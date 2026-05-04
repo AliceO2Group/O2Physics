@@ -9,8 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//
+/// \author Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \file CutsLibrary.cxxx
+/// \brief Library with cuts to use
+
 #include "PWGDQ/Core/CutsLibrary.h"
 
 #include "AnalysisCompositeCut.h"
@@ -29,7 +31,7 @@
 #include <RtypesCore.h>
 
 #include <cstddef>
-#include <iostream>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -1182,7 +1184,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  for (int iCut = 0; iCut < 10; iCut++) {
+  for (int iCut = 0; iCut < 10; iCut++) { // o2-linter: disable=magic-number (number of cuts)
     if (!nameStr.compare(Form("jpsiEleSel%d_ionut", iCut))) {
       cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
       cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
@@ -1482,11 +1484,48 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  for (int i = 1; i <= 8; i++) {
+  for (int i = 1; i <= 8; i++) { // o2-linter: disable=magic-number (number of cuts)
     if (!nameStr.compare(Form("dalitzSelected%d", i))) {
       cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
       return cut;
     }
+  }
+
+  if (!nameStr.compare("electronPrimaryTag0")) {
+    // with tight 3 sigma DCA cut for selecting primary electrons
+    cut->AddCut(GetAnalysisCut("electronPID_TPCnsigma_loose")); // 3 sigma inclusion, 3sigma rejection
+    cut->AddCut(GetAnalysisCut("electronPrimary_dca3sigma"));
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    return cut;
+  }
+
+  if (!nameStr.compare("electronPrimaryTag1")) {
+    // with 7 sigma DCA cut for selecting primary electrons
+    cut->AddCut(GetAnalysisCut("electronPID_TPCnsigma_loose")); // 3 sigma inclusion, 3sigma rejection
+    cut->AddCut(GetAnalysisCut("electronPrimary_dca7sigma"));
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    return cut;
+  }
+
+  if (!nameStr.compare("electronPrimaryProbe_TPC")) {
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    return cut;
+  }
+
+  if (!nameStr.compare("electronPrimaryProbe_ITS")) {
+    cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    return cut;
+  }
+
+  if (!nameStr.compare("electronPrimaryProbe_ITSTPC")) {
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    return cut;
   }
 
   if (!nameStr.compare("jpsiPIDworseRes")) {
@@ -1956,7 +1995,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
 
-    for (unsigned int i = 0; i < 30; i++) {
+    for (unsigned int i = 0; i < 30; i++) { // o2-linter: disable=magic-number (number of cuts)
       if (!nameStr.compare(Form("ElSelCutVar%s%i", vecPIDcase.at(icase).Data(), i))) {
         cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
         cut->AddCut(GetAnalysisCut(Form("lmeeCutVarTrackCuts%i", i)));
@@ -2726,7 +2765,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
         return cut;
       }
 
-      for (int i = 1; i <= 8; i++) {
+      for (int i = 1; i <= 8; i++) { // o2-linter: disable=magic-number (number of cuts)
         if (!nameStr.compare(Form("lmee%s_pp502TeV_PID%s_UsePrefilter%d", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data(), i))) {
           cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
           cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
@@ -2783,7 +2822,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
         return cut;
       }
 
-      for (int i = 1; i <= 8; i++) {
+      for (int i = 1; i <= 8; i++) { // o2-linter: disable=magic-number (number of cuts)
         if (!nameStr.compare(Form("lmee%s_eNSigmaRun3%s_UsePrefilter%d", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data(), i))) {
           cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
           cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
@@ -4232,14 +4271,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("eventStandardSel8PbPbMultCorr")) {
-    TF1* fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultPVCutLow = std::make_shared<TF1>("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
-    TF1* fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultPVCutHigh = std::make_shared<TF1>("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
     fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
 
-    TF1* fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultCutLow = std::make_shared<TF1>("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
-    TF1* fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultCutHigh = std::make_shared<TF1>("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
     cut->AddCut(VarManager::kVtxNcontribReal, fMultPVCutLow, fMultPVCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
     cut->AddCut(VarManager::kMultA, fMultCutLow, fMultCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
@@ -4792,44 +4831,44 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   // loop to define PID cuts with and without post calibration
   for (size_t icase = 1; icase < vecTypetrack.size(); icase++) {
     if (!nameStr.compare(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data()))) {
-      if (icase == 1) {
+      if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
         cut->AddCut(VarManager::kITSncls, 6.5, 7.5);
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
         cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
         cut->AddCut(VarManager::kITSncls, 4.5, 7.5);
-      } else if (icase == 3) {
+      } else if (icase == 3) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
         cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
         cut->AddCut(VarManager::kITSncls, 4.5, 7.5);
         cut->AddCut(VarManager::kHasTPC, -0.5, 0.5);
-      } else if (icase == 4) {
+      } else if (icase == 4) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
-      } else if (icase == 5) {
+      } else if (icase == 5) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
         cut->AddCut(VarManager::kHasITS, -0.5, 0.5);
-      } else if (icase == 6) {
+      } else if (icase == 6) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
         cut->AddCut(VarManager::kHasTRD, -0.5, 0.5);
-      } else if (icase == 7) {
+      } else if (icase == 7) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
         cut->AddCut(VarManager::kITSncls, 4.5, 7.5);
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 130.0, 170.);
-      } else if (icase == 8) {
+      } else if (icase == 8) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
@@ -5064,6 +5103,44 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronPrimary_dca3sigma") || !nameStr.compare("electronPrimary_dca7sigma")) {
+    std::shared_ptr<TF1> fDCAxyresLow = std::make_shared<TF1>("fDCAxyresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAzresLow = std::make_shared<TF1>("fDCAzresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAxyresUp = std::make_shared<TF1>("fDCAxyresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAzresUp = std::make_shared<TF1>("fDCAzresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+
+    if (!nameStr.compare("electronPrimary_dca3sigma")) {
+      // DCAxy and DCAz 3 sigma cut. DCA resolution vs pt extracted from fits of Users/m/mfaggin/test/inputsTrackTuner/pp2024/pass1_minBias/vsPhi (used for the track tuner)
+      // we add in addition a term for the misalignment of the mean of the distribution, which seems to be at most 20 mum for DCAxy and 10 mum for DCAz
+      fDCAxyresLow->SetParameters(-3 * 8.7e-4 - 20e-4, -3 * 25.4e-4, 0.79); // res is 8.7 + 25.4/pt^0.79 mum
+      fDCAzresLow->SetParameters(-3 * 9.4e-4 - 10e-4, -3 * 26.5e-4, 0.79);  // res is 9.4 + 26.5/pt^0.79 mum
+      fDCAxyresUp->SetParameters(3 * 8.7e-4 + 20e-4, 3 * 25.4e-4, 0.79);    // res is 8.7 + 25.4/pt^0.79 mum
+      fDCAzresUp->SetParameters(3 * 9.4e-4 + 10e-4, 3 * 26.5e-4, 0.79);     // res is 9.4 + 26.5/pt^0.79 mum
+      cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
+      cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+      cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+      cut->AddCut(VarManager::kTPCncls, 100, 161.);
+      return cut;
+    }
+
+    if (!nameStr.compare("electronPrimary_dca7sigma")) {
+      // DCAxy and DCAz 7 sigma cut
+      fDCAxyresLow->SetParameters(-7 * 8.7e-4 - 20e-4, -7 * 25.4e-4, 0.79);
+      fDCAzresLow->SetParameters(-7 * 9.4e-4 - 10e-4, -7 * 26.5e-4, 0.79);
+      fDCAxyresUp->SetParameters(7 * 8.7e-4 + 20e-4, 7 * 25.4e-4, 0.79);
+      fDCAzresUp->SetParameters(7 * 9.4e-4 + 10e-4, 7 * 26.5e-4, 0.79);
+      cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
+      cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+      cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+      cut->AddCut(VarManager::kTPCncls, 100, 161.);
+      return cut;
+    }
+  }
+
   if (!nameStr.compare("dcaCut1_ionut")) {
     cut->AddCut(VarManager::kTrackDCAxy, -0.5, 0.5);
     cut->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
@@ -5239,7 +5316,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   // -----------------------------------------------------
   // V0 and Dalitz legs selections
 
-  for (int i = 1; i <= 8; i++) {
+  for (int i = 1; i <= 8; i++) { // o2-linter: disable=magic-number (number of cuts)
     if (!nameStr.compare(Form("dalitzLeg%d", i))) {
       cut->AddCut(VarManager::kIsDalitzLeg + i - 1, 0.5, 1.5);
       return cut;
@@ -5420,40 +5497,42 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  TF1* cutLow1 = new TF1("cutLow1", "pol1", 0., 10.);
-  if (!nameStr.compare("electronPID1")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignal, 70., 100.);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+  if (!nameStr.compare("electronPID1") || !nameStr.compare("electronPID1shiftUp") || !nameStr.compare("electronPID1shiftDown") || !nameStr.compare("electronPID2") || !nameStr.compare("electronPID3")) {
+    std::shared_ptr<TF1> cutLow1 = std::make_shared<TF1>("cutLow1", "pol1", 0., 10.);
+    if (!nameStr.compare("electronPID1")) {
+      cutLow1->SetParameters(130., -40.0);
+      cut->AddCut(VarManager::kTPCsignal, 70., 100.);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID1shiftUp")) {
-    cut->AddCut(VarManager::kTPCsignal, 70. - 0.85, 100. - 0.85);
-    cutLow1->SetParameters(130. - 0.85, -40.0);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 - 0.85, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+    if (!nameStr.compare("electronPID1shiftUp")) {
+      cut->AddCut(VarManager::kTPCsignal, 70. - 0.85, 100. - 0.85);
+      cutLow1->SetParameters(130. - 0.85, -40.0);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 - 0.85, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID1shiftDown")) {
-    cut->AddCut(VarManager::kTPCsignal, 70.0 + 0.85, 100.0 + 0.85);
-    cutLow1->SetParameters(130. + 0.85, -40.0);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 + 0.85, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+    if (!nameStr.compare("electronPID1shiftDown")) {
+      cut->AddCut(VarManager::kTPCsignal, 70.0 + 0.85, 100.0 + 0.85);
+      cutLow1->SetParameters(130. + 0.85, -40.0);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 + 0.85, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID2")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignal, 73., 100.);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+    if (!nameStr.compare("electronPID2")) {
+      cutLow1->SetParameters(130., -40.0);
+      cut->AddCut(VarManager::kTPCsignal, 73., 100.);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID3")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignal, 60., 110.);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
+    if (!nameStr.compare("electronPID3")) {
+      cutLow1->SetParameters(130., -40.0);
+      cut->AddCut(VarManager::kTPCsignal, 60., 110.);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
   }
 
   if (!nameStr.compare("electronPIDnsigma")) {
@@ -5486,26 +5565,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   // loop to define TPC PID cuts with and without post calibration
   for (size_t icase = 0; icase < vecPIDcase.size(); icase++) {
     if (!nameStr.compare(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
       }
       return cut;
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s_loose", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5515,17 +5594,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) { // previously known as electronPID_TPCnsigma_tight
+      if (icase == 0) { // previously known as electronPID_TPCnsigma_tight  // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5535,17 +5614,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s_strongHadRej", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5555,17 +5634,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5575,19 +5654,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5598,19 +5677,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5623,17 +5702,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5645,17 +5724,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5667,17 +5746,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPCnsigma%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5700,17 +5779,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
     for (unsigned int i = 0; i < cutVar_TPCnSigmaEl_low.size(); i++) {
       if (!nameStr.compare(Form("electronPID_TPCnsigma_cutVar%s%i", vecPIDcase.at(icase).Data(), i))) {
-        if (icase == 0) {
+        if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
           cut->AddCut(VarManager::kTPCnSigmaEl, cutVar_TPCnSigmaEl_low.at(i), cutVar_TPCnSigmaEl_up.at(i), false, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPi, cutVar_TPCnSigmaPi_low.at(i), cutVar_TPCnSigmaPi_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaKa, cutVar_TPCnSigmaKa_low.at(i), cutVar_TPCnSigmaKa_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPr, cutVar_TPCnSigmaPr_low.at(i), cutVar_TPCnSigmaPr_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
-        } else if (icase == 1) {
+        } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
           cut->AddCut(VarManager::kTPCnSigmaEl_Corr, cutVar_TPCnSigmaEl_low.at(i), cutVar_TPCnSigmaEl_up.at(i), false, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPi_Corr, cutVar_TPCnSigmaPi_low.at(i), cutVar_TPCnSigmaPi_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaKa, cutVar_TPCnSigmaKa_low.at(i), cutVar_TPCnSigmaKa_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPr_Corr, cutVar_TPCnSigmaPr_low.at(i), cutVar_TPCnSigmaPr_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
-        } else if (icase == 2) {
+        } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
           cut->AddCut(VarManager::kTPCnSigmaEl_Corr, cutVar_TPCnSigmaEl_low.at(i), cutVar_TPCnSigmaEl_up.at(i), false, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPi_Corr, cutVar_TPCnSigmaPi_low.at(i), cutVar_TPCnSigmaPi_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaKa_Corr, cutVar_TPCnSigmaKa_low.at(i), cutVar_TPCnSigmaKa_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5721,17 +5800,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TPC%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5741,19 +5820,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_lowB_TPC%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3.5, 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3.5, 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3.5, 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5775,10 +5854,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TPCPbPbnopkrej%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
       }
@@ -5786,17 +5865,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TPCloose%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 2.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -2., 2., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -2., 2., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1) {
+      } else if (icase == 1) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -2., 2., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr_Corr, -2., 2., true, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 2) {
+      } else if (icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa_Corr, -2., 2., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -5974,50 +6053,50 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("tpc_pion_rejection")) {
-    TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*x", 0, 10);
+    std::shared_ptr<TF1> f1maxPi = std::make_shared<TF1>("f1maxPi", "[0]+[1]*x", 0, 10);
     f1maxPi->SetParameters(85, -50);
     cut->AddCut(VarManager::kTPCsignal, 70, f1maxPi, true, VarManager::kPin, 0.0, 0.4, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_band_rejection")) {
-    TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*log(x)", 0, 10);
+    std::shared_ptr<TF1> f1minPi = std::make_shared<TF1>("f1minPi", "[0]+[1]*log(x)", 0, 10);
     f1minPi->SetParameters(-115, -90);
-    TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*log(x)", 0, 10);
+    std::shared_ptr<TF1> f1maxPi = std::make_shared<TF1>("f1maxPi", "[0]+[1]*log(x)", 0, 10);
     f1maxPi->SetParameters(-70, -90);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.05, 0.3, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_muon_band_rejection")) {
-    TF1* f1minPi = new TF1("f1minPi", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1minPi = std::make_shared<TF1>("f1minPi", "[0]+exp([1]*x+[2])", 0, 10);
     f1minPi->SetParameters(37, -18, 5.5);
-    TF1* f1maxPi = new TF1("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1maxPi = std::make_shared<TF1>("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxPi->SetParameters(67, -17, 5.9);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
-    TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
+    std::shared_ptr<TF1> f1minPi = std::make_shared<TF1>("f1minPi", "[0]+[1]*x", 0, 10);
     f1minPi->SetParameters(65, 4.);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, 110., false, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_kaon_rejection")) {
-    TF1* f1minKa = new TF1("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1minKa = std::make_shared<TF1>("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
     f1minKa->SetParameters(37, -4, 5.6);
-    TF1* f1maxKa = new TF1("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1maxKa = std::make_shared<TF1>("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxKa->SetParameters(60, -4.1, 6.);
     cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.0, 10.0, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_proton_rejection")) {
-    TF1* f1minPr = new TF1("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1minPr = std::make_shared<TF1>("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
     f1minPr->SetParameters(37, -2.6, 6.1);
-    TF1* f1maxPr = new TF1("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1maxPr = std::make_shared<TF1>("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxPr->SetParameters(60, -2.4, 6.2);
     cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.0, 10, false);
     return cut;
@@ -6051,11 +6130,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   // loop to define TOF PID cuts with and without post calibration
   for (size_t icase = 0; icase < vecPIDcase.size(); icase++) {
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_loose", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6064,11 +6143,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) { // previously known as electronPID_TOFnsigma_tight
+      if (icase == 0) { // previously known as electronPID_TOFnsigma_tight  // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6077,11 +6156,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_strongHadRej", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6090,11 +6169,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6112,11 +6191,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
     for (unsigned int i = 0; i < cutVar_TOFnSigmaEl_low.size(); i++) {
       if (!nameStr.compare(Form("electronPID_TOFnsigma_cutVar%s%i", vecPIDcase.at(icase).Data(), i))) {
-        if (icase == 0) {
+        if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
           cut->AddCut(VarManager::kTPCnSigmaEl, cutVar_TPCnSigmaEl_low.at(i), cutVar_TPCnSigmaEl_up.at(i), false, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPi, cutVar_TPCnSigmaPi_low.at(i), cutVar_TPCnSigmaPi_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTOFnSigmaEl, cutVar_TOFnSigmaEl_low.at(i), cutVar_TOFnSigmaEl_up.at(i), false, VarManager::kPin, 0.3, 1e+10, false);
-        } else if (icase == 1 || icase == 2) {
+        } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
           cut->AddCut(VarManager::kTPCnSigmaEl_Corr, cutVar_TPCnSigmaEl_low.at(i), cutVar_TPCnSigmaEl_up.at(i), false, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTPCnSigmaPi_Corr, cutVar_TPCnSigmaPi_low.at(i), cutVar_TPCnSigmaPi_up.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
           cut->AddCut(VarManager::kTOFnSigmaEl, cutVar_TOFnSigmaEl_low.at(i), cutVar_TOFnSigmaEl_up.at(i), false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6126,13 +6205,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TPC_TOFnsigma%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) { // previously known as electronPID_TOFnsigma_tight
+      if (icase == 0) { // previously known as electronPID_TOFnsigma_tight  // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaKa, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
@@ -6143,12 +6222,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.3, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.25, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.3, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.25, 1e+10, false);
@@ -6158,12 +6237,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.3, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.25, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.3, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 4., true, VarManager::kPin, 0.25, 1e+10, false);
@@ -6175,11 +6254,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6190,11 +6269,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6205,11 +6284,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 1., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 1., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6220,11 +6299,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFreq%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
@@ -6233,11 +6312,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("electronPID_TOFreq%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 1., false, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, 0., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 1., false, VarManager::kPin, 0.0, 1e+10, false);
@@ -6246,11 +6325,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TOF%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
@@ -6259,12 +6338,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_lowB_TOF%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaMu, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
@@ -6274,12 +6353,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TOFloose%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 3., true, VarManager::kPin, 0.0, 4.0, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 2.5, true, VarManager::kPin, 4.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -4., 4., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 3., true, VarManager::kPin, 0.0, 4.0, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 4.0, 1e+10, false);
@@ -6289,12 +6368,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TOFloose_pionrej%s", vecPIDcase.at(icase).Data()))) {
-      if (icase == 0) {
+      if (icase == 0) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 3.5, true, VarManager::kPin, 0.0, 2.0, false);
         cut->AddCut(VarManager::kTPCnSigmaPi, -99., 2.5, true, VarManager::kPin, 2.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -4., 4., false, VarManager::kPin, 0.3, 1e+10, false);
-      } else if (icase == 1 || icase == 2) {
+      } else if (icase == 1 || icase == 2) { // o2-linter: disable=magic-number (number of cuts)
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 3.5, true, VarManager::kPin, 0.0, 2.0, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 2.0, 1e+10, false);
@@ -6515,9 +6594,9 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("pairDalitz1")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
     cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
-    TF1* fcutHigh = new TF1("f1", "[0] - [0]/[1]*x", -1.5, 1.5);
+    std::shared_ptr<TF1> fcutHigh = std::make_shared<TF1>("f1", "[0] - [0]/[1]*x", -1.5, 1.5);
     fcutHigh->SetParameters(0.6, 0.12);
-    TF1* fcutLow = new TF1("f2", "-[0] + [0]/[1]*x", -1.5, 1.5);
+    std::shared_ptr<TF1> fcutLow = std::make_shared<TF1>("f2", "-[0] + [0]/[1]*x", -1.5, 1.5);
     fcutLow->SetParameters(0.6, 0.12);
     cut->AddCut(VarManager::kPsiPair, fcutLow, fcutHigh, true, VarManager::kDeltaPhiPair, 0, 0.12);
     return cut;
@@ -6926,7 +7005,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairLxyProjected3sigmaLambdacCand")) {
-    TF1* f1minLxyProjected = new TF1("f1minLxyProjected", "[0]+[1]*x", 0., 20.);
+    std::shared_ptr<TF1> f1minLxyProjected = std::make_shared<TF1>("f1minLxyProjected", "[0]+[1]*x", 0., 20.);
     f1minLxyProjected->SetParameters(0.0065, -0.00023);
     cut->AddCut(VarManager::kVertexingLxyProjected, f1minLxyProjected, 1., false, VarManager::kPt, 0., 20.);
     return cut;
@@ -7425,8 +7504,8 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
       bool depCut2Exclude = (addcut.HasMember("depCut2Exclude") ? addcut.FindMember("depCut2Exclude")->value.GetBool() : false);
       LOG(info) << "depCut2Exclude " << depCut2Exclude;
 
-      TF1* cutLowFunc = nullptr;
-      TF1* cutHighFunc = nullptr;
+      std::shared_ptr<TF1> cutLowFunc = nullptr;
+      std::shared_ptr<TF1> cutHighFunc = nullptr;
       double cutLowNumber = 0.0;
       double cutHighNumber = 0.0;
       if (cutLow_isNumber) {
@@ -7434,8 +7513,8 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
         LOG(info) << "cutLowNumber " << cutLowNumber;
       } else {
         auto& cutLow = addcut.FindMember("cutLow")->value;
-        cutLowFunc = new TF1(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(),
-                             cutLow.FindMember("xLow")->value.GetDouble(), cutLow.FindMember("xHigh")->value.GetDouble());
+        cutLowFunc = std::make_shared<TF1>(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(),
+                                           cutLow.FindMember("xLow")->value.GetDouble(), cutLow.FindMember("xHigh")->value.GetDouble());
         LOG(info) << "cutLowFunc " << cutLow.FindMember("funcName")->value.GetString() << ", " << cutLow.FindMember("funcBody")->value.GetString()
                   << ", " << cutLow.FindMember("xLow")->value.GetDouble() << ", " << cutLow.FindMember("xHigh")->value.GetDouble();
       }
@@ -7444,8 +7523,8 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
         LOG(info) << "cutHighNumber " << cutHighNumber;
       } else {
         auto& cutHigh = addcut.FindMember("cutHigh")->value;
-        cutHighFunc = new TF1(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(),
-                              cutHigh.FindMember("xLow")->value.GetDouble(), cutHigh.FindMember("xHigh")->value.GetDouble());
+        cutHighFunc = std::make_shared<TF1>(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(),
+                                            cutHigh.FindMember("xLow")->value.GetDouble(), cutHigh.FindMember("xHigh")->value.GetDouble());
         LOG(info) << "cutHighFunc " << cutHigh.FindMember("funcName")->value.GetString() << ", " << cutHigh.FindMember("funcBody")->value.GetString()
                   << ", " << cutHigh.FindMember("xLow")->value.GetDouble() << ", " << cutHigh.FindMember("xHigh")->value.GetDouble();
       }
@@ -7705,12 +7784,15 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
         cutsMl.push_back(binCuts);
         labelsFlatBin.push_back(Form("%s_cent%.0f_%.0f_pt%.1f_%.1f", cent.c_str(), centMin, centMax, ptMin, ptMax));
         LOG(info) << "Added cut for " << Form("%s_cent%.0f_%.0f_pt%.1f_%.1f", cent.c_str(), centMin, centMax, ptMin, ptMax) << " with cuts: [";
+        std::string msg = "";
         for (size_t i = 0; i < binCuts.size(); ++i) {
-          std::cout << binCuts[i];
+          msg += std::to_string(binCuts[i]);
           if (i != binCuts.size() - 1)
-            std::cout << ", ";
+            msg += ", ";
         }
-        std::cout << "] and direction: " << (exclude ? "CutGreater" : "CutSmaller") << std::endl;
+        msg += "] and direction: ";
+        msg += (exclude ? "CutGreater" : "CutSmaller");
+        LOG(info) << msg;
       }
     }
 
