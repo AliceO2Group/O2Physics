@@ -17,9 +17,9 @@
 #include "PWGLF/DataModel/LFSigmaHadTables.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -85,9 +85,9 @@ struct sigmaHadCand {
   float nSigmaTPCHad = -1; // Number of sigmas for the hadron candidate
   float nSigmaTOFHad = -1; // Number of sigmas for the hadron candidate using TOF
 
-  int kinkDauID = -1;              // ID of the pion from Sigma decay in MC
-  int sigmaID = -1;                // ID of the Sigma candidate in MC
-  int hadID = -1;                  // ID of the hadron candidate in MC
+  int kinkDauID = -1; // ID of the pion from Sigma decay in MC
+  int sigmaID = -1;   // ID of the Sigma candidate in MC
+  int hadID = -1;     // ID of the hadron candidate in MC
 
   int sigmaMotherPDG = -999;         // PDG of the direct mother of the Sigma in MC
   int sigmaPartonicMotherPDG = -999; // PDG of the first or last partonic ancestor of the Sigma in MC
@@ -630,7 +630,7 @@ struct sigmaHadCorrTask {
   SliceCache cache;
   using BinningTypeNumContrib = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   using BinningTypeMultNTracksPV = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
-  BinningTypeNumContrib    colBinningNumContrib{{CfgVtxBins, CfgMultBins}, true};
+  BinningTypeNumContrib colBinningNumContrib{{CfgVtxBins, CfgMultBins}, true};
   BinningTypeMultNTracksPV colBinningPVMult{{CfgVtxBins, CfgMultBins}, true};
 
   void processMixedEvent(const CollisionsFull& collisions, const aod::KinkCands& kinkCands, const TracksFull& tracks)
