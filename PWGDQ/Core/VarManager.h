@@ -715,8 +715,10 @@ class VarManager : public TObject
     // MC pair variables
     kMCPt1,
     kMCEta1,
+    kMCP1,
     kMCPt2,
     kMCEta2,
+    kMCP2,
     kMCCosThetaHE,
     kMCPhiHE,
     kMCPhiTildeHE,
@@ -4201,6 +4203,8 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kMCPt2] = t2.pt();
   values[kMCEta1] = t1.eta();
   values[kMCEta2] = t2.eta();
+  values[kMCP1] = t1.p();
+  values[kMCP2] = t2.p();
 
   // polarization parameters
   bool useHE = fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]; // helicity frame

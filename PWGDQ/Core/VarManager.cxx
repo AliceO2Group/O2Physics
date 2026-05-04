@@ -1953,6 +1953,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEventWeight"] = kMCEventWeight;
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;
   fgVarNamesMap["kMCEventPlaneAngle"] = kMCEventPlaneAngle;
+  fgVarNamesMap["kMCEventCentrFT0C"] = kMCEventCentrFT0C;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
