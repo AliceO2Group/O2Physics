@@ -222,67 +222,66 @@ mcp: Monte Carlo data (particle level)
 */
 namespace histnames
 {
-#define HNAME(Name) constexpr const char* Name = #Name;
+
 /*
 // Experimental Data (analyseDataChargedSubstructure)
 */
-HNAME(ex_col);           // Collision Counter
-HNAME(ex_jet);           // Jet Counter
-HNAME(ex_jet_pt);        // Jet pT
-HNAME(ex_jet_eta);       // Jet eta
-HNAME(ex_jet_phi);       // Jet phi
-HNAME(ex_jet_ang);       // Jet angularity
-HNAME(ex_jet_proj);      // Projection of HF candidate momentum on jet axis
-HNAME(ex_jet_dist);      // Jet–HF candidate angular distance
-HNAME(ex_jet_dist_proj); // Jet–HF candidate distance vs projection
-HNAME(ex_hfl_pt);        // HF candidate pT
-HNAME(ex_hfl_mass);      // HF candidate mass
-HNAME(ex_hfl_eta);       // HF candidate eta
-HNAME(ex_hfl_phi);       // HF candidate phi
+constexpr const char* ex_col = "ex_col";                     // Collision Counter
+constexpr const char* ex_jet = "ex_jet";                     // Jet Counter
+constexpr const char* ex_jet_pt = "ex_jet_pt";               // Jet pT
+constexpr const char* ex_jet_eta = "ex_jet_eta";             // Jet eta
+constexpr const char* ex_jet_phi = "ex_jet_phi";             // Jet phi
+constexpr const char* ex_jet_ang = "ex_jet_ang";             // Jet angularity
+constexpr const char* ex_jet_proj = "ex_jet_proj";           // Projection of HF candidate momentum on jet axis
+constexpr const char* ex_jet_dist = "ex_jet_dist";           // Jet–HF candidate angular distance
+constexpr const char* ex_jet_dist_proj = "ex_jet_dist_proj"; // Jet–HF candidate distance vs projection
+constexpr const char* ex_hfl_pt = "ex_hfl_pt";               // HF candidate pT
+constexpr const char* ex_hfl_mass = "ex_hfl_mass";           // HF candidate mass
+constexpr const char* ex_hfl_eta = "ex_hfl_eta";             // HF candidate eta
+constexpr const char* ex_hfl_phi = "ex_hfl_phi";             // HF candidate phi
 /*
 // Monte Carlo Data Efficiency (analyseMonteCarloEfficiency)
 */
-HNAME(mc_eff_col);          // Collision Counter
-HNAME(mc_eff_jet);          // Jet Counter
-HNAME(mc_eff_det_jet_pt);   // Detector level jet pT
-HNAME(mc_eff_det_jet_eta);  // Detector level jet eta
-HNAME(mc_eff_det_jet_phi);  // Detector level jet phi
-HNAME(mc_eff_det_jet_ang);  // Detector level jet angularity
-HNAME(mc_eff_det_hfl_pt);   // Detector level HF candidate pT
-HNAME(mc_eff_det_hfl_mass); // Detector level HF candidate mass
-HNAME(mc_eff_det_hfl_eta);  // Detector level HF candidate eta
-HNAME(mc_eff_det_hfl_phi);  // Detector level HF candidate phi
-HNAME(mc_eff_par_jet_pt);   // Particle level jet pT
-HNAME(mc_eff_par_jet_eta);  // Particle level jet eta
-HNAME(mc_eff_par_jet_phi);  // Particle level jet phi
-HNAME(mc_eff_par_jet_ang);  // Particle level jet angularity
-HNAME(mc_eff_par_hfl_pt);   // Particle level HF candidate pT
-// HNAME(mc_eff_par_hfl_mass); // Particle level HF candidate mass -> PDG value
-HNAME(mc_eff_par_hfl_eta); // Particle level HF candidate eta
-HNAME(mc_eff_par_hfl_phi); // Particle level HF candidate phi
+constexpr const char* mc_eff_col = "mc_eff_col";                   // Collision Counter
+constexpr const char* mc_eff_jet = "mc_eff_jet";                   // Jet Counter
+constexpr const char* mc_eff_det_jet_pt = "mc_eff_det_jet_pt";     // Detector level jet pT
+constexpr const char* mc_eff_det_jet_eta = "mc_eff_det_jet_eta";   // Detector level jet eta
+constexpr const char* mc_eff_det_jet_phi = "mc_eff_det_jet_phi";   // Detector level jet phi
+constexpr const char* mc_eff_det_jet_ang = "mc_eff_det_jet_ang";   // Detector level jet angularity
+constexpr const char* mc_eff_det_hfl_pt = "mc_eff_det_hfl_pt";     // Detector level HF candidate pT
+constexpr const char* mc_eff_det_hfl_mass = "mc_eff_det_hfl_mass"; // Detector level HF candidate mass
+constexpr const char* mc_eff_det_hfl_eta = "mc_eff_det_hfl_eta";   // Detector level HF candidate eta
+constexpr const char* mc_eff_det_hfl_phi = "mc_eff_det_hfl_phi";   // Detector level HF candidate phi
+constexpr const char* mc_eff_par_jet_pt = "mc_eff_par_jet_pt";     // Particle level jet pT
+constexpr const char* mc_eff_par_jet_eta = "mc_eff_par_jet_eta";   // Particle level jet eta
+constexpr const char* mc_eff_par_jet_phi = "mc_eff_par_jet_phi";   // Particle level jet phi
+constexpr const char* mc_eff_par_jet_ang = "mc_eff_par_jet_ang";   // Particle level jet angularity
+constexpr const char* mc_eff_par_hfl_pt = "mc_eff_par_hfl_pt";     // Particle level HF candidate pT
+// constexpr const char* mc_eff_par_hfl_mass = "mc_eff_par_hfl_mass"; // Particle level HF candidate mass -> PDG value
+constexpr const char* mc_eff_par_hfl_eta = "mc_eff_par_hfl_eta"; // Particle level HF candidate eta
+constexpr const char* mc_eff_par_hfl_phi = "mc_eff_par_hfl_phi"; // Particle level HF candidate phi
 /*
 // Monte Carlo Data Matching (analyseMonteCarlo)
 */
-HNAME(mc_col);          // Collision Counter
-HNAME(mc_jet);          // Jet Counter
-HNAME(mc_det_jet_pt);   // Detector level jet pT
-HNAME(mc_det_jet_eta);  // Detector level jet eta
-HNAME(mc_det_jet_phi);  // Detector level jet phi
-HNAME(mc_det_jet_ang);  // Detector level jet angularity
-HNAME(mc_det_hfl_pt);   // Detector level HF candidate pT (matched)
-HNAME(mc_det_hfl_mass); // Detector level HF candidate mass (matched)
-HNAME(mc_det_hfl_eta);  // Detector level HF candidate eta (matched)
-HNAME(mc_det_hfl_phi);  // Detector level HF candidate phi (matched)
-// HNAME(mc_par_jet_pt);   // Particle level jet pT
-// HNAME(mc_par_jet_eta);  // Particle level jet eta
-// HNAME(mc_par_jet_phi);  // Particle level jet phi
-// HNAME(mc_par_jet_ang);  // Particle level jet angularity
-// HNAME(mc_par_hfl_pt);   // Particle level HF candidate pT
-// HNAME(mc_par_hfl_mass); // Particle level HF candidate mass -> PDG value
-// HNAME(mc_par_hfl_eta); // Particle level HF candidate eta
-// HNAME(mc_par_hfl_phi); // Particle level HF candidate phi
+constexpr const char* mc_col = "mc_col";                   // Collision Counter
+constexpr const char* mc_jet = "mc_jet";                   // Jet Counter
+constexpr const char* mc_det_jet_pt = "mc_det_jet_pt";     // Detector level jet pT
+constexpr const char* mc_det_jet_eta = "mc_det_jet_eta";   // Detector level jet eta
+constexpr const char* mc_det_jet_phi = "mc_det_jet_phi";   // Detector level jet phi
+constexpr const char* mc_det_jet_ang = "mc_det_jet_ang";   // Detector level jet angularity
+constexpr const char* mc_det_hfl_pt = "mc_det_hfl_pt";     // Detector level HF candidate pT (matched)
+constexpr const char* mc_det_hfl_mass = "mc_det_hfl_mass"; // Detector level HF candidate mass (matched)
+constexpr const char* mc_det_hfl_eta = "mc_det_hfl_eta";   // Detector level HF candidate eta (matched)
+constexpr const char* mc_det_hfl_phi = "mc_det_hfl_phi";   // Detector level HF candidate phi (matched)
+// constexpr const char* mc_par_jet_pt = "mc_par_jet_pt";   // Particle level jet pT
+// constexpr const char* mc_par_jet_eta = "mc_par_jet_eta";  // Particle level jet eta
+// constexpr const char* mc_par_jet_phi = "mc_par_jet_phi";  // Particle level jet phi
+// constexpr const char* mc_par_jet_ang = "mc_par_jet_ang";  // Particle level jet angularity
+// constexpr const char* mc_par_hfl_pt = "mc_par_hfl_pt";   // Particle level HF candidate pT
+// constexpr const char* mc_par_hfl_mass = "mc_par_hfl_mass"; // Particle level HF candidate mass -> PDG value
+// constexpr const char* mc_par_hfl_eta = "mc_par_hfl_eta"; // Particle level HF candidate eta
+// constexpr const char* mc_par_hfl_phi = "mc_par_hfl_phi"; // Particle level HF candidate phi
 
-#undef HNAME
 } // namespace histnames
 
 consteval float getValFromBin(int bin)
