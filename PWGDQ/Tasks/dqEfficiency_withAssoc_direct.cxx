@@ -25,6 +25,7 @@
 #include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -59,6 +60,7 @@
 
 #include <RtypesCore.h>
 
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>

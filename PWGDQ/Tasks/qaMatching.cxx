@@ -23,6 +23,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
@@ -57,9 +58,7 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TMath.h>
-
-#include <RtypesCore.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
@@ -67,7 +66,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <format>
 #include <functional>
 #include <map>
 #include <memory>
