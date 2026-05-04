@@ -1,0 +1,9 @@
+functionStatic
+missingInclude
+missingIncludeSystem
+syntaxError
+unknownMacro
+unreadVariable
+unusedStructMember:*.h
+useStlAlgorithm
+variableScope
