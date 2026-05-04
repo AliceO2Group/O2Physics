@@ -431,7 +431,7 @@ struct FemtoPairEfficiency {
     ROOT::Math::PtEtaPhiMVector particle1;
     ROOT::Math::PtEtaPhiMVector particle2;
 
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsUpperIndexPolicy(tracks, tracks))) {
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
       bool order1 = checkTrack(p1, TrackSel1) && checkTrackPid(p1, TrackSel1) &&
                     checkTrack(p2, TrackSel2) && checkTrackPid(p2, TrackSel2);
