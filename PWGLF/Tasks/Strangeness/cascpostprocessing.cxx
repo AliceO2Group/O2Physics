@@ -16,17 +16,22 @@
 /// \modified by Roman Nepeivoda (roman.nepeivoda@cern.ch)
 /// \since June 1, 2023
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TMathBase.h>
 #include <TPDGCode.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
 
 #include <cmath>
 

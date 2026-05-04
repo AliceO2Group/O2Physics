@@ -63,6 +63,7 @@
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <map>
