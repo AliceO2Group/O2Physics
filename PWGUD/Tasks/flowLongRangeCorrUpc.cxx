@@ -42,6 +42,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <vector>
+#include <string> 
 
 using namespace o2;
 using namespace o2::framework;
@@ -342,7 +343,6 @@ struct FlowLongRangeCorrUpc {
       nTracksRaw += 1.;
       auto momentum = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
       double pt = track1.pt();
-      double phi = RecoDecay::phi(momentum);
       double eta = RecoDecay::eta(momentum);
       if (!getEfficiencyCorrection(weff1, eta, pt, posZ))
         continue;
@@ -528,7 +528,7 @@ struct FlowLongRangeCorrUpc {
         if (!okC)
           continue;
         float thrC = 1.;
-        if (udhelpers::testBit(w2A, chanelidC))
+        if (udhelpers::testBit(w2C, chanelidC))
           thrC = 2.;
 
         float deltaPhi = RecoDecay::constrainAngle(fitCh_phiA - fitCh_phiC, -PIHalf);
