@@ -997,7 +997,8 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
         trkLabels["trkOrigin"].push_back(0); // mismatched coll track
       } else {
         int orig = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-        trkLabels["trkOrigin"].push_back((orig != RecoDecay::OriginType::None) ? static_cast<int>(orig) : (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3 : 4); // 1: charm, 2: beauty, 3: primary, 4: other secondary
+        trkLabels["trkOrigin"].push_back((orig != RecoDecay::OriginType::None) ? static_cast<int>(orig) : (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3
+                                                                                                                                                  : 4); // 1: charm, 2: beauty, 3: primary, 4: other secondary
       }
     }
 
