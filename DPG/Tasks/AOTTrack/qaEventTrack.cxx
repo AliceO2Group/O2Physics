@@ -21,8 +21,6 @@
 /// \brief  Task to produce QA objects for the track and the event properties in the AOD.
 ///
 
-#include "qaEventTrack.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
