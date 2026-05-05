@@ -13,23 +13,49 @@
 /// \brief Task for producing particle correlations
 /// \author Joey Staa <joey.staa@fysik.lu.se>
 
-#include "RecoDecay.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TList.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -56,14 +82,14 @@ struct ThreeParticleCorrelations {
     std::string prefix = "EventSelection";
     Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
     Configurable<int> occupMin{"occupMin", 0, "Minimum collision occupancy"};
-    Configurable<int> occupMax{"occupMax", 15000, "Maximum collision occupancy"};
+    Configurable<int> occupMax{"occupMax", 500, "Maximum collision occupancy"};
     Configurable<bool> useOccupCut{"useOccupCut", true, "Use the kNoCollInTimeRangeStandard cut"};
   } evSelGroup;
 
   // V0 filter parameters
   struct : ConfigurableGroup {
     std::string prefix = "V0Selection";
-    Configurable<float> v0PtMin{"v0PtMin", 0.6, "Minimum V0 transverse momentum"};
+    Configurable<float> v0PtMin{"v0PtMin", 1.6, "Minimum V0 transverse momentum"};
     Configurable<float> v0PtMax{"v0PtMax", 12.0, "Maximum V0 transverse momentum"};
     Configurable<float> tpcNCrossedRows{"tpcNCrossedRows", 70.0, "Minimum number of TPC crossed rows"};
     Configurable<float> decayR{"decayR", 1.2, "Minimum V0 decay radius (cm)"};
@@ -165,7 +191,7 @@ struct ThreeParticleCorrelations {
   struct : ConfigurableGroup {
     std::string prefix = "processSwitchBoard";
     Configurable<int> confBfieldSwitch{"confBfieldSwitch", 0, "Switch for the detector magnetic field (1 if Pos, -1 if Neg, 0 if both)"};
-    Configurable<bool> confRatioCorrectionSwitch{"confRatioCorrectionSwitch", false, "Switch for correcting the negative spectra back to the positive spectra"};
+    Configurable<bool> confRatioCorrectionSwitch{"confRatioCorrectionSwitch", true, "Switch for correcting the negative spectra back to the positive spectra"};
     Configurable<bool> confFakeV0Switch{"confFakeV0Switch", false, "Switch for the fakeV0Filter function"};
     Configurable<bool> confRDSwitch{"confRDSwitch", true, "Switch for the radialDistanceFilter function"};
   } switchGroup;
@@ -1122,7 +1148,7 @@ struct ThreeParticleCorrelations {
       return false;
     }
 
-    if (trackPID(track)[0] == pionID) { // Pions
+    if (trackPID(track)[0] == pionID) {                                            // Pions
       if (std::abs(track.tpcNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
@@ -1144,7 +1170,7 @@ struct ThreeParticleCorrelations {
         return false;
       }
 
-    } else if (trackPID(track)[0] == kaonID) { // Kaons
+    } else if (trackPID(track)[0] == kaonID) {                                     // Kaons
       if (std::abs(track.tpcNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
@@ -1166,7 +1192,7 @@ struct ThreeParticleCorrelations {
         return false;
       }
 
-    } else if (trackPID(track)[0] == protonID) { // Protons
+    } else if (trackPID(track)[0] == protonID) {                                   // Protons
       if (std::abs(track.tpcNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }

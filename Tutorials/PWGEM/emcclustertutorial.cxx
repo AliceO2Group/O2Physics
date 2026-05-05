@@ -11,26 +11,22 @@
 
 #include "PWGJE/DataModel/EMCALClusters.h"
 
-#include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMathBase.h>
 
 #include <climits>
 #include <cstdlib>
-#include <map>
-#include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
 

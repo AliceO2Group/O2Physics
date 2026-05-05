@@ -19,6 +19,8 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -26,15 +28,30 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TRandom2.h"
+#include <TH1.h>
 #include <TPDGCode.h>
+#include <TRandom2.h>
+#include <TString.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,8 +89,8 @@ struct Cascqaanalysis {
   ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
   ConfigurableAxis nChargedFV0AGenAxis{"nChargedFV0AGenAxis", {300, 0, 300}, "N_{FV0A, gen.}"};
   ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
-  ConfigurableAxis signalFT0MAxis{"signalFT0MAxis", {10000, 0, 40000}, "FT0M amplitude"};
-  ConfigurableAxis signalFV0AAxis{"signalFV0AAxis", {10000, 0, 40000}, "FV0A amplitude"};
+  Configurable<int> signalFT0MNBins{"signalFT0MNBins", 1000, "Number of bins for FT0M amplitude QA axis"};
+  Configurable<int> signalFV0ANBins{"signalFV0ANBins", 1000, "Number of bins for FV0A amplitude QA axis"};
   ConfigurableAxis nCandidates{"nCandidates", {30, -0.5, 29.5}, "N_{cand.}"};
 
   // Event selection criteria
@@ -132,11 +149,21 @@ struct Cascqaanalysis {
     uint8_t typeFlag;
   } CollisionIndexAndType;
 
+  static constexpr unsigned int kNITSLayers = 7;
+  static constexpr float kGlobalTrackEtaMax = 0.5f;
+  static constexpr float kFT0CMinEta = -3.3f;
+  static constexpr float kFT0CMaxEta = -2.1f;
+  static constexpr float kFT0AMinEta = 3.5f;
+  static constexpr float kFT0AMaxEta = 4.9f;
+  static constexpr float kFV0AMinEta = 2.2f;
+  static constexpr float kFV0AMaxEta = 5.1f;
+  static constexpr size_t kNContributorsCorrelationSize = 2;
+
   template <typename TTrack>
   static int countITSHits(TTrack const& track)
   {
     int nHits = 0;
-    for (unsigned int i = 0; i < 7; ++i) {
+    for (unsigned int i = 0; i < kNITSLayers; ++i) {
       if (track.itsClusterMap() & (1 << i)) {
         ++nHits;
       }
@@ -208,6 +235,8 @@ struct Cascqaanalysis {
     }
 
     if (multQA) {
+      AxisSpec signalFT0MAxis = {std::max(1, static_cast<int>(signalFT0MNBins)), 0.f, 40000.f, "FT0M amplitude"};
+      AxisSpec signalFV0AAxis = {std::max(1, static_cast<int>(signalFV0ANBins)), 0.f, 40000.f, "FV0A amplitude"};
       if (isMC) {
         // Rec. lvl
         registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
@@ -236,7 +265,7 @@ struct Cascqaanalysis {
      aod::cascdata::dcacascdaughters < dcacascdau);
 
   Partition<DauTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
-  Partition<DauTracks> globalTracksIUEta05 = (nabs(aod::track::eta) < 0.5f) && (requireGlobalTrackInFilter());
+  Partition<DauTracks> globalTracksIUEta05 = (nabs(aod::track::eta) < kGlobalTrackEtaMax) && (requireGlobalTrackInFilter());
 
   template <class TCascTracksTo, typename TCascade>
   bool acceptCascCandidate(TCascade const& cascCand, float const& pvx, float const& pvy, float const& pvz)
@@ -272,7 +301,7 @@ struct Cascqaanalysis {
       if (pdgInfo->Charge() == 0) {
         continue;
       }
-      if (mcParticle.eta() < -3.3 || mcParticle.eta() > 4.9 || (mcParticle.eta() > -2.1 && mcParticle.eta() < 3.5)) {
+      if (mcParticle.eta() < kFT0CMinEta || mcParticle.eta() > kFT0AMaxEta || (mcParticle.eta() > kFT0CMaxEta && mcParticle.eta() < kFT0AMinEta)) {
         continue; // select on T0M Nch region
       }
       nchFT0++; // increment
@@ -296,7 +325,7 @@ struct Cascqaanalysis {
       if (pdgInfo->Charge() == 0) {
         continue;
       }
-      if (mcParticle.eta() < 2.2 || mcParticle.eta() > 5.1) {
+      if (mcParticle.eta() < kFV0AMinEta || mcParticle.eta() > kFV0AMaxEta) {
         continue; // select on V0A Nch region
       }
       nchFV0A++; // increment
@@ -678,7 +707,7 @@ struct Cascqaanalysis {
 
     registry.fill(HIST("hNchFT0MNAssocMCCollisions"), nchFT0, nAssocColl, evType);
 
-    if (numberOfContributors.size() == 2) {
+    if (numberOfContributors.size() == kNContributorsCorrelationSize) {
       std::sort(numberOfContributors.begin(), numberOfContributors.end());
       registry.fill(HIST("hNContributorsCorrelation"), numberOfContributors[0], numberOfContributors[1]);
     }

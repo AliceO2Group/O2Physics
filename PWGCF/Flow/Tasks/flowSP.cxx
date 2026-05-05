@@ -14,39 +14,52 @@
 /// \since  01/12/2024
 /// \brief  task to evaluate flow with respect to spectator plane.
 
-#include "GFWWeights.h"
-
 #include "PWGCF/DataModel/SPTableZDC.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
-#include "Common/Core/EventPlaneHelper.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TF1.h"
-#include "TPDGCode.h"
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
 
-#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
-#include <numeric>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -152,7 +165,7 @@ struct FlowSP {
   Configurable<std::vector<double>> cfgEvSelsMult{"cfgEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgEvSelsVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
   Filter trackFilterMC = nabs(aod::mcparticle::eta) < cfgTrackSelsEta && aod::mcparticle::pt > cfgTrackSelsPtmin&& aod::mcparticle::pt < cfgTrackSelsPtmax;
   using GeneralCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using UnfilteredTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -346,7 +359,7 @@ struct FlowSP {
     AxisSpec axisdEdx = {300, 0, 300, "dEdx for PID"};
     AxisSpec axisBeta = {150, 0, 1.5, "Beta for PID"};
     AxisSpec axisCharge = {3, 0, 3, "Charge: 0 = inclusive, 1 = positive, 2 = negative"};
-    AxisSpec axisPx = {1000, -0.05, 0.05, "p_{x} (GeV/c)"};
+    AxisSpec axisPx = {100, -0.05, 0.05, "p_{x} (GeV/c)"};
 
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
@@ -1379,10 +1392,8 @@ struct FlowSP {
       }
       double centW = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
       if (centW < 0) {
-        spm.centWeight = 1. / centW;
-      } else {
-        LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
         spm.centWeight = 0.;
+        LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
       }
     }
 
@@ -1528,8 +1539,10 @@ struct FlowSP {
     double meanPxAEvent = sumPxAEvent / meanPxEventCount;
     double meanPxCEvent = sumPxCEvent / meanPxEventCount;
 
-    registry.fill(HIST("incl/meanPT/meanPxA"), spm.centrality, spm.psiA - spm.psiC, meanPxAEvent);
-    registry.fill(HIST("incl/meanPT/meanPxC"), spm.centrality, spm.psiA - spm.psiC, meanPxCEvent);
+    if (cfgFillMeanPT) {
+      registry.fill(HIST("incl/meanPT/meanPxA"), spm.centrality, spm.psiA - spm.psiC, meanPxAEvent);
+      registry.fill(HIST("incl/meanPT/meanPxC"), spm.centrality, spm.psiA - spm.psiC, meanPxCEvent);
+    }
 
     // Now we want to fill the final relPt histogram
     // Loop over all eta and fill bins

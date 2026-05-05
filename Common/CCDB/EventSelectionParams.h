@@ -17,8 +17,9 @@
 #ifndef COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 #define COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 
-#include <Rtypes.h>
 #include <TMath.h>
+
+#include <Rtypes.h>
 
 namespace o2::aod::evsel
 {
