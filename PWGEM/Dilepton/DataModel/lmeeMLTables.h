@@ -201,15 +201,15 @@ DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of
 } // namespace emmlevent
 namespace emmltrack
 {
-DECLARE_SOA_COLUMN(IsMotherFromHF, isMotherFromHF, bool); //! is HF included in decay history
-DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);    //! pdg code of mother of lepton
+DECLARE_SOA_COLUMN(IsMotherFromBeauty, isMotherFromBeauty, bool); //! is b quark included in decay history
+DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);            //! pdg code of mother of lepton
 } // namespace emmltrack
 
 DECLARE_SOA_TABLE(EMMLLeptons, "AOD", "EMMLLEPTON", //!
                   o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::SubGeneratorId,
                   track::Signed1Pt, track::Eta,
                   track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
-                  emmltrack::IsMotherFromHF, emmltrack::PdgCodeMother);
+                  emmltrack::IsMotherFromBeauty, emmltrack::PdgCodeMother);
 // iterators
 using EMMLLepton = EMMLLeptons::iterator;
 
