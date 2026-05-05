@@ -262,9 +262,8 @@ struct PhiStrangenessCorrelation {
   using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
 
-  static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "Sideband"};
-  // static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
-  static constexpr std::array<std::string_view, kAssocPartSize> assocParticleLabels{"K0S", "Xi", "Pi"};
+  static constexpr std::array<std::string_view, 2> PhiMassRegionLabels{"Signal", "Sideband"};
+  static constexpr std::array<std::string_view, kAssocPartSize> AssocParticleLabels{"K0S", "Xi", "Pi"};
 
   // Light structures to store only the necessary information for the correlation analysis at MCGen level
   struct MiniParticle {
@@ -315,7 +314,7 @@ struct PhiStrangenessCorrelation {
     histos.add("phiPi/h6PhiPiTPCDataME", "Invariant mass of Phi vs nSigmaTPC Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, massPhiAxis, nSigmaPiAxis});
     histos.add("phiPi/h6PhiPiTOFDataME", "Invariant mass of Phi vs nSigmaTOF Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, massPhiAxis, nSigmaPiAxis});
 
-    for (const auto& label : phiMassRegionLabels) {
+    for (const auto& label : PhiMassRegionLabels) {
       histos.add(fmt::format("phiK0S/h5PhiK0SData{}", label).c_str(), "Deltay vs deltaphi for Phi and K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
       histos.add(fmt::format("phiPi/h5PhiPiData{}", label).c_str(), "Deltay vs deltaphi for Phi and Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
 
@@ -397,7 +396,7 @@ struct PhiStrangenessCorrelation {
     // Only load the associated maps that are explicitly enabled
     for (size_t i = 0; i < kAssocPartSize; ++i) {
       if (doAssocCorrelations[i])
-        fetchSingleEfficiencyMapFromCCDB(effMapsAssoc[i], assocParticleLabels[i]);
+        fetchSingleEfficiencyMapFromCCDB(effMapsAssoc[i], AssocParticleLabels[i]);
     }
   }
 
@@ -508,7 +507,7 @@ struct PhiStrangenessCorrelation {
 
     // Find the bin number.
     // The 'true' flag is mandatory: it allocates the bin in memory if it doesn't exist yet.
-    long bin = hist->GetBin(coordArray, true);
+    auto bin = hist->GetBin(coordArray, true);
 
     // Retrieve the previous content and the squared error (variance)
     double prevContent = hist->GetBinContent(bin);
@@ -614,34 +613,34 @@ struct PhiStrangenessCorrelation {
         auto k0sHistID = std::make_tuple(HIST("phiK0S/h5PhiK0SDataSignal"), HIST("phiK0S/h5PhiK0SDataSideband"));
         auto piHistID = std::make_tuple(HIST("phiPi/h5PhiPiDataSignal"), HIST("phiPi/h5PhiPiDataSideband"));
 
-        static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-          constexpr unsigned int i = i_idx.value;
+        static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int Idx = i_idx.value;
 
-          const auto& [minMassPhi, maxMassPhi] = phiMassRegions[i];
+          const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
           if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
             return;
 
-          // auto k0sHistID = HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]);
-          // auto piHistID = HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]);
+          // auto k0sHistID = HIST("phiK0S/h5PhiK0SData") + HIST(PhiMassRegionLabels[Idx]);
+          // auto piHistID = HIST("phiPi/h5PhiPiData") + HIST(PhiMassRegionLabels[Idx]);
 
           processCorrelations(
             //[&](const auto& k0s, float w) {
-            // histos.fill(std::get<i>(k0sHistID), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
+            // histos.fill(std::get<Idx>(k0sHistID), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
             [&](const auto& k0s, const std::pair<float, float>& w) {
-              customFillTHn(std::get<i>(k0sHistID), w, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()));
+              customFillTHn(std::get<Idx>(k0sHistID), w, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()));
             },
             //[&](const auto& pion, float w) {
-            // histos.fill(std::get<i>(piHistID), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
+            // histos.fill(std::get<Idx>(piHistID), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
             [&](const auto& pion, const std::pair<float, float>& w) {
-              customFillTHn(std::get<i>(piHistID), w, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()));
+              customFillTHn(std::get<Idx>(piHistID), w, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()));
             });
         });
       }
 
-      /*static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int i = i_idx.value;
+      /*static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+        constexpr unsigned int Idx = i_idx.value;
 
-        const auto& [minMassPhi, maxMassPhi] = phiMassRegions[i];
+        const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
         if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
           return;
 
@@ -656,7 +655,7 @@ struct PhiStrangenessCorrelation {
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
 
-          histos.fill(HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), weightPhiK0S);
+          histos.fill(HIST("phiK0S/h5PhiK0SData") + HIST(PhiMassRegionLabels[Idx]), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), weightPhiK0S);
         }
 
         // Loop over all primary pion candidates
@@ -664,7 +663,7 @@ struct PhiStrangenessCorrelation {
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, pionTrack.pt(), pionTrack.y()));
 
-          histos.fill(HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), pionTrack.pt(), phiCand.y() - pionTrack.y(), getDeltaPhi(phiCand.phi(), pionTrack.phi()), weightPhiPion);
+          histos.fill(HIST("phiPi/h5PhiPiData") + HIST(PhiMassRegionLabels[Idx]), multiplicity, phiCand.pt(), pionTrack.pt(), phiCand.y() - pionTrack.y(), getDeltaPhi(phiCand.phi(), pionTrack.phi()), weightPhiPion);
         }
       });*/
     }
@@ -731,26 +730,26 @@ struct PhiStrangenessCorrelation {
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           auto k0sHistID = std::make_tuple(HIST("phiK0S/h5PhiK0SDataMESignal"), HIST("phiK0S/h5PhiK0SDataMESideband"));
 
-          static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-            constexpr unsigned int i = i_idx.value;
+          static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+            constexpr unsigned int Idx = i_idx.value;
 
-            const auto& [minMassPhi, maxMassPhi] = phiMassRegions[i];
+            const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
             if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
               return;
 
             processCorrelations(
               //[&](const auto& k0s, float w) {
-              // histos.fill(std::get<i>(k0sHistID), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
+              // histos.fill(std::get<Idx>(k0sHistID), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
               [&](const auto& k0s, const std::pair<float, float>& w) {
-                customFillTHn(std::get<i>(k0sHistID), w, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()));
+                customFillTHn(std::get<Idx>(k0sHistID), w, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()));
               });
           });
         }
 
-        /*static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-          constexpr unsigned int i = i_idx.value;
+        /*static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int Idx = i_idx.value;
 
-          const auto& [minMassPhi, maxMassPhi] = phiMassRegions[i];
+          const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
           if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
             return;
 
@@ -763,7 +762,7 @@ struct PhiStrangenessCorrelation {
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
 
-          histos.fill(HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), weightPhiK0S);
+          histos.fill(HIST("phiK0S/h5PhiK0SDataME") + HIST(PhiMassRegionLabels[Idx]), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), weightPhiK0S);
         });*/
       }
     }
@@ -835,33 +834,33 @@ struct PhiStrangenessCorrelation {
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           auto piHistID = std::make_tuple(HIST("phiPi/h5PhiPiDataMESignal"), HIST("phiPi/h5PhiPiDataMESideband"));
 
-          static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-            constexpr unsigned int i = i_idx.value;
+          static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+            constexpr unsigned int Idx = i_idx.value;
 
-            const auto& [minMassPhi, maxMassPhi] = phiMassRegions[i];
+            const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
             if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
               return;
 
             processCorrelations(
               //[&](const auto& pion, float w) {
-              // histos.fill(std::get<i>(piHistID), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
+              // histos.fill(std::get<Idx>(piHistID), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
               [&](const auto& pion, const std::pair<float, float>& w) {
-                customFillTHn(std::get<i>(piHistID), w, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()));
+                customFillTHn(std::get<Idx>(piHistID), w, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()));
               });
           });
         }
 
-        /*static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-          constexpr unsigned int i = i_idx.value;
+        /*static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int Idx = i_idx.value;
 
-          const auto& [minMassPhi, maxMassPhi] = phiMassRegions[i];
+          const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
           if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
             return;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, piTrack.pt(), piTrack.y()));
 
-          histos.fill(HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), piTrack.pt(), phiCand.y() - piTrack.y(), getDeltaPhi(phiCand.phi(), piTrack.phi()), weightPhiPion);
+          histos.fill(HIST("phiPi/h5PhiPiDataME") + HIST(PhiMassRegionLabels[Idx]), multiplicity, phiCand.pt(), piTrack.pt(), phiCand.y() - piTrack.y(), getDeltaPhi(phiCand.phi(), piTrack.phi()), weightPhiPion);
         });*/
       }
     }
@@ -1056,12 +1055,12 @@ struct PhiStrangenessCorrelation {
       auto& phiParticle = mcParticles.rawIteratorAt(phiIndices[iTrigg]);
 
       static_for<0, assocIndices.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int i = i_idx.value;
+        constexpr unsigned int Idx = i_idx.value;
 
-        for (std::size_t iAssoc{0}; iAssoc < assocIndices[i].size(); ++iAssoc) {
-          auto& assocParticle = mcParticles.rawIteratorAt(assocIndices[i][iAssoc]);
+        for (std::size_t iAssoc{0}; iAssoc < assocIndices[Idx].size(); ++iAssoc) {
+          auto& assocParticle = mcParticles.rawIteratorAt(assocIndices[Idx][iAssoc]);
 
-          histos.fill(HIST("mcGenClosure/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureGenSE"), multiplicity, phiParticle.pt(), assocParticle.pt(), phiParticle.y() - assocParticle.y(), getDeltaPhi(phiParticle.phi(), assocParticle.phi()));
+          histos.fill(HIST("mcGenClosure/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureGenSE"), multiplicity, phiParticle.pt(), assocParticle.pt(), phiParticle.y() - assocParticle.y(), getDeltaPhi(phiParticle.phi(), assocParticle.phi()));
         }
       });
     }
@@ -1187,13 +1186,13 @@ struct PhiStrangenessCorrelation {
     for (const auto& phiParticle : phiParticles) {
       histos.fill(HIST("phi/h3PhiMCClosureGen"), multiplicity, phiParticle.pt, phiParticle.y);
 
-      static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int i = i_idx.value;
-        if (!doAssocCorrelations[i])
+      static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
+        constexpr unsigned int Idx = i_idx.value;
+        if (!doAssocCorrelations[Idx])
           return;
 
-        for (const auto& assocParticle : *(currentAssocParticles[i])) {
-          histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGen"),
+        for (const auto& assocParticle : *(currentAssocParticles[Idx])) {
+          histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGen"),
                       multiplicity, phiParticle.pt, assocParticle.pt,
                       phiParticle.y - assocParticle.y,
                       getDeltaPhi(phiParticle.phi, assocParticle.phi));
@@ -1207,13 +1206,13 @@ struct PhiStrangenessCorrelation {
 
       // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
       for (const auto& phiParticle : phiParticles) {
-        static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
-          constexpr unsigned int i = i_idx.value;
-          if (!doAssocCorrelations[i])
+        static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int Idx = i_idx.value;
+          if (!doAssocCorrelations[Idx])
             return;
 
-          for (const auto& assocParticle : *(pastAssocParticles[i])) {
-            histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGenME"),
+          for (const auto& assocParticle : *(pastAssocParticles[Idx])) {
+            histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGenME"),
                         multiplicity, phiParticle.pt, assocParticle.pt,
                         phiParticle.y - assocParticle.y,
                         getDeltaPhi(phiParticle.phi, assocParticle.phi));
