@@ -1774,6 +1774,12 @@ struct HStrangeCorrelation {
       histos.add("hNumberOfRejectedPairsHadron", "hNumberOfRejectedPairsHadron", kTH1F, {{1, 0, 1}});
       histos.add("hNumberOfRejectedPairsPion", "hNumberOfRejectedPairsPion", kTH1F, {{1, 0, 1}});
     }
+    if (doprocessSameEventHHadrons) {
+      histos.add("hDCAzTriggerHadron", "hDCAzTriggerHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyTriggerHadron", "hDCAxyTriggerHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAzAssociatedHadron", "hDCAzAssociatedHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyAssociatedHadron", "hDCAxyAssociatedHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+    }
     if (doprocessSameEventHV0s || doprocessMixedEventHV0s) {
       histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
     }
@@ -2147,6 +2153,8 @@ struct HStrangeCorrelation {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track, triggerTrack.isLeading()))
           continue;
+        histos.fill(HIST("hDCAzTriggerHadron"), track.dcaZ(), track.pt());
+        histos.fill(HIST("hDCAxyTriggerHadron"), track.dcaXY(), track.pt());
         float efficiency = 1.0f;
         if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyTrigger->Interpolate(track.pt(), track.eta());
@@ -2169,6 +2177,8 @@ struct HStrangeCorrelation {
         continue;
       float efficiency = 1.0f;
       float purity = 1.0f;
+      histos.fill(HIST("hDCAzAssocHadron"), assoc.dcaZ(), assoc.pt());
+      histos.fill(HIST("hDCAxyAssocHadron"), assoc.dcaXY(), assoc.pt());
       if (efficiencyFlags.applyEfficiencyCorrection) {
         efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
         if (efficiencyFlags.applyPurityHadron)
