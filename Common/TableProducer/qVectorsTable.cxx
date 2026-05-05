@@ -317,8 +317,8 @@ struct qVectorsTable {
       fullPath += std::to_string(ind);
       auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       if (!modeCorrQvecEse) {
-        fullPath = cfgQvecCalibPath; // cfgQvecEseCalibPath;
-        fullPath += "/v2";           // "/eseq2";
+        fullPath = cfgQvecEseCalibPath;
+        fullPath += "/eseq2";
         modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
       corrsQvecEse.push_back(modeCorrQvecEse);
@@ -431,7 +431,6 @@ struct qVectorsTable {
             LOGP(fatal, "Undefined normalization type for Q-vector amplitude. Check the configuration.");
             break;
         }
-        std::cout << "[NORMALIZED] " << i << " Re: " << qVecDetReNorm << ", Im: " << qVecDetImNorm << ", amp: " << qVecAmp[i] << std::endl;
       }
       for (int iCorr = 0; iCorr < kNCorrections; iCorr++) {
         qVecReNorm.push_back(qVecDetReNorm);
@@ -699,19 +698,10 @@ struct qVectorsTable {
     qVecAmp.push_back(static_cast<float>(nTrkTPCPos));
     qVecAmp.push_back(static_cast<float>(nTrkTPCNeg));
     qVecAmp.push_back(static_cast<float>(nTrkTPCAll));
-
-    LOG(info) << "[RAW] qVectFT0A: " << qVectFT0A[0] << ", " << qVectFT0A[1] << ", ampl: " << sumAmplFT0A;
-    LOG(info) << "[RAW] qVectFT0C: " << qVectFT0C[0] << ", " << qVectFT0C[1] << ", ampl: " << sumAmplFT0C;
-    LOG(info) << "[RAW] qVectFT0M: " << qVectFT0M[0] << ", " << qVectFT0M[1] << ", ampl: " << sumAmplFT0M;
-    LOG(info) << "[RAW] qVectFV0A: " << qVectFV0A[0] << ", " << qVectFV0A[1] << ", ampl: " << sumAmplFV0A;
-    LOG(info) << "[RAW] qVectTPCPos: " << qVectTPCPos[0] << ", " << qVectTPCPos[1] << ", nTrk: " << nTrkTPCPos;
-    LOG(info) << "[RAW] qVectTPCNeg: " << qVectTPCNeg[0] << ", " << qVectTPCNeg[1] << ", nTrk: " << nTrkTPCNeg;
-    LOG(info) << "[RAW] qVectTPCAll: " << qVectTPCAll[0] << ", " << qVectTPCAll[1] << ", nTrk: " << nTrkTPCAll;
   }
 
   void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const&, aod::FV0As const&, MyTracks const& tracks)
   {
-    LOG(info) << "---------------------------- Processing Event ---------------------------";
     std::vector<int> trkTPCPosLabel{};
     std::vector<int> trkTPCNegLabel{};
     std::vector<int> trkTPCAllLabel{};
@@ -848,15 +838,6 @@ struct qVectorsTable {
       qVectorTPCNeg(isCalibrated, qVecReTPCNegSp.at(0), qVecImTPCNegSp.at(0), qVecAmp[kTPCNeg], trkTPCNegLabel);
     if (useDetector["QvectorTPCalls"])
       qVectorTPCAll(isCalibrated, qVecReTPCAllSp.at(0), qVecImTPCAllSp.at(0), qVecAmp[kTPCAll], trkTPCAllLabel);
-
-    // Debug prints of values after corrections
-    std::cout << "[CORRECTED] FT0C, Re: " << qVecReFT0CSp.at(0) << ", Im: " << qVecImFT0CSp.at(0) << std::endl;
-    std::cout << "[CORRECTED] FT0A, Re: " << qVecReFT0ASp.at(0) << ", Im: " << qVecImFT0ASp.at(0) << std::endl;
-    std::cout << "[CORRECTED] FT0M, Re: " << qVecReFT0MSp.at(0) << ", Im: " << qVecImFT0MSp.at(0) << std::endl;
-    std::cout << "[CORRECTED] FV0A, Re: " << qVecReFV0ASp.at(0) << ", Im: " << qVecImFV0ASp.at(0) << std::endl;
-    std::cout << "[CORRECTED] TPCPos, Re: " << qVecReTPCPosSp.at(0) << ", Im: " << qVecImTPCPosSp.at(0) << std::endl;
-    std::cout << "[CORRECTED] TPCNeg, Re: " << qVecReTPCNegSp.at(0) << ", Im: " << qVecImTPCNegSp.at(0) << std::endl;
-    std::cout << "[CORRECTED] TPCAll, Re: " << qVecReTPCAllSp.at(0) << ", Im: " << qVecImTPCAllSp.at(0) << std::endl;
 
     qVectorFT0CVec(isCalibrated, qVecReFT0CSp, qVecImFT0CSp, qVecAmp[kFT0C]);
     qVectorFT0AVec(isCalibrated, qVecReFT0ASp, qVecImFT0ASp, qVecAmp[kFT0A]);
