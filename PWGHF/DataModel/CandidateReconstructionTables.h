@@ -23,7 +23,6 @@
 //
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "ALICE3/DataModel/ECAL.h"
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
