@@ -23,6 +23,7 @@
 //
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+// #include "ALICE3/DataModel/ECAL.h"
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -1731,12 +1732,12 @@ DECLARE_SOA_TABLE(HfCandXicResid, "AOD", "HFCANDXICRESID",
                   hf_cand_xic_to_xi_pi_pi::ZSvPull);
 
 // specific chic candidate properties
-namespace hf_cand_chic
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // Jpsi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
-DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
-} // namespace hf_cand_chic
+// namespace hf_cand_chic
+// {
+// DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // Jpsi index
+// DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
+// DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
+// } // namespace hf_cand_chic
 
 // declare dedicated chi_c candidate table
 DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
