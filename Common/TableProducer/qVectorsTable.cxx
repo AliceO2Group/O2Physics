@@ -181,7 +181,7 @@ struct qVectorsTable {
 
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  const double minAmplitude = 1e-8;
+  const float minAmplitude = 1.0e-8f;
   int runNumber{-1};
   float cent;
 
