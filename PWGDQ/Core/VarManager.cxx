@@ -744,6 +744,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
   fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
   fgVariableUnits[kMultMCNParticlesEta10] = "Multiplicity_eta10";
+  fgVariableNames[kMCIsNoTFBorder] = "MC Is not TF border";
+  fgVariableUnits[kMCIsNoTFBorder] = "";
+  fgVariableNames[kMCIsNoTFBorderRecomputed] = "MC Is not TF border";
+  fgVariableUnits[kMCIsNoTFBorderRecomputed] = "";
+  fgVariableNames[kMCIsNoITSROFBorder] = "MC Is not ITS ROF border";
+  fgVariableUnits[kMCIsNoITSROFBorder] = "";
+  fgVariableNames[kMCIsNoITSROFBorderRecomputed] = "MC Is not ITS ROF border";
+  fgVariableUnits[kMCIsNoITSROFBorderRecomputed] = "";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";

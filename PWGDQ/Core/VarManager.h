@@ -342,6 +342,8 @@ class VarManager : public TObject
     kMultMCNParticlesEta10,
     kMultMCNParticlesEta08,
     kMultMCNParticlesEta05,
+    kMCIsNoITSROFBorderRecomputed,
+    kMCIsNoTFBorderRecomputed,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -2384,6 +2386,14 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
     values[kMultMCNParticlesEta08] = event.multMCNParticlesEta08();
     values[kMultMCNParticlesEta10] = event.multMCNParticlesEta10();
+    if (fgUsedVars[kMCIsNoITSROFBorderRecomputed]) {
+      uint16_t bcInITSROF = (event.globalBC() + o2::constants::lhc::LHCMaxBunches - fgITSROFbias) % fgITSROFlength;
+      values[kMCIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
+    }
+    if (fgUsedVars[kMCIsNoTFBorderRecomputed]) {
+      int64_t bcInTF = (event.globalBC() - fgBCSOR) % fgNBCsPerTF;
+      values[kMCIsNoTFBorderRecomputed] = bcInTF > fgTFBorderMarginLow && bcInTF < fgNBCsPerTF - fgTFBorderMarginHigh ? 1.0 : 0.0;
+    }
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {

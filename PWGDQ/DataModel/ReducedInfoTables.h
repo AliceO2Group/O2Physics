@@ -252,7 +252,14 @@ DECLARE_SOA_TABLE_VERSIONED(ReducedMCEvents_001, "AOD", "REDUCEDMCEVENT", 1, //!
                             mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
                             mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
 
-using ReducedMCEvents = ReducedMCEvents_001;
+DECLARE_SOA_TABLE_VERSIONED(ReducedMCEvents_002, "AOD", "REDUCEDMCEVENT", 2, //!   Event level MC truth information
+                            o2::soa::Index<>,
+                            bc::GlobalBC,
+                            mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
+                            mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
+                            mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
+
+using ReducedMCEvents = ReducedMCEvents_002;
 
 using ReducedEvent = ReducedEvents::iterator;
 using StoredReducedEvent = StoredReducedEvents::iterator;

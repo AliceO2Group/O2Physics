@@ -28,6 +28,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -297,6 +299,12 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigAddEventMCHistogram{"cfgAddEventMCHistogram", "generator", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Add event histograms defined via JSON formatting (see HistogramsLibrary)"};
 
+  Configurable<int> fConfigITSROFrameStartBorderMargin{"cfgITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> fConfigITSROFrameEndBorderMargin{"cfgITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> fConfigTFStartBorderMargin{"cfgTFStartBorderMargin", -1, "Number of bcs at the start of TF border. Take from CCDB if -1"};
+  Configurable<int> fConfigTFEndBorderMargin{"cfgTFEndBorderMargin", -1, "Number of bcs at the end of TF border. Take from CCDB if -1"};
+  Configurable<int> fConfigNumberOfOrbitsPerTF{"cfgNumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};
+
   Configurable<float> fConfigSplitCollisionsDeltaZ{"splitCollisionsDeltaZ", 1.0, "maximum delta-z (cm) between two collisions to consider them as split candidates"};
   Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"splitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
   Configurable<bool> fConfigCheckSplitCollisions{"checkSplitCollisions", false, "If true, run the split collision check and fill histograms"};
@@ -383,6 +391,21 @@ struct AnalysisEventSelection {
       uint64_t sor = std::atol(fHeader["SOR"].c_str());
       uint64_t eor = std::atol(fHeader["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
+
+      auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", events.begin().timestamp());
+      EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", events.begin().timestamp());
+      int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
+      int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
+      VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
+
+      int timeFrameStartBorderMargin = fConfigTFStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : fConfigTFStartBorderMargin;
+      int timeFrameEndBorderMargin = fConfigTFEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : fConfigTFEndBorderMargin;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), events.begin().runNumber());
+      int64_t bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      int64_t nBCsPerTF = fConfigNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches : fConfigNumberOfOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      VarManager::SetTFBorderselection(bcSOR, nBCsPerTF, timeFrameStartBorderMargin, timeFrameEndBorderMargin);
+
+      fCurrentRun = events.begin().runNumber();
     }
 
     fSelMap.clear();
