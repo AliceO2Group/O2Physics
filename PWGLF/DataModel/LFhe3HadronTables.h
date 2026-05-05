@@ -37,7 +37,6 @@ DECLARE_SOA_COLUMN(DCAxyHe3, dcaxyHe3, float);
 DECLARE_SOA_COLUMN(DCAzHe3, dcazHe3, float);
 DECLARE_SOA_COLUMN(DCAxyHad, dcaxyHad, float);
 DECLARE_SOA_COLUMN(DCAzHad, dcazHad, float);
-DECLARE_SOA_COLUMN(DCApair, dcapair, float);
 
 DECLARE_SOA_COLUMN(SignalTPCHe3, signalTPCHe3, float);
 DECLARE_SOA_COLUMN(InnerParamTPCHe3, innerParamTPCHe3, float);
@@ -45,9 +44,11 @@ DECLARE_SOA_COLUMN(SignalTPCHad, signalTPCHad, float);
 DECLARE_SOA_COLUMN(InnerParamTPCHad, innerParamTPCHad, float);
 DECLARE_SOA_COLUMN(NClsTPCHe3, nClsTPCHe3, uint8_t);
 DECLARE_SOA_COLUMN(NSigmaTPCHe3, nSigmaTPCHe3, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHad, nSigmaTPCHad, float);
 DECLARE_SOA_COLUMN(NSigmaTPCHadPi, nSigmaTPCHadPi, float);
 DECLARE_SOA_COLUMN(NSigmaTPCHadKa, nSigmaTPCHadKa, float);
 DECLARE_SOA_COLUMN(NSigmaTPCHadPr, nSigmaTPCHadPr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHad, nSigmaTOFHad, float);
 DECLARE_SOA_COLUMN(NSigmaTOFHadPi, nSigmaTOFHadPi, float);
 DECLARE_SOA_COLUMN(NSigmaTOFHadKa, nSigmaTOFHadKa, float);
 DECLARE_SOA_COLUMN(NSigmaTOFHadPr, nSigmaTOFHadPr, float);
@@ -104,29 +105,21 @@ DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
                   he3HadronTablesNS::DCAzHe3,
                   he3HadronTablesNS::DCAxyHad,
                   he3HadronTablesNS::DCAzHad,
-                  he3HadronTablesNS::DCApair,
                   he3HadronTablesNS::SignalTPCHe3,
                   he3HadronTablesNS::InnerParamTPCHe3,
                   he3HadronTablesNS::SignalTPCHad,
                   he3HadronTablesNS::InnerParamTPCHad,
                   he3HadronTablesNS::NClsTPCHe3,
                   he3HadronTablesNS::NSigmaTPCHe3,
-                  he3HadronTablesNS::NSigmaTPCHadPi,
-                  he3HadronTablesNS::NSigmaTPCHadKa,
-                  he3HadronTablesNS::NSigmaTPCHadPr,
-                  he3HadronTablesNS::NSigmaTOFHadPi,
-                  he3HadronTablesNS::NSigmaTOFHadKa,
-                  he3HadronTablesNS::NSigmaTOFHadPr,
+                  he3HadronTablesNS::NSigmaTPCHad,
+                  he3HadronTablesNS::NSigmaTOFHad,
                   he3HadronTablesNS::Chi2TPCHe3,
                   he3HadronTablesNS::Chi2TPCHad,
-                  he3HadronTablesNS::MassTOFHe3,
                   he3HadronTablesNS::MassTOFHad,
                   he3HadronTablesNS::PIDtrkHe3,
-                  he3HadronTablesNS::PIDtrkHad,
                   he3HadronTablesNS::ItsClusterSizeHe3,
                   he3HadronTablesNS::ItsClusterSizeHad,
-                  he3HadronTablesNS::SharedClustersHe3,
-                  he3HadronTablesNS::SharedClustersHad)
+                  he3HadronTablesNS::SharedClustersHe3)
 DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::PtMCHe3,
                   he3HadronTablesNS::EtaMCHe3,
@@ -145,7 +138,17 @@ DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
                   he3HadronTablesNS::MultiplicityFT0C)
 DECLARE_SOA_TABLE(he3HadronQa, "AOD", "HE3HADQA",
                   he3HadronTablesNS::TrackIDHe3,
-                  he3HadronTablesNS::TrackIDHad)
+                  he3HadronTablesNS::TrackIDHad,
+                  he3HadronTablesNS::MassTOFHe3,
+                  he3HadronTablesNS::PIDtrkHad,
+                  he3HadronTablesNS::SharedClustersHad)
+DECLARE_SOA_TABLE(he3HadronPid, "AOD", "HE3HADPID",
+                  he3HadronTablesNS::NSigmaTPCHadPi,
+                  he3HadronTablesNS::NSigmaTPCHadKa,
+                  he3HadronTablesNS::NSigmaTPCHadPr,
+                  he3HadronTablesNS::NSigmaTOFHadPi,
+                  he3HadronTablesNS::NSigmaTOFHadKa,
+                  he3HadronTablesNS::NSigmaTOFHadPr)
 
 } // namespace o2::aod
 
