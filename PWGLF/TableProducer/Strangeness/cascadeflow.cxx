@@ -2622,6 +2622,19 @@ struct cascadeFlow {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
       }
+      int chargeIndex = 0;
+      if (casc.sign() > 0)
+        chargeIndex = 1;
+      if (std::abs(casc.eta()) < CandidateConfigs.etaCasc) {
+        if (fillingConfigs.isFillTHNXi && fillingConfigs.isFillTHN_Pz) {
+          if (std::abs(pdgCode) == PDG_t::kXiMinus)
+            histos.get<THn>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], 0);
+        }
+        if (fillingConfigs.isFillTHNOmega && fillingConfigs.isFillTHN_Pz) {
+          if (std::abs(pdgCode) == PDG_t::kOmegaMinus)
+            histos.get<THn>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], 0);
+        }
+      }
       if (isStoreTrueCascOnly) {
         if (pdgCode == 0)
           continue;
