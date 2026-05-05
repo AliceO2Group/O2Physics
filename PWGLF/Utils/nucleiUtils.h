@@ -148,6 +148,21 @@ enum Flags {
   kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
 };
 
+enum QcFlags {
+  kQcHasReconstructedCollision = BIT(0),
+  kQcPlaceholder0 = BIT(1), /// placeholdedrs
+  kQcPlaceholder1 = BIT(2), /// placeholdedrs
+  kQcPlaceholder2 = BIT(3), /// placeholdedrs
+  kQcPlaceholder3 = BIT(4), /// placeholdedrs
+  kQcHasTOF = BIT(5),
+  kQcHasTRD = BIT(6),
+  kQcIsAmbiguous = BIT(7), /// just a placeholder now
+  kQcITSrof = BIT(8),
+  kQcIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
+  kQcIsSecondaryFromMaterial = BIT(10),
+  kQcIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
+};
+
 constexpr int getSpeciesFromPdg(int pdg)
 {
   switch (std::abs(pdg)) {
@@ -419,7 +434,7 @@ void createHistogramRegistryNucleus(o2::framework::HistogramRegistry& registry)
 
   constexpr int index = iSpecies;
   if (!checkSpeciesValidity(index)) {
-    std::runtime_error("species contains invalid nucleus index");
+    throw std::runtime_error("species contains invalid nucleus index");
   }
 
   registry.add(fmt::format("{}/hTrackSelections", cNames[index]).c_str(), (fmt::format("{} track selections;", cNames[index]) + std::string("Selection step; Counts")).c_str(), o2::framework::HistType::kTH1D, {{trackSelection::kNtrackSelections, -0.5f, static_cast<float>(trackSelection::kNtrackSelections) - 0.5f}});
@@ -457,7 +472,7 @@ class PidManager
     : mSpecies(species)
   {
     if (!checkSpeciesValidity(species)) {
-      std::runtime_error("species contains invalid nucleus index");
+      throw std::runtime_error("species contains invalid nucleus index");
     }
 
     if (!tpcBetheBlochParams) {

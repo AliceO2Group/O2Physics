@@ -185,7 +185,7 @@ struct LongrangecorrDerived {
   void fillCollQA(TCollision const& col)
   {
     histos.fill(HIST("hMultiplicity"), col.multiplicity());
-    if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+    if constexpr (requires { col.centrality(); }) {
       histos.fill(HIST("hCentrality"), col.centrality());
     }
     histos.fill(HIST("hVertexZ"), col.posZ());
@@ -197,7 +197,7 @@ struct LongrangecorrDerived {
     histos.fill(HIST("Trig_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Trig_eta"), track.eta());
     histos.fill(HIST("Trig_phi"), track.phi());
-    if constexpr (std::experimental::is_detected<HasFt0, TTrack>::value) {
+    if constexpr (requires { track.channelID(); }) {
       histos.fill(HIST("Trig_amp"), track.amplitude());
       histos.fill(HIST("Channel_vs_Trig_amp"), track.channelID(), track.amplitude());
       histos.fill(HIST("Trig_amp_gaincorrected"), track.gainAmplitude());
@@ -205,7 +205,7 @@ struct LongrangecorrDerived {
     } else {
       histos.fill(HIST("Trig_pt"), track.pt());
     }
-    if constexpr (std::experimental::is_detected<HasInvMass, TTrack>::value) {
+    if constexpr (requires { track.invMass(); }) {
       histos.fill(HIST("Trig_invMass"), track.invMass());
     }
   }
@@ -216,7 +216,7 @@ struct LongrangecorrDerived {
     histos.fill(HIST("Assoc_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Assoc_eta"), track.eta());
     histos.fill(HIST("Assoc_phi"), track.phi());
-    if constexpr (std::experimental::is_detected<HasFt0, TTrack>::value) {
+    if constexpr (requires { track.channelID(); }) {
       histos.fill(HIST("Assoc_amp"), track.amplitude());
       histos.fill(HIST("Channel_vs_Assoc_amp"), track.channelID(), track.amplitude());
       histos.fill(HIST("Assoc_amp_gaincorrected"), track.gainAmplitude());
@@ -244,25 +244,12 @@ struct LongrangecorrDerived {
     return true;
   }
 
-  template <class T>
-  using HasTpcTrack = decltype(std::declval<T&>().trackType());
-  template <class T>
-  using HasV0Track = decltype(std::declval<T&>().v0Type());
-  template <class T>
-  using HasInvMass = decltype(std::declval<T&>().invMass());
-  template <class T>
-  using HasUpc = decltype(std::declval<T&>().gapSide());
-  template <class T>
-  using HasFt0 = decltype(std::declval<T&>().channelID());
-  template <class T>
-  using HasCent = decltype(std::declval<T&>().centrality());
-
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
-      if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+      if constexpr (requires { triggerTrack.channelID(); }) {
         if (useGainCorr)
           trigAmpl = triggerTrack.gainAmplitude();
         else
@@ -270,18 +257,18 @@ struct LongrangecorrDerived {
       } else {
         trigAmpl = 1.0;
       }
-      if constexpr (std::experimental::is_detected<HasTpcTrack, typename TTriggers::iterator>::value) {
+      if constexpr (requires { triggerTrack.trackType(); }) {
         if (cfgPidMask != 0 && (cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
           continue;
-      } else if constexpr (std::experimental::is_detected<HasV0Track, typename TTriggers::iterator>::value) {
+      } else if constexpr (requires { triggerTrack.v0Type(); }) {
         if (cfgV0Mask != 0 && (cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
           continue;
       }
       if (!mixing) {
         fillTrigTrackQA(triggerTrack);
-        if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+        if constexpr (requires { triggerTrack.channelID(); }) {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl);
-        } else if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
+        } else if constexpr (requires { triggerTrack.v0Type(); }) {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl);
         } else {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
@@ -289,7 +276,7 @@ struct LongrangecorrDerived {
       }
       for (auto const& assoTrack : assocs) {
         auto assoAmpl = 1.0f;
-        if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
+        if constexpr (requires { assoTrack.v0Type(); }) {
           if (useGainCorr)
             assoAmpl = assoTrack.gainAmplitude();
           else
@@ -305,9 +292,9 @@ struct LongrangecorrDerived {
         } else {
           histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
         }
-        if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+        if constexpr (requires { triggerTrack.channelID(); }) {
           target->getPairHist()->Fill(step, vz, multiplicity, 1.0, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
-        } else if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
+        } else if constexpr (requires { triggerTrack.invMass(); }) {
           target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl);
         } else {
           target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
@@ -324,7 +311,7 @@ struct LongrangecorrDerived {
     }
     fillCollQA(col);
     auto multiplicity = 1.0f;
-    if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+    if constexpr (requires { col.centrality(); }) {
       if (isUseCentEst)
         multiplicity = col.centrality();
       else
@@ -339,7 +326,7 @@ struct LongrangecorrDerived {
   void processMixed(TCollision const& cols, TrackTypes&&... tracks)
   {
     auto getMultiplicity = [this](auto& col) {
-      if constexpr (std::experimental::is_detected<HasUpc, TCollision>::value) {
+      if constexpr (requires { col.gapSide(); }) {
         if (!isUpcEventSelected<false>(col)) {
           return -1.0f;
         }
@@ -347,7 +334,7 @@ struct LongrangecorrDerived {
         (void)this;
       }
       auto multiplicity = 1.0f;
-      if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+      if constexpr (requires { col.centrality(); }) {
         if (isUseCentEst)
           multiplicity = col.centrality();
         else
@@ -365,7 +352,7 @@ struct LongrangecorrDerived {
     Pair<TCollision, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, cols, tracksTuple, &cache};
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [col1, tracks1, col2, tracks2] = *it;
-      if constexpr (std::experimental::is_detected<HasUpc, TCollision>::value) {
+      if constexpr (requires { col1.gapSide(); } || requires { col2.gapSide(); }) {
         if (!isUpcEventSelected<false>(col1) || !isUpcEventSelected<false>(col2)) {
           continue;
         }

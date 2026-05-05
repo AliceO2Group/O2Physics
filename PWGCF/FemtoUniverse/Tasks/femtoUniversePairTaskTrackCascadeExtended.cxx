@@ -1193,8 +1193,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
           const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
           const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
+          /// Daughters that do not pass this condition are not selected
           if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-            if (!isParticleTPC(posChild, CascChildTable[confCascType1 + 2][0]) && !isParticleTPC(negChild, CascChildTable[confCascType1 + 2][1]) && !isParticleTPC(bachelor, CascChildTable[confCascType1 + 2][2]))
+            if (!isParticleTPC(posChild, CascChildTable[confCascType1 + 2][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1 + 2][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1 + 2][2]))
               continue;
             if (!isParticleTOF(posChild, CascChildTable[confCascType1 + 2][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1 + 2][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1 + 2][2]))
               continue;
