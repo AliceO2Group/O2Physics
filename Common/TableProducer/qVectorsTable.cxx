@@ -114,7 +114,6 @@ struct qVectorsTable {
   Configurable<bool> useCorrectionForRun{"useCorrectionForRun", true, "Get Qvector corrections based on run number instead of timestamp"};
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB path for Q-vector calibration constants"};
-  Configurable<std::string> cfgQvecEseCalibPath{"cfgQvecEseCalibPath", "Analysis/EventPlane/QVecEseCorrections", "CCDB path for EsE Q-vector calibration constants"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "configurable flag for shift correction"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "", "CCDB path for shift correction"};
@@ -188,7 +187,8 @@ struct qVectorsTable {
 
   std::vector<TH3F*> corrsQvecSp{};
   std::vector<TH3F*> corrsQvecEse{};
-  std::vector<TProfile3D*> shiftProfile{};
+  std::vector<TProfile3D*> shiftProfileSp{};
+  std::vector<TProfile3D*> shiftProfileEse{};
 
   // Deprecated, will be removed in future after transition time //
   Configurable<bool> cfgUseBPos{"cfgUseBPos", false, "Initial value for using BPos. By default obtained from DataModel."};
@@ -312,12 +312,12 @@ struct qVectorsTable {
     corrsQvecEse.clear();
     for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       int ind = cfgnMods->at(i);
-      fullPath = cfgQvecEseCalibPath;
+      fullPath = cfgQvecCalibPath;
       fullPath += "/eseq";
       fullPath += std::to_string(ind);
       auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       if (!modeCorrQvecEse) {
-        fullPath = cfgQvecEseCalibPath;
+        fullPath = cfgQvecCalibPath;
         fullPath += "/eseq2";
         modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
@@ -325,14 +325,24 @@ struct qVectorsTable {
     }
 
     if (cfgShiftCorr) {
-      shiftProfile.clear();
+      shiftProfileSp.clear();
       for (std::size_t i = 0; i < cfgnMods->size(); i++) {
         int ind = cfgnMods->at(i);
         fullPath = cfgShiftPath;
         fullPath += "/v";
         fullPath += std::to_string(ind);
         auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
-        shiftProfile.push_back(objshift);
+        shiftProfileSp.push_back(objshift);
+      }
+
+      shiftProfileEse.clear();
+      for (std::size_t i = 0; i < cfgnMods->size(); i++) {
+        int ind = cfgnMods->at(i);
+        fullPath = cfgShiftPath;
+        fullPath += "/eseq"
+        fullPath += std::to_string(ind);
+        auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
+        shiftProfileEse.push_back(objshift);
       }
     }
 
@@ -408,7 +418,7 @@ struct qVectorsTable {
   /// \param qVecImRaw is the vector with the raw imaginary part of the q-vector for each detector and correction step
   /// \param qVecAmp is the vector with the amplitude of the q-vector for each detector and correction step
   /// \param normType is the type of normalization to apply to the q-vectors
-  void normalizeQvec(std::vector<float>& qVecReNorm,
+  void normalizeQVec(std::vector<float>& qVecReNorm,
                      std::vector<float>& qVecImNorm,
                      std::vector<float> qVecReRaw,
                      std::vector<float> qVecImRaw,
@@ -445,7 +455,7 @@ struct qVectorsTable {
   /// \param qVecIm is the vector with the imaginary part of the q-vector for each detector and correction step
   /// \param histsCorrs is the vector with the histograms with the correction constants for each detector and correction step
   /// \param nMode is the modulation of interest
-  void correctQvec(float cent, std::vector<float>& qVecRe, std::vector<float>& qVecIm, TH3F* histsCorrs, int nMode)
+  void correctQVec(float cent, std::vector<float>& qVecRe, std::vector<float>& qVecIm, TH3F* histsCorrs, std::vector<TProfile3D*>& shiftProfile, int nMode)
   {
     int nCorrections = static_cast<int>(kNCorrections);
     if (cent < cfgMaxCentrality) {
@@ -560,7 +570,7 @@ struct qVectorsTable {
   /// \param trkTPCNegLabel is the vector with the number of TPC tracks with negative eta
   /// \param trkTPCAllLabel is the vector with the number of TPC tracks with any eta
   template <typename Nmode, typename CollType, typename TrackType>
-  void calQvec(const Nmode nMode, const CollType& coll, const TrackType& tracks, std::vector<float>& qVecRe, std::vector<float>& qVecIm, std::vector<float>& qVecAmp, std::vector<int>& trkTPCPosLabel, std::vector<int>& trkTPCNegLabel, std::vector<int>& trkTPCAllLabel)
+  void calcQVec(const Nmode nMode, const CollType& coll, const TrackType& tracks, std::vector<float>& qVecRe, std::vector<float>& qVecIm, std::vector<float>& qVecAmp, std::vector<int>& trkTPCPosLabel, std::vector<int>& trkTPCNegLabel, std::vector<int>& trkTPCAllLabel)
   {
     float qVectFT0A[2] = {-999., -999.};
     float qVectFT0C[2] = {-999., -999.};
@@ -764,13 +774,13 @@ struct qVectorsTable {
       // Raw Q-vectors, no multiplicity normalization and no corrections
       std::vector<float> qVecReRaw{};
       std::vector<float> qVecImRaw{};
-      calQvec(nMode, coll, tracks, qVecReRaw, qVecImRaw, qVecAmp, trkTPCPosLabel, trkTPCNegLabel, trkTPCAllLabel);
+      calcQVec(nMode, coll, tracks, qVecReRaw, qVecImRaw, qVecAmp, trkTPCPosLabel, trkTPCNegLabel, trkTPCAllLabel);
 
       // Scalar Product Q-vectors, normalization by multiplicity/amplitude
       std::vector<float> nModeQVecReSp{};
       std::vector<float> nModeQVecImSp{};
-      normalizeQvec(nModeQVecReSp, nModeQVecImSp, qVecReRaw, qVecImRaw, qVecAmp, MultNorms::kScalarProd);
-      correctQvec(cent, nModeQVecReSp, nModeQVecImSp, corrsQvecSp[id], nMode);
+      normalizeQVec(nModeQVecReSp, nModeQVecImSp, qVecReRaw, qVecImRaw, qVecAmp, MultNorms::kScalarProd);
+      correctQVec(cent, nModeQVecReSp, nModeQVecImSp, corrsQvecSp[id], shiftProfileSp, nMode);
       // Add to summary vector
       qVecReSp.insert(qVecReSp.end(), nModeQVecReSp.begin(), nModeQVecReSp.end());
       qVecImSp.insert(qVecImSp.end(), nModeQVecImSp.begin(), nModeQVecImSp.end());
@@ -799,8 +809,8 @@ struct qVectorsTable {
         // Ese Q-vectors, normalization by sqrt(multiplicity/amplitude)
         std::vector<float> nModeQVecReEse{};
         std::vector<float> nModeQVecImEse{};
-        normalizeQvec(nModeQVecReEse, nModeQVecImEse, qVecReRaw, qVecImRaw, qVecAmp, MultNorms::kEsE);
-        correctQvec(cent, nModeQVecReEse, nModeQVecImEse, corrsQvecEse[id], nMode);
+        normalizeQVec(nModeQVecReEse, nModeQVecImEse, qVecReRaw, qVecImRaw, qVecAmp, MultNorms::kEsE);
+        correctQVec(cent, nModeQVecReEse, nModeQVecImEse, corrsQvecEse[id], shiftProfileEse, nMode);
         // Add to summary vector
         qVecReEse.insert(qVecReEse.end(), nModeQVecReEse.begin(), nModeQVecReEse.end());
         qVecImEse.insert(qVecImEse.end(), nModeQVecImEse.begin(), nModeQVecImEse.end());
