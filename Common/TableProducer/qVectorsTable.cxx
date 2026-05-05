@@ -424,7 +424,7 @@ struct qVectorsTable {
                      std::vector<float>& qVecImNorm,
                      std::vector<float> qVecReRaw,
                      std::vector<float> qVecImRaw,
-                     std::vector<float>& qVecAmp,
+                     std::vector<float> qVecAmp,
                      MultNorms normType)
   {
     for (std::size_t i = 0; i < kNDetectors; i++) {
