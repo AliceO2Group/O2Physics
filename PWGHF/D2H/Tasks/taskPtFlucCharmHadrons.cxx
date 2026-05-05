@@ -255,18 +255,18 @@ struct HfTaskPtFlucCharmHadrons {
     int removedCount = 0;
     float removedSumPt = 0.f;
     auto removeDaug = [&](int daugID, float daugPt) {
-        if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugID)) {
-            removedSumPt += daugPt;
-            ++removedCount;
-        }
+      if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugID)) {
+        removedSumPt += daugPt;
+        ++removedCount;
+      }
     };
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
-        removeDaug(cand.prong0Id(), cand.ptProng0());
-        removeDaug(cand.prong1Id(), cand.ptProng1());
-        removeDaug(cand.prong2Id(), cand.ptProng2());
+      removeDaug(cand.prong0Id(), cand.ptProng0());
+      removeDaug(cand.prong1Id(), cand.ptProng1());
+      removeDaug(cand.prong2Id(), cand.ptProng2());
     } else if constexpr (Channel == DecayChannel::D0ToPiK || Channel == DecayChannel::D0ToKPi) {
-        removeDaug(cand.prong0Id(), cand.ptProng0());
-        removeDaug(cand.prong1Id(), cand.ptProng1());
+      removeDaug(cand.prong0Id(), cand.ptProng0());
+      removeDaug(cand.prong1Id(), cand.ptProng1());
     }
     if (removedCount > 0) {
       double totalSum = static_cast<double>(rawMeanPt) * n;
