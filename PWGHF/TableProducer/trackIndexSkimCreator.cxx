@@ -2039,7 +2039,7 @@ struct HfTrackIndexSkimCreator {
           }
         }
 
-        // prong daughter pT
+        // prong pT
         if (config.debug || TESTBIT(isSelected, iDecay3P)) {
           const auto ptProngMin = cut3Prong[iDecay3P].get(binPt, 4u); // 4u == ptProngMinIndex[iDecay3P]
           if (ptProngs[0] < ptProngMin || ptProngs[1] < ptProngMin || ptProngs[2] < ptProngMin) {
