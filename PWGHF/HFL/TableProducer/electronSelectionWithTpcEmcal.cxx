@@ -86,7 +86,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> etaTrackMax{"etaTrackMax", 0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackMin{"etaTrackMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> ptTrackMin{"ptTrackMin", 3.0f, "Min Transverse MOmentum range for electron tracks"};
-    Configurable<float> ptTrackMax{"ptTrackMax", 12.0f, "Max Transverse MOmentum range for electron tracks"};
+  Configurable<float> ptTrackMax{"ptTrackMax", 12.0f, "Max Transverse MOmentum range for electron tracks"};
   Configurable<float> tpccrossCut{"tpccrossCut", 70, "TPC crossrows cut"};
   Configurable<float> itsChi2{"itsChi2", 36, "ITS chi2 cluster cut"};
   Configurable<float> tpcChi2NCl{"tpcChi2NCl", 4, "TPC chi2 cluster cut"};
