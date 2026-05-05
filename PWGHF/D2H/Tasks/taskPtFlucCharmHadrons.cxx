@@ -252,32 +252,27 @@ struct HfTaskPtFlucCharmHadrons {
   template <DecayChannel Channel, typename CandT>
   float removeDaughtersFromMeanPt(const CandT& cand, float rawMeanPt, int n, const std::vector<int>& trkIDs)
   {
-    float meanPt = rawMeanPt;
     int removedCount = 0;
     float removedSumPt = 0.f;
-    auto removeDaug = [&] (int daugID, float daugPt) {
-      if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugID)) {
-        removedSumPt += daugPt;
-        ++removedCount;
-      }
+    auto removeDaug = [&](int daugID, float daugPt) {
+        if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugID)) {
+            removedSumPt += daugPt;
+            ++removedCount;
+        }
     };
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
-      std::array<int, 3> daugIDs = {cand.prong0Id(), cand.prong1Id(), cand.prong2Id()};
-      std::array<float, 3> daugPts = {cand.ptProng0(), cand.ptProng1(), cand.ptProng2()};
-      for (int iProng = 0; iProng < 3; ++iProng) {
-        removeDaug(daugIDs[iProng], daugPts[iProng]);
-      }
+        removeDaug(cand.prong0Id(), cand.ptProng0());
+        removeDaug(cand.prong1Id(), cand.ptProng1());
+        removeDaug(cand.prong2Id(), cand.ptProng2());
     } else if constexpr (Channel == DecayChannel::D0ToPiK || Channel == DecayChannel::D0ToKPi) {
-      std::array<int, 2> daugIDs = {cand.prong0Id(), cand.prong1Id()};
-      std::array<float, 2> daugPts = {cand.ptProng0(), cand.ptProng1()};
-      for (int iProng = 0; iProng < 2; ++iProng) { // o2-linter: disable=magic-number (for 2-prong)
-        removeDaug(daugIDs[iProng], daugPts[iProng]);
-      }
+        removeDaug(cand.prong0Id(), cand.ptProng0());
+        removeDaug(cand.prong1Id(), cand.ptProng1());
     }
     if (removedCount > 0) {
-      meanPt = (rawMeanPt * n - removedSumPt) / (n - removedCount);
+      double totalSum = static_cast<double>(rawMeanPt) * n;
+      return static_cast<float>((totalSum - removedSumPt) / (n - removedCount));
     }
-    return meanPt;
+    return rawMeanPt;
   }
 
   // ---------------------------------------------------------------------------
