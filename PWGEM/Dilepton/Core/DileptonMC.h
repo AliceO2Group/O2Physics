@@ -311,8 +311,9 @@ struct DileptonMC {
     o2::framework::Configurable<float> cfg_max_DPhi_wrt_matchedMCHMID{"cfg_max_DPhi_wrt_matchedMCHMID", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
     o2::framework::Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to apply MFT hit map"};
     o2::framework::Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
-    o2::framework::Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
-    o2::framework::Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between MFT and MCH-MID"};       // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between MFT and MCH-MID"};         // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between MFT and MCH-MID"};               // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> acceptOnlyXORMatching{"acceptOnlyXORMatching", false, "flag to accept only correct-wrong XOR pairs between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
   } dimuoncuts;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -1436,20 +1437,31 @@ struct DileptonMC {
       // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t2, cut, tracks)) {
       //   return false;
       // }
+
+      bool isCorrectMatch1 = t1.emmcparticleId() == t1.emmftmcparticleId();
+      bool isCorrectMatch2 = t2.emmcparticleId() == t2.emmftmcparticleId();
+
       if (dimuoncuts.acceptOnlyCorrectMatch) {
-        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t1.emmcparticleId() != t1.emmftmcparticleId()) {
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !isCorrectMatch1) {
           return false;
         }
-        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.emmcparticleId() != t2.emmftmcparticleId()) {
+        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !isCorrectMatch2) {
           return false;
         }
       }
-      if (dimuoncuts.acceptOnlyWrongMatch) { // reject correctly matched MFT-MCH-MID for bkg estimation
-        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t1.emmcparticleId() == t1.emmftmcparticleId()) {
+      if (dimuoncuts.acceptOnlyWrongMatch) {
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && isCorrectMatch1) {
           return false;
         }
-        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.emmcparticleId() == t2.emmftmcparticleId()) {
+        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && isCorrectMatch2) {
           return false;
+        }
+      }
+      if (dimuoncuts.acceptOnlyXORMatching) { // this is dummy comment.
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          if (!(isCorrectMatch1 ^ isCorrectMatch2)) {
+            return false;
+          }
         }
       }
 
@@ -2109,6 +2121,12 @@ struct DileptonMC {
         continue;
       }
       if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+      if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+        continue;
+      }
+      if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         continue;
       }
       fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());

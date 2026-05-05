@@ -113,3 +113,8 @@ o2physics_add_dpl_workflow(particle-composition-correction
     SOURCES particleCompositionCorrection.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photon-deuteron
+    SOURCES photonDeuteron.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

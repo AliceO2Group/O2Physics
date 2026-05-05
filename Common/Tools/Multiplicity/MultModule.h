@@ -308,6 +308,8 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   // Autoconfigure process functions
   o2::framework::Configurable<bool> autoConfigureProcess{"autoConfigureProcess", false, "if true, will configure process function switches based on metadata"};
 
+  o2::framework::Configurable<bool> doNTrackStudies{"doNTrackStudies", true, "if true, will fill Ntracks in MultsExtra"};
+
   // do vertex-Z equalized or not
   o2::framework::Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
 
@@ -903,9 +905,15 @@ class MultModule
     if (internalOpts.mEnabledTables[kMultsExtra]) {
       cursors.tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                          bc.runNumber(), collision.posZ(), collision.sel8(),
-                         mults.multHasITS, mults.multHasTPC, mults.multHasTOF, mults.multHasTRD,
-                         mults.multITSOnly, mults.multTPCOnly, mults.multITSTPC,
-                         mults.multAllTracksTPCOnly, mults.multAllTracksITSTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasITS,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTOF,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTRD,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multITSOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multTPCOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multITSTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multAllTracksTPCOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multAllTracksITSTPC,
                          collision.trackOccupancyInTimeRange(),
                          collision.ft0cOccupancyInTimeRange(),
                          collision.flags());

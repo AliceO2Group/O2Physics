@@ -17,7 +17,6 @@
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
-//
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "PWGUD/Core/SGCutParHolder.h"
@@ -62,6 +61,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -120,6 +120,7 @@ struct LongrangeMaker {
     Configurable<int> cfgOccuCut{"cfgOccuCut", 1000, "Occupancy selection"};
     Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "vertex Z selection"};
     Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, "bestCollIndex"};
+    Configurable<bool> isrejectFlangeEvent{"isrejectFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
   } cfgevtsel;
 
   struct : ConfigurableGroup {
@@ -130,6 +131,7 @@ struct LongrangeMaker {
     Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "cut on minimum number of TPC crossed rows"};
     Configurable<float> minTPCNClsFound{"minTPCNClsFound", 50.f, "cut on minimum value of TPC found clusters"};
     Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "cut on maximum abs value of DCA z"};
+    Configurable<float> maxDcaXY{"maxDcaXY", 1.f, "cut on maximum abs value of DCA xy"};
     Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "cut on maximum value of TPC chi2 per cluster"};
   } cfgtrksel;
 
@@ -151,7 +153,7 @@ struct LongrangeMaker {
     Configurable<float> cfigFt0cEtaMin{"cfigFt0cEtaMin", -3.3f, "Minimum FT0C eta cut"};
     Configurable<int> cfigVerbosity{"cfigVerbosity", 0, "print statement"};
     Configurable<bool> useGainCalib{"useGainCalib", true, "use gain calibration"};
-    Configurable<std::string> ConfGainPath{"ConfGainPath", "Analysis/EventPlane/GainEq/FT0", "Path to gain calibration"};
+    Configurable<std::string> confGainPath{"confGainPath", "Analysis/EventPlane/GainEq/FT0", "Path to gain calibration"};
   } cfgfittrksel;
 
   struct : ConfigurableGroup {
@@ -241,6 +243,7 @@ struct LongrangeMaker {
     x->SetBinLabel(10, "ApplyNoCollInRofStandard");
     x->SetBinLabel(11, "ApplyNoHighMultCollInPrevRof");
     x->SetBinLabel(12, "ApplyOccupancySelection");
+    x->SetBinLabel(13, "reject flange event");
     histos.add("hSelectionResult", "hSelectionResult", kTH1I, {{5, -0.5, 4.5}});
 
     AxisSpec axisVtx = {vtxHistBin, "Vertex", "VtxAxis"};
@@ -270,6 +273,7 @@ struct LongrangeMaker {
     myTrackFilter.SetMinNCrossedRowsTPC(cfgtrksel.minNCrossedRowsTPC);
     myTrackFilter.SetMinNClustersTPC(cfgtrksel.minTPCNClsFound);
     myTrackFilter.SetMaxDcaZ(cfgtrksel.maxDcaZ);
+    myTrackFilter.SetMaxDcaXYPtDep([scale = cfgtrksel.maxDcaXY.value](float pt) { return scale * (0.0105f + 0.0350f / std::pow(pt, 1.1f)); });
     myTrackFilter.SetMaxChi2PerClusterTPC(cfgtrksel.maxChi2PerClusterTPC);
     myTrackFilter.print();
 
@@ -309,7 +313,7 @@ struct LongrangeMaker {
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
 
-  using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms>;
+  using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::FITExtraMults>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using MftTrkTable = aod::MFTTracks;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -329,7 +333,7 @@ struct LongrangeMaker {
     ft0gainvalues.clear();
     ft0gainvalues = {};
     if (cfgfittrksel.useGainCalib) {
-      const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.ConfGainPath, bc.timestamp());
+      const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.confGainPath, bc.timestamp());
       if (!ft0GainObj) {
         for (auto i{0u}; i < TotFt0Channels; i++) {
           ft0gainvalues.push_back(1.);
@@ -604,7 +608,7 @@ struct LongrangeMaker {
       ft0gainvalues.clear();
       ft0gainvalues = {};
       if (cfgfittrksel.useGainCalib) {
-        const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.ConfGainPath, bc.timestamp());
+        const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.confGainPath, bc.timestamp());
         if (!ft0GainObj) {
           for (auto i{0u}; i < TotFt0Channels; i++) {
             ft0gainvalues.push_back(1.);
@@ -911,6 +915,16 @@ struct LongrangeMaker {
       return false;
     }
     histos.fill(HIST("EventHist"), 12);
+    if (cfgevtsel.isrejectFlangeEvent) {
+      if constexpr (requires { col.ft0TriggerMask(); }) {
+        constexpr int IsFlangeEventId = 7;
+        std::bitset<8> ft0TriggerMask = col.ft0TriggerMask();
+        if (ft0TriggerMask[IsFlangeEventId]) {
+          return false;
+        }
+      }
+    }
+    histos.fill(HIST("EventHist"), 13);
     return true;
   }
 

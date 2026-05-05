@@ -794,8 +794,8 @@ struct HfTaskCharmPolarisation {
       LOGP(fatal, "THnSparse with cosThStar w.r.t. event plane axis is not supported for pp analysis, please check the configuration!");
     } else if (activateTHnSparseCosThStarEP) {
       std::vector<AxisSpec> hEPaxes = {thnAxisInvMass, thnAxisPt, thnAxisNumPvContributors, thnAxisY};
+      hEPaxes.insert(hEPaxes.end(), {thnAxisInvMassD0, thnAxisCosThetaStarEP});
       if (doprocessDstarInPbPb || doprocessDstarWithMlInPbPb) {
-        hEPaxes.insert(hEPaxes.end(), {thnAxisInvMassD0, thnAxisCosThetaStarEP});
         if (doprocessDstarWithMlInPbPb) {
           hEPaxes.insert(hEPaxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
         }

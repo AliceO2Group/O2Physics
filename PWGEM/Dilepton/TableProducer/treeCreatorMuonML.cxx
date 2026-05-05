@@ -266,8 +266,10 @@ struct TreeCreatorMuonML {
 
   std::unordered_map<int, int> map_mfttrackcovs;
 
-  void processWithMFTCov(MyCollisionsMC const& collisions, aod::BCsWithTimestamps const&, MyFwdTracksMC const&, MyMFTTracksMC const& mfttracks, aod::MFTTracksCov const& mftCovs, aod::McParticles const&, aod::McCollisions const&)
+  void processWithMFTCov(MyCollisionsMC const& collisions, aod::BCsWithTimestamps const&, MyFwdTracksMC const&, MyMFTTracksMC const& mfttracks, aod::MFTTracksCov const& mftCovs, aod::McParticles const&, aod::McCollisions const&, aod::Origins const& origins)
   {
+    uint64_t dfId = origins.iteratorAt(0).dataframeID();
+
     for (const auto& mfttrackCov : mftCovs) {
       map_mfttrackcovs[mfttrackCov.matchMFTTrackId()] = mfttrackCov.globalIndex();
     }
@@ -378,7 +380,7 @@ struct TreeCreatorMuonML {
                      fwdtrack.chi2MatchMCHMFT(),
                      mcParticle_MFT.pdgCode(), isPrimary_MFT,
                      mcParticle_MCHMID.pdgCode(), isPrimary_MCHMID,
-                     isMatched);
+                     isMatched, mchtrack.globalIndex(), dfId);
 
           trackErrTable(tglErrMFTatMP, phiErrMFTatMP, xErrMFTatMP, yErrMFTatMP,
                         tglErrMCHMIDatMP, phiErrMCHMIDatMP, xErrMCHMIDatMP, yErrMCHMIDatMP);
