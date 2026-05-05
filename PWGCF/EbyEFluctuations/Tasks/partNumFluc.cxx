@@ -91,7 +91,7 @@ using JoinedCollisionsWithMc = soa::Join<McCollisionLabels, JoinedCollisions>;
 using JoinedTracksWithMc = soa::Join<McTrackLabels, JoinedTracks>;
 using JoinedMcCollisions = soa::Join<McCollisions, McCollsExtra, MultMCExtras>;
 
-namespace derived_collision
+namespace mini_collision
 {
 DECLARE_SOA_COLUMN(Vz, vz, std::int8_t);
 DECLARE_SOA_COLUMN(Centrality, centrality, std::uint16_t);
@@ -99,28 +99,28 @@ DECLARE_SOA_COLUMN(NChargedParticlesAll, nChargedParticlesAll, std::uint16_t);
 DECLARE_SOA_COLUMN(NChargedParticlesIn, nChargedParticlesIn, std::uint16_t);
 DECLARE_SOA_COLUMN(NTracksAll, nTracksAll, std::uint16_t);
 DECLARE_SOA_COLUMN(NTracksIn, nTracksIn, std::uint16_t);
-} // namespace derived_collision
+} // namespace mini_collision
 
-DECLARE_SOA_TABLE(DerivedCollisions, "AOD", "DERIVEDCOLLISION", o2::soa::Index<>, derived_collision::Vz, derived_collision::Centrality, derived_collision::NChargedParticlesAll, derived_collision::NChargedParticlesIn, derived_collision::NTracksAll, derived_collision::NTracksIn);
-using DerivedCollision = DerivedCollisions::iterator;
+DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLLISION", soa::Index<>, mini_collision::Vz, mini_collision::Centrality, mini_collision::NChargedParticlesAll, mini_collision::NChargedParticlesIn, mini_collision::NTracksAll, mini_collision::NTracksIn);
+using MiniCollision = MiniCollisions::iterator;
 
-namespace derived_particle
+namespace mini_particle
 {
-DECLARE_SOA_INDEX_COLUMN(DerivedCollision, derivedCollision);
+DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
 DECLARE_SOA_COLUMN(SignedEfficiency, signedEfficiency, std::int16_t);
-} // namespace derived_particle
+} // namespace mini_particle
 
-DECLARE_SOA_TABLE(DerivedParticles, "AOD", "DERIVEDPARTICLE", o2::soa::Index<>, derived_particle::DerivedCollisionId, derived_particle::SignedEfficiency);
-using DerivedParticle = DerivedParticles::iterator;
+DECLARE_SOA_TABLE(MiniParticles, "AOD", "MINIPARTICLE", soa::Index<>, mini_particle::MiniCollisionId, mini_particle::SignedEfficiency);
+using MiniParticle = MiniParticles::iterator;
 
-namespace derived_track
+namespace mini_track
 {
-DECLARE_SOA_INDEX_COLUMN(DerivedCollision, derivedCollision);
+DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
 DECLARE_SOA_COLUMN(SignedEfficiency, signedEfficiency, std::int16_t);
-} // namespace derived_track
+} // namespace mini_track
 
-DECLARE_SOA_TABLE(DerivedTracks, "AOD", "DERIVEDTRACK", o2::soa::Index<>, derived_track::DerivedCollisionId, derived_track::SignedEfficiency);
-using DerivedTrack = DerivedTracks::iterator;
+DECLARE_SOA_TABLE(MiniTracks, "AOD", "MINITRACK", soa::Index<>, mini_track::MiniCollisionId, mini_track::SignedEfficiency);
+using MiniTrack = MiniTracks::iterator;
 } // namespace o2::aod
 
 namespace
@@ -811,12 +811,12 @@ struct PartNumFluc {
       return std::numeric_limits<T>::min() <= value && value <= std::numeric_limits<T>::max() ? std::round(value) : (std::is_signed_v<T> ? std::numeric_limits<T>::min() : std::numeric_limits<T>::max());
     }
 
-    aod::derived_collision::NChargedParticlesAll::type nChargedParticlesAll{};
-    aod::derived_collision::NChargedParticlesIn::type nChargedParticlesIn{};
-    aod::derived_collision::NTracksAll::type nTracksAll{};
-    aod::derived_collision::NTracksIn::type nTracksIn{};
-    std::vector<aod::derived_particle::SignedEfficiency::type> signedEfficienciesParticle{[] {std::vector<aod::derived_particle::SignedEfficiency::type> v{}; v.reserve(256); return v; }()};
-    std::vector<aod::derived_track::SignedEfficiency::type> signedEfficienciesTrack{[] {std::vector<aod::derived_track::SignedEfficiency::type> v{}; v.reserve(256); return v; }()};
+    aod::mini_collision::NChargedParticlesAll::type nChargedParticlesAll{};
+    aod::mini_collision::NChargedParticlesIn::type nChargedParticlesIn{};
+    aod::mini_collision::NTracksAll::type nTracksAll{};
+    aod::mini_collision::NTracksIn::type nTracksIn{};
+    std::vector<aod::mini_particle::SignedEfficiency::type> signedEfficienciesParticle{[] {std::vector<aod::mini_particle::SignedEfficiency::type> v{}; v.reserve(256); return v; }()};
+    std::vector<aod::mini_track::SignedEfficiency::type> signedEfficienciesTrack{[] {std::vector<aod::mini_track::SignedEfficiency::type> v{}; v.reserve(256); return v; }()};
 
     void clear()
     {
@@ -916,9 +916,9 @@ struct PartNumFluc {
 
   Preslice<aod::JoinedTracksWithMc> presliceTracksPerCollision{aod::track::collisionId};
 
-  Produces<aod::DerivedCollisions> derivedCollision;
-  Produces<aod::DerivedParticles> derivedParticle;
-  Produces<aod::DerivedTracks> derivedTrack;
+  Produces<aod::MiniCollisions> miniCollision;
+  Produces<aod::MiniParticles> miniParticle;
+  Produces<aod::MiniTracks> miniTrack;
 
   void init(InitContext&)
   {
@@ -1962,11 +1962,11 @@ struct PartNumFluc {
             ++holderMcEvent.numbersEff[toI(particleNumber)][toI(chargeSpecies)];
             fill();
           }
-          holderDerivedData.signedEfficienciesParticle.push_back(HolderDerivedData::convertRound<aod::derived_particle::SignedEfficiency::type>(std::copysign(std::numeric_limits<aod::derived_particle::SignedEfficiency::type>::max(), chargeSign) * efficiency));
+          holderDerivedData.signedEfficienciesParticle.push_back(HolderDerivedData::convertRound<aod::mini_particle::SignedEfficiency::type>(std::copysign(std::numeric_limits<aod::mini_particle::SignedEfficiency::type>::max(), chargeSign) * efficiency));
         } else {
           ++holderEvent.numbers[toI(particleNumber)][toI(chargeSpecies)];
           fill();
-          holderDerivedData.signedEfficienciesTrack.push_back(HolderDerivedData::convertRound<aod::derived_track::SignedEfficiency::type>(std::copysign(std::numeric_limits<aod::derived_track::SignedEfficiency::type>::max(), chargeSign) * efficiency));
+          holderDerivedData.signedEfficienciesTrack.push_back(HolderDerivedData::convertRound<aod::mini_track::SignedEfficiency::type>(std::copysign(std::numeric_limits<aod::mini_track::SignedEfficiency::type>::max(), chargeSign) * efficiency));
         }
       }; // NOLINT(readability/braces)
 
@@ -2388,9 +2388,9 @@ struct PartNumFluc {
       fillCalculationFluctuationByParticleNumber<DataMode::kRawTrack, ParticleNumber::kCharge>();
       fillCalculationFluctuationByParticleNumber<DataMode::kRawTrack, ParticleNumber::kKaon>();
       fillCalculationFluctuationByParticleNumber<DataMode::kRawTrack, ParticleNumber::kProton>();
-      derivedCollision(HolderDerivedData::convertFloor<aod::derived_collision::Vz::type>(holderEvent.vz * 10.), HolderDerivedData::convertFloor<aod::derived_collision::Centrality::type>(holderEvent.centrality * 500.), holderDerivedData.nChargedParticlesAll, holderDerivedData.nChargedParticlesIn, holderDerivedData.nTracksAll, holderDerivedData.nTracksIn);
+      miniCollision(HolderDerivedData::convertFloor<aod::mini_collision::Vz::type>(holderEvent.vz * 10.), HolderDerivedData::convertFloor<aod::mini_collision::Centrality::type>(holderEvent.centrality * 500.), holderDerivedData.nChargedParticlesAll, holderDerivedData.nChargedParticlesIn, holderDerivedData.nTracksAll, holderDerivedData.nTracksIn);
       for (auto const& signedEfficiency : holderDerivedData.signedEfficienciesTrack) {
-        derivedTrack(derivedCollision.lastIndex(), signedEfficiency);
+        miniTrack(miniCollision.lastIndex(), signedEfficiency);
       }
     }
   }
@@ -2529,12 +2529,12 @@ struct PartNumFluc {
           fillCalculationFluctuationByParticleNumber<DataMode::kMcTrack, ParticleNumber::kCharge>();
           fillCalculationFluctuationByParticleNumber<DataMode::kMcTrack, ParticleNumber::kKaon>();
           fillCalculationFluctuationByParticleNumber<DataMode::kMcTrack, ParticleNumber::kProton>();
-          derivedCollision(HolderDerivedData::convertFloor<aod::derived_collision::Vz::type>(holderEvent.vz * 10.), HolderDerivedData::convertFloor<aod::derived_collision::Centrality::type>(holderEvent.centrality * 500.), holderDerivedData.nChargedParticlesAll, holderDerivedData.nChargedParticlesIn, holderDerivedData.nTracksAll, holderDerivedData.nTracksIn);
+          miniCollision(HolderDerivedData::convertFloor<aod::mini_collision::Vz::type>(holderEvent.vz * 10.), HolderDerivedData::convertFloor<aod::mini_collision::Centrality::type>(holderEvent.centrality * 500.), holderDerivedData.nChargedParticlesAll, holderDerivedData.nChargedParticlesIn, holderDerivedData.nTracksAll, holderDerivedData.nTracksIn);
           for (auto const& signedEfficiency : holderDerivedData.signedEfficienciesParticle) {
-            derivedParticle(derivedCollision.lastIndex(), signedEfficiency);
+            miniParticle(miniCollision.lastIndex(), signedEfficiency);
           }
           for (auto const& signedEfficiency : holderDerivedData.signedEfficienciesTrack) {
-            derivedTrack(derivedCollision.lastIndex(), signedEfficiency);
+            miniTrack(miniCollision.lastIndex(), signedEfficiency);
           }
         }
       }
