@@ -189,7 +189,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   Configurable<bool> cfgProcessHel4{"cfgProcessHel4", false, "Process particle pairs from the helicity range 4"}; // -0.5 > cosineTheta >= -1.0
   ConfigurableAxis confInvMassMotherpTBinsHel{"confInvMassMotherpTBinsHel", {5, 0, 5}, "pT binning in the pT vs. InvMassMother plot for helicity"};
   ConfigurableAxis confInvMassMotherBinsHel{"confInvMassMotherBinsHel", {1000, 0.8, 1.4}, "InvMassMother binning in the pT vs. InvMassMother plot for helicity"};
-  ConfigurableAxis confInvMassK0Short{"confInvMassK0s", {1000, 0.2, 0.8}, "Invariant mass binning for K0 Short"};
+  ConfigurableAxis confInvMassK0Short{"confInvMassK0Short", {1000, 0.2, 0.8}, "Invariant mass binning for K0 Short"}; // o2-linter: disable=lowerCamelCase (consistency with generally accepted particle name)
 
   /// Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
@@ -323,7 +323,16 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
-    thetaRegistry.add("Theta/Mother/hInvMassK0Short", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMC", " ; M_{#Lambda}; ;", kTH1F, {confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel1", " ; M_{#Lambda}; ;", kTH1F, {confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel2", " ; M_{#Lambda}; ;", kTH1F, {confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel3", " ; M_{#Lambda}; ;", kTH1F, {confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel4", " ; M_{#Lambda}; ;", kTH1F, {confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMC", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel1", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel2", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel3", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel4", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
 
     /// MC Truth
     registryMCtruth.add("plus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -491,19 +500,43 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaEta"), negChild.eta(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaPhi"), negChild.phi(), cosineTheta);
 
-      if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+      if (cosineTheta <= 1.0 && cosineTheta >= 0.1) // o2-linter: disable=magic-number (fixed cuts values)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel1"), part.pt(), part.mLambda());
-      else if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+      else if (cosineTheta < 0.1 && cosineTheta >= -0.1) // o2-linter: disable=magic-number (fixed cuts values)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel2"), part.pt(), part.mLambda());
-      else if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+      else if (cosineTheta < -0.1 && cosineTheta >= -0.5) // o2-linter: disable=magic-number (fixed cuts values)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel3"), part.pt(), part.mLambda());
-      else if (cosineTheta < -0.5 && cosineTheta >= -1)
+      else if (cosineTheta < -0.5 && cosineTheta >= -1.0) // o2-linter: disable=magic-number (fixed cuts values)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel4"), part.pt(), part.mLambda());
 
+      /// Histogramming for MC Reco to calculate fraction of K0S in Lambda sample for each helicity bin
       if constexpr (confIsMC) {
         if (part.has_fdMCParticle()) {
-          if ((part.fdMCParticle()).pdgMCTruth() == kK0Short) {
-            thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0Short"), part.mKaon());
+          if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+            thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMC"), part.mLambda());
+          else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+            thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMC"), part.mKaon());
+
+          if (cosineTheta <= 1.0 && cosineTheta >= 0.1) { // o2-linter: disable=magic-number (fixed cuts values)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel1"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel1"), part.mKaon());
+          } else if (cosineTheta < 0.1 && cosineTheta >= -0.1) { // o2-linter: disable=magic-number (fixed cuts values)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel2"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel2"), part.mKaon());
+          } else if (cosineTheta < -0.1 && cosineTheta >= -0.5) { // o2-linter: disable=magic-number (fixed cuts values)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel3"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel3"), part.mKaon());
+          } else if (cosineTheta < -0.5 && cosineTheta >= -1.0) { // o2-linter: disable=magic-number (fixed cuts values)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel4"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel4"), part.mKaon());
           }
         }
       }
@@ -571,28 +604,28 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         }
 
         case 1: {
-          if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+          if (cosineTheta <= 1.0 && cosineTheta >= 0.1) // o2-linter: disable=magic-number (fixed cuts values)
             sameEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
         }
 
         case 2: {
-          if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+          if (cosineTheta < 0.1 && cosineTheta >= -0.1) // o2-linter: disable=magic-number (fixed cuts values)
             sameEventContHel2.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
         }
 
         case 3: {
-          if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+          if (cosineTheta < -0.1 && cosineTheta >= -0.5) // o2-linter: disable=magic-number (fixed cuts values)
             sameEventContHel3.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
         }
 
         case 4: {
-          if (cosineTheta < -0.5 && cosineTheta >= -1.0)
+          if (cosineTheta < -0.5 && cosineTheta >= -1.0) // o2-linter: disable=magic-number (fixed cuts values)
             sameEventContHel4.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
@@ -869,28 +902,28 @@ struct FemtoUniversePairTaskTrackV0Helicity {
           }
 
           case 1: {
-            if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+            if (cosineTheta <= 1.0 && cosineTheta >= 0.1) // o2-linter: disable=magic-number (fixed cuts values)
               mixedEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
           }
 
           case 2: {
-            if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+            if (cosineTheta < 0.1 && cosineTheta >= -0.1) // o2-linter: disable=magic-number (fixed cuts values)
               mixedEventContHel2.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
           }
 
           case 3: {
-            if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+            if (cosineTheta < -0.1 && cosineTheta >= -0.5) // o2-linter: disable=magic-number (fixed cuts values)
               mixedEventContHel3.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
           }
 
           case 4: {
-            if (cosineTheta < -0.5 && cosineTheta >= -1.0)
+            if (cosineTheta < -0.5 && cosineTheta >= -1.0) // o2-linter: disable=magic-number (fixed cuts values)
               mixedEventContHel4.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
