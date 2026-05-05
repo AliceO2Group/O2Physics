@@ -16,12 +16,12 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -29,7 +29,6 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -41,14 +40,14 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH2.h>
-#include <THnSparse.h>
+#include <TH1.h>
 #include <TList.h>
-#include <TProfile.h>
+#include <TObject.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
-#include <array>
 #include <cmath>
-#include <map>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -319,8 +318,8 @@ struct LambdaTableProducer {
   Configurable<float> cKaonMaxPt{"cKaonMaxPt", 2.2, "Kaon Max pT"};
   Configurable<float> cKaonRapCut{"cKaonRapCut", 0.5, "Kaon |y| cut"};
   Configurable<bool> cKaonGlobalSel{"cKaonGlobalSel", true, "Global Track"};
-  Configurable<float> cKaonDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
-  Configurable<float> cKaonDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
+  Configurable<float> cKaonDcaXYCut{"cKaonDcaXYCut", 0.1, "DcaXY Cut"};
+  Configurable<float> cKaonDcaZCut{"cKaonDcaZCut", 1., "DcaXY Cut"};
   Configurable<float> cTpcElRejCutMin{"cTpcElRejCutMin", -3., "Electron Rejection Cut Minimum"};
   Configurable<float> cTpcElRejCutMax{"cTpcElRejCutMax", 5., "Electron Rejection Cut Maximum"};
   Configurable<float> cKaonTpcNSigmaCut{"cKaonTpcNSigmaCut", 2, "TPC Kaon NSigma Cut"};
@@ -332,7 +331,7 @@ struct LambdaTableProducer {
   // V0s
   Configurable<double> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.01, "Minimum Proton DCAr to PV"};
   Configurable<double> cMinDcaPionToPV{"cMinDcaPionToPV", 0.1, "Minimum Pion DCAr to PV"};
-  Configurable<double> cMaxDcaV0Daughters{"cMaxV0DcaDaughters", 1., "Maximum DCA between V0 daughters"};
+  Configurable<double> cMaxDcaV0Daughters{"cMaxDcaV0Daughters", 1., "Maximum DCA between V0 daughters"};
   Configurable<double> cMaxDcaV0ToPV{"cMaxDcaV0ToPV", 999.0, "Maximum DCA V0 to PV"};
   Configurable<double> cMinV0TransRadius{"cMinV0TransRadius", 0.5, "Minimum V0 radius from PV"};
   Configurable<double> cMaxV0CTau{"cMaxV0CTau", 30.0, "Maximum ctau"};
@@ -356,7 +355,7 @@ struct LambdaTableProducer {
   Configurable<std::string> cUrlCCDB{"cUrlCCDB", "http://alice-ccdb.cern.ch", "ALICE CCDB URL"};
   Configurable<std::string> cPathCCDBRecoEff{"cPathCCDBRecoEff", "Users/y/ypatley/LBF/PP/RecoEfficiency", "Path for ccdb-object for reco efficiency"};
   Configurable<std::string> cPathCCDBMatchEff{"cPathCCDBMatchEff", "Users/y/ypatley/LBF/PP/MatchEfficiency", "Path for ccdb-object for matching efficiency"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Initialize CCDB Service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
