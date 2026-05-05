@@ -339,7 +339,7 @@ struct qVectorsTable {
       for (std::size_t i = 0; i < cfgnMods->size(); i++) {
         int ind = cfgnMods->at(i);
         fullPath = cfgShiftPath;
-        fullPath += "/eseq"
+        fullPath += "/eseq";
         fullPath += std::to_string(ind);
         auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
         shiftProfileEse.push_back(objshift);
