@@ -3348,7 +3348,7 @@ struct HfTrackIndexSkimCreatorCascades {
     // cascade cuts
     Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};                    // PbPb 2018: use 1
     Configurable<double> cutInvMassCascLc{"cutInvMassCascLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
-    Configurable<double> cutInvMassCascCharmNuclei{"cutInvMassCascCharmNuclei", 1., "charm nuclei candidate invariant mass difference wrt mass threshold"};
+    Configurable<double> cutInvMassCascCharmNuclei{"cutInvMassCascCharmNuclei", 0., "charm nuclei candidate invariant mass difference wrt mass threshold"};
 
     // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
     // proton PID
