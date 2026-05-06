@@ -321,7 +321,6 @@ struct HfDataCreatorHiddenCharmReduced {
         if (!isSelectedTrack(trk)) {
           continue;
         }
-        std::array pVecProton{trk.pVector()};
         selectedTrackIds.push_back(trkId.trackId());
 
         if (config.fillHistograms) {
