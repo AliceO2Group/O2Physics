@@ -73,7 +73,7 @@ using namespace o2::aod::rctsel;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct FlowSP {
-  
+
   // event selection configurable group
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cEvtUseRCTFlagChecker, bool, false, "Evt sel: use RCT flag checker");
@@ -159,7 +159,7 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cCCDBdir_centrality, std::string, "", "ccdb dir for Centrality corrections");
     O2_DEFINE_CONFIGURABLE(cCCDBdir_meanPt, std::string, "", "ccdb dir for Mean Pt corrections");
 
-      // Confogirable axis
+    // Confogirable axis
     // ConfigurableAxis axisCentrality{"axisCentrality", {20, 0, 100}, "Centrality bins for vn "};
     // ConfigurableAxis axisMomentum{"axisMomentum", {20, 0, 10}, "Momentum bins for vn"};
     // ConfigurableAxis axisEtaVn{"axisEtaVn", {8, -0.8, 0.8}, "Eta bins for vn"};
@@ -169,12 +169,12 @@ struct FlowSP {
     Configurable<std::vector<double>> cEvSelsMult{"cEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
     Configurable<std::vector<double>> cPtBinning{"cPtBinning", std::vector<double>{0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pT binning for vn"};
 
-  } cfg; 
+  } cfg;
 
   RCTFlagsChecker rctChecker;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfg.cEvSelsVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfg.cTrackSelsEta && aod::track::pt > cfg.cTrackSelsPtmin&& aod::track::pt < cfg.cTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true) || cfg.cIsMCReco) && nabs(aod::track::dcaXY) < cfg.cTrackSelsDCAxy && nabs(aod::track::dcaZ) < cfg.cTrackSelsDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfg.cTrackSelsEta && aod::track::pt > cfg.cTrackSelsPtmin&& aod::track::pt < cfg.cTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true) || cfg.cIsMCReco) && nabs(aod::track::dcaXY) < cfg.cTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfg.cTrackSelsDCAz;
   Filter trackFilterMC = nabs(aod::mcparticle::eta) < cfg.cTrackSelsEta && aod::mcparticle::pt > cfg.cTrackSelsPtmin&& aod::mcparticle::pt < cfg.cTrackSelsPtmax;
   using GeneralCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using UnfilteredTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -355,7 +355,7 @@ struct FlowSP {
     AxisSpec axisPhi = {60, 0, constants::math::TwoPI, "#varphi"};
     AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
-    AxisSpec axisCentrality = {20,0,100, "Centrality (%)"}; 
+    AxisSpec axisCentrality = {20, 0, 100, "Centrality (%)"};
     AxisSpec axisVx = {40, -0.01, 0.01, "v_{x}"};
     AxisSpec axisVy = {40, -0.01, 0.01, "v_{y}"};
     AxisSpec axisVz = {40, -10, 10, "v_{z}"};
@@ -1143,7 +1143,7 @@ struct FlowSP {
     if (cfg.cFillGeneralV1Histos) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCodd"), track.pt(), track.eta(), spm.centrality, scale * (spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnOdd"), track.pt(), track.eta(), spm.centrality, scale *0.5 * ((spm.uy * spm.qyA + spm.ux * spm.qxA) - (spm.uy * spm.qyC + spm.ux * spm.qxC)) / std::sqrt(std::fabs(spm.corrQQ)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnOdd"), track.pt(), track.eta(), spm.centrality, scale * 0.5 * ((spm.uy * spm.qyA + spm.ux * spm.qxA) - (spm.uy * spm.qyC + spm.ux * spm.qxC)) / std::sqrt(std::fabs(spm.corrQQ)), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnEven"), track.pt(), track.eta(), spm.centrality, 0.5 * ((spm.uy * spm.qyA + spm.ux * spm.qxA) + (spm.uy * spm.qyC + spm.ux * spm.qxC)) / std::sqrt(std::fabs(spm.corrQQ)), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)), weight);
@@ -1457,7 +1457,6 @@ struct FlowSP {
 
       if (track.sign() == 0)
         continue;
-
 
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
@@ -1901,7 +1900,7 @@ struct FlowSP {
         continue;
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
-      if(cfg.cFillWithMCParticle){
+      if (cfg.cFillWithMCParticle) {
         fillMCPtHistos<kBefore, kReco>(mcParticle, mcParticle.pdgCode());
       } else {
         fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
@@ -1933,7 +1932,7 @@ struct FlowSP {
       }
 
       fillPrimaryHistos<kBefore, kInclusive>(mcParticle);
-      if(spm.charge == kPositive){
+      if (spm.charge == kPositive) {
         fillPrimaryHistos<kBefore, kPositive>(mcParticle);
       } else {
         fillPrimaryHistos<kBefore, kNegative>(mcParticle);
@@ -1942,16 +1941,16 @@ struct FlowSP {
       if (!trackSelected(track, field))
         continue;
 
-        fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
-      if(spm.charge == kPositive){
+      fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
+      if (spm.charge == kPositive) {
         fillPrimaryHistos<kAfter, kPositive>(mcParticle);
       } else {
         fillPrimaryHistos<kAfter, kNegative>(mcParticle);
       }
       if (!mcParticle.isPhysicalPrimary())
-      continue;
+        continue;
 
-      if(cfg.cFillWithMCParticle){
+      if (cfg.cFillWithMCParticle) {
         fillMCPtHistos<kAfter, kReco>(mcParticle, mcParticle.pdgCode());
       } else {
         fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode());
@@ -1972,8 +1971,6 @@ struct FlowSP {
             break;
         }
       }
-
-      
 
     } // end of track loop
   }
