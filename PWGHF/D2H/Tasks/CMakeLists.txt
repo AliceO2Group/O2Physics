@@ -1,6 +1,5 @@
-# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-# See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-# All rights not expressly granted are reserved.
+# Copyright 2019-2020 CERN and copyright holders of ALICE O2. See https://alice-o2.web.cern.ch/copyright for 
+# details of the copyright holders. All rights not expressly granted are reserved.
 #
 # This software is distributed under the terms of the GNU General Public
 # License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -111,6 +110,11 @@ o2physics_add_dpl_workflow(task-lb-reduced
 
 o2physics_add_dpl_workflow(task-lc
                     SOURCES taskLc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-upc-lc
+                    SOURCES taskUpcLc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
