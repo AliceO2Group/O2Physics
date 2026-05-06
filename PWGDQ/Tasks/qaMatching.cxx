@@ -121,12 +121,13 @@ DECLARE_SOA_TABLE(QaMatchingEvents, "AOD", "QAMEVT",
 
 namespace qamatching
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(ReducedEvent, reducedEvent, int32_t, o2::aod::QaMatchingEvents, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(ReducedEvent, reducedEvent, int32_t, o2::aod::QaMatchingEvents, "QAMEVTs", "");
 } // namespace qamatching
 
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
+                  o2::soa::Index<>,
                   qamatching::ReducedEventId,
                   qamatching::TrackId,
                   qamatching::TrackType,
@@ -142,6 +143,7 @@ DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
                   qamatching::PyAtVtx,
                   qamatching::PzAtVtx);
 DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
+                  o2::soa::Index<>,
                   qamatching::ReducedEventId,
                   qamatching::MatchLabel,
                   qamatching::TrackId,
