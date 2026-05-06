@@ -486,8 +486,9 @@ struct FemtoPairEfficiency {
   {
     float mass1 = o2::analysis::femto::utils::getPdgMass(std::abs(TrackSel1.pdgCode.value));
     float mass2 = o2::analysis::femto::utils::getPdgMass(std::abs(TrackSel2.pdgCode.value));
+    bool foundPair = false;
 
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsUpperIndexPolicy(tracks, tracks))) {
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
       bool order1 = checkTrackMC(p1, TrackSel1) && checkTrackMC(p2, TrackSel2) &&
                     std::abs(p1.pdgCode()) == std::abs(TrackSel1.pdgCode.value) &&
@@ -525,9 +526,9 @@ struct FemtoPairEfficiency {
       if (kstar > kStarMax.value) {
         continue;
       }
-      return true;
+      foundPair = true;
     }
-    return false;
+    return foundPair;
   }
 
   template <typename CheckCol, typename CheckTracks>
