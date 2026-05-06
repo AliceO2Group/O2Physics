@@ -72,13 +72,6 @@ struct centralityStudy {
   // Configurables
   Configurable<bool> applyVertexZEqualization{"applyVertexZEqualization", false, "0 - no, 1 - yes"};
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
-  Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
-
-  Configurable<float> scaleSignalFT0A{"scaleSignalFT0A", 1.00f, "scale FT0A signal for convenience"};
-  Configurable<float> scaleSignalFT0C{"scaleSignalFT0C", 1.00f, "scale FT0C signal for convenience"};
-  Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
-  Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
-  Configurable<float> scaleSignalFV0AT0C{"scaleSignalFV0AT0C", 1.00f, "scale FV0A+FT0C signal for convenience"};
 
   Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
@@ -91,14 +84,13 @@ struct centralityStudy {
   struct : ConfigurableGroup {
     std::string prefix = "studies";
     Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
-    Configurable<bool> doRunByRunHistograms{"doRunByRunHistograms", true, "0 - no, 1 - yes"};
+    Configurable<bool> doRunByRunHistograms{"doRunByRunHistograms", false, "0 - no, 1 - yes"};
     Configurable<bool> doOccupancyStudyVsCentrality2d{"doOccupancyStudyVsCentrality2d", true, "0 - no, 1 - yes"};
     Configurable<bool> doOccupancyStudyVsRawValues2d{"doOccupancyStudyVsRawValues2d", true, "0 - no, 1 - yes"};
     Configurable<bool> doOccupancyStudyVsCentrality3d{"doOccupancyStudyVsCentrality3d", false, "0 - no, 1 - yes"};
     Configurable<bool> doOccupancyStudyVsRawValues3d{"doOccupancyStudyVsRawValues3d", false, "0 - no, 1 - yes"};
-    Configurable<bool> doTimeStudies{"doTimeStudies", true, "0 - no, 1 - yes"};
+    Configurable<bool> doTimeStudies{"doTimeStudies", false, "0 - no, 1 - yes"};
     Configurable<bool> doNGlobalTracksVsRawSignals{"doNGlobalTracksVsRawSignals", true, "0 - no, 1 - yes"};
-    Configurable<bool> irDoRateVsTime{"irDoRateVsTime", true, "Do IR plots"};
   } studies;
 
   // _______________________________________
@@ -120,6 +112,7 @@ struct centralityStudy {
     Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
     Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: upcRejection"};
     Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
+    Configurable<float> maxVtxZ{"maxVtxZ", 10.0f, "max vertex z distance from ip"};
   } evsel;
 
   // _______________________________________
@@ -133,6 +126,8 @@ struct centralityStudy {
     Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: upcRejection"};
     Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
     Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
+    Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
+
   } bcsel;
 
   // _______________________________________
@@ -142,13 +137,25 @@ struct centralityStudy {
     std::string prefix = "upcRejection";
     Configurable<float> minZNACsignal{"minZNACsignal", -999999.0f, "min zna/c signal"};
     Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", -99999.0f, "max ft0c signal for minZNACsignal to work"};
-
     Configurable<float> minFV0Asignal{"minFV0Asignal", -999999.0f, "min fv0a signal"};
     Configurable<float> maxFT0CforFV0Aselection{"maxFT0CforFV0Aselection", -99999.0f, "max ft0c signal for minFV0Asignal to work"};
-
     Configurable<float> minFDDAsignal{"minFDDAsignal", -999999.0f, "min fdda signal"};
     Configurable<float> maxFT0CforFDDAselection{"maxFT0CforFDDAselection", -99999.0f, "max ft0c signal for minFDDAsignal to work"};
   } upcRejection;
+
+  // _______________________________________
+  // Scaling
+  struct : ConfigurableGroup {
+    std::string prefix = "scale";
+    Configurable<float> factorFT0A{"factorFT0A", 1.00f, "scale the raw FT0A signal for convenience"};
+    Configurable<float> factorFT0C{"factorFT0C", 1.00f, "scale the raw FT0C signal for convenience"};
+    Configurable<float> factorFV0A{"factorFV0A", 1.00f, "scale the raw FV0A signal for convenience"};
+    Configurable<float> factorFT0M{"factorFT0M", 1.00f, "scale the raw FT0M signal for convenience"};
+    Configurable<float> factorFV0AT0C{"factorFV0AT0C", 1.00f, "scale the raw FV0A+FT0C signal for convenience"};
+    Configurable<float> normFT0A{"normFT0A", 1.00f, "scale the self-normalised FT0A signal; scale.normFT0A * FT0A / <FT0A>"};
+    Configurable<float> normFT0C{"normFT0C", 1.00f, "scale the self-normalised FT0C signal; scale.normFT0C * FT0C / <FT0C>"};
+    Configurable<float> normFV0A{"normFV0A", 1.00f, "scale the self-normalised FV0A signal; scale.normFV0A * FV0A / <FV0A>"};
+  } scale;
 
   // Configurable Axes for 2d plots, etc
   ConfigurableAxis axisMultFV0A{"axisMultFV0A", {1000, 0, 100000}, "FV0A amplitude"};
@@ -161,7 +168,6 @@ struct centralityStudy {
   ConfigurableAxis axisMultGlobalTracks{"axisMultGlobalTracks", {500, 0, 5000}, "Number of global tracks"};
   ConfigurableAxis axisMultMFTTracks{"axisMultMFTTracks", {500, 0, 5000}, "Number of MFT tracks"};
   ConfigurableAxis axisMultMCCounts{"axisMultMCCounts", {1000, 0, 5000}, "N_{ch}"};
-
   ConfigurableAxis axisTrackOccupancy{"axisTrackOccupancy", {50, 0, 5000}, "Track occupancy"};
   ConfigurableAxis axisFT0COccupancy{"axisFT0COccupancy", {50, 0, 80000}, "FT0C occupancy"};
 
@@ -487,9 +493,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNTPVContributorsVsTime", histos.add((histPath + "hNTPVContributorsVsTime").c_str(), "hNTPVContributorsVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultPVContributors}}})});
       histPointers.insert({histPath + "hPVzProfileCoVsTime", histos.add((histPath + "hPVzProfileCoVsTime").c_str(), "hPVzProfileCoVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
       histPointers.insert({histPath + "hPVzProfileBcVsTime", histos.add((histPath + "hPVzProfileBcVsTime").c_str(), "hPVzProfileBcVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
-      if (studies.irDoRateVsTime) {
-        histPointers.insert({histPath + "hIRProfileVsTime", histos.add((histPath + "hIRProfileVsTime").c_str(), "hIRProfileVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
-      }
+      histPointers.insert({histPath + "hIRProfileVsTime", histos.add((histPath + "hIRProfileVsTime").c_str(), "hIRProfileVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
     }
   }
 
@@ -566,10 +570,10 @@ struct centralityStudy {
       if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
           passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
           passSelectUPCcollisions && passRejectCollInTimeRangeNarrow) {
-        getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scaleSignalFT0C);
-        getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scaleSignalFT0C);
-        getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scaleSignalFT0C);
-        getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), multFV0A * scaleSignalFV0A);
+        getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
+        getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
+        getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scale.factorFT0C);
+        getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), multFV0A * scale.factorFV0A);
         getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), multNTracksGlobal);
         getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), mftNtracks);
         getHist(TProfile, histPath + "hNTPVvsPVz_Collisions")->Fill(collision.multPVz(), multNTracksPV);
@@ -577,7 +581,7 @@ struct centralityStudy {
     }
 
     // _______________________________________________________
-    if (evsel.applyVtxZ && TMath::Abs(collision.multPVz()) > 10) {
+    if (evsel.applyVtxZ && TMath::Abs(collision.multPVz()) > evsel.maxVtxZ) {
       return;
     }
 
@@ -717,56 +721,56 @@ struct centralityStudy {
     }
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multNTracksPV());
-    histos.fill(HIST("hFT0A_Collisions"), collision.multFT0A() * scaleSignalFT0C);
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
-    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
-    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hFT0A_Collisions"), collision.multFT0A() * scale.factorFT0C);
+    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scale.factorFT0C);
+    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scale.factorFT0M);
+    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scale.factorFV0A);
     histos.fill(HIST("hNGlobalTracks"), collision.multNTracksGlobal());
     histos.fill(HIST("hNMFTTracks"), collision.mftNtracks());
-    histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
-    histos.fill(HIST("hFT0AvsPVz_Collisions"), collision.multPVz(), collision.multFT0A() * scaleSignalFT0A);
-    histos.fill(HIST("hFV0AvsPVz_Collisions"), collision.multPVz(), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scale.factorFT0C);
+    histos.fill(HIST("hFT0AvsPVz_Collisions"), collision.multPVz(), collision.multFT0A() * scale.factorFT0A);
+    histos.fill(HIST("hFV0AvsPVz_Collisions"), collision.multPVz(), collision.multFV0A() * scale.factorFV0A);
     histos.fill(HIST("hNGlobalTracksvsPVz_Collisions"), collision.multPVz(), collision.multNTracksGlobal());
     histos.fill(HIST("hNMFTTracksvsPVz_Collisions"), collision.multPVz(), collision.mftNtracks());
 
     // save vertex-Z equalized
     if (studies.doRunByRunHistograms) {
       getHist(TH1, histPath + "hNPVContributors")->Fill(multNTracksPV);
-      getHist(TH1, histPath + "hFT0A_Collisions")->Fill(multFT0A * scaleSignalFT0A);
-      getHist(TH1, histPath + "hFT0C_Collisions")->Fill(multFT0C * scaleSignalFT0C);
-      getHist(TH1, histPath + "hFT0M_Collisions")->Fill((multFT0A + multFT0C) * scaleSignalFT0M);
-      getHist(TH1, histPath + "hFV0A_Collisions")->Fill(multFV0A * scaleSignalFV0A);
+      getHist(TH1, histPath + "hFT0A_Collisions")->Fill(multFT0A * scale.factorFT0A);
+      getHist(TH1, histPath + "hFT0C_Collisions")->Fill(multFT0C * scale.factorFT0C);
+      getHist(TH1, histPath + "hFT0M_Collisions")->Fill((multFT0A + multFT0C) * scale.factorFT0M);
+      getHist(TH1, histPath + "hFV0A_Collisions")->Fill(multFV0A * scale.factorFV0A);
       getHist(TH1, histPath + "hNGlobalTracks")->Fill(multNTracksGlobal);
       getHist(TH1, histPath + "hNMFTTracks")->Fill(mftNtracks);
       if (applyVertexZEqualization.value) {
         // save unequalized for cross-checks
         getHist(TH1, histPath + "hNPVContributors_Unequalized")->Fill(collision.multNTracksPV());
-        getHist(TH1, histPath + "hFT0C_Collisions_Unequalized")->Fill(collision.multFT0C() * scaleSignalFT0C);
-        getHist(TH1, histPath + "hFT0M_Collisions_Unequalized")->Fill((collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
-        getHist(TH1, histPath + "hFV0A_Collisions_Unequalized")->Fill(collision.multFV0A() * scaleSignalFV0A);
+        getHist(TH1, histPath + "hFT0C_Collisions_Unequalized")->Fill(collision.multFT0C() * scale.factorFT0C);
+        getHist(TH1, histPath + "hFT0M_Collisions_Unequalized")->Fill((collision.multFT0A() + collision.multFT0C()) * scale.factorFT0M);
+        getHist(TH1, histPath + "hFV0A_Collisions_Unequalized")->Fill(collision.multFV0A() * scale.factorFV0A);
         getHist(TH1, histPath + "hNGlobalTracks_Unequalized")->Fill(collision.multNTracksGlobal());
         getHist(TH1, histPath + "hNMFTTracks_Unequalized")->Fill(collision.mftNtracks());
       }
     }
 
     if (studies.do2DPlots) {
-      histos.fill(HIST("hNContribsVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multPVTotalContributors());
-      histos.fill(HIST("hNContribsVsFV0A"), collision.multFV0A() * scaleSignalFV0A, collision.multPVTotalContributors());
+      histos.fill(HIST("hNContribsVsFT0C"), collision.multFT0C() * scale.factorFT0C, collision.multPVTotalContributors());
+      histos.fill(HIST("hNContribsVsFV0A"), collision.multFV0A() * scale.factorFV0A, collision.multPVTotalContributors());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
       // correlate also FIT detector signals
-      histos.fill(HIST("hFT0AVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFT0A());
-      histos.fill(HIST("hFV0AVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFV0A());
-      histos.fill(HIST("hFDDAVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFDDA());
-      histos.fill(HIST("hFDDCVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFDDC());
+      histos.fill(HIST("hFT0AVsFT0C"), collision.multFT0C() * scale.factorFT0C, collision.multFT0A());
+      histos.fill(HIST("hFV0AVsFT0C"), collision.multFT0C() * scale.factorFT0C, collision.multFV0A());
+      histos.fill(HIST("hFDDAVsFT0C"), collision.multFT0C() * scale.factorFT0C, collision.multFDDA());
+      histos.fill(HIST("hFDDCVsFT0C"), collision.multFT0C() * scale.factorFT0C, collision.multFDDC());
       if (studies.doRunByRunHistograms) {
-        getHist(TH2, histPath + "hNContribsVsFT0C")->Fill(collision.multFT0C() * scaleSignalFT0C, collision.multPVTotalContributors());
-        getHist(TH2, histPath + "hNContribsVsFV0A")->Fill(collision.multFV0A() * scaleSignalFV0A, collision.multPVTotalContributors());
+        getHist(TH2, histPath + "hNContribsVsFT0C")->Fill(collision.multFT0C() * scale.factorFT0C, collision.multPVTotalContributors());
+        getHist(TH2, histPath + "hNContribsVsFV0A")->Fill(collision.multFV0A() * scale.factorFV0A, collision.multPVTotalContributors());
         getHist(TH2, histPath + "hMatchedVsITSOnly")->Fill(collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
         // correlate also FIT detector signals
-        getHist(TH2, histPath + "hFT0AVsFT0C")->Fill(collision.multFT0C() * scaleSignalFT0C, collision.multFT0A());
-        getHist(TH2, histPath + "hFV0AVsFT0C")->Fill(collision.multFT0C() * scaleSignalFT0C, collision.multFV0A());
-        getHist(TH2, histPath + "hFDDAVsFT0C")->Fill(collision.multFT0C() * scaleSignalFT0C, collision.multFDDA());
-        getHist(TH2, histPath + "hFDDCVsFT0C")->Fill(collision.multFT0C() * scaleSignalFT0C, collision.multFDDC());
+        getHist(TH2, histPath + "hFT0AVsFT0C")->Fill(collision.multFT0C() * scale.factorFT0C, collision.multFT0A());
+        getHist(TH2, histPath + "hFV0AVsFT0C")->Fill(collision.multFT0C() * scale.factorFT0C, collision.multFV0A());
+        getHist(TH2, histPath + "hFDDAVsFT0C")->Fill(collision.multFT0C() * scale.factorFT0C, collision.multFDDA());
+        getHist(TH2, histPath + "hFDDCVsFT0C")->Fill(collision.multFT0C() * scale.factorFT0C, collision.multFDDC());
       }
     }
 
@@ -856,13 +860,14 @@ struct centralityStudy {
     }
 
     if constexpr (requires { collision.has_multBC(); }) {
-      if (studies.doTimeStudies && collision.has_multBC()) {
+      if (collision.has_multBC()) {
         initRun(collision);
         auto multbc = collision.template multBC_as<aod::MultBCs>();
         uint64_t bcTimestamp = multbc.timestamp();
-        float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+        const float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+        const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
 
-        if (studies.doRunByRunHistograms) {
+        if (studies.doTimeStudies && studies.doRunByRunHistograms) {
           getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
           getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
           getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
@@ -873,10 +878,6 @@ struct centralityStudy {
           getHist(TH2, histPath + "hNTPVContributorsVsTime")->Fill(hoursAfterStartOfRun, collision.multPVTotalContributors());
           getHist(TProfile, histPath + "hPVzProfileCoVsTime")->Fill(hoursAfterStartOfRun, collision.multPVz());
           getHist(TProfile, histPath + "hPVzProfileBcVsTime")->Fill(hoursAfterStartOfRun, multbc.multFT0PosZ());
-        }
-
-        if (studies.irDoRateVsTime && studies.doRunByRunHistograms) {
-          float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
           getHist(TProfile, histPath + "hIRProfileVsTime")->Fill(hoursAfterStartOfRun, interactionRate);
         }
       }
@@ -1000,25 +1001,25 @@ struct centralityStudy {
       }
 
       // if we got here, we also finally fill the FT0C histogram, please
-      histos.fill(HIST("hFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C);
-      histos.fill(HIST("hFT0A_BCs"), multbc.multFT0A() * scaleSignalFT0A);
-      histos.fill(HIST("hFT0M_BCs"), (multbc.multFT0A() + multbc.multFT0C()) * scaleSignalFT0M);
-      histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scaleSignalFV0A);
-      histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scaleSignalFV0AT0C);
+      histos.fill(HIST("hFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C);
+      histos.fill(HIST("hFT0A_BCs"), multbc.multFT0A() * scale.factorFT0A);
+      histos.fill(HIST("hFT0M_BCs"), (multbc.multFT0A() + multbc.multFT0C()) * scale.factorFT0M);
+      histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scale.factorFV0A);
+      histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scale.factorFV0AT0C);
 
       if (studies.do2DPlots) {
-        histos.fill(HIST("hFT0AVsFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C, multbc.multFT0A() * scaleSignalFT0A);
-        histos.fill(HIST("hFV0AVsFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C, multbc.multFV0A() * scaleSignalFV0A);
+        histos.fill(HIST("hFT0AVsFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C, multbc.multFT0A() * scale.factorFT0A);
+        histos.fill(HIST("hFV0AVsFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C, multbc.multFV0A() * scale.factorFV0A);
       }
 
       // ZN signals
-      histos.fill(HIST("hZNAvsFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C, multbc.multZNA());
-      histos.fill(HIST("hZNCvsFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C, multbc.multZNC());
+      histos.fill(HIST("hZNAvsFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C, multbc.multZNA());
+      histos.fill(HIST("hZNCvsFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C, multbc.multZNC());
 
       if (multbc.multFT0PosZValid()) {
-        histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multFT0PosZ(), multbc.multFT0C() * scaleSignalFT0C);
-        if (multbc.multFT0C() > minFT0CforVertexZ) {
-          histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multFT0PosZ(), multbc.multFT0C() * scaleSignalFT0C);
+        histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multFT0PosZ(), multbc.multFT0C() * scale.factorFT0C);
+        if (multbc.multFT0C() > bcsel.minFT0CforVertexZ) {
+          histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multFT0PosZ(), multbc.multFT0C() * scale.factorFT0C);
         }
       }
 
@@ -1035,12 +1036,11 @@ struct centralityStudy {
         continue;
       }
 
-      const float selfNormFV0A = multbc.multFV0A() / histos.get<TH1>(HIST("hFT0A_BCs"))->GetMean();
-      const float selfNormFT0A = multbc.multFT0A() / histos.get<TH1>(HIST("hFT0C_BCs"))->GetMean();
-      const float selfNormFT0C = multbc.multFT0C() / histos.get<TH1>(HIST("hFV0A_BCs"))->GetMean();
-
-      histos.fill(HIST("hScaledFT0M_BCs"), scaleSignalFT0A * selfNormFT0A + scaleSignalFT0C * selfNormFT0C);
-      histos.fill(HIST("hScaledFV0AT0C_BCs"), scaleSignalFV0A * selfNormFV0A + scaleSignalFT0C * selfNormFT0C);
+      const float selfNormFV0A = scale.normFT0A * multbc.multFV0A() / histos.get<TH1>(HIST("hFT0A_BCs"))->GetMean();
+      const float selfNormFT0A = scale.normFV0A * multbc.multFT0A() / histos.get<TH1>(HIST("hFT0C_BCs"))->GetMean();
+      const float selfNormFT0C = scale.normFT0C * multbc.multFT0C() / histos.get<TH1>(HIST("hFV0A_BCs"))->GetMean();
+      histos.fill(HIST("hScaledFT0M_BCs"),  selfNormFT0A + selfNormFT0C);
+      histos.fill(HIST("hScaledFV0AT0C_BCs"), selfNormFV0A + selfNormFT0C);
     }
   }
 
