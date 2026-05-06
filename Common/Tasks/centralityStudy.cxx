@@ -139,6 +139,7 @@ struct centralityStudy {
   // upc rejection criteria
   // reject low zna/c
   struct : ConfigurableGroup {
+    std::string prefix = "upcRejection";
     Configurable<float> minZNACsignal{"minZNACsignal", -999999.0f, "min zna/c signal"};
     Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", -99999.0f, "max ft0c signal for minZNACsignal to work"};
 
