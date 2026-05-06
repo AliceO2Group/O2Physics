@@ -447,18 +447,18 @@ struct PtmultCorr {
         }
         auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
 
-        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll),kGlobalplusITS);
-        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll),trkType);
+        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), kGlobalplusITS);
+        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), trkType);
 
         if (Rectrack.has_mcParticle()) {
           int pid = 0;
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("hPbPbEtaReso"), Rectrack.pt(), Rectrack.pt() - mcpart.pt());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc),kGlobalplusITS);
-           histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc),trkType);
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), kGlobalplusITS);
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), trkType);
           if (mcpart.isPhysicalPrimary()) {
-            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary),kGlobalplusITS);
-             histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary),trkType);
+            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), kGlobalplusITS);
+            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), trkType);
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
@@ -486,11 +486,11 @@ struct PtmultCorr {
             pid = kRecoFake;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid),kGlobalplusITS);
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid),trkType);
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS);
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType);
         } else {
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg),kGlobalplusITS);
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg),trkType);
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS);
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType);
         }
       } // track (mcrec) loop
     } // collision loop
@@ -559,18 +559,18 @@ struct PtmultCorr {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
-         auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
-        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll),kGlobalplusITS);
-        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll),trkType);
+        auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
+        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), kGlobalplusITS);
+        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), trkType);
         if (Rectrack.has_mcParticle()) {
           int pid = 0;
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("hppEtaReso"), Rectrack.pt(), Rectrack.pt() - mcpart.pt());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc),kGlobalplusITS);
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc),trkType);
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), kGlobalplusITS);
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), trkType);
           if (mcpart.isPhysicalPrimary()) {
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary),kGlobalplusITS);
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary),trkType);
+            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), kGlobalplusITS);
+            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), trkType);
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
@@ -598,11 +598,11 @@ struct PtmultCorr {
             pid = kRecoFake;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid),kGlobalplusITS);
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid),trkType);
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS);
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType);
         } else {
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg),kGlobalplusITS);
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg),trkType);
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS);
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType);
         }
       } // track (mcrec) loop
     } // collision loop
