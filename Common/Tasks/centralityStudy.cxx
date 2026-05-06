@@ -689,16 +689,16 @@ struct centralityStudy {
 
     if (evsel.rejectUpc) {
       if (collision.multFT0C() < upcRejection.maxFT0CforZNACselection &&
-      collision.multZNA() < upcRejection.minZNACsignal &&
-      collision.multZNC() < upcRejection.minZNACsignal) {
+          collision.multZNA() < upcRejection.minZNACsignal &&
+          collision.multZNC() < upcRejection.minZNACsignal) {
         return;
       }
       if (collision.multFT0C() < upcRejection.maxFT0CforFV0Aselection &&
-      collision.multFV0A() < upcRejection.minFV0Asignal) {
+          collision.multFV0A() < upcRejection.minFV0Asignal) {
         return;
       }
       if (collision.multFT0C() < upcRejection.maxFT0CforFDDAselection &&
-      collision.multFDDA() < upcRejection.minFDDAsignal) {
+          collision.multFDDA() < upcRejection.minFDDAsignal) {
         return;
       }
     }
@@ -1039,7 +1039,7 @@ struct centralityStudy {
       const float selfNormFV0A = scale.normFT0A * multbc.multFV0A() / histos.get<TH1>(HIST("hFT0A_BCs"))->GetMean();
       const float selfNormFT0A = scale.normFV0A * multbc.multFT0A() / histos.get<TH1>(HIST("hFT0C_BCs"))->GetMean();
       const float selfNormFT0C = scale.normFT0C * multbc.multFT0C() / histos.get<TH1>(HIST("hFV0A_BCs"))->GetMean();
-      histos.fill(HIST("hScaledFT0M_BCs"),  selfNormFT0A + selfNormFT0C);
+      histos.fill(HIST("hScaledFT0M_BCs"), selfNormFT0A + selfNormFT0C);
       histos.fill(HIST("hScaledFV0AT0C_BCs"), selfNormFV0A + selfNormFT0C);
     }
   }
