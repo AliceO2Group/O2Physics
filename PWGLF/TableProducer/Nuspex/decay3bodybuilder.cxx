@@ -958,7 +958,7 @@ struct decay3bodyBuilder {
                                    this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
                                    this3BodyMCInfo.isReco,
                                    mcparticle.globalIndex(), // motherLabel
-                                   mcparticle.pdgCode(), // motherPdgCode
+                                   mcparticle.pdgCode(),     // motherPdgCode
                                    this3BodyMCInfo.daughterPrPdgCode, this3BodyMCInfo.daughterPiPdgCode, this3BodyMCInfo.daughterDePdgCode,
                                    this3BodyMCInfo.isDeuteronPrimary,
                                    this3BodyMCInfo.survivedEventSel);

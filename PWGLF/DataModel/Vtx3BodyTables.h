@@ -112,30 +112,30 @@ DECLARE_SOA_COLUMN(CovDeuteron, covDeuteron, float[21]); //! covariance matrix e
 DECLARE_SOA_COLUMN(VtxCovMat, vtxCovMat, float[21]);     //! covariance matrix elements of candidate
 
 // Monte Carlo info
-DECLARE_SOA_COLUMN(GenPx, genPx, float);                // generated Px of the hypertriton in GeV/c
-DECLARE_SOA_COLUMN(GenPy, genPy, float);                // generated Py of the hypertriton in GeV/c
-DECLARE_SOA_COLUMN(GenPz, genPz, float);                // generated Pz of the hypertriton in GeV/c
-DECLARE_SOA_COLUMN(GenX, genX, float);                  // generated decay vtx position X of the hypertriton
-DECLARE_SOA_COLUMN(GenY, genY, float);                  // generated decay vtx position Y of the hypertriton
-DECLARE_SOA_COLUMN(GenZ, genZ, float);                  // generated decay vtx position Z of the hypertriton
-DECLARE_SOA_COLUMN(GenCt, genCt, float);                // generated Ct of the hypertriton
-DECLARE_SOA_COLUMN(GenPhi, genPhi, float);              // generated Phi of the hypertriton
-DECLARE_SOA_COLUMN(GenEta, genEta, float);              // Eta of the hypertriton
-DECLARE_SOA_COLUMN(GenRap, genRap, float);              // generated rapidity of the hypertriton
-DECLARE_SOA_COLUMN(GenPPr, genPPr, float);              //! generated momentum proton daughter particle
-DECLARE_SOA_COLUMN(GenPPi, genPPi, float);              //! generated momentum pion daughter particle
-DECLARE_SOA_COLUMN(GenPDe, genPDe, float);              //! generated momentum deuteron daughter particle
-DECLARE_SOA_COLUMN(GenPtPr, genPtPr, float);            //! generated transverse momentum proton daughter particle
-DECLARE_SOA_COLUMN(GenPtPi, genPtPi, float);            //! generated transverse momentum pion daughter particle
-DECLARE_SOA_COLUMN(GenPtDe, genPtDe, float);            //! generated transverse momentum deuteron daughter particle
-DECLARE_SOA_COLUMN(MotherPdgCode, motherPdgCode, int);  //! PDG code of the mother particle
-DECLARE_SOA_COLUMN(PrPdgCode, prPdgCode, int);          //! MC particle proton PDG code
-DECLARE_SOA_COLUMN(PiPdgCode, piPdgCode, int);          //! MC particle pion PDG code
-DECLARE_SOA_COLUMN(DePdgCode, dePdgCode, int);          //! MC particle deuteron PDG code
-DECLARE_SOA_COLUMN(IsDePrimary, isDePrimary, bool);     //! flag for deuteron daughter primary
-DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, int);      //! flag if reco collision survived event selection
-DECLARE_SOA_COLUMN(IsReco, isreco, int);                //! flag if candidate was reconstructed
-DECLARE_SOA_COLUMN(MotherLabel, motherLabel, int);      //! label of the mother particle (signal: MC index, bkg: negative value)
+DECLARE_SOA_COLUMN(GenPx, genPx, float);               // generated Px of the hypertriton in GeV/c
+DECLARE_SOA_COLUMN(GenPy, genPy, float);               // generated Py of the hypertriton in GeV/c
+DECLARE_SOA_COLUMN(GenPz, genPz, float);               // generated Pz of the hypertriton in GeV/c
+DECLARE_SOA_COLUMN(GenX, genX, float);                 // generated decay vtx position X of the hypertriton
+DECLARE_SOA_COLUMN(GenY, genY, float);                 // generated decay vtx position Y of the hypertriton
+DECLARE_SOA_COLUMN(GenZ, genZ, float);                 // generated decay vtx position Z of the hypertriton
+DECLARE_SOA_COLUMN(GenCt, genCt, float);               // generated Ct of the hypertriton
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);             // generated Phi of the hypertriton
+DECLARE_SOA_COLUMN(GenEta, genEta, float);             // Eta of the hypertriton
+DECLARE_SOA_COLUMN(GenRap, genRap, float);             // generated rapidity of the hypertriton
+DECLARE_SOA_COLUMN(GenPPr, genPPr, float);             //! generated momentum proton daughter particle
+DECLARE_SOA_COLUMN(GenPPi, genPPi, float);             //! generated momentum pion daughter particle
+DECLARE_SOA_COLUMN(GenPDe, genPDe, float);             //! generated momentum deuteron daughter particle
+DECLARE_SOA_COLUMN(GenPtPr, genPtPr, float);           //! generated transverse momentum proton daughter particle
+DECLARE_SOA_COLUMN(GenPtPi, genPtPi, float);           //! generated transverse momentum pion daughter particle
+DECLARE_SOA_COLUMN(GenPtDe, genPtDe, float);           //! generated transverse momentum deuteron daughter particle
+DECLARE_SOA_COLUMN(MotherPdgCode, motherPdgCode, int); //! PDG code of the mother particle
+DECLARE_SOA_COLUMN(PrPdgCode, prPdgCode, int);         //! MC particle proton PDG code
+DECLARE_SOA_COLUMN(PiPdgCode, piPdgCode, int);         //! MC particle pion PDG code
+DECLARE_SOA_COLUMN(DePdgCode, dePdgCode, int);         //! MC particle deuteron PDG code
+DECLARE_SOA_COLUMN(IsDePrimary, isDePrimary, bool);    //! flag for deuteron daughter primary
+DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, int);     //! flag if reco collision survived event selection
+DECLARE_SOA_COLUMN(IsReco, isreco, int);               //! flag if candidate was reconstructed
+DECLARE_SOA_COLUMN(MotherLabel, motherLabel, int);     //! label of the mother particle (signal: MC index, bkg: negative value)
 
 // Derived expressions
 // Momenta
