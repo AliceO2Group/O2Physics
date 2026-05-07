@@ -540,14 +540,11 @@ struct UpcFwdJpsiRL {
     std::unordered_map<int32_t, ZDCinfo> zdcPerCand;
     collectCandZDCInfo(zdcPerCand, ZDCs);
 
-    // loop over the candidates
+    // loop over the candidates and all track pairs
     for (const auto& item : tracksPerCand) {
-      int32_t trId1 = item.second[0];
-      int32_t trId2 = item.second[1];
+      const auto& trkIds = item.second;
       int32_t candID = item.first;
       auto cand = eventCandidates.iteratorAt(candID);
-      auto tr1 = fwdTracks.iteratorAt(trId1);
-      auto tr2 = fwdTracks.iteratorAt(trId2);
 
       ZDCinfo zdc;
       if (zdcPerCand.count(candID) != 0) {
@@ -559,7 +556,13 @@ struct UpcFwdJpsiRL {
         zdc.enC = -999;
       }
 
-      processCand(cand, tr1, tr2, zdc);
+      for (size_t i = 0; i < trkIds.size(); ++i) {
+        for (size_t j = i + 1; j < trkIds.size(); ++j) {
+          auto tr1 = fwdTracks.iteratorAt(trkIds[i]);
+          auto tr2 = fwdTracks.iteratorAt(trkIds[j]);
+          processCand(cand, tr1, tr2, zdc);
+        }
+      }
     }
   }
 
