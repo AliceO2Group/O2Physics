@@ -309,19 +309,21 @@ struct qVectorsTable {
       corrsQvecSp.push_back(modeCorrQvecSp);
     }
 
-    corrsQvecEse.clear();
-    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
-      int ind = cfgnMods->at(i);
-      fullPath = cfgQvecCalibPath;
-      fullPath += "/eseq";
-      fullPath += std::to_string(ind);
-      auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
-      if (!modeCorrQvecEse) {
+    if (cfgProduceRedQVecs) {
+      corrsQvecEse.clear();
+      for (std::size_t i = 0; i < cfgnMods->size(); i++) {
+        int ind = cfgnMods->at(i);
         fullPath = cfgQvecCalibPath;
-        fullPath += "/eseq2";
-        modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+        fullPath += "/eseq";
+        fullPath += std::to_string(ind);
+        auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+        if (!modeCorrQvecEse) {
+          fullPath = cfgQvecCalibPath;
+          fullPath += "/eseq2";
+          modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+        }
+        corrsQvecEse.push_back(modeCorrQvecEse);
       }
-      corrsQvecEse.push_back(modeCorrQvecEse);
     }
 
     if (cfgShiftCorr) {
