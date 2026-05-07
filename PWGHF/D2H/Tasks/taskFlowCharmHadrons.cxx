@@ -319,6 +319,9 @@ struct HfTaskFlowCharmHadrons {
       if (doprocessResolutionSPEsE) {
         registry.add("redQVecs/hSparseRedQVecs", "hSpResoRedQVec; centrality; Q_{red} #bullet Q_{TPCtot}", {HistType::kTHnSparseF, {thnAxisCent, thnAxisRedQVec, thnAxisRedQVec, thnAxisRedQVec, thnAxisRedQVec}});
         registry.add("redQVecs/hRedQVecFT0C", "hRedQVecFT0C; centrality; q_{FT0c}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecFT0A", "hRedQVecFT0A; centrality; q_{FT0a}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecFT0M", "hRedQVecFT0M; centrality; q_{FT0m}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecFV0A", "hRedQVecFV0A; centrality; q_{FV0a}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
         registry.add("redQVecs/hRedQVecTpcPos", "hRedQVecTpcPos; centrality; q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
         registry.add("redQVecs/hRedQVecTpcNeg", "hRedQVecTpcNeg; centrality; q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
         registry.add("redQVecs/hRedQVecTpcAll", "hRedQVecTpcAll; centrality; q_{TPCall}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
@@ -1053,6 +1056,9 @@ struct HfTaskFlowCharmHadrons {
 
     if constexpr (HasRedQVecs) {
       registry.fill(HIST("redQVecs/hRedQVecFT0C"), centrality, std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()));
+      registry.fill(HIST("redQVecs/hRedQVecFT0M"), centrality, std::hypot(collision.eseQvecFT0MRe(), collision.eseQvecFT0MIm()));
+      registry.fill(HIST("redQVecs/hRedQVecFT0A"), centrality, std::hypot(collision.eseQvecFT0ARe(), collision.eseQvecFT0AIm()));
+      registry.fill(HIST("redQVecs/hRedQVecFV0A"), centrality, std::hypot(collision.eseQvecFV0ARe(), collision.eseQvecFV0AIm()));
       registry.fill(HIST("redQVecs/hRedQVecTpcPos"), centrality, std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()));
       registry.fill(HIST("redQVecs/hRedQVecTpcNeg"), centrality, std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()));
       registry.fill(HIST("redQVecs/hRedQVecTpcAll"), centrality, std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
