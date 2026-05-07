@@ -1184,7 +1184,7 @@ struct taggingHFE {
           bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > 0;
           if (mckaon.has_mothers() && !foundCommonMother) {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
-            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == -413 || mcMother_of_kaon.pdgCode() == -423) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == -413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
               if (commonMotherId > 0) {
                 foundCommonMother = true;
@@ -1250,7 +1250,7 @@ struct taggingHFE {
           bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > 0;
           if (mckaon.has_mothers() && !foundCommonMother) {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
-            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == -413 || mcMother_of_kaon.pdgCode() == -423) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == -413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
               if (commonMotherId > 0) {
                 foundCommonMother = true;
@@ -1610,7 +1610,7 @@ struct taggingHFE {
           bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > 0;
           if (mckaon.has_mothers() && !foundCommonMother) {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
-            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == 413 || mcMother_of_kaon.pdgCode() == 423) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == 413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
               if (commonMotherId > 0) {
                 foundCommonMother = true;
@@ -1677,7 +1677,7 @@ struct taggingHFE {
           bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > 0;
           if (mckaon.has_mothers() && !foundCommonMother) {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
-            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == 413 || mcMother_of_kaon.pdgCode() == 423) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == 413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
               if (commonMotherId > 0) {
                 foundCommonMother = true;
