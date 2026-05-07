@@ -154,7 +154,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Configurable<float> nSigmaTpcElMin{"nSigmaTpcElMin", 3.f, "Kaon PID Method1: require |nSigmaTpcEl| > this (electron)"};
     Configurable<float> nSigmaCombKaMax{"nSigmaCombKaMax", 3.f, "Kaon PID Method2: require |nSigmaCombKa| < this"};
     Configurable<float> nSigmaCombKaTightMax{"nSigmaCombKaTightMax", 2.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombKa| < this"};
-    Configurable<float> {"", 6.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombPi| < this"};
+    Configurable<float>{"", 6.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombPi| < this"};
   } kaonPidSel;
 
   Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
