@@ -412,8 +412,11 @@ struct JetSpectraEseTask {
       registry.add("hTrackPt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {eseAxis}, {occAxis}}});
       registry.add("hTrackEta", "track #eta;#eta_{track};entries", {HistType::kTH3F, {{centAxis}, {etaAxis}, {occAxis}}});
       registry.add("hTrackPhi", "track #phi;#phi_{track};entries", {HistType::kTH3F, {{centAxis}, {phiAxis}, {occAxis}}});
-      registry.add("hOccupancy", "Occupancy;Occupancy;entries", {HistType::kTH1F, {{occAxis}}});
+      registry.add("hOccupancy", "Occupancy;Occupancy;entries", {HistType::kTH2F, {{centAxis}, {occAxis}}});
+      registry.add("hOccupancyEv", "Occupancy;Occupancy;entries", {HistType::kTH1F, {{centAxis}, {occAxis}}});
       registry.add("hPsiOccupancy", "Occupancy;#Psi_{2};entries", {HistType::kTH3F, {{centAxis}, {150, -2.5, 2.5}, {occAxis}}});
+      registry.add("hSTrackPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {phiAxis}, {etaAxis}, {occAxis}}});
+      registry.add("hSJetPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {phiAxis}, {etaAxis}, {occAxis}}});
     }
     if (doprocessMCGenTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCGen track");
@@ -723,7 +726,7 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processESEBackground, "process random cones with event plane and ESE", false);
 
   void processESEOccupancy(soa::Join<aod::JetCollisions, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
-                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks)
+                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   {
     float count{0.5};
     registry.fill(HIST("hEventCounterOcc"), count++);
@@ -732,21 +735,31 @@ struct JetSpectraEseTask {
 
     auto occupancy{collision.trackOccupancyInTimeRange()};
     registry.fill(HIST("hPsiOccupancy"), collision.centFT0M(), psi.psi2, occupancy);
-    registry.fill(HIST("hOccupancy"), occupancy);
+    registry.fill(HIST("hOccupancy"), collision.centFT0M(), occupancy);
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hEventCounterOcc"), count++);
+    registry.fill(HIST("hOccupancyEv"), collision.centFT0M(), occupancy);
 
     for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection))
         continue;
 
       registry.fill(HIST("hTrackPt"), collision.centFT0M(), track.pt(), qPerc[0], occupancy);
+      registry.fill(HIST("hSTrackPtPhiEtaOcc"), collision.centFT0M(), track.pt(), track.phi(), track.eta(), occupancy);
       if (track.pt() < cfgOccupancyPtCut->at(0) || track.pt() > cfgOccupancyPtCut->at(1))
         continue;
       registry.fill(HIST("hTrackEta"), collision.centFT0M(), track.eta(), occupancy);
       registry.fill(HIST("hTrackPhi"), collision.centFT0M(), track.phi(), occupancy);
+    }
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
+        continue;
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      registry.fill(HIST("hSJetPtPhiEtaOcc"), collision.centFT0M(), jet.pt(), jet.phi(), jet.eta(), occupancy);
     }
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEOccupancy, "process occupancy", false);
