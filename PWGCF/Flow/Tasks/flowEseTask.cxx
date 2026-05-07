@@ -157,8 +157,8 @@ struct FlowEseTask {
   ConfigurableAxis multAxis{"multAxis", {300, 0, 2700}, "multiplicity"};
   ConfigurableAxis qvecAxis{"qvecAxis", {300, -1, 1}, "range of Qvector component"};
   ConfigurableAxis qvec2Axis{"qvec2Axis", {600, 0, 600}, "range of Qvector Module"};
-  ConfigurableAxis lowerQAxis = {"lowerQAxis", {900, 0.0, 900.0}, "range of lowerQ QAplots"};
-  ConfigurableAxis upperQAxis = {"upperQAxis", {200, 0.0, 20.0}, "range of upperQ QAplots"};
+  ConfigurableAxis lowerQAxis = {"lowerQAxis", {800, 0.0, 800.0}, "range of lowerQ QAplots"};
+  ConfigurableAxis upperQAxis = {"upperQAxis", {300, 0.0, 6.0}, "range of upperQ QAplots"};
   ConfigurableAxis lowerQAxisTPC = {"lowerQAxisTPC", {150, 0.0, 150.0}, "range of lowerQTPC QAplots"};
   ConfigurableAxis upperQAxisTPC = {"upperQAxisTPC", {100, 0.0, 10.0}, "range of upperQTPC QAplots"};
 
@@ -234,6 +234,7 @@ struct FlowEseTask {
     AxisSpec basisAxis = {20, 0, 20, "basis"};
 
     histos.add(Form("histQvecV2"), "", {HistType::kTH3F, {qvecAxis, qvecAxis, centAxis}});
+    histos.add(Form("histQvecCent"), "", {HistType::kTH3F, {lowerQAxis, upperQAxis, centQaAxis}});
     histos.add(Form("histMultCor"), "", {HistType::kTH2F, {multAxis, centAxis}});
     histos.add(Form("histMultUncor"), "", {HistType::kTH2F, {multAxis, centAxis}});
     histos.add(Form("histLowerQvecCentCor"), "", {HistType::kTH2F, {lowerQAxis, centQaAxis}});
@@ -733,6 +734,8 @@ struct FlowEseTask {
       }
     }
 
+    histos.fill(HIST("histQvecCent"), std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()),
+                std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]), centrality);
     histos.fill(HIST("histLowerQvecCentCor"), std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * collision.sumAmplFT0C() / std::sqrt(collision.multFT0C()), centrality);
     histos.fill(HIST("histLowerQvecCentUncor"), std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()), centrality);
     histos.fill(HIST("histUpperQvecCent"), std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]), centrality);
