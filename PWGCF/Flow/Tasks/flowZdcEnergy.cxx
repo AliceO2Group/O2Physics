@@ -42,6 +42,36 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+  namespace zdctree
+  {
+    DECLARE_SOA_COLUMN(ZNAC, znac, float);
+    DECLARE_SOA_COLUMN(ZNA1, zna1, float);
+    DECLARE_SOA_COLUMN(ZNA2, zna2, float);
+    DECLARE_SOA_COLUMN(ZNA3, zna3, float);
+    DECLARE_SOA_COLUMN(ZNA4, zna4, float);
+    DECLARE_SOA_COLUMN(ZNCC, zncc, float);
+    DECLARE_SOA_COLUMN(ZNC1, znc1, float);
+    DECLARE_SOA_COLUMN(ZNC2, znc2, float);
+    DECLARE_SOA_COLUMN(ZNC3, znc3, float);
+    DECLARE_SOA_COLUMN(ZNC4, znc4, float);
+    DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+  }
+  DECLARE_SOA_TABLE(ZdcTree, "AOD", "ZDCTREE",
+                    zdctree::ZNAC,
+                    zdctree::ZNA1,
+                    zdctree::ZNA2,
+                    zdctree::ZNA3,
+                    zdctree::ZNA4,
+                    zdctree::ZNCC,
+                    zdctree::ZNC1,
+                    zdctree::ZNC2,
+                    zdctree::ZNC3,
+                    zdctree::ZNC4,
+                    zdctree::Multiplicity);
+}
+
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct FlowZdcEnergy {
@@ -73,6 +103,7 @@ struct FlowZdcEnergy {
 
   Service<ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry registry{"registry"};
+  Produces<aod::ZdcTree> zdcTree;
 
   Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin&& aod::track::pt < cfgPtMax&& nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
   using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
@@ -203,6 +234,18 @@ struct FlowZdcEnergy {
     const float energySectorZNC2 = zdc.energySectorZNC()[1];
     const float energySectorZNC3 = zdc.energySectorZNC()[2];
     const float energySectorZNC4 = zdc.energySectorZNC()[3];
+
+    zdcTree(energyCommonZNA,
+        energySectorZNA1,
+        energySectorZNA2,
+        energySectorZNA3,
+        energySectorZNA4,
+        energyCommonZNC,
+        energySectorZNC1,
+        energySectorZNC2,
+        energySectorZNC3,
+        energySectorZNC4,
+        multiTPC);
 
     const float sumEnergyZNA = energySectorZNA1 + energySectorZNA2 + energySectorZNA3 + energySectorZNA4;
     const float sumEnergyZNC = energySectorZNC1 + energySectorZNC2 + energySectorZNC3 + energySectorZNC4;
