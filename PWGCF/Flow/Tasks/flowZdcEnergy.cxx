@@ -42,33 +42,34 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+
 namespace o2::aod
 {
 namespace zdctree
 {
-DECLARE_SOA_COLUMN(ZNAC, znac, float);
-DECLARE_SOA_COLUMN(ZNA1, zna1, float);
-DECLARE_SOA_COLUMN(ZNA2, zna2, float);
-DECLARE_SOA_COLUMN(ZNA3, zna3, float);
-DECLARE_SOA_COLUMN(ZNA4, zna4, float);
-DECLARE_SOA_COLUMN(ZNCC, zncc, float);
-DECLARE_SOA_COLUMN(ZNC1, znc1, float);
-DECLARE_SOA_COLUMN(ZNC2, znc2, float);
-DECLARE_SOA_COLUMN(ZNC3, znc3, float);
-DECLARE_SOA_COLUMN(ZNC4, znc4, float);
+DECLARE_SOA_COLUMN(Znac, znac, float);
+DECLARE_SOA_COLUMN(Zna1, zna1, float);
+DECLARE_SOA_COLUMN(Zna2, zna2, float);
+DECLARE_SOA_COLUMN(Zna3, zna3, float);
+DECLARE_SOA_COLUMN(Zna4, zna4, float);
+DECLARE_SOA_COLUMN(Zncc, zncc, float);
+DECLARE_SOA_COLUMN(Znc1, znc1, float);
+DECLARE_SOA_COLUMN(Znc2, znc2, float);
+DECLARE_SOA_COLUMN(Znc3, znc3, float);
+DECLARE_SOA_COLUMN(Znc4, znc4, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 } // namespace zdctree
 DECLARE_SOA_TABLE(ZdcTree, "AOD", "ZDCTREE",
-                  zdctree::ZNAC,
-                  zdctree::ZNA1,
-                  zdctree::ZNA2,
-                  zdctree::ZNA3,
-                  zdctree::ZNA4,
-                  zdctree::ZNCC,
-                  zdctree::ZNC1,
-                  zdctree::ZNC2,
-                  zdctree::ZNC3,
-                  zdctree::ZNC4,
+                  zdctree::Znac,
+                  zdctree::Zna1,
+                  zdctree::Zna2,
+                  zdctree::Zna3,
+                  zdctree::Zna4,
+                  zdctree::Zncc,
+                  zdctree::Znc1,
+                  zdctree::Znc2,
+                  zdctree::Znc3,
+                  zdctree::Znc4,
                   zdctree::Multiplicity);
 } // namespace o2::aod
 
