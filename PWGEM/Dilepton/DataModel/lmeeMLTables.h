@@ -241,7 +241,7 @@ DECLARE_SOA_COLUMN(Lz, lz, float);               //! decay length of LH pair
 DECLARE_SOA_COLUMN(LzSigma, lzSigma, float);     //! decay length resolution of LH pair
 
 DECLARE_SOA_COLUMN(PdgCodeH, pdgCodeH, int);                    //! pdg code of associated hadron
-DECLARE_SOA_COLUMN(PdgCodeHFH, pdgCodeHFH, int);                //! pdg code of HF hadron
+DECLARE_SOA_COLUMN(PdgCodeIM, pdgCodeIM, int);                  //! pdg code of intermediate hadron from HF hadrons. e.g K*, D*
 DECLARE_SOA_COLUMN(FoundCommonMother, foundCommonMother, bool); //! decay length resolution of LH pair
 } // namespace emmllhpair
 
@@ -255,7 +255,7 @@ DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
                   emmllhpair::Lxyz, emmllhpair::LxyzSigma,
                   emmllhpair::Lxy, emmllhpair::LxySigma,
                   emmllhpair::Lz, emmllhpair::LzSigma,
-                  emmllhpair::PdgCodeH, emmllhpair::FoundCommonMother);
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLHPair = EMMLLHPairs::iterator;
 
