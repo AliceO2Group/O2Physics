@@ -131,7 +131,10 @@ class PIDExtended
   static constexpr ID XiCPlus = PIDCounts + 37;
   static constexpr ID XiC0 = PIDCounts + 38;
   static constexpr ID Kstar = PIDCounts + 39;
-  static constexpr ID NIDsTot = PIDCounts + 40;
+  static constexpr ID KstarPM = PIDCounts + 40;
+  static constexpr ID Kshort = PIDCounts + 41;
+  static constexpr ID Xi1530 = PIDCounts + 42;
+  static constexpr ID NIDsTot = PIDCounts + 43;
 
   static constexpr const char* sNames[NIDsTot + 1] = {
     o2::track::pid_constants::sNames[Electron],     // Electron
@@ -193,6 +196,9 @@ class PIDExtended
     "XiCPlus",                                      // XiCPlus
     "XiC0",                                         // XiC0
     "Kstar",                                        // Kstar
+    "KstarPM",                                      // KstarPM
+    "Kshort",                                       // Kshort
+    "Xi1530",                                       // Xi1530
     nullptr};
 
   static std::vector<std::string> arrayNames()
@@ -329,6 +335,12 @@ class PIDExtended
         return XiC0;
       case o2::constants::physics::Pdg::kK0Star892:
         return Kstar;
+      case 323:
+        return KstarPM;
+      case 310:
+        return Kshort;
+      case 3324:
+        return Xi1530;
       default:
         LOG(debug) << "Cannot identify particle with PDG code " << particle.pdgCode();
         break;
