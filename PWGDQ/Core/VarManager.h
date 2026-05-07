@@ -1098,26 +1098,26 @@ class VarManager : public TObject
   }; // end of Variables enumeration
 
   enum CalibObjects {
-    kTPCElectronMean = 0,
-    kTPCElectronSigma,
-    kTPCElectronStatus,
-    kTPCElectronMeanData,
+    kTPCElectronMeanData = 0,
     kTPCElectronSigmaData,
-    kTPCPionMean,
-    kTPCPionSigma,
-    kTPCPionStatus,
+    kTPCElectronStatusData,
+    kTPCElectronMeanMC,
+    kTPCElectronSigmaMC,
     kTPCPionMeanData,
     kTPCPionSigmaData,
-    kTPCKaonMean,
-    kTPCKaonSigma,
-    kTPCKaonStatus,
+    kTPCPionStatusData,
+    kTPCPionMeanMC,
+    kTPCPionSigmaMC,
     kTPCKaonMeanData,
     kTPCKaonSigmaData,
-    kTPCProtonMean,
-    kTPCProtonSigma,
-    kTPCProtonStatus,
+    kTPCKaonStatusData,
+    kTPCKaonMeanMC,
+    kTPCKaonSigmaMC,
     kTPCProtonMeanData,
     kTPCProtonSigmaData,
+    kTPCProtonStatusData,
+    kTPCProtonMeanMC,
+    kTPCProtonSigmaMC,
     kNCalibObjects
   };
 
@@ -1440,26 +1440,49 @@ class VarManager : public TObject
   template <typename M, typename T>
   static void FillResolutions(M const& mcTrack, T const& track, float* values = nullptr);
 
+  static bool HasCalibrationObject(CalibObjects calib)
+  {
+    auto obj = fgCalibs.find(calib);
+    return (obj != fgCalibs.end() && obj->second != nullptr);
+  }
+
+  static void UpdateTPCPostCalibrationFlags()
+  {
+    bool isMCTuning = (fgCalibrationType == 3 || fgCalibrationType == 4);
+
+    bool hasElectronSimCalibration = HasCalibrationObject(kTPCElectronMeanMC) && HasCalibrationObject(kTPCElectronSigmaMC);
+    bool hasElectronDataCalibration = HasCalibrationObject(kTPCElectronMeanData) && HasCalibrationObject(kTPCElectronSigmaData);
+    fgRunTPCPostCalibration[0] = (isMCTuning ? (hasElectronSimCalibration && hasElectronDataCalibration) : hasElectronDataCalibration);
+    if (fgRunTPCPostCalibration[0]) {
+      fgUsedVars[kTPCnSigmaEl_Corr] = true;
+    }
+
+    bool hasPionSimCalibration = HasCalibrationObject(kTPCPionMeanMC) && HasCalibrationObject(kTPCPionSigmaMC);
+    bool hasPionDataCalibration = HasCalibrationObject(kTPCPionMeanData) && HasCalibrationObject(kTPCPionSigmaData);
+    fgRunTPCPostCalibration[1] = (isMCTuning ? (hasPionSimCalibration && hasPionDataCalibration) : hasPionDataCalibration);
+    if (fgRunTPCPostCalibration[1]) {
+      fgUsedVars[kTPCnSigmaPi_Corr] = true;
+    }
+
+    bool hasKaonSimCalibration = HasCalibrationObject(kTPCKaonMeanMC) && HasCalibrationObject(kTPCKaonSigmaMC);
+    bool hasKaonDataCalibration = HasCalibrationObject(kTPCKaonMeanData) && HasCalibrationObject(kTPCKaonSigmaData);
+    fgRunTPCPostCalibration[2] = (isMCTuning ? (hasKaonSimCalibration && hasKaonDataCalibration) : hasKaonDataCalibration);
+    if (fgRunTPCPostCalibration[2]) {
+      fgUsedVars[kTPCnSigmaKa_Corr] = true;
+    }
+
+    bool hasProtonSimCalibration = HasCalibrationObject(kTPCProtonMeanMC) && HasCalibrationObject(kTPCProtonSigmaMC);
+    bool hasProtonDataCalibration = HasCalibrationObject(kTPCProtonMeanData) && HasCalibrationObject(kTPCProtonSigmaData);
+    fgRunTPCPostCalibration[3] = (isMCTuning ? (hasProtonSimCalibration && hasProtonDataCalibration) : hasProtonDataCalibration);
+    if (fgRunTPCPostCalibration[3]) {
+      fgUsedVars[kTPCnSigmaPr_Corr] = true;
+    }
+  }
+
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
     fgCalibs[calib] = obj;
-    // Check whether all the needed objects for TPC postcalibration are available
-    if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
-      fgRunTPCPostCalibration[0] = true;
-      fgUsedVars[kTPCnSigmaEl_Corr] = true;
-    }
-    if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
-      fgRunTPCPostCalibration[1] = true;
-      fgUsedVars[kTPCnSigmaPi_Corr] = true;
-    }
-    if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
-      fgRunTPCPostCalibration[2] = true;
-      fgUsedVars[kTPCnSigmaKa_Corr] = true;
-    }
-    if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
-      fgRunTPCPostCalibration[3] = true;
-      fgUsedVars[kTPCnSigmaPr_Corr] = true;
-    }
+    UpdateTPCPostCalibrationFlags();
   }
 
   static void SetCalibrationType(int type, bool useInterpolation = true)

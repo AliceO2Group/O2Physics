@@ -189,47 +189,6 @@ struct AnalysisTrackSelection {
   std::vector<std::vector<TString>> fHistNamesMCMatched;
   int fCurrentRun = 0;
 
-  int getMCTuningCalibrationType() const
-  {
-    switch (fConfigTPCpostCalibType.value) {
-      case 1:
-        return 3;
-      case 2:
-        return 4;
-      default:
-        LOGF(fatal, "Invalid cfgTPCpostCalibType=%d for dqEfficiency. Supported values are 1:(pIN,eta) and 2:(pIN,eta,CentFT0C).", fConfigTPCpostCalibType.value);
-        return 3;
-    }
-  }
-
-  void setTPCPostCalibObject(TList* calibList, VarManager::CalibObjects calib, const char* objectName)
-  {
-    if (!calibList) {
-      LOGF(fatal, "TPC post-calibration list not found at CCDB path %s.", fConfigCcdbPathTPC.value.c_str());
-    }
-    auto* obj = calibList->FindObject(objectName);
-    if (!obj) {
-      LOGF(fatal, "TPC post-calibration object '%s' not found at CCDB path %s.", objectName, fConfigCcdbPathTPC.value.c_str());
-    }
-    VarManager::SetCalibrationObject(calib, obj);
-  }
-
-  void loadTPCPostCalibObjects(TList* calibList)
-  {
-    setTPCPostCalibObject(calibList, VarManager::kTPCElectronMean, "mean_map_electron");
-    setTPCPostCalibObject(calibList, VarManager::kTPCElectronSigma, "sigma_map_electron");
-    setTPCPostCalibObject(calibList, VarManager::kTPCElectronMeanData, "mean_map_electron_data");
-    setTPCPostCalibObject(calibList, VarManager::kTPCElectronSigmaData, "sigma_map_electron_data");
-    setTPCPostCalibObject(calibList, VarManager::kTPCPionMean, "mean_map_pion");
-    setTPCPostCalibObject(calibList, VarManager::kTPCPionSigma, "sigma_map_pion");
-    setTPCPostCalibObject(calibList, VarManager::kTPCPionMeanData, "mean_map_pion_data");
-    setTPCPostCalibObject(calibList, VarManager::kTPCPionSigmaData, "sigma_map_pion_data");
-    setTPCPostCalibObject(calibList, VarManager::kTPCProtonMean, "mean_map_proton");
-    setTPCPostCalibObject(calibList, VarManager::kTPCProtonSigma, "sigma_map_proton");
-    setTPCPostCalibObject(calibList, VarManager::kTPCProtonMeanData, "mean_map_proton_data");
-    setTPCPostCalibObject(calibList, VarManager::kTPCProtonSigmaData, "sigma_map_proton_data");
-  }
-
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -300,8 +259,25 @@ struct AnalysisTrackSelection {
   {
     if (fConfigComputeTPCpostCalib && fCurrentRun != event.runNumber()) {
       auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, event.timestamp());
-      loadTPCPostCalibObjects(calibList);
-      VarManager::SetCalibrationType(getMCTuningCalibrationType());
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMeanMC, calibList->FindObject("mean_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigmaMC, calibList->FindObject("sigma_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMeanData, calibList->FindObject("mean_map_electron_data"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigmaData, calibList->FindObject("sigma_map_electron_data"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMeanMC, calibList->FindObject("mean_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigmaMC, calibList->FindObject("sigma_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMeanData, calibList->FindObject("mean_map_pion_data"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigmaData, calibList->FindObject("sigma_map_pion_data"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMeanMC, calibList->FindObject("mean_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigmaMC, calibList->FindObject("sigma_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMeanData, calibList->FindObject("mean_map_proton_data"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigmaData, calibList->FindObject("sigma_map_proton_data"));
+      if (fConfigTPCpostCalibType.value == 1) {
+        VarManager::SetCalibrationType(3);
+      } else if (fConfigTPCpostCalibType.value == 2) {
+        VarManager::SetCalibrationType(4);
+      } else {
+        LOGF(fatal, "Invalid cfgTPCpostCalibType=%d for dqEfficiency. Supported values are 1:(pIN,eta) and 2:(pIN,eta,CentFT0C).", fConfigTPCpostCalibType.value);
+      }
       fCurrentRun = event.runNumber();
     }
 

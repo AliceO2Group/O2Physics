@@ -251,20 +251,20 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     CalibObjects calibMean, calibSigma;
     switch (species) {
       case 0:
-        calibMean = kTPCElectronMean;
-        calibSigma = kTPCElectronSigma;
+        calibMean = kTPCElectronMeanData;
+        calibSigma = kTPCElectronSigmaData;
         break;
       case 1:
-        calibMean = kTPCPionMean;
-        calibSigma = kTPCPionSigma;
+        calibMean = kTPCPionMeanData;
+        calibSigma = kTPCPionSigmaData;
         break;
       case 2:
-        calibMean = kTPCKaonMean;
-        calibSigma = kTPCKaonSigma;
+        calibMean = kTPCKaonMeanData;
+        calibSigma = kTPCKaonSigmaData;
         break;
       case 3:
-        calibMean = kTPCProtonMean;
-        calibSigma = kTPCProtonSigma;
+        calibMean = kTPCProtonMeanData;
+        calibSigma = kTPCProtonSigmaData;
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
@@ -297,24 +297,24 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     CalibObjects calibMean, calibSigma, calibStatus;
     switch (species) {
       case 0:
-        calibMean = kTPCElectronMean;
-        calibSigma = kTPCElectronSigma;
-        calibStatus = kTPCElectronStatus;
+        calibMean = kTPCElectronMeanData;
+        calibSigma = kTPCElectronSigmaData;
+        calibStatus = kTPCElectronStatusData;
         break;
       case 1:
-        calibMean = kTPCPionMean;
-        calibSigma = kTPCPionSigma;
-        calibStatus = kTPCPionStatus;
+        calibMean = kTPCPionMeanData;
+        calibSigma = kTPCPionSigmaData;
+        calibStatus = kTPCPionStatusData;
         break;
       case 2:
-        calibMean = kTPCKaonMean;
-        calibSigma = kTPCKaonSigma;
-        calibStatus = kTPCKaonStatus;
+        calibMean = kTPCKaonMeanData;
+        calibSigma = kTPCKaonSigmaData;
+        calibStatus = kTPCKaonStatusData;
         break;
       case 3:
-        calibMean = kTPCProtonMean;
-        calibSigma = kTPCProtonSigma;
-        calibStatus = kTPCProtonStatus;
+        calibMean = kTPCProtonMeanData;
+        calibSigma = kTPCProtonSigmaData;
+        calibStatus = kTPCProtonStatusData;
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
@@ -378,26 +378,26 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     CalibObjects calibMeanSim, calibSigmaSim, calibMeanData, calibSigmaData;
     switch (species) {
       case 0:
-        calibMeanSim = kTPCElectronMean;
-        calibSigmaSim = kTPCElectronSigma;
+        calibMeanSim = kTPCElectronMeanMC;
+        calibSigmaSim = kTPCElectronSigmaMC;
         calibMeanData = kTPCElectronMeanData;
         calibSigmaData = kTPCElectronSigmaData;
         break;
       case 1:
-        calibMeanSim = kTPCPionMean;
-        calibSigmaSim = kTPCPionSigma;
+        calibMeanSim = kTPCPionMeanMC;
+        calibSigmaSim = kTPCPionSigmaMC;
         calibMeanData = kTPCPionMeanData;
         calibSigmaData = kTPCPionSigmaData;
         break;
       case 2:
-        calibMeanSim = kTPCKaonMean;
-        calibSigmaSim = kTPCKaonSigma;
+        calibMeanSim = kTPCKaonMeanMC;
+        calibSigmaSim = kTPCKaonSigmaMC;
         calibMeanData = kTPCKaonMeanData;
         calibSigmaData = kTPCKaonSigmaData;
         break;
       case 3:
-        calibMeanSim = kTPCProtonMean;
-        calibSigmaSim = kTPCProtonSigma;
+        calibMeanSim = kTPCProtonMeanMC;
+        calibSigmaSim = kTPCProtonSigmaMC;
         calibMeanData = kTPCProtonMeanData;
         calibSigmaData = kTPCProtonSigmaData;
         break;
@@ -431,26 +431,26 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     CalibObjects calibMeanSim, calibSigmaSim, calibMeanData, calibSigmaData;
     switch (species) {
       case 0:
-        calibMeanSim = kTPCElectronMean;
-        calibSigmaSim = kTPCElectronSigma;
+        calibMeanSim = kTPCElectronMeanMC;
+        calibSigmaSim = kTPCElectronSigmaMC;
         calibMeanData = kTPCElectronMeanData;
         calibSigmaData = kTPCElectronSigmaData;
         break;
       case 1:
-        calibMeanSim = kTPCPionMean;
-        calibSigmaSim = kTPCPionSigma;
+        calibMeanSim = kTPCPionMeanMC;
+        calibSigmaSim = kTPCPionSigmaMC;
         calibMeanData = kTPCPionMeanData;
         calibSigmaData = kTPCPionSigmaData;
         break;
       case 2:
-        calibMeanSim = kTPCKaonMean;
-        calibSigmaSim = kTPCKaonSigma;
+        calibMeanSim = kTPCKaonMeanMC;
+        calibSigmaSim = kTPCKaonSigmaMC;
         calibMeanData = kTPCKaonMeanData;
         calibSigmaData = kTPCKaonSigmaData;
         break;
       case 3:
-        calibMeanSim = kTPCProtonMean;
-        calibSigmaSim = kTPCProtonSigma;
+        calibMeanSim = kTPCProtonMeanMC;
+        calibSigmaSim = kTPCProtonSigmaMC;
         calibMeanData = kTPCProtonMeanData;
         calibSigmaData = kTPCProtonSigmaData;
         break;

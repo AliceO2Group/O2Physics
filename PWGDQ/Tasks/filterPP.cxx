@@ -246,12 +246,12 @@ struct DQBarrelTrackSelection {
     auto bc = bcs.begin(); // check just the first bc to get the run number
     if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
       auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMeanData, calibList->FindObject("mean_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigmaData, calibList->FindObject("sigma_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMeanData, calibList->FindObject("mean_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigmaData, calibList->FindObject("sigma_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMeanData, calibList->FindObject("mean_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigmaData, calibList->FindObject("sigma_map_proton"));
       fCurrentRun = bc.runNumber();
     }
 
