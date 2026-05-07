@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file upcFwdJpsiRl.cxx
+/// \file UpcFwdJpsiRl.cxx
 /// \brief UPC forward J/psi analysis with configurable track-type candidate selection
 ///
 /// Candidate types (configured via candidateType):
@@ -118,7 +118,7 @@ const float kInvalidFloat = -999.;
 const int kMaxRelBCsV0A = 1;
 const int kNMuons = 2;
 
-struct UpcFwdJpsiRL {
+struct UpcFwdJpsiRl {
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
@@ -560,12 +560,12 @@ struct UpcFwdJpsiRL {
     }
   }
 
-  PROCESS_SWITCH(UpcFwdJpsiRL, processData, "", true);
+  PROCESS_SWITCH(UpcFwdJpsiRl, processData, "", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcFwdJpsiRL>(cfgc),
+    adaptAnalysisTask<UpcFwdJpsiRl>(cfgc),
   };
 }
