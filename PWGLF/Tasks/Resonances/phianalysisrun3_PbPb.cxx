@@ -1771,7 +1771,7 @@ struct phianalysisrun3_PbPb {
         multiplicity = collision.centFV0A();
       }
       histos.fill(HIST("Centgen1"), multiplicity);
-      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      selectedEvents[nevts++] = collision.mcCollision_as<McCollisionMults>().globalIndex();
     }
     selectedEvents.resize(nevts);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
