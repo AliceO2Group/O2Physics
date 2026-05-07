@@ -32,11 +32,11 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h>
+#include <Math/VectorUtil.h>
 #include <TRandom3.h>
 
 #include <cmath>
@@ -114,10 +114,11 @@ const float kPtMin = 0.;
 const float kMaxAmpV0A = 100.;
 const float kMaxZDCTime = 2.;
 const float kMaxZDCTimeHisto = 10.;
+const float kInvalidFloat = -999.;
+const int kMaxRelBCsV0A = 1;
+const int kNMuons = 2;
 
 struct UpcFwdJpsiRL {
-
-  Service<o2::framework::O2DatabasePDG> pdg;
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
@@ -255,12 +256,7 @@ struct UpcFwdJpsiRL {
 
   // FUNCTIONS
 
-  // retrieve particle mass from TDatabasePDG
-  float particleMass(int pid)
-  {
-    auto mass = pdg->Mass(pid);
-    return mass;
-  }
+  using LorentzVec = ROOT::Math::PxPyPzMVector;
 
   // check if track is a GlobalMuonTrack (enum 0 or 1)
   template <typename TTrack>
@@ -334,13 +330,13 @@ struct UpcFwdJpsiRL {
       zdcPerCand[candId].enC = zdc.energyCommonZNC();
 
       if (std::isinf(zdcPerCand[candId].timeA))
-        zdcPerCand[candId].timeA = -999;
+        zdcPerCand[candId].timeA = kInvalidFloat;
       if (std::isinf(zdcPerCand[candId].timeC))
-        zdcPerCand[candId].timeC = -999;
+        zdcPerCand[candId].timeC = kInvalidFloat;
       if (std::isinf(zdcPerCand[candId].enA))
-        zdcPerCand[candId].enA = -999;
+        zdcPerCand[candId].enA = kInvalidFloat;
       if (std::isinf(zdcPerCand[candId].enC))
-        zdcPerCand[candId].enC = -999;
+        zdcPerCand[candId].enC = kInvalidFloat;
     }
   }
 
@@ -350,9 +346,8 @@ struct UpcFwdJpsiRL {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    TLorentzVector p;
     auto mMu = o2::constants::physics::MassMuon;
-    p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
+    LorentzVec p(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
     float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
@@ -369,11 +364,11 @@ struct UpcFwdJpsiRL {
   }
 
   // compute phi for azimuth anisotropy
-  void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float& phiAverage, float& phiCharge)
+  void computePhiAnis(LorentzVec p1, LorentzVec p2, int sign1, float& phiAverage, float& phiCharge)
   {
-    TLorentzVector tSum, tDiffAv, tDiffCh;
-    tSum = p1 + p2;
+    auto tSum = p1 + p2;
     float halfUnity = 0.5;
+    decltype(tSum) tDiffCh, tDiffAv;
     if (sign1 > 0) {
       tDiffCh = p1 - p2;
       if (gRandom->Rndm() > halfUnity)
@@ -388,8 +383,8 @@ struct UpcFwdJpsiRL {
         tDiffAv = p1 - p2;
     }
 
-    phiAverage = tSum.DeltaPhi(tDiffAv);
-    phiCharge = tSum.DeltaPhi(tDiffCh);
+    phiAverage = ROOT::Math::VectorUtil::DeltaPhi(tSum, tDiffAv);
+    phiCharge = ROOT::Math::VectorUtil::DeltaPhi(tSum, tDiffCh);
   }
 
   // process a single candidate
@@ -405,7 +400,7 @@ struct UpcFwdJpsiRL {
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
-      if (std::abs(ampsRelBCsV0A[i]) <= 1) {
+      if (std::abs(ampsRelBCsV0A[i]) <= kMaxRelBCsV0A) {
         if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
@@ -423,7 +418,7 @@ struct UpcFwdJpsiRL {
       nMIDs++;
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
-    if (nMIDs != 2)
+    if (nMIDs != kNMuons)
       return;
 
     // track selection
@@ -433,11 +428,10 @@ struct UpcFwdJpsiRL {
       return;
 
     // form Lorentz vectors
-    TLorentzVector p1, p2;
     auto mMu = o2::constants::physics::MassMuon;
-    p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
-    p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
-    TLorentzVector p = p1 + p2;
+    LorentzVec p1(tr1.px(), tr1.py(), tr1.pz(), mMu);
+    LorentzVec p2(tr2.px(), tr2.py(), tr2.pz(), mMu);
+    auto p = p1 + p2;
 
     // cut on pair kinematics
     if (p.M() < lowMass || p.M() > highMass)
@@ -514,15 +508,15 @@ struct UpcFwdJpsiRL {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(tr1.trackType()),
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(tr2.trackType()),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(tr1.trackType()),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(tr2.trackType()),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     } else {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(tr2.trackType()),
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(tr1.trackType()),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(tr2.trackType()),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(tr1.trackType()),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     }
   }
@@ -550,10 +544,10 @@ struct UpcFwdJpsiRL {
       if (zdcPerCand.count(candID) != 0) {
         zdc = zdcPerCand.at(candID);
       } else {
-        zdc.timeA = -999;
-        zdc.timeC = -999;
-        zdc.enA = -999;
-        zdc.enC = -999;
+        zdc.timeA = kInvalidFloat;
+        zdc.timeC = kInvalidFloat;
+        zdc.enA = kInvalidFloat;
+        zdc.enC = kInvalidFloat;
       }
 
       for (size_t i = 0; i < trkIds.size(); ++i) {
