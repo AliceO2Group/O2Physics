@@ -261,7 +261,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfCharmBach{};
   int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
-  // Track PID - Used in DCAFitter
+  // Track PID: PID value of tracks defined under o2::track::PID namespace
+  int trackPidOfV0DauPos{}, trackPidOfV0DauNeg{};
+  int trackPidOfBach{}, trackPidOfCharmBach{};
   int trackPidOfCascade{};
 
   // Mass of daughter tracks & V0s & cascades & charm baryons;
@@ -320,6 +322,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCascade = kXiMinus;
       pdgIdOfCharmBaryon = kXiC0;
 
+      trackPidOfV0DauPos = o2::track::PID::Proton;
+      trackPidOfV0DauNeg = o2::track::PID::Pion;
+      trackPidOfBach = o2::track::PID::Pion;
+      trackPidOfCharmBach = o2::track::PID::Pion;
       trackPidOfCascade = o2::track::PID::XiMinus;
 
       massOfCharmBach = o2::constants::physics::MassPiPlus;
@@ -337,6 +343,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
 
+      trackPidOfV0DauPos = o2::track::PID::Proton;
+      trackPidOfV0DauNeg = o2::track::PID::Pion;
+      trackPidOfBach = o2::track::PID::Kaon;
+      trackPidOfCharmBach = o2::track::PID::Pion;
       trackPidOfCascade = o2::track::PID::OmegaMinus;
 
       massOfCharmBach = o2::constants::physics::MassPiPlus;
@@ -354,6 +364,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
 
+      trackPidOfV0DauPos = o2::track::PID::Proton;
+      trackPidOfV0DauNeg = o2::track::PID::Pion;
+      trackPidOfBach = o2::track::PID::Kaon;
+      trackPidOfCharmBach = o2::track::PID::Kaon;
       trackPidOfCascade = o2::track::PID::OmegaMinus;
 
       massOfCharmBach = o2::constants::physics::MassKPlus;
@@ -362,20 +376,28 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       massOfV0 = o2::constants::physics::MassLambda;
       massOfCascade = o2::constants::physics::MassOmegaMinus;
     }
-    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-    LOGF(info, "PDG ID of V0 positive daughter: %d", pdgIdOfV0DauPos);
-    LOGF(info, "PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
-    LOGF(info, "PDG ID of Bachelor: %d", pdgIdOfBach);
-    LOGF(info, "PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "PDG ID of V0: %d", pdgIdOfV0);
-    LOGF(info, "PDG ID of Cascade: %d", pdgIdOfCascade);
-    LOGF(info, "PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "Mass of V0 set as: %f", massOfV0);
-    LOGF(info, "Mass of CharmBach set as: %f", massOfCharmBach);
-    LOGF(info, "Mass of Casc as: %f", massOfCascade);
-    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGF(info, "  Chosen reconstruction info: ToXiPi(%d)/ ToOmegaPi(%d)/ ToOmegaKa(%d)", xipiEnabledDca+xipiEnabledKf, omegapiEnabledDca+omegapiEnabledKf, omegakaEnabledDca+omegakaEnabledKf);
+    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGF(info, "  PDG ID of V0 positive daughter: %d", pdgIdOfV0DauPos);
+    LOGF(info, "  PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
+    LOGF(info, "  PDG ID of Bachelor: %d", pdgIdOfBach);
+    LOGF(info, "  PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
+    LOGF(info, "-----------------------------------------------------------------------");
+    LOGF(info, "  Track PID of V0 Dau Pos: %d", trackPidOfV0DauPos);
+    LOGF(info, "  Track PID of V0 Dau Neg: %d", trackPidOfV0DauNeg);
+    LOGF(info, "  Track PID of Bach: %d", trackPidOfBach);
+    LOGF(info, "  Track PID of Charm Bach: %d", trackPidOfCharmBach);
+    LOGF(info, "  Track PID of Cascade: %d", trackPidOfCascade);
+    LOGF(info, "-----------------------------------------------------------------------");
+    LOGF(info, "  PDG ID of V0: %d", pdgIdOfV0);
+    LOGF(info, "  PDG ID of Cascade: %d", pdgIdOfCascade);
+    LOGF(info, "  PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
+    LOGF(info, "-----------------------------------------------------------------------");
+    LOGF(info, "  Mass of V0 set as: %f", massOfV0);
+    LOGF(info, "  Mass of CharmBach set as: %f", massOfCharmBach);
+    LOGF(info, "  Mass of Casc as: %f", massOfCascade);
+    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
     // Add histogram to indicate which sv method was used
     registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {kTH1F, {{2, 0.0, 2.0}}});
@@ -1082,6 +1104,26 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
       //----------Reconstruct information after vertex fit----------
+      
+      //auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1);
+      //auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1);
+      //auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, kfBachToCasc.GetPDG(), (isAnti ? 1 : -1));
+      //auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, kfCharmBachToCharmBaryon.GetPDG(), (isAnti ? -1 : 1));
+      //auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, kfCascToCharmBaryon.GetPDG(), (isAnti ? 1 : -1));
+      auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, (isAnti ? trackPidOfV0DauNeg : trackPidOfV0DauPos), 1);
+      auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, (isAnti ? trackPidOfV0DauPos : trackPidOfV0DauNeg), -1);
+      auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, trackPidOfBach, (isAnti ? 1 : -1));
+      auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, trackPidOfCharmBach, (isAnti ? -1 : 1));
+      auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, trackPidOfCascade, (isAnti ? 1 : -1));
+
+      trackParCovV0DauPos.setAbsCharge(1);
+      trackParCovV0DauNeg.setAbsCharge(1);
+      trackParCovBach.setAbsCharge(1);
+      trackParCovCharmBach.setAbsCharge(1);
+      trackParCovCasc.setAbsCharge(1);
+
+      LOGF(info, "  V0DauPos(%d) V0DauNeg(%d) Bach(%d) CharmBach(%d)", kfPos.GetPDG(), kfNeg.GetPDG(), kfBachToCasc.GetPDG(), kfCharmBachToCharmBaryon.GetPDG());
+
       std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
       std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
 
@@ -1098,17 +1140,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
 
-      auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1);
-      auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1);
-      auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, kfBachToCasc.GetPDG(), (isAnti ? 1 : -1));
-      auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, kfCharmBachToCharmBaryon.GetPDG(), (isAnti ? -1 : 1));
-      auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, kfCascToCharmBaryon.GetPDG(), (isAnti ? 1 : -1));
-      trackParCovV0DauPos.setAbsCharge(1);
-      trackParCovV0DauNeg.setAbsCharge(1);
-      trackParCovBach.setAbsCharge(1);
-      trackParCovCharmBach.setAbsCharge(1);
-      trackParCovCasc.setAbsCharge(1);
-
       //----------Calculate physical quantities and fill candidate table----------
 
       // impact parameters
@@ -1117,7 +1148,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       std::array<float, 2> impactParameterBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovBach, 2.f, matCorr, &impactParameterBach);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz( {collision.posX(), collision.posY(), collision.posZ()},trackParCovBach, 2.f, matCorr, &impactParameterBach);
       float dcaxyV0DauPos = impactParameterV0DauPos[0];
       float dcaxyV0DauNeg = impactParameterV0DauNeg[0];
       float dcaxyBach = impactParameterBach[0];
