@@ -99,7 +99,7 @@ struct taggingHFE {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
-  Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for fake matches"};
+  Configurable<float> cfgDownSamplingHc{"cfgDownSamplingHc", 1.1, "down sampling for charm hadrons"}; // there are enough hc, but not jpsi or hb.
   Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", true, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
   struct : ConfigurableGroup {
@@ -970,10 +970,6 @@ struct taggingHFE {
         continue;
       }
 
-      if (dist01(engine) > cfgDownSampling) { // random sampling, if necessary
-        continue;
-      }
-
       fillEventHistograms(collision);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 1);
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
@@ -1016,6 +1012,13 @@ struct taggingHFE {
           fRegistry.fill(HIST("Electron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
           fRegistry.fill(HIST("Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Electron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+
+          auto mcMother = mcParticle.template mothers_as<aod::McParticles>()[0];
+          bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
+          if (is_e_from_hc && dist01(engine) > cfgDownSamplingHc) { // random sampling hc, if necessary
+            continue;
+          }
+
           if (track.sign() > 0) { // positron
             positronIds.emplace_back(trackId.trackId());
           } else { // electron
@@ -1182,9 +1185,74 @@ struct taggingHFE {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
             if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
-              if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) {
+              if (commonMotherId > 0) {
                 foundCommonMother = true;
                 // LOGF(info, "eK: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+              }
+            }
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+            // I want 3 types.
+            // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
+            // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
+            // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
+            continue;
+          }
+
+          // if (std::abs(mckaon.pdgCode()) == 11) {
+          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
+          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
+          //     auto daughter = mcParticles.rawIteratorAt(d);
+          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+          //   }
+          // }
+
+          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+
+          emmllhpair(leptonTable.lastIndex(),
+                     trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
+                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     kaon.tpcNSigmaKa(), tofNSigmaKa,
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
+                     eKpair.lxyz, eKpair.lxyzErr,
+                     eKpair.lxy, eKpair.lxyErr,
+                     eKpair.lz, eKpair.lzErr,
+                     mckaon.pdgCode(), foundCommonMother);
+
+        } // end of kaon loop
+
+        for (const auto& kaonId : kaonPlusIds) {
+          auto kaon = tracks.rawIteratorAt(kaonId);
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          auto trackParCov = getTrackParCov(kaon);
+          trackParCov.setPID(kaon.pidForTracking());
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          float dcaXY_kaon = mDcaInfoCov.getY();
+          float dcaZ_kaon = mDcaInfoCov.getZ();
+
+          if (positronId == kaonId) {
+            continue;
+          }
+
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          if (!eKpair.isOK) {
+            continue;
+          }
+          if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+            continue;
+          }
+
+          auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
+          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > 0;
+          if (mckaon.has_mothers() && !foundCommonMother) {
+            auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
+            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+              int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
+              if (commonMotherId > 0) {
+                foundCommonMother = true;
+                // LOGF(info, "eK: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
               }
             }
           }
@@ -1271,7 +1339,7 @@ struct taggingHFE {
               auto mcMother_of_k0s = mcK0S.template mothers_first_as<aod::McParticles>();
               if (mcMother_of_k0s.pdgCode() == -323 || mcMother_of_k0s.pdgCode() == -313 || mcMother_of_k0s.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
                 int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_k0s);
-                if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) { // proton decay is implemented. reject it.
+                if (commonMotherId > 0) {
                   foundCommonMother = true;
                   // LOGF(info, "eK0S: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
                 }
@@ -1514,6 +1582,72 @@ struct taggingHFE {
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
                     isMotherFromB, mcMother.pdgCode());
 
+        for (const auto& kaonId : kaonMinusIds) {
+          auto kaon = tracks.rawIteratorAt(kaonId);
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          auto trackParCov = getTrackParCov(kaon);
+          trackParCov.setPID(kaon.pidForTracking());
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          float dcaXY_kaon = mDcaInfoCov.getY();
+          float dcaZ_kaon = mDcaInfoCov.getZ();
+
+          if (electronId == kaonId) {
+            continue;
+          }
+
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          if (!eKpair.isOK) {
+            continue;
+          }
+
+          if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+            continue;
+          }
+
+          auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
+          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > 0;
+          if (mckaon.has_mothers() && !foundCommonMother) {
+            auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
+            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+              int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
+              if (commonMotherId > 0) {
+                foundCommonMother = true;
+                // LOGF(info, "eK: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+              }
+            }
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+            // I want 3 types.
+            // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
+            // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
+            // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
+            continue;
+          }
+
+          // if (std::abs(mckaon.pdgCode()) == 11) {
+          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
+          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
+          //     auto daughter = mcParticles.rawIteratorAt(d);
+          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+          //   }
+          // }
+
+          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+
+          emmllhpair(leptonTable.lastIndex(),
+                     trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
+                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     kaon.tpcNSigmaKa(), tofNSigmaKa,
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
+                     eKpair.lxyz, eKpair.lxyzErr,
+                     eKpair.lxy, eKpair.lxyErr,
+                     eKpair.lz, eKpair.lzErr,
+                     mckaon.pdgCode(), foundCommonMother);
+
+        } // end of kaon loop
+
         // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonPlusIds) {
           auto kaon = tracks.rawIteratorAt(kaonId);
@@ -1542,7 +1676,7 @@ struct taggingHFE {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
             if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
-              if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) {
+              if (commonMotherId > 0) {
                 foundCommonMother = true;
                 // LOGF(info, "eK: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
               }
@@ -1630,7 +1764,7 @@ struct taggingHFE {
               auto mcMother_of_k0s = mcK0S.template mothers_first_as<aod::McParticles>();
               if (mcMother_of_k0s.pdgCode() == 323 || mcMother_of_k0s.pdgCode() == 313 || mcMother_of_k0s.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
                 int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_k0s);
-                if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) { // proton decay is implemented. reject it.
+                if (commonMotherId > 0) {
                   foundCommonMother = true;
                   // LOGF(info, "eK0S: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
                 }
