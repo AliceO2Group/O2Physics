@@ -1101,15 +1101,23 @@ class VarManager : public TObject
     kTPCElectronMean = 0,
     kTPCElectronSigma,
     kTPCElectronStatus,
+    kTPCElectronMeanData,
+    kTPCElectronSigmaData,
     kTPCPionMean,
     kTPCPionSigma,
     kTPCPionStatus,
+    kTPCPionMeanData,
+    kTPCPionSigmaData,
     kTPCKaonMean,
     kTPCKaonSigma,
     kTPCKaonStatus,
+    kTPCKaonMeanData,
+    kTPCKaonSigmaData,
     kTPCProtonMean,
     kTPCProtonSigma,
     kTPCProtonStatus,
+    kTPCProtonMeanData,
+    kTPCProtonSigmaData,
     kNCalibObjects
   };
 
@@ -1456,8 +1464,8 @@ class VarManager : public TObject
 
   static void SetCalibrationType(int type, bool useInterpolation = true)
   {
-    if (type < 0 || type > 2) {
-      LOG(fatal) << "Invalid calibration type. Must be 0, 1, or 2.";
+    if (type < 0 || type > 4) {
+      LOG(fatal) << "Invalid calibration type. Must be between 0 and 4.";
     }
     fgCalibrationType = type;
     fgUseInterpolatedCalibration = useInterpolation;
@@ -1544,7 +1552,7 @@ class VarManager : public TObject
 
   static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
   static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
-  static int fgCalibrationType;                     // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+  static int fgCalibrationType;                     // 0 - no calibration, 1 - data calibration vs (TPCncls,pIN,eta), 2 - data calibration vs (eta,nPV,nLong,tLong), 3 - MC tuning vs (pIN,eta), 4 - MC tuning vs (pIN,eta,CentFT0C)
   static bool fgUseInterpolatedCalibration;         // use interpolated calibration histograms (default: true)
 
   VarManager& operator=(const VarManager& c);

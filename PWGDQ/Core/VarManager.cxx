@@ -23,6 +23,7 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <THn.h>
 #include <TObject.h>
@@ -72,7 +73,7 @@ o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
 bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
-int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - data calibration vs (TPCncls,pIN,eta), 2 - data calibration vs (eta,nPV,nLong,tLong), 3 - MC tuning vs (pIN,eta), 4 - MC tuning vs (pIN,eta,CentFT0C)
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 
 //__________________________________________________________________
@@ -373,6 +374,119 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
         return nSigmaValue; // unknown status, return the original nSigma value
         break;
     }
+  } else if (fgCalibrationType == 3) {
+    CalibObjects calibMeanSim, calibSigmaSim, calibMeanData, calibSigmaData;
+    switch (species) {
+      case 0:
+        calibMeanSim = kTPCElectronMean;
+        calibSigmaSim = kTPCElectronSigma;
+        calibMeanData = kTPCElectronMeanData;
+        calibSigmaData = kTPCElectronSigmaData;
+        break;
+      case 1:
+        calibMeanSim = kTPCPionMean;
+        calibSigmaSim = kTPCPionSigma;
+        calibMeanData = kTPCPionMeanData;
+        calibSigmaData = kTPCPionSigmaData;
+        break;
+      case 2:
+        calibMeanSim = kTPCKaonMean;
+        calibSigmaSim = kTPCKaonSigma;
+        calibMeanData = kTPCKaonMeanData;
+        calibSigmaData = kTPCKaonSigmaData;
+        break;
+      case 3:
+        calibMeanSim = kTPCProtonMean;
+        calibSigmaSim = kTPCProtonSigma;
+        calibMeanData = kTPCProtonMeanData;
+        calibSigmaData = kTPCProtonSigmaData;
+        break;
+      default:
+        LOG(fatal) << "Invalid species for PID calibration: " << species;
+        return -999.0;
+    }
+
+    TH2* calibMeanSimHist = reinterpret_cast<TH2*>(fgCalibs[calibMeanSim]);
+    TH2* calibSigmaSimHist = reinterpret_cast<TH2*>(fgCalibs[calibSigmaSim]);
+    TH2* calibMeanDataHist = reinterpret_cast<TH2*>(fgCalibs[calibMeanData]);
+    TH2* calibSigmaDataHist = reinterpret_cast<TH2*>(fgCalibs[calibSigmaData]);
+    if (!calibMeanSimHist || !calibSigmaSimHist || !calibMeanDataHist || !calibSigmaDataHist) {
+      LOG(fatal) << "MC tuning histograms not found for species: " << species;
+      return -999.0;
+    }
+
+    int binPin = calibMeanSimHist->GetXaxis()->FindBin(fgValues[kPin]);
+    binPin = (binPin == 0 ? 1 : binPin);
+    binPin = (binPin > calibMeanSimHist->GetXaxis()->GetNbins() ? calibMeanSimHist->GetXaxis()->GetNbins() : binPin);
+    int binEta = calibMeanSimHist->GetYaxis()->FindBin(fgValues[kEta]);
+    binEta = (binEta == 0 ? 1 : binEta);
+    binEta = (binEta > calibMeanSimHist->GetYaxis()->GetNbins() ? calibMeanSimHist->GetYaxis()->GetNbins() : binEta);
+
+    double meanSim = calibMeanSimHist->GetBinContent(binPin, binEta);
+    double sigmaSim = calibSigmaSimHist->GetBinContent(binPin, binEta);
+    double meanData = calibMeanDataHist->GetBinContent(binPin, binEta);
+    double sigmaData = calibSigmaDataHist->GetBinContent(binPin, binEta);
+    return (nSigmaValue - meanSim) * (sigmaSim / sigmaData) + meanData;
+  } else if (fgCalibrationType == 4) {
+    CalibObjects calibMeanSim, calibSigmaSim, calibMeanData, calibSigmaData;
+    switch (species) {
+      case 0:
+        calibMeanSim = kTPCElectronMean;
+        calibSigmaSim = kTPCElectronSigma;
+        calibMeanData = kTPCElectronMeanData;
+        calibSigmaData = kTPCElectronSigmaData;
+        break;
+      case 1:
+        calibMeanSim = kTPCPionMean;
+        calibSigmaSim = kTPCPionSigma;
+        calibMeanData = kTPCPionMeanData;
+        calibSigmaData = kTPCPionSigmaData;
+        break;
+      case 2:
+        calibMeanSim = kTPCKaonMean;
+        calibSigmaSim = kTPCKaonSigma;
+        calibMeanData = kTPCKaonMeanData;
+        calibSigmaData = kTPCKaonSigmaData;
+        break;
+      case 3:
+        calibMeanSim = kTPCProtonMean;
+        calibSigmaSim = kTPCProtonSigma;
+        calibMeanData = kTPCProtonMeanData;
+        calibSigmaData = kTPCProtonSigmaData;
+        break;
+      default:
+        LOG(fatal) << "Invalid species for PID calibration: " << species;
+        return -999.0;
+    }
+
+    TH3F* calibMeanSimHist = reinterpret_cast<TH3F*>(fgCalibs[calibMeanSim]);
+    TH3F* calibSigmaSimHist = reinterpret_cast<TH3F*>(fgCalibs[calibSigmaSim]);
+    TH3F* calibMeanDataHist = reinterpret_cast<TH3F*>(fgCalibs[calibMeanData]);
+    TH3F* calibSigmaDataHist = reinterpret_cast<TH3F*>(fgCalibs[calibSigmaData]);
+    if (!calibMeanSimHist || !calibSigmaSimHist || !calibMeanDataHist || !calibSigmaDataHist) {
+      LOG(fatal) << "MC tuning histograms not found for species: " << species;
+      return -999.0;
+    }
+    if (fgValues[kCentFT0C] < -999.) {
+      LOG(fatal) << "TPC MC tuning calibration type 4 requires event centrality in VarManager::fgValues[kCentFT0C].";
+      return -999.0;
+    }
+
+    int binPin = calibMeanSimHist->GetXaxis()->FindBin(fgValues[kPin]);
+    binPin = (binPin == 0 ? 1 : binPin);
+    binPin = (binPin > calibMeanSimHist->GetXaxis()->GetNbins() ? calibMeanSimHist->GetXaxis()->GetNbins() : binPin);
+    int binEta = calibMeanSimHist->GetYaxis()->FindBin(fgValues[kEta]);
+    binEta = (binEta == 0 ? 1 : binEta);
+    binEta = (binEta > calibMeanSimHist->GetYaxis()->GetNbins() ? calibMeanSimHist->GetYaxis()->GetNbins() : binEta);
+    int binCent = calibMeanSimHist->GetZaxis()->FindBin(fgValues[kCentFT0C]);
+    binCent = (binCent == 0 ? 1 : binCent);
+    binCent = (binCent > calibMeanSimHist->GetZaxis()->GetNbins() ? calibMeanSimHist->GetZaxis()->GetNbins() : binCent);
+
+    double meanSim = calibMeanSimHist->GetBinContent(binPin, binEta, binCent);
+    double sigmaSim = calibSigmaSimHist->GetBinContent(binPin, binEta, binCent);
+    double meanData = calibMeanDataHist->GetBinContent(binPin, binEta, binCent);
+    double sigmaData = calibSigmaDataHist->GetBinContent(binPin, binEta, binCent);
+    return (nSigmaValue - meanSim) * (sigmaSim / sigmaData) + meanData;
   } else {
     // unknown calibration type, return the original nSigma value
     LOG(fatal) << "Unknown calibration type: " << fgCalibrationType;

@@ -575,7 +575,8 @@ struct AnalysisTrackSelection {
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, apply TPC PID correction maps for MC-to-data tuning"};
+  Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (pIN,eta) calibration typically for pp, 2: (pIN,eta,CentFT0C) calibration typically for PbPb"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
@@ -594,6 +595,47 @@ struct AnalysisTrackSelection {
 
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
+
+  int getMCTuningCalibrationType() const
+  {
+    switch (fConfigTPCpostCalibType.value) {
+      case 1:
+        return 3;
+      case 2:
+        return 4;
+      default:
+        LOGF(fatal, "Invalid cfgTPCpostCalibType=%d for dqEfficiency_withAssoc_direct track selection. Supported values are 1:(pIN,eta) and 2:(pIN,eta,CentFT0C).", fConfigTPCpostCalibType.value);
+        return 3;
+    }
+  }
+
+  void setTPCPostCalibObject(TList* calibList, VarManager::CalibObjects calib, const char* objectName)
+  {
+    if (!calibList) {
+      LOGF(fatal, "TPC post-calibration list not found at CCDB path %s.", fConfigCcdbPathTPC.value.c_str());
+    }
+    auto* obj = calibList->FindObject(objectName);
+    if (!obj) {
+      LOGF(fatal, "TPC post-calibration object '%s' not found at CCDB path %s.", objectName, fConfigCcdbPathTPC.value.c_str());
+    }
+    VarManager::SetCalibrationObject(calib, obj);
+  }
+
+  void loadTPCPostCalibObjects(TList* calibList)
+  {
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronMean, "mean_map_electron");
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronSigma, "sigma_map_electron");
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronMeanData, "mean_map_electron_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronSigmaData, "sigma_map_electron_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionMean, "mean_map_pion");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionSigma, "sigma_map_pion");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionMeanData, "mean_map_pion_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionSigmaData, "sigma_map_pion_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonMean, "mean_map_proton");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonSigma, "sigma_map_proton");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonMeanData, "mean_map_proton_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonSigmaData, "sigma_map_proton_data");
+  }
 
   void init(o2::framework::InitContext& context)
   {
@@ -703,16 +745,11 @@ struct AnalysisTrackSelection {
     }
 
     cout << "After filling TimeFrame statistics" << endl;
-    // TODO: Check if postcalibration needed for MC
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bcs.begin().timestamp());
-        VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-        VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-        VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-        VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-        VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-        VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+        loadTPCPostCalibObjects(calibList);
+        VarManager::SetCalibrationType(getMCTuningCalibrationType());
       }
 
       o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bcs.begin().timestamp());
@@ -897,6 +934,13 @@ struct AnalysisTrackSelection {
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
     cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
+  void processPbPbWithCov(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelectedWithCentAndMults const& events, MyBarrelTracksWithCov const& tracks,
+                          McCollisions const& eventsMC, McParticles const& tracksMC)
+  {
+    cout << "AnalysisTrackSelection::processPbPbWithCov() called" << endl;
+    runTrackSelection<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
+    cout << "AnalysisTrackSelection::processPbPbWithCov() completed" << endl;
+  }
   void processWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCovNoTOF const& tracks,
                                 McCollisions const& eventsMC, McParticles const& tracksMC)
   {
@@ -906,13 +950,24 @@ struct AnalysisTrackSelection {
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCovNoTOF>(assocs, bcs, events, tracksWithTOFservice, eventsMC, tracksMC);
     cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
+  void processPbPbWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelectedWithCentAndMults const& events, MyBarrelTracksWithCovNoTOF const& tracks,
+                                    McCollisions const& eventsMC, McParticles const& tracksMC)
+  {
+    cout << "AnalysisTrackSelection::processPbPbWithCovTOFService() called" << endl;
+    fTofResponse->processSetup(bcs.iteratorAt(0));
+    auto tracksWithTOFservice = soa::Attach<MyBarrelTracksWithCovNoTOF, o2::aod::TOFNSigmaDynEl, o2::aod::TOFNSigmaDynPi, o2::aod::TOFNSigmaDynKa, o2::aod::TOFNSigmaDynPr>(tracks);
+    runTrackSelection<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCovNoTOF>(assocs, bcs, events, tracksWithTOFservice, eventsMC, tracksMC);
+    cout << "AnalysisTrackSelection::processPbPbWithCovTOFService() completed" << endl;
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processPbPbWithCov, "Run PbPb barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCovTOFService, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations, with TOF service", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processPbPbWithCovTOFService, "Run PbPb barrel track selection on DQ skimmed tracks w/ cov matrix associations, with TOF service", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 
@@ -2052,6 +2107,7 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
+      VarManager::ResetValues(0, VarManager::kNVars);
       eFromJpsiMcParticleIndices.clear();
 
       auto mcCollisionGlobalIndex = event.mcCollisionId();

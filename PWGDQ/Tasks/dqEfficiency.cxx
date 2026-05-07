@@ -35,11 +35,13 @@
 #include <Framework/runDataProcessing.h>
 
 #include <THashList.h>
+#include <TList.h>
 #include <TMath.h>
 #include <TString.h>
 
 #include <RtypesCore.h>
 
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -173,12 +175,60 @@ struct AnalysisTrackSelection {
   Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, apply TPC PID correction maps for MC-to-data tuning"};
+  Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (pIN,eta) calibration typically for pp, 2: (pIN,eta,CentFT0C) calibration typically for PbPb"};
 
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<MCSignal> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<std::vector<TString>> fHistNamesMCMatched;
+  int fCurrentRun = 0;
+
+  int getMCTuningCalibrationType() const
+  {
+    switch (fConfigTPCpostCalibType.value) {
+      case 1:
+        return 3;
+      case 2:
+        return 4;
+      default:
+        LOGF(fatal, "Invalid cfgTPCpostCalibType=%d for dqEfficiency. Supported values are 1:(pIN,eta) and 2:(pIN,eta,CentFT0C).", fConfigTPCpostCalibType.value);
+        return 3;
+    }
+  }
+
+  void setTPCPostCalibObject(TList* calibList, VarManager::CalibObjects calib, const char* objectName)
+  {
+    if (!calibList) {
+      LOGF(fatal, "TPC post-calibration list not found at CCDB path %s.", fConfigCcdbPathTPC.value.c_str());
+    }
+    auto* obj = calibList->FindObject(objectName);
+    if (!obj) {
+      LOGF(fatal, "TPC post-calibration object '%s' not found at CCDB path %s.", objectName, fConfigCcdbPathTPC.value.c_str());
+    }
+    VarManager::SetCalibrationObject(calib, obj);
+  }
+
+  void loadTPCPostCalibObjects(TList* calibList)
+  {
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronMean, "mean_map_electron");
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronSigma, "sigma_map_electron");
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronMeanData, "mean_map_electron_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCElectronSigmaData, "sigma_map_electron_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionMean, "mean_map_pion");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionSigma, "sigma_map_pion");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionMeanData, "mean_map_pion_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCPionSigmaData, "sigma_map_pion_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonMean, "mean_map_proton");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonSigma, "sigma_map_proton");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonMeanData, "mean_map_proton_data");
+    setTPCPostCalibObject(calibList, VarManager::kTPCProtonSigmaData, "sigma_map_proton_data");
+  }
 
   void init(o2::framework::InitContext& context)
   {
@@ -236,11 +286,25 @@ struct AnalysisTrackSelection {
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
+
+    if (fConfigComputeTPCpostCalib) {
+      fCCDB->setURL(fConfigCcdbUrl.value);
+      fCCDB->setCaching(true);
+      fCCDB->setLocalObjectValidityChecking();
+      fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+    }
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
   void runSelection(TEvent const& event, TTracks const& tracks, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
+    if (fConfigComputeTPCpostCalib && fCurrentRun != event.runNumber()) {
+      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, event.timestamp());
+      loadTPCPostCalibObjects(calibList);
+      VarManager::SetCalibrationType(getMCTuningCalibrationType());
+      fCurrentRun = event.runNumber();
+    }
+
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
