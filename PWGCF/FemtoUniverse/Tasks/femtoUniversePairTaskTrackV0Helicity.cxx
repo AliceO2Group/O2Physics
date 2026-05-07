@@ -182,14 +182,21 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   } twotracksconfigs;
 
   /// Helicity ranges and configurables
-  Configurable<bool> cfgProcessHel{"cfgProcessHel", true, "Process particle pairs from all helicity ranges"};
-  Configurable<bool> cfgProcessHel1{"cfgProcessHel1", false, "Process particle pairs from the helicity range 1"}; // 1.0 >= cosineTheta >= 0.1
-  Configurable<bool> cfgProcessHel2{"cfgProcessHel2", false, "Process particle pairs from the helicity range 2"}; // 0.1 > cosineTheta >= -0.1
-  Configurable<bool> cfgProcessHel3{"cfgProcessHel3", false, "Process particle pairs from the helicity range 3"}; // -0.1 > cosineTheta >= -0.5
-  Configurable<bool> cfgProcessHel4{"cfgProcessHel4", false, "Process particle pairs from the helicity range 4"}; // -0.5 > cosineTheta >= -1.0
-  ConfigurableAxis confInvMassMotherpTBinsHel{"confInvMassMotherpTBinsHel", {5, 0, 5}, "pT binning in the pT vs. InvMassMother plot for helicity"};
-  ConfigurableAxis confInvMassMotherBinsHel{"confInvMassMotherBinsHel", {1000, 0.8, 1.4}, "InvMassMother binning in the pT vs. InvMassMother plot for helicity"};
-  ConfigurableAxis confInvMassK0Short{"confInvMassK0s", {1000, 0.2, 0.8}, "Invariant mass binning for K0 Short"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> cfgProcessHel{"cfgProcessHel", true, "Process particle pairs from all helicity ranges"};
+    Configurable<bool> cfgProcessHel1{"cfgProcessHel1", false, "Process particle pairs from the helicity range 1"}; // 1.0 >= cosineTheta >= 0.1
+    Configurable<bool> cfgProcessHel2{"cfgProcessHel2", false, "Process particle pairs from the helicity range 2"}; // 0.1 > cosineTheta >= -0.1
+    Configurable<bool> cfgProcessHel3{"cfgProcessHel3", false, "Process particle pairs from the helicity range 3"}; // -0.1 > cosineTheta >= -0.5
+    Configurable<bool> cfgProcessHel4{"cfgProcessHel4", false, "Process particle pairs from the helicity range 4"}; // -0.5 > cosineTheta >= -1.0
+    Configurable<float> confLimitHel0{"confLimitHel0", 1.0, "Highest value of the helicity angle"};
+    Configurable<float> confLimitHel1{"confLimitHel1", 0.1, "Border value between ranges 1 and 2"};
+    Configurable<float> confLimitHel2{"confLimitHel2", -0.1, "Border value between ranges 2 and 3"};
+    Configurable<float> confLimitHel3{"confLimitHel3", -0.5, "Border value between ranges 3 and 4"};
+    Configurable<float> confLimitHel4{"confLimitHel4", -1.0, "Lowest value of the helicity angle"};
+    ConfigurableAxis confInvMassMotherpTBinsHel{"confInvMassMotherpTBinsHel", {5, 0, 5}, "pT binning in the pT vs. InvMassMother plot for helicity"};
+    ConfigurableAxis confInvMassMotherBinsHel{"confInvMassMotherBinsHel", {1000, 0.8, 1.4}, "InvMassMother binning in the pT vs. InvMassMother plot for helicity"};
+    ConfigurableAxis confInvMassK0Short{"confInvMassK0Short", {1000, 0.2, 0.8}, "Invariant mass binning for K0 Short"}; // o2-linter: disable=lowerCamelCase (consistency with generally accepted particle name)
+  } helicityconfigs;
 
   /// Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
@@ -319,11 +326,20 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/NegativeChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
-    thetaRegistry.add("Theta/Mother/hInvMassK0Short", " ; M_{K^{0}_{S}}; ;", kTH1F, {confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMC", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel1", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel2", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel3", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassLambdaMCHel4", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMC", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel1", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel2", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel3", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
+    thetaRegistry.add("Theta/Mother/hInvMassK0ShortMCHel4", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
 
     /// MC Truth
     registryMCtruth.add("plus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -387,7 +403,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     registryMCreco.add("ThetaMCReco/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
 
     /// Correlations
-    if (cfgProcessHel) {
+    if (helicityconfigs.cfgProcessHel) {
       sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
       sameEventCont.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
 
@@ -395,7 +411,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       mixedEventCont.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
     }
 
-    if (cfgProcessHel1) {
+    if (helicityconfigs.cfgProcessHel1) {
       sameEventContHel1.init(&resultRegistryHel1, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
       sameEventContHel1.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
 
@@ -403,7 +419,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       mixedEventContHel1.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
     }
 
-    if (cfgProcessHel2) {
+    if (helicityconfigs.cfgProcessHel2) {
       sameEventContHel2.init(&resultRegistryHel2, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
       sameEventContHel2.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
 
@@ -411,7 +427,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       mixedEventContHel2.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
     }
 
-    if (cfgProcessHel3) {
+    if (helicityconfigs.cfgProcessHel3) {
       sameEventContHel3.init(&resultRegistryHel3, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
       sameEventContHel3.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
 
@@ -419,7 +435,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       mixedEventContHel3.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
     }
 
-    if (cfgProcessHel4) {
+    if (helicityconfigs.cfgProcessHel4) {
       sameEventContHel4.init(&resultRegistryHel4, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
       sameEventContHel4.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
 
@@ -491,19 +507,43 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaEta"), negChild.eta(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaPhi"), negChild.phi(), cosineTheta);
 
-      if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+      if (cosineTheta <= helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel1"), part.pt(), part.mLambda());
-      else if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+      else if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel2"), part.pt(), part.mLambda());
-      else if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+      else if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel3"), part.pt(), part.mLambda());
-      else if (cosineTheta < -0.5 && cosineTheta >= -1)
+      else if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4)
         thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel4"), part.pt(), part.mLambda());
 
+      /// Histogramming for MC Reco to calculate fraction of K0S in the Lambda sample for each helicity bin
       if constexpr (confIsMC) {
         if (part.has_fdMCParticle()) {
-          if ((part.fdMCParticle()).pdgMCTruth() == kK0Short) {
-            thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0Short"), part.mKaon());
+          if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+            thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMC"), part.mLambda());
+          else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+            thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMC"), part.mKaon());
+
+          if (cosineTheta <= helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1) {
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel1"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel1"), part.mKaon());
+          } else if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2) {
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel2"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel2"), part.mKaon());
+          } else if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3) {
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel3"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel3"), part.mKaon());
+          } else if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4) {
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassLambdaMCHel4"), part.mLambda());
+            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
+              thetaRegistry.fill(HIST("Theta/Mother/hInvMassK0ShortMCHel4"), part.mKaon());
           }
         }
       }
@@ -571,28 +611,28 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         }
 
         case 1: {
-          if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+          if (cosineTheta < helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1)
             sameEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
         }
 
         case 2: {
-          if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+          if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2)
             sameEventContHel2.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
         }
 
         case 3: {
-          if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+          if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3)
             sameEventContHel3.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
         }
 
         case 4: {
-          if (cosineTheta < -0.5 && cosineTheta >= -1.0)
+          if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4)
             sameEventContHel4.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
@@ -609,19 +649,19 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    if (cfgProcessHel)
+    if (helicityconfigs.cfgProcessHel)
       doSameEvent<false>(col, parts, groupPartsOne, groupPartsTwo, 0);
 
-    if (cfgProcessHel1)
+    if (helicityconfigs.cfgProcessHel1)
       doSameEvent<false>(col, parts, groupPartsOne, groupPartsTwo, 1);
 
-    if (cfgProcessHel2)
+    if (helicityconfigs.cfgProcessHel2)
       doSameEvent<false>(col, parts, groupPartsOne, groupPartsTwo, 2);
 
-    if (cfgProcessHel3)
+    if (helicityconfigs.cfgProcessHel3)
       doSameEvent<false>(col, parts, groupPartsOne, groupPartsTwo, 3);
 
-    if (cfgProcessHel4)
+    if (helicityconfigs.cfgProcessHel4)
       doSameEvent<false>(col, parts, groupPartsOne, groupPartsTwo, 4);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processSameEvent, "Enable processing same event for track - V0", false);
@@ -869,28 +909,28 @@ struct FemtoUniversePairTaskTrackV0Helicity {
           }
 
           case 1: {
-            if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+            if (cosineTheta < helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1)
               mixedEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
           }
 
           case 2: {
-            if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+            if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2)
               mixedEventContHel2.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
           }
 
           case 3: {
-            if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+            if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3)
               mixedEventContHel3.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
           }
 
           case 4: {
-            if (cosineTheta < -0.5 && cosineTheta >= -1.0)
+            if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4)
               mixedEventContHel4.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
@@ -917,19 +957,19 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   void processMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    if (cfgProcessHel)
+    if (helicityconfigs.cfgProcessHel)
       doMixedEvent(cols, parts, partsOne, partsTwo, 0);
 
-    if (cfgProcessHel1)
+    if (helicityconfigs.cfgProcessHel1)
       doMixedEvent(cols, parts, partsOne, partsTwo, 1);
 
-    if (cfgProcessHel2)
+    if (helicityconfigs.cfgProcessHel2)
       doMixedEvent(cols, parts, partsOne, partsTwo, 2);
 
-    if (cfgProcessHel3)
+    if (helicityconfigs.cfgProcessHel3)
       doMixedEvent(cols, parts, partsOne, partsTwo, 3);
 
-    if (cfgProcessHel4)
+    if (helicityconfigs.cfgProcessHel4)
       doMixedEvent(cols, parts, partsOne, partsTwo, 4);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMixedEvent, "Enable processing mixed event for track - V0", false);

@@ -1774,6 +1774,12 @@ struct HStrangeCorrelation {
       histos.add("hNumberOfRejectedPairsHadron", "hNumberOfRejectedPairsHadron", kTH1F, {{1, 0, 1}});
       histos.add("hNumberOfRejectedPairsPion", "hNumberOfRejectedPairsPion", kTH1F, {{1, 0, 1}});
     }
+    if (doprocessSameEventHHadrons) {
+      histos.add("hDCAzTriggerHadron", "hDCAzTriggerHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyTriggerHadron", "hDCAxyTriggerHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAzAssociatedHadron", "hDCAzAssociatedHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyAssociatedHadron", "hDCAxyAssociatedHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+    }
     if (doprocessSameEventHV0s || doprocessMixedEventHV0s) {
       histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
     }
@@ -1916,10 +1922,19 @@ struct HStrangeCorrelation {
       for (int i = 1; i <= histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetNbinsX(); i++) {
         histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1]);
       }
-      if (masterConfigurations.useCentralityinPrediction)
+      if (masterConfigurations.useCentralityinPrediction) {
+        if (masterConfigurations.doSeparateFT0Prediction) {
+          histos.add("Prediction/hTriggerFT0A", "Trigger Tracks FT0A", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+          histos.add("Prediction/hTriggerFT0C", "Trigger Tracks FT0C", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+        }
         histos.add("Prediction/hTrigger", "Trigger Tracks", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
-      else
+      } else {
+        if (masterConfigurations.doSeparateFT0Prediction) {
+          histos.add("Prediction/hTriggerFT0A", "Trigger Tracks FT0A", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMultiplicity});
+          histos.add("Prediction/hTriggerFT0C", "Trigger Tracks FT0C", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMultiplicity});
+        }
         histos.add("Prediction/hTrigger", "Trigger Tracks", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMultiplicity});
+      }
       for (int i = 0; i < AssocParticleTypes; i++) {
         if (TESTBIT(doCorrelation, i))
           histos.add(fmt::format("Prediction/h{}", Particlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
@@ -2147,6 +2162,8 @@ struct HStrangeCorrelation {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track, triggerTrack.isLeading()))
           continue;
+        histos.fill(HIST("hDCAzTriggerHadron"), track.dcaZ(), track.pt());
+        histos.fill(HIST("hDCAxyTriggerHadron"), track.dcaXY(), track.pt());
         float efficiency = 1.0f;
         if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyTrigger->Interpolate(track.pt(), track.eta());
@@ -2169,6 +2186,8 @@ struct HStrangeCorrelation {
         continue;
       float efficiency = 1.0f;
       float purity = 1.0f;
+      histos.fill(HIST("hDCAzAssocHadron"), assoc.dcaZ(), assoc.pt());
+      histos.fill(HIST("hDCAxyAssocHadron"), assoc.dcaXY(), assoc.pt());
       if (efficiencyFlags.applyEfficiencyCorrection) {
         efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
         if (efficiencyFlags.applyPurityHadron)
@@ -3328,7 +3347,19 @@ struct HStrangeCorrelation {
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
         if (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
-          histos.fill(HIST("Prediction/hTrigger"), gpt, geta, gphi);
+          if (masterConfigurations.useCentralityinPrediction) {
+            if (masterConfigurations.doSeparateFT0Prediction) {
+              histos.fill(HIST("Prediction/hTriggerFT0A"), gpt, geta, centMultFT0A);
+              histos.fill(HIST("Prediction/hTriggerFT0C"), gpt, geta, centMultFT0C);
+            }
+            histos.fill(HIST("Prediction/hTrigger"), gpt, geta, centMultFT0M);
+          } else {
+            if (masterConfigurations.doSeparateFT0Prediction) {
+              histos.fill(HIST("Prediction/hTriggerFT0A"), gpt, geta, multFT0A);
+              histos.fill(HIST("Prediction/hTriggerFT0C"), gpt, geta, multFT0C);
+            }
+            histos.fill(HIST("Prediction/hTrigger"), gpt, geta, multFT0M);
+          }
         }
         if (masterConfigurations.doCorrelationHadron) {
           if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {

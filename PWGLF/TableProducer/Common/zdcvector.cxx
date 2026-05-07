@@ -44,7 +44,9 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -59,6 +61,7 @@ struct zdcvector {
 
   Produces<aod::ZDCCalTables> zdccaltable;
   Produces<aod::ZDCEnergyTables> zdcenergytable;
+  Produces<aod::ZDCTimeTables> zdctimetable;
 
   // Configurables.
   struct : ConfigurableGroup {
@@ -100,8 +103,10 @@ struct zdcvector {
   } rctCut;
 
   Configurable<bool> storeZdcEnergy{"storeZdcEnergy", true, "Store ZDC tower/common energies in a linked extra table"};
+  Configurable<bool> storeZdcTime{"storeZdcTime", true, "Store timestamp and time from first event of run"};
 
   RCTFlagsChecker rctChecker;
+  std::unordered_map<int, uint64_t> runStartTime;
 
   void init(o2::framework::InitContext&)
   {
@@ -194,6 +199,17 @@ struct zdcvector {
     float znc3 = 0.f;
 
     auto bc = collision.foundBC_as<BCsRun3>();
+    const uint64_t timestampzdc = bc.timestamp(); // in milliseconds
+
+    float timeInMinutes = 0.f;
+
+    auto itStart = runStartTime.find(currentRunNumber);
+    if (itStart == runStartTime.end()) {
+      runStartTime[currentRunNumber] = timestampzdc;
+      timeInMinutes = 0.f;
+    } else {
+      timeInMinutes = static_cast<float>(timestampzdc - itStart->second) / 60000.f;
+    }
 
     // Helper to keep your early-return structure unchanged.
     // Every time ZDCCalTables is filled, the optional linked energy table is also filled.
@@ -213,8 +229,10 @@ struct zdcvector {
                   qyA,
                   qyC);
 
+      auto zdcCalIndex = zdccaltable.lastIndex();
+
       if (storeZdcEnergy) {
-        zdcenergytable(zdccaltable.lastIndex(),
+        zdcenergytable(zdcCalIndex,
                        znaEnergycommon,
                        zncEnergycommon,
                        zna0,
@@ -225,6 +243,11 @@ struct zdcvector {
                        znc1,
                        znc2,
                        znc3);
+      }
+      if (storeZdcTime) {
+        zdctimetable(zdcCalIndex,
+                     timestampzdc,
+                     timeInMinutes);
       }
     };
 

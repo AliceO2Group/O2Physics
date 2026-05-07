@@ -777,6 +777,36 @@ struct taggingHFE {
   }
 
   template <typename TMCParticle, typename TMCParticles>
+  bool isSemiLeptonic(TMCParticle const& mcParticle, TMCParticles const& mcParticles, const int pdgLepton, const int pdgNeutrino)
+  {
+    if (!mcParticle.has_daughters()) {
+      return false;
+    }
+    bool is_lepton_involved = false;
+    bool is_neutrino_involved = false;
+    for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+      if (d < mcParticles.size()) { // protect against bad daughter indices
+        auto daughter = mcParticles.rawIteratorAt(d);
+        if (daughter.pdgCode() == pdgLepton) {
+          is_lepton_involved = true;
+        } else if (daughter.pdgCode() == pdgNeutrino) {
+          is_neutrino_involved = true;
+        }
+      } else {
+        std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcParticles.size() << ")" << std::endl;
+        std::cout << " Check the MC generator" << std::endl;
+        return false;
+      }
+    }
+
+    if (is_lepton_involved && is_neutrino_involved) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template <typename TMCParticle, typename TMCParticles>
   bool isSemiLeptonic(TMCParticle const& mcParticle, TMCParticles const& mcParticles, const int pdgLepton, const int pdgNeutrino, const int pdgStrHad)
   {
     if (!mcParticle.has_daughters()) {
@@ -1098,12 +1128,6 @@ struct taggingHFE {
         }
       } // end of cascade loop
 
-      // // if (electronIds.size() > 0 || positronIds.size() > 0) {
-      // if ((electronIds.size() > 0 || positronIds.size() > 0) && (xiMinusIds.size() > 0 || xiPlusIds.size() > 0)) {
-      // LOGF(info, "collision.globalIndex() = %d, electronIds.size() = %d, positronIds.size() = %d, kaonMinusIds.size() = %d, kaonPlusIds.size() = %d, k0Ids.size() = %d, lambdaIds.size() = %d, antilambdaIds.size() = %d, xiMinusIds.size() = %d, xiPlusIds.size() = %d, omegaMinusIds.size() = %d, omegaPlusIds.size() = %d",
-      //     collision.globalIndex(), electronIds.size(), positronIds.size(), kaonMinusIds.size(), kaonPlusIds.size(), k0Ids.size(), lambdaIds.size(), antilambdaIds.size(), xiMinusIds.size(), xiPlusIds.size(), omegaMinusIds.size(), omegaPlusIds.size());
-      // }
-
       for (const auto& positronId : positronIds) {
         auto pos = tracks.rawIteratorAt(positronId);
         mDcaInfoCov.set(999, 999, 999, 999, 999);
@@ -1114,13 +1138,21 @@ struct taggingHFE {
         float dcaZ_lepton = mDcaInfoCov.getZ();
 
         auto mcpos = pos.template mcParticle_as<aod::McParticles>();
-        auto mcmother = mcpos.template mothers_as<aod::McParticles>()[0];
-        bool isMotherFromHF = (IsFromCharm(mcmother, mcParticles) > 0) || (IsFromBeauty(mcmother, mcParticles) > 0);
+        auto mcMother = mcpos.template mothers_as<aod::McParticles>()[0];
+        bool isMotherFromB = IsFromBeauty(mcMother, mcParticles) > -1;
         auto mcCollision = mcpos.template mcCollision_as<aod::McCollisions>();
+
+        bool is_e_from_dy = std::abs(mcMother.pdgCode()) == 23; // virtual photon is Z in simulation.
+        bool is_e_from_jpsi = std::abs(mcMother.pdgCode()) == 443;
+        bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
+        bool is_e_from_hb = (std::abs(mcMother.pdgCode()) == 511 || std::abs(mcMother.pdgCode()) == 521 || std::abs(mcMother.pdgCode()) == 531 || std::abs(mcMother.pdgCode()) == 541 || std::abs(mcMother.pdgCode()) == 5122 || std::abs(mcMother.pdgCode()) == 5132 || std::abs(mcMother.pdgCode()) == 5232 || std::abs(mcMother.pdgCode()) == 5332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
+        if (!(is_e_from_dy || is_e_from_jpsi || is_e_from_hc || is_e_from_hb)) {
+          continue;
+        }
 
         leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision.getSubGeneratorId(),
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
-                    isMotherFromHF, mcmother.pdgCode());
+                    isMotherFromB, mcMother.pdgCode());
 
         // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonMinusIds) {
@@ -1157,6 +1189,22 @@ struct taggingHFE {
               }
             }
           }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+            // I want 3 types.
+            // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
+            // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
+            // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
+            continue;
+          }
+
+          // if (std::abs(mckaon.pdgCode()) == 11) {
+          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
+          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
+          //     auto daughter = mcParticles.rawIteratorAt(d);
+          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+          //   }
+          // }
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
@@ -1232,6 +1280,10 @@ struct taggingHFE {
             }
           }
 
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
+          }
+
           emmllv0pair(leptonTable.lastIndex(),
                       v0.pt(), v0.rapidity(0),
                       RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
@@ -1286,6 +1338,10 @@ struct taggingHFE {
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             pdgCodeV0 = mcLambda.pdgCode();
             foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcLambda) > 0;
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
           }
 
           emmllv0pair(leptonTable.lastIndex(),
@@ -1349,6 +1405,10 @@ struct taggingHFE {
             }
           }
 
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
+          }
+
           emmllcascpair(leptonTable.lastIndex(),
                         cascade.pt(), cascade.rapidity(0),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
@@ -1410,6 +1470,10 @@ struct taggingHFE {
             }
           }
 
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
+          }
+
           emmllcascpair(leptonTable.lastIndex(),
                         cascade.pt(), cascade.rapidity(2),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
@@ -1435,13 +1499,21 @@ struct taggingHFE {
         float dcaZ_lepton = mDcaInfoCov.getZ();
 
         auto mcele = ele.template mcParticle_as<aod::McParticles>();
-        auto mcmother = mcele.template mothers_as<aod::McParticles>()[0];
-        bool isMotherFromHF = (IsFromCharm(mcmother, mcParticles) > 0) || (IsFromBeauty(mcmother, mcParticles) > 0);
+        auto mcMother = mcele.template mothers_as<aod::McParticles>()[0];
+        bool isMotherFromB = IsFromBeauty(mcMother, mcParticles) > -1;
         auto mcCollision = mcele.template mcCollision_as<aod::McCollisions>();
+
+        bool is_e_from_dy = std::abs(mcMother.pdgCode()) == 23; // virtual photon is Z in simulation.
+        bool is_e_from_jpsi = std::abs(mcMother.pdgCode()) == 443;
+        bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1);
+        bool is_e_from_hb = (std::abs(mcMother.pdgCode()) == 511 || std::abs(mcMother.pdgCode()) == 521 || std::abs(mcMother.pdgCode()) == 531 || std::abs(mcMother.pdgCode()) == 541 || std::abs(mcMother.pdgCode()) == 5122 || std::abs(mcMother.pdgCode()) == 5132 || std::abs(mcMother.pdgCode()) == 5232 || std::abs(mcMother.pdgCode()) == 5332) && isSemiLeptonic(mcMother, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1);
+        if (!(is_e_from_dy || is_e_from_jpsi || is_e_from_hc || is_e_from_hb)) {
+          continue;
+        }
 
         leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision.getSubGeneratorId(),
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
-                    isMotherFromHF, mcmother.pdgCode());
+                    isMotherFromB, mcMother.pdgCode());
 
         // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonPlusIds) {
@@ -1477,6 +1549,22 @@ struct taggingHFE {
               }
             }
           }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+            // I want 3 types.
+            // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
+            // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
+            // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
+            continue;
+          }
+
+          // if (std::abs(mckaon.pdgCode()) == 11) {
+          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
+          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
+          //     auto daughter = mcParticles.rawIteratorAt(d);
+          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+          //   }
+          // }
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
@@ -1551,6 +1639,10 @@ struct taggingHFE {
             }
           }
 
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
+          }
+
           emmllv0pair(leptonTable.lastIndex(),
                       v0.pt(), v0.rapidity(0),
                       RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
@@ -1605,6 +1697,10 @@ struct taggingHFE {
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             pdgCodeV0 = mcLambda.pdgCode();
             foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcLambda) > 0;
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
           }
 
           emmllv0pair(leptonTable.lastIndex(),
@@ -1668,6 +1764,10 @@ struct taggingHFE {
             }
           }
 
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
+          }
+
           emmllcascpair(leptonTable.lastIndex(),
                         cascade.pt(), cascade.rapidity(0),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
@@ -1727,6 +1827,10 @@ struct taggingHFE {
               pdgCodeCascade = mcOmega.pdgCode();
               foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcOmega) > 0;
             }
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+            continue;
           }
 
           emmllcascpair(leptonTable.lastIndex(),
@@ -1857,7 +1961,16 @@ struct taggingHFE {
           fRegistry.fill(HIST("Generated/Lc/hsAcc"), ptLepton, ptHadron, etaLepton, etaHadron);
         }
 
-      } // end of D0 loop per mcCollision
+      } // end of Lc loop per mcCollision
+
+      // auto mcB0s_per_mccollision = mcB0s.sliceBy(perMcCollision, mcCollision.globalIndex());
+      // for (const auto& mcParticle : mcB0s_per_mccollision) {
+      //   LOGF(info, "B0: mcParticle.pdgCode() = %d", mcParticle.pdgCode());
+      //   for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+      //     auto daughter = mcParticles.rawIteratorAt(d);
+      //     LOGF(info, "B0: daughter.pdgCode() = %d", daughter.pdgCode());
+      //   }
+      // } // end of B0 loop per mcCollision
     }
   }
 
@@ -1867,6 +1980,7 @@ struct taggingHFE {
   Partition<aod::McParticles> mcLcs = nabs(o2::aod::mcparticle::pdgCode) == 4122;
   // Partition<aod::McParticles> mcXic0s = nabs(o2::aod::mcparticle::pdgCode) == 4232;
   // Partition<aod::McParticles> mcOmegac0s = nabs(o2::aod::mcparticle::pdgCode) == 4332;
+  // Partition<aod::McParticles> mcB0s = nabs(o2::aod::mcparticle::pdgCode) == 511;
 
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;

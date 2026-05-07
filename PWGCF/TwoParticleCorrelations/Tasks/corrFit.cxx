@@ -14,7 +14,6 @@
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch)
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
@@ -28,7 +27,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsCommonDataFormats/AlignParam.h>
 #include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -46,7 +44,6 @@
 #include <TH3.h>
 #include <TRandom3.h>
 
-#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>

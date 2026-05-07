@@ -14,41 +14,58 @@
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch, Wenya Wu, TUM, wenya.wu@cern.ch
 
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
-#include "PWGCF/GenericFramework/Core/FlowPtContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <Framework/ASoAHelpers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <complex>
+#include <cstdint>
+#include <cstdlib>
 #include <ctime>
+#include <iterator>
 #include <map>
-#include <numeric>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
