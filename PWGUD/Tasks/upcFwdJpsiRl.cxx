@@ -9,8 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+
 /// \file UpcFwdJpsiRl.cxx
 /// \brief UPC forward J/psi analysis with configurable track-type candidate selection
+/// \author Roman Lavicka, roman.lavicka@cern.ch
+/// \since  07.05.2026
 ///
 /// Candidate types (configured via candidateType):
 ///   0 = GlobalMuon-GlobalMuon: both tracks are GlobalMuonTrack (enum 0) or GlobalMuonTrackOtherMatch (enum 1)
@@ -19,7 +22,6 @@
 
 /// executable name o2-analysis-ud-upc-fwd-jpsi-rl
 
-/// \author Roman Lavicka <roman.lavicka@cern.ch>
 
 #include "PWGUD/DataModel/UDTables.h"
 
