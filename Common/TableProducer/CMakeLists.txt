@@ -79,6 +79,11 @@ o2physics_add_dpl_workflow(propagationservice
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(propagationservice-v2
+                    SOURCES propagationServiceV2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(propagationservice-run2
                     SOURCES propagationServiceRun2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
