@@ -210,9 +210,8 @@ struct lambdajetpolarizationions {
     std::string prefix = "v0Selections"; // JSON group name
     Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
+    Configurable<float> rapidityCut{"rapidityCut", 1.0f, "rapidity"}; // This is actually a physics cut, not a proper acceptance cut
     // Selection criteria: acceptance
-    Configurable<float> rapidityCut{"rapidityCut", 1.0f, "rapidity"};
-    Configurable<float> v0EtaCut{"v0EtaCut", 0.9f, "eta cut for v0"};
     Configurable<float> daughterEtaCut{"daughterEtaCut", 0.9f, "max eta for daughters"}; // Default is 0.8. Changed to 0.9 to agree with jet selection. TODO: test the impact/biasing of this!
 
     // Standard 5 topological criteria -- Closed a bit more for the Lambda analysis
@@ -1258,12 +1257,10 @@ struct lambdajetpolarizationions {
       return false;
     V0SelCounter.fill();
 
-    // pseudorapidity cuts:
+    // rapidity cuts (this is actually a physics cut, moreso than being an acceptance cut):
     if (std::fabs(v0.yLambda()) > v0Selections.rapidityCut)
       return false;
-    // if (std::fabs(v0.eta()) > v0Selections.v0EtaCut) return false;
     V0SelCounter.fill();
-    // if (std::fabs(v0.eta()) > v0Selections.daughterEtaCut) return false; // (TODO: properly consider this in daughter selection!)
 
     // competing mass rejection (if compMassRejection < 0, this cut does nothing)
     if (std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0Selections.compMassRejection)
