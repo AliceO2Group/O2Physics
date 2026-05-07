@@ -75,6 +75,7 @@ DECLARE_SOA_COLUMN(MlScore0, mlScore0, float);     //! ML score of the first con
 DECLARE_SOA_COLUMN(MlScore1, mlScore1, float);     //! ML score of the second configured index
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality
+DECLARE_SOA_COLUMN(RedQVec, redQVec, float);       //! Reduced Q-vector
 } // namespace full
 DECLARE_SOA_TABLE(HfCandMPtInfos, "AOD", "HFCANDMPTINFO",
                   full::M,
@@ -89,6 +90,7 @@ DECLARE_SOA_TABLE(HfCandFlowInfos, "AOD", "HFCANDFLOWINFO",
                   full::MlScore1,
                   full::ScalarProd,
                   full::Cent);
+DECLARE_SOA_TABLE(HfRedQVecEsEs, "AOD", "HFREDQVECESE", full::RedQVec);
 } // namespace o2::aod
 
 enum DecayChannel { DplusToPiKPi = 0,
@@ -106,15 +108,18 @@ enum DecayChannel { DplusToPiKPi = 0,
 struct HfTaskFlowCharmHadrons {
   Produces<o2::aod::HfCandMPtInfos> rowCandMassPtMl;
   Produces<o2::aod::HfCandFlowInfos> rowCandMassPtMlSpCent;
+  Produces<o2::aod::HfRedQVecEsEs> rowRedQVecEsE;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
+  Configurable<int> qVecRedDetector{"qVecRedDetector", 6, "Detector for Q vector estimation (FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4, NTracksPV: 5, FT0CVariant2: 6)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
+  Configurable<bool> storeRedQVec{"storeRedQVec", false, "Flag to store reduced Q-vectors for ESE"};
   Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass, pt and ML scores tree"};
   Configurable<bool> fillMassPtMlSpCentTree{"fillMassPtMlSpCentTree", false, "Flag to fill mass, pt, ML scores, SP and centrality tree"};
   Configurable<bool> fillSparse{"fillSparse", true, "Flag to fill sparse"};
@@ -148,7 +153,7 @@ struct HfTaskFlowCharmHadrons {
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -198,6 +203,7 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, 8}, ""};
   ConfigurableAxis thnConfigAxisCandidateEta{"thnConfigAxisCandidateEta", {100, -5, 5}, ""};
   ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {6, -3.0, 3.0}, ""};
+  ConfigurableAxis thnConfigAxisRedQVec{"thnConfigAxisRedQVec", {1000, 0, 100}, ""};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -225,6 +231,7 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnConfigAxisNoCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow"};
     const AxisSpec thnAxisNoCollInTimeRangeStandard{thnConfigAxisNoCollInTimeRangeStandard, "NoCollInTimeRangeStandard"};
     const AxisSpec thnAxisNoCollInRofStandard{thnConfigAxisNoCollInRofStandard, "NoCollInRofStandard"};
+    const AxisSpec thnAxisRedQVec{thnConfigAxisRedQVec, "Reduced Q-vector"};
     // TODO: currently only the Q vector of FT0c FV0a and TPCtot are considered
     const AxisSpec thnAxisResoFT0cFV0a{thnConfigAxisResoFT0cFV0a, "Q_{FT0c} #bullet Q_{FV0a}"};
     const AxisSpec thnAxisResoFT0cTPCtot{thnConfigAxisResoFT0cTPCtot, "Q_{FT0c} #bullet Q_{TPCtot}"};
@@ -251,6 +258,9 @@ struct HfTaskFlowCharmHadrons {
         axes.insert(axes.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisOccupancy,
                                  thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
       }
+    }
+    if (storeRedQVec) {
+      axes.insert(axes.end(), {thnAxisRedQVec});
     }
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
     registry.add("hCentEventWithCand", "Centrality distributions with charm candidates;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
@@ -287,6 +297,14 @@ struct HfTaskFlowCharmHadrons {
       registry.add("spReso/hSpResoFV0aTPCneg", "hSpResoFV0aTPCneg; centrality; Q_{FV0a} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
       registry.add("spReso/hSpResoFV0aTPCtot", "hSpResoFV0aTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
       registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
+
+      if (storeRedQVec) {
+        registry.add("redQVecs/hSparseRedQVecs", "hSpResoRedQVec; centrality; Q_{red} #bullet Q_{TPCtot}", {HistType::kTHnSparseF, {thnAxisCent, thnAxisRedQVec, thnAxisRedQVec, thnAxisRedQVec, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecFT0C", "hRedQVecFT0C; centrality; q_{FT0c}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecTpcPos", "hRedQVecTpcPos; centrality; q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecTpcNeg", "hRedQVecTpcNeg; centrality; q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+        registry.add("redQVecs/hRedQVecTpcAll", "hRedQVecTpcAll; centrality; q_{TPCall}", {HistType::kTH2F, {thnAxisCent, thnAxisRedQVec}});
+      }
 
       if (saveEpResoHisto) {
         registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
@@ -430,6 +448,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param outputMl are the ML scores
   /// \param occupancy is the occupancy of the collision using the track estimator
   /// \param hfevselflag flag of the collision associated to utilsEvSelHf.h
+  /// \param redQVec is the reduced Q vector for EsE
   void fillThn(const float mass,
                const float pt,
                const float eta,
@@ -441,7 +460,8 @@ struct HfTaskFlowCharmHadrons {
                const float sp,
                const std::vector<float>& outputMl,
                const float occupancy,
-               const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
+               const o2::hf_evsel::HfCollisionRejectionMask hfevselflag,
+               const float redQVec)
   {
     auto hSparse = registry.get<THnSparse>(HIST("hSparseFlowCharm"));
     const int ndim = hSparse->GetNdimensions();
@@ -480,6 +500,9 @@ struct HfTaskFlowCharmHadrons {
       values.push_back(evtSelFlags[3]);
       values.push_back(evtSelFlags[4]);
     }
+    if (storeRedQVec) {
+      values.push_back(redQVec);
+    }
 
     if (static_cast<int>(values.size()) != ndim) {
       LOGF(fatal,
@@ -487,7 +510,6 @@ struct HfTaskFlowCharmHadrons {
            "does not match THnSparse dimensionality (%d).",
            static_cast<int>(values.size()), ndim);
     }
-
     hSparse->Fill(values.data());
   }
 
@@ -501,13 +523,16 @@ struct HfTaskFlowCharmHadrons {
                       aod::BCsWithTimestamps const&,
                       float& centrality)
   {
-    const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+    float occupancy{-999.f};
+    if (occEstimator != 0) {
+      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+    }
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     centrality = o2::hf_centrality::getCentralityColl(collision, CentEstimator);
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
-    registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
     return rejectionMask == 0;
   }
 
@@ -543,6 +568,16 @@ struct HfTaskFlowCharmHadrons {
     float yQVec = qVecs[1];
     float const amplQVec = qVecs[2];
     float const evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
+
+    float redQVec{-999.f};
+    std::array<float, 3> qVecRedComps{-999.f, -999.f, -999.f};
+    if (storeRedQVec) {
+      qVecRedComps = getEseQvec(collision, qVecRedDetector.value);
+    }
+    float xRedQVec = qVecRedComps[0];
+    float yRedQVec = qVecRedComps[1];
+    float const amplRedQVec = qVecRedComps[2];
+
     for (const auto& candidate : candidates) {
       float massCand = 0.;
       float signCand = 0.;
@@ -681,10 +716,16 @@ struct HfTaskFlowCharmHadrons {
         etaCand = candidate.eta();
       }
 
+      float const cosNPhi = std::cos(harmonic * phiCand);
+      float const sinNPhi = std::sin(harmonic * phiCand);
+      float const cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
+
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the corresponding TPC Q vector to avoid self-correlations
-      if (qVecDetector == QvecEstimator::TPCNeg ||
-          qVecDetector == QvecEstimator::TPCPos ||
-          qVecDetector == QvecEstimator::TPCTot) {
+      bool subtractDaugsFromQVec = (qVecDetector == QvecEstimator::TPCNeg ||
+                                    qVecDetector == QvecEstimator::TPCPos ||
+                                    qVecDetector == QvecEstimator::TPCTot);
+      float scalprodCand{-999.f};
+      if (subtractDaugsFromQVec) {
 
         std::vector<float> tracksQx;
         std::vector<float> tracksQy;
@@ -697,16 +738,12 @@ struct HfTaskFlowCharmHadrons {
         }
 
         // subtract daughters' contribution from the (normalized) Q-vector
-        for (std::size_t iTrack = 0; iTrack < tracksQx.size(); ++iTrack) {
-          xQVec -= tracksQx[iTrack];
-          yQVec -= tracksQy[iTrack];
-        }
+        float xQVecDaugSubtr = xQVec - std::accumulate(tracksQx.begin(), tracksQx.end(), 0.0);
+        float yQVecDaugSubtr = yQVec - std::accumulate(tracksQy.begin(), tracksQy.end(), 0.0);
+        scalprodCand = cosNPhi * xQVecDaugSubtr + sinNPhi * yQVecDaugSubtr;
+      } else {
+        scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       }
-
-      float const cosNPhi = std::cos(harmonic * phiCand);
-      float const sinNPhi = std::sin(harmonic * phiCand);
-      float const scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
-      float const cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
       if (fillMassPtMlTree || fillMassPtMlSpCentTree) {
         if (downSampleFactor < 1.) {
@@ -722,8 +759,37 @@ struct HfTaskFlowCharmHadrons {
           rowCandMassPtMlSpCent(massCand, ptCand, outputMl[0], outputMl[1], scalprodCand, cent);
         }
       }
+
+      bool subtractDaugsFromRedQVec = storeRedQVec && (qVecRedDetector == QvecEstimator::TPCNeg ||
+                                                       qVecRedDetector == QvecEstimator::TPCPos ||
+                                                       qVecRedDetector == QvecEstimator::TPCTot);
+      if (subtractDaugsFromRedQVec) {
+        std::vector<float> tracksRedQx;
+        std::vector<float> tracksRedQy;
+
+        // IMPORTANT: use the amplitude of the reduced Q-vector to build this Q-vector
+        if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
+          getQvecXic0Tracks(candidate, tracksRedQx, tracksRedQy, std::sqrt(amplRedQVec), static_cast<QvecEstimator>(qVecRedDetector.value));
+        } else {
+          getQvecDtracks<Channel>(candidate, tracksRedQx, tracksRedQy, std::sqrt(amplRedQVec), static_cast<QvecEstimator>(qVecRedDetector.value));
+        }
+
+        // subtract daughters' contribution from the (normalized) Q-vector
+        const float redQVecXDaugSubtr = xRedQVec - std::accumulate(tracksRedQx.begin(), tracksRedQx.end(), 0.0);
+        const float redQVecYDaugSubtr = yRedQVec - std::accumulate(tracksRedQy.begin(), tracksRedQy.end(), 0.0);
+        if (qVecRedDetector.value == QvecEstimator::TPCTot || qVecRedDetector.value == QvecEstimator::TPCPos || qVecRedDetector.value == QvecEstimator::TPCNeg) {
+          // Correct for track multiplicity
+          redQVec = std::hypot(redQVecXDaugSubtr, redQVecYDaugSubtr) * std::sqrt(amplRedQVec) / std::sqrt(amplRedQVec - tracksRedQx.size());
+        } else {
+          redQVec = std::hypot(xRedQVec, yRedQVec);
+        }
+      }
+      if (storeRedQVec) {
+        rowRedQVecEsE(redQVec);
+      }
       if (fillSparse) {
-        fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
+        fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi,
+                cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag, redQVec);
       }
     }
     if (hasCandInMassWin) {
@@ -878,28 +944,38 @@ struct HfTaskFlowCharmHadrons {
     float const yQVecFT0m = collision.qvecFT0MIm();
     float const xQVecFV0a = collision.qvecFV0ARe();
     float const yQVecFV0a = collision.qvecFV0AIm();
-    float const xQVecBPos = collision.qvecBPosRe();
-    float const yQVecBPos = collision.qvecBPosIm();
-    float const xQVecBNeg = collision.qvecBNegRe();
-    float const yQVecBNeg = collision.qvecBNegIm();
-    float const xQVecBTot = collision.qvecBTotRe();
-    float const yQVecBTot = collision.qvecBTotIm();
+    float const xQVecTPCPos = collision.qvecTPCposRe();
+    float const yQVecTPCPos = collision.qvecTPCposIm();
+    float const xQVecTPCNeg = collision.qvecTPCnegRe();
+    float const yQVecTPCNeg = collision.qvecTPCnegIm();
+    float const xQVecTPCAll = collision.qvecTPCallRe();
+    float const yQVecTPCAll = collision.qvecTPCallIm();
 
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
     if (storeResoOccu) {
-      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
-      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      float occupancy{-999.f};
+      if (occEstimator != 0) {
+        occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+        registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      }
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       std::vector<int> evtSelFlags = getEventSelectionFlags(rejectionMask);
       registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
-                    xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
-                    xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,
+                    xQVecFT0c * xQVecTPCAll + yQVecFT0c * yQVecTPCAll,
+                    xQVecFV0a * xQVecTPCAll + yQVecFV0a * yQVecTPCAll,
                     occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
     }
 
     if (storeCentSparse) {
       registry.fill(HIST("hSparseCentEstimators"), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(0)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(1)),
                     o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(2)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(3)));
+    }
+    if (storeRedQVec) {
+      registry.fill(HIST("redQVecs/hSparseRedQVecs"), centrality,
+                    std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()),
+                    std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()),
+                    std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()),
+                    std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
@@ -909,30 +985,35 @@ struct HfTaskFlowCharmHadrons {
 
     registry.fill(HIST("spReso/hSpResoFT0cFT0a"), centrality, xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a);
     registry.fill(HIST("spReso/hSpResoFT0cFV0a"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a);
-    registry.fill(HIST("spReso/hSpResoFT0cTPCpos"), centrality, xQVecFT0c * xQVecBPos + yQVecFT0c * yQVecBPos);
-    registry.fill(HIST("spReso/hSpResoFT0cTPCneg"), centrality, xQVecFT0c * xQVecBNeg + yQVecFT0c * yQVecBNeg);
-    registry.fill(HIST("spReso/hSpResoFT0cTPCtot"), centrality, xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot);
+    registry.fill(HIST("spReso/hSpResoFT0cTPCpos"), centrality, xQVecFT0c * xQVecTPCPos + yQVecFT0c * yQVecTPCPos);
+    registry.fill(HIST("spReso/hSpResoFT0cTPCneg"), centrality, xQVecFT0c * xQVecTPCNeg + yQVecFT0c * yQVecTPCNeg);
+    registry.fill(HIST("spReso/hSpResoFT0cTPCtot"), centrality, xQVecFT0c * xQVecTPCAll + yQVecFT0c * yQVecTPCAll);
     registry.fill(HIST("spReso/hSpResoFT0aFV0a"), centrality, xQVecFT0a * xQVecFV0a + yQVecFT0a * yQVecFV0a);
-    registry.fill(HIST("spReso/hSpResoFT0aTPCpos"), centrality, xQVecFT0a * xQVecBPos + yQVecFT0a * yQVecBPos);
-    registry.fill(HIST("spReso/hSpResoFT0aTPCneg"), centrality, xQVecFT0a * xQVecBNeg + yQVecFT0a * yQVecBNeg);
-    registry.fill(HIST("spReso/hSpResoFT0aTPCtot"), centrality, xQVecFT0a * xQVecBTot + yQVecFT0a * yQVecBTot);
+    registry.fill(HIST("spReso/hSpResoFT0aTPCpos"), centrality, xQVecFT0a * xQVecTPCPos + yQVecFT0a * yQVecTPCPos);
+    registry.fill(HIST("spReso/hSpResoFT0aTPCneg"), centrality, xQVecFT0a * xQVecTPCNeg + yQVecFT0a * yQVecTPCNeg);
+    registry.fill(HIST("spReso/hSpResoFT0aTPCtot"), centrality, xQVecFT0a * xQVecTPCAll + yQVecFT0a * yQVecTPCAll);
     registry.fill(HIST("spReso/hSpResoFT0mFV0a"), centrality, xQVecFT0m * xQVecFV0a + yQVecFT0m * yQVecFV0a);
-    registry.fill(HIST("spReso/hSpResoFT0mTPCpos"), centrality, xQVecFT0m * xQVecBPos + yQVecFT0m * yQVecBPos);
-    registry.fill(HIST("spReso/hSpResoFT0mTPCneg"), centrality, xQVecFT0m * xQVecBNeg + yQVecFT0m * yQVecBNeg);
-    registry.fill(HIST("spReso/hSpResoFT0mTPCtot"), centrality, xQVecFT0m * xQVecBTot + yQVecFT0m * yQVecBTot);
-    registry.fill(HIST("spReso/hSpResoFV0aTPCpos"), centrality, xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
-    registry.fill(HIST("spReso/hSpResoFV0aTPCneg"), centrality, xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
-    registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot);
-    registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecBPos * xQVecBNeg + yQVecBPos * yQVecBNeg);
+    registry.fill(HIST("spReso/hSpResoFT0mTPCpos"), centrality, xQVecFT0m * xQVecTPCPos + yQVecFT0m * yQVecTPCPos);
+    registry.fill(HIST("spReso/hSpResoFT0mTPCneg"), centrality, xQVecFT0m * xQVecTPCNeg + yQVecFT0m * yQVecTPCNeg);
+    registry.fill(HIST("spReso/hSpResoFT0mTPCtot"), centrality, xQVecFT0m * xQVecTPCAll + yQVecFT0m * yQVecTPCAll);
+    registry.fill(HIST("spReso/hSpResoFV0aTPCpos"), centrality, xQVecFV0a * xQVecTPCPos + yQVecFV0a * yQVecTPCPos);
+    registry.fill(HIST("spReso/hSpResoFV0aTPCneg"), centrality, xQVecFV0a * xQVecTPCNeg + yQVecFV0a * yQVecTPCNeg);
+    registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecTPCAll + yQVecFV0a * yQVecTPCAll);
+    registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecTPCPos * xQVecTPCNeg + yQVecTPCPos * yQVecTPCNeg);
+
+    registry.fill(HIST("redQVecs/hRedQVecFT0C"), centrality, std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()));
+    registry.fill(HIST("redQVecs/hRedQVecTpcPos"), centrality, std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()));
+    registry.fill(HIST("redQVecs/hRedQVecTpcNeg"), centrality, std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()));
+    registry.fill(HIST("redQVecs/hRedQVecTpcAll"), centrality, std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
 
     if (saveEpResoHisto) {
       float const epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, harmonic);
       float const epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic);
       float const epFT0m = epHelper.GetEventPlane(xQVecFT0m, yQVecFT0m, harmonic);
       float const epFV0a = epHelper.GetEventPlane(xQVecFV0a, yQVecFV0a, harmonic);
-      float const epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, harmonic);
-      float const epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
-      float const epBTots = epHelper.GetEventPlane(xQVecBTot, yQVecBTot, harmonic);
+      float const epBPoss = epHelper.GetEventPlane(xQVecTPCPos, yQVecTPCPos, harmonic);
+      float const epBNegs = epHelper.GetEventPlane(xQVecTPCNeg, yQVecTPCNeg, harmonic);
+      float const epBTots = epHelper.GetEventPlane(xQVecTPCAll, yQVecTPCAll, harmonic);
 
       registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a, harmonic)));
       registry.fill(HIST("epReso/hEpResoFT0cFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFV0a, harmonic)));

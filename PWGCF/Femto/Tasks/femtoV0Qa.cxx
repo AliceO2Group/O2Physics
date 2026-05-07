@@ -166,8 +166,11 @@ struct FemtoV0Qa {
 
   void processK0short(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto k0shortSlice = k0shortPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (k0shortSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     for (auto const& k0short : k0shortSlice) {
       k0shortHistManager.fill<modes::Mode::kAnalysis_Qa>(k0short, tracks);
     }
@@ -176,8 +179,11 @@ struct FemtoV0Qa {
 
   void processK0shortMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoK0shortsWithLabel const& /*k0shorts*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto k0shortSlice = k0shortWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (k0shortSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     for (auto const& k0short : k0shortSlice) {
       if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
@@ -189,8 +195,11 @@ struct FemtoV0Qa {
 
   void processLambda(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto lambdaSlice = lambdaPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (lambdaSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     for (auto const& lambda : lambdaSlice) {
       lambdaHistManager.fill<modes::Mode::kAnalysis_Qa>(lambda, tracks);
     }
@@ -199,8 +208,11 @@ struct FemtoV0Qa {
 
   void processLambdaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto lambdaSlice = lambdaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (lambdaSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     for (auto const& lambda : lambdaSlice) {
       if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;

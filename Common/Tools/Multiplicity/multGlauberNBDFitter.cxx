@@ -39,6 +39,7 @@
 #include <TNamed.h>
 #include <TProfile.h>
 #include <TStopwatch.h>
+#include <TString.h>
 #include <TVirtualFitter.h>
 
 #include <Rtypes.h>

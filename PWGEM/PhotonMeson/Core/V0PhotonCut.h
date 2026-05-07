@@ -29,7 +29,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
-#include <Math/Vector3D.h> // IWYU pragma: keep
 #include <TH2.h>
 #include <TNamed.h>
 

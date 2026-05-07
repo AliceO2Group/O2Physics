@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef ANALYSIS_CORE_EVENTMIXING_H_
-#define ANALYSIS_CORE_EVENTMIXING_H_
+#ifndef COMMON_CORE_EVENTMIXING_H_
+#define COMMON_CORE_EVENTMIXING_H_
 
 namespace eventmixing
 {
@@ -47,4 +47,4 @@ static int getMixingBin(const T1& vtxBins, const T1& multBins, const T2& vtx, co
 }
 }; // namespace eventmixing
 
-#endif /* ANALYSIS_CORE_EVENTMIXING_H_ */
+#endif // COMMON_CORE_EVENTMIXING_H_

@@ -836,7 +836,7 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack>
-  bool fillCandidateInfoHyper(const aod::DataHypCandsWColl::iterator& V0Hyper, const Ttrack& trackHad, HadNucandidate& hadHypercand, bool isMixedEvent)
+  void fillCandidateInfoHyper(const aod::DataHypCandsWColl::iterator& V0Hyper, const Ttrack& trackHad, HadNucandidate& hadHypercand, bool isMixedEvent)
   {
     hadHypercand.collisionID = V0Hyper.collisionId();
     // get hypertriton information
@@ -898,7 +898,6 @@ struct HadNucleiFemto {
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       hadHypercand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
-    return true;
   }
 
   template <typename Ttrack>
@@ -1166,9 +1165,7 @@ struct HadNucleiFemto {
       // auto collBracket = trackPair.collBracket;
 
       HadNucandidate hadNucand;
-      if (!fillCandidateInfoHyper(v0hyper, hadTrack, hadNucand, isMixedEvent)) {
-        continue;
-      }
+      fillCandidateInfoHyper(v0hyper, hadTrack, hadNucand, isMixedEvent);
 
       mQaRegistry.fill(HIST("hNuPt"), hadNucand.recoPtNu());
       mQaRegistry.fill(HIST("hHadPt"), hadNucand.recoPtHad());

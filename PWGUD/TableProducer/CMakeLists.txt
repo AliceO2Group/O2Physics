@@ -66,6 +66,11 @@ o2physics_add_dpl_workflow(upc-cand-producer-muon
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(true-gap-producer
+                           SOURCES trueGapProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-cand-producer-global-muon
         SOURCES upcCandProducerGlobalMuon.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking

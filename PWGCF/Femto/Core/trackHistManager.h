@@ -155,26 +155,35 @@ struct ConfTrackBinning : o2::framework::ConfigurableGroup {
 constexpr const char PrefixTrackBinning1[] = "TrackBinning1";
 constexpr const char PrefixTrackBinning2[] = "TrackBinning2";
 constexpr const char PrefixTrackBinning3[] = "TrackBinning3";
-constexpr const char PrefixResonancePosDauBinning[] = "ResonancePosDauBinning";
-constexpr const char PrefixResonanceNegDauBinning[] = "ResonanceNegDauBinning";
 constexpr const char PrefixV0PosDauBinning[] = "V0PosDauBinning";
 constexpr const char PrefixV0NegDauBinning[] = "V0NegDauBinning";
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
 constexpr const char PrefixKinkChaDauBinning[] = "KinkChaDauBinning";
+constexpr const char PrefixResonancePosDauBinning[] = "ResonancePosDauBinning";
+constexpr const char PrefixResonanceNegDauBinning[] = "ResonanceNegDauBinning";
+constexpr const char PrefixPionPlusBinning[] = "PionPlusBinning";
+constexpr const char PrefixPionMinusBinning[] = "PionMinusBinning";
+constexpr const char PrefixKaonPlusBinning[] = "KaonPlusBinning";
+constexpr const char PrefixKaonMinusBinning[] = "KaonMinusBinning";
 
 using ConfTrackBinning1 = ConfTrackBinning<PrefixTrackBinning1>;
 using ConfTrackBinning2 = ConfTrackBinning<PrefixTrackBinning2>;
 using ConfTrackBinning3 = ConfTrackBinning<PrefixTrackBinning3>;
-using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
-using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
 using ConfV0PosDauBinning = ConfTrackBinning<PrefixV0PosDauBinning>;
 using ConfV0NegDauBinning = ConfTrackBinning<PrefixV0NegDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
 using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
+// for resonance daughters
+using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
+using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
+using ConfPionPlusBinning = ConfTrackBinning<PrefixPionPlusBinning>;
+using ConfPionMinusBinning = ConfTrackBinning<PrefixPionPlusBinning>;
+using ConfKaonPlusBinning = ConfTrackBinning<PrefixKaonPlusBinning>;
+using ConfKaonMinusBinning = ConfTrackBinning<PrefixKaonPlusBinning>;
 
 template <const char* Prefix>
 struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {

@@ -23,11 +23,12 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMFwdTrack
 {
  public:
-  EMFwdTrack(float pt, float eta, float phi, float /*mass*/, int8_t charge, float dcaX, float dcaY, float cXX, float cXY, float cYY)
+  EMFwdTrack(float pt, float eta, float phi, float /*mass*/, int8_t sign, float dcaX, float dcaY, float cXX, float cXY, float cYY)
   {
-    fSigned1Pt = static_cast<float>(charge) / pt;
+    fPt = pt;
     fEta = eta;
     fPhi = phi;
+    fSign = sign;
     fDCAx = dcaX;
     fDCAy = dcaY;
     fCXX = cXX;
@@ -37,28 +38,28 @@ class EMFwdTrack
 
   ~EMFwdTrack() {}
 
-  float pt() const { return 1.f / std::fabs(fSigned1Pt); }
+  float pt() const { return fPt; }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
-  int8_t sign() const { return (fSigned1Pt > 0 ? +1 : -1); }
+  int8_t sign() const { return fSign; }
   float fwdDcaX() const { return fDCAx; }
   float fwdDcaY() const { return fDCAy; }
   float fwdDcaXY() const { return std::sqrt(std::pow(fDCAx, 2) + std::pow(fDCAy, 2)); }
-  float p() const { return 1.f / std::fabs(fSigned1Pt) * std::cosh(fEta); }
-  float px() const { return 1.f / std::fabs(fSigned1Pt) * std::cos(fPhi); }
-  float py() const { return 1.f / std::fabs(fSigned1Pt) * std::sin(fPhi); }
-  float pz() const { return 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta); }
-  // float e(const float mass) const { return std::hypot(fPt * std::cosh(fEta), mass); } // e2 = p2 + m2
-  float signed1Pt() const { return fSigned1Pt; }
+  float p() const { return fPt * std::cosh(fEta); }
+  float px() const { return fPt * std::cos(fPhi); }
+  float py() const { return fPt * std::sin(fPhi); }
+  float pz() const { return fPt * std::sinh(fEta); }
+  float signed1Pt() const { return fSign / fPt; }
 
   float cXX() const { return fCXX; }
   float cXY() const { return fCXY; }
   float cYY() const { return fCYY; }
 
  protected:
-  float fSigned1Pt;
+  float fPt;
   float fEta;
   float fPhi;
+  int8_t fSign;
   float fDCAx;
   float fDCAy;
   float fCXX;
@@ -69,11 +70,11 @@ class EMFwdTrack
 class EMFwdTrackWithCov : public EMFwdTrack
 {
  public:
-  EMFwdTrackWithCov(float pt, float eta, float phi, float mass, int8_t charge, float dcaX, float dcaY, float cXX, float cXY, float cYY,
+  EMFwdTrackWithCov(float pt, float eta, float phi, float mass, int8_t sign, float dcaX, float dcaY, float cXX, float cXY, float cYY,
                     float X = 0.f, float Y = 0.f, float Z = 0.f, float tgl = 0.f,
                     float cPhiX = 0.f, float cPhiY = 0.f, float cPhiPhi = 0.f,
                     float cTglX = 0.f, float cTglY = 0.f, float cTglPhi = 0.f, float cTglTgl = 0.f,
-                    float c1PtX = 0.f, float c1PtY = 0.f, float c1PtPhi = 0.f, float c1PtTgl = 0.f, float c1Pt21Pt2 = 0.f, float chi2 = 0.f) : EMFwdTrack(pt, eta, phi, mass, charge, dcaX, dcaY, cXX, cXY, cYY)
+                    float c1PtX = 0.f, float c1PtY = 0.f, float c1PtPhi = 0.f, float c1PtTgl = 0.f, float c1Pt21Pt2 = 0.f, float chi2 = 0.f) : EMFwdTrack(pt, eta, phi, mass, sign, dcaX, dcaY, cXX, cXY, cYY)
   {
     fX = X;
     fY = Y;

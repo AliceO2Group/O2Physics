@@ -139,7 +139,7 @@ struct lambdaAnalysis_pb {
   Configurable<bool> cEvtMCSel8{"cEvtMCSel8", false, "MC event sel: isInSel8"};
   Configurable<bool> cEvtMCVtxIn10{"cEvtMCVtxIn10", false, "MC event sel: isVtxIn10"};
   Configurable<bool> cEvtMCTriggerTVX{"cEvtMCTriggerTVX", false, "MC event sel: isTriggerTVX"};
-  Configurable<bool> cEvtMCRecINELgt0{"cEvtMCRecINELgt0", false, "MC event sel: isRecINELgt0"};
+  Configurable<bool> cEvtRecINELgt0{"cEvtMCRecINELgt0", false, "MC event sel: isRecINELgt0"};
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -238,6 +238,24 @@ struct lambdaAnalysis_pb {
       histos.add("Analysis/h3d_rec_lstar_MP", "Reconstructed #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {axisInvM, axisPt, axisCent});
       histos.add("Analysis/h3d_reso_lstar_PM", "Resolution #Lambda(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
       histos.add("Analysis/h3d_reso_lstar_MP", "Resolution #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
+    }
+
+    if (doprocessMCGen) {
+      histos.add("SignalLoss/hMCEventCutflow", "MC Event Cutflow", kTH1F, {{7, 0, 7}});
+      histos.add("SignalLoss/hGen_mT_scaled_Proton", "mT Scaled #Lambda(1520) from Proton", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_AntiProton", "mT Scaled #bar{#Lambda}(1520) from AntiProton", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_Lambda0", "mT Scaled #Lambda(1520) from Lambda0", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_AntiLambda0", "mT Scaled #bar{#Lambda}(1520) from AntiLambda0", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_XiMinus", "mT Scaled #Lambda(1520) from Xi-", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_XiPlus", "mT Scaled #bar{#Lambda}(1520) from Xi+", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_Xi0", "mT Scaled #Lambda(1520) from Xi0", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_AntiXi0", "mT Scaled #bar{#Lambda}(1520) from AntiXi0", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_OmegaMinus", "mT Scaled #Lambda(1520) from Omega-", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_OmegaPlus", "mT Scaled #bar{#Lambda}(1520) from Omega+", kTHnSparseF, {axisPt, axisCent});
     }
   }
 
@@ -694,6 +712,10 @@ struct lambdaAnalysis_pb {
 
   void processData(resoCols::iterator const& collision, resoTracks const& tracks)
   {
+
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent(), 100);
     histos.fill(HIST("Event/h_ft0_vz"), collision.posZ());
@@ -724,7 +746,7 @@ struct lambdaAnalysis_pb {
       return;
     histos.fill(HIST("Event/hMCEventCutflow"), 4); // After Sel8
 
-    if (cEvtMCRecINELgt0 && !collision.isRecINELgt0())
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0())
       return;
     histos.fill(HIST("Event/hMCEventCutflow"), 5); // After RecINELgt0
 
@@ -771,10 +793,11 @@ struct lambdaAnalysis_pb {
     for (auto const& part : resoParents) {
       if (std::abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
         continue;
-      //  if (std::abs(part.y()) > 0.5) { // rapidity cut
-      //    continue;
-      //  }
 
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+
+      if (std::abs(yshift) > cfgRapidityCut)
+        continue;
       bool pass1 = false;
       bool pass2 = false;
 
@@ -797,6 +820,98 @@ struct lambdaAnalysis_pb {
   }
   PROCESS_SWITCH(lambdaAnalysis_pb, processMC, "Process Event for MC", false);
 
+  void processMCGen(resoMCCols::iterator const& collision,
+                    aod::ResoMCParents const& resoParents)
+  {
+
+    float centrality = collision.cent();
+
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 0); // All collisions
+
+    if (cEvtMCTriggerTVX && !collision.isTriggerTVX())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 1); // After TriggerTVX
+
+    if (cEvtMCVtxIn10 && !collision.isVtxIn10())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 2); // After VtxIn10
+
+    if (cEvtMCINELgt0 && !collision.isINELgt0())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 3); // After INELgt0
+
+    if (cEvtMCSel8 && !collision.isInSel8())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 4); // After Sel8
+
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 5); // After RecINELgt0
+
+    if (cEvtMCAfterAllCuts && !collision.isInAfterAllCuts())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 6); // After AfterAllCuts
+
+    for (auto const& part : resoParents) {
+
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+
+      if (std::abs(yshift) > cfgRapidityCut)
+        continue;
+
+      int pdg = part.pdgCode();
+      float ptRef = part.pt();
+      double ptSq = -1.0;
+
+      std::array<float, 3> pvec = {part.px(), part.py(), part.pz()};
+      float mass = RecoDecay::m(pvec, part.e());
+
+      if (pdg == 2212) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_Proton"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -2212) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiProton"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3122) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_Lambda0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3122) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiLambda0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3312) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_XiMinus"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3312) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_XiPlus"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3322) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_Xi0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3322) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiXi0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3334) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_OmegaMinus"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3334) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_OmegaPlus"), std::sqrt(ptSq), centrality);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(lambdaAnalysis_pb, processMCGen, "Process Event for MC", false);
+
   using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
 
   void processMix(resoCols& collisions, resoTracks const& tracks)
@@ -808,6 +923,10 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
+
+      if (cEvtRecINELgt0 && !c1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
       // LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%d), %d (%.3f, %.3f,%d)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.mult(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.mult());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
       fillDataHistos<true, false>(t1, t2, c1.cent());
@@ -826,6 +945,9 @@ struct lambdaAnalysis_pb {
 
     if (doprocessData)
       LOG(error) << "Disable processData() first!";
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
     auto _occup = 100;
     if (ConfEvtOccupancyInTimeRange)
       _occup = collision.trackOccupancyInTimeRange();
@@ -849,6 +971,9 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoColDFs, resoTrackDFs, BinningTypeDF> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
+      if (cEvtRecINELgt0 && !c1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
       auto _occup = 100;
       if (ConfEvtOccupancyInTimeRange)
         _occup = c1.trackOccupancyInTimeRange();

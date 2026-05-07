@@ -20,6 +20,9 @@
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -29,13 +32,14 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <map>
-#include <set>
 #include <string>
 #include <string_view>
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace o2::analysis::femto
@@ -99,12 +103,14 @@ enum PairHist {
   kTrueCentVsCent,
 
   // mixing qa
-  kSeNpart1VsNpart2,                         // number of particles 1 vs number of particles 2 in each same event
-  kMeMixingDepth,                            // mixing depth
-  kMeNpart1VsNpart2,                         // number of particles 1 vs number of particles 2 in each mixed event
-  kMeNpart1,                                 // number of unique particles 1 in each mixing bin
-  kMeNpart2,                                 // number of unique particles 2 in each mixing bin
+  kSeNpart1VsNpart2,                         // number of unique particles 1 vs unique number of particles 2 in each same event
+  kMeMixingWindowRaw,                        // mixing window size
+  kMeMixingWindowEffective,                  // mixing window size, counting event pairs with particle pairs
+  kMeNpart1VsNpart2,                         // number of unique particles 1 vs number of unique particles 2 in each mixed event
   kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, // correlation of event properties in each mixing bin
+
+  // angular
+  kDeltaEtaDeltaPhi,
 
   kPairHistogramLast
 };
@@ -147,7 +153,11 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotKstarVsMtVsMass1VsMass2VsPt1VsPt2{"plotKstarVsMtVsMass1VsMass2VsPt1VsPt2", false, "Enable 6D histogram (Kstar Vs Mt Vs Pt1 Vs Pt2 Vs Mass1 Vs Mass2)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult{"plotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult", false, "Enable 7D histogram (Kstar Vs Mt Vs Pt1 Vs Pt2 Vs Mass1 Vs Mass2 Vs Mult)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent{"plotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent", false, "Enable 8D histogram (Kstar Vs Mt Vs Pt1 Vs Pt2 Vs Mass1 Vs Mass2 Vs Mult Vs Cent)"};
+  o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2{"plotKstarVsMtVsMinv1VsPt1VsPt2", false, "Enable 5D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2)"};
+  o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2VsMult{"plotKstarVsMtVsMinv1VsPt1VsPt2VsMult", false, "Enable 6D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2 Vs Mult)"};
+  o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent{"plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent", false, "Enable 7D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2 Vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotDalitz{"plotDalitz", false, "Enable dalitz plot"};
+  o2::framework::Configurable<bool> plotDeltaEtaDeltaPhi{"plotDeltaEtaDeltaPhi", false, "Plot #Delta#phi vs #Delta#eta"};
   o2::framework::ConfigurableAxis kstar{"kstar", {{600, 0, 6}}, "kstar"};
   o2::framework::ConfigurableAxis kt{"kt", {{600, 0, 6}}, "kt"};
   o2::framework::ConfigurableAxis mt{"mt", {{500, 0.8, 5.8}}, "mt"};
@@ -162,6 +172,8 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
+  o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
+  o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -221,6 +233,9 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c});"},
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
+      {kKstarVsMtVsMinvVsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c})"},
+      {kKstarVsMtVsMinvVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
+      {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
       {kDalitz, o2::framework::HistType::kTHnSparseF, "hDalitz", "Dalitz plot; k* (GeV/#it{c}); m^{2}_{123} (GeV/#it{c}^{2})^{2}; m^{2}_{12} (GeV/#it{c}^{2})^{2}; m^{2}_{13} (GeV/#it{c}^{2})^{2};"},
       {kTrueKstarVsKstar, o2::framework::HistType::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
       {kTrueKtVsKt, o2::framework::HistType::kTH2F, "hTrueKtVsKt", "k_{T,True} vs k_{T}; k_{T,True} (GeV/#it{c});  k_{T} (GeV/#it{c})"},
@@ -228,12 +243,13 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueMinvVsMinv, o2::framework::HistType::kTH2F, "hTrueMinvVsMinv", "m_{Inv,True} vs m_{Inv}; m_{Inv,True} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2})"},
       {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
       {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
-      {kSeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hSeNpart1VsNpart2", "# particle 1 vs # particle 2 in each same event; # partilce 1; # particle 2"},
-      {kMeMixingDepth, o2::framework::HistType::kTH1F, "hMeMixingDepth", "Mixing Depth; Mixing Depth ; Entries"},
-      {kMeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hMeNpart1VsNpart2", "# particle 1 vs # particle 2 in each mixed event pair; # partilce 1; # particle 2"},
-      {kMeNpart1, o2::framework::HistType::kTH1F, "hMeNpart1", "# particle 1 in each mixing bin; # partilce 1; Entries"},
-      {kMeNpart2, o2::framework::HistType::kTH1F, "hMeNpart2", "# particle 2 in each mixing bin; # particle 2; Entries"},
+      {kSeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hSeNpart1VsNpart2", "# unique particle 1 vs # unique particle 2 in each same event; # partilce 1; # particle 2"},
+      {kMeMixingWindowRaw, o2::framework::HistType::kTH1F, "hMeMixingWindowRaw", "Raw Mixing Window; Raw Mixing Window ; Entries"},
+      {kMeMixingWindowEffective, o2::framework::HistType::kTH1F, "hMeMixingWindowEffective", "Effective Mixing Window; Effective Mixing Windown ; Entries"},
+      {kMeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hMeNpart1VsNpart2", "# unique particle 1 vs # unique partilce 2 in each mixing bin; # partilce 1; # particle 2"},
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
+      // angular
+      {kDeltaEtaDeltaPhi, o2::framework::HistType::kTH2F, "hDeltaEtaDeltaPhi", "#Delta#phi vs #Delta#eta; #Delta#phi; #Delta#eta"},
     }};
 
 #define PAIR_HIST_ANALYSIS_MAP(confAnalysis, confMixing)                                                                                                                                                                     \
@@ -269,12 +285,15 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMtVsMass1VsMass2VsPt1VsPt2, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2}},                                                                 \
     {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity}},                                \
     {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}}, \
+    {kKstarVsMtVsMinvVsPt1VsPt2, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2}},                                                                                           \
+    {kKstarVsMtVsMinvVsPt1VsPt2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity}},                                                          \
+    {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}},                           \
     {kDalitz, {confAnalysis.kstar, confAnalysis.dalitzMtot, confAnalysis.dalitzM12, confAnalysis.dalitzM13}},                                                                                                                \
+    {kDeltaEtaDeltaPhi, {confAnalysis.binningDeltaPhi, confAnalysis.binningDeltaEta}},                                                                                                                                       \
     {kSeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
-    {kMeMixingDepth, {confMixing.particleBinning}},                                                                                                                                                                          \
+    {kMeMixingWindowRaw, {confMixing.particleBinning}},                                                                                                                                                                      \
+    {kMeMixingWindowEffective, {confMixing.particleBinning}},                                                                                                                                                                \
     {kMeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
-    {kMeNpart1, {confMixing.particleBinning}},                                                                                                                                                                               \
-    {kMeNpart2, {confMixing.particleBinning}},                                                                                                                                                                               \
     {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
 
 #define PAIR_HIST_MC_MAP(conf)                                 \
@@ -363,7 +382,12 @@ class PairHistManager
     mPlotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult = ConfPairBinning.plotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult.value;
     mPlotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent = ConfPairBinning.plotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent.value;
 
+    mPlotKstarVsMtVsMinvVsPt1VsPt2 = ConfPairBinning.plotKstarVsMtVsMinv1VsPt1VsPt2.value;
+    mPlotKstarVsMtVsMinvVsPt1VsPt2VsMult = ConfPairBinning.plotKstarVsMtVsMinv1VsPt1VsPt2VsMult.value;
+    mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent = ConfPairBinning.plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent.value;
+
     mPlotDalitz = ConfPairBinning.plotDalitz.value;
+    mPlotDeltaEtaDeltaPhi = ConfPairBinning.plotDeltaEtaDeltaPhi.value;
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
@@ -463,6 +487,11 @@ class PairHistManager
 
     // set kstar
     mKstar = getKstar(mParticle1, mParticle2);
+
+    if (mPlotDeltaEtaDeltaPhi) {
+      mDeltaEta = particle1.eta() - particle2.eta();
+      mDeltaPhi = RecoDecay::constrainAngle(particle1.phi() - particle2.phi(), -o2::constants::math::PIHalf);
+    }
 
     if (mPlotDalitz) {
       if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && modes::isEqual(particleType2, modes::Particle::kV0)) {
@@ -572,25 +601,13 @@ class PairHistManager
   }
 
   template <typename T1, typename T2>
-  void trackParticlesPerMixingBin(T1 const& particle1, T2 const& particle2)
-  {
-    mUniqueParticles1PerMixingBin.emplace(particle1.globalIndex(), 0);
-    mUniqueParticles1PerMixingBin.at(particle1.globalIndex())++;
-    mUniqueParticles2PerMixingBin.emplace(particle2.globalIndex(), 0);
-    mUniqueParticles2PerMixingBin.at(particle2.globalIndex())++;
-  }
-
-  void resetTrackedParticlesPerMixingBin()
-  {
-    mUniqueParticles1PerMixingBin.clear();
-    mUniqueParticles2PerMixingBin.clear();
-  }
-
-  template <typename T1, typename T2>
   void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2)
   {
-    mUniqueParticles1PerEvent.insert(particle1.globalIndex());
-    mUniqueParticles2PerEvent.insert(particle2.globalIndex());
+    if (!mPairCorrelationQa) {
+      return;
+    }
+    mParticles1PerEvent.insert(particle1.globalIndex());
+    mParticles2PerEvent.insert(particle2.globalIndex());
   }
 
   template <typename T1, typename T2>
@@ -603,39 +620,31 @@ class PairHistManager
 
   void resetTrackedParticlesPerEvent()
   {
-    mUniqueParticles1PerEvent.clear();
-    mUniqueParticles2PerEvent.clear();
+    mParticles1PerEvent.clear();
+    mParticles1PerEvent.reserve(100);
+    mParticles2PerEvent.clear();
+    mParticles2PerEvent.reserve(100);
   }
 
   void fillMixingQaSe()
   {
     if (mPairCorrelationQa) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kSeNpart1VsNpart2, HistTable)), mUniqueParticles1PerEvent.size(), mUniqueParticles2PerEvent.size());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kSeNpart1VsNpart2, HistTable)), mParticles1PerEvent.size(), mParticles2PerEvent.size());
     }
   }
 
   void fillMixingQaMePerEvent()
   {
     if (mPairCorrelationQa) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart1VsNpart2, HistTable)), mUniqueParticles1PerEvent.size(), mUniqueParticles2PerEvent.size());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart1VsNpart2, HistTable)), mParticles1PerEvent.size(), mParticles2PerEvent.size());
     }
   }
 
-  void fillMixingQaMePerMixingBin(int windowSize)
+  void fillMixingQaMePerMixingBin(int windowSizeRaw, int windowSizeEffective)
   {
-    if (!mPairCorrelationQa || windowSize <= 0) {
-      return;
-    }
-    mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingDepth, HistTable)), windowSize);
-    for (const auto& [_, nPart1] : mUniqueParticles1PerMixingBin) {
-      mHistogramRegistry->fill(
-        HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart1, HistTable)),
-        nPart1);
-    }
-    for (const auto& [_, nPart2] : mUniqueParticles2PerMixingBin) {
-      mHistogramRegistry->fill(
-        HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart2, HistTable)),
-        nPart2);
+    if (mPairCorrelationQa) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingWindowRaw, HistTable)), windowSizeRaw);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingWindowEffective, HistTable)), windowSizeEffective);
     }
   }
 
@@ -709,8 +718,22 @@ class PairHistManager
     if (mPlotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, HistTable), getHistType(kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent)});
     }
+
+    if (mPlotKstarVsMtVsMinvVsPt1VsPt2) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsPt1VsPt2, HistTable), getHistDesc(kKstarVsMtVsMinvVsPt1VsPt2, HistTable), getHistType(kKstarVsMtVsMinvVsPt1VsPt2, HistTable), {Specs.at(kKstarVsMtVsMinvVsPt1VsPt2)});
+    }
+    if (mPlotKstarVsMtVsMinvVsPt1VsPt2VsMult) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsPt1VsPt2VsMult, HistTable), getHistDesc(kKstarVsMtVsMinvVsPt1VsPt2VsMult, HistTable), getHistType(kKstarVsMtVsMinvVsPt1VsPt2VsMult, HistTable), {Specs.at(kKstarVsMtVsMinvVsPt1VsPt2VsMult)});
+    }
+    if (mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable), getHistType(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent)});
+    }
+
     if (mPlotDalitz) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kDalitz, HistTable), getHistDesc(kDalitz, HistTable), getHistType(kDalitz, HistTable), {Specs.at(kDalitz)});
+    }
+    if (mPlotDeltaEtaDeltaPhi) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kDeltaEtaDeltaPhi, HistTable), getHistDesc(kDeltaEtaDeltaPhi, HistTable), getHistType(kDeltaEtaDeltaPhi, HistTable), {Specs.at(kDeltaEtaDeltaPhi)});
     }
   }
 
@@ -737,10 +760,9 @@ class PairHistManager
   {
     std::string mcDir = std::string(prefix) + std::string(MixingQaDir);
     if (mPairCorrelationQa) {
-      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingDepth, HistTable), getHistDesc(kMeMixingDepth, HistTable), getHistType(kMeMixingDepth, HistTable), {Specs.at(kMeMixingDepth)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingWindowRaw, HistTable), getHistDesc(kMeMixingWindowRaw, HistTable), getHistType(kMeMixingWindowRaw, HistTable), {Specs.at(kMeMixingWindowRaw)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingWindowEffective, HistTable), getHistDesc(kMeMixingWindowEffective, HistTable), getHistType(kMeMixingWindowEffective, HistTable), {Specs.at(kMeMixingWindowEffective)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart1VsNpart2, HistTable), getHistDesc(kMeNpart1VsNpart2, HistTable), getHistType(kMeNpart1VsNpart2, HistTable), {Specs.at(kMeNpart1VsNpart2)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart1, HistTable), getHistDesc(kMeNpart1, HistTable), getHistType(kMeNpart1, HistTable), {Specs.at(kMeNpart1)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart2, HistTable), getHistDesc(kMeNpart2, HistTable), getHistType(kMeNpart2, HistTable), {Specs.at(kMeNpart2)});
     }
     if (mEventMixingQa) {
       mHistogramRegistry->add(mcDir + getHistNameV2(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable), getHistDesc(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable), getHistType(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable), {Specs.at(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2)});
@@ -813,8 +835,20 @@ class PairHistManager
     if (mPlotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, HistTable)), mKstar, mMt, mRecoMass1, mRecoMass2, mParticle1.Pt(), mParticle2.Pt(), mMult, mCent);
     }
+    if (mPlotKstarVsMtVsMinvVsPt1VsPt2) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsPt1VsPt2, HistTable)), mKstar, mMt, mMassInv, mParticle1.Pt(), mParticle2.Pt());
+    }
+    if (mPlotKstarVsMtVsMinvVsPt1VsPt2VsMult) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsPt1VsPt2VsMult, HistTable)), mKstar, mMt, mMassInv, mParticle1.Pt(), mParticle2.Pt(), mMult);
+    }
+    if (mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable)), mKstar, mMt, mMassInv, mParticle1.Pt(), mParticle2.Pt(), mMult, mCent);
+    }
     if (mPlotDalitz) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kDalitz, HistTable)), mKstar, mMassTot2, mMass12, mMass13);
+    }
+    if (mPlotDeltaEtaDeltaPhi) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kDeltaEtaDeltaPhi, HistTable)), mDeltaPhi, mDeltaEta);
     }
   }
 
@@ -870,15 +904,20 @@ class PairHistManager
 
   float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    // compute pair momentum
-    auto sum = part1 + part2;
-    // Boost particle 1 to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
-    // make a copy of particle 1
-    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(part1);
-    // get lorentz boost into pair rest frame
-    ROOT::Math::Boost boostPrf(sum.BoostToCM());
-    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
-    return static_cast<float>(boostPrf(particle1Prf).P());
+    // Use Cartesian 4-vectors: addition/M2() become pure arithmetic
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
+
+    // Mandelstam s = (p1 + p2)^2
+    const double s = (p1 + p2).M2();
+    const double m1sq = p1.M2();
+    const double m2sq = p2.M2();
+
+    // Källen function λ(s, m1^2, m2^2) = (s - m1^2 - m2^2)² - 4*m1^2*m2^2
+    const double kallen = (s - m1sq - m2sq) * (s - m1sq - m2sq) - 4.0 * m1sq * m2sq;
+
+    // k* = 0.5 * sqrt(λ/s)
+    return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
@@ -949,17 +988,22 @@ class PairHistManager
   bool mPlotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult = false;
   bool mPlotKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent = false;
 
+  bool mPlotKstarVsMtVsMinvVsPt1VsPt2 = false;
+  bool mPlotKstarVsMtVsMinvVsPt1VsPt2VsMult = false;
+  bool mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent = false;
+
   bool mPlotDalitz = false;
+  bool mPlotDeltaEtaDeltaPhi = false;
+
+  float mDeltaEta = 0.f;
+  float mDeltaPhi = 0.f;
 
   // qa
   bool mPairCorrelationQa = false;
   bool mEventMixingQa = false;
 
-  std::set<int64_t> mUniqueParticles1PerEvent = {};
-  std::set<int64_t> mUniqueParticles2PerEvent = {};
-
-  std::unordered_map<int64_t, int> mUniqueParticles1PerMixingBin = {};
-  std::unordered_map<int64_t, int> mUniqueParticles2PerMixingBin = {};
+  std::unordered_set<int64_t> mParticles1PerEvent = {};
+  std::unordered_set<int64_t> mParticles2PerEvent = {};
 };
 
 }; // namespace pairhistmanager

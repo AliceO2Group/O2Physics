@@ -161,6 +161,9 @@ struct Kstar892LightIon {
     Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
     Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
     Configurable<bool> selINELgt0MC{"selINELgt0MC", true, "Select INEL > 0?"};
+
+    Configurable<float> invMassMinMID{"invMassMinMID", 0.6, "Minimum invariant mass for MID"};
+    Configurable<float> invMassMaxMID{"invMassMaxMID", 0.82, "Maximum invariant mass for MID"};
   } selectionConfig;
 
   Configurable<bool> calcLikeSign{"calcLikeSign", true, "Calculate Like Sign"};
@@ -378,6 +381,8 @@ struct Kstar892LightIon {
       hMC.add("Reflections/hOmegaToKpi", "Refelction template of Omega", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Reflections/hPhiToKpi", "Refelction template of Phi", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Reflections/hKstarSelf", "Refelction template of Kstar", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Reflections/hEtaToKpi", "Refelction template of Eta", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Reflections/hEtaPrimeToKpi", "Refelction template of Eta'", kTH3F, {ptAxis, centralityAxis, invmassAxis});
     }
 
     if (doprocessMCCheck) {
@@ -1999,6 +2004,50 @@ struct Kstar892LightIon {
       }
 
       // =====================================================
+      //  Eta -> pi pi(pi0) -> K pi
+      // =====================================================
+      if (motherPDG == o2::constants::physics::kEta && pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kPiPlus) {
+
+        // track 1 -> K
+        ROOT::Math::PxPyPzMVector p1K(track1.px(), track1.py(), track1.pz(), massKa);
+        ROOT::Math::PxPyPzMVector p2Pi(track2.px(), track2.py(), track2.pz(), massPi);
+        auto fake1 = p1K + p2Pi;
+
+        if (fake1.Rapidity() > selectionConfig.motherRapidityMin && fake1.Rapidity() < selectionConfig.motherRapidityMax)
+          hMC.fill(HIST("Reflections/hEtaToKpi"), fake1.Pt(), centrality, fake1.M());
+
+        // track 2 -> K
+        ROOT::Math::PxPyPzMVector p1Pi(track1.px(), track1.py(), track1.pz(), massPi);
+        ROOT::Math::PxPyPzMVector p2K(track2.px(), track2.py(), track2.pz(), massKa);
+        auto fake2 = p1Pi + p2K;
+
+        if (fake2.Rapidity() > selectionConfig.motherRapidityMin && fake2.Rapidity() < selectionConfig.motherRapidityMax)
+          hMC.fill(HIST("Reflections/hEtaToKpi"), fake2.Pt(), centrality, fake2.M());
+      }
+
+      // =====================================================
+      //  Eta' (958) -> pi pi(eta) -> K pi
+      // =====================================================
+      if (motherPDG == o2::constants::physics::kEtaPrime && pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kPiPlus) {
+
+        // track 1 -> K
+        ROOT::Math::PxPyPzMVector p1K(track1.px(), track1.py(), track1.pz(), massKa);
+        ROOT::Math::PxPyPzMVector p2Pi(track2.px(), track2.py(), track2.pz(), massPi);
+        auto fake1 = p1K + p2Pi;
+
+        if (fake1.Rapidity() > selectionConfig.motherRapidityMin && fake1.Rapidity() < selectionConfig.motherRapidityMax)
+          hMC.fill(HIST("Reflections/hEtaPrimeToKpi"), fake1.Pt(), centrality, fake1.M());
+
+        // track 2 -> K
+        ROOT::Math::PxPyPzMVector p1Pi(track1.px(), track1.py(), track1.pz(), massPi);
+        ROOT::Math::PxPyPzMVector p2K(track2.px(), track2.py(), track2.pz(), massKa);
+        auto fake2 = p1Pi + p2K;
+
+        if (fake2.Rapidity() > selectionConfig.motherRapidityMin && fake2.Rapidity() < selectionConfig.motherRapidityMax)
+          hMC.fill(HIST("Reflections/hEtaPrimeToKpi"), fake2.Pt(), centrality, fake2.M());
+      }
+
+      // =====================================================
       // Phi (1020) -> KK -> K pi
       // =====================================================
       if (motherPDG == o2::constants::physics::kPhi && pdg1 == PDG_t::kKPlus && pdg2 == PDG_t::kKPlus) {
@@ -2261,6 +2310,90 @@ struct Kstar892LightIon {
     hMC.fill(HIST("MCCheck/NchMC_AllGen"), nChMCEta08);
   }
   PROCESS_SWITCH(Kstar892LightIon, processMCCheck, "Cross-check MC analysis", false);
+
+  void processSEMassMID(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  {
+    if (!selectionEvent(collision, true)) { // fill data event cut histogram
+      return;
+    }
+
+    centrality = -1;
+
+    if (selectCentEstimator == kFT0M) {
+      centrality = collision.centFT0M();
+    } else if (selectCentEstimator == kFT0A) {
+      centrality = collision.centFT0A();
+    } else if (selectCentEstimator == kFT0C) {
+      centrality = collision.centFT0C();
+    } else if (selectCentEstimator == kFV0A) {
+      centrality = collision.centFV0A();
+    } else {
+      centrality = collision.centFT0M(); // default
+    }
+
+    /* else if (selectCentEstimator == 4) {
+      centrality = collision.centMFT();
+    } */
+    /* else if (selectCentEstimator == 5) {
+      centrality = collision.centNGlobal();
+    } */
+    /* else if (selectCentEstimator == 6) {
+      centrality = collision.centNTPV();
+    } */
+
+    if (cQAevents) {
+      hEventSelection.fill(HIST("hVertexZ"), collision.posZ());
+      hEventSelection.fill(HIST("hCentrality"), centrality);
+    }
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+      if (!selectionTrack(track1) || !selectionTrack(track2)) {
+        continue;
+      }
+
+      if (track1.globalIndex() == track2.globalIndex())
+        continue;
+
+      if (!selectionPair(track1, track2)) {
+        continue;
+      }
+
+      // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
+      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
+        continue;
+      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !selectionPID(track2, 0)) // Track 2 is checked with Pion
+        continue;
+
+      if (selectionConfig.isApplypTdepPID && !selectionPIDpTdep(track1, 1)) // Track 1 is checked with Kaon
+        continue;
+      if (selectionConfig.isApplypTdepPID && !selectionPIDpTdep(track2, 0)) // Track 2 is checked with Pion
+        continue;
+
+      if (selectionConfig.isApplypTdepPIDwTOF && !selectionPIDpTdepTOF(track1, 1)) // Track 1 is checked with Kaon
+        continue;
+      if (selectionConfig.isApplypTdepPIDwTOF && !selectionPIDpTdepTOF(track2, 0)) // Track 2 is checked with Pion
+        continue;
+
+      /* if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+        continue;
+
+      if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
+        continue; */
+
+      daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+      daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+      mother = daughter1 + daughter2; // Kstar meson
+
+      if (mother.M() < selectionConfig.invMassMaxMID && mother.M() > selectionConfig.invMassMinMID) {
+        if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+          continue;
+      }
+
+      isMix = false;
+      fillInvMass(daughter1, daughter2, mother, centrality, isMix, track1, track2);
+    }
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processSEMassMID, "Process Same event", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

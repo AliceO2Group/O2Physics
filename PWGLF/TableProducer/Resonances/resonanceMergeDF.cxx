@@ -88,7 +88,7 @@ struct ResonanceMergeDF {
   Produces<aod::ResoCascadeDFs> reso2cascadesdf;
   int df = 0;
 
-  std::vector<std::tuple<float, float, float, float, float, float, int>> vecOfTuples;
+  std::vector<std::tuple<float, float, float, float, float, float, bool, int>> vecOfTuples;
   std::vector<std::vector<std::tuple<float, float, float, float,
                                      unsigned char, unsigned char,
                                      int16_t, int16_t, int8_t, int8_t, int8_t,
@@ -113,7 +113,7 @@ struct ResonanceMergeDF {
   {
 
     int nCollisions = nDF;
-    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0));
+    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, collision.isRecINELgt0(), 0));
     std::vector<std::tuple<float, float, float, float,
                            unsigned char, unsigned char,
                            int16_t, int16_t, int8_t, int8_t, int8_t,
@@ -159,7 +159,7 @@ struct ResonanceMergeDF {
         (int8_t)(track.tofNSigmaPi() * 10),
         (int8_t)(track.tofNSigmaKa() * 10),
         (int8_t)(track.tofNSigmaPr() * 10),
-        (int8_t)(track.tpcSignal() * 10),
+        static_cast<int16_t>(track.tpcSignal() * 100),
         track.trackFlags()));
     }
 
@@ -177,7 +177,7 @@ struct ResonanceMergeDF {
       const auto& innerVector = vecOfVecOfTuples[i];
 
       histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
-      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., 0, std::get<6>(tuple));
+      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., std::get<6>(tuple), 0, std::get<7>(tuple));
       //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
 
       for (const auto& tuple : innerVector) {
@@ -211,7 +211,7 @@ struct ResonanceMergeDF {
   {
 
     int nCollisions = nDF;
-    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0));
+    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, collision.isRecINELgt0(), 0));
     std::vector<std::tuple<float, float, float, float,
                            unsigned char, unsigned char,
                            int16_t, int16_t, int8_t, int8_t, int8_t,
@@ -271,7 +271,7 @@ struct ResonanceMergeDF {
         (int8_t)(track.tofNSigmaPi() * 10),
         (int8_t)(track.tofNSigmaKa() * 10),
         (int8_t)(track.tofNSigmaPr() * 10),
-        (int8_t)(track.tpcSignal() * 10),
+        static_cast<int16_t>(track.tpcSignal() * 100),
         track.trackFlags()));
     }
 
@@ -333,7 +333,7 @@ struct ResonanceMergeDF {
       const auto& innerVectorCasc = vecOfVecOfTuplesCasc[i];
 
       histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
-      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., 0, std::get<6>(tuple));
+      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., std::get<6>(tuple), 0, std::get<7>(tuple));
       //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
 
       for (const auto& tuple : innerVector) {
@@ -417,7 +417,7 @@ struct ResonanceMergeDF {
 
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
-    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0., 0., 0., 0., 0, 0);
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0., 0., 0., 0., collision.isRecINELgt0(), 0, 0);
 
     for (const auto& track : tracks) {
       if (isPrimary && !track.isPrimaryTrack())
@@ -458,7 +458,7 @@ struct ResonanceMergeDF {
                   (int8_t)(track.tofNSigmaPi() * 10),
                   (int8_t)(track.tofNSigmaKa() * 10),
                   (int8_t)(track.tofNSigmaPr() * 10),
-                  (int8_t)(track.tpcSignal() * 10),
+                  static_cast<int16_t>(track.tpcSignal() * 100),
                   track.trackFlags());
     }
   }
@@ -474,7 +474,7 @@ struct ResonanceMergeDF {
     if (collision.cent() < minCent || collision.cent() > maxCent)
       return;
 
-    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0., 0., 0., 0., 0, 0);
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0., 0., 0., 0., collision.isRecINELgt0(), 0, 0);
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
     for (const auto& track : tracks) {
@@ -521,7 +521,7 @@ struct ResonanceMergeDF {
                   (int8_t)(track.tofNSigmaPi() * 10),
                   (int8_t)(track.tofNSigmaKa() * 10),
                   (int8_t)(track.tofNSigmaPr() * 10),
-                  (int8_t)(track.tpcSignal() * 10),
+                  static_cast<int16_t>(track.tpcSignal() * 100),
                   track.trackFlags());
     }
     // Cascade candidate

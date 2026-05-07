@@ -63,7 +63,7 @@ struct FwdTrackToCollisionAssociation {
     collisionAssociator.setNumSigmaForTimeCompat(nSigmaForTimeCompat);
     collisionAssociator.setTimeMargin(timeMargin);
     collisionAssociator.setTrackSelectionOptionForStdAssoc(track_association::TrackSelection::None);
-    collisionAssociator.setUsePvAssociation(false);
+    collisionAssociator.setUsePvAssociation(track_association::PVContrReassocOpt::Disabled);
     collisionAssociator.setIncludeUnassigned(includeUnassigned);
     collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
     collisionAssociator.setBcWindow(bcWindowForOneSigma);
