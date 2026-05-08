@@ -326,7 +326,7 @@ struct HfElectronSelectionWithTpcEmcal {
     if ((track.phi() < phiTrackEMCalMin || track.phi() > phiTrackEMCalMax) && (track.phi() < phiTrackDCalMin || track.phi() > phiTrackDCalMax)) {
       return false;
     }
-    if (track.pt() < ptTrackMin) {
+    if (track.pt() < ptTrackMin || track.pt() > ptTrackMax) {
       return false;
     }
     return true;
