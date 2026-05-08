@@ -124,7 +124,7 @@ struct phianalysisrun3_PbPb {
   Configurable<int> centestimator{"centestimator", 0, "Select multiplicity estimator: 0 - FT0C, 1 - FT0A, 2 - FT0M, 3 - FV0A, 4 - PVTracks"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
-  Configurable<bool> isApplyCentFT0M{"isApplyCentFV0M", false, "Centrality based on FT0M"};
+  Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0M"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
@@ -1771,7 +1771,7 @@ struct phianalysisrun3_PbPb {
         multiplicity = collision.centFV0A();
       }
       histos.fill(HIST("Centgen1"), multiplicity);
-      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      selectedEvents[nevts++] = collision.mcCollision_as<McCollisionMults>().globalIndex();
     }
     selectedEvents.resize(nevts);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
