@@ -251,6 +251,7 @@ DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
                   track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
                   pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
                   pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
+                  pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr,
                   emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
                   emmllhpair::Lxyz, emmllhpair::LxyzSigma,
                   emmllhpair::Lxy, emmllhpair::LxySigma,
