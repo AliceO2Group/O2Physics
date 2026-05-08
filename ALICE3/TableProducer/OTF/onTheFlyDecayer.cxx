@@ -31,7 +31,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TPDGCode.h>

@@ -391,7 +391,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       if (std::abs(nSigmaCombKa) >= kaonPidSel.nSigmaCombKaTightMax) {
         isTrackKaonPidMethod2 = false;
       }
-      if (std::abs(nSigmaCombPi) >= kaonPidSel.nSigmaCombPiMax) {
+      if (std::abs(nSigmaCombPi) <= kaonPidSel.nSigmaCombPiMax) {
         isTrackKaonPidMethod2 = false;
       }
     }

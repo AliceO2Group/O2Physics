@@ -699,7 +699,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       // track cleaning & checking for duplicate pairs
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-        // mark for rejection the cascade that shares a daughter with another cascade and has an invariant mass further from default value
+        // mark for rejection the v0 that shares a daughter with another v0 and has an invariant mass further from default value. Set confV0DuplCosPA as TRUE to do the same check with cosPA instead.
         if (!ConfV0Selection.confV0DuplCosPA) {
           if (std::abs(p1.mLambda() - v0InvMass[ConfV0Selection.confV0Type1]) < std::abs(p2.mLambda() - v0InvMass[ConfV0Selection.confV0Type2])) {
             v0Duplicates.insert(p2.globalIndex());
