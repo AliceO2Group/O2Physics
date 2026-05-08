@@ -16,7 +16,7 @@
 ///
 /// Based on PWGLF/TableProducer/Nuspex/nucleiSpectra.cxx
 /// \since 05/2026
-// 
+//
 // ================
 // Executable + dependencies:
 //
