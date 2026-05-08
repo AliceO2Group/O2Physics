@@ -300,19 +300,19 @@ struct HfTaskUpcLc {
             /// Fill the ML outputScores and variables of candidate
             if (fillTreeOnlySingleGap) {
               if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+                rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
               }
             } else {
-              rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+              rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
             }
 
           } else {
             if (fillTreeOnlySingleGap) {
               if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
               }
             } else {
-              rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+              rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
             }
           }
         };
