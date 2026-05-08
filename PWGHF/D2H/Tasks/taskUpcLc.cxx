@@ -48,14 +48,12 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
-#include <THnSparse.h>
 #include <TPDGCode.h>
 
 #include <array>
 #include <cmath>
 #include <numeric>
 #include <string>
-#include <string_view>
 #include <vector> // std::vector
 
 using namespace o2;
@@ -161,13 +159,6 @@ struct HfTaskUpcLc {
 
   HistogramRegistry registry{"registry", {}};
 
-  // Factors for conversion between units
-  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
-  constexpr static float NanoToPico = 1000.f;
-  // Names of folders and suffixes for MC signal histograms
-  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
-
   enum MlClasses : int {
     MlClassBackground = 0,
     MlClassPrompt,
@@ -267,7 +258,7 @@ struct HfTaskUpcLc {
         registry.fill(HIST("Data/hUpcVtz"), collision.posZ());
       }
       if (fillTreeUpcQa) {
-        rowUpcQa(static_cast<float>(numPvContributors), collision.multNTracksPV(), collision.posZ(), fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+        rowUpcQa(numPvContributors, collision.multNTracksPV(), collision.posZ(), fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
       }
 
       for (const auto& candidate : groupedLcCandidates) {
