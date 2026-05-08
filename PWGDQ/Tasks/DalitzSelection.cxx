@@ -343,7 +343,7 @@ struct DalitzSelection {
       if (!twoTracksFilterMap) {
         continue;
       }
-
+      
       // pairing
       VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
 
