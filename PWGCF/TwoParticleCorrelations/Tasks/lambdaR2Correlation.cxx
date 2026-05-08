@@ -428,13 +428,12 @@ struct LambdaTableProducer {
     histos.add("Tracks/h1f_kaon_sel", "Kaon selection", kTH1F, {axisTrks});
     histos.add("Tracks/h2f_armpod_before_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
     histos.add("Tracks/h2f_armpod_after_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
-    histos.add("Tracks/h1f_lambda_pt_vs_invm", "p_{T} vs M_{#Lambda}", kTH2F, {axisV0Mass, axisV0Pt});
-    histos.add("Tracks/h1f_antilambda_pt_vs_invm", "p_{T} vs M_{#bar{#Lambda}}", kTH2F, {axisV0Mass, axisV0Pt});
     histos.add("Tracks/h2f_itstrack_centpt", "h2f_itstrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
     histos.add("Tracks/h2f_itstpctrack_centpt", "h2f_itstpctrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
     histos.add("Tracks/h2f_itstpctoftrack_centpt", "h2f_itstpctoftrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
 
     // QA Lambda
+    histos.add("QA/Lambda/h3f_centmasspt", "Invariant Mass", kTH3F, {axisCent, axisV0Mass, axisV0Pt});
     histos.add("QA/Lambda/h2f_qt_vs_alpha", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
     histos.add("QA/Lambda/h1f_dca_V0_daughters", "DCA between V0 daughters", kTH1F, {axisDcaDau});
     histos.add("QA/Lambda/h1f_dca_pos_to_PV", "DCA positive prong to PV", kTH1F, {axisDcaProngPV});
@@ -842,6 +841,7 @@ struct LambdaTableProducer {
     // Decay length
     float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
 
+    histos.fill(HIST(SubDir[part]) + HIST("h3f_centmasspt"), cent, mass, v0.pt());
     histos.fill(HIST(SubDir[part]) + HIST("h2f_qt_vs_alpha"), v0.alpha(), v0.qtarm());
     histos.fill(HIST(SubDir[part]) + HIST("h1f_dca_V0_daughters"), v0.dcaV0daughters());
     histos.fill(HIST(SubDir[part]) + HIST("h1f_dca_pos_to_PV"), v0.dcapostopv());
@@ -957,10 +957,8 @@ struct LambdaTableProducer {
 
       // fill lambda qa
       if (partType == kLambda) {
-        histos.fill(HIST("Tracks/h1f_lambda_pt_vs_invm"), lambdaMass, v0.pt());
         fillLambdaQAHistos<kLambda>(collision, v0, tracks);
       } else {
-        histos.fill(HIST("Tracks/h1f_antilambda_pt_vs_invm"), lambdaMass, v0.pt());
         fillLambdaQAHistos<kAntiLambda>(collision, v0, tracks);
       }
 
