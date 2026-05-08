@@ -315,6 +315,6 @@ o2physics_add_dpl_workflow(chk892li
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambda1520-analysis-po
-    SOURCES lambda1520Analysispo.cxx
+    SOURCES lambda1520analysispo.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
