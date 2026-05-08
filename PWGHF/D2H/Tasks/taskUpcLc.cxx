@@ -230,7 +230,7 @@ struct HfTaskUpcLc {
       // Determine gap type using SGSelector with BC range checking
       const auto gapResult = hf_upc::determineGapType(collision, bcs, upcThresholds);
       const int gap = gapResult.value;
-      const int upc_flag = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
+      const int upcFlag = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
 
       // Use the BC with FIT activity if available from SGSelector
       auto bcForUPC = bc;
@@ -248,7 +248,7 @@ struct HfTaskUpcLc {
       float zdcEnergyZNC = -1.f;
       float zdcTimeZNA = -1.f;
       float zdcTimeZNC = -1.f;
-      if (verticesWithUpc && !upc_flag) {
+      if (verticesWithUpc && !upcFlag) {
         continue;
       }
       if (hasZdc) {
