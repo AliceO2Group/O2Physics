@@ -234,7 +234,7 @@ enum triggerListName {
 };
 } // namespace nuclei
 
-struct deuteronInTriggeredEvents {
+struct DeuteronInTriggeredEvents {
   enum {
     kProton = BIT(0),
     kDeuteron = BIT(1),
@@ -261,19 +261,19 @@ struct deuteronInTriggeredEvents {
 
   struct : o2::framework::ConfigurableGroup {
     std::string prefix{"cfgTrackCut"};
-    Configurable<LabeledArray<double>> DcaMax{"DcaMax", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
-    Configurable<float> EtaMax{"EtaMax", 0.8f, "Max Eta for tracks"};
-    Configurable<int> ITSnClusMin{"ITSnClsMin", 5, "Minimum number of ITS clusters"};
-    Configurable<float> ITSchi2ClusMax{"ITSchi2ClusMax", 36.f, "Max ITS Chi2 per cluster"};
-    Configurable<float> RapidityMax{"RapidityMax", 1.f, "Maximum rapidity for tracks"};
-    Configurable<float> RapidityMin{"RapidityMin", -1.f, "Minimum rapidity for tracks"};
-    Configurable<bool> RapidityToggle{"RapidityToggle", false, "If true, use rapidity cuts"};
-    Configurable<float> TPCchi2ClusMax{"TPCchi2ClusMax", 4.f, "Max TPC Chi2 per cluster"};
-    Configurable<int> TPCnCrossedRowsMin{"TPCnCrossedRowsMin", 70, "Minimum number of TPC crossed rows"};
-    Configurable<float> TPCnCrossedRowsOverFindableMin{"TPCnCrossedRowsOverFindableMin", 0.8f, "Minimum ratio of crossed rows over findable clusters"};
-    Configurable<int> TPCnClsMin{"TPCnClsMin", 80, "Minimum number of TPC clusters"};
-    Configurable<float> TPCrigidityMin{"TPCrigidityMin", 0.5f, "Minimum TPC rigidity for tracks"};
-    Configurable<LabeledArray<double>> TPCnSigmaMax{"TPCnSigmaMax", {nuclei::nSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
+    Configurable<LabeledArray<double>> dcaMax{"dcaMax", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
+    Configurable<float> etaMax{"etaMax", 0.8f, "Max Eta for tracks"};
+    Configurable<int> itsNClusMin{"itsNClusMin", 5, "Minimum number of ITS clusters"};
+    Configurable<float> itsChi2ClusMax{"itsChi2ClusMax", 36.f, "Max ITS Chi2 per cluster"};
+    Configurable<float> rapidityMax{"rapidityMax", 1.f, "Maximum rapidity for tracks"};
+    Configurable<float> rapidityMin{"rapidityMin", -1.f, "Minimum rapidity for tracks"};
+    Configurable<bool> rapidityToggle{"rapidityToggle", false, "If true, use rapidity cuts"};
+    Configurable<float> tpcChi2ClusMax{"tpcChi2ClusMax", 4.f, "Max TPC Chi2 per cluster"};
+    Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of TPC crossed rows"};
+    Configurable<float> tpcNCrossedRowsOverFindableMin{"tpcNCrossedRowsOverFindableMin", 0.8f, "Minimum ratio of crossed rows over findable clusters"};
+    Configurable<int> tpcNClsMin{"tpcNClsMin", 80, "Minimum number of TPC clusters"};
+    Configurable<float> tpcRigidityMin{"tpcRigidityMin", 0.5f, "Minimum TPC rigidity for tracks"};
+    Configurable<LabeledArray<double>> tpcNSigmaMax{"tpcNSigmaMax", {nuclei::nSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
   } cfgTrackCut;
 
   Configurable<float> cfgCutPtMinTree{"cfgCutPtMinTree", 0.2f, "Minimum track transverse momentum for tree saving"};
@@ -328,7 +328,7 @@ struct deuteronInTriggeredEvents {
 
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
-  Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgCCDBurl{"cfgCCDBurl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "EventFiltering/Zorro/", "path to the zorro ccdb objects"};
   int mRunNumber = 0;
   float mBz = 0.f;
@@ -534,7 +534,7 @@ struct deuteronInTriggeredEvents {
     // The first index is set to 0 because it is for TPC
     for (int iS{0}; iS < nuclei::species; ++iS) {
       for (unsigned int iMax{0}; iMax < nuclei::pidName.size(); ++iMax) {
-        nuclei::pidCuts[0][iS][iMax] = cfgTrackCut.TPCnSigmaMax->get(iS, iMax);
+        nuclei::pidCuts[0][iS][iMax] = cfgTrackCut.tpcNSigmaMax->get(iS, iMax);
       }
     }
 
@@ -754,15 +754,18 @@ struct deuteronInTriggeredEvents {
       {nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(4u, 0u) / nuclei::masses[4], nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(4u, 1u) / nuclei::masses[4]}};
 
     int nGloTracks[2]{0, 0}, nTOFTracks[2]{0, 0};
+
+    constexpr float MinMomentumForDeltaP = 0.2f;
+
     for (const auto& track : tracks) { // start loop over tracks
-      if (std::abs(track.eta()) > cfgTrackCut.EtaMax ||
-          track.tpcInnerParam() < cfgTrackCut.TPCrigidityMin ||
-          track.itsNCls() < cfgTrackCut.ITSnClusMin ||
-          track.tpcNClsFound() < cfgTrackCut.TPCnClsMin ||
-          track.tpcNClsCrossedRows() < cfgTrackCut.TPCnCrossedRowsMin ||
-          track.tpcNClsCrossedRows() < cfgTrackCut.TPCnCrossedRowsOverFindableMin * track.tpcNClsFindable() ||
-          track.tpcChi2NCl() > cfgTrackCut.TPCchi2ClusMax ||
-          track.itsChi2NCl() > cfgTrackCut.ITSchi2ClusMax) {
+      if (std::abs(track.eta()) > cfgTrackCut.etaMax ||
+          track.tpcInnerParam() < cfgTrackCut.tpcRigidityMin ||
+          track.itsNCls() < cfgTrackCut.itsNClusMin ||
+          track.tpcNClsFound() < cfgTrackCut.tpcNClsMin ||
+          track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsMin ||
+          track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsOverFindableMin * track.tpcNClsFindable() ||
+          track.tpcChi2NCl() > cfgTrackCut.tpcChi2ClusMax ||
+          track.itsChi2NCl() > cfgTrackCut.itsChi2ClusMax) {
         continue;
       }
       // temporary fix: tpcInnerParam() returns the momentum in all the software tags before --- CM: what does it mean
@@ -792,7 +795,7 @@ struct deuteronInTriggeredEvents {
         nSigmaTPC[iS] = nSigma[0][iS];
         selectedTPC[iS] = (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]);
         goodToAnalyse = goodToAnalyse || selectedTPC[iS];
-        if (selectedTPC[iS] && track.p() > 0.2) {
+        if (selectedTPC[iS] && track.p() > MinMomentumForDeltaP) {
           nuclei::hDeltaP[iC][iS]->Fill(track.p(), 1 - correctedTpcInnerParam / track.p()); // Important: see of there is a shift between track momentum and tpc innerparam
         }
       }
@@ -830,7 +833,7 @@ struct deuteronInTriggeredEvents {
 
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTOF{false};
-        if (std::abs(dcaInfo[1]) > cfgTrackCut.DcaMax->get(iS, 1)) {
+        if (std::abs(dcaInfo[1]) > cfgTrackCut.dcaMax->get(iS, 1)) {
           continue;
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
@@ -841,15 +844,15 @@ struct deuteronInTriggeredEvents {
               continue;
             } else if (iPID) {
               selectedTOF = true; /// temporarly skipped
-              float charge{1.f + static_cast<float>(iS == 3 || iS == 4)};
+              float charge{nuclei::charges[iS]};
               tofMasses[iS] = correctedTpcInnerParam * charge * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS];
             }
-            if (!cfgTrackCut.RapidityToggle || (y > cfgTrackCut.RapidityMin && y < cfgTrackCut.RapidityMax)) {
+            if (!cfgTrackCut.rapidityToggle || (y > cfgTrackCut.rapidityMin && y < cfgTrackCut.rapidityMax)) {
               if (std::abs(nSigmaTPC[iS]) < cfgNsigmaTPCcutDCAhists && (!iPID || std::abs(tofMasses[iS]) < cfgDeltaTOFmassCutDCAhists)) {
                 nuclei::hDCAxy[iPID][iS][iC]->Fill(fvector.pt(), dcaInfo[0]);
                 nuclei::hDCAz[iPID][iS][iC]->Fill(fvector.pt(), dcaInfo[1]);
               }
-              if (std::abs(dcaInfo[0]) < cfgTrackCut.DcaMax->get(iS, 0u)) {
+              if (std::abs(dcaInfo[0]) < cfgTrackCut.dcaMax->get(iS, 0u)) {
                 if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
                   nuclei::hNsigma[iPID][iS][iC]->Fill(fvector.pt(), nSigma[iPID][iS]);
                   nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
@@ -919,7 +922,7 @@ struct deuteronInTriggeredEvents {
       }
     }
   }
-  PROCESS_SWITCH(deuteronInTriggeredEvents, processData, "Data analysis", true);
+  PROCESS_SWITCH(DeuteronInTriggeredEvents, processData, "Data analysis", true);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
   Preslice<o2::aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
@@ -1002,7 +1005,7 @@ struct deuteronInTriggeredEvents {
       if (!storeIt) {
         continue;
       }
-      if (particle.y() < cfgTrackCut.RapidityMin || particle.y() > cfgTrackCut.RapidityMax) {
+      if (particle.y() < cfgTrackCut.rapidityMin || particle.y() > cfgTrackCut.rapidityMax) {
         continue;
       }
 
@@ -1043,7 +1046,7 @@ struct deuteronInTriggeredEvents {
         if (pdg != nuclei::codes[iS]) {
           continue;
         }
-        if (particle.y() < cfgTrackCut.RapidityMin || particle.y() > cfgTrackCut.RapidityMax) {
+        if (particle.y() < cfgTrackCut.rapidityMin || particle.y() > cfgTrackCut.rapidityMax) {
           continue;
         }
 
@@ -1092,11 +1095,11 @@ struct deuteronInTriggeredEvents {
       index++;
     }
   }
-  PROCESS_SWITCH(deuteronInTriggeredEvents, processMC, "MC analysis", false);
+  PROCESS_SWITCH(DeuteronInTriggeredEvents, processMC, "MC analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<deuteronInTriggeredEvents>(cfgc)};
+    adaptAnalysisTask<DeuteronInTriggeredEvents>(cfgc)};
 }
