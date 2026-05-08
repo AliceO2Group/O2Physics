@@ -283,7 +283,7 @@ struct SecondaryVertexReconstruction {
                           zMomenta,
                           energySV, massSV, chi2PCA, dispersion, errorDecayLength, errorDecayLengthXY);
         svIndices.push_back(sv2prongTableData.lastIndex());
-      } else if ((doprocessDataNProngs || doprocessDataNProngsExternalMagneticField) && numProngs == TwoProngCount) {
+      } else if ((doprocessDataNProngs || doprocessDataNProngsExternalMagneticField)) {
         svnprongTableData(analysisJet.globalIndex(),
                           primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                           secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
