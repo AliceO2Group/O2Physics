@@ -37,8 +37,8 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TComplex.h>
+#include <TDatabasePDG.h>
 #include <TF1.h>
-#include <TH2.h>
 #include <THn.h>
 #include <TList.h>
 #include <TMath.h>
@@ -48,6 +48,7 @@
 #include <TRandom3.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>

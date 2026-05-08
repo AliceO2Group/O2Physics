@@ -27,8 +27,6 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <string>
-#include <unordered_map>
 #include <vector>
 
 #ifndef PWGEM_DILEPTON_DATAMODEL_DILEPTONTABLES_H_

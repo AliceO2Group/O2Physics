@@ -114,6 +114,11 @@ o2physics_add_dpl_workflow(task-lc
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-upc-lc
+                    SOURCES taskUpcLc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-lc-to-k0s-p
                     SOURCES taskLcToK0sP.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

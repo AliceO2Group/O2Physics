@@ -30,7 +30,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsCalibration/MeanVertexObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -100,7 +99,7 @@ struct taggingHFE {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
-  Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for fake matches"};
+  Configurable<float> cfgDownSamplingHc{"cfgDownSamplingHc", 1.1, "down sampling for charm hadrons"}; // there are enough hc, but not jpsi or hb.
   Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", true, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
   struct : ConfigurableGroup {
@@ -167,8 +166,12 @@ struct taggingHFE {
     Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
-    Configurable<bool> requirePiKa{"requirePiKa", false, "require hadron to be pion or kaon"}; // proton is not involved in semileptonic decay of HF hadrons often.
-    Configurable<bool> applyTOFif{"applyTOFif", false, "apply TOFif for pion or kaon"};        // proton is not involved in semileptonic decay of HF hadrons often.
+    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
+    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
+    Configurable<bool> requirePiKaPr{"requirePiKaPr", true, "require hadron to be pion or kaon or proton"};
+    Configurable<bool> applyTOFif{"applyTOFif", false, "apply TOFif for hadron identification"};
   } hadronCut;
 
   struct : ConfigurableGroup {
@@ -458,19 +461,23 @@ struct taggingHFE {
   }
 
   template <typename TCollision, typename TTrack>
-  bool isKaon_or_isPion(TCollision const& collision, TTrack const& track)
+  bool isPiKaPr(TCollision const& collision, TTrack const& track)
   {
     float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
-    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < tofNSigmaKa && tofNSigmaKa < hadronCut.cfg_max_TOFNsigmaKa) : true;
+    float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     bool is_pi_included_TPC = hadronCut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < hadronCut.cfg_max_TPCNsigmaPi;
     bool is_pi_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPi < tofNSigmaPi && tofNSigmaPi < hadronCut.cfg_max_TOFNsigmaPi) : true;
+    bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
+    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < tofNSigmaKa && tofNSigmaKa < hadronCut.cfg_max_TOFNsigmaKa) : true;
+    bool is_pr_included_TPC = hadronCut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < hadronCut.cfg_max_TPCNsigmaPr;
+    bool is_pr_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPr < tofNSigmaPr && tofNSigmaPr < hadronCut.cfg_max_TOFNsigmaPr) : true;
     if (!hadronCut.applyTOFif) {
-      is_ka_included_TOF = true;
       is_pi_included_TOF = true;
+      is_ka_included_TOF = true;
+      is_pr_included_TOF = true;
     }
-    return (is_ka_included_TPC && is_ka_included_TOF) || (is_pi_included_TPC && is_pi_included_TOF);
+    return (is_pi_included_TPC && is_pi_included_TOF) || (is_ka_included_TPC && is_ka_included_TOF) || (is_pr_included_TPC && is_pr_included_TOF);
   }
 
   template <typename TTrack>
@@ -625,7 +632,7 @@ struct taggingHFE {
       return false;
     }
 
-    if (hadronCut.requirePiKa && !isKaon_or_isPion(collision, track)) {
+    if (hadronCut.requirePiKaPr && !isPiKaPr(collision, track)) {
       return false;
     }
 
@@ -866,6 +873,7 @@ struct taggingHFE {
 
   std::map<std::pair<int, int>, float> mapTOFNsigmaPiReassociated; // map pair(collisionId, trackId) -> tof n sigma pi
   std::map<std::pair<int, int>, float> mapTOFNsigmaKaReassociated; // map pair(collisionId, trackId) -> tof n sigma ka
+  std::map<std::pair<int, int>, float> mapTOFNsigmaPrReassociated; // map pair(collisionId, trackId) -> tof n sigma pr
   std::map<std::pair<int, int>, float> mapTOFBetaReassociated;     // map pair(collisionId, trackId) -> tof beta
   std::unordered_map<int, double> mapCollisionTime;
   std::unordered_map<int, double> mapCollisionTimeError;
@@ -891,13 +899,16 @@ struct taggingHFE {
               auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
               float tofNSigmaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
               float tofNSigmaKa = mTOFResponse->nSigma<o2::track::PID::Kaon>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              float tofNSigmaPr = mTOFResponse->nSigma<o2::track::PID::Proton>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
               float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
               mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaPi;
               mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaKa;
+              mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaPr;
               mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = beta;
             } else {
               mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
               mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+              mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
               mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
             }
           } // end of track loop
@@ -911,6 +922,7 @@ struct taggingHFE {
             }
             mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
             mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           }
         } // end of track loop
@@ -926,6 +938,7 @@ struct taggingHFE {
             }
             mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
             mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           } // end of track loop
         } // end of collision loop
@@ -938,6 +951,7 @@ struct taggingHFE {
             }
             mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
             mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           }
         } // end of track loop
@@ -968,10 +982,6 @@ struct taggingHFE {
         continue;
       }
       if (eventCut.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
-        continue;
-      }
-
-      if (dist01(engine) > cfgDownSampling) { // random sampling, if necessary
         continue;
       }
 
@@ -1017,6 +1027,13 @@ struct taggingHFE {
           fRegistry.fill(HIST("Electron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
           fRegistry.fill(HIST("Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Electron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+
+          auto mcMother = mcParticle.template mothers_as<aod::McParticles>()[0];
+          bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
+          if (is_e_from_hc && dist01(engine) > cfgDownSamplingHc) { // random sampling hc, if necessary
+            continue;
+          }
+
           if (track.sign() > 0) { // positron
             positronIds.emplace_back(trackId.trackId());
           } else { // electron
@@ -1177,15 +1194,16 @@ struct taggingHFE {
             continue;
           }
 
+          int pdgCodeIM = 0;
           auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
           bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > 0;
           if (mckaon.has_mothers() && !foundCommonMother) {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
-            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == -413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
-              if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) {
+              if (commonMotherId > 0) {
                 foundCommonMother = true;
-                // LOGF(info, "eK: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+                pdgCodeIM = mcMother_of_kaon.pdgCode();
               }
             }
           }
@@ -1208,16 +1226,86 @@ struct taggingHFE {
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
+                     kaon.tpcNSigmaPr(), tofNSigmaPr,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
                      eKpair.lxyz, eKpair.lxyzErr,
                      eKpair.lxy, eKpair.lxyErr,
                      eKpair.lz, eKpair.lzErr,
-                     mckaon.pdgCode(), foundCommonMother);
+                     mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
+
+        } // end of kaon loop
+
+        for (const auto& kaonId : kaonPlusIds) {
+          auto kaon = tracks.rawIteratorAt(kaonId);
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          auto trackParCov = getTrackParCov(kaon);
+          trackParCov.setPID(kaon.pidForTracking());
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          float dcaXY_kaon = mDcaInfoCov.getY();
+          float dcaZ_kaon = mDcaInfoCov.getZ();
+
+          if (positronId == kaonId) {
+            continue;
+          }
+
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          if (!eKpair.isOK) {
+            continue;
+          }
+          if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+            continue;
+          }
+
+          int pdgCodeIM = 0;
+          auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
+          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > 0;
+          if (mckaon.has_mothers() && !foundCommonMother) {
+            auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
+            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == -413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+              int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
+              if (commonMotherId > 0) {
+                foundCommonMother = true;
+                pdgCodeIM = mcMother_of_kaon.pdgCode();
+              }
+            }
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+            // I want 3 types.
+            // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
+            // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
+            // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
+            continue;
+          }
+
+          // if (std::abs(mckaon.pdgCode()) == 11) {
+          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
+          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
+          //     auto daughter = mcParticles.rawIteratorAt(d);
+          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+          //   }
+          // }
+
+          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+
+          emmllhpair(leptonTable.lastIndex(),
+                     trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
+                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     kaon.tpcNSigmaKa(), tofNSigmaKa,
+                     kaon.tpcNSigmaPr(), tofNSigmaPr,
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
+                     eKpair.lxyz, eKpair.lxyzErr,
+                     eKpair.lxy, eKpair.lxyErr,
+                     eKpair.lz, eKpair.lzErr,
+                     mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
 
@@ -1272,9 +1360,8 @@ struct taggingHFE {
               auto mcMother_of_k0s = mcK0S.template mothers_first_as<aod::McParticles>();
               if (mcMother_of_k0s.pdgCode() == -323 || mcMother_of_k0s.pdgCode() == -313 || mcMother_of_k0s.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
                 int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_k0s);
-                if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) { // proton decay is implemented. reject it.
+                if (commonMotherId > 0) {
                   foundCommonMother = true;
-                  // LOGF(info, "eK0S: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
                 }
               }
             }
@@ -1515,8 +1602,7 @@ struct taggingHFE {
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
                     isMotherFromB, mcMother.pdgCode());
 
-        // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
-        for (const auto& kaonId : kaonPlusIds) {
+        for (const auto& kaonId : kaonMinusIds) {
           auto kaon = tracks.rawIteratorAt(kaonId);
           mDcaInfoCov.set(999, 999, 999, 999, 999);
           auto trackParCov = getTrackParCov(kaon);
@@ -1533,19 +1619,21 @@ struct taggingHFE {
           if (!eKpair.isOK) {
             continue;
           }
+
           if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
             continue;
           }
 
+          int pdgCodeIM = 0;
           auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
           bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > 0;
           if (mckaon.has_mothers() && !foundCommonMother) {
             auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
-            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == 413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
               int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
-              if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) {
+              if (commonMotherId > 0) {
                 foundCommonMother = true;
-                // LOGF(info, "eK: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+                pdgCodeIM = mcMother_of_kaon.pdgCode();
               }
             }
           }
@@ -1568,16 +1656,87 @@ struct taggingHFE {
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
+                     kaon.tpcNSigmaPr(), tofNSigmaPr,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
                      eKpair.lxyz, eKpair.lxyzErr,
                      eKpair.lxy, eKpair.lxyErr,
                      eKpair.lz, eKpair.lzErr,
-                     mckaon.pdgCode(), foundCommonMother);
+                     mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
+
+        } // end of kaon loop
+
+        // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
+        for (const auto& kaonId : kaonPlusIds) {
+          auto kaon = tracks.rawIteratorAt(kaonId);
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          auto trackParCov = getTrackParCov(kaon);
+          trackParCov.setPID(kaon.pidForTracking());
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          float dcaXY_kaon = mDcaInfoCov.getY();
+          float dcaZ_kaon = mDcaInfoCov.getZ();
+
+          if (electronId == kaonId) {
+            continue;
+          }
+
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          if (!eKpair.isOK) {
+            continue;
+          }
+          if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+            continue;
+          }
+
+          int pdgCodeIM = 0;
+          auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
+          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > 0;
+          if (mckaon.has_mothers() && !foundCommonMother) {
+            auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
+            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333 || mcMother_of_kaon.pdgCode() == 413) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+              int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
+              if (commonMotherId > 0) {
+                foundCommonMother = true;
+                pdgCodeIM = mcMother_of_kaon.pdgCode();
+              }
+            }
+          }
+
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+            // I want 3 types.
+            // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
+            // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
+            // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
+            continue;
+          }
+
+          // if (std::abs(mckaon.pdgCode()) == 11) {
+          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
+          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
+          //     auto daughter = mcParticles.rawIteratorAt(d);
+          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+          //   }
+          // }
+
+          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+
+          emmllhpair(leptonTable.lastIndex(),
+                     trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
+                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     kaon.tpcNSigmaKa(), tofNSigmaKa,
+                     kaon.tpcNSigmaPr(), tofNSigmaPr,
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
+                     eKpair.lxyz, eKpair.lxyzErr,
+                     eKpair.lxy, eKpair.lxyErr,
+                     eKpair.lz, eKpair.lzErr,
+                     mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
 
@@ -1631,9 +1790,8 @@ struct taggingHFE {
               auto mcMother_of_k0s = mcK0S.template mothers_first_as<aod::McParticles>();
               if (mcMother_of_k0s.pdgCode() == 323 || mcMother_of_k0s.pdgCode() == 313 || mcMother_of_k0s.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
                 int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_k0s);
-                if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) { // proton decay is implemented. reject it.
+                if (commonMotherId > 0) {
                   foundCommonMother = true;
-                  // LOGF(info, "eK0S: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
                 }
               }
             }
@@ -2043,6 +2201,7 @@ struct taggingHFE {
     mapCollisionTimeError.clear();
     mapTOFNsigmaPiReassociated.clear();
     mapTOFNsigmaKaReassociated.clear();
+    mapTOFNsigmaPrReassociated.clear();
     mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(taggingHFE, processMC, "process with TTCA", true);

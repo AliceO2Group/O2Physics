@@ -22,6 +22,7 @@
 
 #include <Rtypes.h>
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
