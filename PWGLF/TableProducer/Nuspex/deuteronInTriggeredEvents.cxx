@@ -8,30 +8,31 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// \file deuteronInTriggeredEvents.cxx
-//
-// \brief (Anti-)nuclei spectra analysis task in jet-triggered events
-//
-// \author Cristian Moscatelli (cristian.moscatelli@cern.ch)
-//
-// Based on PWGLF/TableProducer/Nuspex/nucleiSpectra.cxx
+///
+/// \file deuteronInTriggeredEvents.cxx
+///
+/// \brief (Anti-)nuclei spectra analysis task in jet-triggered events
+/// \author Cristian Moscatelli (cristian.moscatelli@cern.ch)
+///
+/// Based on PWGLF/TableProducer/Nuspex/nucleiSpectra.cxx
+/// \since 05/2026
+// 
+// ================
 // Executable + dependencies:
 //
-// Data (run3):
+// data (run3):
 // o2-analysis-lf-deuteron-in-triggered-events, o2-analysis-event-selection-service
 // o2-analysis-propagationservice, o2-analysis-trackselection, o2-analysis-track-extra-v002-converter
 // o2-analysis-pid-tof-merge, o2-analysis-pid-tpc-service, o2-analysis-ft0-corrected-table
 //
-// MC:
+//  mc:
 // same as Data and o2-analysis-mccollision-converter
-//
-// \since 05/2026
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
@@ -197,7 +198,7 @@ std::vector<NucleusCandidate> candidates;
 
 enum evSel {
   kTVX = 0,
-  kTFborder, // Here we can substitute with sel8
+  kTFBorder, // Here we can substitute with sel8
   kITSROFborder,
   kZvtx,
   kNoSameBunchPileup,
@@ -363,17 +364,17 @@ struct deuteronInTriggeredEvents {
   {
     spectra.fill(HIST("hEventSelections"), 0);
 
-    if (cfgEventSelections->get(nuclei::evSel::kTVX) && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    if (cfgEventSelections->get(nuclei::evSel::kTVX) && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTVX + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kTFborder) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (cfgEventSelections->get(nuclei::evSel::kTFBorder) && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTFborder + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTFBorder + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kITSROFborder) && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (cfgEventSelections->get(nuclei::evSel::kITSROFborder) && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     spectra.fill(HIST("hEventSelections"), nuclei::evSel::kITSROFborder + 1);
@@ -486,7 +487,7 @@ struct deuteronInTriggeredEvents {
     spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, static_cast<float>(nuclei::evSel::kNevSels) + 0.5f}}});
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "all");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTVX + 2, "TVX");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTFborder + 2, "TFborder");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTFBorder + 2, "TFborder");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kITSROFborder + 2, "ITSROFborder");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kZvtx + 2, "Zvtx");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kNoSameBunchPileup + 2, "kNoSameBunchPileup");
@@ -549,7 +550,7 @@ struct deuteronInTriggeredEvents {
   }
 
   template <typename Ttrks>
-  bool IsJetTriggered(Ttrks const& tracks, nuclei::triggerListName triggerCondition)
+  bool isJetTriggered(Ttrks const& tracks, nuclei::triggerListName triggerCondition)
   {
     // Defining trigger condition
     double jetPtThreshold(0.0);
@@ -608,7 +609,7 @@ struct deuteronInTriggeredEvents {
   }
 
   template <typename McParts>
-  bool IsMCJetTriggered(McParts const& McParticles, aod::McParticles const& particlesMC, nuclei::triggerListName triggerCondition)
+  bool isMCJetTriggered(McParts const& McParticles, aod::McParticles const& particlesMC, nuclei::triggerListName triggerCondition)
   {
     // Defining trigger condition
     double jetPtThreshold(0.0);
@@ -939,7 +940,7 @@ struct deuteronInTriggeredEvents {
       auto mcParticlesPerColl = particlesMC.sliceBy(perMcCollision, c.globalIndex());
       auto& mask = eventMask[c.globalIndex()];
 
-      if (IsMCJetTriggered(mcParticlesPerColl, particlesMC, trigger))
+      if (isMCJetTriggered(mcParticlesPerColl, particlesMC, trigger))
         mask |= nuclei::kIsJetTriggered;
     }
 
@@ -959,7 +960,7 @@ struct deuteronInTriggeredEvents {
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
 
       if (cfgApplyMCEvSel) {
-        if (!IsJetTriggered(slicedTracks, trigger))
+        if (!isJetTriggered(slicedTracks, trigger))
           continue;
       }
 
@@ -1054,7 +1055,7 @@ struct deuteronInTriggeredEvents {
           nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
           // antinuclei from B hadrons are classified as physical primaries
           if (particle.has_mothers()) {
-            for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
               if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
                 flags |= kIsSecondaryFromWeakDecay;
                 motherPdgCode = motherparticle.pdgCode();
@@ -1097,5 +1098,5 @@ struct deuteronInTriggeredEvents {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<deuteronInTriggeredEvents>(cfgc, TaskName{"deuteron-in-triggered-events"})};
+    adaptAnalysisTask<deuteronInTriggeredEvents>(cfgc)};
 }
