@@ -267,7 +267,7 @@ struct HfTaskUpcLc {
         registry.fill(HIST("Data/hUpcVtz"), collision.posZ());
       }
       if (fillTreeUpcQa) {
-        rowUpcQa(static_cast<float>(numPvContributors), collision.multNTracksPV(), collision.posZ(), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+        rowUpcQa(static_cast<float>(numPvContributors), collision.multNTracksPV(), collision.posZ(), fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
       }
 
       for (const auto& candidate : groupedLcCandidates) {
