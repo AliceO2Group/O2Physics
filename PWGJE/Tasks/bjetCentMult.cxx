@@ -144,7 +144,7 @@ struct BjetCentMultTask {
       registry.add("h2_centrality_percentile_multiplicity", "mcd collision centrality; centrality; counts", {HistType::kTH2F, {{axisRebinnedCentrality}, {axisPercentileMultiplicity}}});
     }
     if (doprocessSVData) {
-      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
+      registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
       registry.add("h2_jet_pt_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}});
       registry.add("h2_jet_eta_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}});
       registry.add("h2_jet_phi_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}});
@@ -163,7 +163,7 @@ struct BjetCentMultTask {
       }
     }
     if (doprocessRhoAreaSubSVData) {
-      registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
+      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
       registry.add("h2_jet_pt_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}});
       registry.add("h2_jet_eta_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}});
       registry.add("h2_jet_phi_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}});
