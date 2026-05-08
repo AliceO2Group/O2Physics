@@ -94,8 +94,12 @@ struct Lambda1520Analysispo {
   // ── Track quality cuts ───────────────────────────────────────────────────
   Configurable<float> minTrackPt{
     "minTrackPt", 0.15f, "Minimum transverse momentum pT of a track [GeV/c]"};
-  Configurable<float> minTrackMomentum{
-    "minTrackMomentum", 0.f, "Minimum total momentum p of a track [GeV/c]"};
+  Configurable<float> minProtonMomentum{
+    "minProtonMomentum", 0.f,
+    "Minimum total momentum p for proton PID [GeV/c]"};
+  Configurable<float> minKaonMomentum{
+    "minKaonMomentum", 0.f,
+    "Minimum total momentum p for kaon PID [GeV/c]"};
   Configurable<float> minPseudorapidity{
     "minPseudorapidity", -0.8f,
     "Minimum pseudorapidity eta (detector acceptance)"};
@@ -363,8 +367,8 @@ struct Lambda1520Analysispo {
   Configurable<bool> mcRequireTriggerTVX{
     "mcRequireTriggerTVX", false,
     "MC event selection: require the TVX (T0 vertex) trigger"};
-  Configurable<bool> mcRequireRecoINELgt0{
-    "mcRequireRecoINELgt0", false,
+  Configurable<bool> cEvtRecINELgt0{
+    "cEvtRecINELgt0", false,
     "MC event selection: require reconstructed INEL>0 condition"};
 
   // ── Histogram registry ───────────────────────────────────────────────────
@@ -769,7 +773,7 @@ struct Lambda1520Analysispo {
       if (track.tofNSigmaPr() < minTOFNSigmaProton)
         return false;
 
-      if (combinedNSigmaCutProton < 0 && totalMomentum >= minTrackMomentum) {
+      if (combinedNSigmaCutProton < 0 && totalMomentum >= minProtonMomentum) {
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= tofMomBins[i] &&
               totalMomentum < tofMomBins[i + 1] &&
@@ -786,7 +790,7 @@ struct Lambda1520Analysispo {
           tpcPIDPassed = true;
       }
 
-      if ((combinedNSigmaCutProton > 0) && totalMomentum >= minTrackMomentum &&
+      if ((combinedNSigmaCutProton > 0) && totalMomentum >= minProtonMomentum &&
           (combinedNSigProton < circularCutSquared &&
            combinedNSigPion > circularRejCutSquared &&
            combinedNSigKaon > circularRejCutSquared)) {
@@ -794,7 +798,7 @@ struct Lambda1520Analysispo {
         tpcPIDPassed = true;
       }
 
-      if (totalMomentum < minTrackMomentum &&
+      if (totalMomentum < minProtonMomentum &&
           tpcNSigProton < maxTPCNSigmaProton) {
         tofPIDPassed = true;
         tpcPIDPassed = true;
@@ -853,7 +857,7 @@ struct Lambda1520Analysispo {
       if (track.tofNSigmaKa() < minTOFNSigmaKaon)
         return false;
 
-      if (combinedNSigmaCutKaon < 0 && totalMomentum >= minTrackMomentum) {
+      if (combinedNSigmaCutKaon < 0 && totalMomentum >= minKaonMomentum) {
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= tofMomBins[i] &&
               totalMomentum < tofMomBins[i + 1] &&
@@ -870,7 +874,7 @@ struct Lambda1520Analysispo {
           tpcPIDPassed = true;
       }
 
-      if ((combinedNSigmaCutKaon > 0) && totalMomentum >= minTrackMomentum &&
+      if ((combinedNSigmaCutKaon > 0) && totalMomentum >= minKaonMomentum &&
           (combinedNSigKaon < circularCutSquared &&
            combinedNSigPion > circularRejCutSquared &&
            combinedNSigProton > circularRejCutSquared)) {
@@ -878,7 +882,7 @@ struct Lambda1520Analysispo {
         tpcPIDPassed = true;
       }
 
-      if (totalMomentum < minTrackMomentum && tpcNSigKaon < maxTPCNSigmaKaon) {
+      if (totalMomentum < minKaonMomentum && tpcNSigKaon < maxTPCNSigmaKaon) {
         tofPIDPassed = true;
         tpcPIDPassed = true;
       }
@@ -1236,6 +1240,9 @@ struct Lambda1520Analysispo {
   void processData(ResonanceCollisionsWithEP::iterator const& collision,
                    ResonanceTrackTable const& tracks)
   {
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
     allHistograms.fill(HIST("Event/centralityVsOccupancy"), collision.cent(),
                        100);
     allHistograms.fill(HIST("Event/primaryVertexZ"), collision.posZ());
@@ -1270,7 +1277,7 @@ struct Lambda1520Analysispo {
       return;
     allHistograms.fill(HIST("Event/mcEventSelectionCutflow"), 4);
 
-    if (mcRequireRecoINELgt0 && !collision.isRecINELgt0())
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0())
       return;
     allHistograms.fill(HIST("Event/mcEventSelectionCutflow"), 5);
 
@@ -1370,7 +1377,7 @@ struct Lambda1520Analysispo {
     if (mcRequireSel8 && !collision.isInSel8())
       return;
     allHistograms.fill(HIST("SignalLoss/mcEventSelectionCutflow"), 4);
-    if (mcRequireRecoINELgt0 && !collision.isRecINELgt0())
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0())
       return;
     allHistograms.fill(HIST("SignalLoss/mcEventSelectionCutflow"), 5);
     if (mcRequireAfterAllCuts && !collision.isInAfterAllCuts())
@@ -1479,6 +1486,8 @@ struct Lambda1520Analysispo {
 
     // FIX const-ref-in-for-loop: const auto& structured binding
     for (const auto& [col1, tracks1, col2, tracks2] : eventPairs) {
+      if (cEvtRecINELgt0 && !col1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
       allHistograms.fill(HIST("Event/mixingBins_centralityVsVtxZVsEventPlane"),
                          col1.cent(), col1.posZ(), col1.evtPl());
       fillInvariantMassHistograms<true, false>(tracks1, tracks2, col1.cent());
@@ -1503,6 +1512,8 @@ struct Lambda1520Analysispo {
     if (doprocessData)
       LOG(error) << "Disable processData() first when using processDatadf()!";
 
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
     auto occupancyValue = 100;
     if (applyOccupancyInTimeRangeCut)
       occupancyValue = collision.trackOccupancyInTimeRange();
@@ -1538,6 +1549,8 @@ struct Lambda1520Analysispo {
 
     // FIX const-ref-in-for-loop: const auto& structured binding
     for (const auto& [col1, tracks1, col2, tracks2] : eventPairs) {
+      if (cEvtRecINELgt0 && !col1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
       auto occupancyValue = 100;
       if (applyOccupancyInTimeRangeCut)
         occupancyValue = col1.trackOccupancyInTimeRange();
