@@ -221,7 +221,7 @@ struct HfTaskFlowCharmHadrons {
     if (storeResoOccu && occEstimator == 0) {
       LOGP(fatal, "Occupancy estimation must be enabled to store resolution THnSparse! Please check your configuration!");
     }
-    if (storeRedQVec && !doprocessD0EsEMl && !doprocessD0SPEsEMl) {
+    if (storeRedQVec && !doprocessD0EsEMl && !doprocessD0SPEsEMl && !doprocessResolutionSPEsE) {
       LOGP(fatal, "EsE q-vectors require dedicated process functions. Please check your configuration!");
     }
     if (storeSPQVec && doprocessD0EsEMl) {
