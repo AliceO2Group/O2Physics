@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This task is dedicated to percentile calibration and event 
-// selection studies in pp collisions using derived data based on the 
-// multCentTable output 
+// This task is dedicated to percentile calibration and event
+// selection studies in pp collisions using derived data based on the
+// multCentTable output
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -296,7 +296,7 @@ struct centralityStudypp {
       histos.fill(HIST("hFV0AvsPVz_Collisions"), collision.multPVz(), collision.multFV0A());
       histos.fill(HIST("hNGlobalTracksvsPVz_Collisions"), collision.multPVz(), collision.multNTracksGlobal());
       histos.fill(HIST("hNMFTTracksvsPVz_Collisions"), collision.multPVz(), collision.mftNtracks());
-      
+
       // per run
       getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C);
       getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A);
