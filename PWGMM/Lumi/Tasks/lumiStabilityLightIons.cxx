@@ -26,7 +26,6 @@
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -570,7 +569,7 @@ struct LumiStabilityLightIons {
           fillHistograms<kFT0CE, kBCNSLFT0>(timeSinceSOF, localBC);
       }
 
-      if (cfgDoFDD && anyFDDTrigger) {
+      if (cfgDoFDD && ctpInputMask.test(15)) {
         if (cfgDoBCA && bcPatternA[localBCFDD])
           fillHistograms<kFDD, kBCA>(timeSinceSOF, localBCFDD);
         if (cfgDoBCB && bcPatternB[localBCFDD])

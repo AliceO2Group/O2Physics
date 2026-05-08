@@ -126,10 +126,18 @@ struct skimmerPrimaryElectronQC {
     Configurable<float> maxchi2its{"maxchi2its", 5.0, "max. chi2/NclsITS"};
     Configurable<float> dca_xy_max{"dca_xy_max", 0.2, "max DCAxy in cm"};
     Configurable<float> dca_z_max{"dca_z_max", 0.2, "max DCAz in cm"};
-    Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"}; // Don't change.
-    Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +2.0, "max. TPC n sigma for electron inclusion"}; // Don't change.
-    Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -2.0, "min. TOF n sigma for electron inclusion"}; // Don't change.
-    Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +2.0, "max. TOF n sigma for electron inclusion"}; // Don't change.
+    Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
+    Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +2.0, "max. TPC n sigma for electron inclusion"};
+    Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -2.0, "min. TOF n sigma for electron inclusion"};
+    Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +2.0, "max. TOF n sigma for electron inclusion"};
+
+    Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
+    Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
+    Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", -2.5, "min. TPC n sigma for kaon exclusion"};
+    Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.5, "max. TPC n sigma for proton exclusion"};
+    Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -2.5, "min. TPC n sigma for proton exclusion"};
+    Configurable<bool> requireTOF{"requireTOF", true, "require TOF hit"};
   } tighttrackcut;
 
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
@@ -467,9 +475,19 @@ struct skimmerPrimaryElectronQC {
   template <typename TTrack>
   bool isElectronTight(TTrack const& track)
   {
-    bool is_El_TPC = tighttrackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tighttrackcut.maxTPCNsigmaEl;
-    bool is_El_TOF = tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl;
-    return is_El_TPC && is_El_TOF;
+    if (tighttrackcut.requireTOF) {
+      bool is_El_TPC = tighttrackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tighttrackcut.maxTPCNsigmaEl;
+      bool is_El_TOF = tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl;
+      return is_El_TPC && is_El_TOF;
+    } else { // TPC hadron band rejection OR TOFreq
+      bool is_el_included_TPC = tighttrackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tighttrackcut.maxTPCNsigmaEl;
+      bool is_el_included_TOF = track.hasTOF() ? tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl : true;
+      bool is_pi_excluded_TPC = !(tighttrackcut.minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tighttrackcut.maxTPCNsigmaPi);
+      bool is_ka_excluded_TPC = !(tighttrackcut.minTPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < tighttrackcut.maxTPCNsigmaKa);
+      bool is_pr_excluded_TPC = !(tighttrackcut.minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < tighttrackcut.maxTPCNsigmaPr);
+      bool is_el_included_TOFreq = tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl;
+      return (is_el_included_TPC && is_el_included_TOF && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC) || (is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOFreq);
+    }
   }
 
   template <bool isMC, typename TCollision, typename TTrack>

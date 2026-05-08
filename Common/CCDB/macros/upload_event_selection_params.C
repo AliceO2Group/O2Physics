@@ -9,12 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TString.h"
+#include "Common/CCDB/EventSelectionParams.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
 #include <map>
 #include <string>
-#include "EventSelectionParams.h"
+
 using std::map;
 using std::string;
 

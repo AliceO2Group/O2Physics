@@ -28,8 +28,6 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPLHCIFData.h>
-#include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -46,16 +44,13 @@
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
-#include <TGraph.h>
 #include <TH2.h>
 #include <TString.h>
 
 #include <array>
-#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -123,11 +118,11 @@ struct tofSignal {
     LOG(debug) << "Initializing the tofSignal task";
     tofResponse->initSetup(ccdb, initContext);
     // Checking that the table is requested in the workflow and enabling it
-    enableTableTOFSignal = isTableRequiredInWorkflow(initContext, "TOFSignal");
+    enableTableTOFSignal = o2::common::core::isTableRequiredInWorkflow(initContext, "TOFSignal");
     if (enableTableTOFSignal) {
       LOG(info) << "Table TOFSignal enabled!";
     }
-    enableTablepidTOFFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    enableTablepidTOFFlags = o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFFlags");
     if (enableTablepidTOFFlags) {
       LOG(info) << "Table pidTOFFlags enabled!";
     }
@@ -273,14 +268,14 @@ struct tofEventTime {
     LOG(debug) << "Initializing the tofEventTime task";
     tofResponse->initSetup(ccdb, initContext);
     // Checking that the table is requested in the workflow and enabling it
-    enableTableTOFEvTime = isTableRequiredInWorkflow(initContext, "TOFEvTime");
+    enableTableTOFEvTime = o2::common::core::isTableRequiredInWorkflow(initContext, "TOFEvTime");
 
     if (!enableTableTOFEvTime) {
       LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
     }
     LOG(info) << "Table TOFEvTime enabled!";
 
-    enableTableEvTimeTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
+    enableTableEvTimeTOFOnly = o2::common::core::isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
     if (enableTableEvTimeTOFOnly) {
       LOG(info) << "Table EvTimeTOFOnly enabled!";
     }
@@ -635,14 +630,14 @@ struct tofPidMerge {
     for (int i = 0; i < nSpecies; i++) {
       // First checking tiny
       int f = enableParticle->get(particleNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(initContext, "pidTOF" + particleNames[i], f);
+      o2::common::core::enableFlagIfTableRequired(initContext, "pidTOF" + particleNames[i], f);
       if (f == 1) {
         mEnabledParticles.push_back(i);
       }
 
       // Then checking full tables
       f = enableParticle->get(particleNames[i].c_str(), "EnableFull");
-      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
+      o2::common::core::enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
       if (f == 1) {
         mEnabledParticlesFull.push_back(i);
       }
@@ -692,8 +687,8 @@ struct tofPidMerge {
     }
 
     // Checking the TOF mass and TOF beta tables
-    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
-    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
+    enableTableBeta = o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFbeta");
+    enableTableMass = o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFmass");
 
     if (!enableTableBeta && !enableTableMass) {
       LOG(info) << "No table for TOF mass and beta is required. Disabling beta and mass tables";

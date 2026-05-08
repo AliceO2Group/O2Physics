@@ -17,7 +17,6 @@
 #ifndef PWGEM_PHOTONMESON_CORE_TAGGINGPI0MC_H_
 #define PWGEM_PHOTONMESON_CORE_TAGGINGPI0MC_H_
 
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
@@ -27,6 +26,8 @@
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+//
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -295,17 +296,17 @@ struct TaggingPi0MC {
     const o2::framework::AxisSpec axis_m{200, 0, 0.4, Form("m_{%s} (GeV/c^{2})", mggTitle.Data())};
     const o2::framework::AxisSpec axis_pt{ConfPtBins, "p_{T,#gamma} (GeV/c)"};
 
-    fRegistry.add("Photon/candidate/hPt", "photon candidates;p_{T,#gamma} (GeV/c)", o2::framework::kTH1D, {axis_pt}, true);                                                               // for purity
-    fRegistry.add("Photon/candidate/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", o2::framework::kTH2D, {{90, 0, o2::constants::math::TwoPI}, {40, -1, +1}}, true); // for purity
-    fRegistry.add("Photon/primary/hPt", "photon;p_{T,#gamma} (GeV/c)", o2::framework::kTH1D, {axis_pt}, true);                                                                            // for purity
-    fRegistry.add("Photon/primary/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", o2::framework::kTH2D, {{90, 0, o2::constants::math::TwoPI}, {40, -1, +1}}, true);   // for purity
-    fRegistry.addClone("Photon/primary/", "Photon/fromWD/");                                                                                                                              // only for completeness
-    fRegistry.addClone("Photon/primary/", "Photon/fromHS/");                                                                                                                              // only for completeness
-    fRegistry.addClone("Photon/primary/", "Photon/fromPi0/");                                                                                                                             // for conditional acceptance, denominator
+    fRegistry.add("Photon/candidate/hPt", "photon candidates;p_{T,#gamma} (GeV/c)", o2::framework::HistType::kTH1D, {axis_pt}, true);                                                               // for purity
+    fRegistry.add("Photon/candidate/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", o2::framework::HistType::kTH2D, {{90, 0, o2::constants::math::TwoPI}, {40, -1, +1}}, true); // for purity
+    fRegistry.add("Photon/primary/hPt", "photon;p_{T,#gamma} (GeV/c)", o2::framework::HistType::kTH1D, {axis_pt}, true);                                                                            // for purity
+    fRegistry.add("Photon/primary/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", o2::framework::HistType::kTH2D, {{90, 0, o2::constants::math::TwoPI}, {40, -1, +1}}, true);   // for purity
+    fRegistry.addClone("Photon/primary/", "Photon/fromWD/");                                                                                                                                        // only for completeness
+    fRegistry.addClone("Photon/primary/", "Photon/fromHS/");                                                                                                                                        // only for completeness
+    fRegistry.addClone("Photon/primary/", "Photon/fromPi0/");                                                                                                                                       // for conditional acceptance, denominator
 
-    fRegistry.add("Pair/primary/hMvsPt", "mass vs. p_{T,#gamma} from #pi^{0}", o2::framework::kTH2D, {axis_m, axis_pt}, true); // for conditional acceptance, numerator
-    fRegistry.addClone("Pair/primary/", "Pair/fromWD/");                                                                       // only for completeness
-    fRegistry.addClone("Pair/primary/", "Pair/fromHS/");                                                                       // only for completeness
+    fRegistry.add("Pair/primary/hMvsPt", "mass vs. p_{T,#gamma} from #pi^{0}", o2::framework::HistType::kTH2D, {axis_m, axis_pt}, true); // for conditional acceptance, numerator
+    fRegistry.addClone("Pair/primary/", "Pair/fromWD/");                                                                                 // only for completeness
+    fRegistry.addClone("Pair/primary/", "Pair/fromHS/");                                                                                 // only for completeness
   }
 
   void DefineEMEventCut()

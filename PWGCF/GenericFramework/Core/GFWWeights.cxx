@@ -10,7 +10,21 @@
 // or submit itself to any jurisdiction.
 
 #include "GFWWeights.h"
-#include "TMath.h"
+
+#include <Framework/Logger.h>
+
+#include <TCollection.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TList.h>
+#include <TMath.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
 #include <cstdio>
 
 GFWWeights::GFWWeights() : TNamed("", ""),

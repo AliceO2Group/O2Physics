@@ -78,6 +78,7 @@
 #include <complex>
 #include <cstdint>
 #include <map>
+#include <numbers>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -149,7 +150,8 @@ class VarManager : public TObject
     MuonCovRealign = BIT(26),
     MFTCov = BIT(27),
     TrackTOFService = BIT(28),
-    ParticleMC = BIT(29)
+    ParticleMC = BIT(29),
+    MuonDca = BIT(30)
   };
 
   enum PairCandidateType {
@@ -336,6 +338,7 @@ class VarManager : public TObject
     kMCEventWeight,
     kMCEventImpParam,
     kMCEventCentrFT0C,
+    kMCEventPlaneAngle,
     kMultMCNParticlesEta10,
     kMultMCNParticlesEta08,
     kMultMCNParticlesEta05,
@@ -692,13 +695,19 @@ class VarManager : public TObject
     kMCdeltaphi_randomPhi_toward,
     kMCdeltaphi_randomPhi_away,
     kMCdeltaphi_randomPhi_trans,
+    kMCHadronpt_randomPhi_trans,
     kMCWeight_before,
+    kMCEWeight_before,
     kMCCosChi_gen,
     kMCWeight_gen,
     kMCdeltaeta_gen,
     kMCCosChi_rec,
     kMCWeight_rec,
     kMCdeltaeta_rec,
+    kMCCosChi_randomPhi_trans_rec,
+    kMCWeight_randomPhi_trans_rec,
+    kMCCosChi_randomPhi_trans_gen,
+    kMCWeight_randomPhi_trans_gen,
 
     // MC mother particle variables
     kMCMotherPdgCode,
@@ -706,8 +715,10 @@ class VarManager : public TObject
     // MC pair variables
     kMCPt1,
     kMCEta1,
+    kMCP1,
     kMCPt2,
     kMCEta2,
+    kMCP2,
     kMCCosThetaHE,
     kMCPhiHE,
     kMCPhiTildeHE,
@@ -718,6 +729,7 @@ class VarManager : public TObject
     kMCPhiPP,
     kMCPhiTildePP,
     kMCCosThetaRM,
+    kMCCosThetaStar,
 
     // Pair variables
     kCandidateId,
@@ -941,6 +953,7 @@ class VarManager : public TObject
     kPtDau,
     kCosTheta,
     kEWeight_before,
+    kWeight_before,
     kCosChi_randomPhi_trans,
     kCosChi_randomPhi_toward,
     kCosChi_randomPhi_away,
@@ -951,6 +964,7 @@ class VarManager : public TObject
     kdeltaphi_randomPhi_toward,
     kdeltaphi_randomPhi_away,
     kdileptonmass,
+    kPtDau_randomPhi_trans,
 
     // Dilepton-track-track variables
     kQuadMass,
@@ -1380,7 +1394,7 @@ class VarManager : public TObject
   template <typename T1, typename T2, typename T3>
   static void FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f, float weight = 1.0f);
   template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
-  static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr, bool applyFitMass = false, float Effweight_rec = 1.f, float Accweight_gen = 1.f);
+  static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr, bool applyFitMass = false, float Effweight_rec = 1.f, float Accweight_gen = 1.f, float Translow = 1. / 3, float Transhigh = 2. / 3);
   template <typename T1, typename T2>
   static void FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values = nullptr);
   template <typename T>
@@ -1894,6 +1908,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCollisionRandom] = gRandom->Rndm();
   }
 
+  if (fgUsedVars[kRandomPsi2]) {
+    values[kRandomPsi2] = gRandom->Uniform(-o2::constants::math::PIHalf, o2::constants::math::PIHalf);
+  }
+
   if constexpr ((fillMap & Collision) > 0) {
     // TODO: trigger info from the event selection requires a separate flag
     //       so that it can be switched off independently of the rest of Collision variables (e.g. if event selection is not available)
@@ -2200,7 +2218,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[VarManager::kPsi2A] = Psi2A;
     values[VarManager::kPsi2B] = Psi2B;
     values[VarManager::kPsi2C] = Psi2C;
-    values[VarManager::kRandomPsi2] = gRandom->Uniform(-o2::constants::math::PIHalf, o2::constants::math::PIHalf);
 
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
       values[kQ42XA] = event.q42xa();
@@ -2322,7 +2339,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
-    if constexpr ((fillMap & CollisionCent) > 0) {
+    values[kMCEventPlaneAngle] = event.eventPlaneAngle();
+    if constexpr (requires { event.bestCollisionCentFT0C(); }) {
       // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
       values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
       values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
@@ -3070,8 +3088,12 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonChi2MatchMCHMFT] = track.chi2MatchMCHMFT();
     values[kMuonMatchScoreMCHMFT] = track.matchScoreMCHMFT();
     values[kMuonTrackType] = track.trackType();
-    values[kMuonDCAx] = track.fwdDcaX();
-    values[kMuonDCAy] = track.fwdDcaY();
+    values[kMuonDCAx] = track.sign() * (track.pDca() / std::numbers::sqrt2 / track.p());
+    values[kMuonDCAy] = values[kMuonDCAx];
+    if constexpr ((fillMap & MuonDca) > 0) {
+      values[kMuonDCAx] = track.fwdDcaX();
+      values[kMuonDCAy] = track.fwdDcaY();
+    }
     values[kMuonTime] = track.trackTime();
     values[kMuonTimeRes] = track.trackTimeRes();
   }
@@ -3366,6 +3388,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   values[kMCAccweight] = Accweight;
   values[kMCCosChi] = CosChi;
   values[kMCWeight_before] = t1.pt() / o2::constants::physics::MassJPsi * Accweight;
+  values[kMCEWeight_before] = t1.e() / o2::constants::physics::MassJPsi * Accweight;
   values[kMCCosTheta] = CosTheta;
   values[kMCdeltaphi] = deltaphi;
   values[kMCdeltaeta] = deltaeta;
@@ -3373,7 +3396,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   values[kMCHadronEta] = t1.eta();
   values[kMCHadronPhi] = RecoDecay::constrainAngle(t1.phi(), -o2::constants::math::PIHalf);
   values[kMCHadronPdgCode] = t1.pdgCode();
-  values[kMCWeight] = E_boost / o2::constants::physics::MassJPsi;
+  values[kMCWeight] = E_boost / o2::constants::physics::MassJPsi * Accweight;
 
   values[kMCCosChi_randomPhi_trans] = -999.9f;
   values[kMCCosChi_randomPhi_toward] = -999.9f;
@@ -3393,6 +3416,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
 
+    values[kMCHadronpt_randomPhi_trans] = v2.pt();
     ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, MassHadron);
     values[kMCCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
     values[kMCWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M() * Accweight;
@@ -3642,6 +3666,27 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM])
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
+    }
+  }
+
+  if (fgUsedVars[kCosThetaStarRandom]) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
+
+    // Randomize the event plane angle to check the unpolarized contribution
+    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
+    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
+
+    // if the truth event plane angle is available, calculate the cos(theta*) with respect to the true event plane angle for comparison
+    if (fgUsedVars[kMCCosThetaStar] && fgUsedVars[kMCEventPlaneAngle]) {
+      // truth event plane angle
+      ROOT::Math::XYZVector zaxisTrue = ROOT::Math::XYZVector(TMath::Cos(values[kMCEventPlaneAngle]), TMath::Sin(values[kMCEventPlaneAngle]), 0).Unit();
+      values[kMCCosThetaStar] = v_CM.Dot(zaxisTrue);
     }
   }
 
@@ -4158,6 +4203,8 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kMCPt2] = t2.pt();
   values[kMCEta1] = t1.eta();
   values[kMCEta2] = t2.eta();
+  values[kMCP1] = t1.p();
+  values[kMCP2] = t2.p();
 
   // polarization parameters
   bool useHE = fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]; // helicity frame
@@ -4276,6 +4323,24 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       if (fgUsedVars[kMCCosThetaRM])
         values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
     }
+  }
+
+  if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kMCCosThetaStar]) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.pdgCode() > 0 ? v1_CM : v2_CM);
+
+    // Randomize the event plane angle to check the unpolarized contribution
+    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
+    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
+
+    // truth event plane angle
+    ROOT::Math::XYZVector zaxisTrue = ROOT::Math::XYZVector(TMath::Cos(values[kMCEventPlaneAngle]), TMath::Sin(values[kMCEventPlaneAngle]), 0).Unit();
+    values[kMCCosThetaStar] = v_CM.Dot(zaxisTrue);
   }
 }
 
@@ -5705,11 +5770,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kCosThetaStarFT0C] = v_CM.Dot(zaxisFT0C);
     values[kAbsCosThetaStarFT0C] = std::abs(values[kCosThetaStarFT0C]);
     values[kCos2ThetaStarFT0C] = values[kCosThetaStarFT0C] * values[kCosThetaStarFT0C];
-
-    // Randomize the event plane angle to check the unpolarized contribution
-    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
-    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
-    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
   }
 
   //  kV4, kC4POI, kC4REF etc.
@@ -5873,7 +5933,8 @@ void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2
     values[kWeight] = weight;
     values[kECWeight] = E_boost / v1.M() * weight;
     values[kCosTheta] = LorentzTransformJpsihadroncosChi("costheta", v1, v2);
-    values[kEWeight_before] = v2.Pt() / v1.M() * weight;
+    values[kEWeight_before] = v2.E() / v1.M() * weight;
+    values[kWeight_before] = v2.Pt() / v1.M() * weight;
     values[kPtDau] = v2.pt();
     values[kEtaDau] = v2.eta();
     values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
@@ -5897,7 +5958,7 @@ void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2
       randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-
+      values[kPtDau_randomPhi_trans] = v2.pt();
       ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
       values[kCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
       values[kWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M() * weight;
@@ -5917,7 +5978,7 @@ void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2
 }
 
 template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
-void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values, bool applyFitMass, float Effweight_rec, float Accweight_gen)
+void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values, bool applyFitMass, float Effweight_rec, float Accweight_gen, float Translow, float Transhigh)
 {
   if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
     // energy correlators
@@ -5955,6 +6016,20 @@ void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 cons
     float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
     values[kMCWeight_rec] = E_boost_rec / v1_rec.M() * Effweight_rec;
     values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
+
+    values[kMCCosChi_randomPhi_trans_rec] = -999.9f;
+    values[kMCCosChi_randomPhi_trans_gen] = -999.9f;
+    float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
+
+    if ((deltaphi_rec > -Transhigh * TMath::Pi() && deltaphi_rec < -Translow * TMath::Pi()) || (deltaphi_rec > Translow * TMath::Pi() && deltaphi_rec < Transhigh * TMath::Pi())) {
+      float randomPhi_trans_rec = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_rec(v2_rec.pt(), v2_rec.eta(), randomPhi_trans_rec, o2::constants::physics::MassPionCharged);
+      values[kMCCosChi_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_randomPhi_trans_rec);
+      values[kMCWeight_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_randomPhi_trans_rec) / v1_rec.M() * Effweight_rec;
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_gen(v2_gen.pt(), v2_gen.eta(), randomPhi_trans_rec, MassHadron);
+      values[kMCCosChi_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_randomPhi_trans_gen);
+      values[kMCWeight_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_randomPhi_trans_gen) / v1_gen.M() * Accweight_gen;
+    }
   }
 }
 

@@ -13,7 +13,7 @@
 // Class for track selection
 //
 
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
+#include "PairCut.h"
 
 #include <Framework/Logger.h>
 

@@ -16,14 +16,9 @@
 /// \author Stefanie Mrozinski (stefanie.mrozinski@cern.ch) - Goethe University Frankfurt
 /// \author Lorenzo Mattei (lorenzo.mattei@cern.ch) - Turin University
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/LHCConstants.h>
-#include <DataFormatsParameters/AggregatedRunInfo.h>
-#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -35,10 +30,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include <TH2.h>
 
-#include <array>
 #include <bitset>
 #include <cstdint>
 #include <cstdlib>

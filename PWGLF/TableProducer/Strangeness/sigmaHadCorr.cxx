@@ -16,20 +16,35 @@
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFSigmaHadTables.h"
 
-#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <TLorentzVector.h>
-#include <TMath.h>
+#include <TPDGCode.h>
 
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
 #include <vector>
 
 using namespace o2;
@@ -38,8 +53,8 @@ using namespace o2::framework::expressions;
 
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullPr>;
 using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullPr, aod::McTrackLabels>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel, aod::PVMults>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
 
 struct sigmaHadCand {
 
@@ -74,6 +89,11 @@ struct sigmaHadCand {
   int kinkDauID = -1; // ID of the pion from Sigma decay in MC
   int sigmaID = -1;   // ID of the Sigma candidate in MC
   int hadID = -1;     // ID of the hadron candidate in MC
+
+  int sigmaMotherPDG = -999;         // PDG of the direct mother of the Sigma in MC
+  int sigmaPartonicMotherPDG = -999; // PDG of the first or last partonic ancestor of the Sigma in MC
+
+  float multiplicity = -1.f;
 };
 
 struct sigmaHadCorrTask {
@@ -112,6 +132,9 @@ struct sigmaHadCorrTask {
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Sigma-hadron candidates"};
   Configurable<bool> fillSparseInvMassKstar{"fillSparseInvMassKstar", false, "If true, fill THn with invmass, k*, sigma charge, proton charge, sigma decay radius, cosPA, sigma pt"};
+  Configurable<bool> saveMultiplicity{"saveMultiplicity", false, "If true, save collision multiplicity in the output table"};
+  Configurable<bool> useMultNTracksPV{"useMultNTracksPV", false, "If true, use multNTracksPV for multiplicity and mixing bins; if false, use numContrib"};
+  Configurable<bool> findLastPartonicMother{"findLastPartonicMother", true, "If true, store the initial hard-scattering parton (last partonic mother). If false, store the last parton before hadronization (first partonic mother)"};
 
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
@@ -145,6 +168,7 @@ struct sigmaHadCorrTask {
     // qa histograms
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     // Dedicated QA folder
+    rSigmaHad.add("QA/hHadronPt", "Hadron #it{p}_{T}", {HistType::kTH1F, {ptHadAxis}});
     rSigmaHad.add("QA/h2TPCNSigmaHadVsPtHad", "TPC n#sigma_{had} vs #it{p}_{T,had}", {HistType::kTH2F, {ptHadAxis, nSigmaHadAxis}});
     rSigmaHad.add("QA/h2TOFNSigmaHadVsPtHad", "TOF n#sigma_{had} vs #it{p}_{T,had}", {HistType::kTH2F, {ptHadAxis, nSigmaHadAxis}});
     rSigmaHad.add("QA/hSigmaPt", "#Sigma #it{p}_{T}", {HistType::kTH1F, {sigmaPtAxis}});
@@ -265,6 +289,103 @@ struct sigmaHadCorrTask {
     return doSigmaPion ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
   }
 
+  // Section of functions to retrieve MC truth information for the Sigma candidate (adapted from PWGCF/Femto)
+  // Get the PDG code of the direct mother of the Sigma candidate
+  template <typename TMcParticle, typename TMcParticles>
+  int getSigmaMotherPDG(const TMcParticle& mcParticle, const TMcParticles& mcParticles)
+  {
+    if (!mcParticle.has_mothers()) {
+      return -999;
+    }
+    auto motherIds = mcParticle.mothersIds();
+    int mcMotherIndex = motherIds.front();
+    if (mcMotherIndex < 0 || mcMotherIndex >= static_cast<int>(mcParticles.size())) {
+      return -999;
+    }
+    return mcParticles.iteratorAt(mcMotherIndex).pdgCode();
+  }
+
+  // Walk up the decay chain and return the PDG of the first quark or gluon ancestor found
+  template <typename TMcParticle, typename TMcParticles>
+  int findFirstPartonicMotherPDG(const TMcParticle& mcParticle, const TMcParticles& mcParticles)
+  {
+    if (!mcParticle.has_mothers()) {
+      return -999;
+    }
+    auto motherIds = mcParticle.mothersIds();
+    const int defaultMotherSize = 2;
+    std::vector<int> allMotherIds;
+    if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
+      for (int i = motherIds[0]; i <= motherIds[1]; i++)
+        allMotherIds.push_back(i);
+    } else {
+      for (const int& id : motherIds)
+        allMotherIds.push_back(id);
+    }
+    for (const int& i : allMotherIds) {
+      if (i < 0 || i >= static_cast<int>(mcParticles.size()))
+        continue;
+      const auto& mother = mcParticles.iteratorAt(i);
+      int pdgAbs = std::abs(mother.pdgCode());
+      if (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon) {
+        return mother.pdgCode();
+      }
+      int found = findFirstPartonicMotherPDG(mother, mcParticles);
+      if (found != -999)
+        return found;
+    }
+    return -999;
+  }
+
+  // Walk up the decay chain iteratively and return the PDG of the last quark or gluon before beam remnants
+  template <typename TMcParticle, typename TMcParticles>
+  int findLastPartonicMotherPDG(const TMcParticle& mcParticle, const TMcParticles& mcParticles)
+  {
+    int lastPartonPDG = -999;
+    int64_t currentIndex = mcParticle.globalIndex();
+    while (currentIndex >= 0 && currentIndex < static_cast<int64_t>(mcParticles.size())) {
+      const auto& current = mcParticles.iteratorAt(currentIndex);
+      if (!current.has_mothers())
+        break;
+      auto motherIds = current.mothersIds();
+      int nextIndex = -1;
+      const int defaultMotherSize = 2;
+      if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
+        nextIndex = motherIds[0];
+      } else {
+        for (const int& id : motherIds) {
+          if (id >= 0 && id < static_cast<int>(mcParticles.size())) {
+            nextIndex = id;
+            break;
+          }
+        }
+      }
+      if (nextIndex < 0 || nextIndex >= static_cast<int>(mcParticles.size()))
+        break;
+      const auto& mother = mcParticles.iteratorAt(nextIndex);
+      int pdgAbs = std::abs(mother.pdgCode());
+      int status = std::abs(o2::mcgenstatus::getGenStatusCode(mother.statusCode()));
+      bool isParton = (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon);
+      const int isBeamParticleLowerLimit = 11;
+      const int isBeamParticleUpperLimit = 19;
+      bool isBeam = (status >= isBeamParticleLowerLimit && status <= isBeamParticleUpperLimit);
+      if (isBeam)
+        return lastPartonPDG;
+      if (isParton)
+        lastPartonPDG = mother.pdgCode();
+      currentIndex = nextIndex;
+    }
+    return lastPartonPDG;
+  }
+
+  int getPartonicMotherPDG(const auto& mcParticle, const auto& mcParticles)
+  {
+    if (findLastPartonicMother.value) {
+      return findLastPartonicMotherPDG(mcParticle, mcParticles);
+    }
+    return findFirstPartonicMotherPDG(mcParticle, mcParticles);
+  }
+
   float getSigmaMassForKstar()
   {
     return doSigmaMinus ? o2::constants::physics::MassSigmaMinus : o2::constants::physics::MassSigmaPlus;
@@ -317,11 +438,13 @@ struct sigmaHadCorrTask {
       return false;
     }
 
-    if (!candidate.hasTOF()) {
-      return false;
-    }
-    if (std::abs(getTOFNSigmaHad(candidate)) > cutNSigmaTOF) {
-      return false;
+    if (candidate.pt() >= ptMinTOFHad) {
+      if (!candidate.hasTOF()) {
+        return false;
+      }
+      if (std::abs(getTOFNSigmaHad(candidate)) > cutNSigmaTOF) {
+        return false;
+      }
     }
     return true; // Track is selected
   }
@@ -440,12 +563,14 @@ struct sigmaHadCorrTask {
         candidate.sigmaID = sigmaCand.trackMothId();
         candidate.kinkDauID = sigmaCand.trackDaugId();
         candidate.hadID = hadTrack.globalIndex();
+        candidate.multiplicity = saveMultiplicity.value ? (useMultNTracksPV.value ? collision.multNTracksPV() : collision.numContrib()) : -1.f;
 
         float kStar = getKStar(sigmaPRecal[0], sigmaPRecal[1], sigmaPRecal[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
         if (kStar > cutMaxKStar) {
           continue;
         }
 
+        rSigmaHad.fill(HIST("QA/hHadronPt"), candidate.ptHad());
         rSigmaHad.fill(HIST("QA/h2TPCNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTPCHad);
         if (hadTrack.hasTOF()) {
           rSigmaHad.fill(HIST("QA/h2TOFNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTOFHad);
@@ -494,7 +619,8 @@ struct sigmaHadCorrTask {
                           candidate.pyHad,
                           candidate.pzHad,
                           candidate.nSigmaTPCHad,
-                          candidate.nSigmaTOFHad);
+                          candidate.nSigmaTOFHad,
+                          candidate.multiplicity);
         }
       }
     }
@@ -503,54 +629,64 @@ struct sigmaHadCorrTask {
 
   // Processing Event Mixing
   SliceCache cache;
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
+  using BinningTypeNumContrib = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  using BinningTypeMultNTracksPV = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
+  BinningTypeNumContrib colBinningNumContrib{{CfgVtxBins, CfgMultBins}, true};
+  BinningTypeMultNTracksPV colBinningPVMult{{CfgVtxBins, CfgMultBins}, true};
 
   void processMixedEvent(const CollisionsFull& collisions, const aod::KinkCands& kinkCands, const TracksFull& tracks)
   {
-    for (auto const& [collision1, collision2] :
-         selfCombinations(colBinning, nEvtMixingBkg, -1, collisions, collisions)) {
-      if (collision1.index() == collision2.index())
-        continue;
-
-      sigmaHadCandidates.clear();
-      if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8()) {
-        continue;
+    if (useMultNTracksPV.value) {
+      for (auto const& [collision1, collision2] :
+           selfCombinations(colBinningPVMult, nEvtMixingBkg, -1, collisions, collisions)) {
+        if (collision1.index() == collision2.index())
+          continue;
+        sigmaHadCandidates.clear();
+        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+          continue;
+        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+          continue;
+        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, false);
+        if (fillOutputTree) {
+          for (const auto& candidate : sigmaHadCandidates) {
+            outputDataTable(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                            candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz,
+                            candidate.sigmaDecRadius, candidate.sigmaCosPA, candidate.chargeHad,
+                            candidate.pxHad, candidate.pyHad, candidate.pzHad,
+                            candidate.nSigmaTPCHad, candidate.nSigmaTOFHad, candidate.multiplicity);
+          }
+        }
       }
-      if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8()) {
-        continue;
-      }
-      auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
-      auto tracks_c1 = tracks.sliceBy(tracksPerCollisionPreslice, collision1.globalIndex());
-      auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, false);
-
-      if (fillOutputTree) {
-        // Fill output table
-        for (const auto& candidate : sigmaHadCandidates) {
-          outputDataTable(candidate.sigmaCharge,
-                          candidate.sigmaPx,
-                          candidate.sigmaPy,
-                          candidate.sigmaPz,
-                          candidate.sigmaDauPx,
-                          candidate.sigmaDauPy,
-                          candidate.sigmaDauPz,
-                          candidate.sigmaDecRadius,
-                          candidate.sigmaCosPA,
-                          candidate.chargeHad,
-                          candidate.pxHad,
-                          candidate.pyHad,
-                          candidate.pzHad,
-                          candidate.nSigmaTPCHad,
-                          candidate.nSigmaTOFHad);
+    } else {
+      for (auto const& [collision1, collision2] :
+           selfCombinations(colBinningNumContrib, nEvtMixingBkg, -1, collisions, collisions)) {
+        if (collision1.index() == collision2.index())
+          continue;
+        sigmaHadCandidates.clear();
+        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+          continue;
+        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+          continue;
+        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, false);
+        if (fillOutputTree) {
+          for (const auto& candidate : sigmaHadCandidates) {
+            outputDataTable(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                            candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz,
+                            candidate.sigmaDecRadius, candidate.sigmaCosPA, candidate.chargeHad,
+                            candidate.pxHad, candidate.pyHad, candidate.pzHad,
+                            candidate.nSigmaTPCHad, candidate.nSigmaTOFHad, candidate.multiplicity);
+          }
         }
       }
     }
-    LOG(debug) << "Processing mixed event";
   }
   PROCESS_SWITCH(sigmaHadCorrTask, processMixedEvent, "Process Mixed event", false);
 
-  void processSameEventMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, TracksFullMC const& tracks, aod::McParticles const&)
+  void processSameEventMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, TracksFullMC const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto const& collision : collisions) {
 
@@ -578,6 +714,8 @@ struct sigmaHadCorrTask {
         auto pdgSigma = mcPartSigma.pdgCode();
         auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcPartSigmaDau.pdgCode() : -999;
         auto pdgHad = mcLabelHad.has_mcParticle() ? mcPartHad.pdgCode() : -999;
+        auto sigmaMotherPDG = getSigmaMotherPDG(mcPartSigma, mcParticles);
+        auto sigmaPartonicMotherPDG = getPartonicMotherPDG(mcPartSigma, mcParticles);
 
         float sigmaPtGen = std::hypot(mcPartSigma.px(), mcPartSigma.py());
         float hadPtGen = std::hypot(mcPartHad.px(), mcPartHad.py());
@@ -615,9 +753,12 @@ struct sigmaHadCorrTask {
                             candidate.pzHad,
                             candidate.nSigmaTPCHad,
                             candidate.nSigmaTOFHad,
+                            candidate.multiplicity,
                             pdgSigma,
                             pdgSigmaDau,
                             pdgHad,
+                            sigmaMotherPDG,
+                            sigmaPartonicMotherPDG,
                             sigmaPtGen,
                             hadPtGen,
                             kStarGen);
@@ -627,86 +768,107 @@ struct sigmaHadCorrTask {
   }
   PROCESS_SWITCH(sigmaHadCorrTask, processSameEventMC, "Process Same event MC", false);
 
-  void processMixedEventMC(const CollisionsFullMC& collisions, const aod::KinkCands& kinkCands, const TracksFullMC& tracks, const aod::McParticles&)
+  void processMixedEventMC(const CollisionsFullMC& collisions, const aod::KinkCands& kinkCands, const TracksFullMC& tracks, const aod::McParticles& mcParticles)
   {
-    for (auto const& [collision1, collision2] :
-         selfCombinations(colBinning, nEvtMixingBkg, -1, collisions, collisions)) {
-      if (collision1.index() == collision2.index())
-        continue;
-
-      sigmaHadCandidates.clear();
-      if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8()) {
-        continue;
-      }
-      if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8()) {
-        continue;
-      }
-      auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
-      auto tracks_c1 = tracks.sliceBy(tracksPerCollisionPreslice, collision1.globalIndex());
-      auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, true);
-
-      for (const auto& candidate : sigmaHadCandidates) {
-        auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
-        auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
-        auto mcLabelHad = tracks.rawIteratorAt(candidate.hadID);
-
-        if (!mcLabelSigma.has_mcParticle() || !mcLabelSigmaDau.has_mcParticle() || !mcLabelHad.has_mcParticle()) {
-          continue; // Skip candidates where MC truth is not available
+    if (useMultNTracksPV.value) {
+      for (auto const& [collision1, collision2] :
+           selfCombinations(colBinningPVMult, nEvtMixingBkg, -1, collisions, collisions)) {
+        if (collision1.index() == collision2.index())
+          continue;
+        sigmaHadCandidates.clear();
+        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+          continue;
+        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+          continue;
+        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, true);
+        for (const auto& candidate : sigmaHadCandidates) {
+          auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
+          auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
+          auto mcLabelHad = tracks.rawIteratorAt(candidate.hadID);
+          if (!mcLabelSigma.has_mcParticle() || !mcLabelSigmaDau.has_mcParticle() || !mcLabelHad.has_mcParticle())
+            continue;
+          auto mcPartSigma = mcLabelSigma.mcParticle_as<aod::McParticles>();
+          auto mcPartSigmaDau = mcLabelSigmaDau.mcParticle_as<aod::McParticles>();
+          auto mcPartHad = mcLabelHad.mcParticle_as<aod::McParticles>();
+          auto pdgSigma = mcPartSigma.pdgCode();
+          auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcPartSigmaDau.pdgCode() : -999;
+          auto pdgHad = mcLabelHad.has_mcParticle() ? mcPartHad.pdgCode() : -999;
+          auto sigmaMotherPDG = getSigmaMotherPDG(mcPartSigma, mcParticles);
+          auto sigmaPartonicMotherPDG = getPartonicMotherPDG(mcPartSigma, mcParticles);
+          float sigmaPtGen = std::hypot(mcPartSigma.px(), mcPartSigma.py());
+          float hadPtGen = std::hypot(mcPartHad.px(), mcPartHad.py());
+          float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartHad.px(), mcPartHad.py(), mcPartHad.pz());
+          if (fillSparseInvMassKstar) {
+            auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                                                             candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz);
+            float kStarRec = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
+            float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
+            rSigmaHad.fill(HIST("hSparseSigmaHadMC"), candidate.sigmaMass, kStarRec, candidate.sigmaCharge,
+                           candidate.chargeHad, candidate.sigmaDecRadius, candidate.sigmaCosPA, sigmaPtUsed, kStarGen);
+          }
+          if (fillOutputTree) {
+            outputDataTableMC(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                              candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz,
+                              candidate.sigmaDecRadius, candidate.sigmaCosPA, candidate.chargeHad,
+                              candidate.pxHad, candidate.pyHad, candidate.pzHad,
+                              candidate.nSigmaTPCHad, candidate.nSigmaTOFHad, candidate.multiplicity,
+                              pdgSigma, pdgSigmaDau, pdgHad, sigmaMotherPDG, sigmaPartonicMotherPDG,
+                              sigmaPtGen, hadPtGen, kStarGen);
+          }
         }
-
-        auto mcPartSigma = mcLabelSigma.mcParticle_as<aod::McParticles>();
-        auto mcPartSigmaDau = mcLabelSigmaDau.mcParticle_as<aod::McParticles>();
-        auto mcPartHad = mcLabelHad.mcParticle_as<aod::McParticles>();
-        auto pdgSigma = mcPartSigma.pdgCode();
-        auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcPartSigmaDau.pdgCode() : -999;
-        auto pdgHad = mcLabelHad.has_mcParticle() ? mcPartHad.pdgCode() : -999;
-        float sigmaPtGen = std::hypot(mcPartSigma.px(), mcPartSigma.py());
-        float hadPtGen = std::hypot(mcPartHad.px(), mcPartHad.py());
-        float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartHad.px(), mcPartHad.py(), mcPartHad.pz());
-
-        if (fillSparseInvMassKstar) {
-          auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
-                                                           candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz);
-          float kStarRec = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
-          float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
-          rSigmaHad.fill(HIST("hSparseSigmaHadMC"),
-                         candidate.sigmaMass,
-                         kStarRec,
-                         candidate.sigmaCharge,
-                         candidate.chargeHad,
-                         candidate.sigmaDecRadius,
-                         candidate.sigmaCosPA,
-                         sigmaPtUsed,
-                         kStarGen);
-        }
-
-        if (fillOutputTree) {
-          outputDataTableMC(candidate.sigmaCharge,
-                            candidate.sigmaPx,
-                            candidate.sigmaPy,
-                            candidate.sigmaPz,
-                            candidate.sigmaDauPx,
-                            candidate.sigmaDauPy,
-                            candidate.sigmaDauPz,
-                            candidate.sigmaDecRadius,
-                            candidate.sigmaCosPA,
-                            candidate.chargeHad,
-                            candidate.pxHad,
-                            candidate.pyHad,
-                            candidate.pzHad,
-                            candidate.nSigmaTPCHad,
-                            candidate.nSigmaTOFHad,
-                            pdgSigma,
-                            pdgSigmaDau,
-                            pdgHad,
-                            sigmaPtGen,
-                            hadPtGen,
-                            kStarGen);
+      }
+    } else {
+      for (auto const& [collision1, collision2] :
+           selfCombinations(colBinningNumContrib, nEvtMixingBkg, -1, collisions, collisions)) {
+        if (collision1.index() == collision2.index())
+          continue;
+        sigmaHadCandidates.clear();
+        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+          continue;
+        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+          continue;
+        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, true);
+        for (const auto& candidate : sigmaHadCandidates) {
+          auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
+          auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
+          auto mcLabelHad = tracks.rawIteratorAt(candidate.hadID);
+          if (!mcLabelSigma.has_mcParticle() || !mcLabelSigmaDau.has_mcParticle() || !mcLabelHad.has_mcParticle())
+            continue;
+          auto mcPartSigma = mcLabelSigma.mcParticle_as<aod::McParticles>();
+          auto mcPartSigmaDau = mcLabelSigmaDau.mcParticle_as<aod::McParticles>();
+          auto mcPartHad = mcLabelHad.mcParticle_as<aod::McParticles>();
+          auto pdgSigma = mcPartSigma.pdgCode();
+          auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcPartSigmaDau.pdgCode() : -999;
+          auto pdgHad = mcLabelHad.has_mcParticle() ? mcPartHad.pdgCode() : -999;
+          auto sigmaMotherPDG = getSigmaMotherPDG(mcPartSigma, mcParticles);
+          auto sigmaPartonicMotherPDG = getPartonicMotherPDG(mcPartSigma, mcParticles);
+          float sigmaPtGen = std::hypot(mcPartSigma.px(), mcPartSigma.py());
+          float hadPtGen = std::hypot(mcPartHad.px(), mcPartHad.py());
+          float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartHad.px(), mcPartHad.py(), mcPartHad.pz());
+          if (fillSparseInvMassKstar) {
+            auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                                                             candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz);
+            float kStarRec = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
+            float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
+            rSigmaHad.fill(HIST("hSparseSigmaHadMC"), candidate.sigmaMass, kStarRec, candidate.sigmaCharge,
+                           candidate.chargeHad, candidate.sigmaDecRadius, candidate.sigmaCosPA, sigmaPtUsed, kStarGen);
+          }
+          if (fillOutputTree) {
+            outputDataTableMC(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                              candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz,
+                              candidate.sigmaDecRadius, candidate.sigmaCosPA, candidate.chargeHad,
+                              candidate.pxHad, candidate.pyHad, candidate.pzHad,
+                              candidate.nSigmaTPCHad, candidate.nSigmaTOFHad, candidate.multiplicity,
+                              pdgSigma, pdgSigmaDau, pdgHad, sigmaMotherPDG, sigmaPartonicMotherPDG,
+                              sigmaPtGen, hadPtGen, kStarGen);
+          }
         }
       }
     }
-    LOG(debug) << "Processing mixed event MC";
   }
   PROCESS_SWITCH(sigmaHadCorrTask, processMixedEventMC, "Process Mixed event MC", false);
 };

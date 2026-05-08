@@ -16,36 +16,31 @@
 /// \author sourav.kundu@cern.ch
 
 #include "PWGLF/DataModel/LFSpincorrelationTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
-#include <fairlogger/Logger.h>
-
+#include <iterator>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -53,7 +48,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 using namespace o2::aod::rctsel;
 
 struct lambdaspincorrelation {
@@ -80,7 +74,8 @@ struct lambdaspincorrelation {
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
 
   // events
-  Configurable<float> cfgEventTypepp{"cfgEventTypepp", false, "Type of collisions"};
+  Configurable<bool> cfgEventTypepp{"cfgEventTypepp", false, "Type of collisions"};
+  Configurable<bool> cfgCentTypepp{"cfgCentTypepp", true, "Type of centrality"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Accepted minimum Centrality"};
@@ -157,9 +152,9 @@ struct lambdaspincorrelation {
     if (std::abs(ctauLambda) > cMaxV0LifeTime) {
       return false;
     }
-    if (std::abs(candidate.yLambda()) > confV0Rap) {
-      return false;
-    }
+    // if (std::abs(candidate.yLambda()) > confV0Rap) {
+    // return false;
+    // }
     return true;
   }
 
@@ -243,12 +238,13 @@ struct lambdaspincorrelation {
   ROOT::Math::PxPyPzMVector lambdaDummy, pionDummy, protonDummy;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
+  // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using ResoV0s = aod::V0Datas;
-
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using AllTrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::McTrackLabels>;
   void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s)
   {
     std::vector<ROOT::Math::PxPyPzMVector> lambdaMother, protonDaughter, pionDaughter;
@@ -264,13 +260,24 @@ struct lambdaspincorrelation {
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
-    if (cfgEventTypepp)
+    if (cfgCentTypepp)
       centrality = collision.centFT0M();
     auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     // if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
-    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
+    if (
+      // RCT check only if requested
+      (!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
+
+      // pp event-selection bits only if cfgEventTypepp is true
+      (!cfgEventTypepp || (collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+                           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+                           collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+                           collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) &&
+      (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() &&
+      (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
+      occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
@@ -285,7 +292,7 @@ struct lambdaspincorrelation {
           }
           if (lambdaTag && aLambdaTag) {
             doubleStatus.push_back(true);
-            if (std::abs(v0.mLambda() - 1.1154) < std::abs(v0.mAntiLambda() - 1.1154)) {
+            if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda)) {
               lambdaTag = true;
               aLambdaTag = false;
             } else {
@@ -365,12 +372,23 @@ struct lambdaspincorrelation {
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
-    if (cfgEventTypepp)
+    if (cfgCentTypepp)
       centrality = collision.centFT0M();
     auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+    if (
+      // RCT check only if requested
+      (!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
+
+      // pp event-selection bits only if cfgEventTypepp is true
+      (!cfgEventTypepp || (collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+                           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+                           collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+                           collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) &&
+      (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() &&
+      (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
+      occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
@@ -449,6 +467,201 @@ struct lambdaspincorrelation {
     }
   }
   PROCESS_SWITCH(lambdaspincorrelation, processMc, "Process montecarlo", true);
+
+  void processMc2(aod::McCollision const&,
+                  soa::SmallGroups<EventCandidatesMC> const& collisions,
+                  AllTrackCandidatesMC const&,
+                  ResoV0s const& V0s,
+                  aod::McParticles const&)
+  {
+    if (collisions.size() == 1) {
+
+      for (const auto& collision : collisions) {
+
+        std::vector<ROOT::Math::PxPyPzMVector> lambdaMother, protonDaughter, pionDaughter;
+        std::vector<int> v0Status = {};
+        std::vector<bool> doubleStatus = {};
+        std::vector<float> v0Cospa = {};
+        std::vector<float> v0Radius = {};
+        std::vector<float> dcaPositive = {};
+        std::vector<float> dcaNegative = {};
+        std::vector<int> positiveIndex = {};
+        std::vector<int> negativeIndex = {};
+        std::vector<float> dcaBetweenDaughter = {};
+        int numbV0 = 0;
+
+        auto centrality = collision.centFT0C();
+        if (cfgCentTypepp) {
+          centrality = collision.centFT0M();
+        }
+
+        auto vz = collision.posZ();
+        int occupancy = collision.trackOccupancyInTimeRange();
+
+        histos.fill(HIST("hEvtSelInfo"), 0.5);
+
+        if (std::abs(collision.posZ()) < cfgCutVertex &&
+            (!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
+
+            (!cfgEventTypepp || (collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+                                 collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+                                 collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+                                 collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) &&
+
+            (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) &&
+            collision.sel8() &&
+            (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
+            occupancy < cfgCutOccupancy) {
+
+          histos.fill(HIST("hEvtSelInfo"), 1.5);
+
+          for (const auto& v0 : V0s) {
+
+            auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
+
+            if (isValid) {
+
+              auto postrack1 = v0.template posTrack_as<AllTrackCandidatesMC>();
+              auto negtrack1 = v0.template negTrack_as<AllTrackCandidatesMC>();
+
+              // Reject candidates whose reconstructed daughters are not MC-labelled.
+              if (!postrack1.has_mcParticle() || !negtrack1.has_mcParticle()) {
+                continue;
+              }
+
+              auto mcPos = postrack1.mcParticle();
+              auto mcNeg = negtrack1.mcParticle();
+
+              // Reject gap/background-event daughters.
+              if (mcPos.fromBackgroundEvent() || mcNeg.fromBackgroundEvent()) {
+                continue;
+              }
+
+              if (lambdaTag) {
+                histos.fill(HIST("hV0Info"), 0.5);
+              }
+              if (aLambdaTag) {
+                histos.fill(HIST("hV0Info"), 1.5);
+              }
+
+              if (lambdaTag && aLambdaTag) {
+                doubleStatus.push_back(true);
+                if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda) <
+                    std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda)) {
+                  lambdaTag = true;
+                  aLambdaTag = false;
+                } else {
+                  lambdaTag = false;
+                  aLambdaTag = true;
+                }
+              } else {
+                doubleStatus.push_back(false);
+              }
+
+              if (lambdaTag) {
+                histos.fill(HIST("hV0Info"), 2.5);
+              }
+              if (aLambdaTag) {
+                histos.fill(HIST("hV0Info"), 3.5);
+              }
+
+              positiveIndex.push_back(postrack1.globalIndex());
+              negativeIndex.push_back(negtrack1.globalIndex());
+
+              v0Cospa.push_back(v0.v0cosPA());
+              v0Radius.push_back(v0.v0radius());
+              dcaPositive.push_back(std::abs(v0.dcapostopv()));
+              dcaNegative.push_back(std::abs(v0.dcanegtopv()));
+              dcaBetweenDaughter.push_back(std::abs(v0.dcaV0daughters()));
+
+              if (lambdaTag) {
+                v0Status.push_back(0);
+
+                proton = ROOT::Math::PxPyPzMVector(
+                  v0.pxpos(),
+                  v0.pypos(),
+                  v0.pzpos(),
+                  o2::constants::physics::MassProton);
+
+                antiPion = ROOT::Math::PxPyPzMVector(
+                  v0.pxneg(),
+                  v0.pyneg(),
+                  v0.pzneg(),
+                  o2::constants::physics::MassPionCharged);
+
+                lambda = proton + antiPion;
+
+                lambdaMother.push_back(lambda);
+                protonDaughter.push_back(proton);
+                pionDaughter.push_back(antiPion);
+
+                histos.fill(HIST("hLambdaMass"), lambda.M());
+
+              } else if (aLambdaTag) {
+                v0Status.push_back(1);
+
+                antiProton = ROOT::Math::PxPyPzMVector(
+                  v0.pxneg(),
+                  v0.pyneg(),
+                  v0.pzneg(),
+                  o2::constants::physics::MassProton);
+
+                pion = ROOT::Math::PxPyPzMVector(
+                  v0.pxpos(),
+                  v0.pypos(),
+                  v0.pzpos(),
+                  o2::constants::physics::MassPionCharged);
+
+                antiLambda = antiProton + pion;
+
+                lambdaMother.push_back(antiLambda);
+                protonDaughter.push_back(antiProton);
+                pionDaughter.push_back(pion);
+
+                histos.fill(HIST("hLambdaMass"), antiLambda.M());
+              }
+
+              numbV0 = numbV0 + 1;
+            }
+          }
+
+          if (numbV0 > 1 && v0Cospa.size() > 1) {
+            histos.fill(HIST("hEvtSelInfo"), 2.5);
+
+            lambdaEventmc(centrality, vz);
+            auto indexEvent = lambdaEventmc.lastIndex();
+
+            for (auto if1 = lambdaMother.begin(); if1 != lambdaMother.end(); ++if1) {
+              auto i5 = std::distance(lambdaMother.begin(), if1);
+
+              lambdaDummy = lambdaMother.at(i5);
+              protonDummy = protonDaughter.at(i5);
+              pionDummy = pionDaughter.at(i5);
+
+              lambdaPairmc(indexEvent,
+                           v0Status.at(i5),
+                           doubleStatus.at(i5),
+                           v0Cospa.at(i5),
+                           v0Radius.at(i5),
+                           dcaPositive.at(i5),
+                           dcaNegative.at(i5),
+                           dcaBetweenDaughter.at(i5),
+                           lambdaDummy.Pt(),
+                           lambdaDummy.Eta(),
+                           lambdaDummy.Phi(),
+                           lambdaDummy.M(),
+                           protonDummy.Pt(),
+                           protonDummy.Eta(),
+                           protonDummy.Phi(),
+                           positiveIndex.at(i5),
+                           negativeIndex.at(i5));
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdaspincorrelation, processMc2, "Process montecarlo2", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

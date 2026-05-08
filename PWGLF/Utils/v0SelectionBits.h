@@ -12,6 +12,8 @@
 #ifndef PWGLF_UTILS_V0SELECTIONBITS_H_
 #define PWGLF_UTILS_V0SELECTIONBITS_H_
 
+#include <cstdint>
+
 namespace v0data
 {
 // provides simple switches

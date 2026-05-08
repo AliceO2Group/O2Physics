@@ -14,48 +14,39 @@
 
 #include "PWGLF/DataModel/ZDCCalTables.h"
 
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/Logger.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/GeometryManager.h>
-#include <DetectorsBase/Propagator.h>
-#include <DetectorsCommonDataFormats/AlignParam.h>
-#include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/StepTHn.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector4D.h>
-#include <TComplex.h>
 #include <TF1.h>
-#include <TH1F.h>
-#include <TMath.h>
+#include <TH2.h>
+#include <TProfile.h>
 #include <TRandom3.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -69,6 +60,8 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 struct zdcvector {
 
   Produces<aod::ZDCCalTables> zdccaltable;
+  Produces<aod::ZDCEnergyTables> zdcenergytable;
+  Produces<aod::ZDCTimeTables> zdctimetable;
 
   // Configurables.
   struct : ConfigurableGroup {
@@ -109,7 +102,11 @@ struct zdcvector {
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctCut;
 
+  Configurable<bool> storeZdcEnergy{"storeZdcEnergy", true, "Store ZDC tower/common energies in a linked extra table"};
+  Configurable<bool> storeZdcTime{"storeZdcTime", true, "Store timestamp and time from first event of run"};
+
   RCTFlagsChecker rctChecker;
+  std::unordered_map<int, uint64_t> runStartTime;
 
   void init(o2::framework::InitContext&)
   {
@@ -148,8 +145,8 @@ struct zdcvector {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH2D* gainprofile;
-  TProfile* gainprofilevxy;
+  TH2D* gainprofile = nullptr;
+  TProfile* gainprofilevxy = nullptr;
 
   // int lastRunNumberTimeRec = -999;
   //  for time since start of run
@@ -187,35 +184,102 @@ struct zdcvector {
     auto sumA = 0.0;
     auto sumC = 0.0;
 
+    // default values for events without ZDC
+    float znaEnergycommon = 0.f;
+    float zncEnergycommon = 0.f;
+
+    float zna0 = 0.f;
+    float zna1 = 0.f;
+    float zna2 = 0.f;
+    float zna3 = 0.f;
+
+    float znc0 = 0.f;
+    float znc1 = 0.f;
+    float znc2 = 0.f;
+    float znc3 = 0.f;
+
     auto bc = collision.foundBC_as<BCsRun3>();
+    const uint64_t timestampzdc = bc.timestamp(); // in milliseconds
+
+    float timeInMinutes = 0.f;
+
+    auto itStart = runStartTime.find(currentRunNumber);
+    if (itStart == runStartTime.end()) {
+      runStartTime[currentRunNumber] = timestampzdc;
+      timeInMinutes = 0.f;
+    } else {
+      timeInMinutes = static_cast<float>(timestampzdc - itStart->second) / 60000.f;
+    }
+
+    // Helper to keep your early-return structure unchanged.
+    // Every time ZDCCalTables is filled, the optional linked energy table is also filled.
+    auto fillTables = [&](bool trigger,
+                          float qxA,
+                          float qxC,
+                          float qyA,
+                          float qyC) {
+      zdccaltable(trigger,
+                  currentRunNumber,
+                  centrality,
+                  vx,
+                  vy,
+                  vz,
+                  qxA,
+                  qxC,
+                  qyA,
+                  qyC);
+
+      auto zdcCalIndex = zdccaltable.lastIndex();
+
+      if (storeZdcEnergy) {
+        zdcenergytable(zdcCalIndex,
+                       znaEnergycommon,
+                       zncEnergycommon,
+                       zna0,
+                       zna1,
+                       zna2,
+                       zna3,
+                       znc0,
+                       znc1,
+                       znc2,
+                       znc3);
+      }
+      if (storeZdcTime) {
+        zdctimetable(zdcCalIndex,
+                     timestampzdc,
+                     timeInMinutes);
+      }
+    };
 
     if (!bc.has_zdc()) {
       triggerevent = false;
-      zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+      fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
+      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
       return;
     }
 
-    // -------- define time since run start --------
-    /*uint64_t ts = bc.timestamp();
-    if (currentRunNumber != runForStartTime) {
-      runStartTime = ts;
-      runForStartTime = currentRunNumber;
-    }
-    double tsec = 1.e-3 * static_cast<double>(ts - runStartTime);
-    */
     histos.fill(HIST("hEvtSelInfo"), 1.5);
 
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
-    auto zncEnergycommon = zdc.energyCommonZNC();
-    auto znaEnergycommon = zdc.energyCommonZNA();
+    zncEnergycommon = zdc.energyCommonZNC();
+    znaEnergycommon = zdc.energyCommonZNA();
     auto beamEne = 5.36 * 0.5;
+    zna0 = znaEnergy[0];
+    zna1 = znaEnergy[1];
+    zna2 = znaEnergy[2];
+    zna3 = znaEnergy[3];
+
+    znc0 = zncEnergy[0];
+    znc1 = zncEnergy[1];
+    znc2 = zncEnergy[2];
+    znc3 = zncEnergy[3];
 
     if (znaEnergycommon <= 0.0 || zncEnergycommon <= 0.0) {
       triggerevent = false;
-      zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+      fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
       return;
     }
 
@@ -223,16 +287,16 @@ struct zdcvector {
 
     if (znaEnergy[0] <= 0.0 || znaEnergy[1] <= 0.0 || znaEnergy[2] <= 0.0 || znaEnergy[3] <= 0.0) {
       triggerevent = false;
-      zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+      fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 3.5);
 
     if (zncEnergy[0] <= 0.0 || zncEnergy[1] <= 0.0 || zncEnergy[2] <= 0.0 || zncEnergy[3] <= 0.0) {
       triggerevent = false;
-      zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+      fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
       return;
     }
 
@@ -240,25 +304,17 @@ struct zdcvector {
 
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
       triggerevent = false;
-      zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+      fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
       return;
     }
 
     histos.fill(HIST("hEvtSelInfo"), 5.5);
-    /*histos.fill(HIST("hZNA0"), centrality, znaEnergy[0]);
-    histos.fill(HIST("hZNA1"), centrality, znaEnergy[1]);
-    histos.fill(HIST("hZNA2"), centrality, znaEnergy[2]);
-    histos.fill(HIST("hZNA3"), centrality, znaEnergy[3]);
-    histos.fill(HIST("hZNC0"), centrality, zncEnergy[0]);
-    histos.fill(HIST("hZNC1"), centrality, zncEnergy[1]);
-    histos.fill(HIST("hZNC2"), centrality, zncEnergy[2]);
-    histos.fill(HIST("hZNC3"), centrality, zncEnergy[3]);*/
 
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       triggerevent = false;
-      zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+      fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
+      // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
       return;
     }
 
@@ -295,7 +351,8 @@ struct zdcvector {
 
           if (znaEnergy[iChA] <= 0.0) {
             triggerevent = false;
-            zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+            fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
+            // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
             return;
           } else {
             double ampl = gainequal * znaEnergy[iChA];
@@ -311,8 +368,8 @@ struct zdcvector {
         } else {
           if (zncEnergy[iChA - 4] <= 0.0) {
             triggerevent = false;
-            zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-            // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+            fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
+            // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
             return;
           } else {
             double ampl = gainequal * zncEnergy[iChA - 4];
@@ -356,8 +413,8 @@ struct zdcvector {
         qyZDCA = 0.0;
         qyZDCC = 0.0;
         triggerevent = false;
-        zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
-        // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+        // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
+        fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);
         return;
       }
 
@@ -381,7 +438,12 @@ struct zdcvector {
 
       lastRunNumber = currentRunNumber;
     }
-    zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC);
+    // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC);
+    fillTables(triggerevent,
+               qxZDCA,
+               qxZDCC,
+               qyZDCA,
+               qyZDCC);
   }
 };
 

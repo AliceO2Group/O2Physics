@@ -13,7 +13,7 @@
 /// \brief header of class for dalitz ee cuts.
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
+#include "DalitzEECut.h"
 
 #include <Framework/Logger.h>
 

@@ -43,18 +43,23 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <functional>
+#include <initializer_list>
 #include <map>
 #include <random>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -86,10 +91,11 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils;
 
-// EMMCEventLabels needed for processMC truth-efficiency loop
 using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000,
-                               aod::EMEventsCent_000, aod::EMEventsQvec_001,
-                               aod::EMMCEventLabels>;
+                               aod::EMEventsCent_000, aod::EMEventsQvec_001>;
+using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000,
+                                 aod::EMEventsCent_000, aod::EMEventsQvec_001,
+                                 aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsPhiVPsi>;
@@ -2274,6 +2280,8 @@ struct Photonhbt {
     o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
 
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
+  using FilteredMyMCCollisions = soa::Filtered<MyCollisionsMC>;
+
   int ndf = 0;
 
   void processAnalysis(FilteredMyCollisions const& collisions,
@@ -2286,16 +2294,16 @@ struct Photonhbt {
   }
   PROCESS_SWITCH(Photonhbt, processAnalysis, "pairing for analysis", true);
 
-  void processMC(FilteredMyCollisions const& collisions,
+  void processMC(FilteredMyMCCollisions const& mccollisions,
                  MyV0Photons const& v0photons,
                  MyMCV0Legs const& v0legs,
                  aod::EMMCParticles const& mcParticles,
                  aod::EMMCEvents const& mcEvents)
   {
 
-    runPairingMC(collisions, v0photons, v0legs, mcParticles,
+    runPairingMC(mccollisions, v0photons, v0legs, mcParticles,
                  perCollisionPCM, fV0PhotonCut);
-    runTruthEfficiency(collisions, v0photons, v0legs, mcParticles, mcEvents,
+    runTruthEfficiency(mccollisions, v0photons, v0legs, mcParticles, mcEvents,
                        perMCCollisionEMMCParts, perCollisionV0Legs, fV0PhotonCut);
 
     ndf++;

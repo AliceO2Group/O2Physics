@@ -15,16 +15,12 @@
 /// \author Your Name (your.email@cern.ch)
 /// \since April 2025
 
-#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
-#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFhe3HadronTables.h"
 #include "PWGLF/Utils/nucleiUtils.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
@@ -35,37 +31,44 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <MathUtils/Primitive2D.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <THn.h>
-#include <TMath.h>
-#include <TObjArray.h>
 #include <TPDGCode.h>
+#include <TString.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <iterator> // std::prev
+#include <cstring>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -189,9 +192,11 @@ struct He3HadCandidate {
   float chi2TPCHe3 = -10.f;
   float chi2TPCHad = -10.f;
   float nSigmaHe3 = -10.f;
+  float nSigmaTPCHad = -10.f;
   float nSigmaTPCHadPi = -10.f;
   float nSigmaTPCHadKa = -10.f;
   float nSigmaTPCHadPr = -10.f;
+  float nSigmaTOFHad = -10.f;
   float nSigmaTOFHadPi = -10.f;
   float nSigmaTOFHadKa = -10.f;
   float nSigmaTOFHadPr = -10.f;
@@ -236,6 +241,7 @@ struct he3HadronFemto {
   Produces<aod::he3HadronTableMC> outputMcTable;
   Produces<aod::he3HadronMult> outputMultiplicityTable;
   Produces<aod::he3HadronQa> outputQaTable;
+  Produces<aod::he3HadronPid> outputPidTable;
 
   // Selections
   Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
@@ -752,9 +758,11 @@ struct he3HadronFemto {
 
     he3Hadcand.nTPCClustersHe3 = trackHe3.tpcNClsFound();
     he3Hadcand.nSigmaHe3 = computeNSigmaHe3(trackHe3);
+    he3Hadcand.nSigmaTPCHad = computeTPCNSigmaHadron(trackHad);
     he3Hadcand.nSigmaTPCHadPi = trackHad.tpcNSigmaPi();
     he3Hadcand.nSigmaTPCHadKa = trackHad.tpcNSigmaKa();
     he3Hadcand.nSigmaTPCHadPr = trackHad.tpcNSigmaPr();
+    he3Hadcand.nSigmaTOFHad = computeTOFNSigmaHadron(trackHad);
     he3Hadcand.nSigmaTOFHadPi = trackHad.tofNSigmaPi();
     he3Hadcand.nSigmaTOFHadKa = trackHad.tofNSigmaKa();
     he3Hadcand.nSigmaTOFHadPr = trackHad.tofNSigmaPr();
@@ -903,29 +911,21 @@ struct he3HadronFemto {
       he3Hadcand.dcazHe3,
       he3Hadcand.dcaxyHad,
       he3Hadcand.dcazHad,
-      he3Hadcand.dcaPair,
       he3Hadcand.tpcSignalHe3,
       he3Hadcand.momHe3TPC,
       he3Hadcand.tpcSignalHad,
       he3Hadcand.momHadTPC,
       he3Hadcand.nTPCClustersHe3,
       he3Hadcand.nSigmaHe3,
-      he3Hadcand.nSigmaTPCHadPi,
-      he3Hadcand.nSigmaTPCHadKa,
-      he3Hadcand.nSigmaTPCHadPr,
-      he3Hadcand.nSigmaTOFHadPi,
-      he3Hadcand.nSigmaTOFHadKa,
-      he3Hadcand.nSigmaTOFHadPr,
+      he3Hadcand.nSigmaTPCHad,
+      he3Hadcand.nSigmaTOFHad,
       he3Hadcand.chi2TPCHe3,
       he3Hadcand.chi2TPCHad,
-      he3Hadcand.massTOFHe3,
       he3Hadcand.massTOFHad,
       he3Hadcand.pidtrkHe3,
-      he3Hadcand.pidtrkHad,
       he3Hadcand.itsClSizeHe3,
       he3Hadcand.itsClSizeHad,
-      he3Hadcand.sharedClustersHe3,
-      he3Hadcand.sharedClustersHad);
+      he3Hadcand.sharedClustersHe3);
     if (isMC) {
       outputMcTable(
         he3Hadcand.momHe3MC,
@@ -938,19 +938,25 @@ struct he3HadronFemto {
         he3Hadcand.l4MassMC,
         he3Hadcand.flags);
     }
-    if (settingFillMultiplicity) {
-      outputMultiplicityTable(
-        collision.globalIndex(),
-        collision.posZ(),
-        collision.numContrib(),
-        collision.centFT0C(),
-        collision.multFT0C());
-    }
-    if (settingFillQa) {
-      outputQaTable(
-        he3Hadcand.trackIDHe3,
-        he3Hadcand.trackIDHad);
-    }
+    outputMultiplicityTable(
+      collision.globalIndex(),
+      collision.posZ(),
+      collision.numContrib(),
+      collision.centFT0C(),
+      collision.multFT0C());
+    outputQaTable(
+      he3Hadcand.trackIDHe3,
+      he3Hadcand.trackIDHad,
+      he3Hadcand.massTOFHe3,
+      he3Hadcand.pidtrkHad,
+      he3Hadcand.sharedClustersHad);
+    outputPidTable(
+      he3Hadcand.nSigmaTPCHadPi,
+      he3Hadcand.nSigmaTPCHadKa,
+      he3Hadcand.nSigmaTPCHadPr,
+      he3Hadcand.nSigmaTOFHadPi,
+      he3Hadcand.nSigmaTOFHadKa,
+      he3Hadcand.nSigmaTOFHadPr);
   }
 
   void fillHistograms(const He3HadCandidate& he3Hadcand, bool isMc = false)

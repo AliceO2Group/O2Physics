@@ -33,6 +33,7 @@
 #include <TH2.h>
 #include <TRandom3.h>
 
+#include <cmath>
 #include <cstdint>
 
 using namespace o2;

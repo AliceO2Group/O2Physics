@@ -295,7 +295,7 @@ struct HfCandidateSelectorToXiPiQa {
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool SelectOnLF(const T& candidate, const int& inputPtBin)
+  bool selectOnLf(const T& candidate, const int& inputPtBin)
   {
 
     registry.fill(HIST("hSelStatusLf"), 0.0);
@@ -442,7 +442,7 @@ struct HfCandidateSelectorToXiPiQa {
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool SelectOnHF(const T& candidate, const int& inputPtBin)
+  bool selectOnHf(const T& candidate, const int& inputPtBin)
   {
 
     registry.fill(HIST("hSelStatusHf"), 0.0);
@@ -561,8 +561,8 @@ struct HfCandidateSelectorToXiPiQa {
       }
 
       // Topological selection
-      const bool selectionResOnLF = SelectOnLF<svReco>(candidate, pTBin);
-      const bool selectionResOnHF = SelectOnHF<svReco>(candidate, pTBin);
+      const bool selectionResOnLF = selectOnLf<svReco>(candidate, pTBin);
+      const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin);
       if (!selectionResOnLF || !selectionResOnHF) {
         resultSelections = false;
       }
@@ -699,23 +699,6 @@ struct HfCandidateSelectorToXiPiQa {
         statusInvMassCharmBaryon = true;
       }
 
-      // ML BDT selection
-      if (applyMl) {
-        bool isSelectedMlXic0 = false;
-        std::vector<float> inputFeaturesXic0 = {};
-        if constexpr (svReco == doDcaFitter) {
-          inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
-        } else {
-          inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-          isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
-        }
-        if (!isSelectedMlXic0) {
-          continue;
-        }
-        hfMlToXiPi(outputMlXic0ToXiPi);
-      }
-
       // Fill in selection result
       if constexpr (svReco == doDcaFitter) {
         hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
@@ -730,6 +713,25 @@ struct HfCandidateSelectorToXiPiQa {
         hfSelToXiPiKf(resultSelections,
                       trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                       trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+      }
+
+      // ML BDT selection if required
+      if (applyMl) {
+        bool isSelectedMlXic0 = false;
+        std::vector<float> inputFeaturesXic0 = {};
+        if constexpr (svReco == doDcaFitter) {
+          inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
+        } else {
+          inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
+        }
+
+        hfMlToXiPi(outputMlXic0ToXiPi);
+
+        if (!isSelectedMlXic0) {
+          continue;
+        }
       }
 
       // Fill in invariant mass histogram
