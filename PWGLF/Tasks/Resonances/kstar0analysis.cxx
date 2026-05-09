@@ -79,7 +79,7 @@ enum PIDCutType {
   CircularType,
 };
 
-struct kstar0analysis {
+struct Kstar0analysis {
   // Define slice per collision
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
   SliceCache cache;
@@ -146,12 +146,12 @@ struct kstar0analysis {
     Configurable<std::vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
 
     // Pion
-    Configurable<std::vector<float>> PionTPCPIDpTintv{"PionTPCPIDpTintv", {0.9f}, "pT intervals for Pion TPC PID cuts"};
-    Configurable<std::vector<float>> PionTPCPIDcuts{"PionTPCPIDcuts", {2}, "nSigma list for Pion TPC PID cuts"};
-    Configurable<std::vector<float>> PionTOFPIDpTintv{"PionTOFPIDpTintv", {999.0f}, "pT intervals for Pion TOF PID cuts"};
-    Configurable<std::vector<float>> PionTOFPIDcuts{"PionTOFPIDcuts", {2}, "nSigma list for Pion TOF PID cuts"};
-    Configurable<std::vector<float>> PionTPCTOFCombinedpTintv{"PionTPCTOFCombinedpTintv", {999.0f}, "pT intervals for Pion TPC-TOF PID cuts"};
-    Configurable<std::vector<float>> PionTPCTOFCombinedPIDcuts{"PionTPCTOFCombinedPIDcuts", {2}, "nSigma list for Pion TPC-TOF PID cuts"};
+    Configurable<std::vector<float>> pionTPCPIDpTintv{"pionTPCPIDpTintv", {0.9f}, "pT intervals for Pion TPC PID cuts"};
+    Configurable<std::vector<float>> pionTPCPIDcuts{"pionTPCPIDcuts", {2}, "nSigma list for Pion TPC PID cuts"};
+    Configurable<std::vector<float>> pionTOFPIDpTintv{"pionTOFPIDpTintv", {999.0f}, "pT intervals for Pion TOF PID cuts"};
+    Configurable<std::vector<float>> pionTOFPIDcuts{"pionTOFPIDcuts", {2}, "nSigma list for Pion TOF PID cuts"};
+    Configurable<std::vector<float>> pionTPCTOFCombinedpTintv{"pionTPCTOFCombinedpTintv", {999.0f}, "pT intervals for Pion TPC-TOF PID cuts"};
+    Configurable<std::vector<float>> pionTPCTOFCombinedPIDcuts{"pionTPCTOFCombinedPIDcuts", {2}, "nSigma list for Pion TPC-TOF PID cuts"};
   } configPID;
 
   struct : ConfigurableGroup {
@@ -426,7 +426,7 @@ struct kstar0analysis {
     }
 
     // Print output histograms statistics
-    LOG(info) << "Size of the histograms in kstar0analysis:";
+    LOG(info) << "Size of the histograms in Kstar0analysis:";
     histos.print();
   } // end of init
 
@@ -531,13 +531,13 @@ struct kstar0analysis {
   template <typename T>
   bool ptDependentPidPion(const T& candidate)
   {
-    auto vPionTPCPIDpTintv = configPID.PionTPCPIDpTintv.value;
+    auto vPionTPCPIDpTintv = configPID.pionTPCPIDpTintv.value;
     vPionTPCPIDpTintv.insert(vPionTPCPIDpTintv.begin(), configTracks.cMinPtcut);
-    auto vPionTPCPIDcuts = configPID.PionTPCPIDcuts.value;
-    auto vPionTOFPIDpTintv = configPID.PionTOFPIDpTintv.value;
-    auto vPionTPCTOFCombinedpTintv = configPID.PionTPCTOFCombinedpTintv.value;
-    auto vPionTPCTOFCombinedPIDcuts = configPID.PionTPCTOFCombinedPIDcuts.value;
-    auto vPionTOFPIDcuts = configPID.PionTOFPIDcuts.value;
+    auto vPionTPCPIDcuts = configPID.pionTPCPIDcuts.value;
+    auto vPionTOFPIDpTintv = configPID.pionTOFPIDpTintv.value;
+    auto vPionTPCTOFCombinedpTintv = configPID.pionTPCTOFCombinedpTintv.value;
+    auto vPionTPCTOFCombinedPIDcuts = configPID.pionTPCTOFCombinedPIDcuts.value;
+    auto vPionTOFPIDcuts = configPID.pionTOFPIDcuts.value;
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vPionTPCPIDpTintv.back();
@@ -1071,7 +1071,7 @@ struct kstar0analysis {
 
     fillHistograms<true, false, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(kstar0analysis, processData, "Process Event for data without partition", false);
+  PROCESS_SWITCH(Kstar0analysis, processData, "Process Event for data without partition", false);
 
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
@@ -1083,7 +1083,7 @@ struct kstar0analysis {
 
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(kstar0analysis, processRotational, "Process Rotational Background", false);
+  PROCESS_SWITCH(Kstar0analysis, processRotational, "Process Rotational Background", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
@@ -1132,7 +1132,7 @@ struct kstar0analysis {
       fillHistograms<false, false, false, true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(kstar0analysis, processME, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(Kstar0analysis, processME, "Process EventMixing light without partition", false);
 
   void processMCRec(MCEventCandidates::iterator const& collision,
                     aod::McCollisions const&,
@@ -1151,7 +1151,7 @@ struct kstar0analysis {
 
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(kstar0analysis, processMCRec, "Process Event for MC Rec without partition", false);
+  PROCESS_SWITCH(Kstar0analysis, processMCRec, "Process Event for MC Rec without partition", false);
 
   Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kK0Star892)); // K(892)
 
@@ -1216,7 +1216,7 @@ struct kstar0analysis {
       }
     }
   }
-  PROCESS_SWITCH(kstar0analysis, processMCGen, "Process Event for MC only", false);
+  PROCESS_SWITCH(Kstar0analysis, processMCGen, "Process Event for MC only", false);
 
   void processEventFactor(MCEventCandidates const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1249,7 +1249,7 @@ struct kstar0analysis {
         histos.fill(HIST("Event/MultiplicityGenEv"), centrality);
     }
   }
-  PROCESS_SWITCH(kstar0analysis, processEventFactor, "Process Event factor", false);
+  PROCESS_SWITCH(Kstar0analysis, processEventFactor, "Process Event factor", false);
 
   void processSignalLoss(MCEventCandidates const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1337,9 +1337,9 @@ struct kstar0analysis {
       }
     }
   }
-  PROCESS_SWITCH(kstar0analysis, processSignalLoss, "Process SignalLoss", false);
-}; // kstar0analysis
+  PROCESS_SWITCH(Kstar0analysis, processSignalLoss, "Process SignalLoss", false);
+}; // Kstar0analysis
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<kstar0analysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Kstar0analysis>(cfgc)};
 };
