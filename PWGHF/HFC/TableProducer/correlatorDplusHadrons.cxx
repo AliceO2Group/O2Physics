@@ -241,9 +241,9 @@ struct HfCorrelatorDplusHadrons {
   // Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
   Preslice<aod::McParticles> presliceMc{aod::mcparticle::mcCollisionId};
   Preslice<CandDplusMcGen> candMcGenPerMcCollision = o2::aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> recoCollisionsPerMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
   Preslice<CandidatesDplusData> candsDplusPerCollision = aod::hf_cand::collisionId;
   Preslice<TracksData> trackIndicesPerCollision = aod::track::collisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> recoCollisionsPerMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
