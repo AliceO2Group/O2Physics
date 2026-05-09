@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file Phianalysisrun3pbpb.cxx
+/// \file phianalysisrun3pbpb.cxx
 /// \brief Code for phi resonance without resonance initializer
 /// \author Sarjeeta Gami
 
