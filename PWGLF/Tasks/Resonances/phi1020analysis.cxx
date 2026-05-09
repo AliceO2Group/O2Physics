@@ -79,7 +79,7 @@ enum PIDCutType {
   CircularType,
 };
 
-struct phi1020analysis {
+struct Phi1020analysis {
   // Define slice per collision
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
   SliceCache cache;
@@ -201,8 +201,8 @@ struct phi1020analysis {
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>>;
 
-  Partition<TrackCandidates> PosKaon = aod::track::signed1Pt > static_cast<float>(0);
-  Partition<TrackCandidates> NegKaon = aod::track::signed1Pt < static_cast<float>(0);
+  Partition<TrackCandidates> posKaon = aod::track::signed1Pt > static_cast<float>(0);
+  Partition<TrackCandidates> negKaon = aod::track::signed1Pt < static_cast<float>(0);
 
   Partition<MCTrackCandidates> PosKaon_MC = aod::track::signed1Pt > static_cast<float>(0);
   Partition<MCTrackCandidates> NegKaon_MC = aod::track::signed1Pt < static_cast<float>(0);
@@ -406,7 +406,7 @@ struct phi1020analysis {
     }
 
     // Print output histograms statistics
-    LOG(info) << "Size of the histograms in phi1020analysis:";
+    LOG(info) << "Size of the histograms in Phi1020analysis:";
     histos.print();
   } // end of init
 
@@ -940,7 +940,7 @@ struct phi1020analysis {
 
     fillHistograms<true, false, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(phi1020analysis, processData, "Process Event for data without partition", false);
+  PROCESS_SWITCH(Phi1020analysis, processData, "Process Event for data without partition", false);
 
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
@@ -952,7 +952,7 @@ struct phi1020analysis {
 
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(phi1020analysis, processRotational, "Process Rotational Background", false);
+  PROCESS_SWITCH(Phi1020analysis, processRotational, "Process Rotational Background", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
@@ -1001,7 +1001,7 @@ struct phi1020analysis {
       fillHistograms<false, false, false, true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(phi1020analysis, processME, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(Phi1020analysis, processME, "Process EventMixing light without partition", false);
 
   void processMCRec(MCEventCandidates::iterator const& collision,
                     aod::McCollisions const&,
@@ -1020,7 +1020,7 @@ struct phi1020analysis {
 
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(phi1020analysis, processMCRec, "Process Event for MC Rec without partition", false);
+  PROCESS_SWITCH(Phi1020analysis, processMCRec, "Process Event for MC Rec without partition", false);
 
   Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kPhi)); // Lambda(1520)
 
@@ -1051,7 +1051,7 @@ struct phi1020analysis {
         daughterPDGs = {-1, -1};
       }
 
-      if (abs(daughterPDGs[0]) != kKPlus || abs(daughterPDGs[1]) != kKPlus) { // At least one decay to Kaon
+      if (abs(daughterPDGs[0]) != PDG_t::kKPlus || abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
         continue;
       }
 
@@ -1077,7 +1077,7 @@ struct phi1020analysis {
         histos.fill(HIST("Result/MC/Genphi1020pt"), part.pt(), centrality);
     }
   }
-  PROCESS_SWITCH(phi1020analysis, processMCGen, "Process Event for MC only", false);
+  PROCESS_SWITCH(Phi1020analysis, processMCGen, "Process Event for MC only", false);
 
   void processEventFactor(MCEventCandidates const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1110,7 +1110,7 @@ struct phi1020analysis {
         histos.fill(HIST("Event/MultiplicityGenEv"), centrality);
     }
   }
-  PROCESS_SWITCH(phi1020analysis, processEventFactor, "Process Event factor", false);
+  PROCESS_SWITCH(Phi1020analysis, processEventFactor, "Process Event factor", false);
 
   void processSignalLoss(MCEventCandidates const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1179,7 +1179,7 @@ struct phi1020analysis {
             daughterPDGs = {-1, -1};
           }
 
-          if (abs(daughterPDGs[0]) != kKPlus || abs(daughterPDGs[1]) != kKPlus) { // At least one decay to Kaon
+          if (abs(daughterPDGs[0]) != PDG_t::kKPlus || abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
             continue;
           }
 
@@ -1188,10 +1188,10 @@ struct phi1020analysis {
       }
     }
   }
-  PROCESS_SWITCH(phi1020analysis, processSignalLoss, "Process SignalLoss", false);
+  PROCESS_SWITCH(Phi1020analysis, processSignalLoss, "Process SignalLoss", false);
 }; // end of main struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<phi1020analysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Phi1020analysis>(cfgc)};
 };
