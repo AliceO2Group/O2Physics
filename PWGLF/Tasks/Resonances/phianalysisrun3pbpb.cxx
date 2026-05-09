@@ -2131,5 +2131,5 @@ struct Phianalysisrun3pbpb {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-  adaptAnalysisTask<Phianalysisrun3pbpb>(cfgc)};
+    adaptAnalysisTask<Phianalysisrun3pbpb>(cfgc)};
 }
