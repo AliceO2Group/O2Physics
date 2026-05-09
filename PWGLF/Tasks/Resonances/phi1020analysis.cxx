@@ -1051,7 +1051,7 @@ struct Phi1020analysis {
         daughterPDGs = {-1, -1};
       }
 
-      if (abs(daughterPDGs[0]) != PDG_t::kKPlus || abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
+      if (std::abs(daughterPDGs[0]) != PDG_t::kKPlus || std::abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
         continue;
       }
 
@@ -1179,7 +1179,7 @@ struct Phi1020analysis {
             daughterPDGs = {-1, -1};
           }
 
-          if (abs(daughterPDGs[0]) != PDG_t::kKPlus || abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
+          if (std::abs(daughterPDGs[0]) != PDG_t::kKPlus || std::abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
             continue;
           }
 
