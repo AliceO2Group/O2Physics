@@ -99,7 +99,7 @@ struct taggingHFE {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
-  Configurable<float> cfgDownSamplingHc{"cfgDownSamplingHc", 1.1, "down sampling for charm hadrons"}; // there are enough hc, but not jpsi or hb.
+  Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for wrongly found SV"};
   Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", true, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
   struct : ConfigurableGroup {
@@ -1028,12 +1028,6 @@ struct taggingHFE {
           fRegistry.fill(HIST("Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Electron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
 
-          auto mcMother = mcParticle.template mothers_as<aod::McParticles>()[0];
-          bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
-          if (is_e_from_hc && dist01(engine) > cfgDownSamplingHc) { // random sampling hc, if necessary
-            continue;
-          }
-
           if (track.sign() > 0) { // positron
             positronIds.emplace_back(trackId.trackId());
           } else { // electron
@@ -1160,10 +1154,10 @@ struct taggingHFE {
         auto mcCollision = mcpos.template mcCollision_as<aod::McCollisions>();
 
         bool is_e_from_dy = std::abs(mcMother.pdgCode()) == 23; // virtual photon is Z in simulation.
-        bool is_e_from_jpsi = std::abs(mcMother.pdgCode()) == 443;
+        bool is_e_from_prompt_jpsi = std::abs(mcMother.pdgCode()) == 443 && !isMotherFromB && std::abs(mcMother.pdgCode()) != 100443;
         bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
         bool is_e_from_hb = (std::abs(mcMother.pdgCode()) == 511 || std::abs(mcMother.pdgCode()) == 521 || std::abs(mcMother.pdgCode()) == 531 || std::abs(mcMother.pdgCode()) == 541 || std::abs(mcMother.pdgCode()) == 5122 || std::abs(mcMother.pdgCode()) == 5132 || std::abs(mcMother.pdgCode()) == 5232 || std::abs(mcMother.pdgCode()) == 5332) && isSemiLeptonic(mcMother, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1);
-        if (!(is_e_from_dy || is_e_from_jpsi || is_e_from_hc || is_e_from_hb)) {
+        if (!(is_e_from_dy || is_e_from_prompt_jpsi || is_e_from_hc || is_e_from_hb)) {
           continue;
         }
 
@@ -1208,7 +1202,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
             // I want 3 types.
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
@@ -1216,13 +1210,9 @@ struct taggingHFE {
             continue;
           }
 
-          // if (std::abs(mckaon.pdgCode()) == 11) {
-          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
-          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
-          //     auto daughter = mcParticles.rawIteratorAt(d);
-          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
-          //   }
-          // }
+          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+            continue;
+          }
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
@@ -1276,7 +1266,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
             // I want 3 types.
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
@@ -1284,13 +1274,9 @@ struct taggingHFE {
             continue;
           }
 
-          // if (std::abs(mckaon.pdgCode()) == 11) {
-          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
-          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
-          //     auto daughter = mcParticles.rawIteratorAt(d);
-          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
-          //   }
-          // }
+          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+            continue;
+          }
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
@@ -1367,7 +1353,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1427,7 +1413,7 @@ struct taggingHFE {
             foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcLambda) > 0;
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1492,7 +1478,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1557,7 +1543,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1591,10 +1577,10 @@ struct taggingHFE {
         auto mcCollision = mcele.template mcCollision_as<aod::McCollisions>();
 
         bool is_e_from_dy = std::abs(mcMother.pdgCode()) == 23; // virtual photon is Z in simulation.
-        bool is_e_from_jpsi = std::abs(mcMother.pdgCode()) == 443;
+        bool is_e_from_prompt_jpsi = std::abs(mcMother.pdgCode()) == 443 && !isMotherFromB && std::abs(mcMother.pdgCode()) != 100443;
         bool is_e_from_hc = (std::abs(mcMother.pdgCode()) == 411 || std::abs(mcMother.pdgCode()) == 421 || std::abs(mcMother.pdgCode()) == 431 || std::abs(mcMother.pdgCode()) == 4122 || std::abs(mcMother.pdgCode()) == 4132 || std::abs(mcMother.pdgCode()) == 4232 || std::abs(mcMother.pdgCode()) == 4332) && isSemiLeptonic(mcMother, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1);
         bool is_e_from_hb = (std::abs(mcMother.pdgCode()) == 511 || std::abs(mcMother.pdgCode()) == 521 || std::abs(mcMother.pdgCode()) == 531 || std::abs(mcMother.pdgCode()) == 541 || std::abs(mcMother.pdgCode()) == 5122 || std::abs(mcMother.pdgCode()) == 5132 || std::abs(mcMother.pdgCode()) == 5232 || std::abs(mcMother.pdgCode()) == 5332) && isSemiLeptonic(mcMother, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1);
-        if (!(is_e_from_dy || is_e_from_jpsi || is_e_from_hc || is_e_from_hb)) {
+        if (!(is_e_from_dy || is_e_from_prompt_jpsi || is_e_from_hc || is_e_from_hb)) {
           continue;
         }
 
@@ -1638,7 +1624,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
             // I want 3 types.
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
@@ -1646,13 +1632,9 @@ struct taggingHFE {
             continue;
           }
 
-          // if (std::abs(mckaon.pdgCode()) == 11) {
-          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
-          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
-          //     auto daughter = mcParticles.rawIteratorAt(d);
-          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
-          //   }
-          // }
+          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+            continue;
+          }
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
@@ -1707,7 +1689,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && foundCommonMother && std::abs(mckaon.pdgCode()) == cfgPdgLepton))) {
             // I want 3 types.
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
@@ -1715,13 +1697,9 @@ struct taggingHFE {
             continue;
           }
 
-          // if (std::abs(mckaon.pdgCode()) == 11) {
-          //   LOGF(info, "mcMother.pdgCode() = %d, mckaon.pdgCode() = %d, foundCommonMother = %d", mcMother.pdgCode(), mckaon.pdgCode(), foundCommonMother);
-          //   for (int d = mcMother.daughtersIds()[0]; d <= mcMother.daughtersIds()[1]; ++d) {
-          //     auto daughter = mcParticles.rawIteratorAt(d);
-          //     LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
-          //   }
-          // }
+          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+            continue;
+          }
 
           float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
@@ -1797,7 +1775,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1857,7 +1835,7 @@ struct taggingHFE {
             foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcLambda) > 0;
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1922,7 +1900,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
@@ -1987,7 +1965,7 @@ struct taggingHFE {
             }
           }
 
-          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_jpsi) && !foundCommonMother))) {
+          if (!(((is_e_from_hc || is_e_from_hb) && foundCommonMother) || ((is_e_from_dy || is_e_from_prompt_jpsi) && !foundCommonMother))) {
             continue;
           }
 
