@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file phianalysisrun3pbpb.cxx
 /// \brief Code for phi resonance without resonance initializer
 /// \author Sarjeeta Gami
@@ -349,11 +350,11 @@ struct Phianalysisrun3pbpb {
       return false;
 
     } else if (pid == 1) {
-      constexpr double kPtThresholdForTOF = 0.5;
-      if (candidate.pt() < kPtThresholdForTOF && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC) {
+      constexpr double PtThresholdForTOF = 0.5;
+      if (candidate.pt() < PtThresholdForTOF && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC) {
         return true;
       }
-      if (candidate.pt() >= kPtThresholdForTOF && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta &&
+      if (candidate.pt() >= PtThresholdForTOF && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta &&
           std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmacutTOF) {
         return true;
       }
@@ -461,10 +462,10 @@ struct Phianalysisrun3pbpb {
                               candidate1.pz() + candidate2.pz()},
                             mass);
 
-    constexpr int kOppositeCharge = 0;
+    constexpr int OppositeCharge = 0;
 
     // default filling
-    if (rapidity > rapiditycut1 && rapidity < rapiditycut2 && track1Sign * track2Sign < kOppositeCharge) {
+    if (rapidity > rapiditycut1 && rapidity < rapiditycut2 && track1Sign * track2Sign < OppositeCharge) {
       if (unlike) {
         histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
         histos.fill(HIST("h2PhiRapidity"), pT, rapidity);
@@ -2092,8 +2093,8 @@ struct Phianalysisrun3pbpb {
         continue;
 
       auto daughters = particle.daughters_as<aod::McParticles>();
-      static constexpr int kPhiNDaughters = 2;
-      if (daughters.size() != kPhiNDaughters)
+      static constexpr int PhiNDaughters = 2;
+      if (daughters.size() != PhiNDaughters)
         continue;
 
       bool daup = false, daun = false;
