@@ -190,7 +190,7 @@ struct taggingHFE {
     Configurable<float> cfg_max_mass_lambda_veto{"cfg_max_mass_lambda_veto", 1.12, "max mass for Lambda veto for K0S"};
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "min cospa for v0"};
     Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 0.1, "max distance between 2 legs for v0"};
-    // Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v"};
+    Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.f, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
@@ -224,20 +224,20 @@ struct taggingHFE {
     std::string prefix = "cascadeCut";
     Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for lambda in cascade"};
     Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for lambda in cascade"};
-    Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.316, "min mass for Xi"};
-    Configurable<float> cfg_max_mass_Xi{"cfg_max_mass_Xi", 1.326, "max mass for Xi"};
+    Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.314, "min mass for Xi"};
+    Configurable<float> cfg_max_mass_Xi{"cfg_max_mass_Xi", 1.328, "max mass for Xi"};
     Configurable<float> cfg_min_mass_Xi_veto{"cfg_min_mass_Xi_veto", 1.31, "min mass for Xi veto"};
     Configurable<float> cfg_max_mass_Xi_veto{"cfg_max_mass_Xi_veto", 1.33, "max mass for Xi veto"};
-    Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.669, "min mass for Omega"};
-    Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.675, "max mass for Omega"};
-    Configurable<float> cfg_min_mass_Omega_veto{"cfg_min_mass_Omega_veto", 1.66, "min mass for Omega veto"};
-    Configurable<float> cfg_max_mass_Omega_veto{"cfg_max_mass_Omega_veto", 1.68, "max mass for Omega veto"};
-    Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.9, "minimum V0 CosPA in cascade"};
+    Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.668, "min mass for Omega"};
+    Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.678, "max mass for Omega"};
+    Configurable<float> cfg_min_mass_Omega_veto{"cfg_min_mass_Omega_veto", 1.665, "min mass for Omega veto"};
+    Configurable<float> cfg_max_mass_Omega_veto{"cfg_max_mass_Omega_veto", 1.680, "max mass for Omega veto"};
+    Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.95, "minimum V0 CosPA in cascade"};
     Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.1, "max distance between V0 Daughters in cascade"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9, "minimum cascade CosPA"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "minimum cascade CosPA"};
     Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between bachelor and V0"};
-    Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 1.2, "minimum V0 rxy in cascade"};
-    Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.5, "minimum V0 rxy in cascade"};
+    Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 0.1, "minimum V0 rxy in cascade"};
+    Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.1, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
     Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.05, "min dca XY for V0 in cm"};
@@ -1182,12 +1182,6 @@ struct taggingHFE {
         auto pos = v0.template posTrack_as<TTracks>();
         auto neg = v0.template negTrack_as<TTracks>();
 
-        if (v0.dcaV0daughters() > v0Cut.cfg_max_dca2legs) {
-          continue;
-        }
-        if (v0.v0cosPA() < v0Cut.cfg_min_cospa) {
-          continue;
-        }
         if (pos.sign() * neg.sign() > 0) {
           continue;
         }
@@ -1265,35 +1259,6 @@ struct taggingHFE {
         }
 
         if (!(cascadeCut.cfg_min_mass_lambda < cascade.mLambda() && cascade.mLambda() < cascadeCut.cfg_max_mass_lambda)) {
-          continue;
-        }
-
-        if (cascade.cascradius() > cascade.v0radius()) {
-          continue;
-        }
-
-        if (cascade.dcaV0daughters() > cascadeCut.cfg_max_dcadau_v0) {
-          continue;
-        }
-        if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_cospa_v0) {
-          continue;
-        }
-        if (cascade.v0radius() < cascadeCut.cfg_min_rxy_v0) {
-          continue;
-        }
-
-        if (cascade.cascradius() < cascadeCut.cfg_min_rxy) {
-          continue;
-        }
-
-        if (cascade.dcacascdaughters() > cascadeCut.cfg_max_dcadau) {
-          continue;
-        }
-        if (cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_cospa) {
-          continue;
-        }
-
-        if (cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_dcaxy_v0) {
           continue;
         }
 
@@ -1559,6 +1524,18 @@ struct taggingHFE {
           continue;
         }
 
+        if (v0.dcaV0daughters() > v0Cut.cfg_max_dca2legs) {
+          continue;
+        }
+
+        if (v0.v0radius() < v0Cut.cfg_min_radius) {
+          continue;
+        }
+
+        if (v0.v0cosPA() < v0Cut.cfg_min_cospa) {
+          continue;
+        }
+
         fillV0Histograms(collision, v0);
 
         if (std::sqrt(std::pow(v0.alpha() / v0Cut.cfg_max_alpha_veto, 2) + std::pow(v0.qtarm() / v0Cut.cfg_max_qt_veto, 2)) < 1.f) { // photon conversion rejection at small qT
@@ -1606,6 +1583,28 @@ struct taggingHFE {
         if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_cospa_v0) {
           continue;
         }
+
+        if (cascade.cascradius() > cascade.v0radius()) {
+          continue;
+        }
+
+        if (cascade.dcaV0daughters() > cascadeCut.cfg_max_dcadau_v0) {
+          continue;
+        }
+        if (cascade.v0radius() < cascadeCut.cfg_min_rxy_v0) {
+          continue;
+        }
+        if (cascade.cascradius() < cascadeCut.cfg_min_rxy) {
+          continue;
+        }
+
+        if (cascade.dcacascdaughters() > cascadeCut.cfg_max_dcadau) {
+          continue;
+        }
+
+        // if (cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_dcaxy_v0) {
+        //   continue;
+        // }
 
         fillCascadeHistograms(collision, cascade);
 
