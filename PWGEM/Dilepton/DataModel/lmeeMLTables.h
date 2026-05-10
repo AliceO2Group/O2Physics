@@ -220,7 +220,10 @@ DECLARE_SOA_COLUMN(RapidityV0, rapidityV0, float); //! rapidity of associated V0
 DECLARE_SOA_COLUMN(RapidityC, rapidityC, float);   //! rapidity of associated Cascade
 
 DECLARE_SOA_COLUMN(ImpParXY, impParXY, float);       //! impact parameter for V0/Cascade in XY plane
-DECLARE_SOA_COLUMN(ImpParXYErr, impParXYErr, float); //! sigma of impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);       //! impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float); //! sigma of impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float); //! sigma of impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float); //! sigma of impact parameter for V0/Cascade in XY plane
 
 DECLARE_SOA_COLUMN(V0CosPA, v0copa, float);     //! cosPA of V0
 DECLARE_SOA_COLUMN(V0CosPAXY, v0copaXY, float); //! cosPA of V0 in XY plane
@@ -263,24 +266,26 @@ using EMMLLHPair = EMMLLHPairs::iterator;
 DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
                   emmllhpair::EMMLLeptonId,
                   track::Pt, emmllhpair::RapidityV0,
-                  emmllhpair::V0CosPA, emmllhpair::V0CosPAXY, emmllhpair::ImpParXY, emmllhpair::ImpParXYErr,
+                  emmllhpair::V0CosPA, emmllhpair::V0CosPAXY,
+                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
                   emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
                   emmllhpair::Lxyz, emmllhpair::LxyzSigma,
                   emmllhpair::Lxy, emmllhpair::LxySigma,
                   emmllhpair::Lz, emmllhpair::LzSigma,
-                  emmllhpair::PdgCodeH, emmllhpair::FoundCommonMother);
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLV0Pair = EMMLLV0Pairs::iterator;
 
 DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCAPAIR", //!
                   emmllhpair::EMMLLeptonId,
                   track::Pt, emmllhpair::RapidityC,
-                  emmllhpair::CascCosPA, emmllhpair::CascCosPAXY, emmllhpair::ImpParXY, emmllhpair::ImpParXYErr,
+                  emmllhpair::CascCosPA, emmllhpair::CascCosPAXY,
+                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
                   emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
                   emmllhpair::Lxyz, emmllhpair::LxyzSigma,
                   emmllhpair::Lxy, emmllhpair::LxySigma,
                   emmllhpair::Lz, emmllhpair::LzSigma,
-                  emmllhpair::PdgCodeH, emmllhpair::FoundCommonMother);
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLCascPair = EMMLLCascPairs::iterator;
 
