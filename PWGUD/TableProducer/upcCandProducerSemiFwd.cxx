@@ -172,10 +172,10 @@ struct UpcCandProducerSemiFwd {
     bool passPt = track.pt() > fUpcCuts.getBarPtLow() && track.pt() < fUpcCuts.getBarPtHigh();
     bool passEta = track.eta() > fUpcCuts.getBarEtaLow() && track.eta() < fUpcCuts.getBarEtaHigh();
     bool passITSNCls = track.itsNCls() >= static_cast<uint8_t>(fUpcCuts.getITSNClusLow()) &&
-                      track.itsNCls() <= static_cast<uint8_t>(fUpcCuts.getITSNClusHigh());
+                       track.itsNCls() <= static_cast<uint8_t>(fUpcCuts.getITSNClusHigh());
     bool passITSChi2 = track.itsChi2NCl() > fUpcCuts.getITSChi2Low() && track.itsChi2NCl() < fUpcCuts.getITSChi2High();
     bool passTPCNCls = track.tpcNClsFound() >= static_cast<int16_t>(fUpcCuts.getTPCNClsLow()) &&
-                      track.tpcNClsFound() <= static_cast<int16_t>(fUpcCuts.getTPCNClsHigh());
+                       track.tpcNClsFound() <= static_cast<int16_t>(fUpcCuts.getTPCNClsHigh());
     bool passTPCChi2 = track.tpcChi2NCl() > fUpcCuts.getTPCChi2Low() && track.tpcChi2NCl() < fUpcCuts.getTPCChi2High();
     bool passDcaZ = track.dcaZ() > fUpcCuts.getDcaZLow() && track.dcaZ() < fUpcCuts.getDcaZHigh();
     bool passDcaXY = true;
