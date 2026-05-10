@@ -220,10 +220,10 @@ DECLARE_SOA_COLUMN(RapidityV0, rapidityV0, float); //! rapidity of associated V0
 DECLARE_SOA_COLUMN(RapidityC, rapidityC, float);   //! rapidity of associated Cascade
 
 DECLARE_SOA_COLUMN(ImpParXY, impParXY, float);       //! impact parameter for V0/Cascade in XY plane
-DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);       //! impact parameter for V0/Cascade in XY plane
-DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float); //! sigma of impact parameter for V0/Cascade in XY plane
-DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float); //! sigma of impact parameter for V0/Cascade in XY plane
-DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float); //! sigma of impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);         //! impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float);     //! sigma of impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float);     //! sigma of impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float);     //! sigma of impact parameter for V0/Cascade in XY plane
 
 DECLARE_SOA_COLUMN(V0CosPA, v0copa, float);     //! cosPA of V0
 DECLARE_SOA_COLUMN(V0CosPAXY, v0copaXY, float); //! cosPA of V0 in XY plane
