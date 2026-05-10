@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file jetHadronsPID.cxx
-/// \brief Analysis of hadrons in jets 
+/// \brief Analysis of hadrons in jets
 /// \author Leonard Lorenc, WUT Warsaw, leonard.lorenc@cern.ch
 /// \author Aleksandra Mulewicz, WUT Warsaw, aleksandra.mulewicz@cern.ch
 /// \author Hubert Zalewski, WUT Warsaw, hubert.zalewski@cern.ch
