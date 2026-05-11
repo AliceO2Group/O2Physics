@@ -532,12 +532,20 @@ class VarManager : public TObject
     kEta1,
     kPhi1,
     kCharge1,
+    kDCAxy1,
+    kDCAz1,
+    kITSclusterMap1,
+    kTPCnSigmaEl1,
     kPin_leg1,
     kTPCnSigmaKa_leg1,
     kPt2,
     kEta2,
     kPhi2,
     kCharge2,
+    kDCAxy2,
+    kDCAz2,
+    kITSclusterMap2,
+    kTPCnSigmaEl2,
 
     // Barrel track variables
     kPin,
@@ -3690,37 +3698,55 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
-  if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
+  if constexpr ((pairType == kDecayToEE)) {
+    if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
+      values[kITSclusterMap1] = t1.itsClusterMap();
+      values[kITSclusterMap2] = t2.itsClusterMap();
+    }
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
-      // Quantities based on the barrel tables
+    if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTPCnSigmaEl1] = t1.tpcNSigmaEl();
+      values[kTPCnSigmaEl2] = t2.tpcNSigmaEl();
+    }
+
+    if constexpr (((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
       double dca1XY = t1.dcaXY();
       double dca2XY = t2.dcaXY();
       double dca1Z = t1.dcaZ();
       double dca2Z = t2.dcaZ();
-      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
-      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
-      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
-      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
 
-      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
-      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
-      values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
-      values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
-      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kDCAxy1] = dca1XY;
+      values[kDCAz1] = dca1Z;
+      values[kDCAxy2] = dca2XY;
+      values[kDCAz2] = dca2Z;
 
-      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
-      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
-      if ((det1 < 0) || (det2 < 0)) {
-        values[kQuadDCAsigXYZ] = -999;
-      } else {
-        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
-        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+      if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
+        // Quantities based on the barrel tables
 
-        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
-        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+        double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+        double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
+        double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
+        double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
 
-        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+        values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
+        values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+        values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
+        values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
+        values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+
+        double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+        double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
+        if ((det1 < 0) || (det2 < 0)) {
+          values[kQuadDCAsigXYZ] = -999;
+        } else {
+          double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+          double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+          double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+          double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+
+          values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+        }
       }
     }
   }
@@ -4577,9 +4603,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v12.Px() +
-                                   (collision.posY() - secondaryVertex[1]) * v12.Py() +
-                                   (collision.posZ() - secondaryVertex[2]) * v12.Pz()) /
+      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v12.Px() +
+                                   (secondaryVertex[1] - collision.posY()) * v12.Py() +
+                                   (secondaryVertex[2] - collision.posZ()) * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
       // Decay length defined as in Run 2
       values[kVertexingLzProjected] = ((secondaryVertex[2] - collision.posZ()) * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
@@ -4995,9 +5021,9 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                   (collision.posY() - secondaryVertex[1]) * v123.Py() +
-                                   (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v123.Px() +
+                                   (secondaryVertex[1] - collision.posY()) * v123.Py() +
+                                   (secondaryVertex[2] - collision.posZ()) * v123.Pz()) /
                                   (v123.P() * values[VarManager::kVertexingLxyz]);
       // run 2 definitions: Decay length projected onto the momentum vector of the candidate
       values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
@@ -5256,9 +5282,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
       if (fgUsedVars[kCosPointingAngle] && fgUsedVars[kVertexingLxyz]) {
-        values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                                 (collision.posY() - secondaryVertex[1]) * v123.Py() +
-                                                 (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+        values[VarManager::kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v123.Px() +
+                                                 (secondaryVertex[1] - collision.posY()) * v123.Py() +
+                                                 (secondaryVertex[2] - collision.posZ()) * v123.Pz()) /
                                                 (v123.P() * values[VarManager::kVertexingLxyz]);
       }
       // run 2 definitions: Lxy projected onto the momentum vector of the candidate
@@ -6283,9 +6309,9 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v1234.Px() +
-                                   (collision.posY() - secondaryVertex[1]) * v1234.Py() +
-                                   (collision.posZ() - secondaryVertex[2]) * v1234.Pz()) /
+      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v1234.Px() +
+                                   (secondaryVertex[1] - collision.posY()) * v1234.Py() +
+                                   (secondaryVertex[2] - collision.posZ()) * v1234.Pz()) /
                                   (v1234.P() * values[VarManager::kVertexingLxyz]);
       // // run 2 definitions: Decay length projected onto the momentum vector of the candidate
       values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v1234.Pz();
