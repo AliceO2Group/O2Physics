@@ -21,9 +21,11 @@
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
+#include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+// #include <ReconstructionDataFormats/Track.h>
+// #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+#include <ReconstructionDataFormats/V0.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -39,11 +41,16 @@ struct LHPair { // struct to store electron-hadron pair information
   float cospa{-999.f};
   float cospaXY{-999.f};
   float lxy{-999.f};
-  float lxyErr{-999.f};
   float lz{-999.f};
-  float lzErr{-999.f};
   float lxyz{-999.f};
+  float lxyErr{-999.f};
+  float lzErr{-999.f};
   float lxyzErr{-999.f};
+  float impParXY{-999.f};
+  float impParZ{-999.f};
+  float impParCYY{-999.f};
+  float impParCZY{-999.f};
+  float impParCZZ{-999.f};
   bool isOK{false};
 };
 
@@ -95,11 +102,28 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
 
   auto primaryVertex = getPrimaryVertex(collision);
   std::array<float, 6> covVtxLK = fitter.calcPCACovMatrixFlat();
-  double phiLK{}, thetaLK{};
-  getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, svpos, phiLK, thetaLK);
-  pair.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLK, thetaLK) + getRotatedCovMatrixXX(covVtxLK, phiLK, thetaLK));
-  pair.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLK, 0.) + getRotatedCovMatrixXX(covVtxLK, phiLK, 0.));
+  double phiLH{}, thetaLK{};
+  getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, svpos, phiLH, thetaLK);
+  pair.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLH, thetaLK) + getRotatedCovMatrixXX(covVtxLK, phiLH, thetaLK));
+  pair.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLH, 0.) + getRotatedCovMatrixXX(covVtxLK, phiLH, 0.));
   pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLK) + getRotatedCovMatrixXX(covVtxLK, 0, thetaLK));
+
+  // propagate the 2 prongs to the secondary vertex
+  leptonParCov.propagateTo(vtx[0], fitter.getBz());
+  trackParCov.propagateTo(vtx[0], fitter.getBz());
+
+  // calculate impact parameter
+  o2::dataformats::DCA dcaLH;
+  auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, trackParCov);
+  trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+
+  pair.impParXY = dcaLH.getY();
+  pair.impParZ = dcaLH.getZ();
+  pair.impParCYY = dcaLH.getSigmaY2();
+  pair.impParCZY = dcaLH.getSigmaYZ();
+  pair.impParCZZ = dcaLH.getSigmaZ2();
+
+  // LOGF(info, "fitter.getBz() = %f, dcaLH.getY() = %f, dcaLH.getZ() = %f", fitter.getBz(), dcaLH.getY(), dcaLH.getZ());
 
   ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
   if (leptonId == o2::track::PID::Electron) {
@@ -113,23 +137,10 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   }
 
   ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassPionCharged);
-  // if (strHadId == o2::track::PID::Kaon) {
-  //   v2.SetM(o2::constants::physics::MassPionCharged);
-  // } else {
-  //   LOGF(info, "strHadId supports only Kaon.");
-  //   pair.isOK = false;
-  //   return pair;
-  // }
-
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
-
   pair.mass = v12.M();
-  // pair.dca2legs = dca2legs;
-  // pair.cospa = cospa;
-  // pair.lxy = lxy;
-  // pair.lz = lz;
-  pair.isOK = true;
 
+  pair.isOK = true;
   return pair;
 }
 
@@ -197,6 +208,21 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   pair.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLV0, 0.) + getRotatedCovMatrixXX(covVtxLV0, phiLV0, 0.));
   pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLV0) + getRotatedCovMatrixXX(covVtxLV0, 0, thetaLV0));
 
+  // propagate the 2 prongs to the secondary vertex
+  leptonParCov.propagateTo(vtx[0], fitter.getBz());
+  v0ParCov.propagateTo(vtx[0], fitter.getBz());
+
+  // calculate impact parameter
+  o2::dataformats::DCA dcaLH;
+  auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, v0ParCov);
+  trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+
+  pair.impParXY = dcaLH.getY();
+  pair.impParZ = dcaLH.getZ();
+  pair.impParCYY = dcaLH.getSigmaY2();
+  pair.impParCZY = dcaLH.getSigmaYZ();
+  pair.impParCZZ = dcaLH.getSigmaZ2();
+
   ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
   if (leptonId == o2::track::PID::Electron) {
     v1.SetM(o2::constants::physics::MassElectron);
@@ -222,10 +248,6 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
 
   pair.mass = v12.M();
-  // pair.dca2legs = dca2legs;
-  // pair.cospa = cospa;
-  // pair.lxy = lxy;
-  // pair.lz = lz;
   pair.isOK = true;
 
   return pair;
@@ -299,6 +321,21 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLC) + getRotatedCovMatrixXX(covVtxLC, 0, thetaLC));
   pair.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLC, thetaLC) + getRotatedCovMatrixXX(covVtxLC, phiLC, thetaLC));
 
+  // propagate the 2 prongs to the secondary vertex
+  leptonParCov.propagateTo(vtx[0], fitter.getBz());
+  cascParCov.propagateTo(vtx[0], fitter.getBz());
+
+  // calculate impact parameter
+  o2::dataformats::DCA dcaLH;
+  auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, cascParCov);
+  trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+
+  pair.impParXY = dcaLH.getY();
+  pair.impParZ = dcaLH.getZ();
+  pair.impParCYY = dcaLH.getSigmaY2();
+  pair.impParCZY = dcaLH.getSigmaYZ();
+  pair.impParCZZ = dcaLH.getSigmaZ2();
+
   ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
   if (leptonId == o2::track::PID::Electron) {
     v1.SetM(o2::constants::physics::MassElectron);
@@ -324,10 +361,6 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
 
   pair.mass = v12.M();
-  // pair.dca2legs = dca2legs;
-  // pair.cospa = cospa;
-  // pair.lxy = lxy;
-  // pair.lz = lz;
   pair.isOK = true;
 
   return pair;
