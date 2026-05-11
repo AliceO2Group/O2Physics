@@ -1775,10 +1775,10 @@ struct HStrangeCorrelation {
       histos.add("hNumberOfRejectedPairsPion", "hNumberOfRejectedPairsPion", kTH1F, {{1, 0, 1}});
     }
     if (doprocessSameEventHHadrons) {
-      histos.add("hDCAzTriggerHadron", "hDCAzTriggerHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
-      histos.add("hDCAxyTriggerHadron", "hDCAxyTriggerHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
-      histos.add("hDCAzAssociatedHadron", "hDCAzAssociatedHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
-      histos.add("hDCAxyAssociatedHadron", "hDCAxyAssociatedHadron", kTH2F, {{200, -10, 10}, axesConfigurations.axisPtQA});
+      histos.add("hDCAzTriggerHadron", "hDCAzTriggerHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyTriggerHadron", "hDCAxyTriggerHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+      histos.add("hDCAzAssociatedHadron", "hDCAzAssociatedHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyAssociatedHadron", "hDCAxyAssociatedHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
     }
     if (doprocessSameEventHV0s || doprocessMixedEventHV0s) {
       histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
