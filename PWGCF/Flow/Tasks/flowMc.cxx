@@ -479,7 +479,7 @@ struct FlowMc {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgCutDCAzPtDepEnabled && (fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt()))) {
+    if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt()))) {
       return false;
     }
     return myTrackSel.IsSelected(track);
