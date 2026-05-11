@@ -201,11 +201,10 @@ struct centralityStudypp {
     getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
     getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(11, "Pass INEL > 0");
 
-
     histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
     histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
     histPointers.insert({histPath + "hFT0M_Collisions", histos.add((histPath + "hFT0M_Collisions").c_str(), "hFT0M_Collisions", {kTH1D, {{axisMultUltraFineFT0M}}})});
-    
+
     histPointers.insert({histPath + "hFDDA_Collisions", histos.add((histPath + "hFDDA_Collisions").c_str(), "hFDDA_Collisions", {kTH1D, {{axisMultUltraFineFDDA}}})});
     histPointers.insert({histPath + "hFDDC_Collisions", histos.add((histPath + "hFDDC_Collisions").c_str(), "hFDDC_Collisions", {kTH1D, {{axisMultUltraFineFDDC}}})});
 
@@ -221,7 +220,7 @@ struct centralityStudypp {
 
       histPointers.insert({histPath + "hFDDA_Collisions_Unequalized", histos.add((histPath + "hFDDA_Collisions_Unequalized").c_str(), "hFDDA_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDA}}})});
       histPointers.insert({histPath + "hFDDC_Collisions_Unequalized", histos.add((histPath + "hFDDC_Collisions_Unequalized").c_str(), "hFDDC_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDC}}})});
-      
+
       histPointers.insert({histPath + "hFV0A_Collisions_Unequalized", histos.add((histPath + "hFV0A_Collisions_Unequalized").c_str(), "hFV0A_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFV0A}}})});
       histPointers.insert({histPath + "hNGlobalTracks_Unequalized", histos.add((histPath + "hNGlobalTracks_Unequalized").c_str(), "hNGlobalTracks_Unequalized", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
       histPointers.insert({histPath + "hNMFTTracks_Unequalized", histos.add((histPath + "hNMFTTracks_Unequalized").c_str(), "hNMFTTracks_Unequalized", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
@@ -255,7 +254,7 @@ struct centralityStudypp {
     float multFV0A = collision.multFV0A();
     float multFT0A = collision.multFT0A();
     float multFT0C = collision.multFT0C();
-    float multFDDA = collision.multFDDA(); 
+    float multFDDA = collision.multFDDA();
     float multFDDC = collision.multFDDC();
     float multNTracksGlobal = collision.multNTracksGlobal();
     float mftNtracks = collision.mftNtracks();
