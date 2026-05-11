@@ -199,8 +199,8 @@ struct Cascqaanalysis {
   template <typename TAxisType>
   static void setEventTypeAxisLabels(TAxisType* axis)
   {
-    const char* labels[3] = {"INEL", "INEL>0", "INEL>1"};
-    for (int i = 0; i < 3; ++i) {
+    const char* labels[] = {"INEL", "INEL>0", "INEL>1"};
+    for (int i = 0; i < static_cast<int>(sizeof(labels) / sizeof(labels[0])); ++i) {
       axis->SetBinLabel(i + 1, labels[i]);
     }
   }
