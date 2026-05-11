@@ -72,7 +72,8 @@ struct OTFParticle {
   float py() const { return mPy; }
   float pz() const { return mPz; }
   float e() const { return mE; }
-  float radius() const { return std::hypot(mVx, mVy); }
+  float r() const { return std::hypot(mVx, mVy); }
+  float radius() const { return radius(); }
   float pt() const { return std::hypot(mPx, mPy); }
   float p() const { return std::hypot(mPx, mPy, mPz); }
 
