@@ -317,8 +317,10 @@ struct HfCorrelatorLcScHadrons {
   Produces<aod::LcHadronPairY> entryCandHadronPairY;
   Produces<aod::LcHadronPairTrkPID> entryCandHadronPairTrkPID;
   Produces<aod::LcHadronRecoInfo> entryCandHadronRecoInfo;
+  Produces<aod::ScHadronRecoInfo> entryScHadronRecoInfoExt;
   Produces<aod::LcHadronMlInfo> entryCandHadronMlInfo;
-  Produces<aod::LcRecoInfo> entryCandCandRecoInfo;
+  Produces<aod::LcRecoInfo> entryCandRecoInfo;
+  Produces<aod::ScRecoInfo> entryScRecoInfoExt;
   Produces<aod::LcHadronGenInfo> entryCandHadronGenInfo;
   Produces<aod::LcGenInfo> entryCandCandGenInfo;
   Produces<aod::TrkRecInfoLc> entryTrackRecoInfo;
@@ -812,12 +814,17 @@ struct HfCorrelatorLcScHadrons {
       double yCand = -999.0;
       double etaCand = -999.0;
       double ptScProng0 = -999.0;
+      double ptSoftPi = -999.0;
+      double massPKPiLcFromSc = -999.0;
+      double massPiKPLcFromSc = -999.0;
       double ptCand = -999.0;
       double phiCand = -999.0;
       double massCandPKPi = -999.0;
       double massCandPiKP = -999.0;
       bool selLcPKPi = false;
       bool selLcPiKP = false;
+      float softPiAbsDcaXY = -999.0;
+      float softPiAbsDcaZ = -999.0;
 
       yCand = estimateY<IsCandSc>(candidate);
       etaCand = candidate.eta();
@@ -847,17 +854,21 @@ struct HfCorrelatorLcScHadrons {
         chargeCand = candidate.charge();
         const auto& candidateLc = candidate.template prongLc_as<CandsLcData>();
         ptScProng0 = candidateLc.pt();
+        softPiAbsDcaXY = std::abs(candidate.softPiDcaXY());
+        softPiAbsDcaZ = std::abs(candidate.softPiDcaZ());
         selLcPKPi = (candidateLc.isSelLcToPKPi() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPKPiFromPDG());
         selLcPiKP = (candidateLc.isSelLcToPiKP() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPiKPFromPDG());
         if (selLcPKPi) {
           const auto& probs = candidateLc.mlProbLcToPKPi();
           fillMlOutput(probs, outputMlPKPi);
-          massCandPKPi = std::abs(HfHelper::invMassScRecoLcToPKPi(candidate, candidateLc) - HfHelper::invMassLcToPKPi(candidateLc));
+          massPKPiLcFromSc = HfHelper::invMassLcToPKPi(candidateLc);
+          massCandPKPi = std::abs(HfHelper::invMassScRecoLcToPKPi(candidate, candidateLc) - massPKPiLcFromSc);
         }
         if (selLcPiKP) {
           const auto& probs = candidateLc.mlProbLcToPiKP();
           fillMlOutput(probs, outputMlPiKP);
-          massCandPiKP = std::abs(HfHelper::invMassScRecoLcToPiKP(candidate, candidateLc) - HfHelper::invMassLcToPiKP(candidateLc));
+          massPiKPLcFromSc = HfHelper::invMassLcToPiKP(candidateLc);
+          massCandPiKP = std::abs(HfHelper::invMassScRecoLcToPiKP(candidate, candidateLc) - massPiKPLcFromSc);
         }
         if constexpr (IsMcRec) {
           // isSignal =
@@ -870,12 +881,14 @@ struct HfCorrelatorLcScHadrons {
           auto trackPos1 = candidateLc.template prong0_as<aod::TracksWMc>();
           auto trackPos2 = candidateLc.template prong2_as<aod::TracksWMc>();
           signSoftPion = candidate.template prong1_as<aod::TracksWMc>().sign();
+          ptSoftPi = candidate.template prong1_as<aod::TracksWMc>().pt();
           if (calTrkEff && countCand == 1 && (isSignal || !calEffEventWithCand)) {
             calculateTrkEff(trackPos1, trackPos2, *mcParticles);
           }
           registry.fill(HIST("hPtProng1"), candidate.template prong1_as<aod::TracksWMc>().pt());
         } else {
           signSoftPion = candidate.template prong1_as<aod::Tracks>().sign();
+          ptSoftPi = candidate.template prong1_as<aod::Tracks>().pt();
           registry.fill(HIST("hPtProng1"), candidate.prong1().pt());
         }
         registry.fill(HIST("hPtProng0"), ptScProng0);
@@ -931,12 +944,13 @@ struct HfCorrelatorLcScHadrons {
           registry.fill(HIST("hPtVsMultiplicityMcRecNonPrompt"), ptCand, multiplicityFT0M);
         }
 
-        entryCandCandRecoInfo(massCandPKPi, ptCand, outputMlPKPi[0], outputMlPKPi[1], poolBin);
+        entryCandRecoInfo(massCandPKPi, ptCand, outputMlPKPi[0], outputMlPKPi[1], poolBin);
         entryCandCandGenInfo(isPrompt);
         if (!skipMixedEventTableFilling) {
           entryCand(candidate.phi(), etaCand, ptCand, massCandPKPi, poolBin, gCollisionId, timeStamp);
           entryCandCharge(chargeCand);
           entryPtLcFromSc(ptScProng0);
+          entryScRecoInfoExt(massPKPiLcFromSc, ptSoftPi, softPiAbsDcaXY, softPiAbsDcaZ);
         }
       }
 
@@ -952,12 +966,13 @@ struct HfCorrelatorLcScHadrons {
           registry.fill(HIST("hPtCandSigNonPrompt"), ptCand);
           registry.fill(HIST("hPtVsMultiplicityMcRecNonPrompt"), ptCand, multiplicityFT0M);
         }
-        entryCandCandRecoInfo(massCandPiKP, ptCand, outputMlPiKP[0], outputMlPiKP[1], poolBin);
+        entryCandRecoInfo(massCandPiKP, ptCand, outputMlPiKP[0], outputMlPiKP[1], poolBin);
         entryCandCandGenInfo(isPrompt);
         if (!skipMixedEventTableFilling) {
           entryCand(candidate.phi(), etaCand, ptCand, massCandPiKP, poolBin, gCollisionId, timeStamp);
           entryCandCharge(chargeCand);
           entryPtLcFromSc(ptScProng0);
+          entryScRecoInfoExt(massPiKPLcFromSc, ptSoftPi, softPiAbsDcaXY, softPiAbsDcaZ);
         }
       }
 
@@ -1016,10 +1031,12 @@ struct HfCorrelatorLcScHadrons {
         if (selLcPKPi) {
           fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, ptScProng0, *mcParticles);
           entryCandHadronRecoInfo(massCandPKPi, false);
+          entryScHadronRecoInfoExt(massPKPiLcFromSc, ptSoftPi, softPiAbsDcaXY, softPiAbsDcaZ);
         }
         if (selLcPiKP) {
           fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, ptScProng0, *mcParticles);
           entryCandHadronRecoInfo(massCandPiKP, false);
+          entryScHadronRecoInfoExt(massPiKPLcFromSc, ptSoftPi, softPiAbsDcaXY, softPiAbsDcaZ);
         }
 
         if (countCand == 1) {

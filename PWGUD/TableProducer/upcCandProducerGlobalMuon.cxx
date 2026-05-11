@@ -143,10 +143,11 @@ struct UpcCandProducerGlobalMuon {
     // NEW: Add histograms for global track monitoring
     const AxisSpec axisTrackType{5, -0.5, 4.5, "Track Type"};
     histRegistry.add("hTrackTypes", "Track type distribution", kTH1F, {axisTrackType});
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(1, "MuonStandalone");
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(2, "MCHStandalone");
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(3, "GlobalMuon");
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(4, "GlobalFwd");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(1, "GlobalMuonTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(2, "GlobalMuonTrackOtherMatch");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(3, "GlobalForwardTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(4, "MuonStandaloneTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(5, "MCHStandaloneTrack");
 
     const AxisSpec axisEta{100, -4.0, -2.0, "#eta"};
     histRegistry.add("hEtaGlobal", "Global track eta", kTH1F, {axisEta});
