@@ -136,7 +136,6 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigMCGenPairSignalsJSON{"cfgMCGenDileptonHadronPairSignalsJSON", "", "Comma separated list of MC pair signals (generated) via JSON"};
     Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
     Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 0.1f, "minimum pt for the hadron"};
-    Configurable<bool> fConfigContainlepton{"cfgContainlepton", false, "If true, require the hadron to contain the lepton in its decay tree for the energy correlator study"};
     Configurable<bool> fConfigUsePionMass{"cfgUsePionMass", false, "If true, use pion mass for the hadron in the energy correlator study"};
     Configurable<bool> fConfigApplyEfficiency{"cfgApplyEfficiency", false, "If true, apply efficiency correction for the energy correlator study"};
     Configurable<bool> fConfigApplyEfficiencyME{"cfgApplyEfficiencyME", false, "If true, apply efficiency correction for the energy correlator study"};
@@ -570,13 +569,13 @@ struct AnalysisEnergyCorrelator {
       float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, hadron_eta, hadron.pt());
       float Masswindow = hMasswindow->Interpolate(dilepton_pt);
       float Reweighthadron = 1.0f;
-      if (abs(hadronMC.pdgCode()) == PDG_t::kPiPlus) {
+      if (std::abs(hadronMC.pdgCode()) == PDG_t::kPiPlus) {
         int bin = hReweighthadron->FindBin(0, hadron.pt());
         Reweighthadron = hReweighthadron->GetBinContent(bin);
-      } else if (abs(hadronMC.pdgCode()) == PDG_t::kProton) {
+      } else if (std::abs(hadronMC.pdgCode()) == PDG_t::kProton) {
         int bin = hReweighthadron->FindBin(1, hadron.pt());
         Reweighthadron = hReweighthadron->GetBinContent(bin);
-      } else if (abs(hadronMC.pdgCode()) == PDG_t::kKPlus) {
+      } else if (std::abs(hadronMC.pdgCode()) == PDG_t::kKPlus) {
         int bin = hReweighthadron->FindBin(2, hadron.pt());
         Reweighthadron = hReweighthadron->GetBinContent(bin);
       }
@@ -1005,13 +1004,13 @@ struct AnalysisEnergyCorrelator {
           float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
           acceptance = hAcceptance_gen->Interpolate(dilepton_eta - hadron_eta, deltaphi);
           float Reweighthadron = 1.0f;
-          if (abs(t2_raw.pdgCode()) == PDG_t::kPiPlus) {
+          if (std::abs(t2_raw.pdgCode()) == PDG_t::kPiPlus) {
             int bin = hReweighthadron->FindBin(0, t2_raw.pt());
             Reweighthadron = hReweighthadron->GetBinContent(bin);
-          } else if (abs(t2_raw.pdgCode()) == PDG_t::kProton) {
+          } else if (std::abs(t2_raw.pdgCode()) == PDG_t::kProton) {
             int bin = hReweighthadron->FindBin(1, t2_raw.pt());
             Reweighthadron = hReweighthadron->GetBinContent(bin);
-          } else if (abs(t2_raw.pdgCode()) == PDG_t::kKPlus) {
+          } else if (std::abs(t2_raw.pdgCode()) == PDG_t::kKPlus) {
             int bin = hReweighthadron->FindBin(2, t2_raw.pt());
             Reweighthadron = hReweighthadron->GetBinContent(bin);
           }
