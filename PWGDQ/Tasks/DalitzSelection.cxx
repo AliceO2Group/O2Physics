@@ -138,6 +138,7 @@ struct DalitzSelection {
   void init(o2::framework::InitContext&)
   {
     fIsTagAndProbe = false;
+    VarManager::SetDefaultVarNames();
 
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
@@ -158,7 +159,7 @@ struct DalitzSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -176,7 +177,7 @@ struct DalitzSelection {
     if (addTrackCutsProbeStr != "" && (cutNamesProbeStr.CompareTo(cutNamesStr) != 0 || addTrackCutsProbeStr.CompareTo(addTrackCutsStr) != 0)) {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsProbeStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCutsProbe.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCutsProbe.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
       fIsTagAndProbe = true;
     }
@@ -194,7 +195,7 @@ struct DalitzSelection {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
-        fPairCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fPairCuts.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -212,7 +213,7 @@ struct DalitzSelection {
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-    VarManager::SetDefaultVarNames();
+
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
@@ -229,13 +230,13 @@ struct DalitzSelection {
           histClasses += Form("TrackBarrelProbe_%s_%s_%s;", (*trackCut).GetName(), fTrackCutsProbe.at(iCut).GetName(), (*pairCut).GetName());
           histClasses += Form("Pair_%s_%s_%s;", (*trackCut).GetName(), fTrackCutsProbe.at(iCut).GetName(), (*pairCut).GetName());
           if (fConfigOptions.fConfigEnableLikeSign) {
-            histClasses += Form("Pair_LS_%s_%s_%s;", (*trackCut).GetName(), fTrackCutsProbe.at(iCut).GetName(), (*pairCut).GetName());
+            histClasses += Form("PairLS_%s_%s_%s;", (*trackCut).GetName(), fTrackCutsProbe.at(iCut).GetName(), (*pairCut).GetName());
           }
         } else {
           histClasses += Form("TrackBarrel_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
           histClasses += Form("Pair_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
           if (fConfigOptions.fConfigEnableLikeSign) {
-            histClasses += Form("Pair_LS_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
+            histClasses += Form("PairLS_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
           }
         }
       }
@@ -334,7 +335,7 @@ struct DalitzSelection {
       if (!fIsTagAndProbe && track1.globalIndex() >= track2.globalIndex()) {
         continue;
       }
-      if (!fConfigOptions.fConfigEnableLikeSign && track1.sign() * track2.sign() > 0) {
+      if (!fConfigOptions.fConfigEnableLikeSign && (track1.sign() * track2.sign() > 0)) {
         continue;
       }
 
@@ -461,7 +462,7 @@ struct DalitzSelection {
     }
 
     for (const auto& track : tracks) { // Fill dalitz bits
-      dalitzbits(fDalitzmap[track.globalIndex()]);
+      dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
     }
   }
 

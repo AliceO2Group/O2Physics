@@ -2186,8 +2186,8 @@ struct HStrangeCorrelation {
         continue;
       float efficiency = 1.0f;
       float purity = 1.0f;
-      histos.fill(HIST("hDCAzAssocHadron"), assoc.dcaZ(), assoc.pt());
-      histos.fill(HIST("hDCAxyAssocHadron"), assoc.dcaXY(), assoc.pt());
+      histos.fill(HIST("hDCAzAssociatedHadron"), assoc.dcaZ(), assoc.pt());
+      histos.fill(HIST("hDCAxyAssociatedHadron"), assoc.dcaXY(), assoc.pt());
       if (efficiencyFlags.applyEfficiencyCorrection) {
         efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
         if (efficiencyFlags.applyPurityHadron)
