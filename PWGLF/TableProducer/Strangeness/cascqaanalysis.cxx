@@ -44,6 +44,8 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TPDGCode.h>
 #include <TRandom2.h>
 #include <TString.h>
@@ -194,6 +196,15 @@ struct Cascqaanalysis {
             o2::constants::physics::MassOmegaMinus * decayLength * invMomentum};
   }
 
+  template <typename TAxisType>
+  static void setEventTypeAxisLabels(TAxisType* axis)
+  {
+    const char* labels[3] = {"INEL", "INEL>0", "INEL>1"};
+    for (int i = 0; i < 3; ++i) {
+      axis->SetBinLabel(i + 1, labels[i]);
+    }
+  }
+
   void init(InitContext const&)
   {
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
@@ -220,15 +231,25 @@ struct Cascqaanalysis {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
       registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1D, {{200, -20.f, 20.f}}});
+      registry.add("hZCollisionRecVsGen", "hZCollisionRecVsGen", {HistType::kTH2D, {{100, -10.f, 10.f, "z_{vtx}^{rec} (cm)"}, {100, -10.f, 10.f, "z_{vtx}^{gen} (cm)"}}});
+      registry.add("hEventTypeRecVsGen", "hEventTypeRecVsGen", {HistType::kTH2D, {eventTypeAxis, eventTypeAxis}});
       registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH3D, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
       registry.add("hNchFT0MNAssocMCCollisionsSameType", "hNchFT0MNAssocMCCollisionsSameType", {HistType::kTH3D, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
       registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2D, {nChargedFT0MGenAxis, eventTypeAxis}});
       registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2D, {nChargedFV0AGenAxis, eventTypeAxis}});
       registry.add("hCentFT0M_genMC", "hCentFT0M_genMC", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
+      setEventTypeAxisLabels(registry.get<TH2>(HIST("hEventTypeRecVsGen"))->GetXaxis());
+      setEventTypeAxisLabels(registry.get<TH2>(HIST("hEventTypeRecVsGen"))->GetYaxis());
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0MNAssocMCCollisions"))->GetZaxis());
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0MNAssocMCCollisionsSameType"))->GetZaxis());
+      setEventTypeAxisLabels(registry.get<TH2>(HIST("hNchFT0MGenEvType"))->GetYaxis());
+      setEventTypeAxisLabels(registry.get<TH2>(HIST("hNchFV0AGenEvType"))->GetYaxis());
+      setEventTypeAxisLabels(registry.get<TH2>(HIST("hCentFT0M_genMC"))->GetYaxis());
     }
 
     registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
+    setEventTypeAxisLabels(registry.get<TH2>(HIST("hCentFT0M_rec"))->GetYaxis());
 
     if (candidateQA) {
       registry.add("hNcandidates", "hNcandidates", {HistType::kTH3D, {nCandidates, centFT0MAxis, {2, -0.5f, 1.5f}}});
@@ -242,6 +263,9 @@ struct Cascqaanalysis {
         registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
         registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
         registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3D, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
+        setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0Mglobal"))->GetZaxis());
+        setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0MPVContr"))->GetZaxis());
+        setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFV0APVContr"))->GetZaxis());
       }
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3D, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3D, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
@@ -249,6 +273,11 @@ struct Cascqaanalysis {
       registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3D, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
       registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2D, {signalFT0MAxis, signalFV0AAxis}});
       registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0MpvContr"))->GetZaxis());
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFV0ApvContr"))->GetZaxis());
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0Mglobal"))->GetZaxis());
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFV0AFT0M"))->GetZaxis());
+      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0MsignalPVContr"))->GetZaxis());
     }
 
     rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
@@ -549,31 +578,30 @@ struct Cascqaanalysis {
     uint16_t nchFT0 = getGenNchInFT0Mregion(mcPartSlice);
     uint16_t nchFV0 = getGenNchInFV0Aregion(mcPartSlice);
 
-    int evType = 0;
-    registry.fill(HIST("hNEvents"), 11.5); // INEL
-    // Rec. collision associated with INEL>0 gen. one
+    int genEvType = 0;
     if (pwglf::isINELgtNmc(mcPartSlice, 0, pdgDB)) {
-      registry.fill(HIST("hNEvents"), 12.5); // INEL
-      evType++;
+      genEvType++;
     }
-    // Rec. collision associated with INEL>1 gen. one
     if (pwglf::isINELgtNmc(mcPartSlice, 1, pdgDB)) {
-      registry.fill(HIST("hNEvents"), 13.5); // INEL
-      evType++;
+      genEvType++;
     }
 
-    registry.fill(HIST("hCentFT0M_rec"), mcCollision.centFT0M(), evType);
+    const int recoEvType = getEventTypeFlag(collision);
+
+    registry.fill(HIST("hCentFT0M_rec"), mcCollision.centFT0M(), recoEvType);
+    registry.fill(HIST("hZCollisionRecVsGen"), collision.posZ(), mcCollision.posZ());
+    registry.fill(HIST("hEventTypeRecVsGen"), recoEvType, genEvType);
 
     if (multQA) {
-      registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
-      registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
-      registry.fill(HIST("hFT0MpvContr"), mcCollision.centFT0M(), nTracksPVcontr, evType);
-      registry.fill(HIST("hFV0ApvContr"), 0, nTracksPVcontr, evType); // mcCollision.centFV0A() to be added
-      registry.fill(HIST("hFT0Mglobal"), mcCollision.centFT0M(), nTracksGlobal, evType);
-      registry.fill(HIST("hFV0AFT0M"), 0, mcCollision.centFT0M(), evType); // mcCollision.centFV0A() to be added
-      registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
+      registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, recoEvType);
+      registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, recoEvType);
+      registry.fill(HIST("hFT0MpvContr"), mcCollision.centFT0M(), nTracksPVcontr, recoEvType);
+      registry.fill(HIST("hFV0ApvContr"), 0, nTracksPVcontr, recoEvType); // mcCollision.centFV0A() to be added
+      registry.fill(HIST("hFT0Mglobal"), mcCollision.centFT0M(), nTracksGlobal, recoEvType);
+      registry.fill(HIST("hFV0AFT0M"), 0, mcCollision.centFT0M(), recoEvType); // mcCollision.centFV0A() to be added
+      registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, recoEvType);
       registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
-      registry.fill(HIST("hFT0MsignalPVContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evType);
+      registry.fill(HIST("hFT0MsignalPVContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, recoEvType);
     }
 
     float lEventScale = scalefactor;
