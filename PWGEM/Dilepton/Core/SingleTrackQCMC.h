@@ -953,6 +953,12 @@ struct SingleTrackQCMC {
       if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
+      if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+        continue;
+      }
+      if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+        continue;
+      }
       fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto leptonsMC_per_coll = leptonsMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);

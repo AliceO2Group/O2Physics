@@ -401,6 +401,12 @@ struct PidFlowPtCorr {
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hPhicorr", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhiPi", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorrPi", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhiKa", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorrKa", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhiPr", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorrPr", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {cfgaxisEta}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
@@ -483,9 +489,16 @@ struct PidFlowPtCorr {
     if (switchsOpts.cfgOutputrunbyrun.value) {
       // hist for NUA
       registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexPion", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexKaon", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexProton", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+
       // set "correction/hRunNumberPhiEtaVertex" axis0 label
       for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexPion"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexKaon"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexProton"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
       // end set "correction/hRunNumberPhiEtaVertex" axis0 label
     } // cfgooutputrunbyrun
@@ -957,6 +970,39 @@ struct PidFlowPtCorr {
     }
   }
 
+  /**
+   * @brief Get the Pid, combine square cut && circle cut
+   *
+   * @tparam TrackObject
+   * @param track
+   * @return MyParticleType
+   */
+  template <typename TrackObject>
+  int getPidConfigurable(TrackObject const& track)
+  {
+    int pid = -1;
+    if (circleCutOpts.cfgUseCircleCutPID.value) {
+      // Use circular cut (already handles ambiguity rejection)
+      pid = getPidWithCircleCut(track);
+    } else {
+      // Use normal cut (with manual ambiguity rejection)
+      bool isPi = isPion(track);
+      bool isKa = isKaon(track);
+      bool isPr = isProton(track);
+      int nCandidates = isPi + isKa + isPr;
+      if (nCandidates == 1) {
+        if (isPi)
+          pid = MyParticleType::kPion;
+        else if (isKa)
+          pid = MyParticleType::kKaon;
+        else if (isPr)
+          pid = MyParticleType::kProton;
+      }
+      // else: pid remains -1 (ambiguous or none)
+    }
+    return pid;
+  }
+
   // pid util function
 
   // other utils
@@ -1294,6 +1340,11 @@ struct PidFlowPtCorr {
     if (correctionsLoaded)
       return;
     int nspecies = 1;
+    int totalSpecies = 4;
+    /// @note if put 4 path in cfg then load charged, pi, ka, pr
+    // else only load charegd
+    // if path size != 1 or 4, nothing will be loaded
+
     // load NUA
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
       for (int i = 0; i <= nspecies - 1; i++) {
@@ -1304,6 +1355,17 @@ struct PidFlowPtCorr {
       else
         LOGF(warning, "Could not load acceptance weights");
     }
+
+    if (cfgAcceptance.size() == static_cast<uint64_t>(totalSpecies)) {
+      for (int i = 0; i <= totalSpecies - 1; i++) {
+        mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
+      }
+      if (mAcceptance.size() == static_cast<uint64_t>(totalSpecies))
+        LOGF(info, "Loaded acceptance weights * 4");
+      else
+        LOGF(warning, "Could not load acceptance weights * 4");
+    }
+
     // end load NUA
 
     /// @note dont modify load NUA!, just modify NUE
@@ -1420,13 +1482,51 @@ struct PidFlowPtCorr {
     correctionsLoaded = true;
   }
 
+  /**
+   * @brief Set the Particle NUA, note that it works only when macceptance size >= 1,
+   * macceptance size can only be 1 or 4
+   *
+   * @tparam TrackObject
+   * @param weight_nua
+   * @param track
+   * @param vtxz
+   * @return true
+   * @return false
+   */
   template <typename TrackObject>
   bool setParticleNUAWeight(float& weight_nua, TrackObject& track, float vtxz)
   {
-    if (mAcceptance.size() == static_cast<uint64_t>(1))
+    if (mAcceptance.size() == static_cast<uint64_t>(1) || mAcceptance.size() == static_cast<uint64_t>(4))
       weight_nua = mAcceptance[0]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
+    return true;
+  }
+
+  template <typename TrackObject>
+  bool setParticleNUAWeight(float& weight_nua, TrackObject& track, float vtxz, int pid)
+  {
+    if (mAcceptance.size() == static_cast<uint64_t>(4)) {
+
+      switch (pid) {
+        case MyParticleType::kPion:
+          weight_nua = mAcceptance[1]->getNUA(track.phi(), track.eta(), vtxz);
+          break;
+        case MyParticleType::kKaon:
+          weight_nua = mAcceptance[2]->getNUA(track.phi(), track.eta(), vtxz);
+          break;
+        case MyParticleType::kProton:
+          weight_nua = mAcceptance[3]->getNUA(track.phi(), track.eta(), vtxz);
+          break;
+
+        default:
+          weight_nua = 1;
+          break;
+      }
+
+    } else {
+      weight_nua = 1;
+    }
     return true;
   }
 
@@ -1932,26 +2032,7 @@ struct PidFlowPtCorr {
         // ------------------------------
         // Unified PID logic (configurable)
         // ------------------------------
-        int pid = -1;
-        if (circleCutOpts.cfgUseCircleCutPID.value) {
-          // Use circular cut (already handles ambiguity rejection)
-          pid = getPidWithCircleCut(track);
-        } else {
-          // Use normal cut (with manual ambiguity rejection)
-          bool isPi = isPion(track);
-          bool isKa = isKaon(track);
-          bool isPr = isProton(track);
-          int nCandidates = isPi + isKa + isPr;
-          if (nCandidates == 1) {
-            if (isPi)
-              pid = MyParticleType::kPion;
-            else if (isKa)
-              pid = MyParticleType::kKaon;
-            else if (isPr)
-              pid = MyParticleType::kProton;
-          }
-          // else: pid remains -1 (ambiguous or none)
-        }
+        int pid = getPidConfigurable(track);
 
         // Fill PID variables based on unified result
         if (pid == MyParticleType::kPion) {
@@ -2065,39 +2146,31 @@ struct PidFlowPtCorr {
       // ------------------------------
       // Unified PID logic (configurable)
       // ------------------------------
-      int pid = -1;
-      if (circleCutOpts.cfgUseCircleCutPID.value) {
-        // Use circular cut (already handles ambiguity rejection)
-        pid = getPidWithCircleCut(track);
-      } else {
-        // Use normal cut (with manual ambiguity rejection)
-        bool isPi = isPion(track);
-        bool isKa = isKaon(track);
-        bool isPr = isProton(track);
-        int nCandidates = isPi + isKa + isPr;
-        if (nCandidates == 1) {
-          if (isPi)
-            pid = MyParticleType::kPion;
-          else if (isKa)
-            pid = MyParticleType::kKaon;
-          else if (isPr)
-            pid = MyParticleType::kProton;
-        }
-        // else: pid remains -1 (ambiguous or none)
-      }
+      int pid = getPidConfigurable(track);
+      float waccPid = 1;
+      this->setParticleNUAWeight(waccPid, track, vtxz, pid);
 
       // Fill GFW and counters based on unified result
       if (pid == MyParticleType::kPion) {
         // bitmask 18: 0010010
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 18);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 2);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 16, wacc * weff);
+        registry.fill(HIST("hPhiPi"), track.phi());
+        registry.fill(HIST("hPhicorrPi"), track.phi(), waccPid);
         numOfPi++;
       } else if (pid == MyParticleType::kKaon) {
         // bitmask 36: 0100100
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 36);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 4);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 32, wacc * weff);
+        registry.fill(HIST("hPhiKa"), track.phi());
+        registry.fill(HIST("hPhicorrKa"), track.phi(), waccPid);
         numOfKa++;
       } else if (pid == MyParticleType::kProton) {
         // bitmask 72: 1001000
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 72);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 8);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 64, wacc * weff);
+        registry.fill(HIST("hPhiPr"), track.phi());
+        registry.fill(HIST("hPhicorrPr"), track.phi(), waccPid);
         numOfPr++;
       }
       // else: do nothing (ambiguous or not identified)
@@ -2369,6 +2442,24 @@ struct PidFlowPtCorr {
 
       // fill the THn
       registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+
+      int pid = this->getPidConfigurable(track);
+      switch (pid) {
+        case MyParticleType::kPion:
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+          break;
+
+        case MyParticleType::kKaon:
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+          break;
+
+        case MyParticleType::kProton:
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+          break;
+
+        default:
+          break;
+      }
       // end fill the THn
 
     } // end loop all the track
@@ -2521,26 +2612,7 @@ struct PidFlowPtCorr {
             // ------------------------------
             // Unified PID logic (configurable)
             // ------------------------------
-            int pid = -1;
-            if (circleCutOpts.cfgUseCircleCutPID.value) {
-              // Use circular cut (already handles ambiguity rejection)
-              pid = getPidWithCircleCut(track);
-            } else {
-              // Use normal cut (with manual ambiguity rejection)
-              bool isPi = isPion(track);
-              bool isKa = isKaon(track);
-              bool isPr = isProton(track);
-              int nCandidates = isPi + isKa + isPr;
-              if (nCandidates == 1) {
-                if (isPi)
-                  pid = MyParticleType::kPion;
-                else if (isKa)
-                  pid = MyParticleType::kKaon;
-                else if (isPr)
-                  pid = MyParticleType::kProton;
-              }
-              // else: pid remains -1 (ambiguous or none)
-            }
+            int pid = getPidConfigurable(track);
 
             // Fill MC reco histograms based on unified result
             if (pid == MyParticleType::kPion) {

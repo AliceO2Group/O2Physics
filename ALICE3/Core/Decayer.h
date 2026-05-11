@@ -30,7 +30,6 @@
 #include <TLorentzVector.h>
 #include <TRandom3.h>
 
-#include <array>
 #include <cmath>
 #include <cstddef>
 #include <vector>
