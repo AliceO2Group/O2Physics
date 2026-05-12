@@ -274,6 +274,7 @@ constexpr float massDPlus = o2::constants::physics::MassDPlus;
 constexpr float massDs = o2::constants::physics::MassDS;
 constexpr float massLc = o2::constants::physics::MassLambdaCPlus;
 constexpr float massXic = o2::constants::physics::MassXiCPlus;
+constexpr float massXic0 = o2::constants::physics::MassXiC0;
 constexpr float massDStar = o2::constants::physics::MassDStar;
 constexpr float massBPlus = o2::constants::physics::MassBPlus;
 constexpr float massB0 = o2::constants::physics::MassB0;
@@ -717,7 +718,7 @@ class HfFilterHelper
   template <typename T1>
   bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
   template <typename T, typename C, typename H2>
-  bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa);
+  bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa, H2 hMassVsCtXiPi);
   template <int Nprongs, typename T, typename C, typename H2>
   bool isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi, H2 hMassVsCtXiPiPi);
   template <bool is4ThetaC = false, typename T>
@@ -2423,8 +2424,9 @@ inline bool HfFilterHelper::isCharmHadronMassInSbRegions(T1 const& massHypo1, T1
 /// \param activateQA is the flag to activate the QA
 /// \param hMassVsPtXiPi is the 2D histogram with pT vs mass(XiPi)
 /// \param hMassVsPtXiKa is the 2D histogram with pT vs mass(XiKa)
+/// \param hMassVsCtXiPi is the 2D histogram with ct vs mass(XiPi)
 template <typename T, typename C, typename H2>
-inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa)
+inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa, H2 hMassVsCtXiPi)
 {
   bool isSelectedXiPi{false}, isSelectedXiKa{false};
 
@@ -2483,13 +2485,16 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
       return false;
     }
 
-    if (RecoDecay::distance(primVtx, vtx) < mDecLenMinXiBach[0]) {
+    auto decLenXiBach = RecoDecay::distance(primVtx, vtx);
+    if (decLenXiBach < mDecLenMinXiBach[0]) {
       return false;
     }
 
     if (activateQA) {
       if (isSelectedXiPi) {
+        auto ctXiBach = RecoDecay::ct(momXiBach, decLenXiBach, massXic0);
         hMassVsPtXiPi->Fill(ptXiBach, massXiPi);
+        hMassVsCtXiPi->Fill(ctXiBach, massXiPi);
       }
       if (isSelectedXiKa) {
         hMassVsPtXiKa->Fill(ptXiBach, massXiKa);
