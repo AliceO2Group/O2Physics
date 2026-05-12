@@ -35,13 +35,13 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <THn.h>
-#include <TProfile3D.h>
 #include <TPDGCode.h>
+#include <TProfile3D.h>
 
 #include <RtypesCore.h>
 
@@ -61,7 +61,7 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::T
 using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
 using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
 
-struct jEPFlowAnalysis {
+struct JEPFlowAnalysis {
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -428,7 +428,7 @@ struct jEPFlowAnalysis {
 
     fillvn(coll, tracks);
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, processDefault, "default process", true);
+  PROCESS_SWITCH(JEPFlowAnalysis, processDefault, "default process", true);
 
   void processMCRec(MyCollisionsMC::iterator const& coll, MyTracksMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
@@ -468,7 +468,7 @@ struct jEPFlowAnalysis {
       }
     }
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, processMCRec, "process for MC", false);
+  PROCESS_SWITCH(JEPFlowAnalysis, processMCRec, "process for MC", false);
 
   void processMCGen(MyCollisionsMC::iterator const& coll, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
@@ -501,11 +501,11 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("MC/hPartGen"), cent, mcColl.posZ(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
     }
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, processMCGen, "process for MC", false);
+  PROCESS_SWITCH(JEPFlowAnalysis, processMCGen, "process for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<jEPFlowAnalysis>(cfgc)};
+    adaptAnalysisTask<JEPFlowAnalysis>(cfgc)};
 }
