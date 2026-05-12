@@ -139,8 +139,8 @@ struct jEPFlowAnalysis {
 
   float cent;
 
-  float kMinQvecAmp = 1e-5;
-  float kMinChg = 0.1;
+  float minQvecAmp = 1e-5;
+  float minChg = 0.1;
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
 
