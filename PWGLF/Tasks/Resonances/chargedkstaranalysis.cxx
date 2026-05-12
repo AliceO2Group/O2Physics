@@ -19,9 +19,12 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -29,37 +32,42 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
-#include <Framework/Configurable.h>
-#include <Framework/GroupedCombinations.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector3Dfwd.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
-#include <TF1.h>
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include "TVector2.h"
+// #include <TDatabasePDG.h> // FIXME
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
+#include <TMath.h>
+#include <TObjArray.h>
 #include <TPDGCode.h> // FIXME
-#include <TRandom3.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <unordered_map>
@@ -344,7 +352,6 @@ struct Chargedkstaranalysis {
     AxisSpec thnAxisPhi = {axisCfgs.configThnAxisPhi, "Configurabel phi axis"}; // 0 to 2pi
     // THnSparse
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
-
     if (!doprocessMC) {
       histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
       auto hCutFlow = histos.get<TH1>(HIST("hEvtSelInfo"));
@@ -402,7 +409,7 @@ struct Chargedkstaranalysis {
         hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "cross-mass veto");
 
         histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
-        histos.add("QA/before/CentDist1", "Centrality distribution", HistType::kTH1F, {{110, 0, 110}});
+        histos.add("QA/before/CentDist1", "Centrality distribution", o2::framework::kTH1F, {{110, 0, 110}});
 
         histos.add("QA/trkbpionTPCPIDME", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
 
@@ -744,88 +751,7 @@ struct Chargedkstaranalysis {
 
     return returnFlag;
   }
-  template <typename TrackTemplate, typename V0Template>
-  bool isTrueKstar(const TrackTemplate& bTrack, const V0Template& K0scand)
-  {
-    if (std::abs(bTrack.PDGCode()) != kPiPlus) // Are you pion?
-      return false;
-    if (std::abs(K0scand.PDGCode()) != kPDGK0s) // Are you K0s?
-      return false;
-
-    auto motherbTrack = bTrack.template mothers_as<aod::McParticles>();
-    auto motherkV0 = K0scand.template mothers_as<aod::McParticles>();
-
-    // Check bTrack first
-    if (std::abs(motherbTrack.pdgCode()) != kKstarPlus) // Are you charged Kstar's daughter?
-      return false;                                     // Apply first since it's more restrictive
-
-    if (std::abs(motherkV0.pdgCode()) != kPDGK0) // Is it K0s?
-      return false;
-    // Check if K0s's mother is K0 (311)
-    auto motherK0 = motherkV0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherK0.pdgCode()) != kPDGK0)
-      return false;
-
-    // Check if K0's mother is Kstar (323)
-    auto motherKstar = motherK0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherKstar.pdgCode()) != kKstarPlus)
-      return false;
-
-    // Check if bTrack and K0 have the same mother (global index)
-    if (motherbTrack.globalIndex() != motherK0.globalIndex())
-      return false;
-
-    return true;
-  }
-
   int count = 0;
-  template <typename V0T, typename TrkT>
-  bool matchRecoToTruthKstar(V0T const& v0, TrkT const& trk)
-  {
-    if (!v0.has_mcParticle() || !trk.has_mcParticle())
-      return false;
-
-    auto mcK0s = v0.template mcParticle_as<MCTrueTrackCandidates>();
-    auto mcPi = trk.template mcParticle_as<MCTrueTrackCandidates>();
-
-    if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
-      return false;
-    if (std::abs(mcPi.pdgCode()) != kPiPlus)
-      return false;
-
-    MCTrueTrackCandidates::iterator kstarFromPi;
-    bool havePiKstar = false;
-    for (const auto& m1 : mcPi.template mothers_as<MCTrueTrackCandidates>()) {
-      if (std::abs(m1.pdgCode()) == kKstarPlus) {
-        kstarFromPi = m1;
-        havePiKstar = true;
-        break;
-      }
-    }
-    if (!havePiKstar) {
-      return false;
-    }
-
-    bool shareSameKstar = false;
-    for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
-      if (std::abs(m1.pdgCode()) == kPDGK0) {
-        for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
-          if (m2.globalIndex() == kstarFromPi.globalIndex()) {
-            shareSameKstar = true;
-            break;
-          }
-        }
-        if (shareSameKstar)
-          break;
-      }
-    }
-    if (!shareSameKstar) {
-      return false;
-    }
-
-    return true;
-  } // matchRecoToTruthKstar
-
   template <typename T>
   void fillKstarHist(bool isRot, float multiplicity, const T& mother, double cosTheta)
   {
@@ -1313,7 +1239,6 @@ struct Chargedkstaranalysis {
         histos.fill(HIST("QA/MC/QACent_woCut"), lCentrality);
         histos.fill(HIST("QA/MC/QAvtxz_woCut"), coll.posZ());
       }
-
       if (!colCuts.isSelected(coll))
         continue;
       if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(coll))
@@ -1408,9 +1333,7 @@ struct Chargedkstaranalysis {
 
       if (!coll.has_mcCollision())
         continue;
-
       const auto mcid = coll.mcCollisionId();
-
       if (allowedMcIds.count(mcid) == 0)
         continue; // To check the event is allowed or not
 
@@ -1427,7 +1350,6 @@ struct Chargedkstaranalysis {
       }
       if (!selectionK0s(coll, v0))
         continue;
-
       auto trks = tracks.sliceBy(perCollision, v0.collisionId()); // Grouping the tracks with the v0s, means only those tracks that belong to the same collision as v0
       for (const auto& bTrack : trks) {
         if (bTrack.collisionId() != v0.collisionId())
@@ -1436,7 +1358,6 @@ struct Chargedkstaranalysis {
           continue;
         if (!selectionPIDPion(bTrack))
           continue;
-
         LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
 
         lResoSecondary = LorentzVectorSetXYZM(v0.px(), v0.py(), v0.pz(), MassK0Short);
@@ -1447,7 +1368,6 @@ struct Chargedkstaranalysis {
         const double yreco = lResoKstar.Rapidity();
         if (std::abs(yreco) > kstarCutCfgs.cKstarMaxRap)
           continue;
-
         // Since we are doing the MC study and we know about the PDG code of each particle let's try to check the things which we have
         if (!v0.has_mcParticle() || !bTrack.has_mcParticle())
           continue;
@@ -1470,6 +1390,27 @@ struct Chargedkstaranalysis {
         if (!havePiKstar) {
           continue;
         }
+        // Loops over all the mother's of K0s and check if this K0s comming from a kstar and also share the smae mother as of the pion
+        double ptgen = 0, ygen = 0;
+        bool shareSameKstar = false;
+        for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
+          if (std::abs(m1.pdgCode()) == kPDGK0) {
+            for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
+              if (m2.globalIndex() == kstarFromPi.globalIndex()) {
+                shareSameKstar = true;
+                break;
+              }
+            }
+            if (shareSameKstar)
+              break;
+          }
+        }
+        if (!shareSameKstar) {
+          continue;
+        }
+        ptgen = kstarFromPi.pt();
+        ygen = kstarFromPi.y();
+
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
         if (helicityCfgs.cBoostKShot) {
           fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
