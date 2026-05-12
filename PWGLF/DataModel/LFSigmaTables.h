@@ -800,7 +800,7 @@ DECLARE_SOA_COLUMN(KShortPDGCode, kshortPDGCode, int);
 DECLARE_SOA_COLUMN(KShortPDGCodeMother, kshortPDGCodeMother, int);
 DECLARE_SOA_COLUMN(KShortIsCorrectlyAssoc, kshortIsCorrectlyAssoc, bool);
 
-DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                        //! IsSigma0
+DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                                  //! IsSigma0
                            [](int pdgCode) -> bool { return std::abs(pdgCode) == o2::constants::physics::Pdg::kK0Star892; }); // 313
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Sigma0 px
