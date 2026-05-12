@@ -15,8 +15,7 @@
 
 #include "PWGLF/DataModel/ReducedDoublePhiTables.h"
 
-#include "Common/Core/RecoDecay.h"
-
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
@@ -1079,8 +1078,8 @@ struct doublephimeson {
       return;
 
     // --- helpers ---
-    constexpr double mPhiPDG = 1.019461; // GeV/c^2
-    constexpr double mKPDG = 0.493677;   // GeV/c^2
+    constexpr double mPhiPDG = o2::constants::physics::MassPhi; // GeV/c^2
+    constexpr double mKPDG = o2::constants::physics::MassKPlus; // GeV/c^2
 
     const auto deltaMPhi = [=](double m1, double m2) {
       const double d1 = m1 - mPhiPDG, d2 = m2 - mPhiPDG;
@@ -1302,8 +1301,8 @@ struct doublephimeson {
       return;
     }
 
-    constexpr double mPhiPDG = 1.019461; // GeV/c^2
-    constexpr double mKPDG = 0.493677;   // GeV/c^2
+    constexpr double mPhiPDG = o2::constants::physics::MassPhi; // GeV/c^2
+    constexpr double mKPDG = o2::constants::physics::MassKPlus; // GeV/c^2
 
     const auto deltaMPhi = [=](double m1, double m2) {
       const double d1 = m1 - mPhiPDG;
