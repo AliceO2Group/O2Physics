@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <math.h>
