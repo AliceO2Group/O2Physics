@@ -1382,7 +1382,6 @@ struct Chargedkstaranalysis {
           continue;
         }
         // Loops over all the mother's of K0s and check if this K0s comming from a kstar and also share the smae mother as of the pion
-        double ptgen = 0, ygen = 0;
         bool shareSameKstar = false;
         for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
           if (std::abs(m1.pdgCode()) == kPDGK0) {
@@ -1399,8 +1398,6 @@ struct Chargedkstaranalysis {
         if (!shareSameKstar) {
           continue;
         }
-        ptgen = kstarFromPi.pt();
-        ygen = kstarFromPi.y();
 
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
         if (helicityCfgs.cBoostKShot) {
