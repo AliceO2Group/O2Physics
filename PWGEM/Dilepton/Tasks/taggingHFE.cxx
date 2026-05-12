@@ -1710,9 +1710,8 @@ struct taggingHFE {
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      kaon.tpcNSigmaPr(), tofNSigmaPr,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
-                     eKpair.lxyz, eKpair.lxyzErr,
-                     eKpair.lxy, eKpair.lxyErr,
-                     eKpair.lz, eKpair.lzErr,
+                     eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
+                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -1774,9 +1773,8 @@ struct taggingHFE {
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      kaon.tpcNSigmaPr(), tofNSigmaPr,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
-                     eKpair.lxyz, eKpair.lxyzErr,
-                     eKpair.lxy, eKpair.lxyErr,
-                     eKpair.lz, eKpair.lzErr,
+                     eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
+                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -1851,9 +1849,8 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
                       eV0pair.mass, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY,
-                      eV0pair.lxyz, eV0pair.lxyzErr,
-                      eV0pair.lxy, eV0pair.lxyErr,
-                      eV0pair.lz, eV0pair.lzErr,
+                      eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
+                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of K0S loop
@@ -1912,9 +1909,8 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
                       eV0pair.mass, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY,
-                      eV0pair.lxyz, eV0pair.lxyzErr,
-                      eV0pair.lxy, eV0pair.lxyErr,
-                      eV0pair.lz, eV0pair.lzErr,
+                      eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
+                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of Lambda loop
@@ -1978,9 +1974,8 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
                         eCpair.mass, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY,
-                        eCpair.lxyz, eCpair.lxyzErr,
-                        eCpair.lxy, eCpair.lxyErr,
-                        eCpair.lz, eCpair.lzErr,
+                        eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
+                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Xi- loop
@@ -2044,9 +2039,8 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
                         eCpair.mass, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY,
-                        eCpair.lxyz, eCpair.lxyzErr,
-                        eCpair.lxy, eCpair.lxyErr,
-                        eCpair.lz, eCpair.lzErr,
+                        eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
+                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Omega- loop
@@ -2137,9 +2131,8 @@ struct taggingHFE {
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      kaon.tpcNSigmaPr(), tofNSigmaPr,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
-                     eKpair.lxyz, eKpair.lxyzErr,
-                     eKpair.lxy, eKpair.lxyErr,
-                     eKpair.lz, eKpair.lzErr,
+                     eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
+                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -2202,9 +2195,8 @@ struct taggingHFE {
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      kaon.tpcNSigmaPr(), tofNSigmaPr,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
-                     eKpair.lxyz, eKpair.lxyzErr,
-                     eKpair.lxy, eKpair.lxyErr,
-                     eKpair.lz, eKpair.lzErr,
+                     eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
+                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -2278,9 +2270,8 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
                       eV0pair.mass, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY,
-                      eV0pair.lxyz, eV0pair.lxyzErr,
-                      eV0pair.lxy, eV0pair.lxyErr,
-                      eV0pair.lz, eV0pair.lzErr,
+                      eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
+                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of K0S loop
@@ -2339,9 +2330,8 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
                       eV0pair.mass, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY,
-                      eV0pair.lxyz, eV0pair.lxyzErr,
-                      eV0pair.lxy, eV0pair.lxyErr,
-                      eV0pair.lz, eV0pair.lzErr,
+                      eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
+                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of Anti-Lambda loop
@@ -2405,9 +2395,8 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
                         eCpair.mass, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY,
-                        eCpair.lxyz, eCpair.lxyzErr,
-                        eCpair.lxy, eCpair.lxyErr,
-                        eCpair.lz, eCpair.lzErr,
+                        eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
+                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Xi+ loop
@@ -2471,9 +2460,8 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
                         eCpair.mass, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY,
-                        eCpair.lxyz, eCpair.lxyzErr,
-                        eCpair.lxy, eCpair.lxyErr,
-                        eCpair.lz, eCpair.lzErr,
+                        eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
+                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Omega+ loop

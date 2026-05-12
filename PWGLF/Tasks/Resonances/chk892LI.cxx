@@ -251,7 +251,8 @@ struct Chk892LI {
     Configurable<int> cfgNrotBkg{"cfgNrotBkg", 4, "Number of rotated copies (background) per each original candidate"};
   } BkgEstimationConfig;
 
-  Configurable<bool> cfgTruthUseInelGt0{"cfgTruthUseInelGt0", true, "Truth denominator: require INEL>0"};
+  Configurable<bool> cfgRecoUseInelGt0{"cfgRecoUseInelGt0", false, "Data/Reco require INEL>0"};
+  Configurable<bool> cfgTruthUseInelGt0{"cfgTruthUseInelGt0", false, "Truth denominator: require INEL>0"};
   Configurable<bool> cfgTruthIncludeZvtx{"cfgTruthIncludeZvtx", true, "Truth denominator: also require |vtxz|<cfgEvtZvtx"};
 
   float lCentrality;
@@ -761,7 +762,7 @@ struct Chk892LI {
         if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(coll)) {
           continue;
         }
-        if (!coll.isInelGt0()) {
+        if (cfgRecoUseInelGt0 && !coll.isInelGt0()) {
           continue;
         }
 
@@ -1413,7 +1414,7 @@ struct Chk892LI {
     lCentrality = getCentrality(collision);
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
-    if (!collision.isInelGt0())
+    if (cfgRecoUseInelGt0 && !collision.isInelGt0())
       return;
     colCuts.fillQA(collision);
 
@@ -1508,7 +1509,7 @@ struct Chk892LI {
       return;
     if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
-    if (!collision.isInelGt0())
+    if (cfgRecoUseInelGt0 && !collision.isInelGt0())
       return;
     if (!collision.has_mcCollision())
       return;

@@ -379,7 +379,7 @@ struct SpectatorPlaneTableProducer {
     // Load ZDC gain calibration
     if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, 1);
       CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
       CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
     }
@@ -407,7 +407,7 @@ struct SpectatorPlaneTableProducer {
         std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
 
         // Get object from CCDB
-        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, 1);
 
         // Check CCDB Object
         if (!ccdbObject) {

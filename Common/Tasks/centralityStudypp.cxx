@@ -72,6 +72,7 @@ struct centralityStudypp {
   // _______________________________________
   // event selection criteria
   Configurable<bool> applyVertexZEqualization{"applyVertexZEqualization", false, "0 - no, 1 - yes"};
+  Configurable<bool> saveUnequalized{"saveUnequalized", false, "save unequalized raw: 0 - no, 1 - yes"};
   Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
   Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
   Configurable<bool> requireINELgtZERO{"requireINELgtZERO", true, "0 no, 1 - yes"};
@@ -83,22 +84,13 @@ struct centralityStudypp {
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC"};
 
-  // Configurable Axes for 2d plots, etc
-  // ConfigurableAxis axisMultFV0A{"axisMultFV0A", {1000, 0, 100000}, "FV0A amplitude"};
-  // ConfigurableAxis axisMultFT0A{"axisMultFT0A", {1000, 0, 100000}, "FT0A amplitude"};
-  // ConfigurableAxis axisMultFT0C{"axisMultFT0C", {1000, 0, 100000}, "FT0C amplitude"};
-  // ConfigurableAxis axisMultFT0M{"axisMultFT0M", {1000, 0, 100000}, "FT0M amplitude"};
-  // ConfigurableAxis axisMultFDDA{"axisMultFDDA", {1000, 0, 100000}, "FDDA amplitude"};
-  // ConfigurableAxis axisMultFDDC{"axisMultFDDC", {1000, 0, 100000}, "FDDC amplitude"};
-  // ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
-  // ConfigurableAxis axisMultGlobalTracks{"axisMultGlobalTracks", {500, 0, 5000}, "Number of global tracks"};
-  // ConfigurableAxis axisMultMFTTracks{"axisMultMFTTracks", {500, 0, 5000}, "Number of MFT tracks"};
-
   // For one-dimensional plots, where binning is no issue
   ConfigurableAxis axisMultUltraFineFV0A{"axisMultUltraFineFV0A", {60000, 0, 60000}, "FV0A amplitude"};
-  ConfigurableAxis axisMultUltraFineFT0M{"axisMultUltraFineFT0M", {50000, 0, 200000}, "FT0M amplitude"};
-  ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
   ConfigurableAxis axisMultUltraFineFT0A{"axisMultUltraFineFT0A", {60000, 0, 60000}, "FT0A amplitude"};
+  ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultUltraFineFT0M{"axisMultUltraFineFT0M", {50000, 0, 200000}, "FT0M amplitude"};
+  ConfigurableAxis axisMultUltraFineFDDA{"axisMultUltraFineFDDA", {60000, 0, 60000}, "FDDA amplitude"};
+  ConfigurableAxis axisMultUltraFineFDDC{"axisMultUltraFineFDDC", {60000, 0, 60000}, "FDDC amplitude"};
   ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultUltraFineGlobalTracks{"axisMultUltraFineGlobalTracks", {5000, 0, 5000}, "Number of global tracks"};
   ConfigurableAxis axisMultUltraFineMFTTracks{"axisMultUltraFineMFTTracks", {5000, 0, 5000}, "Number of MFT tracks"};
@@ -146,6 +138,10 @@ struct centralityStudypp {
     histos.add("hFT0A_Collisions", "hFT0A_Collisions", kTH1D, {axisMultUltraFineFT0A});
     histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
     histos.add("hFT0M_Collisions", "hFT0M_Collisions", kTH1D, {axisMultUltraFineFT0M});
+
+    histos.add("hFDDA_Collisions", "hFDDA_Collisions", kTH1D, {axisMultUltraFineFDDA});
+    histos.add("hFDDC_Collisions", "hFDDC_Collisions", kTH1D, {axisMultUltraFineFDDC});
+
     histos.add("hFV0A_Collisions", "hFV0A_Collisions", kTH1D, {axisMultUltraFineFV0A});
     histos.add("hNGlobalTracks", "hNGlobalTracks", kTH1D, {axisMultUltraFineGlobalTracks});
     histos.add("hNMFTTracks", "hNMFTTracks", kTH1D, {axisMultUltraFineMFTTracks});
@@ -153,6 +149,8 @@ struct centralityStudypp {
 
     histos.add("hFT0AvsPVz_Collisions", "hFT0AvsPVz_Collisions", kTProfile, {axisPVz});
     histos.add("hFT0CvsPVz_Collisions", "hFT0CvsPVz_Collisions", kTProfile, {axisPVz});
+    histos.add("hFDDAvsPVz_Collisions", "hFDDAvsPVz_Collisions", kTProfile, {axisPVz});
+    histos.add("hFDDCvsPVz_Collisions", "hFDDCvsPVz_Collisions", kTProfile, {axisPVz});
     histos.add("hFV0AvsPVz_Collisions", "hFV0AvsPVz_Collisions", kTProfile, {axisPVz});
     histos.add("hNGlobalTracksvsPVz_Collisions", "hNGlobalTracksvsPVz_Collisions", kTProfile, {axisPVz});
     histos.add("hNMFTTracksvsPVz_Collisions", "hNMFTTracksvsPVz_Collisions", kTProfile, {axisPVz});
@@ -176,14 +174,14 @@ struct centralityStudypp {
       hVtxZFV0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
       hVtxZFT0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
       hVtxZFT0C = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
-      // hVtxZFDDA = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
-      // hVtxZFDDC = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
+      hVtxZFDDA = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
+      hVtxZFDDC = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
       hVtxZNTracks = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
       hVtxZNGlobals = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
       hVtxZMFT = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
 
       // Capture error
-      if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks || !hVtxZNGlobals || !hVtxZMFT) {
+      if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks || !hVtxZNGlobals || !hVtxZMFT) {
         LOGF(error, "Problem loading CCDB objects! Please check");
       }
     }
@@ -203,17 +201,26 @@ struct centralityStudypp {
     getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
     getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(11, "Pass INEL > 0");
 
-    histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
     histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
+    histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
     histPointers.insert({histPath + "hFT0M_Collisions", histos.add((histPath + "hFT0M_Collisions").c_str(), "hFT0M_Collisions", {kTH1D, {{axisMultUltraFineFT0M}}})});
+
+    histPointers.insert({histPath + "hFDDA_Collisions", histos.add((histPath + "hFDDA_Collisions").c_str(), "hFDDA_Collisions", {kTH1D, {{axisMultUltraFineFDDA}}})});
+    histPointers.insert({histPath + "hFDDC_Collisions", histos.add((histPath + "hFDDC_Collisions").c_str(), "hFDDC_Collisions", {kTH1D, {{axisMultUltraFineFDDC}}})});
+
     histPointers.insert({histPath + "hFV0A_Collisions", histos.add((histPath + "hFV0A_Collisions").c_str(), "hFV0A_Collisions", {kTH1D, {{axisMultUltraFineFV0A}}})});
     histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
     histPointers.insert({histPath + "hNMFTTracks", histos.add((histPath + "hNMFTTracks").c_str(), "hNMFTTracks", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
     histPointers.insert({histPath + "hNPVContributors", histos.add((histPath + "hNPVContributors").c_str(), "hNPVContributors", {kTH1D, {{axisMultUltraFinePVContributors}}})});
 
-    if (applyVertexZEqualization) {
+    if (applyVertexZEqualization && saveUnequalized) {
+      histPointers.insert({histPath + "hFT0A_Collisions_Unequalized", histos.add((histPath + "hFT0A_Collisions_Unequalized").c_str(), "hFT0A_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0A}}})});
       histPointers.insert({histPath + "hFT0C_Collisions_Unequalized", histos.add((histPath + "hFT0C_Collisions_Unequalized").c_str(), "hFT0C_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0C}}})});
       histPointers.insert({histPath + "hFT0M_Collisions_Unequalized", histos.add((histPath + "hFT0M_Collisions_Unequalized").c_str(), "hFT0M_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0M}}})});
+
+      histPointers.insert({histPath + "hFDDA_Collisions_Unequalized", histos.add((histPath + "hFDDA_Collisions_Unequalized").c_str(), "hFDDA_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDA}}})});
+      histPointers.insert({histPath + "hFDDC_Collisions_Unequalized", histos.add((histPath + "hFDDC_Collisions_Unequalized").c_str(), "hFDDC_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDC}}})});
+
       histPointers.insert({histPath + "hFV0A_Collisions_Unequalized", histos.add((histPath + "hFV0A_Collisions_Unequalized").c_str(), "hFV0A_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFV0A}}})});
       histPointers.insert({histPath + "hNGlobalTracks_Unequalized", histos.add((histPath + "hNGlobalTracks_Unequalized").c_str(), "hNGlobalTracks_Unequalized", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
       histPointers.insert({histPath + "hNMFTTracks_Unequalized", histos.add((histPath + "hNMFTTracks_Unequalized").c_str(), "hNMFTTracks_Unequalized", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
@@ -222,6 +229,8 @@ struct centralityStudypp {
 
     histPointers.insert({histPath + "hFT0AvsPVz_Collisions", histos.add((histPath + "hFT0AvsPVz_Collisions").c_str(), "hFT0AvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     histPointers.insert({histPath + "hFT0CvsPVz_Collisions", histos.add((histPath + "hFT0CvsPVz_Collisions").c_str(), "hFT0CvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
+    histPointers.insert({histPath + "hFDDAvsPVz_Collisions", histos.add((histPath + "hFDDAvsPVz_Collisions").c_str(), "hFDDAvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
+    histPointers.insert({histPath + "hFDDCvsPVz_Collisions", histos.add((histPath + "hFDDCvsPVz_Collisions").c_str(), "hFDDCvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     histPointers.insert({histPath + "hFV0AvsPVz_Collisions", histos.add((histPath + "hFV0AvsPVz_Collisions").c_str(), "hFV0AvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     histPointers.insert({histPath + "hNGlobalTracksvsPVz_Collisions", histos.add((histPath + "hNGlobalTracksvsPVz_Collisions").c_str(), "hNGlobalTracksvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     histPointers.insert({histPath + "hNMFTTracksvsPVz_Collisions", histos.add((histPath + "hNMFTTracksvsPVz_Collisions").c_str(), "hNMFTTracksvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
@@ -245,6 +254,8 @@ struct centralityStudypp {
     float multFV0A = collision.multFV0A();
     float multFT0A = collision.multFT0A();
     float multFT0C = collision.multFT0C();
+    float multFDDA = collision.multFDDA();
+    float multFDDC = collision.multFDDC();
     float multNTracksGlobal = collision.multNTracksGlobal();
     float mftNtracks = collision.mftNtracks();
     float multNTracksPV = collision.multNTracksPV();
@@ -253,6 +264,8 @@ struct centralityStudypp {
       multFV0A = -1.0f;
       multFT0A = -1.0f;
       multFT0C = -1.0f;
+      multFDDA = -1.0f;
+      multFDDC = -1.0f;
       multNTracksGlobal = -1.0f;
       mftNtracks = -1.0f;
       multNTracksPV = -1.0f;
@@ -265,6 +278,12 @@ struct centralityStudypp {
       }
       if (hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
         multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
+      }
+      if (hVtxZFDDA->Interpolate(collision.multPVz()) > epsilon) {
+        multFDDA = hVtxZFDDA->Interpolate(0.0) * collision.multFDDA() / hVtxZFDDA->Interpolate(collision.multPVz());
+      }
+      if (hVtxZFDDC->Interpolate(collision.multPVz()) > epsilon) {
+        multFDDC = hVtxZFDDC->Interpolate(0.0) * collision.multFDDC() / hVtxZFDDC->Interpolate(collision.multPVz());
       }
       if (hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
         multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
@@ -293,6 +312,8 @@ struct centralityStudypp {
       // all runs
       histos.fill(HIST("hFT0AvsPVz_Collisions"), collision.multPVz(), collision.multFT0A());
       histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C());
+      histos.fill(HIST("hFDDAvsPVz_Collisions"), collision.multPVz(), collision.multFDDA());
+      histos.fill(HIST("hFDDCvsPVz_Collisions"), collision.multPVz(), collision.multFDDC());
       histos.fill(HIST("hFV0AvsPVz_Collisions"), collision.multPVz(), collision.multFV0A());
       histos.fill(HIST("hNGlobalTracksvsPVz_Collisions"), collision.multPVz(), collision.multNTracksGlobal());
       histos.fill(HIST("hNMFTTracksvsPVz_Collisions"), collision.multPVz(), collision.mftNtracks());
@@ -300,6 +321,8 @@ struct centralityStudypp {
       // per run
       getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C);
       getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A);
+      getHist(TProfile, histPath + "hFDDAvsPVz_Collisions")->Fill(collision.multPVz(), multFDDA);
+      getHist(TProfile, histPath + "hFDDCvsPVz_Collisions")->Fill(collision.multPVz(), multFDDC);
       getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), multFV0A);
       getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), multNTracksGlobal);
       getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), mftNtracks);
@@ -368,6 +391,8 @@ struct centralityStudypp {
     histos.fill(HIST("hFT0A_Collisions"), collision.multFT0A());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
     histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()));
+    histos.fill(HIST("hFDDA_Collisions"), collision.multFDDA());
+    histos.fill(HIST("hFDDC_Collisions"), collision.multFDDC());
     histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A());
     histos.fill(HIST("hNGlobalTracks"), collision.multNTracksGlobal());
     histos.fill(HIST("hNMFTTracks"), collision.mftNtracks());
@@ -381,11 +406,14 @@ struct centralityStudypp {
     getHist(TH1, histPath + "hNGlobalTracks")->Fill(multNTracksGlobal);
     getHist(TH1, histPath + "hNMFTTracks")->Fill(mftNtracks);
 
-    if (applyVertexZEqualization.value) {
+    if (applyVertexZEqualization.value && saveUnequalized.value) {
       // save unequalized for cross-checks
       getHist(TH1, histPath + "hNPVContributors_Unequalized")->Fill(collision.multNTracksPV());
+      getHist(TH1, histPath + "hFT0A_Collisions_Unequalized")->Fill(collision.multFT0A());
       getHist(TH1, histPath + "hFT0C_Collisions_Unequalized")->Fill(collision.multFT0C());
       getHist(TH1, histPath + "hFT0M_Collisions_Unequalized")->Fill((collision.multFT0A() + collision.multFT0C()));
+      getHist(TH1, histPath + "hFDDA_Collisions_Unequalized")->Fill(collision.multFDDA());
+      getHist(TH1, histPath + "hFDDC_Collisions_Unequalized")->Fill(collision.multFDDC());
       getHist(TH1, histPath + "hFV0A_Collisions_Unequalized")->Fill(collision.multFV0A());
       getHist(TH1, histPath + "hNGlobalTracks_Unequalized")->Fill(collision.multNTracksGlobal());
       getHist(TH1, histPath + "hNMFTTracks_Unequalized")->Fill(collision.mftNtracks());
