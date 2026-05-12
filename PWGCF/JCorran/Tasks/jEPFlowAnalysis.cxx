@@ -423,7 +423,7 @@ struct jEPFlowAnalysis {
       }
     }
 
-    if (coll.qvecAmp()[detId] < kMinQvecAmp || coll.qvecAmp()[refAId] < kMinQvecAmp || coll.qvecAmp()[refBId] < kMinQvecAmp)
+    if (coll.qvecAmp()[detId] < minQvecAmp || coll.qvecAmp()[refAId] < minQvecAmp || coll.qvecAmp()[refBId] < minQvecAmp)
       return;
 
     fillvn(coll, tracks);
@@ -490,7 +490,7 @@ struct jEPFlowAnalysis {
 
       auto p = pdg->GetParticle(mcParticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) < kMinChg) {
+        if (std::abs(p->Charge()) < minChg) {
           continue;
         }
       }
