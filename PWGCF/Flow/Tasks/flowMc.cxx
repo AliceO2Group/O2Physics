@@ -20,6 +20,7 @@
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -63,6 +64,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -113,6 +115,7 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking', 'CBT_hadronPID' ")
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.6003720411, 0.6152630970, 0.6288860646, 0.6360694031, 0.6409494798, 0.6450540203, 0.6482117301, 0.6512592056, 0.6640008690, 0.6862631416, 0.7005738691, 0.7106567432, 0.7170728333}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-1.007592e-05, -8.932635e-06, -9.114538e-06, -1.054818e-05, -1.220212e-05, -1.312304e-05, -1.376433e-05, -1.412813e-05, -1.289562e-05, -1.050065e-05, -8.635725e-06, -7.380821e-06, -6.201250e-06}, "parameter 1 for track density efficiency correction"};
@@ -176,6 +179,8 @@ struct FlowMc {
   std::vector<GFW::CorrConfig> corrconfigsReco;
   TRandom3* fRndm = new TRandom3(0);
   double epsilon = 1e-6;
+
+  RCTFlagsChecker rctChecker{"CBT"};
 
   void init(InitContext&)
   {
@@ -338,6 +343,9 @@ struct FlowMc {
       funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
+    if (!cfgEvSelRCTflags.value.empty()) {
+      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
+    }
   }
 
   void loadCorrections(uint64_t timestamp)
@@ -435,6 +443,8 @@ struct FlowMc {
     if (cfgRecoEvSel8 && !collision.sel8()) {
       return 0;
     }
+    if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision))
+      return 0;
     if (cfgRecoEvkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
