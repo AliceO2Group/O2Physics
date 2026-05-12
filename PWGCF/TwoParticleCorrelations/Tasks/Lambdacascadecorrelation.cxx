@@ -12,6 +12,8 @@
 /// \file Lambdacascadecorrelation.cxx
 /// \brief Correlation-balance functions of multistrange baryons
 /// \author Oveis Sheibani <oveis.sheibani@cern.ch>
+//
+// o2-linter: disable=name/workflow-file (filename retained for back-compat with existing alienv install and user JSON configs; file contains three structs LambdaCascadeProducer / LambdaTracksExtProducer / LambdaXiCorrelation so no single struct name can be the file name)
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/inelGt.h"
@@ -800,7 +802,7 @@ struct LambdaCascadeProducer {
     Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "[DEPRECATED Phase 4] event selection delegated to LTP"};
     Configurable<bool> doSel8{"doSel8", true, "[DEPRECATED Phase 4] sel8 is enforced by LTP's cSel8Trig"};
     Configurable<bool> doNoSameBunchPileUp{"doNoSameBunchPileUp", true, "[DEPRECATED Phase 4] pileup veto is enforced by LTP's cPileupReject"};
-    Configurable<int> INEL{"INEL", 0, "[DEPRECATED Phase 4] INEL>N enforcement is no longer applied"};
+    Configurable<int> INEL{"INEL", 0, "[DEPRECATED Phase 4] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable (back-compat: deprecated ALICE INEL knob name kept for JSON config compatibility)
     Configurable<double> maxVertexZ{"maxVertexZ", 10., "[DEPRECATED Phase 4] |Vz| cut is enforced by LTP's cMin/cMaxZVtx"};
 
     // Cascade kinematic / selection.
@@ -832,20 +834,25 @@ struct LambdaCascadeProducer {
     Configurable<float> maxBachItsChi2{"maxBachItsChi2", 36, "max ITS chi2 / cluster for bachelor"};
 
     // Cascade selection criteria.
-    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "v0setting_cospa"};
-    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};
-    Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};
-    Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};
-    Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};
-    Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
+    // Cascade selection criteria.
+    // [Phase 16u] The following Configurables intentionally use snake_case
+    // names matching the long-standing ALICE V0/cascade-builder JSON
+    // convention shared across PWGCF / PWGLF tasks. Renaming would break
+    // back-compat with every existing config file.
+    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "v0setting_cospa"}; // o2-linter: disable=name/configurable (back-compat: V0-builder JSON key)
+    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"}; // o2-linter: disable=name/configurable (back-compat: cascade-builder JSON key)
     // [Phase 16e] Removed unused Configurables: cascadesetting_dcacascdau /
     // cascadesetting_dcabachtopv. These were declared but never used in the
     // cut chain — only `casc.dcacascdaughters()` / `casc.dcabachtopv()` (the
     // row values) are read for QA fills. The cascade-builder upstream applies
     // the analogous cuts at table-production time; our task didn't re-cut.
-    Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.9, "cascadesetting_cascradius"};
-    Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
-    Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+    Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.9, "cascadesetting_cascradius"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
 
     // Cascade-side ConfigurableAxes.
     ConfigurableAxis cascRadiusAxis{"cascRadiusAxis", {100, 0.0f, 50.0f}, "cm"};
