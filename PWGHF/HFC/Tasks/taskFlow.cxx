@@ -202,6 +202,7 @@ struct HfTaskFlow {
   struct : ConfigurableGroup {
     std::string prefix = "ConfigTask_group";
     Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "falsce = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
+    Configurable<bool> doEtaDependentFlow{"doEtaDependentFlow", false, "Flag to know if eta dependent flow should be done"};
     Configurable<bool> doHeavyFlavor{"doHeavyFlavor", false, "Flag to know we in the heavy flavor case or not"};
     Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
     Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
@@ -379,6 +380,7 @@ struct HfTaskFlow {
     ConfigurableAxis axisMass{"axisMass", {1, 1.5848, 2.1848}, "axis of invariant mass of candidates"};
     ConfigurableAxis binsMixingMultiplicity{"binsMixingMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity bins for event mixing"};
     ConfigurableAxis binsMixingVertex{"binsMixingVertex", {20, -10, 10}, "vertex bins for event mixing"};
+    ConfigurableAxis axisNClusters{"axisNClusters", {9, 1, 10}, "axis for number of clusters of MFT tracks"};
     ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {1, -1.0, 1.0}, "eta axis for efficiency histograms"};
     ConfigurableAxis axisEtaAssociated{"axisEtaAssociated", {48, -4, -2}, "eta axis for MFT histograms"};
     ConfigurableAxis axisEtaTrigger{"axisEtaTrigger", {48, -1, 1}, "eta axis for TPC histograms"};
@@ -465,6 +467,8 @@ struct HfTaskFlow {
     }
 
     registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
+    registry.add("Data/Mft/hPtVsClustersLTF", "", {HistType::kTH2D, {configAxis.axisPt, configAxis.axisNClusters}});
+    registry.add("Data/Mft/hPtVsClustersCA", "", {HistType::kTH2D, {configAxis.axisPt, configAxis.axisNClusters}});
     registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
     registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
   }
@@ -547,6 +551,12 @@ struct HfTaskFlow {
                                             {configAxis.axisMultiplicity, "multiplicity"},
                                             {configAxis.axisDeltaPhi, "#Delta#varphi (rad)"},
                                             {configAxis.axisVertex, "z-vtx (cm)"}};
+    std::vector<AxisSpec> const corrAxisEta = {{configAxis.axisDeltaEta, "#Delta#eta"},
+                                               {configAxis.axisEtaAssociated, "#eta_{associated}"},
+                                               {configAxis.axisEtaTrigger, "#eta_{trigger}"},
+                                               {configAxis.axisMultiplicity, "multiplicity"},
+                                               {configAxis.axisDeltaPhi, "#Delta#varphi (rad)"},
+                                               {configAxis.axisVertex, "z-vtx (cm)"}};
     std::vector<AxisSpec> const effAxis = {{configAxis.axisEtaEfficiency, "#eta"},
                                            {configAxis.axisPtEfficiency, "p_{T} (GeV/c)"},
                                            {configAxis.axisVertexEfficiency, "z-vtx (cm)"}};
@@ -562,8 +572,13 @@ struct HfTaskFlow {
     if (doprocessSameTpcTpcChCh) {
       addHistograms<Data, TpcTpc, ChPartChPart>();
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     if (doprocessSameTpcTpcD0Ch) {
@@ -588,8 +603,13 @@ struct HfTaskFlow {
       addHistograms<Data, TpcMft, ChPartChPart>();
       addMftHistograms();
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     if (doprocessSameTpcMftD0Ch || doprocessSameTpcMftD0ChReassociated) {
@@ -615,8 +635,13 @@ struct HfTaskFlow {
     if (doprocessSameTpcFv0aChCh) {
       addHistograms<Data, TpcFv0a, ChPartChPart>();
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     if (doprocessSameTpcFv0aD0Ch) {
@@ -642,8 +667,13 @@ struct HfTaskFlow {
       addHistograms<Data, MftFv0a, ChPartChPart>();
       addMftHistograms();
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     //  =========================
@@ -655,8 +685,13 @@ struct HfTaskFlow {
       registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
       registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     if (doprocessSameTpcFt0aD0Ch) {
@@ -687,8 +722,13 @@ struct HfTaskFlow {
       registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
       registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     //  =========================
@@ -700,8 +740,13 @@ struct HfTaskFlow {
       registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
       registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
     if (doprocessSameTpcFt0cD0Ch) {
@@ -731,8 +776,13 @@ struct HfTaskFlow {
       registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
       registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
-      sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-      mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      if (!configTask.doEtaDependentFlow) {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+      } else {
+        sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+        mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+      }
     }
 
   } // End of init() function
@@ -939,7 +989,7 @@ struct HfTaskFlow {
       LOGF(fatal, "Cor Index %d out of range", fitType);
     }
     registry.fill(HIST("Data/FT0Amp"), rID, amplitude);
-    amplitude = amplitude / cstFT0RelGain[iCh];
+    amplitude = amplitude / cstFT0RelGain[id];
     registry.fill(HIST("Data/FT0AmpCorr"), rID, amplitude);
   }
 
@@ -1153,6 +1203,7 @@ struct HfTaskFlow {
     if (mftTrack.isCA()) {
       if (fillHistograms) {
         registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::IsCA);
+        registry.fill(HIST("Data/Mft/hPtVsClustersCA"), mftTrack.pt(), mftTrack.nClusters());
       }
 
       if (configMft.useOnlyLTFTracks) {
@@ -1162,6 +1213,7 @@ struct HfTaskFlow {
     } else {
       if (fillHistograms) {
         registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::IsLTF);
+        registry.fill(HIST("Data/Mft/hPtVsClustersLTF"), mftTrack.pt(), mftTrack.nClusters());
       }
 
       if (configMft.useOnlyCATracks) {
@@ -1242,8 +1294,12 @@ struct HfTaskFlow {
       }
 
       //  fill single-track distributions
-      if (!fillingHFcontainer) { // if not HF-h case
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+      if (!fillingHFcontainer) {              // if not HF-h case
+        if (!configTask.doEtaDependentFlow) { // if not eta-differential flow, fill vs pt, otherwise fill vs eta
+          target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        } else {
+          target->getTriggerHist()->Fill(step, eta1, multiplicity, posZ, triggerWeight);
+        }
       } else {
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
       }
@@ -1370,8 +1426,13 @@ struct HfTaskFlow {
 
         if (!fillingHFcontainer) {
           //  fill pair correlations
-          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                      triggerWeight * associatedWeight);
+          if (!configTask.doEtaDependentFlow) {
+            target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+                                        triggerWeight * associatedWeight);
+          } else {
+            target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
+                                        triggerWeight * associatedWeight);
+          }
         } else {
           target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
@@ -1445,7 +1506,11 @@ struct HfTaskFlow {
 
       //  fill single-track distributions
       if (!fillingHFcontainer) { // if not HF-h case
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        if (!configTask.doEtaDependentFlow) {
+          target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        } else {
+          target->getTriggerHist()->Fill(step, eta1, multiplicity, posZ, triggerWeight);
+        }
       } else {
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
       }
@@ -1556,8 +1621,13 @@ struct HfTaskFlow {
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
         if (!fillingHFcontainer) {
-          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                      triggerWeight * associatedWeight);
+          if (!configTask.doEtaDependentFlow) {
+            target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+                                        triggerWeight * associatedWeight);
+          } else {
+            target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
+                                        triggerWeight * associatedWeight);
+          }
         } else {
           target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
@@ -1635,7 +1705,11 @@ struct HfTaskFlow {
 
       //  fill single-track distributions
       if (!fillingHFcontainer) { // if not HF-h case
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        if (!configTask.doEtaDependentFlow) {
+          target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        } else {
+          target->getTriggerHist()->Fill(step, eta1, multiplicity, posZ, triggerWeight);
+        }
       } else {
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
       }
@@ -1697,8 +1771,13 @@ struct HfTaskFlow {
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
           if (!fillingHFcontainer) {
-            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-                                        triggerWeight * associatedWeight);
+            if (!configTask.doEtaDependentFlow) {
+              target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+                                          triggerWeight * associatedWeight);
+            } else {
+              target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
+                                          triggerWeight * associatedWeight);
+            }
           } else {
             target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
                                         triggerWeight * associatedWeight);
@@ -1745,8 +1824,13 @@ struct HfTaskFlow {
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
           if (!fillingHFcontainer) {
-            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-                                        amplitude * triggerWeight * associatedWeight);
+            if (!configTask.doEtaDependentFlow) {
+              target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+                                          amplitude * triggerWeight * associatedWeight);
+            } else {
+              target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
+                                          amplitude * triggerWeight * associatedWeight);
+            }
           } else {
             target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
                                         amplitude * triggerWeight * associatedWeight);
@@ -1837,7 +1921,11 @@ struct HfTaskFlow {
       float phi1 = reassociatedMftTrack.phi();
       o2::math_utils::bringTo02Pi(phi1);
 
-      target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+      if (!configTask.doEtaDependentFlow) {
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+      } else {
+        target->getTriggerHist()->Fill(step, eta1, multiplicity, posZ, triggerWeight);
+      }
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
@@ -1861,8 +1949,13 @@ struct HfTaskFlow {
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
-          target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-                                      triggerWeight * associatedWeight);
+          if (!configTask.doEtaDependentFlow) {
+            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+                                        triggerWeight * associatedWeight);
+          } else {
+            target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
+                                        triggerWeight * associatedWeight);
+          }
 
           // FILL QA PLOTS for associated particle
           if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
@@ -1894,8 +1987,13 @@ struct HfTaskFlow {
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
-          target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-                                      amplitude * triggerWeight * associatedWeight);
+          if (!configTask.doEtaDependentFlow) {
+            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+                                        amplitude * triggerWeight * associatedWeight);
+          } else {
+            target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
+                                        amplitude * triggerWeight * associatedWeight);
+          }
 
           // FILL QA PLOTS for associated particle
           if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
@@ -1927,7 +2025,11 @@ struct HfTaskFlow {
       auto phiA = getPhiFT0(channelIdA, isFT0A);
       auto etaA = getEtaFT0(channelIdA, isFT0A);
 
-      target->getTriggerHist()->Fill(step, 0.f, multiplicity, posZ, amplitude * triggerWeight);
+      if (!configTask.doEtaDependentFlow) {
+        target->getTriggerHist()->Fill(step, 0.f, multiplicity, posZ, amplitude * triggerWeight);
+      } else {
+        target->getTriggerHist()->Fill(step, etaA, multiplicity, posZ, amplitude * triggerWeight);
+      }
 
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         fillTriggerQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaA, phiA, 0.f);
@@ -1943,8 +2045,13 @@ struct HfTaskFlow {
         auto etaC = getEtaFT0(channelIdC, isFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
 
-        target->getPairHist()->Fill(step, etaA - etaC, 0.f, 0.f, multiplicity, deltaPhi, posZ,
-                                    amplitude * triggerWeight * associatedWeight);
+        if (!configTask.doEtaDependentFlow) {
+          target->getPairHist()->Fill(step, etaA - etaC, 0.f, 0.f, multiplicity, deltaPhi, posZ,
+                                      amplitude * triggerWeight * associatedWeight);
+        } else {
+          target->getPairHist()->Fill(step, etaA - etaC, etaC, etaA, multiplicity, deltaPhi, posZ,
+                                      amplitude * triggerWeight * associatedWeight);
+        }
 
         if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
           fillAssociatedQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaC, phiC);

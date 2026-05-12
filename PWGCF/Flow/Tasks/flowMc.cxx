@@ -89,6 +89,8 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgDCAxyFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAxy cut");
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgDCAzFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAz cut");
+  O2_DEFINE_CONFIGURABLE(cfgDCAzNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the z direction");
   O2_DEFINE_CONFIGURABLE(cfgEnableITSCuts, bool, true, "switch of enabling ITS based track selection cuts")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
   O2_DEFINE_CONFIGURABLE(cfgFlowAcceptance, std::string, "", "CCDB path to acceptance object")
@@ -137,6 +139,7 @@ struct FlowMc {
   // Additional filters for tracks
   TrackSelection myTrackSel;
   TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
 
   // Cent vs IP
   TH1D* mCentVsIPTruth = nullptr;
@@ -310,9 +313,13 @@ struct FlowMc {
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
     if (cfgEnableITSCuts)
       myTrackSel.SetMinNClustersITS(cfgCutITSclu);
-    if (!cfgCutDCAzPtDepEnabled)
+    if (!cfgCutDCAzPtDepEnabled) {
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
-
+    } else {
+      fPtDepDCAz = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAzFunction->c_str()), 0.001, 100);
+      fPtDepDCAz->SetParameter(0, cfgDCAzNSigma);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("[0]*%s", cfgDCAzFunction->c_str()));
+    }
     if (cfgTrackDensityCorrUse) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
@@ -472,7 +479,7 @@ struct FlowMc {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt()))) {
+    if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt()))) {
       return false;
     }
     return myTrackSel.IsSelected(track);

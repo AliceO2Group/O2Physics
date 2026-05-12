@@ -493,6 +493,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       auto negChildMass = pdg->Mass(V0configs.confPDGCodeNegChild);
       auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
       auto cosineTheta = (posChildBoosted.Px() * part.px() + posChildBoosted.Py() * part.py() + posChildBoosted.Pz() * part.pz()) / (posChildBoosted.P() * part.p());
+      auto invMassK0Short = TMath::Sqrt(TMath::Power(TMath::Sqrt(posChild.p() * posChild.p() + pdg->Mass(V0configs.confPDGCodePosChild) * pdg->Mass(V0configs.confPDGCodePosChild)) + TMath::Sqrt(negChild.p() * negChild.p() + pdg->Mass(V0configs.confPDGCodeNegChild) * pdg->Mass(V0configs.confPDGCodeNegChild)), 2) - TMath::Power(posChild.p() + negChild.p(), 2)); // "fake" K0Short invariant mass to estimate their fraction in the Lambda sample
 
       trackHistoPartTwo.fillQA<false, true>(part);
       posChildHistos.fillQA<false, true>(posChild);

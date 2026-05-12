@@ -57,7 +57,7 @@ using namespace o2::pwglf;
 // Particles
 static const std::vector<std::string> parameterNames{"Enable"};
 static constexpr int nParameters = 1;
-static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
+static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
 bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
@@ -158,7 +158,7 @@ std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
 std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
 std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
 
-struct mcParticlePrediction {
+struct McParticlePrediction {
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -180,6 +180,7 @@ struct mcParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "Select only particles within |y| < cut"};
   Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
@@ -194,6 +195,8 @@ struct mcParticlePrediction {
   Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
   Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
   Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
+  Configurable<float> cfgEvtZvtxCut{"cfgEvtZvtxCut", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<float> chargetolerance{"chargetolerance", 1e-3, "Tolerance to consider a particle as charged based on its charge"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -455,7 +458,7 @@ struct mcParticlePrediction {
     }
 
     histos.fill(HIST("collisions/generated"), 1);
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > cfgEvtZvtxCut) {
       return;
     }
     histos.fill(HIST("collisions/generated"), 2);
@@ -493,20 +496,41 @@ struct mcParticlePrediction {
         continue;
       }
 
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
+      // if (!particle.isPhysicalPrimary()) {
+      //   continue;
+      // }
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
-        if (std::abs(p->Charge()) > 1e-3) {
+        if (std::abs(p->Charge()) > chargetolerance) {
           histos.fill(HIST("particles/eta/charged"), particle.eta());
         } else {
           histos.fill(HIST("particles/eta/neutral"), particle.eta());
         }
       }
 
-      if (std::abs(particle.y()) > 0.5) {
+      if (std::abs(particle.y()) >= rapidityCut) {
+        continue;
+      }
+
+      // Check if particle has daughters (not a final state particle)
+      auto daughters = particle.daughters_as<aod::McParticles>();
+      bool isValid = false;
+
+      if (daughters.size() > 0) {
+        isValid = true;
+        for (const auto& daughter : daughters) {
+          if (!daughter.isPhysicalPrimary()) {
+            isValid = false;
+            break;
+          }
+        }
+      } else {
+        // Final state particle - check if particle itself is physical primary
+        isValid = particle.isPhysicalPrimary();
+      }
+
+      if (!isValid) {
         continue;
       }
 
@@ -672,10 +696,10 @@ struct mcParticlePrediction {
     float nMultRecoMCBC[Estimators::nEstimators] = {0};
     if (mcBC.has_ft0()) {
       const auto& ft0 = mcBC.ft0();
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         nMultRecoMCBC[Estimators::FT0A] += amplitude;
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         nMultRecoMCBC[Estimators::FT0C] += amplitude;
       }
       nMultRecoMCBC[Estimators::FT0AC] = nMultRecoMCBC[Estimators::FT0A] + nMultRecoMCBC[Estimators::FT0C];
@@ -699,7 +723,7 @@ struct mcParticlePrediction {
       hestimatorsRecoEvVsBCId[i]->Fill(foundBCid, nMultReco[i]);
     }
   }
-  PROCESS_SWITCH(mcParticlePrediction, processReco, "Process the reco info", true);
+  PROCESS_SWITCH(McParticlePrediction, processReco, "Process the reco info", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<mcParticlePrediction>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<McParticlePrediction>(cfgc)}; }

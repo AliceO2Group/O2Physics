@@ -1457,11 +1457,16 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+
+    bool isRecINELgt0 = 0;
+    if (checkIsRecINELgt0)
+      isRecINELgt0 = collision.isInelGt0();
+
     if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, isRecINELgt0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1664,8 +1669,11 @@ struct ResonanceInitializer {
     if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
+    bool isRecINELgt0 = 0;
+    if (checkIsRecINELgt0)
+      isRecINELgt0 = collision.isInelGt0();
 
-    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, isRecINELgt0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }

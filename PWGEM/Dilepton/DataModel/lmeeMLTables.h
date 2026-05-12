@@ -201,47 +201,96 @@ DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of
 } // namespace emmlevent
 namespace emmltrack
 {
-DECLARE_SOA_COLUMN(IsMotherFromHF, isMotherFromHF, bool); //! is HF included in decay history
-DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);    //! pdg code of mother of lepton
+DECLARE_SOA_COLUMN(IsMotherFromBeauty, isMotherFromBeauty, bool); //! is b quark included in decay history
+DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);            //! pdg code of mother of lepton
 } // namespace emmltrack
 
 DECLARE_SOA_TABLE(EMMLLeptons, "AOD", "EMMLLEPTON", //!
                   o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::SubGeneratorId,
                   track::Signed1Pt, track::Eta,
                   track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
-                  emmltrack::IsMotherFromHF, emmltrack::PdgCodeMother);
+                  emmltrack::IsMotherFromBeauty, emmltrack::PdgCodeMother);
 // iterators
 using EMMLLepton = EMMLLeptons::iterator;
 
 namespace emmllhpair
 {
 DECLARE_SOA_INDEX_COLUMN(EMMLLepton, emmllepton);  //! most propable emeventId
-DECLARE_SOA_COLUMN(Signed1PtH, signed1PtH, float); //! signed1Pt of hadron
-DECLARE_SOA_COLUMN(EtaH, etaH, float);             //! eta of hadron
-DECLARE_SOA_COLUMN(DcaH, dcaH, float);             //! dca of hadron
-DECLARE_SOA_COLUMN(DcaHSigma, dcaHsigma, float);   //! dca resolution of hadron
-DECLARE_SOA_COLUMN(NSigmaKa, nSigmaKa, float);     //! PID n sigma with respect to charged Kaon
+DECLARE_SOA_COLUMN(RapidityV0, rapidityV0, float); //! rapidity of associated V0
+DECLARE_SOA_COLUMN(RapidityC, rapidityC, float);   //! rapidity of associated Cascade
 
-DECLARE_SOA_COLUMN(Mass, mass, float);           //! invariant mass of LH assuming kaon
-DECLARE_SOA_COLUMN(DcaLH, dcalh, float);         //! DCA between lepton and hadron
-DECLARE_SOA_COLUMN(CosPA, cospa, float);         //! flight direction of LH pair
-DECLARE_SOA_COLUMN(Lxyz, lxyz, float);           //! decay length of LH pair
-DECLARE_SOA_COLUMN(LxyzSigma, lxyzSigma, float); //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(ImpParHXY, impParHXY, float);   //! impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParHZ, impParHZ, float);     //! impact parameter for V0/Cascade in Z plane
+DECLARE_SOA_COLUMN(ImpParHCYY, impParHCYY, float); //! sigma of impact parameter for V0/Cascade in XY
+DECLARE_SOA_COLUMN(ImpParHCZY, impParHCZY, float); //! sigma of impact parameter for V0/Cascade, correlaion term
+DECLARE_SOA_COLUMN(ImpParHCZZ, impParHCZZ, float); //! sigma of impact parameter for V0/Cascade in Z
+
+DECLARE_SOA_COLUMN(V0CosPA, v0copa, float);     //! cosPA of V0
+DECLARE_SOA_COLUMN(V0CosPAXY, v0copaXY, float); //! cosPA of V0 in XY plane
+
+DECLARE_SOA_COLUMN(CascCosPA, casccopa, float);     //! cosPA of Cascade
+DECLARE_SOA_COLUMN(CascCosPAXY, casccopaXY, float); //! cosPA of Cascade in XY plane
+
+DECLARE_SOA_COLUMN(Mass, mass, float);       //! invariant mass of LH assuming kaon
+DECLARE_SOA_COLUMN(DcaLH, dcalh, float);     //! DCA between lepton and hadron
+DECLARE_SOA_COLUMN(CosPA, cospa, float);     //! flight direction of LH pair
+DECLARE_SOA_COLUMN(CosPAXY, cospaXY, float); //! flight direction of LH pair in XY
+
+DECLARE_SOA_COLUMN(Lxy, lxy, float);         //! decay length of LH pair
+DECLARE_SOA_COLUMN(Lz, lz, float);           //! decay length of LH pair
+DECLARE_SOA_COLUMN(Lxyz, lxyz, float);       //! decay length of LH pair
+DECLARE_SOA_COLUMN(LxyErr, lxyErr, float);   //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(LzErr, lzErr, float);     //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(LxyzErr, lxyzErr, float); //! decay length resolution of LH pair
+
+DECLARE_SOA_COLUMN(ImpParXY, impParXY, float);   //! impact parameter for LH in XY plane
+DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);     //! impact parameter for LH in Z plane
+DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float); //! sigma of impact parameter for LH in XY
+DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float); //! sigma of impact parameter for LH, correlation term
+DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float); //! sigma of impact parameter for LH in Z
 
 DECLARE_SOA_COLUMN(PdgCodeH, pdgCodeH, int);                    //! pdg code of associated hadron
-DECLARE_SOA_COLUMN(PdgCodeHFH, pdgCodeHFH, int);                //! pdg code of HF hadron
+DECLARE_SOA_COLUMN(PdgCodeIM, pdgCodeIM, int);                  //! pdg code of intermediate hadron from HF hadrons. e.g K*, D*
 DECLARE_SOA_COLUMN(FoundCommonMother, foundCommonMother, bool); //! decay length resolution of LH pair
 } // namespace emmllhpair
 
 DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
                   emmllhpair::EMMLLeptonId,
                   track::Signed1Pt, track::Eta,
-                  track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ, pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
-                  emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::Lxyz, emmllhpair::LxyzSigma,
-                  emmllhpair::PdgCodeH, emmllhpair::FoundCommonMother);
-
+                  track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
+                  pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
+                  pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
+                  pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr,
+                  emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
+                  emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
+                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLHPair = EMMLLHPairs::iterator;
+
+DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
+                  emmllhpair::EMMLLeptonId,
+                  track::Pt, emmllhpair::RapidityV0,
+                  emmllhpair::V0CosPA, emmllhpair::V0CosPAXY,
+                  emmllhpair::ImpParHXY, emmllhpair::ImpParHZ, emmllhpair::ImpParHCYY, emmllhpair::ImpParHCZY, emmllhpair::ImpParHCZZ,
+                  emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
+                  emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
+                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
+// iterators
+using EMMLLV0Pair = EMMLLV0Pairs::iterator;
+
+DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCAPAIR", //!
+                  emmllhpair::EMMLLeptonId,
+                  track::Pt, emmllhpair::RapidityC,
+                  emmllhpair::CascCosPA, emmllhpair::CascCosPAXY,
+                  emmllhpair::ImpParHXY, emmllhpair::ImpParHZ, emmllhpair::ImpParHCYY, emmllhpair::ImpParHCZY, emmllhpair::ImpParHCZZ,
+                  emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
+                  emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
+                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
+// iterators
+using EMMLLCascPair = EMMLLCascPairs::iterator;
 
 } // namespace o2::aod
 

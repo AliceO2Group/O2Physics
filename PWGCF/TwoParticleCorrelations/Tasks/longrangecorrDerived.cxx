@@ -36,7 +36,6 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <experimental/type_traits>
 #include <string>
 #include <tuple>
 #include <utility>

@@ -174,7 +174,7 @@ struct MeanPtFlucId {
       ccdb->setURL(cfgUrlCCDB.value);
       ccdb->setCaching(true);
 
-      TList* lst = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
+      TList* lst = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, 1);
       hWeightPt = reinterpret_cast<TH1D*>(lst->FindObject("hWeightPt"));
       hWeightPtPi = reinterpret_cast<TH1D*>(lst->FindObject("hWeightPtPi"));
       hWeightPtKa = reinterpret_cast<TH1D*>(lst->FindObject("hWeightPtKa"));

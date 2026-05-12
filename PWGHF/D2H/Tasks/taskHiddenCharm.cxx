@@ -52,8 +52,8 @@ struct HfTaskHiddenCharm {
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4, NTracksPV: 5, FT0CVariant2: 6)"};
   Configurable<float> centralityMin{"centralityMin", 0.f, "Minimum accepted centrality"};
   Configurable<float> centralityMax{"centralityMax", 100.f, "Maximum accepted centrality"};
-  Configurable<bool> fillOnlyUnlikeSign{"fillOnlyUnlikeSign", true, "Fill only unlike-sign proton pairs"};
-  Configurable<bool> fillOnlyLikeSign{"fillOnlyLikeSign", true, "Fill only like-sign proton pairs"};
+  Configurable<bool> fillUnlikeSign{"fillUnlikeSign", true, "Fill unlike-sign proton pairs"};
+  Configurable<bool> fillLikeSign{"fillLikeSign", true, "Fill like-sign proton pairs"};
 
   SliceCache cache;
 
@@ -94,7 +94,7 @@ struct HfTaskHiddenCharm {
   void fillEtac(TCollisions const& collision,
                 TProtonIds const& protonIds)
   {
-    float cent{-1.f};
+    float cent{0.f};
     if constexpr (CentEstimator != o2::hf_centrality::CentralityEstimator::None) {
       cent = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (cent < centralityMin || cent >= centralityMax) {
@@ -102,26 +102,32 @@ struct HfTaskHiddenCharm {
       }
     }
 
-    for (const auto& proton1 : protonIds) {
-      for (const auto& proton2 : protonIds) {
-        if (proton1.trackId() >= proton2.trackId()) {
-          continue; // avoid double counting and self-pairs
-        }
+    for (auto it1 = protonIds.begin(); it1 != protonIds.end(); ++it1) {
+      for (auto it2 = it1 + 1; it2 != protonIds.end(); ++it2) {
+
+        const auto& proton1 = *it1;
+        const auto& proton2 = *it2;
         const int sign = (proton1.sign() * proton2.sign() > 0) ? 1 : -1;
-        if ((sign == 1 && !fillOnlyLikeSign) || (sign == -1 && !fillOnlyUnlikeSign)) {
+
+        if (sign == 1 && !fillLikeSign)
           continue;
-        }
+        if (sign == -1 && !fillUnlikeSign)
+          continue;
+
         std::array<float, 3> pVec1{proton1.px(), proton1.py(), proton1.pz()};
         std::array<float, 3> pVec2{proton2.px(), proton2.py(), proton2.pz()};
+
         float invMass = RecoDecay::m(std::array{pVec1, pVec2}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassProton});
-        float ptEtac = RecoDecay::pt(RecoDecay::sumOfVec(pVec1, pVec2));
-        registry.fill(HIST("hSparseHiddenCharm"), invMass, ptEtac, sign, cent);
+        float pt = RecoDecay::pt(RecoDecay::sumOfVec(pVec1, pVec2));
+
+        registry.fill(HIST("hSparseHiddenCharm"), invMass, pt, sign, cent);
         if (sign == 1) {
-          registry.fill(HIST("hPtVsInvMassLikeSign"), invMass, ptEtac);
-        } else if (sign == -1) {
-          registry.fill(HIST("hPtVsInvMassUnlikeSign"), invMass, ptEtac);
-          registry.fill(HIST("hPtVsInvMassAllSign"), invMass, ptEtac);
+          registry.fill(HIST("hPtVsInvMassLikeSign"), invMass, pt);
+        } else {
+          registry.fill(HIST("hPtVsInvMassUnlikeSign"), invMass, pt);
         }
+
+        registry.fill(HIST("hPtVsInvMassAllSign"), invMass, pt);
       }
     }
   }
