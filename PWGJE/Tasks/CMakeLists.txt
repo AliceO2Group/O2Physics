@@ -188,10 +188,10 @@ if(FastJet_FOUND)
                         SOURCES v0QA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-#     o2physics_add_dpl_workflow(jet-finder-charged-qa
-#                         SOURCES jetFinderQA.cxx
-#                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-#                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-finder-charged-qa
+                        SOURCES jetFinderQA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-outlier-qa
                         SOURCES jetOutlierQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -366,11 +366,11 @@ if(FastJet_FOUND)
                         SOURCES dijetFinderQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    # o2physics_add_dpl_workflow(bjet-tagging-gnn
-    #                     SOURCES bjetTaggingGnn.cxx
-    #                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
-    #                     O2Physics::AnalysisCCDB
-    #                     COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(bjet-tagging-gnn
+                        SOURCES bjetTaggingGnn.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                        O2Physics::AnalysisCCDB
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-shape
                         SOURCES jetShape.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
