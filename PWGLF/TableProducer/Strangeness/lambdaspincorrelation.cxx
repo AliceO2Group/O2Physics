@@ -571,15 +571,8 @@ struct lambdaspincorrelation {
                 continue;
               }
 
-              auto mcPos = postrack1.mcParticle();
-              auto mcNeg = negtrack1.mcParticle();
-
-              /*
-                    // Reject gap/background-event daughters.
-                    if (mcPos.fromBackgroundEvent() || mcNeg.fromBackgroundEvent()) {
-          histos.fill(HIST("hEvtSelInfo"), 5.5); // rejected: no MC label
-                      continue;
-          }*/
+              // auto mcPos = postrack1.mcParticle();
+              // auto mcNeg = negtrack1.mcParticle();
 
               histos.fill(HIST("hEvtSelInfo"), 6.5); // rejected: no MC label
 
