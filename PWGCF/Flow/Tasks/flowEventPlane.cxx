@@ -823,7 +823,6 @@ struct FlowEventPlane {
     const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
     const AxisSpec axisTrackNSigma{161, -4.025, 4.025, {"n#sigma"}};
 
-    const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
     const AxisSpec axisPhiInvMass{cPhiInvMassBins, 0.99, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
     const AxisSpec axisKStarInvMass{cKStarInvMassBins, 0.8, 1.2, "M_{#piK} (GeV/#it{c}^{2}"};
     const AxisSpec axisMomPID(80, 0, 4, "p_{T} (GeV/#it{c})");
@@ -903,13 +902,13 @@ struct FlowEventPlane {
       histos.add("V0/Lambda/QA/hNegNsigPiVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.addClone("V0/Lambda/", "V0/K0Short/");
       histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisLambdaInvMass, axisTrackEta});
-      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
-      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
       histos.addClone("V0/Lambda/", "V0/AntiLambda/");
       histos.addClone("V0/Lambda/", "V0/LambdaAntiLambda/");
       histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisK0ShortInvMass, axisTrackEta});
-      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
-      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
     }
   }
 

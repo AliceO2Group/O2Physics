@@ -249,7 +249,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
   std::array<std::shared_ptr<TH2>, kNV0> hArmPod{};
-  std::shared_ptr<TH2> hV0Selected;
+  std::shared_ptr<TH2> hV0Selected, hMassVsCtCharmBaryonToXiPiPi;
   std::array<std::shared_ptr<TH2>, 2> hMassXi{}; // not tracked and tracked
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hCpaVsPtB{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hDecayLengthVsPtB{};
@@ -390,6 +390,7 @@ struct HfFilter { // Main struct for HF triggers
       hMassVsPtC[kNCharmParticles + 15] = registry.add<TH2>("fMassVsPtCharmBaryonToXiPi", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+#pi candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 15]});
       hMassVsPtC[kNCharmParticles + 16] = registry.add<TH2>("fMassVsPtCharmBaryonToXiKa", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+K candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 16]});
       hMassVsPtC[kNCharmParticles + 17] = registry.add<TH2>("fMassVsPtCharmBaryonToXiPiPi", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+#pi+#pi candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 17]});
+      hMassVsCtCharmBaryonToXiPiPi = registry.add<TH2>("fMassVsCtCharmBaryonToXiPiPi", "#it{M} vs. ct distribution of triggered #Xi+#pi+#pi candidates;ct (cm);#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ctAxis, massAxisC[kNCharmParticles + 17]});
       // JPsi
       hMassVsPtC[kNCharmParticles + 18] = registry.add<TH2>("fMassVsPtJPsiToMuMu", "#it{M} vs. #it{p}_{T} distribution of triggered J/#psi to #mu#mu candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 18]});
       // Lc resonances
@@ -1991,10 +1992,10 @@ struct HfFilter { // Main struct for HF triggers
                   bool isSelXiBachBach{false};
                   if (requireStrangenessTracking->get(0u, 1u) > 0) {
                     if (hasStrangeTrack) {
-                      isSelXiBachBach = helper.isSelectedXiBachBach<3>(trackParCascTrack, {trackParBachelor, trackParBachelorSecond}, collision, dfStrangeness3, activateQA, hMassVsPtC[kNCharmParticles + 17]);
+                      isSelXiBachBach = helper.isSelectedXiBachBach<3>(trackParCascTrack, {trackParBachelor, trackParBachelorSecond}, collision, dfStrangeness3, activateQA, hMassVsPtC[kNCharmParticles + 17], hMassVsCtCharmBaryonToXiPiPi);
                     }
                   } else { // vertex with only the two bachelors
-                    isSelXiBachBach = helper.isSelectedXiBachBach<2>(trackParCasc, {trackParBachelor, trackParBachelorSecond}, collision, df2, activateQA, hMassVsPtC[kNCharmParticles + 17]);
+                    isSelXiBachBach = helper.isSelectedXiBachBach<2>(trackParCasc, {trackParBachelor, trackParBachelorSecond}, collision, df2, activateQA, hMassVsPtC[kNCharmParticles + 17], hMassVsCtCharmBaryonToXiPiPi);
                   }
                   if (isSelXiBachBach) {
                     keepEvent[kCharmBarToXi2Bach] = true;
