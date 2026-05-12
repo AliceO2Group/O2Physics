@@ -37,10 +37,11 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 
-#include <TDatabasePDG.h>
 #include <THn.h>
 #include <TProfile3D.h>
+#include <TPDGCode.h>
 
 #include <RtypesCore.h>
 
@@ -62,6 +63,8 @@ using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod:
 
 struct jEPFlowAnalysis {
 
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
@@ -70,9 +73,9 @@ struct jEPFlowAnalysis {
   o2::ccdb::CcdbApi ccdbApi;
 
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgURL{"cfgURL",
+    Configurable<std::string> cfgUrl{"cfgUrl",
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
+    Configurable<int64_t> nolaterthan{"nolaterthan",
                                       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                                       "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
@@ -136,6 +139,8 @@ struct jEPFlowAnalysis {
 
   float cent;
 
+  float kMinQvecAmp = 1e-5;
+  float kMinChg = 0.1;
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
 
@@ -327,7 +332,7 @@ struct jEPFlowAnalysis {
 
   void init(InitContext const&)
   {
-    ccdb->setURL(cfgCcdbParam.cfgURL);
+    ccdb->setURL(cfgCcdbParam.cfgUrl);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -418,7 +423,7 @@ struct jEPFlowAnalysis {
       }
     }
 
-    if (coll.qvecAmp()[detId] < 1e-5 || coll.qvecAmp()[refAId] < 1e-5 || coll.qvecAmp()[refBId] < 1e-5)
+    if (coll.qvecAmp()[detId] < kMinQvecAmp || coll.qvecAmp()[refAId] < kMinQvecAmp || coll.qvecAmp()[refBId] < kMinQvecAmp)
       return;
 
     fillvn(coll, tracks);
@@ -447,7 +452,7 @@ struct jEPFlowAnalysis {
       }
     }
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.has_mcParticle()) {
         continue;
       }
@@ -479,13 +484,13 @@ struct jEPFlowAnalysis {
 
     float cent = coll.centFT0C();
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.eta()) > cfgTrackCuts.cfgEtaMax)
         continue;
 
-      auto* p = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (p) {
-        if (std::abs(p->Charge()) < 1e-1) {
+      auto p = pdg->GetParticle(mcParticle.pdgCode());
+      if (p != nullptr) {
+        if (std::abs(p->Charge()) < kMinChg) {
           continue;
         }
       }
