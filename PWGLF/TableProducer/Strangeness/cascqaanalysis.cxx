@@ -51,6 +51,7 @@
 #include <TString.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -76,6 +77,19 @@ struct Cascqaanalysis {
 
   HistogramRegistry registry{"registry"};
 
+  enum EventTypeBin {
+    kINEL = 0,
+    kINELgt0,
+    kINELgt1,
+    kNEventTypeBins
+  };
+
+  static constexpr std::array<std::pair<EventTypeBin, const char*>, kNEventTypeBins> EventTypeBinLabels{{
+    {kINEL, "INEL"},
+    {kINELgt0, "INEL>0"},
+    {kINELgt1, "INEL>1"},
+  }};
+
   // Axes
   ConfigurableAxis ptAxis{"ptAxis", {200, 0.0f, 10.0f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis rapidityAxis{"rapidityAxis", {200, -2.0f, 2.0f}, "y"};
@@ -85,7 +99,7 @@ struct Cascqaanalysis {
   ConfigurableAxis centFV0AAxis{"centFV0AAxis",
                                 {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                                 "FV0A (%)"};
-  ConfigurableAxis eventTypeAxis{"eventTypeAxis", {3, -0.5f, 2.5f}, "Event Type"};
+  ConfigurableAxis eventTypeAxis{"eventTypeAxis", {kNEventTypeBins, -0.5f, static_cast<float>(kNEventTypeBins) - 0.5f}, "Event Type"};
 
   ConfigurableAxis nAssocCollAxis{"nAssocCollAxis", {5, -0.5f, 4.5f}, "N_{assoc.}"};
   ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
@@ -199,9 +213,8 @@ struct Cascqaanalysis {
   template <typename TAxisType>
   static void setEventTypeAxisLabels(TAxisType* axis)
   {
-    const char* labels[] = {"INEL", "INEL>0", "INEL>1"};
-    for (int i = 0; i < static_cast<int>(sizeof(labels) / sizeof(labels[0])); ++i) {
-      axis->SetBinLabel(i + 1, labels[i]);
+    for (const auto& [bin, label] : EventTypeBinLabels) {
+      axis->SetBinLabel(static_cast<int>(bin) + 1, label);
     }
   }
 
@@ -363,20 +376,19 @@ struct Cascqaanalysis {
   }
 
   template <typename TCollision>
-  int getEventTypeFlag(TCollision const& collision)
+  EventTypeBin getEventTypeBin(TCollision const& collision)
   {
-    // 0 - INEL, 1 - INEL>0, 2 - INEL>1
-    int evFlag = 0;
+    EventTypeBin evTypeBin = kINEL;
     registry.fill(HIST("hNEvents"), 11.5); // INEL
     if (collision.isInelGt0()) {
-      evFlag += 1;
+      evTypeBin = kINELgt0;
       registry.fill(HIST("hNEvents"), 12.5); // INEL>0
     }
     if (collision.isInelGt1()) {
-      evFlag += 1;
+      evTypeBin = kINELgt1;
       registry.fill(HIST("hNEvents"), 13.5); // INEL>1
     }
-    return evFlag;
+    return evTypeBin;
   }
 
   template <typename TCollision>
@@ -480,7 +492,7 @@ struct Cascqaanalysis {
       return;
     }
 
-    int evType = getEventTypeFlag(collision);
+    EventTypeBin evType = getEventTypeBin(collision);
 
     auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int nTracksPVcontr = tracksGroupedPVcontr.size();
@@ -578,15 +590,15 @@ struct Cascqaanalysis {
     uint16_t nchFT0 = getGenNchInFT0Mregion(mcPartSlice);
     uint16_t nchFV0 = getGenNchInFV0Aregion(mcPartSlice);
 
-    int genEvType = 0;
+    EventTypeBin genEvType = kINEL;
     if (pwglf::isINELgtNmc(mcPartSlice, 0, pdgDB)) {
-      genEvType++;
+      genEvType = kINELgt0;
     }
     if (pwglf::isINELgtNmc(mcPartSlice, 1, pdgDB)) {
-      genEvType++;
+      genEvType = kINELgt1;
     }
 
-    const int recoEvType = getEventTypeFlag(collision);
+    const EventTypeBin recoEvType = getEventTypeBin(collision);
 
     registry.fill(HIST("hCentFT0M_rec"), mcCollision.centFT0M(), recoEvType);
     registry.fill(HIST("hZCollisionRecVsGen"), collision.posZ(), mcCollision.posZ());
@@ -682,20 +694,20 @@ struct Cascqaanalysis {
     registry.fill(HIST("hNEventsMC"), 1.5);
 
     // Define the type of generated MC collision
-    int evType = 0;
+    EventTypeBin evType = kINEL;
     uint8_t flagsGen = 0;
     flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
     registry.fill(HIST("hNEventsMC"), 2.5);
     // Generated collision is INEL>0
     if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
-      evType++;
+      evType = kINELgt0;
       registry.fill(HIST("hNEventsMC"), 3.5);
     }
     // Generated collision is INEL>1
     if (pwglf::isINELgtNmc(mcParticles, 1, pdgDB)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
-      evType++;
+      evType = kINELgt1;
       registry.fill(HIST("hNEventsMC"), 4.5);
     }
 
@@ -751,15 +763,15 @@ struct Cascqaanalysis {
     const auto evtReconstructedAndINELgt1 = std::count_if(selectedEvents.begin(), selectedEvents.end(), isAssocToINELgt1);
 
     switch (evType) {
-      case 0: {
+      case kINEL: {
         registry.fill(HIST("hNchFT0MNAssocMCCollisionsSameType"), nchFT0, evtReconstructedAndINEL, evType);
         break;
       }
-      case 1: {
+      case kINELgt0: {
         registry.fill(HIST("hNchFT0MNAssocMCCollisionsSameType"), nchFT0, evtReconstructedAndINELgt0, evType);
         break;
       }
-      case 2: {
+      case kINELgt1: {
         registry.fill(HIST("hNchFT0MNAssocMCCollisionsSameType"), nchFT0, evtReconstructedAndINELgt1, evType);
         break;
       }
