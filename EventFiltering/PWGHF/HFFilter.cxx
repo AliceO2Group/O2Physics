@@ -238,7 +238,7 @@ struct HfFilter { // Main struct for HF triggers
   std::shared_ptr<TH1> hProcessedEvents;
 
   // QA histos
-  std::shared_ptr<TH1> hN2ProngCharmCand, hN3ProngCharmCand, hMassVsCtCharmBaryonToXiPiPi;
+  std::shared_ptr<TH1> hN2ProngCharmCand, hN3ProngCharmCand;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmHighPt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmDeuteronKstarDistr{};
@@ -249,7 +249,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
   std::array<std::shared_ptr<TH2>, kNV0> hArmPod{};
-  std::shared_ptr<TH2> hV0Selected;
+  std::shared_ptr<TH2> hV0Selected, hMassVsCtCharmBaryonToXiPiPi;
   std::array<std::shared_ptr<TH2>, 2> hMassXi{}; // not tracked and tracked
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hCpaVsPtB{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hDecayLengthVsPtB{};
