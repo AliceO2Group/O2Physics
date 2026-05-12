@@ -2577,7 +2577,7 @@ inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::arr
       return false;
     }
 
-    auto ctXiBachBach = RecoDecay::ct(decLenXiBachBach, momXiBachBach, massXiPiPi);
+    auto ctXiBachBach = RecoDecay::ct(decLenXiBachBach, momXiBachBach, massXic);
     if (activateQA) {
       hMassVsPtXiPiPi->Fill(ptXiBachBach, massXiPiPi);
       hMassVsCtXiPiPi->Fill(ctXiBachBach, massXiPiPi);
