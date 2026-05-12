@@ -1741,9 +1741,8 @@ struct OnTheFlyTracker {
     std::vector<int> genCascades;
     std::vector<int> genV0s;
     bcData.clear();
-
-    o2::dataformats::DCA dcaInfo;
-    // o2::dataformats::VertexBase vtx;
+    recoPrimaries.clear();
+    ghostPrimaries.clear();
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // Study collision and perform vertexing
@@ -1856,7 +1855,7 @@ struct OnTheFlyTracker {
 
     // Compute primary vertex with primary tracks
     o2::vertexing::PVertex primaryVertex;
-    if (recoPrimaries.size() <= 2) {
+    if (enablePrimaryVertexing && recoPrimaries.size() <= 2) {
       LOG(info) << "Not enough primary tracks (" << recoPrimaries.size() << ") to compute vertex, skipping vertexing and collision population.";
       return;
     }
@@ -1921,6 +1920,7 @@ struct OnTheFlyTracker {
       processWithLUTs(mcCollision, mcParticles, static_cast<int>(icfg));
     }
   }
+
   void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles, const int icfg)
   {
     // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
@@ -2032,7 +2032,7 @@ struct OnTheFlyTracker {
     }
 
     o2::vertexing::PVertex primaryVertex;
-    if (recoPrimaries.size() <= 2) {
+    if (enablePrimaryVertexing && recoPrimaries.size() <= 2) {
       LOG(info) << "Not enough primary tracks (" << recoPrimaries.size() << ") to compute vertex, skipping vertexing and collision population.";
       return;
     }
