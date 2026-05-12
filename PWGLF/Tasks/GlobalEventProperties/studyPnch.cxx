@@ -162,8 +162,6 @@ struct StudyPnch {
       histos.add("hMultiplicityMCrec", "hMultiplicityMCrec", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgen", "hMultiplicityMCgen", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrix", "hResponseMatrix", kTH2F, {axisMult, axisMult}, true);
-    }
-    if (isPtincrease || isPtdecrease) {
       histos.add("hMultiplicityMCgenPtCut", "hMultiplicityMCgenPtCut", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrixPtCut", "hResponseMatrixPtCut", kTH2F, {axisMult, axisMult}, true);
     }
@@ -360,7 +358,7 @@ struct StudyPnch {
   template <typename countTrk, typename McColType>
   float countTracksPtCut(countTrk const& tracks, McColType const& McCol)
   {
-    auto nTrk = 0.0;
+    float nTrk = 0.0;
     for (const auto& track : tracks) {
       if (!isGenTrackSelected(track)) {
         continue;
@@ -429,26 +427,18 @@ struct StudyPnch {
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      if (multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCrec"), multrec);
-      }
+      histos.fill(HIST("hMultiplicityMCrec"), multrec);
       float multgen = countGenTracks(GenParticles, RecCol);
-      if (multgen > 0 && multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCgen"), multgen);
-        histos.fill(HIST("hResponseMatrix"), multrec, multgen);
-      }
-      if (isPtincrease || isPtdecrease) {
-        float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
-        multgen = multgen + nTrkPtCut;
-        histos.fill(HIST("hMultiplicityMCgenPtCut"), multgen);
-        histos.fill(HIST("hResponseMatrixPtCut"), multrec, multgen);
-      }
+      histos.fill(HIST("hMultiplicityMCgen"), multgen);
+      histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
+      nTrkPtCut = multgen + nTrkPtCut;
+      histos.fill(HIST("hMultiplicityMCgenPtCut"), nTrkPtCut);
+      histos.fill(HIST("hResponseMatrixPtCut"), multrec, nTrkPtCut);
       if (isApplyStrangenessSysUncert) {
         auto nSubtractStrange = countStrangeTracksMcCol(recTracksPart, RecCol);
-        if (multrec > 0) {
-          histos.fill(HIST("hMultiplicityMCSubStrDecay"), nSubtractStrange);
-          histos.fill(HIST("hResponseMatrixSubStrDecay"), nSubtractStrange, multgen);
-        }
+        histos.fill(HIST("hMultiplicityMCSubStrDecay"), nSubtractStrange);
+        histos.fill(HIST("hResponseMatrixSubStrDecay"), nSubtractStrange, multgen);
       }
     }
   }
