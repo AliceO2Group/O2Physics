@@ -1218,6 +1218,9 @@ struct HStrangeCorrelation {
 
         static_for<0, 3>([&](auto i) {
           constexpr int Index = i.value;
+          if ((Index == IndexOmegaMinus || Index == IndexOmegaPlus) && assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && std::abs(assocCandidate.invMassNSigma(Index - 2)) < massWindowConfigurations.nSigmaNearXiMassCenter) {
+            return;
+          }
           float efficiency = 1.0f;
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
