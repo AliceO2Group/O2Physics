@@ -275,16 +275,15 @@ struct OnTheFlyTracker {
                 int isUsedInCascadingInput = 0,
                 int nSiliconHitsInput = 0,
                 int nTPCHitsInput = 0,
-                TrackType trackTypeInput = TrackType::kRecoPrimary
-                ) : o2::track::TrackParCov(src),
-                                         mcLabel{label},
-                                         timeEst{time, timeError},
-                                         isDecayDau(decayDauInput),
-                                         isWeakDecayDau(weakDecayDauInput),
-                                         isUsedInCascading(isUsedInCascadingInput),
-                                         nSiliconHits(nSiliconHitsInput),
-                                         nTPCHits(nTPCHitsInput),
-                                         trackType(trackTypeInput) {}
+                TrackType trackTypeInput = TrackType::kRecoPrimary) : o2::track::TrackParCov(src),
+                                                                      mcLabel{label},
+                                                                      timeEst{time, timeError},
+                                                                      isDecayDau(decayDauInput),
+                                                                      isWeakDecayDau(weakDecayDauInput),
+                                                                      isUsedInCascading(isUsedInCascadingInput),
+                                                                      nSiliconHits(nSiliconHitsInput),
+                                                                      nTPCHits(nTPCHitsInput),
+                                                                      trackType(trackTypeInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
@@ -842,7 +841,8 @@ struct OnTheFlyTracker {
   /// \param mcParticles the set of MC particles to compute dN/deta from
   /// \param histPath the path to the histogram where the computed dN/deta value will be stored for QA purposes
   template <typename McParticleType>
-  void computeDNDEta(float& dNdEta, McParticleType const& mcParticles, const std::string histPath) {
+  void computeDNDEta(float& dNdEta, McParticleType const& mcParticles, const std::string histPath)
+  {
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.eta()) > multEtaRange) {
         continue;
@@ -874,7 +874,6 @@ struct OnTheFlyTracker {
 
     dNdEta /= (multEtaRange * 2.0f);
     getHist(TH1, histPath + "hLUTMultiplicity")->Fill(dNdEta);
-
   }
 
   /// Function to study the cascade decay and fill the relevant histograms and output track vector
@@ -981,8 +980,7 @@ struct OnTheFlyTracker {
         isReco[i] = true;
 
         for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits() && cascadeDecaySettings.doXiQA; ih++) {
-          getHist(TH2, histPath + "hFastTrackerHits")->Fill(fastTracker[icfg]->GetHitZ(ih), 
-                       std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
+          getHist(TH2, histPath + "hFastTrackerHits")->Fill(fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
         }
       } else {
         isReco[i] = true;
@@ -1024,8 +1022,8 @@ struct OnTheFlyTracker {
       // n-2: pion from lambda
       // n-3: pion from xi
       thisCascade.bachelorId = trackTableOffset + 1;
-      thisCascade.positiveId = trackTableOffset + 2;      // Lambda daughters
-      thisCascade.negativeId = trackTableOffset + 3;      // Lambda daughters
+      thisCascade.positiveId = trackTableOffset + 2; // Lambda daughters
+      thisCascade.negativeId = trackTableOffset + 3; // Lambda daughters
       thisCascade.cascadeTrackId = trackTableOffset + 4;
 
       // use DCA fitters
@@ -1237,8 +1235,12 @@ struct OnTheFlyTracker {
         }
 
         // Reset indices
-        if (!isReco[1]) { thisCascade.negativeId = -1; }
-        if (!isReco[2]) { thisCascade.positiveId = -1; }
+        if (!isReco[1]) {
+          thisCascade.negativeId = -1;
+        }
+        if (!isReco[2]) {
+          thisCascade.positiveId = -1;
+        }
 
         int nCand = 0;
         bool kinkFitterOK = true;
@@ -1267,8 +1269,8 @@ struct OnTheFlyTracker {
           o2::track::TrackParCov newCascadeTrack = fitter.getTrack(0); // (cascade)
           std::array<float, 3> kinkVtx = {-999, -999, -999};
           kinkVtx = fitter.getPCACandidatePos();
-          thisCascade.dcaV0dau = -1.f;                                       // unknown
-          thisCascade.v0radius = -1.f;                                       // unknown
+          thisCascade.dcaV0dau = -1.f; // unknown
+          thisCascade.v0radius = -1.f; // unknown
           thisCascade.dcacascdau = std::sqrt(fitter.getChi2AtPCACandidate());
           thisCascade.cascradius = std::hypot(kinkVtx[0], kinkVtx[1]);
           thisCascade.cascradiusMC = xiDecayRadius2D;
@@ -1319,7 +1321,7 @@ struct OnTheFlyTracker {
       if (isReco[1]) {
         getHist(TH2, histPath + "hRecoPiFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[1].Pt());
         o2::track::TrackParCov trackParametrizationCascProng1(tracksCascadeProngs[1]);
-        if (populateTracksDCA && tracksCascadeProngs[1].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {  // FIXME: this is not the right trackParametrization, need to propagate the negative pion track
+        if (populateTracksDCA && tracksCascadeProngs[1].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the negative pion track
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
           getHist(TH2, histPath + "h2dDCAxyCascadeNegative")->Fill(trackParametrizationCascProng1.getPt(), dcaXY * 1e+4); // in microns, please
@@ -1329,7 +1331,7 @@ struct OnTheFlyTracker {
       if (isReco[2]) {
         getHist(TH2, histPath + "hRecoPrFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[2].Pt());
         o2::track::TrackParCov trackParametrizationCascProng2(tracksCascadeProngs[2]);
-        if (populateTracksDCA && tracksCascadeProngs[2].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {  // FIXME: this is not the right trackParametrization, need to propagate the positive proton track
+        if (populateTracksDCA && tracksCascadeProngs[2].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the positive proton track
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
           getHist(TH2, histPath + "h2dDCAxyCascadePositive")->Fill(trackParametrizationCascProng2.getPt(), dcaXY * 1e+4); // in microns, please
@@ -1365,10 +1367,11 @@ struct OnTheFlyTracker {
   template <typename McParticleType>
   void studyV0(const int trackTableOffset,
                const McParticleType& mcParticle,
-               std::vector<TrackAlice3>& tracksV0Daugs, 
+               std::vector<TrackAlice3>& tracksV0Daugs,
                int icfg,
                int dNdEta,
-               float eventCollisionTimeNS) {
+               float eventCollisionTimeNS)
+  {
 
     o2::track::TrackParCov trackParCov;
     o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
@@ -1439,9 +1442,12 @@ struct OnTheFlyTracker {
         nV0SiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
         nV0TPCHits[i] = fastTracker[icfg]->GetNGasPoints();
 
-        if (nV0SiliconHits[i] < fastTrackerSettings.minSiliconHits) continue;
-        if (nV0SiliconHits[i] < fastTrackerSettings.minSiliconHitsIfTPCUsed) continue;
-        if (nV0TPCHits[i] < fastTrackerSettings.minTPCClusters) continue;
+        if (nV0SiliconHits[i] < fastTrackerSettings.minSiliconHits)
+          continue;
+        if (nV0SiliconHits[i] < fastTrackerSettings.minSiliconHitsIfTPCUsed)
+          continue;
+        if (nV0TPCHits[i] < fastTrackerSettings.minTPCClusters)
+          continue;
         isV0Reco[i] = true;
 
         if (v0DecaySettings.doV0QA) { // QA
@@ -1607,7 +1613,8 @@ struct OnTheFlyTracker {
   /// \param primaryVertex the output variable where the computed primary vertex will be stored
   /// \param icfg index of the current configuration, used for histogram filling
   template <typename McCollisionType, typename TrackType>
-  void computeVertex(McCollisionType& mcCollision, const std::vector<TrackType>& prmTrks, o2::vertexing::PVertex& primaryVertex, const int icfg) {
+  void computeVertex(McCollisionType& mcCollision, const std::vector<TrackType>& prmTrks, o2::vertexing::PVertex& primaryVertex, const int icfg)
+  {
 
     if (!enablePrimaryVertexing) {
       primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
@@ -1673,7 +1680,8 @@ struct OnTheFlyTracker {
   /// \param tracks the vector of tracks to be processed
   /// \param primaryVertex the primary vertex position, used for DCA calculation
   /// \param icfg index of the current configuration, used for histogram filling
-  void fillTracksInfo(std::vector<TrackAlice3> const& tracks, o2::vertexing::PVertex const& primaryVertex, const int icfg) {
+  void fillTracksInfo(std::vector<TrackAlice3> const& tracks, o2::vertexing::PVertex const& primaryVertex, const int icfg)
+  {
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
 
     for (const auto& trackParCov : tracks) {
@@ -1765,8 +1773,8 @@ struct OnTheFlyTracker {
 
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
-      const bool pdgsToBeHandled = longLivedToBeHandled || 
-                                   (enableNucleiSmearing && nucleiToBeHandled) || 
+      const bool pdgsToBeHandled = longLivedToBeHandled ||
+                                   (enableNucleiSmearing && nucleiToBeHandled) ||
                                    (cascadeDecaySettings.decayXi && isCascade) ||
                                    (v0DecaySettings.decayV0 && isV0);
       if (!pdgsToBeHandled) {
@@ -1799,10 +1807,14 @@ struct OnTheFlyTracker {
         }
         getHist(TH1, histPath + "hPtGenerated")->Fill(mcParticle.pt());
         getHist(TH1, histPath + "hPhiGenerated")->Fill(mcParticle.phi());
-        if (std::abs(mcParticle.pdgCode()) == kElectron)  getHist(TH1, histPath + "hPtGeneratedEl")->Fill(mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == kPiPlus)    getHist(TH1, histPath + "hPtGeneratedPi")->Fill(mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == kKPlus)     getHist(TH1, histPath + "hPtGeneratedKa")->Fill(mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == kProton)    getHist(TH1, histPath + "hPtGeneratedPr")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kElectron)
+          getHist(TH1, histPath + "hPtGeneratedEl")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+          getHist(TH1, histPath + "hPtGeneratedPi")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
+          getHist(TH1, histPath + "hPtGeneratedKa")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kProton)
+          getHist(TH1, histPath + "hPtGeneratedPr")->Fill(mcParticle.pt());
 
         if (!reconstructed && !processUnreconstructedTracks) {
           continue;
@@ -1810,10 +1822,14 @@ struct OnTheFlyTracker {
 
         // LOG(info) << "Particle with PDG " << mcParticle.pdgCode() << (reconstructed ? " was reconstructed." : " was not reconstructed.");
         getHist(TH1, histPath + "hPtReconstructed")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kElectron)  getHist(TH1, histPath + "hPtReconstructedEl")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kPiPlus)    getHist(TH1, histPath + "hPtReconstructedPi")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kKPlus)     getHist(TH1, histPath + "hPtReconstructedKa")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kProton)    getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kElectron)
+          getHist(TH1, histPath + "hPtReconstructedEl")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+          getHist(TH1, histPath + "hPtReconstructedPi")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
+          getHist(TH1, histPath + "hPtReconstructedKa")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kProton)
+          getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
       }
       if (doExtraQA) {
         getHist(TH2, histPath + "h2dPtRes")->Fill(trackParCov.getPt(), (trackParCov.getPt() - mcParticle.pt()) / trackParCov.getPt());
@@ -1881,7 +1897,7 @@ struct OnTheFlyTracker {
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // populate tracks
-    fillTracksInfo(recoPrimaries,  primaryVertex, icfg);
+    fillTracksInfo(recoPrimaries, primaryVertex, icfg);
     fillTracksInfo(ghostPrimaries, primaryVertex, icfg);
 
     // do bookkeeping of fastTracker tracking
