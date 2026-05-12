@@ -20,20 +20,14 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
+#include "Framework/runDataProcessing.h"
 
-#include <cstdlib>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <math.h>
@@ -84,7 +78,8 @@ DECLARE_SOA_COLUMN(D0MD, d0MD, float);
 DECLARE_SOA_COLUMN(D0PtD, d0PtD, float);
 DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
 DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
-DECLARE_SOA_COLUMN(D0Reflection, d0Reflection, int);
+DECLARE_SOA_COLUMN(D0MatchedFrom, d0MatchedFrom, int);
+DECLARE_SOA_COLUMN(D0SelectedAs, d0SelectedAs, int);
 } // namespace d0Info
 
 DECLARE_SOA_TABLE(D0Tables, "AOD", "D0TABLE",
@@ -98,6 +93,20 @@ DECLARE_SOA_TABLE(D0Tables, "AOD", "D0TABLE",
                   d0Info::D0Eta,
                   d0Info::D0Phi,
                   d0Info::D0Y);
+
+DECLARE_SOA_TABLE(D0McDTables, "AOD", "D0MCDTABLE",
+                  o2::soa::Index<>,
+                  collisionInfo::CollisionTableId,
+                  d0Info::D0PromptBDT,
+                  d0Info::D0NonPromptBDT,
+                  d0Info::D0BkgBDT,
+                  d0Info::D0M,
+                  d0Info::D0Pt,
+                  d0Info::D0Eta,
+                  d0Info::D0Phi,
+                  d0Info::D0Y,
+                  d0Info::D0MatchedFrom,
+                  d0Info::D0SelectedAs);
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
                   o2::soa::Index<>,
@@ -160,9 +169,10 @@ DECLARE_SOA_TABLE_STAGED(JetMatchedTables, "JETMATCHEDTABLE",
 struct JetCorrelationD0 {
   // Define new table
   Produces<aod::CollisionTables> tableCollision;
-  Produces<aod::MatchCollTables> tableMatchedCollision;
   Produces<aod::McCollisionTables> tableMcCollision;
+  Produces<aod::MatchCollTables> tableMatchedCollision;
   Produces<aod::D0Tables> tableD0;
+  Produces<aod::D0McDTables> tableD0McDetector;
   Produces<aod::D0McPTables> tableD0McParticle;
   Produces<aod::JetTables> tableJet;
   Produces<aod::JetMcPTables> tableJetMcParticle;
@@ -318,7 +328,25 @@ struct JetCorrelationD0 {
       }
       const auto scores = d0Candidate.mlScores();
       fillD0Histograms(d0Candidate, scores);
-      tableD0(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
+
+      int matchedFrom = 0;
+      int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
+      int selectedAs = 0;
+
+      if (d0Candidate.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
+        matchedFrom = 1;
+      } 
+      else if (d0Candidate.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
+        matchedFrom = -1;
+      }
+      if (d0Candidate.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
+        selectedAs = 1;
+      } 
+      else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+        selectedAs = -1;
+      }
+
+      tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
               scores[2],
               scores[1],
               scores[0],
@@ -326,7 +354,9 @@ struct JetCorrelationD0 {
               d0Candidate.pt(),
               d0Candidate.eta(),
               d0Candidate.phi(),
-              d0Candidate.y());
+              d0Candidate.y(),
+              matchedFrom,
+              selectedAs);
       for (const auto& jet : jets) {
         if (jet.pt() < jetPtCutMin) {
           continue;
@@ -337,7 +367,7 @@ struct JetCorrelationD0 {
         }
         fillJetHistograms(jet, dPhi);
         tableJet(tableCollision.lastIndex(),
-                 tableD0.lastIndex(),
+                 tableD0McDetector.lastIndex(),
                  jet.pt(),
                  jet.eta(),
                  jet.phi(),
@@ -417,9 +447,6 @@ struct JetCorrelationD0 {
         if (McDJet.has_matchedJetGeo()) { // geometric matching
           for (auto const& McPJet : McDJet.template matchedJetGeo_as<aod::ChargedMCParticleLevelJets>()) {
             float dPhiP = RecoDecay::constrainAngle(McPJet.phi() - d0Particle.phi(), -o2::constants::math::PI);
-            // if (std::abs(dPhiP - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
-            //   continue;
-            // }
             tableJetMatched(tableMatchedCollision.lastIndex(),
                             McDJet.pt(),
                             McDJet.eta(),
