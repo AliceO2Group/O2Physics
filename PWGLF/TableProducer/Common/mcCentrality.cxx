@@ -168,24 +168,22 @@ struct McCentrality {
     // const float nFV0A = mCounter.countFV0A(mcParticles);
 
     if (fillFt0M) {
-      float valueCentFT0M = 105.0f;
-      if (h1dFT0M)
-        valueCentFT0M = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFT0M));
+      const float valueCentFT0M = h1dFT0M ? h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFT0M)) : 105.0f;
       centFT0M(valueCentFT0M);
       histos.fill(HIST("FT0M/percentile"), valueCentFT0M);
       histos.fill(HIST("FT0M/percentilevsMult"), valueCentFT0M, nFT0M);
     }
     if (fillFt0A) {
-      float valueCentFT0A = 105.0f;
-      if (h1dFT0A)
-        valueCentFT0A = h1dFT0A->GetBinContent(h1dFT0A->FindBin(nFT0A));
+      const float valueCentFT0A = h1dFT0A ? h1dFT0A->GetBinContent(h1dFT0A->FindBin(nFT0A)) : 105.0f;
       centFT0A(valueCentFT0A);
+      histos.fill(HIST("FT0A/percentile"), valueCentFT0A);
+      histos.fill(HIST("FT0A/percentilevsMult"), valueCentFT0A, nFT0A);
     }
     if (fillFt0C) {
-      float valueCentFT0C = 105.0f;
-      if (h1dFT0C)
-        valueCentFT0C = h1dFT0C->GetBinContent(h1dFT0C->FindBin(nFT0C));
+      const float valueCentFT0C = h1dFT0C ? h1dFT0C->GetBinContent(h1dFT0C->FindBin(nFT0C)) : 105.0f;
       centFT0C(valueCentFT0C);
+      histos.fill(HIST("FT0C/percentile"), valueCentFT0C);
+      histos.fill(HIST("FT0C/percentilevsMult"), valueCentFT0C, nFT0C);
     }
     // const float valueCentFV0A = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFV0A));
     // centFV0A(valueCentFV0A);
