@@ -28,9 +28,10 @@
 //  mc:
 // same as Data and o2-analysis-mccollision-converter
 
+#include "PWGLF/DataModel/LFSlimNucleiTables.h"
+
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGLF/DataModel/LFSlimNucleiTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
@@ -47,18 +48,18 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <Math/Vector4D.h>
 #include <TMCProcess.h>
@@ -83,36 +84,36 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
 struct NucleusCandidate {
-  int globalIndex;
-  int collTrackIndex;
-  float pt;
-  float eta;
-  float phi;
-  float tpcInnerParam;
-  float beta;
-  float zVertex;
-  int nContrib;
-  float DCAxy;
-  float DCAz;
-  float TPCsignal;
-  float ITSchi2;
-  float TPCchi2;
-  float TOFchi2;
-  std::array<float, 5> nSigmaTPC;
-  std::array<float, 5> tofMasses;
-  bool fillTree;
-  bool fillDCAHist;
-  bool correctPV;
-  bool isSecondary;
-  bool fromWeakDecay;
-  uint16_t flags;
-  uint8_t TPCfindableCls;
-  uint8_t TPCcrossedRows;
-  uint8_t ITSclsMap;
-  uint8_t TPCnCls;
-  uint8_t TPCnClsShared;
-  uint8_t ITSnCls;
-  uint32_t clusterSizesITS;
+  int globalIndex = 0;
+  int collTrackIndex = 0;
+  float pt = 0.f;
+  float eta = 0.f;
+  float phi = 0.f;
+  float tpcInnerParam = 0.f;
+  float beta = 0.f;
+  float zVertex = 0.f;
+  int nContrib = 0;
+  float DCAxy = 0.f;
+  float DCAz = 0.f;
+  float TPCsignal = 0.f;
+  float ITSchi2 = 0.f;
+  float TPCchi2 = 0.f;
+  float TOFchi2 = 0.f;
+  std::array<float, 5> nSigmaTPC{};
+  std::array<float, 5> tofMasses{};
+  bool fillTree = false;
+  bool fillDCAHist = false;
+  bool correctPV = false;
+  bool isSecondary = false;
+  bool fromWeakDecay = false;
+  uint16_t flags = 0;
+  uint8_t TPCfindableCls = 0;
+  uint8_t TPCcrossedRows = 0;
+  uint8_t ITSclsMap = 0;
+  uint8_t TPCnCls = 0;
+  uint8_t TPCnClsShared = 0;
+  uint8_t ITSnCls = 0;
+  uint32_t clusterSizesITS = 0;
 };
 
 namespace nuclei
