@@ -28,7 +28,7 @@ namespace antin_cex
 // Metadata
 DECLARE_SOA_COLUMN(IsCex, isCex, bool);            // 1=CEX (from antin), 0=BG
 DECLARE_SOA_COLUMN(MotherPdg, motherPdg, int32_t); // mother PDG
-DECLARE_SOA_COLUMN(MotherP, motherP, float);        // mother P
+DECLARE_SOA_COLUMN(MotherP, motherP, float);       // mother P
 DECLARE_SOA_COLUMN(ColId, colId, int32_t);         // mcCollisionId
 DECLARE_SOA_COLUMN(PId, pId, int32_t);             // proton MC id
 DECLARE_SOA_COLUMN(AntipId, antipId, int32_t);     // antiproton MC id
