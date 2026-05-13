@@ -142,7 +142,6 @@ struct HfTaskElectronWeakBoson {
   // QA for Z->ee
   Configurable<bool> enableZeeTrkRecoQA{"enableZeeTrkRecoQA", false, "Enable QA for track info Z->ee reconstruction"};
   Configurable<bool> enableZeeEmcRecoQA{"enableZeeEmcRecoQA", false, "Enable QA for Emc info Z->ee reconstruction"};
-  Configurable<int> ZeeRecoQAtype{"ZeeRecoQAtype", 1, "QA for Z->ee reconstruction"};
   Configurable<float> massZMinQA{"massZMinQA", 0.1, "minimum mass cut for Zee Reco QA"};
   // UE
   Configurable<int> nRandomCones{"nRandomCones", 100, "number of random cones"};
@@ -359,7 +358,7 @@ struct HfTaskElectronWeakBoson {
                             float energyUE)
   {
     double energySum = 0.0;
-    double energySum_excl = 0.0;
+    double energySumExcl = 0.0;
     double isoEnergy = 10.0;
     double const etaAssCluster = cluster.eta();
     double const phiAssCluster = cluster.phi();
@@ -380,9 +379,9 @@ struct HfTaskElectronWeakBoson {
         energySum += associateCluster.energy();
       }
     }
-    energySum_excl = energySum - cluster.energy();
+    energySumExcl = energySum - cluster.energy();
     if (energySum > 0) {
-      isoEnergy = (energySum_excl - energyUE) / cluster.energy();
+      isoEnergy = (energySumExcl - energyUE) / cluster.energy();
     }
 
     // LOG(info) <<"clustE = " << cluster.energy() << " ; energySum = " << energySum << " ; nclust in Cone = " <<  nclustSum - 1  << " ; UE = " << energyUE << " ; isoEnergy = " << isoEnergy;
