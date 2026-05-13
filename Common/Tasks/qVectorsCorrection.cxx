@@ -418,8 +418,8 @@ struct qVectorsCorrection {
     auto epRefBTwistInd = helperEP.GetEventPlane(getQVecRe(vec, RefBInd + 2), getQVecIm(vec, RefBInd + 2), nmode);
     auto epRefBFinalInd = helperEP.GetEventPlane(getQVecRe(vec, RefBInd + 3), getQVecIm(vec, RefBInd + 3), nmode);
 
-    auto occ  = vec.trackOccupancyInTimeRange();
-    auto cent = vec.cent(); 
+    auto occ = vec.trackOccupancyInTimeRange();
+    auto cent = vec.cent();
 
     if (nmode == 2) {
       if (vec.qvecAmp()[DetId] > 1e-8) {
@@ -643,7 +643,7 @@ struct qVectorsCorrection {
     }
   }
 
-  template<typename TCollision>
+  template <typename TCollision>
   void processColls(TCollision const& flowQVec, MyTracks const& tracks)
   {
     histosQA.fill(HIST("histCentFull"), flowQVec.cent());
