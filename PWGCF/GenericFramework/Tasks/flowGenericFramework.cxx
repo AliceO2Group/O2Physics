@@ -148,9 +148,11 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A, 4:NTPV, 5:NGlobal, 6:MFT")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgUseNchCorrection, int, 1, "Use correction for Nch; 0: Use size of tracks table, 1: Use efficiency-corrected Nch values, 2: Use uncorrected Nch values");
-  O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Fill histograms on a run-by-run basis")
-  O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
+  O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Use run-by-run NUA")
+  struct : ConfigurableGroup{
+             O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
+               O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
+                 O2_DEFINE_CONFIGURABLE(cfgFillRunByRunQA, bool, false, "Fill histograms on a run-by-run basis")} cfgFill;
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
@@ -558,51 +560,65 @@ struct FlowGenericFramework {
     fPtAxis = new TAxis(ptbins, &o2::analysis::gfw::ptbinning[0]);
 
     if (doprocessMCGen || doprocessOnTheFly) {
-      registryQA.add("MCGen/before/pt_gen", "", {HistType::kTH1D, {ptAxis}});
-      registryQA.add("MCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registryQA.addClone("MCGen/before/", "MCGen/after/");
-      registry.add("MCGen/after/pt_centrality_K0_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-      registry.add("MCGen/after/pt_centrality_Lambda_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-      registry.add("MCGen/after/pt_centrality_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-      registry.add("MCGen/after/pt_centrality_proton_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-      if (doprocessOnTheFly)
-        registryQA.add("MCGen/impactParameter", "", {HistType::kTH2D, {{bAxis, nchAxis}}});
+      if (cfgFill.cfgFillQA) {
+        registryQA.add("MCGen/before/pt_gen", "", {HistType::kTH1D, {ptAxis}});
+        registryQA.add("MCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        registryQA.addClone("MCGen/before/", "MCGen/after/");
+        registry.add("MCGen/after/pt_centrality_K0_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_Lambda_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_proton_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        if (doprocessOnTheFly)
+          registryQA.add("MCGen/impactParameter", "", {HistType::kTH2D, {{bAxis, nchAxis}}});
+      }
     }
     if (doprocessMCReco || doprocessData || doprocessRun2) {
-      registryQA.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registryQA.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
-      registryQA.add("trackQA/before/pt_phi", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
-      registryQA.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
-      registryQA.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
-      registryQA.add("trackQA/before/nTPCClusters", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
-      registryQA.add("trackQA/before/nITSClusters", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
-      registryQA.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+      if (cfgFill.cfgFillQA) {
+        registryQA.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        registryQA.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
+        registryQA.add("trackQA/before/pt_phi", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
+        registryQA.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+        registryQA.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
+        registryQA.add("trackQA/before/nTPCClusters", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+        registryQA.add("trackQA/before/nITSClusters", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
+        registryQA.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
 
-      registryQA.addClone("trackQA/before/", "trackQA/after/");
-      registryQA.add("trackQA/after/pt_ref", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
-      registryQA.add("trackQA/after/pt_poi", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
-      registryQA.add("trackQA/after/Nch_corrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
-      registryQA.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
-      registryQA.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-      registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-      registryQA.add("trackQA/after/etaV0Daughters", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-      if (doprocessMCReco) {
-        registry.add("trackQA/after/pt_centrality_K0_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("trackQA/after/pt_centrality_Lambda_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("trackQA/after/pt_centrality_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("trackQA/after/pt_centrality_proton", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registryQA.addClone("trackQA/before/", "trackQA/after/");
+        registryQA.add("trackQA/after/pt_ref", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
+        registryQA.add("trackQA/after/pt_poi", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
+        registryQA.add("trackQA/after/Nch_corrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
+        registryQA.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
+        registryQA.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+        registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+        registryQA.add("trackQA/after/etaV0Daughters", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+        if (doprocessMCReco) {
+          registry.add("trackQA/after/pt_centrality_K0_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_Lambda_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_proton", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        }
+        if (!cfgFill.cfgFillRunByRunQA) {
+          if (cfgUsePID) {
+            registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+            registryQA.add<TH3>("phi_eta_vtxz_ch", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+            registryQA.add<TH3>("phi_eta_vtxz_pi", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+            registryQA.add<TH3>("phi_eta_vtxz_ka", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+            registryQA.add<TH3>("phi_eta_vtxz_pr", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+          } else {
+            registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+          }
+        }
+        registryQA.add("eventQA/before/globalTracks_centT0C", "; FT0C centrality (%); N_{global}", {HistType::kTH2D, {centAxis, nchAxis}});
+        registryQA.add("eventQA/before/PVTracks_centT0C", "; FT0C centrality (%); N_{PV}", {HistType::kTH2D, {centAxis, multpvAxis}});
+        registryQA.add("eventQA/before/globalTracks_PVTracks", "; N_{PV}; N_{global}", {HistType::kTH2D, {multpvAxis, nchAxis}});
+        registryQA.add("eventQA/before/globalTracks_multT0A", "; multT0A; N_{global}", {HistType::kTH2D, {t0aAxis, nchAxis}});
+        registryQA.add("eventQA/before/globalTracks_multV0A", "; multV0A; N_{global}", {HistType::kTH2D, {v0aAxis, nchAxis}});
+        registryQA.add("eventQA/before/multV0A_multT0A", "; multV0A; multT0A", {HistType::kTH2D, {t0aAxis, v0aAxis}});
+        registryQA.add("eventQA/before/multT0C_centT0C", "; multT0C; FT0C centrality (%)", {HistType::kTH2D, {centAxis, t0cAxis}});
+        registryQA.add("eventQA/before/occ_mult_cent", "; occupancy; N_{ch}; centrality (%)", {HistType::kTH3D, {occAxis, nchAxis, centAxis}});
       }
-
       registryQA.add("eventQA/before/centrality", "; centrality (%); Counts", {HistType::kTH1D, {centAxis}});
       registryQA.add("eventQA/before/multiplicity", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
-      registryQA.add("eventQA/before/globalTracks_centT0C", "; FT0C centrality (%); N_{global}", {HistType::kTH2D, {centAxis, nchAxis}});
-      registryQA.add("eventQA/before/PVTracks_centT0C", "; FT0C centrality (%); N_{PV}", {HistType::kTH2D, {centAxis, multpvAxis}});
-      registryQA.add("eventQA/before/globalTracks_PVTracks", "; N_{PV}; N_{global}", {HistType::kTH2D, {multpvAxis, nchAxis}});
-      registryQA.add("eventQA/before/globalTracks_multT0A", "; multT0A; N_{global}", {HistType::kTH2D, {t0aAxis, nchAxis}});
-      registryQA.add("eventQA/before/globalTracks_multV0A", "; multV0A; N_{global}", {HistType::kTH2D, {v0aAxis, nchAxis}});
-      registryQA.add("eventQA/before/multV0A_multT0A", "; multV0A; multT0A", {HistType::kTH2D, {t0aAxis, v0aAxis}});
-      registryQA.add("eventQA/before/multT0C_centT0C", "; multT0C; FT0C centrality (%)", {HistType::kTH2D, {centAxis, t0cAxis}});
-      registryQA.add("eventQA/before/occ_mult_cent", "; occupancy; N_{ch}; centrality (%)", {HistType::kTH3D, {occAxis, nchAxis, centAxis}});
       registryQA.addClone("eventQA/before/", "eventQA/after/");
       registryQA.add("eventQA/eventSel", "Number of Events;; Counts", {HistType::kTH1D, {{15, 0.5, 15.5}}});
       registryQA.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(FilteredEvent, "Filtered event");
@@ -621,33 +637,22 @@ struct FlowGenericFramework {
       registryQA.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(MultCuts, "after Mult cuts");
       registryQA.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(TrackCent, "has track + within cent");
 
-      if (!cfgRunByRun) {
-        if (cfgUsePID) {
-          registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-          registryQA.add<TH3>("phi_eta_vtxz_ch", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-          registryQA.add<TH3>("phi_eta_vtxz_pi", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-          registryQA.add<TH3>("phi_eta_vtxz_ka", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-          registryQA.add<TH3>("phi_eta_vtxz_pr", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-        } else {
-          registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-        }
-      }
-
       AxisSpec axisK0Mass = {resoSwitchVals[MassBins][K0], resoCutVals[MassMin][K0], resoCutVals[MassMax][K0]};
       AxisSpec axisLambdaMass = {resoSwitchVals[MassBins][Lambda], resoCutVals[MassMin][Lambda], resoCutVals[MassMax][Lambda]};
 
       // QA histograms for V0s
       if (resoSwitchVals[UseParticle][K0]) {
-        registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
-        registryQA.add("K0/PiMinusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
-        registryQA.add("K0/PiPlusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
-        registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
-        registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
-        registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
-        registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
-        registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
-
+        if (cfgFill.cfgFillQA) {
+          registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
+          registryQA.add("K0/PiMinusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
+          registryQA.add("K0/PiPlusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
+          registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
+          registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
+          registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
+          registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
+          registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
+          registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
+        }
         registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{12, 0.5, 12.5}}});
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillCandidate, "K0 candidates");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
@@ -664,23 +669,24 @@ struct FlowGenericFramework {
       }
 
       if (resoSwitchVals[UseParticle][Lambda]) {
-        registryQA.add("Lambda/PrPlusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
-        registryQA.add("Lambda/PiMinusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
-        registryQA.add("Lambda/PrPlusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
-        registryQA.add("Lambda/PiMinusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
-        registryQA.add("Lambda/hLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
-        registryQA.add("Lambda/hLambdaEta", "", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("Lambda/hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
-        registryQA.add("Lambda/PiPlusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
-        registryQA.add("Lambda/PrMinusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
-        registryQA.add("Lambda/PiPlusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
-        registryQA.add("Lambda/PrMinusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
-        registryQA.add("Lambda/hAntiLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
-        registryQA.add("Lambda/hAntiLambdaEta", "", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("Lambda/hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
-        registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
-        registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
-
+        if (cfgFill.cfgFillQA) {
+          registryQA.add("Lambda/PrPlusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
+          registryQA.add("Lambda/PiMinusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
+          registryQA.add("Lambda/PrPlusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
+          registryQA.add("Lambda/PiMinusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
+          registryQA.add("Lambda/hLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
+          registryQA.add("Lambda/hLambdaEta", "", {HistType::kTH1D, {etaAxis}});
+          registryQA.add("Lambda/hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
+          registryQA.add("Lambda/PiPlusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
+          registryQA.add("Lambda/PrMinusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
+          registryQA.add("Lambda/PiPlusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
+          registryQA.add("Lambda/PrMinusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
+          registryQA.add("Lambda/hAntiLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
+          registryQA.add("Lambda/hAntiLambdaEta", "", {HistType::kTH1D, {etaAxis}});
+          registryQA.add("Lambda/hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
+          registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
+          registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
+        }
         registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{12, 0.5, 12.5}}});
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillCandidate, "Lambda candidates");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
@@ -1100,7 +1106,7 @@ struct FlowGenericFramework {
         return false;
       }
       registryQA.fill(HIST("eventQA/eventSel"), TVXinTRD);
-      if (cfgRunByRun)
+      if (cfgFill.cfgFillRunByRunQA)
         th1sList[run][EventSel]->Fill(TVXinTRD);
     }
     // Cut on event selection flags
@@ -1110,7 +1116,7 @@ struct FlowGenericFramework {
       if (!collision.selection_bit(cut.flag))
         return false;
       registryQA.fill(HIST("eventQA/eventSel"), cut.histBin);
-      if (cfgRunByRun)
+      if (cfgFill.cfgFillRunByRunQA)
         th1sList[run][EventSel]->Fill(cut.histBin);
     }
     // Cut on vertex
@@ -1166,7 +1172,7 @@ struct FlowGenericFramework {
     if (!(cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) > fMultGlobalT0ACutHigh->Eval(multTrk))
       return false;
     registryQA.fill(HIST("eventQA/eventSel"), MultCuts);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(MultCuts);
     return true;
   }
@@ -1185,11 +1191,11 @@ struct FlowGenericFramework {
 
       phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
       phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
-      if (cfgFillQA)
+      if (cfgFill.cfgFillQA)
         registryQA.fill(HIST("trackQA/before/pt_phi"), track.pt(), phimodn);
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
         return false; // reject track
-      if (cfgFillQA)
+      if (cfgFill.cfgFillQA)
         registryQA.fill(HIST("trackQA/after/pt_phi"), track.pt(), phimodn);
     }
     if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgTrackCuts.cfgDCAxyNSigma / 7. * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1))))
@@ -1221,7 +1227,7 @@ struct FlowGenericFramework {
       double ptpidmaxs[] = {o2::analysis::gfw::ptpoiup, o2::analysis::gfw::ptpoiup, 6.0, 6.0};                    // max pt for ch, pi, ka, pr
       bool withinPtPOI = (ptpidmins[pid_index] < track.pt()) && (track.pt() < ptpidmaxs[pid_index]);              // within POI pT range
       bool withinPtRef = (o2::analysis::gfw::ptreflow < track.pt()) && (track.pt() < o2::analysis::gfw::ptrefup); // within RF pT range
-      if (cfgRunByRun) {
+      if (cfgFill.cfgFillRunByRunQA) {
         if (withinPtRef && !pid_index)
           th3sList[run][NUAref]->Fill(track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
         if (withinPtPOI)
@@ -1247,7 +1253,7 @@ struct FlowGenericFramework {
         }
       }
     } else {
-      if (cfgRunByRun)
+      if (cfgFill.cfgFillRunByRunQA)
         th3sList[run][NUAref]->Fill(track.phi(), track.eta(), vtxz);
       else
         registryQA.fill(HIST("phi_eta_vtxz_ref"), track.phi(), track.eta(), vtxz);
@@ -1257,6 +1263,7 @@ struct FlowGenericFramework {
 
   void createRunByRunHistograms(const int run)
   {
+    LOGF(info, "Creating histograms for run %d", run);
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, cfgEta->first, cfgEta->second, "#eta"};
@@ -1270,18 +1277,22 @@ struct FlowGenericFramework {
     histos[VtxZ] = registryQA.add<TH1>(Form("%d/vtxz", run), "", {HistType::kTH1D, {vtxAxis}});
     histos[Mult] = registryQA.add<TH1>(Form("%d/mult", run), "", {HistType::kTH1D, {nchAxis}});
     histos[Cent] = registryQA.add<TH1>(Form("%d/cent", run), "", {HistType::kTH1D, {centAxis}});
-    histos[EventSel] = registryQA.add<TH1>(Form("%d/eventSel", run), "Number of Events;; Counts", {HistType::kTH1D, {{11, 0, 11}}});
-    histos[EventSel]->GetXaxis()->SetBinLabel(1, "Filtered event");
-    histos[EventSel]->GetXaxis()->SetBinLabel(2, "sel8");
-    histos[EventSel]->GetXaxis()->SetBinLabel(3, "occupancy");
-    histos[EventSel]->GetXaxis()->SetBinLabel(4, "TVXinTRD");
-    histos[EventSel]->GetXaxis()->SetBinLabel(5, "NoSameBunchPileup");
-    histos[EventSel]->GetXaxis()->SetBinLabel(6, "IsGoodZvtxFT0vsPV");
-    histos[EventSel]->GetXaxis()->SetBinLabel(7, "NoCollInTimeRangeStandard");
-    histos[EventSel]->GetXaxis()->SetBinLabel(8, "IsVertexITSTPC");
-    histos[EventSel]->GetXaxis()->SetBinLabel(9, "IsGoodITSLayersAll");
-    histos[EventSel]->GetXaxis()->SetBinLabel(10, "after Mult cuts");
-    histos[EventSel]->GetXaxis()->SetBinLabel(11, "has track + within cent");
+    histos[EventSel] = registryQA.add<TH1>(Form("%d/eventSel", run), "Number of Events;; Counts", {HistType::kTH1D, {{15, 0.5, 15.5}}});
+    histos[EventSel]->GetXaxis()->SetBinLabel(FilteredEvent, "Filtered event");
+    histos[EventSel]->GetXaxis()->SetBinLabel(Sel8, "sel8");
+    histos[EventSel]->GetXaxis()->SetBinLabel(Occupancy, "occupancy");
+    histos[EventSel]->GetXaxis()->SetBinLabel(TVXinTRD, "TVXinTRD");
+    histos[EventSel]->GetXaxis()->SetBinLabel(NoSameBunchPileup, "NoSameBunchPileup");
+    histos[EventSel]->GetXaxis()->SetBinLabel(IsGoodZvtxFT0vsPV, "IsGoodZvtxFT0vsPV");
+    histos[EventSel]->GetXaxis()->SetBinLabel(NoCollInTimeRangeStandard, "NoCollInTimeRangeStandard");
+    histos[EventSel]->GetXaxis()->SetBinLabel(NoCollInRofStandard, "NoCollInRofStandard");
+    histos[EventSel]->GetXaxis()->SetBinLabel(NoHighMultCollInPrevRof, "NoHighMultCollInPrevRof");
+    histos[EventSel]->GetXaxis()->SetBinLabel(NoTimeFrameBorder, "NoTimeFrameBorder");
+    histos[EventSel]->GetXaxis()->SetBinLabel(NoITSROFrameBorder, "NoITSROFrameBorder");
+    histos[EventSel]->GetXaxis()->SetBinLabel(IsVertexITSTPC, "IsVertexITSTPC");
+    histos[EventSel]->GetXaxis()->SetBinLabel(IsGoodITSLayersAll, "IsGoodITSLayersAll");
+    histos[EventSel]->GetXaxis()->SetBinLabel(MultCuts, "after Mult cuts");
+    histos[EventSel]->GetXaxis()->SetBinLabel(TrackCent, "has track + within cent");
     th1sList.insert(std::make_pair(run, histos));
     std::vector<std::shared_ptr<TH3>> histos3d(TH3NameCount);
     if (cfgUsePID) {
@@ -1415,11 +1426,11 @@ struct FlowGenericFramework {
       return;
     if (dt != Gen) {
       registryQA.fill(HIST("eventQA/eventSel"), TrackCent);
-      if (cfgRunByRun)
+      if (cfgFill.cfgFillRunByRunQA)
         th1sList[run][EventSel]->Fill(TrackCent);
     }
     float vtxz = collision.posZ();
-    if (dt != Gen && cfgRunByRun) {
+    if (dt != Gen && cfgFill.cfgFillRunByRunQA) {
       th1sList[run][VtxZ]->Fill(vtxz);
       th1sList[run][Mult]->Fill(tracks.size());
       th1sList[run][Cent]->Fill(centrality);
@@ -1470,7 +1481,7 @@ struct FlowGenericFramework {
     for (const auto& track : tracks) {
       processTrack(track, vtxz, field, run, densitycorrections, acceptedTracks);
     }
-    if (dt != Gen) {
+    if (dt != Gen && cfgFill.cfgFillQA) {
       registryQA.fill(HIST("trackQA/after/Nch_corrected"), acceptedTracks.total);
       registryQA.fill(HIST("trackQA/after/Nch_uncorrected"), acceptedTracks.totaluncorr);
     }
@@ -1491,7 +1502,7 @@ struct FlowGenericFramework {
         break;
     }
 
-    if (cfgFillWeights)
+    if (cfgFill.cfgFillWeights)
       return;
 
     fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom);
@@ -1641,7 +1652,7 @@ struct FlowGenericFramework {
       auto mcParticle = track.mcParticle();
       if (!mcParticle.isPhysicalPrimary())
         return;
-      if (cfgFillQA)
+      if (cfgFill.cfgFillQA)
         fillTrackQA<Reco, Before>(track, vtxz);
 
       if (mcParticle.eta() < o2::analysis::gfw::etalow || mcParticle.eta() > o2::analysis::gfw::etaup || mcParticle.pt() < o2::analysis::gfw::ptlow || mcParticle.pt() > o2::analysis::gfw::ptup)
@@ -1682,16 +1693,16 @@ struct FlowGenericFramework {
           histosNpt[ProtonID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
       }
 
-      if (cfgFillWeights) {
+      if (cfgFill.cfgFillWeights) {
         fillWeights(mcParticle, vtxz, 0, run);
       } else {
         fillPtSums<Reco>(track, vtxz);
         fillGFW<Reco>(mcParticle, vtxz, pidIndex, densitycorrections);
       }
 
-      if (cfgFillQA) {
+      if (cfgFill.cfgFillQA) {
         fillTrackQA<Reco, After>(track, vtxz);
-        if (cfgRunByRun) {
+        if (cfgFill.cfgFillRunByRunQA) {
           th1sList[run][Phi]->Fill(track.phi());
           th1sList[run][Eta]->Fill(track.eta());
         }
@@ -1700,7 +1711,7 @@ struct FlowGenericFramework {
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TTrack::all_columns>) {
       if (!track.isPhysicalPrimary())
         return;
-      if (cfgFillQA)
+      if (cfgFill.cfgFillQA)
         fillTrackQA<Gen, Before>(track, vtxz);
       if (track.eta() < o2::analysis::gfw::etalow || track.eta() > o2::analysis::gfw::etaup || track.pt() < o2::analysis::gfw::ptlow || track.pt() > o2::analysis::gfw::ptup)
         return;
@@ -1727,11 +1738,11 @@ struct FlowGenericFramework {
 
       fillPtSums<Gen>(track, vtxz);
       fillGFW<Gen>(track, vtxz, pidIndex, densitycorrections);
-      if (cfgFillQA)
+      if (cfgFill.cfgFillQA)
         fillTrackQA<Gen, After>(track, vtxz);
 
     } else {
-      if (cfgFillQA)
+      if (cfgFill.cfgFillQA)
         fillTrackQA<Reco, Before>(track, vtxz);
       // Select tracks with nominal cuts always
       if (!nchSelected(track))
@@ -1763,15 +1774,15 @@ struct FlowGenericFramework {
           histosNpt[ProtonID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
       }
 
-      if (cfgFillWeights) {
+      if (cfgFill.cfgFillWeights) {
         fillWeights(track, vtxz, pidIndex, run);
       } else {
         fillPtSums<Reco>(track, vtxz);
         fillGFW<Reco>(track, vtxz, pidIndex, densitycorrections);
       }
-      if (cfgFillQA) {
+      if (cfgFill.cfgFillQA) {
         fillTrackQA<Reco, After>(track, vtxz);
-        if (cfgRunByRun) {
+        if (cfgFill.cfgFillRunByRunQA) {
           th1sList[run][Phi]->Fill(track.phi());
           th1sList[run][Eta]->Fill(track.eta());
         }
@@ -1808,7 +1819,8 @@ struct FlowGenericFramework {
     // Eta cuts on daughter particles to remove self-correlations with correlated observables
     if (track.eta() < cfgEtaV0Daughters->first || track.eta() > cfgEtaV0Daughters->second)
       return false;
-    registryQA.fill(HIST("trackQA/after/etaV0Daughters"), track.eta());
+    if (cfgFill.cfgFillQA)
+      registryQA.fill(HIST("trackQA/after/etaV0Daughters"), track.eta());
     return true;
   }
 
@@ -1867,28 +1879,31 @@ struct FlowGenericFramework {
       return false;
     registryQA.fill(HIST("K0/hK0Count"), FillDaughterTrackSelection);
 
-    registryQA.fill(HIST("K0/hK0Mass_sparse"), massK0s, v0.pt(), centrality);
-    registryQA.fill(HIST("K0/hK0Phi"), v0.phi());
-    registryQA.fill(HIST("K0/hK0Eta"), v0.eta());
-    registryQA.fill(HIST("K0/PiPlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaKa());
-    registryQA.fill(HIST("K0/PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaKa());
-    registryQA.fill(HIST("K0/PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
-    registryQA.fill(HIST("K0/PiMinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaKa());
-
-    registryQA.fill(HIST("K0/hK0s"), 0.5, 1);
-    if (cfgUsePIDEfficiencies) {
-      double weffDaughter1 = getEfficiency(postrack, 1);
-      double weffDaughter2 = getEfficiency(negtrack, 1);
-      weff = weffDaughter1 * weffDaughter2;
-      if (weff > 0)
-        registryQA.fill(HIST("K0/hK0s_corrected"), 0.5, weff);
+    if (cfgFill.cfgFillQA) {
+      registryQA.fill(HIST("K0/hK0Mass_sparse"), massK0s, v0.pt(), centrality);
+      registryQA.fill(HIST("K0/hK0Phi"), v0.phi());
+      registryQA.fill(HIST("K0/hK0Eta"), v0.eta());
+      registryQA.fill(HIST("K0/PiPlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaKa());
+      registryQA.fill(HIST("K0/PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaKa());
+      registryQA.fill(HIST("K0/PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
+      registryQA.fill(HIST("K0/PiMinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaKa());
+      registryQA.fill(HIST("K0/hK0s"), 0.5, 1);
+      if (cfgUsePIDEfficiencies) {
+        double weffDaughter1 = getEfficiency(postrack, 1);
+        double weffDaughter2 = getEfficiency(negtrack, 1);
+        weff = weffDaughter1 * weffDaughter2;
+        if (weff > 0)
+          registryQA.fill(HIST("K0/hK0s_corrected"), 0.5, weff);
+      }
     }
 
     if (doprocessMCReco) {
-      registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), postrack.pt(), centrality);
-      registry.fill(HIST("trackQA/after/pt_centrality_pion"), postrack.pt(), centrality);
-      registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), negtrack.pt(), centrality);
-      registry.fill(HIST("trackQA/after/pt_centrality_pion"), negtrack.pt(), centrality);
+      if (cfgFill.cfgFillQA) {
+        registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), postrack.pt(), centrality);
+        registry.fill(HIST("trackQA/after/pt_centrality_pion"), postrack.pt(), centrality);
+        registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), negtrack.pt(), centrality);
+        registry.fill(HIST("trackQA/after/pt_centrality_pion"), negtrack.pt(), centrality);
+      }
     }
 
     return true;
@@ -1971,7 +1986,7 @@ struct FlowGenericFramework {
     }
     registryQA.fill(HIST("Lambda/hLambdaCount"), FillDaughterTrackSelection);
 
-    if (isL) {
+    if (isL && cfgFill.cfgFillQA) {
       registryQA.fill(HIST("Lambda/hLambdaMass_sparse"), mlambda, v0.pt(), centrality);
       registryQA.fill(HIST("Lambda/hLambdaPhi"), v0.phi());
       registryQA.fill(HIST("Lambda/hLambdaEta"), v0.eta());
@@ -1994,7 +2009,7 @@ struct FlowGenericFramework {
         registry.fill(HIST("trackQA/after/pt_centrality_proton"), postrack.pt(), centrality);
       }
     }
-    if (isAL) {
+    if (isAL && cfgFill.cfgFillQA) {
       registryQA.fill(HIST("Lambda/hAntiLambdaMass_sparse"), mantilambda, v0.pt(), centrality);
       registryQA.fill(HIST("Lambda/hAntiLambdaPhi"), v0.phi());
       registryQA.fill(HIST("Lambda/hAntiLambdaEta"), v0.eta());
@@ -2130,7 +2145,7 @@ struct FlowGenericFramework {
 
         if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second)
           registryQA.fill(HIST("trackQA/after/etaNch"), track.eta());
-        if (track.eta() > cfgEtaPtPt->first && track.eta() < cfgEtaPtPt->second)
+        if (track.eta() > cfgEtaPtPt->first && track.eta() < cfgEtaPtPt->second && cfgFill.cfgFillQA)
           registryQA.fill(HIST("trackQA/after/etaPtPt"), track.eta());
       }
     }
@@ -2197,45 +2212,46 @@ struct FlowGenericFramework {
       LOGF(info, "run = %d", run);
       if (cfgRunByRun) {
         if (std::find(runNumbers.begin(), runNumbers.end(), run) == runNumbers.end()) {
-          LOGF(info, "Creating histograms for run %d", run);
-          createRunByRunHistograms(run);
+          if (cfgFill.cfgFillRunByRunQA)
+            createRunByRunHistograms(run);
           runNumbers.push_back(run);
         } else {
           LOGF(info, "run %d already in runNumbers", run);
         }
-        if (!cfgFillWeights)
+        if (!cfgFill.cfgFillWeights)
           loadCorrections(bc);
       }
     }
-    if (!cfgFillWeights && !cfgRunByRun)
+    if (!cfgFill.cfgFillWeights && !cfgRunByRun)
       loadCorrections(bc);
     registryQA.fill(HIST("eventQA/eventSel"), 0.5);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(0.5);
     if (!collision.sel8())
       return;
     registryQA.fill(HIST("eventQA/eventSel"), 1.5);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(1.5);
-
     float centrality = getCentrality(collision);
     if (cfgDoOccupancySel) {
       int occupancy = collision.trackOccupancyInTimeRange();
-      registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (cfgFill.cfgFillQA)
+        registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
       if (occupancy < 0 || occupancy > cfgOccupancySelection)
         return;
-      registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (cfgFill.cfgFillQA)
+        registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
     }
     registryQA.fill(HIST("eventQA/eventSel"), 2.5);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(2.5);
-    if (cfgFillQA)
+    if (cfgFill.cfgFillQA)
       fillEventQA<Before>(collision, tracks);
     registryQA.fill(HIST("eventQA/before/centrality"), centrality);
     registryQA.fill(HIST("eventQA/before/multiplicity"), tracks.size());
     if (!eventSelected(collision, tracks.size(), centrality, run))
       return;
-    if (cfgFillQA)
+    if (cfgFill.cfgFillQA)
       fillEventQA<After>(collision, tracks);
     registryQA.fill(HIST("eventQA/after/centrality"), centrality);
     registryQA.fill(HIST("eventQA/after/multiplicity"), tracks.size());
@@ -2253,19 +2269,19 @@ struct FlowGenericFramework {
     int run = bc.runNumber();
     if (run != lastRun) {
       lastRun = run;
-      if (cfgRunByRun)
+      if (cfgFill.cfgFillRunByRunQA)
         createRunByRunHistograms(run);
     }
 
     registryQA.fill(HIST("eventQA/eventSel"), 0.5);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(0.5);
 
     if (!collision.sel8())
       return;
 
     registryQA.fill(HIST("eventQA/eventSel"), 1.5);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(1.5);
 
     const auto centrality = getCentrality(collision);
@@ -2278,17 +2294,17 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
     }
     registryQA.fill(HIST("eventQA/eventSel"), 2.5);
-    if (cfgRunByRun)
+    if (cfgFill.cfgFillRunByRunQA)
       th1sList[run][EventSel]->Fill(2.5);
 
-    if (cfgFillQA)
+    if (cfgFill.cfgFillQA)
       fillEventQA<Before>(collision, tracks);
     if (!eventSelected(collision, tracks.size(), centrality, run))
       return;
-    if (cfgFillQA)
+    if (cfgFill.cfgFillQA)
       fillEventQA<After>(collision, tracks);
 
-    if (!cfgFillWeights)
+    if (!cfgFill.cfgFillWeights)
       loadCorrections(bc);
     int defaultMagCut = 99999;
     auto field = (cfgMagField == defaultMagCut) ? getMagneticField(bc.timestamp()) : cfgMagField;
@@ -2324,13 +2340,13 @@ struct FlowGenericFramework {
     int run = bc.runNumber();
     if (run != lastRun) {
       lastRun = run;
-      if (cfgRunByRun)
+      if (cfgFill.cfgFillRunByRunQA)
         createRunByRunHistograms(run);
     }
     if (!collision.sel7())
       return;
     const auto centrality = collision.centRun2V0M();
-    if (!cfgFillWeights)
+    if (!cfgFill.cfgFillWeights)
       loadCorrections(bc);
     int defaultMagCut = 99999;
     auto field = (cfgMagField == defaultMagCut) ? getMagneticField(bc.timestamp()) : cfgMagField;
