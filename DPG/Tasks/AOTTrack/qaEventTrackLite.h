@@ -10,15 +10,15 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaEventTrack.h
+/// \file   qaEventTrackLite.h
 /// \author Mario Krüger <mario.kruger@cern.ch>
 /// \author Mattia Faggin <mattia.faggin@cern.ch>
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>
 /// \brief  Header file for QA tasks for the track and the event properties.
 ///
 
-#ifndef DPG_TASKS_AOTTRACK_QAEVENTTRACK_H_
-#define DPG_TASKS_AOTTRACK_QAEVENTTRACK_H_
+#ifndef DPG_TASKS_AOTTRACK_QAEVENTTRACKLITE_H_
+#define DPG_TASKS_AOTTRACK_QAEVENTTRACKLITE_H_
 
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -170,4 +170,4 @@ DECLARE_SOA_TABLE(DPGNonRecoParticles, "AOD", "DPGNonRecoPart", //! Table of the
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz);
 } // namespace o2::aod
 
-#endif // DPG_TASKS_AOTTRACK_QAEVENTTRACK_H_
+#endif // DPG_TASKS_AOTTRACK_QAEVENTTRACKLITE_H_

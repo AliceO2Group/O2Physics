@@ -57,7 +57,7 @@ using namespace o2::pwglf;
 // Particles
 static const std::vector<std::string> parameterNames{"Enable"};
 static constexpr int nParameters = 1;
-static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
+static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
 bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
@@ -158,7 +158,7 @@ std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
 std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
 std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
 
-struct mcParticlePrediction {
+struct McParticlePrediction {
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -195,6 +195,8 @@ struct mcParticlePrediction {
   Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
   Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
   Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
+  Configurable<float> cfgEvtZvtxCut{"cfgEvtZvtxCut", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<float> chargetolerance{"chargetolerance", 1e-3, "Tolerance to consider a particle as charged based on its charge"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -456,7 +458,7 @@ struct mcParticlePrediction {
     }
 
     histos.fill(HIST("collisions/generated"), 1);
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > cfgEvtZvtxCut) {
       return;
     }
     histos.fill(HIST("collisions/generated"), 2);
@@ -500,7 +502,7 @@ struct mcParticlePrediction {
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
-        if (std::abs(p->Charge()) > 1e-3) {
+        if (std::abs(p->Charge()) > chargetolerance) {
           histos.fill(HIST("particles/eta/charged"), particle.eta());
         } else {
           histos.fill(HIST("particles/eta/neutral"), particle.eta());
@@ -721,7 +723,7 @@ struct mcParticlePrediction {
       hestimatorsRecoEvVsBCId[i]->Fill(foundBCid, nMultReco[i]);
     }
   }
-  PROCESS_SWITCH(mcParticlePrediction, processReco, "Process the reco info", true);
+  PROCESS_SWITCH(McParticlePrediction, processReco, "Process the reco info", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<mcParticlePrediction>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<McParticlePrediction>(cfgc)}; }

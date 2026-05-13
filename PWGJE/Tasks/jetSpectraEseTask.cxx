@@ -413,7 +413,7 @@ struct JetSpectraEseTask {
       registry.add("hTrackEta", "track #eta;#eta_{track};entries", {HistType::kTH3F, {{centAxis}, {etaAxis}, {occAxis}}});
       registry.add("hTrackPhi", "track #phi;#phi_{track};entries", {HistType::kTH3F, {{centAxis}, {phiAxis}, {occAxis}}});
       registry.add("hOccupancy", "Occupancy;Occupancy;entries", {HistType::kTH2F, {{centAxis}, {occAxis}}});
-      registry.add("hOccupancyEv", "Occupancy;Occupancy;entries", {HistType::kTH1F, {{centAxis}, {occAxis}}});
+      registry.add("hOccupancyEv", "Occupancy;Occupancy;entries", {HistType::kTH2F, {{centAxis}, {occAxis}}});
       registry.add("hPsiOccupancy", "Occupancy;#Psi_{2};entries", {HistType::kTH3F, {{centAxis}, {150, -2.5, 2.5}, {occAxis}}});
       registry.add("hSTrackPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {phiAxis}, {etaAxis}, {occAxis}}});
       registry.add("hSJetPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {phiAxis}, {etaAxis}, {occAxis}}});

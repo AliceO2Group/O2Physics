@@ -195,6 +195,9 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
 // KSTAR core info
 namespace kstarCore
 {
+DECLARE_SOA_COLUMN(PhotonV0ID, photonV0ID, int);
+DECLARE_SOA_COLUMN(KShortV0ID, kshortV0ID, int);
+
 DECLARE_SOA_COLUMN(X, x, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Z, z, float);
@@ -312,6 +315,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(KShortPhi, kshortPhi, //! Phi in the range [0, 2pi)
 } // namespace kstarCore
 
 DECLARE_SOA_TABLE(KStarCores, "AOD", "KSTARCORES",
+                  kstarCore::PhotonV0ID, kstarCore::KShortV0ID,
                   kstarCore::X, kstarCore::Y, kstarCore::Z, kstarCore::DCADaughters,
                   kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::PhotonMass,
                   kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz, kstarCore::KShortMass,
@@ -796,8 +800,8 @@ DECLARE_SOA_COLUMN(KShortPDGCode, kshortPDGCode, int);
 DECLARE_SOA_COLUMN(KShortPDGCodeMother, kshortPDGCodeMother, int);
 DECLARE_SOA_COLUMN(KShortIsCorrectlyAssoc, kshortIsCorrectlyAssoc, bool);
 
-DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                        //! IsSigma0
-                           [](int pdgCode) -> bool { return pdgCode == o2::constants::physics::Pdg::kK0Star892; }); // 313
+DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                                  //! IsSigma0
+                           [](int pdgCode) -> bool { return std::abs(pdgCode) == o2::constants::physics::Pdg::kK0Star892; }); // 313
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Sigma0 px
                            [](float photonMCPx, float kshortMCPx) -> float { return photonMCPx + kshortMCPx; });

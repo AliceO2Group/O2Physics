@@ -8,7 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file phianalysisrun3_PbPb.cxx
+
+/// \file phianalysisrun3pbpb.cxx
 /// \brief Code for phi resonance without resonance initializer
 /// \author Sarjeeta Gami
 
@@ -55,7 +56,7 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace o2::aod::rctsel;
 
-struct phianalysisrun3_PbPb {
+struct Phianalysisrun3pbpb {
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
@@ -124,7 +125,7 @@ struct phianalysisrun3_PbPb {
   Configurable<int> centestimator{"centestimator", 0, "Select multiplicity estimator: 0 - FT0C, 1 - FT0A, 2 - FT0M, 3 - FV0A, 4 - PVTracks"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
-  Configurable<bool> isApplyCentFT0M{"isApplyCentFV0M", false, "Centrality based on FT0M"};
+  Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0M"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
@@ -349,11 +350,11 @@ struct phianalysisrun3_PbPb {
       return false;
 
     } else if (pid == 1) {
-      constexpr double kPtThresholdForTOF = 0.5;
-      if (candidate.pt() < kPtThresholdForTOF && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC) {
+      constexpr double PtThresholdForTOF = 0.5;
+      if (candidate.pt() < PtThresholdForTOF && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC) {
         return true;
       }
-      if (candidate.pt() >= kPtThresholdForTOF && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta &&
+      if (candidate.pt() >= PtThresholdForTOF && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta &&
           std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmacutTOF) {
         return true;
       }
@@ -461,10 +462,10 @@ struct phianalysisrun3_PbPb {
                               candidate1.pz() + candidate2.pz()},
                             mass);
 
-    constexpr int kOppositeCharge = 0;
+    constexpr int OppositeCharge = 0;
 
     // default filling
-    if (rapidity > rapiditycut1 && rapidity < rapiditycut2 && track1Sign * track2Sign < kOppositeCharge) {
+    if (rapidity > rapiditycut1 && rapidity < rapiditycut2 && track1Sign * track2Sign < OppositeCharge) {
       if (unlike) {
         histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
         histos.fill(HIST("h2PhiRapidity"), pT, rapidity);
@@ -664,7 +665,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processSameEvent, "Process Same event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processSameEvent, "Process Same event", false);
   void processMixedEvent1(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
@@ -740,7 +741,7 @@ struct phianalysisrun3_PbPb {
       }
     }
   }
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent1, "Process Mixed event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processMixedEvent1, "Process Mixed event", false);
   void processMixedEvent2(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
@@ -817,7 +818,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent2, "Process Mixed event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processMixedEvent2, "Process Mixed event", false);
   void processMixedEvent3(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
@@ -894,7 +895,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent3, "Process Mixed event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processMixedEvent3, "Process Mixed event", false);
   void processMixedEvent4(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
@@ -971,7 +972,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent4, "Process Mixed event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processMixedEvent4, "Process Mixed event", false);
   void processRotEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
@@ -1057,7 +1058,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processRotEvent, "Process Rot event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processRotEvent, "Process Rot event", false);
   void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     histos.fill(HIST("hMC"), 0);
@@ -1270,7 +1271,7 @@ struct phianalysisrun3_PbPb {
     } // rec collision loop
 
   } // process MC
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMC, "Process Reconstructed", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processMC, "Process Reconstructed", false);
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
 
@@ -1358,7 +1359,7 @@ struct phianalysisrun3_PbPb {
       }
     }
   }
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processGen, "Process Generated", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processGen, "Process Generated", false);
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
@@ -1487,7 +1488,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processRec, "Process Reconstructed", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processRec, "Process Reconstructed", false);
   void processSameEventMC(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.sel8()) {
@@ -1599,7 +1600,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processSameEventMC, "Process Same event", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processSameEventMC, "Process Same event", false);
   void processMixedEventMC(EventCandidatesMC const& recCollisions, TrackCandidatesMC const& RecTracks, aod::McParticles const&)
   {
 
@@ -1684,7 +1685,7 @@ struct phianalysisrun3_PbPb {
       }
     }
   }
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEventMC, "Process Mixed event MC", true);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processMixedEventMC, "Process Mixed event MC", true);
   void processGen1(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     // all events
@@ -1771,7 +1772,7 @@ struct phianalysisrun3_PbPb {
         multiplicity = collision.centFV0A();
       }
       histos.fill(HIST("Centgen1"), multiplicity);
-      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      selectedEvents[nevts++] = collision.mcCollision_as<McCollisionMults>().globalIndex();
     }
     selectedEvents.resize(nevts);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
@@ -1815,7 +1816,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processGen1, "Process Generated", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processGen1, "Process Generated", false);
   void processRec1(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
@@ -1964,7 +1965,7 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processRec1, "Process Reconstructed", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processRec1, "Process Reconstructed", false);
   void processEvtLossSigLossMC(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   {
 
@@ -2040,7 +2041,7 @@ struct phianalysisrun3_PbPb {
       }
     } // end loop on gen particles
   }
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
   void processEvtLossSigLossMC1(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& GenParticles)
   {
     if (selectionConfig.cutvzgen &&
@@ -2092,8 +2093,8 @@ struct phianalysisrun3_PbPb {
         continue;
 
       auto daughters = particle.daughters_as<aod::McParticles>();
-      static constexpr int kPhiNDaughters = 2;
-      if (daughters.size() != kPhiNDaughters)
+      static constexpr int PhiNDaughters = 2;
+      if (daughters.size() != PhiNDaughters)
         continue;
 
       bool daup = false, daun = false;
@@ -2126,10 +2127,10 @@ struct phianalysisrun3_PbPb {
       }
     }
   }
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processEvtLossSigLossMC1, "Process Signal Loss, Event Loss", false);
+  PROCESS_SWITCH(Phianalysisrun3pbpb, processEvtLossSigLossMC1, "Process Signal Loss, Event Loss", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<phianalysisrun3_PbPb>(cfgc, TaskName{"phianalysisrun3_PbPb"})};
+    adaptAnalysisTask<Phianalysisrun3pbpb>(cfgc)};
 }
