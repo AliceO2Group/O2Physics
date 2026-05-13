@@ -291,7 +291,7 @@ struct JEPFlowAnalysis {
       float resNumB = helperEP.GetResolution(eps[0], eps[2], i + 2);
       float resDenom = helperEP.GetResolution(eps[1], eps[2], i + 2);
 
-      q2Mag = std::sqrt(pow(qx_shifted[0], 2) + pow(qy_shifted[0], 2));
+      q2Mag = std::sqrt(std::pow(qx_shifted[0], 2) + std::pow(qy_shifted[0], 2));
 
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
       epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
