@@ -1405,10 +1405,7 @@ struct NchCumulantsId {
           // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Kaons -----
-        else if (pdg == kKPlus) {
+        } else if (pdg == kKPlus) {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
@@ -1416,10 +1413,7 @@ struct NchCumulantsId {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Protons -----
-        else if (pdg == kProton) {
+        } else if (pdg == kProton) {
           // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
@@ -1520,10 +1514,7 @@ struct NchCumulantsId {
           // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Kaons -----
-        else if (pdg == kKPlus) {
+        } else if (pdg == kKPlus) {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
@@ -1531,10 +1522,7 @@ struct NchCumulantsId {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Protons -----
-        else if (pdg == kProton) {
+        } else if (pdg == kProton) {
           // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
