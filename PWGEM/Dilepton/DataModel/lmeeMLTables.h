@@ -246,6 +246,9 @@ DECLARE_SOA_COLUMN(CascCPA, casccpa, float);     //! cosPA of Cascade
 DECLARE_SOA_COLUMN(CascCPAXY, casccpaXY, float); //! cosPA of Cascade in XY plane
 DECLARE_SOA_COLUMN(CascCPARZ, casccpaRZ, float); //! cosPA of Cascade in RZ plane
 
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);           //! v0 type, 0 = K0S, 1 = Lambda, 2 = AntiLambda
+DECLARE_SOA_COLUMN(CascadeType, cascadeType, uint8_t); //! cascade type, 0 = XiMunus, 1 = OmegaMinus
+
 // LH pair variables
 DECLARE_SOA_COLUMN(MassLH, massLH, float); //! invariant mass of LH assuming pion
 DECLARE_SOA_COLUMN(PtLH, ptLH, float);     //! pT of LH pair
@@ -287,7 +290,7 @@ DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
 using EMMLLHPair = EMMLLHPairs::iterator;
 
 DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
-                  emmllhpair::EMMLLeptonId,
+                  emmllhpair::EMMLLeptonId, emmllhpair::V0Type,
                   emmllhpair::PtH, emmllhpair::RapidityV0,
                   emmllhpair::V0CPA, emmllhpair::V0CPAXY, emmllhpair::V0CPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
@@ -299,8 +302,8 @@ DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
 using EMMLLV0Pair = EMMLLV0Pairs::iterator;
 
 DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCAPAIR", //!
-                  emmllhpair::EMMLLeptonId,
-                  emmllhpair::PtH, emmllhpair::RapidityC,
+                  emmllhpair::EMMLLeptonId, emmllhpair::CascadeType,
+                  emmllhpair::Signed1PtH, emmllhpair::RapidityC,
                   emmllhpair::CascCPA, emmllhpair::CascCPAXY, emmllhpair::CascCPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
                   emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
