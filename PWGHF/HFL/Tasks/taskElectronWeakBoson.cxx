@@ -140,16 +140,18 @@ struct HfTaskElectronWeakBoson {
   Configurable<std::vector<double>> centralityBins{"centralityBins", {0, 20, 60, 100}, "centrality bins"};
 
   // QA for Z->ee
-  Configurable<bool> enableZeeRecoQA{"enableZeeRecoQA", false, "Enable QA for Z->ee reconstruction"};
+  Configurable<bool> enableZeeTrkRecoQA{"enableZeeTrkRecoQA", false, "Enable QA for track info Z->ee reconstruction"};
+  Configurable<bool> enableZeeEmcRecoQA{"enableZeeEmcRecoQA", false, "Enable QA for Emc info Z->ee reconstruction"};
   Configurable<int> ZeeRecoQAtype{"ZeeRecoQAtype", 1, "QA for Z->ee reconstruction"};
   Configurable<float> massZMinQA{"massZMinQA", 0.1, "minimum mass cut for Zee Reco QA"};
-  // CCDB service object
-  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   // UE
   Configurable<int> nRandomCones{"nRandomCones", 100, "number of random cones"};
   Configurable<float> rcHardE{"rcHardE", 5.0, "hard cluster veto energy"};
   Configurable<float> rcVetoR{"rcVetoR", 0.4, "veto radius"};
   Configurable<bool> useUEsub{"useUEsub", true, "apply UE subtraction in isolation"};
+
+  // CCDB service object
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   struct HfElectronCandidate {
     float pt, eta, phi, dcaxyTrk, dcazTrk, eop, energyIso, momIso, dedxTrk, m02Emc;
@@ -812,7 +814,7 @@ struct HfTaskElectronWeakBoson {
         // LOG(info) << "R mim = " << rMin;
         registry.fill(HIST("hTrMatch_mim"), dPhiMin, dEtaMin);
       }
-      if (enableZeeRecoQA && track.pt() > ptZeeMin) {
+      if ((enableZeeTrkRecoQA || enableZeeEmcRecoQA) && track.pt() > ptZeeMin) {
         if (track.sign() < 0) {
           selectedElectronsIso.emplace_back(
             track.pt(),
@@ -871,7 +873,7 @@ struct HfTaskElectronWeakBoson {
       }
     } // end of Z-hadron correlation
     // Z->ee QA
-    if (enableZeeRecoQA) {
+    if (enableZeeTrkRecoQA || enableZeeEmcRecoQA) {
       if (!selectedElectronsIso.empty() && !selectedPositronsIso.empty()) {
         // signal
         for (const auto& trackEle : selectedElectronsIso) {
@@ -882,10 +884,10 @@ struct HfTaskElectronWeakBoson {
             double const invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             float const sectorpos = trackPos.phi / o2::constants::math::SectorSpanRad;
             if (invMass > massZMinQA) {
-              if (ZeeRecoQAtype == 1) {
+              if (enableZeeTrkRecoQA) {
                 registry.fill(HIST("hInvMassZeeTrkQA"), invMass, trackEle.pt, trackPos.pt, trackEle.dcaxyTrk, trackPos.dcaxyTrk, trackPos.dcazTrk, trackEle.nclusterTPC, trackPos.nclusterTPC, trackEle.nclusterITS, trackPos.nclusterITS, sectorneg, sectorpos, trackEle.eop, trackPos.eop, trackEle.energyIso, trackPos.energyIso, trackEle.momIso, trackPos.momIso, trackEle.ntrackIso, trackPos.ntrackIso);
               }
-              if (ZeeRecoQAtype == 2) {
+              if (enableZeeEmcRecoQA) {
                 registry.fill(HIST("hInvMassZeeEmcQA"), invMass, trackEle.pt, trackPos.pt, trackEle.eop, trackPos.eop, trackEle.m02Emc, trackPos.m02Emc, trackEle.dedxTrk, trackPos.dedxTrk, trackEle.energyIso, trackPos.energyIso, trackEle.momIso, trackPos.momIso, trackEle.ntrackIso, trackPos.ntrackIso);
               }
             }
@@ -902,10 +904,10 @@ struct HfTaskElectronWeakBoson {
             float const sectorpos = trackEle2.phi / o2::constants::math::SectorSpanRad;
             double const invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             if (invMass > massZMinQA) {
-              if (ZeeRecoQAtype == 1) {
+              if (enableZeeTrkRecoQA) {
                 registry.fill(HIST("hInvMassZeeTrkQAbg"), invMass, trackEle.pt, trackEle2.pt, trackEle.dcaxyTrk, trackEle2.dcaxyTrk, trackEle2.dcazTrk, trackEle.nclusterTPC, trackEle2.nclusterTPC, trackEle.nclusterITS, trackEle2.nclusterITS, sectorneg, sectorpos, trackEle.eop, trackEle2.eop, trackEle.energyIso, trackEle2.energyIso, trackEle.momIso, trackEle2.momIso, trackEle.ntrackIso, trackEle2.ntrackIso);
               }
-              if (ZeeRecoQAtype == 2) {
+              if (enableZeeEmcRecoQA) {
                 registry.fill(HIST("hInvMassZeeEmcQAbg"), invMass, trackEle.pt, trackEle2.pt, trackEle.eop, trackEle2.eop, trackEle.m02Emc, trackEle2.m02Emc, trackEle.dedxTrk, trackEle2.dedxTrk, trackEle.energyIso, trackEle2.energyIso, trackEle.momIso, trackEle2.momIso, trackEle.ntrackIso, trackEle2.ntrackIso);
               }
             }
@@ -922,10 +924,10 @@ struct HfTaskElectronWeakBoson {
             float const sectorpos = trackPos2.phi / o2::constants::math::SectorSpanRad;
             double const invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             if (invMass > massZMinQA) {
-              if (ZeeRecoQAtype == 1) {
+              if (enableZeeTrkRecoQA) {
                 registry.fill(HIST("hInvMassZeeTrkQAbg"), invMass, trackPos.pt, trackPos2.pt, trackPos.dcaxyTrk, trackPos2.dcaxyTrk, trackPos2.dcazTrk, trackPos.nclusterTPC, trackPos2.nclusterTPC, trackPos.nclusterITS, trackPos2.nclusterITS, sectorneg, sectorpos, trackPos.eop, trackPos2.eop, trackPos.energyIso, trackPos2.energyIso, trackPos.momIso, trackPos2.momIso, trackPos.ntrackIso, trackPos2.ntrackIso);
               }
-              if (ZeeRecoQAtype == 2) {
+              if (enableZeeEmcRecoQA) {
                 registry.fill(HIST("hInvMassZeeEmcQAbg"), invMass, trackPos.pt, trackPos2.pt, trackPos.eop, trackPos2.eop, trackPos.m02Emc, trackPos2.m02Emc, trackPos.dedxTrk, trackPos2.dedxTrk, trackPos.energyIso, trackPos2.energyIso, trackPos.momIso, trackPos2.momIso, trackPos.ntrackIso, trackPos2.ntrackIso);
               }
             }
