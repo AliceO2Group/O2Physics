@@ -37,9 +37,11 @@ namespace o2::aod::pwgem::dilepton::utils
 
 struct LHPair { // struct to store electron-hadron pair information
   float mass{-999.f};
+  float pt{-999.f};
   float dca2legs{-999.f};
   float cospa{-999.f};
   float cospaXY{-999.f};
+  float cospaRZ{-999.f};
   float lxy{-999.f};
   float lz{-999.f};
   float lxyz{-999.f};
@@ -95,6 +97,7 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
+  pair.cospaRZ = RecoDecay::cpaRZ(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
   pair.lz = svpos[2] - collision.posZ();
@@ -139,6 +142,7 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassPionCharged);
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
+  pair.pt = v12.Pt();
 
   pair.isOK = true;
   return pair;
@@ -195,6 +199,7 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
+  pair.cospaRZ = RecoDecay::cpaRZ(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
   pair.lz = svpos[2] - collision.posZ();
@@ -246,8 +251,8 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   }
 
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
-
   pair.mass = v12.M();
+  pair.pt = v12.Pt();
   pair.isOK = true;
 
   return pair;
@@ -308,6 +313,7 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
+  pair.cospaRZ = RecoDecay::cpaRZ(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
   pair.lz = svpos[2] - collision.posZ();
@@ -361,6 +367,7 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
 
   pair.mass = v12.M();
+  pair.pt = v12.Pt();
   pair.isOK = true;
 
   return pair;
