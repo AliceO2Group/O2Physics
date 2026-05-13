@@ -246,7 +246,7 @@ DECLARE_SOA_COLUMN(CascCPA, casccpa, float);     //! cosPA of Cascade
 DECLARE_SOA_COLUMN(CascCPAXY, casccpaXY, float); //! cosPA of Cascade in XY plane
 DECLARE_SOA_COLUMN(CascCPARZ, casccpaRZ, float); //! cosPA of Cascade in RZ plane
 
-DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);     //! v0 type, 0 = K0S, 1 = Lambda, 2 = AntiLambda
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);           //! v0 type, 0 = K0S, 1 = Lambda, 2 = AntiLambda
 DECLARE_SOA_COLUMN(CascadeType, cascadeType, uint8_t); //! cascade type, 0 = XiMunus, 1 = OmegaMinus
 
 // LH pair variables
