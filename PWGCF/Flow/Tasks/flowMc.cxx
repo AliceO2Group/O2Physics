@@ -14,34 +14,51 @@
 /// \since  Feb/5/2025
 /// \brief  QC of synthetic flow exercise
 
-#include <CCDB/BasicCCDBManager.h>
-#include <vector>
-#include <string>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
-#include "GFWPowerArray.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "GFWWeights.h"
-#include "FlowContainer.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TPDGCode.h>
-#include <TF1.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,6 +89,8 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgDCAxyFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAxy cut");
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgDCAzFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAz cut");
+  O2_DEFINE_CONFIGURABLE(cfgDCAzNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the z direction");
   O2_DEFINE_CONFIGURABLE(cfgEnableITSCuts, bool, true, "switch of enabling ITS based track selection cuts")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
   O2_DEFINE_CONFIGURABLE(cfgFlowAcceptance, std::string, "", "CCDB path to acceptance object")
@@ -85,7 +104,8 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrSlopeFactor, float, 1.0f, "A factor to scale the track density efficiency slope")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvRejectMC, bool, false, "reject both MC and Reco events when reco do not pass")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSel8, bool, false, "require sel8 for reconstruction events")
-  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayersAll, bool, false, "require kIsGoodITSLayersAll for reconstruction events")
+  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayers, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayersFlag, int, 0, "0: kIsGoodITSLayersAll; 1: kIsGoodITSLayer0123; 2: kIsGoodITSLayer3")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvkNoSameBunchPileup, bool, false, "require kNoSameBunchPileup for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoITSROFrameBorder, bool, false, "reject events at ITS ROF border")
@@ -119,6 +139,7 @@ struct FlowMc {
   // Additional filters for tracks
   TrackSelection myTrackSel;
   TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
 
   // Cent vs IP
   TH1D* mCentVsIPTruth = nullptr;
@@ -134,6 +155,12 @@ struct FlowMc {
   TF1* funcV2;
   TF1* funcV3;
   TF1* funcV4;
+  enum GoodITSLayersFlag {
+    kITSLayersAll,
+    kITSLayer0123,
+    kITSLayer3,
+    kCount_ITSLayersFlag
+  };
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -286,9 +313,13 @@ struct FlowMc {
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
     if (cfgEnableITSCuts)
       myTrackSel.SetMinNClustersITS(cfgCutITSclu);
-    if (!cfgCutDCAzPtDepEnabled)
+    if (!cfgCutDCAzPtDepEnabled) {
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
-
+    } else {
+      fPtDepDCAz = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAzFunction->c_str()), 0.001, 100);
+      fPtDepDCAz->SetParameter(0, cfgDCAzNSigma);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("[0]*%s", cfgDCAzFunction->c_str()));
+    }
     if (cfgTrackDensityCorrUse) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
@@ -409,10 +440,15 @@ struct FlowMc {
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (cfgRecoEvkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgRecoEvkIsGoodITSLayers) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
-      return 0;
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+        return 0;
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123))
+        return 0;
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3))
+        return 0;
     }
     if (cfgRecoEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
@@ -443,7 +479,7 @@ struct FlowMc {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt()))) {
+    if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt()))) {
       return false;
     }
     return myTrackSel.IsSelected(track);

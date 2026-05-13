@@ -9,11 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
 #ifndef PWGLF_DATAMODEL_LFDOUBLECASCTABLES_H_
 #define PWGLF_DATAMODEL_LFDOUBLECASCTABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

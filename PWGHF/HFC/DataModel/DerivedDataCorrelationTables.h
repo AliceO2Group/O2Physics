@@ -53,22 +53,22 @@ DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                //! Prong2 index
 DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
 DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
 DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);            //! Invariant mass of Ds candidate
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                //! Invariant mass of charm candidate
 DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);  //! BDT output score for prompt hypothesis
 DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);        //! BDT output score for background hypothesis
 } // namespace hf_candidate_reduced
-DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info
+DECLARE_SOA_TABLE(HcCandReduceds, "AOD", "HCCANDREDUCED", //! Table with charm hadron candidate info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
                   aod::hf_candidate_reduced::PhiCand,
                   aod::hf_candidate_reduced::EtaCand,
                   aod::hf_candidate_reduced::PtCand,
-                  aod::hf_candidate_reduced::InvMassDs,
+                  aod::hf_candidate_reduced::InvMass,
                   aod::hf_candidate_reduced::Prong0Id,
                   aod::hf_candidate_reduced::Prong1Id,
                   aod::hf_candidate_reduced::Prong2Id);
 
-DECLARE_SOA_TABLE(DsCandSelInfos, "AOD", "DSCANDSELINFO", //! Table with Ds candidate selection info
+DECLARE_SOA_TABLE(HcCandSelInfos, "AOD", "HCCANDSELINFO", //! Table with charm hadron candidate selection info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
                   aod::hf_candidate_reduced::BdtScorePrompt,

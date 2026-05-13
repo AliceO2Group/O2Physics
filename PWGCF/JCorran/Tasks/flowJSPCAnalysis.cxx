@@ -13,37 +13,40 @@
 /// \brief   Task for the calculation of SPC with filtered data.
 /// \author  Maxim Virta (maxim.virta@cern.ch), Cindy Mordasini (cindy.mordasini@cern.ch), Neelkamal Mallick (neelkamal.mallick@cern.ch)
 
-// Standard headers.
-#include <TFormula.h>
-#include <TRandom3.h>
+#include "PWGCF/JCorran/Core/FlowJSPCAnalysis.h"
 
-#include <chrono>
-#include <memory>
-#include <string>
-#include <vector>
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/Core/FlowJHistManager.h"
+#include "PWGCF/JCorran/Core/FlowJSPCObservables.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
-// O2 headers. //
-// The first two are mandatory.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-
-// O2 Physics headers. //
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGCF/JCorran/DataModel/JCatalyst.h"
-#include "PWGCF/JCorran/Core/FlowJSPCAnalysis.h"
-#include "PWGCF/JCorran/Core/FlowJSPCObservables.h"
-#include "PWGCF/JCorran/Core/FlowJHistManager.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TFormula.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cstdint>
+#include <experimental/type_traits>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <vector>
 
 // Namespaces and definitions.
 using namespace o2;

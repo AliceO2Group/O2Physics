@@ -32,26 +32,54 @@
 //  -- v0builderopts ......: V0-specific building options (topological, deduplication, etc)
 //  -- cascadebuilderopts .: cascade-specific building options (topological, etc)
 
-#include "TableHelper.h"
-
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataSpecUtils.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataSpecUtils.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
+#include <TMath.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <map>
+#include <numeric>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;

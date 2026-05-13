@@ -13,19 +13,26 @@
 /// \brief Task to generate a table of dNdEta, pt and PID dependent weigths for MC particles to reflect the measured particle abundances
 /// \author Mario Krüger <mario.kruger@cern.ch>
 
-#include <PWGLF/DataModel/particleCompositionCorrectionTable.h>
+#include "PWGLF/DataModel/particleCompositionCorrectionTable.h"
 
 #include "Tools/ML/model.h"
 
 #include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <string>
 #include <tuple>

@@ -134,10 +134,9 @@ class McBuilder
         // Not yet created → create it
         auto mcCol = col.template mcCollision_as<T3>();
         this->fillMcCollision<system>(mcCol, mcProducts);
-        it = mCollisionMap.find(originalIndex);
       }
       // Add label
-      mcProducts.producedCollisionLabels(it->second);
+      mcProducts.producedCollisionLabels(mCollisionMap.at(originalIndex)); // mc collsions has been added so we can now safely retrieve the index
     } else {
       // If no MC collision associated, fill empty label
       mcProducts.producedCollisionLabels(-1);

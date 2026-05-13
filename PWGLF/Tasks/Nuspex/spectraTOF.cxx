@@ -17,36 +17,52 @@
 ///        Depending on the configuration it can also run on tiny tables.
 ///
 
-// O2 includes
-
 #include "PWGLF/DataModel/spectraTOF.h"
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h" // IWYU pragma: keep
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TPDGCode.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
+#include <array>
+#include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
+
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
@@ -111,8 +127,10 @@ struct tofSpectra {
 
   struct : ConfigurableGroup {
     Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
+    Configurable<float> cfgCutdcaZMax{"cfgCutdcaZMax", 0.02f, "Max dcaZ range for tracks"};
     Configurable<float> cfgCutNsigma{"cfgCutNsigma", 100.0f, "nsigma cut range for tracks"};
     Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
+    Configurable<float> cfgCutdcaZMin{"cfgCutdcaZMin", -0.02f, "Min dcaZ range for tracks"};
     Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
     Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
     Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
@@ -159,7 +177,7 @@ struct tofSpectra {
   Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Additional cut on the minimum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
-  Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
+  Configurable<float> maxDcaZ{"maxDcaZ", 0.02f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 100.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", false, "choose if produce thnsparse"}; // RD
   Configurable<bool> enableTPCTOFvsEtaHistograms{"enableTPCTOFvsEtaHistograms", false, "choose if produce TPC tof vs Eta"};
@@ -741,7 +759,7 @@ struct tofSpectra {
       if (enableDCAxyzHistograms) {
         hDcaXYZ[i] = histos.add<TH3>(Form("dca/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
       } else {
-        histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+        histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
         histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
       }
 
@@ -1111,7 +1129,7 @@ struct tofSpectra {
         }
       } else {
         if (track.sign() > 0) {
-          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY(), multiplicity);
           histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
             if (enableDCAxyphiHistograms) {
@@ -1119,7 +1137,7 @@ struct tofSpectra {
             }
           }
         } else {
-          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY(), multiplicity);
           histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
             if (enableDCAxyphiHistograms) {
@@ -1287,6 +1305,9 @@ struct tofSpectra {
       histos.fill(HIST("tracksel"), 1);
     }
     if (track.eta() < trkselOptions.cfgCutEtaMin || track.eta() > trkselOptions.cfgCutEtaMax) {
+      return false;
+    }
+    if (track.dcaZ() < trkselOptions.cfgCutdcaZMin || track.dcaZ() > trkselOptions.cfgCutdcaZMax) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -1867,11 +1888,7 @@ struct tofSpectra {
         }
         break;
       case MultCodes::kCentralityFT0C: // Centrality FT0C
-        if constexpr (!isMC) {
-          return collision.centFT0C();
-        } else {
-          return 50.f; // Not implemented yet
-        }
+        return collision.centFT0C();
         break;
       case MultCodes::kCentralityFT0M: // Centrality FT0M
         return collision.centFT0M();
@@ -1882,7 +1899,7 @@ struct tofSpectra {
     }
   }
 
-  using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
+  using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultsExtraMC>;
   float getMultiplicityMC(const GenMCCollisions::iterator& collision) { return getMultiplicity<GenMCCollisions::iterator, true>(collision); }
 
   template <std::size_t id>

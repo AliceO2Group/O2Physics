@@ -112,8 +112,8 @@ struct DQEventQvector {
 
   Produces<ReducedEventsQvector> eventQvector;
   Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
-  Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
-  Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
+  // Produces<ReducedEventsQvectorCentr> eventQvectorCentr;           // temporarily removed --> this table is filled in the table-maker directly
+  // Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra; // temporarily removed --> this table is filled in the table-maker directly
   Produces<ReducedEventsRefFlow> eventRefFlow;
   Produces<ReducedEventsQvectorZN> eventQvectorZN;
 
@@ -345,10 +345,58 @@ struct DQEventQvector {
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
+    // temporarily removed --> this table is filled in the table-maker directly
+    // if (fEventCut->IsSelected(VarManager::fgValues)) {
+    //  eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+    //                    collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+    //  eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+    // }
+  }
+
+  // Templated function instantianed for all of the process functions
+  template <uint32_t TEventFillMap, typename TEvent, typename TFT0s>
+  void runFillQvectorFromCentralFWWithFT0CCumulants(TEvent const& collision, TFT0s const& /*ft0s*/)
+  {
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<TEventFillMap>(collision);
+
+    float S11C = collision.sumAmplFT0C();
+    float S12C = 0.f;
+    float S21C = S11C * S11C;
+
+    // Compute sum of squares of amplitudes from FT0C for flow analysis
+    if (collision.has_foundFT0()) {
+      auto ft0 = collision.foundFT0();
+      auto const& ampC = ft0.amplitudeC();
+      for (auto amp : ampC) {
+        if (amp > 0.f) {
+          S12C += amp * amp;
+        }
+      }
+    }
+    VarManager::FillQVectorFromCentralFW(collision);
+    std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
+
+    // Fill necessary quantities for cumulant calculations with weighted Q-vectors
+    float M11REF = S21C - S12C;
+    float CORR2REF = (norm(Q21C) - S12C) / M11REF;
+    CORR2REF = std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF) ? 0 : CORR2REF;
+    M11REF = std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF) ? 0 : M11REF;
+
+    if (fConfigQA) {
+      fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
+      if (fEventCut->IsSelected(VarManager::fgValues)) {
+        fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+      }
+    }
+
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
-      eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+      // temporarily removed --> this table is filled in the table-maker directly
+      // eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+      //                  collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+      // eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+      eventRefFlow(M11REF, -9999, -9999, CORR2REF, -9999, -9999, VarManager::fgValues[VarManager::kCentFT0C]);
+      eventQvectorExtra(-9999, -9999, -9999, -9999, S11C, S12C, -9999, -9999);
     }
   }
 
@@ -538,9 +586,10 @@ struct DQEventQvector {
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
-        eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+        // temporarily removed --> this table is filled in the table-maker directly
+        // eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+        //                   collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+        // eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
         if (bc.has_zdc()) {
           eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
         } else {
@@ -574,6 +623,12 @@ struct DQEventQvector {
     runFillQvectorFromCentralFW<gkEventFillMapRun3>(collisions);
   }
 
+  // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
+  void processCentralQvectorWithFT0CCumulants(MyEventsWithCentQvectRun3::iterator const& collision, aod::FT0s const& ft0s)
+  {
+    runFillQvectorFromCentralFWWithFT0CCumulants<gkEventFillMapRun3>(collision, ft0s);
+  }
+
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
   void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks, aod::Zdcs const& zdcs)
   {
@@ -590,6 +645,7 @@ struct DQEventQvector {
   PROCESS_SWITCH(DQEventQvector, processBarrelQvector, "Run q-vector task on barrel tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processAllQvector, "Run q-vector task on barrel tracks for Run3 and using central q-vector", false);
   PROCESS_SWITCH(DQEventQvector, processCentralQvector, "Run q-vector task using central q-vector", false);
+  PROCESS_SWITCH(DQEventQvector, processCentralQvectorWithFT0CCumulants, "Run q-vector task using central q-vector with FT0C cumulants", false);
   PROCESS_SWITCH(DQEventQvector, processForwardQvector, "Run q-vector task on forward tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processDummy, "Dummy function", false);
 };

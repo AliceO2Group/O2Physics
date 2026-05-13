@@ -13,26 +13,40 @@
 /// \author Salman Malik
 /// \author Balwan Singh
 
-#include "TRandom.h"
-#include <TH1F.h>
-
-// O2 includes
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <unordered_set>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TRandom.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -334,30 +348,35 @@ struct FactorialMomentsTask {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : tracks) {
-      if (track.hasTPC()) {
-        histos.fill(HIST("mCollID"), track.collisionId());
-        histos.fill(HIST("mEta"), track.eta());
-        histos.fill(HIST("mPt"), track.pt());
-        histos.fill(HIST("mPhi"), track.phi());
-        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-        histos.fill(HIST("mNClsITS"), track.itsNCls());
-        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-        histos.fill(HIST("mChi2TRD"), track.trdChi2());
-        histos.fill(HIST("mDCAxy"), track.dcaXY());
-        histos.fill(HIST("mDCAx"), track.dcaZ());
-        histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
-        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
-        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-        checkpT(track);
-      }
+      if (useITS && !track.hasITS())
+        continue;
+      if (useTPC && !track.hasTPC())
+        continue;
+      if (useGlobal && !track.isGlobalTrack())
+        continue;
+      histos.fill(HIST("mCollID"), track.collisionId());
+      histos.fill(HIST("mEta"), track.eta());
+      histos.fill(HIST("mPt"), track.pt());
+      histos.fill(HIST("mPhi"), track.phi());
+      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+      histos.fill(HIST("mNClsITS"), track.itsNCls());
+      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+      histos.fill(HIST("mChi2TRD"), track.trdChi2());
+      histos.fill(HIST("mDCAxy"), track.dcaXY());
+      histos.fill(HIST("mDCAx"), track.dcaZ());
+      histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
+      histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+      checkpT(track);
     }
+
     for (int iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
@@ -456,13 +475,11 @@ struct FactorialMomentsTask {
       }
     }
     for (auto iPt = 0; iPt < numPt; ++iPt) {
-      // if (countTracks[iPt] > 0)countTracks = {0, 0, 0, 0, 0};
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
     }
     histos.fill(HIST("mEventSelected"), 6);
-    // Calculate the normalized factorial moments
     calculateMoments(mHistArrReset);
   }
   PROCESS_SWITCH(FactorialMomentsTask, processMCRec, "main process function", false);

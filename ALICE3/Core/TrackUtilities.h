@@ -22,6 +22,7 @@
 
 #include <TLorentzVector.h>
 
+#include <cmath>
 #include <vector>
 
 namespace o2::upgrade
@@ -29,11 +30,20 @@ namespace o2::upgrade
 
 /// Struct to store mc info for the otf decayer
 struct OTFParticle {
-  int mPdgCode;
-  float mE;
-  float mVx, mVy, mVz;
-  float mPx, mPy, mPz;
-  bool mIsAlive;
+  OTFParticle() = default;
+
+  template <typename TParticle>
+  explicit OTFParticle(const TParticle& particle)
+  {
+    mPdgCode = particle.pdgCode();
+    mPx = particle.px();
+    mPy = particle.py();
+    mPz = particle.pz();
+    mE = particle.e();
+    mVx = particle.vx();
+    mVy = particle.vy();
+    mVz = particle.vz();
+  }
 
   // Setters
   void setIsAlive(bool isAlive) { mIsAlive = isAlive; }
@@ -62,6 +72,16 @@ struct OTFParticle {
   float py() const { return mPy; }
   float pz() const { return mPz; }
   float e() const { return mE; }
+  float radius() const { return std::hypot(mVx, mVy); }
+  float pt() const { return std::hypot(mPx, mPy); }
+  float p() const { return std::hypot(mPx, mPy, mPz); }
+
+ private:
+  int mPdgCode{};
+  float mE{};
+  float mVx{}, mVy{}, mVz{};
+  float mPx{}, mPy{}, mPz{};
+  bool mIsAlive{};
 };
 
 /// Function to convert a TLorentzVector into a perfect Track

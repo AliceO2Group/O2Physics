@@ -22,7 +22,12 @@
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
 #include "PWGLF/DataModel/LFHStrangeCorrelationTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
@@ -30,19 +35,44 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THn.h>
+#include <TList.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
-#include <iostream>
+#include <fmt/format.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <string_view>
+#include <variant>
 #include <vector>
 
 using namespace o2;
@@ -59,6 +89,7 @@ struct HStrangeCorrelation {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
+  o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -86,11 +117,15 @@ struct HStrangeCorrelation {
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+    Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
+    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
     Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
     Configurable<bool> doTriggPhysicalPrimary{"doTriggPhysicalPrimary", false, "require physical primary for trigger particles"};
     Configurable<bool> applyNewMCSelection{"applyNewMCSelection", false, "apply new MC Generated selection"};
+    Configurable<bool> doSeparateFT0Prediction{"doSeparateFT0Prediction", false, "separate FT0M to FT0A and FT0C in prediction process"};
+    Configurable<bool> useCentralityinPrediction{"useCentralityinPrediction", false, "if true, use centrality instead of multiplisity"};
   } masterConfigurations;
 
   // master analysis switches
@@ -124,8 +159,10 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 100}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-    ConfigurableAxis axisMultCount{"axisMultCount", {VARIABLE_WIDTH, 0, 200, 400, 600, 800, 1000, 1400, 1800, 2300, 2800, 3300, 4000, 5000, 6000}, "Mixing bins - multiplicity"};
     ConfigurableAxis axisMassNSigma{"axisMassNSigma", {40, -2, 2}, "Axis for mass Nsigma"};
+    ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Multiplicity axis in model prediction process"};
+    ConfigurableAxis axisMidrapidityMultiplicity{"axisMidrapidityMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Midrapidity Multiplicity axis in model prediction process"};
+
   } axesConfigurations;
 
   // for topo var QA
@@ -223,7 +260,7 @@ struct HStrangeCorrelation {
   } cascadeSelections;
 
   struct : ConfigurableGroup {
-    std::string prefix = "`";
+    std::string prefix = "checks";
     // cascade selections
     // more cascade selections in PbPb
     // Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
@@ -941,14 +978,14 @@ struct HStrangeCorrelation {
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) {
               if (mixingInBf) {
-                currentCollision.addValidParticle(assoc.eta(), assoc.phi(), assoc.pt(), 1, efficiencyTrigg, efficiencyError, Index);
+                currentCollision.addValidParticle(assoc.eta(), assoc.phi(), assoc.pt(), 1, efficiency, efficiencyError, Index);
               } else {
                 fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               }
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma) {
               if (mixingInBf) {
-                currentCollision.addValidParticle(assoc.eta(), assoc.phi(), assoc.pt(), 2, efficiencyTrigg, efficiencyError, Index);
+                currentCollision.addValidParticle(assoc.eta(), assoc.phi(), assoc.pt(), 2, efficiency, efficiencyError, Index);
               } else {
                 fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/") + HIST(V0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               }
@@ -1181,6 +1218,9 @@ struct HStrangeCorrelation {
 
         static_for<0, 3>([&](auto i) {
           constexpr int Index = i.value;
+          if ((Index == IndexOmegaMinus || Index == IndexOmegaPlus) && assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && std::abs(assocCandidate.invMassNSigma(Index - 2)) < massWindowConfigurations.nSigmaNearXiMassCenter) {
+            return;
+          }
           float efficiency = 1.0f;
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
@@ -1538,6 +1578,7 @@ struct HStrangeCorrelation {
     const AxisSpec preAxisMult{axesConfigurations.axisMult, "mult percentile"};
     const AxisSpec axisPtLambda{axesConfigurations.axisPtAssoc, "#it{p}_{T}^{#Lambda} (GeV/c)"};
     const AxisSpec axisPtCascade{axesConfigurations.axisPtAssoc, "#it{p}_{T}^{Mother} (GeV/c)"};
+    const AxisSpec preAxisMultiplicity{axesConfigurations.axisMultiplicity, "multiplicity"};
 
     // store the original axes in specific TH1Cs for completeness
     histos.add("axes/hDeltaPhiAxis", "", kTH1C, {preAxisDeltaPhi});
@@ -1546,6 +1587,7 @@ struct HStrangeCorrelation {
     histos.add("axes/hPtTriggerAxis", "", kTH1C, {preAxisPtTrigger});
     histos.add("axes/hVertexZAxis", "", kTH1C, {preAxisVtxZ});
     histos.add("axes/hMultAxis", "", kTH1C, {preAxisMult});
+    histos.add("axes/hMultiplicityAxis", "", kTH1C, {preAxisMultiplicity});
 
     std::vector<double> edgesDeltaPhiOrig = preAxisDeltaPhi.binEdges;
     std::vector<double> edgesDeltaEtaOrig = preAxisDeltaEta.binEdges;
@@ -1553,6 +1595,7 @@ struct HStrangeCorrelation {
     std::vector<double> edgesPtTriggerOrig = preAxisPtTrigger.binEdges;
     std::vector<double> edgesVtxZOrig = preAxisVtxZ.binEdges;
     std::vector<double> edgesMultOrig = preAxisMult.binEdges;
+    std::vector<double> edgesMultiplicityOrig = preAxisMultiplicity.binEdges;
 
     std::vector<float> rangesDeltaPhi = {static_cast<float>(edgesDeltaPhiOrig[0]), static_cast<float>(edgesDeltaPhiOrig[edgesDeltaPhiOrig.size() - 1])};
     std::vector<float> rangesDeltaEta = {static_cast<float>(edgesDeltaEtaOrig[0]), static_cast<float>(edgesDeltaEtaOrig[edgesDeltaEtaOrig.size() - 1])};
@@ -1560,6 +1603,7 @@ struct HStrangeCorrelation {
     std::vector<float> rangesPtTrigger = {static_cast<float>(edgesPtTriggerOrig[0]), static_cast<float>(edgesPtTriggerOrig[edgesPtTriggerOrig.size() - 1])};
     std::vector<float> rangesVtxZ = {static_cast<float>(edgesVtxZOrig[0]), static_cast<float>(edgesVtxZOrig[edgesVtxZOrig.size() - 1])};
     std::vector<float> rangesMult = {static_cast<float>(edgesMultOrig[0]), static_cast<float>(edgesMultOrig[edgesMultOrig.size() - 1])};
+    std::vector<float> rangesMultiplicity = {static_cast<float>(edgesMultiplicityOrig[0]), static_cast<float>(edgesMultiplicityOrig[edgesMultiplicityOrig.size() - 1])};
 
     axisRanges.emplace_back(rangesDeltaPhi);
     axisRanges.emplace_back(rangesDeltaEta);
@@ -1567,6 +1611,7 @@ struct HStrangeCorrelation {
     axisRanges.emplace_back(rangesPtTrigger);
     axisRanges.emplace_back(rangesVtxZ);
     axisRanges.emplace_back(rangesMult);
+    axisRanges.emplace_back(rangesMultiplicity);
 
     std::vector<double> edgesDeltaPhi;
     std::vector<double> edgesDeltaEta;
@@ -1574,6 +1619,7 @@ struct HStrangeCorrelation {
     std::vector<double> edgesPtTrigger;
     std::vector<double> edgesVtxZ;
     std::vector<double> edgesMult;
+    std::vector<double> edgesMultiplicity;
 
     // v--- skipUnderOverflowInTHn ---v
     //
@@ -1658,13 +1704,26 @@ struct HStrangeCorrelation {
       for (int i = offset; i < preAxisMult.nBins.value() + 1 - offset; i++)
         edgesMult.emplace_back(min + static_cast<double>(i) * delta);
     }
+    // ===] multiplicity count [===
+    if (!preAxisMultiplicity.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesMultiplicityOrig.size()) - offset; i++)
+        edgesMultiplicity.emplace_back(edgesMultiplicityOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesMultiplicityOrig[0];
+      double delta = (edgesMultiplicityOrig[1] - edgesMultiplicityOrig[0]) / preAxisMultiplicity.nBins.value();
+      for (int i = offset; i < preAxisMultiplicity.nBins.value() + 1 - offset; i++)
+        edgesMultiplicity.emplace_back(min + static_cast<double>(i) * delta);
+    }
 
     LOGF(info, "Initialized THnF axis delta-phi with %i bins.", edgesDeltaPhi.size() - 1);
     LOGF(info, "Initialized THnF axis delta-eta with %i bins.", edgesDeltaEta.size() - 1);
     LOGF(info, "Initialized THnF axis pTassoc with %i bins.", edgesPtAssoc.size() - 1);
     LOGF(info, "Initialized THnF axis pTtrigger with %i bins.", edgesPtTrigger.size() - 1);
     LOGF(info, "Initialized THnF axis vertex-Z with %i bins.", edgesVtxZ.size() - 1);
-    LOGF(info, "Initialized THnF axis multiplicity with %i bins.", edgesMult.size() - 1);
+    LOGF(info, "Initialized THnF axis mult cent with %i bins.", edgesMult.size() - 1);
+    LOGF(info, "Initialized THnF axis multiplicity with %i bins.", edgesMultiplicity.size() - 1);
 
     const AxisSpec axisDeltaPhiNDim{edgesDeltaPhi, "#Delta#varphi"};
     const AxisSpec axisDeltaEtaNDim{edgesDeltaEta, "#Delta#eta"};
@@ -1672,11 +1731,12 @@ struct HStrangeCorrelation {
     const AxisSpec axisPtTriggerNDim{edgesPtTrigger, "#it{p}_{T}^{trigger} (GeV/c)"};
     const AxisSpec axisVtxZNDim{edgesVtxZ, "vertex Z (cm)"};
     const AxisSpec axisMultNDim{edgesMult, "mult percentile"};
+    const AxisSpec axisMultiplicityNDim{edgesMultiplicity, "Multiplicity"};
 
     if (doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer) {
       validCollisions.resize(histos.get<TH1>(HIST("axes/hMultAxis"))->GetNbinsX() * histos.get<TH1>(HIST("axes/hVertexZAxis"))->GetNbinsX());
-      for (auto& inner_vec : validCollisions) {
-        inner_vec.reserve(masterConfigurations.mixingParameter);
+      for (size_t i = 0; i < validCollisions.size(); ++i) {
+        validCollisions[i].reserve(masterConfigurations.mixingParameter);
       }
     }
     if (!masterConfigurations.doPPAnalysis) {
@@ -1718,6 +1778,12 @@ struct HStrangeCorrelation {
       histos.add("hNumberOfRejectedPairsHadron", "hNumberOfRejectedPairsHadron", kTH1F, {{1, 0, 1}});
       histos.add("hNumberOfRejectedPairsPion", "hNumberOfRejectedPairsPion", kTH1F, {{1, 0, 1}});
     }
+    if (doprocessSameEventHHadrons) {
+      histos.add("hDCAzTriggerHadron", "hDCAzTriggerHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyTriggerHadron", "hDCAxyTriggerHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+      histos.add("hDCAzAssociatedHadron", "hDCAzAssociatedHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+      histos.add("hDCAxyAssociatedHadron", "hDCAxyAssociatedHadron", kTH2F, {{200, -0.5, 0.5}, axesConfigurations.axisPtQA});
+    }
     if (doprocessSameEventHV0s || doprocessMixedEventHV0s) {
       histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
     }
@@ -1741,7 +1807,7 @@ struct HStrangeCorrelation {
 
     bool hStrange = false;
     for (int i = 0; i < AssocParticleTypes; i++) {
-      if (TESTBIT(doCorrelation, i)) {
+      if (TESTBIT(doCorrelation, i) && (doprocessSameEventHV0s || doprocessSameEventHCascades)) {
         if (masterConfigurations.doFullCorrelationStudy)
           histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         if (doDeltaPhiStarCheck && masterConfigurations.doFullCorrelationStudy) {
@@ -1767,13 +1833,13 @@ struct HStrangeCorrelation {
         }
       }
     }
-    if (TESTBIT(doCorrelation, 7)) {
+    if (TESTBIT(doCorrelation, 7) && doprocessSameEventHPions) {
       histos.add("hPionEtaVsPtAllSelected", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
       histos.add("hPionEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
       histos.add("hPositivePionEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
       histos.add("hNegativePionEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
     }
-    if (TESTBIT(doCorrelation, 8)) {
+    if (TESTBIT(doCorrelation, 8) && doprocessSameEventHHadrons) {
       histos.add("hAsssocTrackEtaVsPtVsPhi", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       histos.add("hAssocPrimaryEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
       histos.add("hAssocHadronsAllSelectedEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
@@ -1852,7 +1918,49 @@ struct HStrangeCorrelation {
       histos.add("GeneratedWithPV/hAntiLambdaFromXiZero", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
       histos.add("GeneratedWithPV/hAntiLambdaFromXiPlus", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
     }
-
+    if (doprocessPrediction) {
+      mCounter.mPdgDatabase = pdgDB.service;
+      mCounter.mSelectPrimaries = doAssocPhysicalPrimary.value;
+      histos.add("Prediction/hEventSelection", "hEventSelection", kTH1F, {{3, 0, 3}});
+      TString eventSelLabel[] = {"Read", "INELgt0", "|Z|<10"};
+      for (int i = 1; i <= histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetNbinsX(); i++) {
+        histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1]);
+      }
+      if (masterConfigurations.useCentralityinPrediction) {
+        if (masterConfigurations.doSeparateFT0Prediction) {
+          histos.add("Prediction/hTriggerFT0A", "Trigger Tracks FT0A", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+          histos.add("Prediction/hTriggerFT0C", "Trigger Tracks FT0C", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+        }
+        histos.add("Prediction/hTrigger", "Trigger Tracks", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+      } else {
+        if (masterConfigurations.doSeparateFT0Prediction) {
+          histos.add("Prediction/hTriggerFT0A", "Trigger Tracks FT0A", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMultiplicity});
+          histos.add("Prediction/hFT0AvsNchEta08", "Nch in 0.8 vs FT0A multiplicity", kTH2F, {axesConfigurations.axisMultiplicity, axesConfigurations.axisMidrapidityMultiplicity});
+          histos.add("Prediction/hFT0AvsNchEta05", "Nch in 0.5 vs FT0A multiplicity", kTH2F, {axesConfigurations.axisMultiplicity, axesConfigurations.axisMidrapidityMultiplicity});
+          histos.add("Prediction/hTriggerFT0C", "Trigger Tracks FT0C", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMultiplicity});
+          histos.add("Prediction/hFT0CvsNchEta08", "Nch in 0.8 vs FT0C multiplicity", kTH2F, {axesConfigurations.axisMultiplicity, axesConfigurations.axisMidrapidityMultiplicity});
+          histos.add("Prediction/hFT0CvsNchEta05", "Nch in 0.5 vs FT0C multiplicity", kTH2F, {axesConfigurations.axisMultiplicity, axesConfigurations.axisMidrapidityMultiplicity});
+        }
+        histos.add("Prediction/hTrigger", "Trigger Tracks", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMultiplicity});
+        histos.add("Prediction/hFT0MvsNchEta08", "Nch in 0.8 vs FT0M multiplicity", kTH2F, {axesConfigurations.axisMultiplicity, axesConfigurations.axisMidrapidityMultiplicity});
+        histos.add("Prediction/hFT0MvsNchEta05", "Nch in 0.5 vs FT0M multiplicity", kTH2F, {axesConfigurations.axisMultiplicity, axesConfigurations.axisMidrapidityMultiplicity});
+      }
+      for (int i = 0; i < AssocParticleTypes; i++) {
+        if (TESTBIT(doCorrelation, i))
+          histos.add(fmt::format("Prediction/h{}", Particlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        if (masterConfigurations.useCentralityinPrediction) {
+          if (TESTBIT(doCorrelation, i))
+            histos.add(fmt::format("Prediction/sameEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        } else {
+          if (TESTBIT(doCorrelation, i))
+            histos.add(fmt::format("Prediction/sameEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultiplicityNDim});
+        }
+      }
+      if (masterConfigurations.doSeparateFT0Prediction) {
+        histos.addClone("Prediction/sameEvent/", "Prediction/sameEventFT0A/");
+        histos.addClone("Prediction/sameEvent/", "Prediction/sameEventFT0C/");
+      }
+    }
     // visual inspection of sizes
     histos.print();
 
@@ -1912,7 +2020,7 @@ struct HStrangeCorrelation {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel8*/);
 
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && masterConfigurations.requireGoodTriggerTVX) {
       return false;
     }
     if (fillHists)
@@ -1924,14 +2032,14 @@ struct HStrangeCorrelation {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
       // cut time intervals with dead ITS staves
       return false;
     }
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after cut time intervals with dead ITS staves*/);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return false;
@@ -2064,6 +2172,8 @@ struct HStrangeCorrelation {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track, triggerTrack.isLeading()))
           continue;
+        histos.fill(HIST("hDCAzTriggerHadron"), track.dcaZ(), track.pt());
+        histos.fill(HIST("hDCAxyTriggerHadron"), track.dcaXY(), track.pt());
         float efficiency = 1.0f;
         if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyTrigger->Interpolate(track.pt(), track.eta());
@@ -2086,6 +2196,8 @@ struct HStrangeCorrelation {
         continue;
       float efficiency = 1.0f;
       float purity = 1.0f;
+      histos.fill(HIST("hDCAzAssociatedHadron"), assoc.dcaZ(), assoc.pt());
+      histos.fill(HIST("hDCAxyAssociatedHadron"), assoc.dcaXY(), assoc.pt());
       if (efficiencyFlags.applyEfficiencyCorrection) {
         efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
         if (efficiencyFlags.applyPurityHadron)
@@ -2792,9 +2904,9 @@ struct HStrangeCorrelation {
       double gpt = mcParticle.pt();
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
         if (efficiencyFlags.applyEffAsFunctionOfMultAndPhi) {
-          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, mcParticle.phi(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, mcParticle.phi(), bestCollisionFT0Cpercentile);
         } else {
-          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Cpercentile);
+          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
         if (mcParticle.pdgCode() > 0)
           histos.fill(HIST("GeneratedWithPV/hPositiveTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
@@ -3159,7 +3271,7 @@ struct HStrangeCorrelation {
     }
 
     // Perform basic event selection on both collisions
-    if (((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision))) || (!masterConfigurations.doPPAnalysis && !isCollisionSelectedPbPb(collision, true))) {
+    if (((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision))) || (!masterConfigurations.doPPAnalysis && !isCollisionSelectedPbPb(collision, false))) {
       return;
     }
     if (cent > axisRanges[5][1] || cent < axisRanges[5][0])
@@ -3186,7 +3298,7 @@ struct HStrangeCorrelation {
       return;
     }
     // Perform basic event selection on both collisions
-    if ((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision)) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision, true)))) {
+    if ((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision)) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision, false)))) {
       return;
     }
     if (cent > axisRanges[5][1] || cent < axisRanges[5][0])
@@ -3195,6 +3307,184 @@ struct HStrangeCorrelation {
     // Do hadron - cascade correlations
     if (masterConfigurations.doFullCorrelationStudy)
       fillCorrelationsCascade(triggerTracks, associatedCascades, true, true, collision.posX(), collision.posY(), collision.posZ(), cent, bField);
+  }
+  void processPrediction(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0As>::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    std::vector<uint32_t> triggerIndices;
+    std::vector<std::vector<uint32_t>> associatedIndices;
+    std::vector<uint32_t> assocHadronIndices;
+    std::vector<uint32_t> piIndices;
+    std::vector<uint32_t> k0ShortIndices;
+    std::vector<uint32_t> lambdaIndices;
+    std::vector<uint32_t> antiLambdaIndices;
+    std::vector<uint32_t> xiMinusIndices;
+    std::vector<uint32_t> xiPlusIndices;
+    std::vector<uint32_t> omegaMinusIndices;
+    std::vector<uint32_t> omegaPlusIndices;
+    float centMultFT0M = -1;
+    float centMultFT0A = -1;
+    float centMultFT0C = -1;
+    float multFT0M = -1;
+    float multFT0A = -1;
+    float multFT0C = -1;
+    float multEta08 = -1;
+    float multEta05 = -1;
+    histos.fill(HIST("Prediction/hEventSelection"), 0.5);
+    if (masterConfigurations.selectINELgtZERO && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+      return;
+    }
+    histos.fill(HIST("Prediction/hEventSelection"), 1.5);
+    if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {
+      return;
+    }
+    histos.fill(HIST("Prediction/hEventSelection"), 2.5);
+    if (masterConfigurations.useCentralityinPrediction) {
+      centMultFT0M = mcCollision.centFT0M();
+      centMultFT0A = mcCollision.centFT0A();
+      centMultFT0C = mcCollision.centFT0C();
+    } else {
+      multFT0M = mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles);
+      multFT0A = mCounter.countFT0A(mcParticles);
+      multFT0C = mCounter.countFT0C(mcParticles);
+      multEta08 = mCounter.countEta08(mcParticles);
+      multEta05 = mCounter.countEta05(mcParticles);
+    }
+    if (!masterConfigurations.useCentralityinPrediction) {
+      if (masterConfigurations.doSeparateFT0Prediction) {
+        histos.fill(HIST("Prediction/hFT0AvsNchEta08"), multFT0A, multEta08);
+        histos.fill(HIST("Prediction/hFT0AvsNchEta05"), multFT0A, multEta05);
+        histos.fill(HIST("Prediction/hFT0CvsNchEta08"), multFT0C, multEta08);
+        histos.fill(HIST("Prediction/hFT0CvsNchEta05"), multFT0C, multEta05);
+      }
+      histos.fill(HIST("Prediction/hFT0MvsNchEta08"), multFT0M, multEta08);
+      histos.fill(HIST("Prediction/hFT0MvsNchEta05"), multFT0M, multEta05);
+    }
+    int iteratorNum = -1;
+    for (auto const& mcParticle : mcParticles) {
+      iteratorNum = iteratorNum + 1;
+      double geta = mcParticle.eta();
+      double gpt = mcParticle.pt();
+      double gphi = mcParticle.phi();
+      if (std::abs(geta) > etaSel) {
+        continue;
+      }
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
+        if (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          triggerIndices.emplace_back(iteratorNum);
+          if (masterConfigurations.useCentralityinPrediction) {
+            if (masterConfigurations.doSeparateFT0Prediction) {
+              histos.fill(HIST("Prediction/hTriggerFT0A"), gpt, geta, centMultFT0A);
+              histos.fill(HIST("Prediction/hTriggerFT0C"), gpt, geta, centMultFT0C);
+            }
+            histos.fill(HIST("Prediction/hTrigger"), gpt, geta, centMultFT0M);
+          } else {
+            if (masterConfigurations.doSeparateFT0Prediction) {
+              histos.fill(HIST("Prediction/hTriggerFT0A"), gpt, geta, multFT0A);
+              histos.fill(HIST("Prediction/hTriggerFT0C"), gpt, geta, multFT0C);
+            }
+            histos.fill(HIST("Prediction/hTrigger"), gpt, geta, multFT0M);
+          }
+        }
+        if (masterConfigurations.doCorrelationHadron) {
+          if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+            assocHadronIndices.emplace_back(iteratorNum);
+            histos.fill(HIST("Prediction/hHadron"), gpt, geta, gphi);
+          }
+        }
+      }
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && masterConfigurations.doCorrelationPion) {
+          piIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hPion"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kK0Short && masterConfigurations.doCorrelationK0Short) {
+          k0ShortIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hK0Short"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kLambda0 && masterConfigurations.doCorrelationLambda) {
+          lambdaIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hLambda"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kLambda0Bar && masterConfigurations.doCorrelationAntiLambda) {
+          antiLambdaIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hAntiLambda"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kXiMinus && masterConfigurations.doCorrelationXiMinus) {
+          xiMinusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hXiMinus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kXiPlusBar && masterConfigurations.doCorrelationXiPlus) {
+          xiPlusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hXiPlus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kOmegaMinus && masterConfigurations.doCorrelationOmegaMinus) {
+          omegaMinusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hOmegaMinus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kOmegaPlusBar && masterConfigurations.doCorrelationOmegaPlus) {
+          omegaPlusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hOmegaPlus"), gpt, geta, gphi);
+        }
+      }
+    }
+
+    associatedIndices.emplace_back(k0ShortIndices);
+    associatedIndices.emplace_back(lambdaIndices);
+    associatedIndices.emplace_back(antiLambdaIndices);
+    associatedIndices.emplace_back(xiMinusIndices);
+    associatedIndices.emplace_back(xiPlusIndices);
+    associatedIndices.emplace_back(omegaMinusIndices);
+    associatedIndices.emplace_back(omegaPlusIndices);
+    associatedIndices.emplace_back(piIndices);
+    associatedIndices.emplace_back(assocHadronIndices);
+    for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
+      auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
+      // check range of trigger particle
+      if (triggerParticle.pt() > axisRanges[3][1] || triggerParticle.pt() < axisRanges[3][0]) {
+        continue;
+      }
+      double getatrigger = triggerParticle.eta();
+      double gphitrigger = triggerParticle.phi();
+      double pttrigger = triggerParticle.pt();
+      auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
+      auto globalIndex = mother.globalIndex();
+      static_for<0, 8>([&](auto i) { // associated loop
+        constexpr int Index = i.value;
+        for (std::size_t iassoc = 0; iassoc < associatedIndices[Index].size(); iassoc++) {
+          auto assocParticle = mcParticles.iteratorAt(associatedIndices[Index][iassoc]);
+          if (triggerIndices[iTrigger] != associatedIndices[Index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
+            double getaassoc = assocParticle.eta();
+            double gphiassoc = assocParticle.phi();
+            double ptassoc = assocParticle.pt();
+            double deltaphi = computeDeltaPhi(gphitrigger, gphiassoc);
+            double deltaeta = getatrigger - getaassoc;
+
+            // skip if basic ranges not met
+            if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
+              continue;
+            if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
+              continue;
+            if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
+              continue;
+            if (TESTBIT(doCorrelation, i)) {
+              if (masterConfigurations.useCentralityinPrediction) {
+                histos.fill(HIST("Prediction/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0M);
+                if (masterConfigurations.doSeparateFT0Prediction) {
+                  histos.fill(HIST("Prediction/sameEventFT0A/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0A);
+                  histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0C);
+                }
+              } else {
+                histos.fill(HIST("Prediction/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0M);
+                if (masterConfigurations.doSeparateFT0Prediction) {
+                  histos.fill(HIST("Prediction/sameEventFT0A/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0A);
+                  histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0C);
+                }
+              }
+            }
+          }
+        }
+      });
+    }
   }
   PROCESS_SWITCH(HStrangeCorrelation, processSelectEventWithTrigger, "Select events with trigger only", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHV0s, "Process same events, h-V0s", true);
@@ -3212,6 +3502,7 @@ struct HStrangeCorrelation {
   PROCESS_SWITCH(HStrangeCorrelation, processMCGenerated, "Process MC generated", false);
   PROCESS_SWITCH(HStrangeCorrelation, processClosureTest, "Process Closure Test", false);
   PROCESS_SWITCH(HStrangeCorrelation, processFeedDown, "process Feed Down", false);
+  PROCESS_SWITCH(HStrangeCorrelation, processPrediction, "process model prediction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

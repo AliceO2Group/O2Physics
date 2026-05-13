@@ -2804,6 +2804,9 @@ struct checkMCPairTemplate {
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
+        if (cfgRequireTrueAssociation && (mcpos.emmceventId() != collision.emmceventId() || mcneg.emmceventId() != collision.emmceventId())) {
+          continue;
+        }
 
         if (isPairOK(pos, neg, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), neg.globalIndex()));
@@ -2820,6 +2823,9 @@ struct checkMCPairTemplate {
         if (cfgEventGeneratorType >= 0 && mccollision_from_pos2.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
+        if (cfgRequireTrueAssociation && (mcpos1.emmceventId() != collision.emmceventId() || mcpos2.emmceventId() != collision.emmceventId())) {
+          continue;
+        }
 
         if (isPairOK(pos1, pos2, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(pos1.globalIndex(), pos2.globalIndex()));
@@ -2834,6 +2840,9 @@ struct checkMCPairTemplate {
         auto mcneg2 = mcparticles.iteratorAt(neg2.emmcparticleId());
         auto mccollision_from_neg2 = mcneg2.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg2.getSubGeneratorId() != cfgEventGeneratorType) {
+          continue;
+        }
+        if (cfgRequireTrueAssociation && (mcneg1.emmceventId() != collision.emmceventId() || mcneg2.emmceventId() != collision.emmceventId())) {
           continue;
         }
         if (isPairOK(neg1, neg2, cut, tracks)) {
