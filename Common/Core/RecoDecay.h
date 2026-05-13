@@ -284,7 +284,7 @@ struct RecoDecay {
   /// \param posSV {x, y, z} position of the secondary vertex
   /// \param mom {x, y, z} momentum array
   /// \return cosine of pointing angle in {r, z}
-  template <std::size_t N, typename T, typename U, typename V>
+  template <typename T, typename U, typename V>
   static double cpaRZ(const T& posPV, const U& posSV, const std::array<V, 3>& mom)
   {
     // CPARZ = (r . pz)/(|r| |pz|)
