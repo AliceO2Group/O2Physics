@@ -25,3 +25,7 @@ o2physics_add_dpl_workflow(phosid-converter1
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(converter-emevent-pmevent
+                  SOURCES converterEmeventPmevent.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)

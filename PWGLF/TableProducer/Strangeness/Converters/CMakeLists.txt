@@ -124,6 +124,11 @@ o2physics_add_dpl_workflow(stracentconverter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(stracentconverter2
+                    SOURCES stracentconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(stramccollmultconverter
                     SOURCES stramccollmultconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

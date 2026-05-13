@@ -2,7 +2,7 @@
 # Find issues in O2 code
 name: O2 linter
 
-#"on": [pull_request_target, push]
+"on": [pull_request_target, push]
 permissions: {}
 env:
   BRANCH_MAIN: master
@@ -20,12 +20,12 @@ jobs:
     steps:
       - name: Set branches
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
+          if [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "pull_request" ]]; then
             branch_head="${{ github.ref }}"
-            branch_base="${{ env.BRANCH_MAIN }}"
+            branch_base="origin/${{ env.BRANCH_MAIN }}"
           else
             branch_head="refs/pull/${{ github.event.pull_request.number }}/merge"
-            branch_base="${{ github.event.pull_request.base.ref }}"
+            branch_base="origin/${{ github.event.pull_request.base.ref }}"
           fi
           echo BRANCH_HEAD="$branch_head" >> "$GITHUB_ENV"
           echo BRANCH_BASE="$branch_base" >> "$GITHUB_ENV"
@@ -37,9 +37,10 @@ jobs:
       - name: Run tests
         id: linter
         run: |
+          git log -n 1 --pretty='format:%ci %h %s %d%n'
           # Diff against the common ancestor of the source (head) branch and the target (base) branch.
           echo "Diffing ${{ env.BRANCH_HEAD }} against ${{ env.BRANCH_BASE }}."
-          readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.BRANCH_BASE }}...)
+          readarray -t files < <(git diff --diff-filter d --name-only ${{ env.BRANCH_BASE }}...)
           if [ ${#files[@]} -eq 0 ]; then
               echo "::notice::No files to lint."
               echo "linter_ran=0" >> "$GITHUB_OUTPUT"

@@ -18,8 +18,9 @@
 #ifndef PWGLF_DATAMODEL_LFANTINCEXTABLES_H_
 #define PWGLF_DATAMODEL_LFANTINCEXTABLES_H_
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -42,6 +43,12 @@ DECLARE_SOA_COLUMN(McAngleDeg, mcAngleDeg, float);
 DECLARE_SOA_COLUMN(McVtxX, mcVtxX, float);
 DECLARE_SOA_COLUMN(McVtxY, mcVtxY, float);
 DECLARE_SOA_COLUMN(McVtxZ, mcVtxZ, float);
+DECLARE_SOA_COLUMN(VtxNAll, vtxNAll, int16_t);
+DECLARE_SOA_COLUMN(VtxNCh, vtxNCh, int16_t);
+DECLARE_SOA_COLUMN(VtxNNeut, vtxNNeut, int16_t);
+DECLARE_SOA_COLUMN(VtxNPi0, vtxNPi0, int16_t);
+DECLARE_SOA_COLUMN(VtxNGamma, vtxNGamma, int16_t);
+DECLARE_SOA_COLUMN(VtxNN, vtxNN, int16_t);
 
 // Tracks (pair, fitter)
 DECLARE_SOA_COLUMN(TrkPairP, trkPairP, float);
@@ -122,6 +129,7 @@ DECLARE_SOA_TABLE(AntinCexPairs, "AOD", "ANTINCEX",
                   antin_cex::MotherPdg, antin_cex::MotherP, antin_cex::ColId, antin_cex::PId, antin_cex::AntipId,
                   antin_cex::McPairP, antin_cex::McPairPt, antin_cex::McPairPz,
                   antin_cex::McDplane, antin_cex::McAngleDeg, antin_cex::McVtxX, antin_cex::McVtxY, antin_cex::McVtxZ,
+                  antin_cex::VtxNAll, antin_cex::VtxNCh, antin_cex::VtxNNeut, antin_cex::VtxNPi0, antin_cex::VtxNGamma, antin_cex::VtxNN,
                   antin_cex::TrkPairP, antin_cex::TrkPairPt, antin_cex::TrkPairPz, antin_cex::TrkAngleDeg,
                   antin_cex::TrkVtxfitDcaPair, antin_cex::TrkVtxfitR, antin_cex::TrkVtxfitDistToPv,
                   antin_cex::TrkVtxfitSecVtxX, antin_cex::TrkVtxfitSecVtxY, antin_cex::TrkVtxfitSecVtxZ,

@@ -21,6 +21,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 
+#include <TString.h>
 #include <TSystem.h>
 
 #include <array>

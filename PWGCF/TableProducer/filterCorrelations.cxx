@@ -8,31 +8,45 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/detail/TypeTruncation.h"
-#include <Framework/Output.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
+#include <TH3.h>
+#include <TParticlePDG.h>
 
+#include <Rtypes.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <experimental/type_traits> // required for is_detected
+#include <type_traits>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -41,17 +55,6 @@ using namespace o2::math_utils::detail;
 
 #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
-namespace o2::aod
-{
-namespace cfmultiplicity
-{
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Centrality/multiplicity value
-} // namespace cfmultiplicity
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity); //! Transient multiplicity table
-
-using CFMultiplicity = CFMultiplicities::iterator;
-} // namespace o2::aod
 
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -106,7 +109,7 @@ struct FilterCF {
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
@@ -570,7 +573,7 @@ struct MultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   void init(InitContext&)
   {
@@ -588,6 +591,9 @@ struct MultiplicitySelector {
       enabledFunctions++;
     }
     if (doprocessFT0CVariant1) {
+      enabledFunctions++;
+    }
+    if (doprocessFT0CVariant2) {
       enabledFunctions++;
     }
     if (doprocessFT0A) {
@@ -634,6 +640,14 @@ struct MultiplicitySelector {
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
+
+  void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0CVariant2());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant2, "Select FT0CVariant2 centrality as multiplicity", false);
 
   void processFT0A(aod::CentFT0As const& centralities)
   {

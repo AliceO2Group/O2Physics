@@ -15,35 +15,37 @@
 
 #include "PWGLF/DataModel/ReducedF1ProtonTables.h"
 
-#include "Common/Core/trackUtilities.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
-#include <TObjString.h>
-
-#include <fairlogger/Logger.h>
+#include <TMathBase.h>
 
 #include <algorithm>
 #include <array>
-#include <iostream>
-#include <iterator>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <random>
-#include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -140,86 +142,94 @@ struct f1protoncorrelation {
   // -------------------------
   void buildSystematicCuts()
   {
-    // choices from your table/picture
-    const std::array<float, 2> optDcaxy{0.01f, 0.03f};
-    const std::array<float, 2> optDcaz{0.01f, 0.03f};
-    const std::array<int, 2> optNcrs{90, 100};
-    const std::array<int, 2> optNcls{90, 100};
+    // 3 options per cut: index 0 = DEFAULT, index 1/2 = variations
+    // Fill these with the exact values you want (I used your def as index 0 + your old options as 1/2)
+    const std::array<float, 3> optDcaxy{0.05f, 0.01f, 0.03f};
+    const std::array<float, 3> optDcaz{0.05f, 0.01f, 0.03f};
+    const std::array<int, 3> optNcrs{80, 90, 100};
+    const std::array<int, 3> optNcls{80, 90, 100};
 
-    const std::array<float, 2> optCPA{0.99f, 0.995f};
-    const std::array<float, 2> optRad{0.8f, 1.0f};
-    const std::array<float, 2> optDcaDD{0.9f, 0.8f};
-    const std::array<float, 2> optDcaV0{0.2f, 0.15f};
-    const std::array<float, 2> optLife{16.f, 18.f};
-    const std::array<float, 2> optDcaD1{0.06f, 0.08f};
-    const std::array<float, 2> optDcaD2{0.06f, 0.08f};
+    const std::array<float, 3> optCPA{0.985f, 0.99f, 0.995f};
+    const std::array<float, 3> optRad{0.50f, 0.80f, 1.00f};
+    const std::array<float, 3> optDcaDD{1.00f, 0.90f, 0.80f};
+    const std::array<float, 3> optDcaV0{0.30f, 0.20f, 0.15f};
+    const std::array<float, 3> optLife{20.f, 16.f, 18.f};
+    const std::array<float, 3> optDcaD1{0.05f, 0.06f, 0.08f};
+    const std::array<float, 3> optDcaD2{0.05f, 0.06f, 0.08f};
 
-    // bit layout:
-    // primary: 4 bits  (0..3)
-    // v0:      7 bits  (4..10)
-    // pid:     3 bits  (11..13)
-    // total: 14 bits -> 16384 combos
-    auto buildFromMask = [&](uint32_t m) -> SysCuts {
+    // PID modes: also allow default (0) to appear in random variations
+    const std::array<int, 3> optPidPi{0, 1, 2};
+    const std::array<int, 3> optPidK{0, 1, 2};
+    const std::array<int, 3> optPidP{0, 1, 2};
+
+    // Helper: build SysCuts from chosen indices (0..2)
+    auto buildFromIdx = [&](int i0, int i1, int i2, int i3,
+                            int i4, int i5, int i6, int i7, int i8, int i9, int i10,
+                            int i11, int i12, int i13) -> SysCuts {
       SysCuts c{};
-      c.maxDcaxy = optDcaxy[(m >> 0) & 1u];
-      c.maxDcaz = optDcaz[(m >> 1) & 1u];
-      c.minTPCCrossedRows = optNcrs[(m >> 2) & 1u];
-      c.minTPCClusters = optNcls[(m >> 3) & 1u];
+      c.maxDcaxy = optDcaxy[i0];
+      c.maxDcaz = optDcaz[i1];
+      c.minTPCCrossedRows = optNcrs[i2];
+      c.minTPCClusters = optNcls[i3];
 
-      c.minCPA = optCPA[(m >> 4) & 1u];
-      c.minRadius = optRad[(m >> 5) & 1u];
-      c.maxDcaDaughters = optDcaDD[(m >> 6) & 1u];
-      c.maxDcaV0 = optDcaV0[(m >> 7) & 1u];
-      c.maxLifetime = optLife[(m >> 8) & 1u];
-      c.minDcaD1 = optDcaD1[(m >> 9) & 1u];
-      c.minDcaD2 = optDcaD2[(m >> 10) & 1u];
+      c.minCPA = optCPA[i4];
+      c.minRadius = optRad[i5];
+      c.maxDcaDaughters = optDcaDD[i6];
+      c.maxDcaV0 = optDcaV0[i7];
+      c.maxLifetime = optLife[i8];
+      c.minDcaD1 = optDcaD1[i9];
+      c.minDcaD2 = optDcaD2[i10];
 
-      c.pidPi = (m >> 11) & 1u;
-      c.pidK = (m >> 12) & 1u;
-      c.pidP = (m >> 13) & 1u;
+      c.pidPi = optPidPi[i11];
+      c.pidK = optPidK[i12];
+      c.pidP = optPidP[i13];
       return c;
     };
 
-    // DEFAULT (sysId=0): set to your baseline
-    SysCuts def{};
-    def.maxDcaxy = 0.05f;
-    def.maxDcaz = 0.05f;
-    def.minTPCCrossedRows = 80;
-    def.minTPCClusters = 80;
-
-    def.minCPA = 0.985f;
-    def.minRadius = 0.5f;
-    def.maxDcaDaughters = 1.0f;
-    def.maxDcaV0 = 0.3f;
-    def.maxLifetime = 20.f;
-    def.minDcaD1 = 0.05f;
-    def.minDcaD2 = 0.05f;
-
-    def.pidPi = 0;
-    def.pidK = 0;
-    def.pidP = 0;
-
-    std::vector<uint32_t> masks;
-    masks.reserve(16384);
-    for (uint32_t m = 0; m < 16384; ++m) {
-      masks.push_back(m);
-    }
+    // sysId=0 must be strict default (all indices = 0)
+    SysCuts def = buildFromIdx(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     std::mt19937 rng(sysSeed);
-    std::shuffle(masks.begin(), masks.end(), rng);
+    std::uniform_int_distribution<int> pick012(0, 2);
+
+    // Optional: keep unique combinations (by packing indices in 2 bits each)
+    auto packCode = [&](const std::array<int, 14>& idx) -> uint32_t {
+      uint32_t code = 0u;
+      for (int k = 0; k < 14; ++k) {
+        code |= (uint32_t(idx[k] & 0x3) << (2 * k));
+      }
+      return code;
+    };
 
     sysCuts.clear();
-    sysCuts.reserve(1 + nSysRand);
-    sysCuts.push_back(def);
+    sysCuts.reserve(1 + (size_t)nSysRand);
+    sysCuts.push_back(def); // sysId=0
 
-    const int nPick = std::min<int>(nSysRand, (int)masks.size());
-    for (int i = 0, picked = 0; picked < nPick && i < (int)masks.size(); ++i) {
-      if (masks[i] == 0u) { // avoid trivial mask that can reproduce default
+    std::unordered_set<uint32_t> used;
+    used.reserve((size_t)nSysRand * 2);
+    used.insert(0u); // all-default code
+
+    const int nPick = std::max(0, (int)nSysRand);
+    while ((int)sysCuts.size() < 1 + nPick) {
+
+      std::array<int, 14> idx{};
+      for (int k = 0; k < 14; ++k)
+        idx[k] = pick012(rng);
+
+      uint32_t code = packCode(idx);
+      if (!used.insert(code).second)
+        continue; // already have this combination
+
+      // (optional) avoid generating exactly default again
+      if (code == 0u)
         continue;
-      }
-      sysCuts.push_back(buildFromMask(masks[i]));
-      ++picked;
+
+      sysCuts.push_back(buildFromIdx(
+        idx[0], idx[1], idx[2], idx[3],
+        idx[4], idx[5], idx[6], idx[7], idx[8], idx[9], idx[10],
+        idx[11], idx[12], idx[13]));
     }
+
     nSysTotal = (int)sysCuts.size();
   }
 
@@ -283,9 +293,9 @@ struct f1protoncorrelation {
     if (f1track.f1d1TOFHit() != 1) {
       return (std::abs(nsTPC) < cutNoTOF);
     }
-
-    const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
-    return (comb < cutWithTOF);
+    return (std::abs(nsTPC) < cutNoTOF && std::abs(nsTOF) < cutWithTOF);
+    // const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
+    // return (comb < cutWithTOF);
   }
   inline bool passKaonPID(int pidMode,
                           const aod::F1Tracks::iterator& f1track,
@@ -331,10 +341,10 @@ struct f1protoncorrelation {
       }
       return true;
     }
-
+    return (std::abs(nsTPC) < cutNoTOFBase && std::abs(nsTOF) < cutWithTOF);
     // --- TOF available: circular cut in (TPC,TOF) nσ plane
-    const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
-    return (comb < cutWithTOF);
+    // const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
+    // return (comb < cutWithTOF);
   }
   inline bool passProtonPID(int pidMode,
                             const aod::ProtonTracks::iterator& ptrack,
@@ -370,8 +380,9 @@ struct f1protoncorrelation {
     // circular cut in (TPC,TOF)
     const float nsTPC = ptrack.protonNsigmaTPC();
     const float nsTOF = ptrack.protonNsigmaTOF();
-    const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
-    return (comb < cutCircle);
+    return (std::abs(nsTPC) < cutTPC && std::abs(nsTOF) < cutCircle);
+    // const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
+    // return (comb < cutCircle);
   }
 
   // Initialize the ananlysis task
@@ -598,10 +609,10 @@ struct f1protoncorrelation {
         }
         auto relative_momentum = getkstar(F1, Proton);
         if (relative_momentum <= 0.5) {
-          histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), Proton.Pt());
+          histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), protontrack.protonNsigmaTOF(), Proton.Pt());
         }
         histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, F1.Pt(), Proton.Pt());
-
+        auto mT = getmT(F1, Proton);
         if (f1track.f1SignalStat() > 0) {
           // check charge
           float pairCharge = f1track.f1SignalStat() * protontrack.protonCharge();
@@ -616,7 +627,9 @@ struct f1protoncorrelation {
             histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz), relative_momentum); // Phase Space Proton kaon
           if (pionCharge == protontrack.protonCharge())
             histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Pion.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz), relative_momentum); // Phase Space Proton Pionsyst
-          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge, collision.numContrib());                                                  // F1 sign = 1 unlike, F1 sign = -1 like
+
+          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge, collision.numContrib()); // F1 sign = 1 unlike, F1 sign = -1 like
+          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass_SYS"), 0, relative_momentum, mT, F1.M(), collision.numContrib());
           if (fillSparse) {
             histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
           }
@@ -642,6 +655,7 @@ struct f1protoncorrelation {
           }
         }
         if (f1track.f1SignalStat() == -1) {
+          histos.fill(HIST("h2SameEventInvariantMassLike_mass_SYS"), 0, relative_momentum, mT, F1.M(), collision.numContrib());
           histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), protontrack.protonCharge(), collision.numContrib());
           if (fillSparse) {
             histos.fill(HIST("SEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, protontrack.protonCharge());
@@ -887,6 +901,7 @@ struct f1protoncorrelation {
           continue;
         }
         auto relative_momentum = getkstar(F1, Proton);
+        auto mT = getmT(F1, Proton);
         if (t1.f1SignalStat() > 0) {
           float pairCharge = t1.f1SignalStat() * t2.protonCharge();
           int f1Charge = t1.f1SignalStat();
@@ -896,6 +911,7 @@ struct f1protoncorrelation {
             pionCharge = 1;
             kaonCharge = -1;
           }
+          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass_SYS"), 0, relative_momentum, mT, F1.M(), collision1.numContrib());
           histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge, collision1.numContrib());                                         // F1 sign = 1 unlike, F1 sign = -1 like
           histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), kaonCharge, bz, bz2), relative_momentum); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Pion.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2), relative_momentum); // Phase Space Proton Pion
@@ -927,6 +943,7 @@ struct f1protoncorrelation {
           }
         }
         if (t1.f1SignalStat() == -1) {
+          histos.fill(HIST("h2MixEventInvariantMassLike_mass_SYS"), 0, relative_momentum, mT, F1.M(), collision1.numContrib());
           histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), t2.protonCharge(), collision1.numContrib());
           if (fillSparse) {
             histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, t2.protonCharge());
@@ -968,7 +985,8 @@ struct f1protoncorrelation {
       Kaon.SetXYZM(f1track.f1d2Px(), f1track.f1d2Py(), f1track.f1d2Pz(), 0.493);
       Kshort.SetXYZM(f1track.f1d3Px(), f1track.f1d3Py(), f1track.f1d3Pz(), 0.497);
       KaonKshortPair = Kaon + Kshort;
-
+      if (F1.Pt() < lowPtF1 || F1.Pt() > 50.0)
+        continue;
       std::vector<int> activeSys;
       activeSys.reserve((size_t)nSysTotal);
 
@@ -1014,7 +1032,7 @@ struct f1protoncorrelation {
 
         const auto& sc0 = sysCuts[0];
 
-        if (countf1 && passPrimary(protontrack.protonDcaxy(), protontrack.protonDcaz(), protontrack.protonTPCNcrs(), protontrack.protonTPCNcls(), sc0)) {
+        if (countf1 && passPrimary(protontrack.protonDcaxy(), protontrack.protonDcaz(), protontrack.protonTPCNcrs(), protontrack.protonTPCNcls(), sc0) && passProtonPID(0, protontrack, Proton, pMinP, pMaxP, pTofP)) {
           histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), protontrack.protonNsigmaTOF(), Proton.Pt());
         }
 
@@ -1110,6 +1128,8 @@ struct f1protoncorrelation {
         Kshort.SetXYZM(t1.f1d3Px(), t1.f1d3Py(), t1.f1d3Pz(), 0.497);
         KaonKshortPair = Kaon + Kshort;
         Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
+        if (F1.Pt() < lowPtF1 || F1.Pt() > 50.0)
+          continue;
         auto relative_momentum = getkstar(F1, Proton);
         auto mT = getmT(F1, Proton);
         // sys list for this (F1, p) pair

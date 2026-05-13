@@ -19,6 +19,7 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 #include "EventFiltering/filterTables.h"
 //
@@ -249,6 +250,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
   std::array<std::shared_ptr<TH2>, kNV0> hArmPod{};
   std::shared_ptr<TH2> hV0Selected;
+  std::array<std::shared_ptr<TH2>, 2> hMassVsCtCharmBaryonToXi{};
   std::array<std::shared_ptr<TH2>, 2> hMassXi{}; // not tracked and tracked
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hCpaVsPtB{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hDecayLengthVsPtB{};
@@ -301,7 +303,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
-    helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
+    helper.setVtxConfiguration(dfStrangeness, true);  // (DCAFitterN, useAbsDCA)
     helper.setVtxConfiguration(dfStrangeness3, true); // (DCAFitterN, useAbsDCA)
     helper.setParSigmaCPr(
       cutsPtDeltaMassCharmReso->get(0u, 13u), // min ΔM
@@ -389,6 +391,8 @@ struct HfFilter { // Main struct for HF triggers
       hMassVsPtC[kNCharmParticles + 15] = registry.add<TH2>("fMassVsPtCharmBaryonToXiPi", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+#pi candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 15]});
       hMassVsPtC[kNCharmParticles + 16] = registry.add<TH2>("fMassVsPtCharmBaryonToXiKa", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+K candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 16]});
       hMassVsPtC[kNCharmParticles + 17] = registry.add<TH2>("fMassVsPtCharmBaryonToXiPiPi", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+#pi+#pi candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 17]});
+      hMassVsCtCharmBaryonToXi[0] = registry.add<TH2>("fMassVsCtCharmBaryonToXiPi", "#it{M} vs. ct distribution of triggered #Xi+#pi candidates;ct (cm);#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ctAxis, massAxisC[kNCharmParticles + 15]});
+      hMassVsCtCharmBaryonToXi[1] = registry.add<TH2>("fMassVsCtCharmBaryonToXiPiPi", "#it{M} vs. ct distribution of triggered #Xi+#pi+#pi candidates;ct (cm);#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ctAxis, massAxisC[kNCharmParticles + 17]});
       // JPsi
       hMassVsPtC[kNCharmParticles + 18] = registry.add<TH2>("fMassVsPtJPsiToMuMu", "#it{M} vs. #it{p}_{T} distribution of triggered J/#psi to #mu#mu candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 18]});
       // Lc resonances
@@ -481,6 +485,9 @@ struct HfFilter { // Main struct for HF triggers
   {
     for (const auto& collision : collisions) {
 
+      // all processed collisions
+      hProcessedEvents->Fill(0);
+
       bool keepEvent[kNtriggersHF]{false};
       bool isSelectedTVX = evSel.applyTVX ? collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) : true;
       bool isSelectedTFBorder = evSel.applyTFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) : true;
@@ -488,6 +495,7 @@ struct HfFilter { // Main struct for HF triggers
       bool isSelectedPvZ = (std::fabs(collision.posZ()) < evSel.maxPvZ);
       if (!isSelectedTVX || !isSelectedTFBorder || !isSelectedITSROFBorder || !isSelectedPvZ) {
         tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P], keepEvent[kCharmBarToXi2Bach], keepEvent[kPrCharm2P], keepEvent[kBtoJPsiKa], keepEvent[kBtoJPsiKstar], keepEvent[kBtoJPsiPhi], keepEvent[kBtoJPsiPrKa], keepEvent[kBtoJPsiPi], keepEvent[kSigmaCPr]);
+        hProcessedEvents->Fill(1); // rejected
         continue;
       }
 
@@ -526,8 +534,6 @@ struct HfFilter { // Main struct for HF triggers
 
         currentRun = bc.runNumber();
       }
-
-      hProcessedEvents->Fill(0);
 
       std::vector<std::vector<int64_t>> indicesDau2Prong{}, indicesDau2ProngPrompt{};
 
@@ -1945,10 +1951,10 @@ struct HfFilter { // Main struct for HF triggers
               bool isSelXiBach{false};
               if (requireStrangenessTracking->get(0u, 0u) > 0) {
                 if (hasStrangeTrack) {
-                  isSelXiBach = helper.isSelectedXiBach(trackParCascTrack, trackParBachelor, isSelBachelor, collision, dfStrangeness, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16]);
+                  isSelXiBach = helper.isSelectedXiBach(trackParCascTrack, trackParBachelor, isSelBachelor, collision, dfStrangeness, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16], hMassVsCtCharmBaryonToXi[0]);
                 }
               } else {
-                isSelXiBach = helper.isSelectedXiBach(trackParCasc, trackParBachelor, isSelBachelor, collision, dfStrangeness, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16]);
+                isSelXiBach = helper.isSelectedXiBach(trackParCasc, trackParBachelor, isSelBachelor, collision, dfStrangeness, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16], hMassVsCtCharmBaryonToXi[0]);
               }
               if (isSelXiBach) {
                 keepEvent[kCharmBarToXiBach] = true;
@@ -1988,10 +1994,10 @@ struct HfFilter { // Main struct for HF triggers
                   bool isSelXiBachBach{false};
                   if (requireStrangenessTracking->get(0u, 1u) > 0) {
                     if (hasStrangeTrack) {
-                      isSelXiBachBach = helper.isSelectedXiBachBach<3>(trackParCascTrack, {trackParBachelor, trackParBachelorSecond}, collision, dfStrangeness3, activateQA, hMassVsPtC[kNCharmParticles + 17]);
+                      isSelXiBachBach = helper.isSelectedXiBachBach<3>(trackParCascTrack, {trackParBachelor, trackParBachelorSecond}, collision, dfStrangeness3, activateQA, hMassVsPtC[kNCharmParticles + 17], hMassVsCtCharmBaryonToXi[1]);
                     }
                   } else { // vertex with only the two bachelors
-                    isSelXiBachBach = helper.isSelectedXiBachBach<2>(trackParCasc, {trackParBachelor, trackParBachelorSecond}, collision, df2, activateQA, hMassVsPtC[kNCharmParticles + 17]);
+                    isSelXiBachBach = helper.isSelectedXiBachBach<2>(trackParCasc, {trackParBachelor, trackParBachelorSecond}, collision, df2, activateQA, hMassVsPtC[kNCharmParticles + 17], hMassVsCtCharmBaryonToXi[1]);
                   }
                   if (isSelXiBachBach) {
                     keepEvent[kCharmBarToXi2Bach] = true;

@@ -74,7 +74,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 /// Task to QA the efficiency of a particular particle defined by particlePDG
 template <track::pid_constants::ID particle>

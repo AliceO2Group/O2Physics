@@ -19,14 +19,13 @@
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
-#include "Common/DataModel/Multiplicity.h"
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -35,9 +34,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <vector>
@@ -145,61 +143,80 @@ struct BjetCentMultTask {
       registry.add("h_scaled_FT0M_class", "", {HistType::kTH1F, {{axisMultScaledFT0MClass}}});
       registry.add("h2_centrality_percentile_multiplicity", "mcd collision centrality; centrality; counts", {HistType::kTH2F, {{axisRebinnedCentrality}, {axisPercentileMultiplicity}}});
     }
-    if (doprocessSV3ProngData) {
+    if (doprocessSVData) {
       registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
       registry.add("h2_jet_pt_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}});
       registry.add("h2_jet_eta_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}});
       registry.add("h2_jet_phi_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}});
       if (fillGeneralSVQA) {
-        registry.add("h2_3prong_nprongs_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}});
-        registry.add("hn_jet_3prong_Sxy_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}});
+        registry.add("h2_nprongs_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}});
+        registry.add("hn_jet_Sxy_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}});
         if (fillSVxyz) {
-          registry.add("hn_jet_3prong_Sxyz_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}});
+          registry.add("hn_jet_Sxyz_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}});
         }
       }
-      registry.add("hn_jet_3prong_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
+      registry.add("hn_jet_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
+      registry.add("hn_taggedjet_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
       if (fillSVxyz) {
-        registry.add("hn_jet_3prong_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
+        registry.add("hn_jet_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
+        registry.add("hn_taggedjet_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
       }
     }
-    if (doprocessSV3ProngMCD || doprocessSV3ProngMCPMCDMatched) {
+    if (doprocessRhoAreaSubSVData) {
+      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
+      registry.add("h2_jet_pt_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}});
+      registry.add("h2_jet_eta_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}});
+      registry.add("h2_jet_phi_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}});
+      if (fillGeneralSVQA) {
+        registry.add("h2_nprongs_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}});
+        registry.add("hn_jet_Sxy_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}});
+        if (fillSVxyz) {
+          registry.add("hn_jet_Sxyz_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}});
+        }
+      }
+      registry.add("hn_jet_Sxy_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
+      registry.add("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
+      if (fillSVxyz) {
+        registry.add("hn_jet_Sxyz_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
+        registry.add("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
+      }
+    }
+    if (doprocessSVMCD || doprocessSVMCPMCDMatched) {
       registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
       registry.add("h3_jet_pt_centrality_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisCentrality}, {axisJetFlavour}}});
       registry.add("h3_jet_eta_centrality_flavour", "", {HistType::kTH3F, {{axisEta}, {axisCentrality}, {axisJetFlavour}}});
       registry.add("h3_jet_phi_centrality_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisCentrality}, {axisJetFlavour}}});
       if (fillGeneralSVQA) {
-        registry.add("h3_3prong_nprongs_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_jet_3prong_Sxy_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("h3_nprongs_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_jet_Sxy_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}});
         if (fillSVxyz) {
-          registry.add("hn_jet_3prong_Sxyz_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}});
+          registry.add("hn_jet_Sxyz_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}});
         }
       }
-      registry.add("hn_jet_3prong_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_jet_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_taggedjet_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       if (fillSVxyz) {
-        registry.add("hn_jet_3prong_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_jet_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_taggedjet_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       }
     }
-    if (doprocessRhoAreaSubSV3ProngMCD || doprocessRhoAreaSubSV3ProngMCPMCDMatched) {
+    if (doprocessRhoAreaSubSVMCD || doprocessRhoAreaSubSVMCPMCDMatched) {
       registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
       registry.add("h3_jet_pt_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisCentrality}, {axisJetFlavour}}});
       registry.add("h3_jet_eta_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisEta}, {axisCentrality}, {axisJetFlavour}}});
       registry.add("h3_jet_phi_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisCentrality}, {axisJetFlavour}}});
       if (fillGeneralSVQA) {
-        registry.add("h3_3prong_nprongs_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_jet_3prong_Sxy_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("h3_nprongs_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_jet_Sxy_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}});
         if (fillSVxyz) {
-          registry.add("hn_jet_3prong_Sxyz_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}});
+          registry.add("hn_jet_Sxyz_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}});
         }
       }
-      registry.add("hn_jet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_jet_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       if (fillSVxyz) {
-        registry.add("hn_jet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_jet_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       }
     }
   }
@@ -315,19 +332,19 @@ struct BjetCentMultTask {
   }
 
   template <typename T, typename U>
-  void fillHistogramSV3ProngData(T const& jet, U const& /*prongs*/, float centrality)
+  void fillRhoAreaSubtractedHistogramSV(T const& jet, U const& /*prongs*/, float centrality, float rho)
   {
     if (jet.template secondaryVertices_as<U>().size() < 1)
       return;
-    registry.fill(HIST("h2_jet_pt_centrality"), jet.pt(), centrality);
-    registry.fill(HIST("h2_jet_eta_centrality"), jet.eta(), centrality);
-    registry.fill(HIST("h2_jet_phi_centrality"), jet.phi(), centrality);
+    registry.fill(HIST("h2_jet_pt_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), centrality);
+    registry.fill(HIST("h2_jet_eta_rhoareasubtracted_centrality"), jet.eta(), centrality);
+    registry.fill(HIST("h2_jet_phi_rhoareasubtracted_centrality"), jet.phi(), centrality);
     if (fillGeneralSVQA) {
-      registry.fill(HIST("h2_3prong_nprongs_centrality"), jet.template secondaryVertices_as<U>().size(), centrality);
+      registry.fill(HIST("h2_nprongs_rhoareasubtracted_centrality"), jet.template secondaryVertices_as<U>().size(), centrality);
       for (const auto& prong : jet.template secondaryVertices_as<U>()) {
-        registry.fill(HIST("hn_jet_3prong_Sxy_centrality"), jet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality);
+        registry.fill(HIST("hn_jet_Sxy_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality);
         if (fillSVxyz) {
-          registry.fill(HIST("hn_jet_3prong_Sxyz_centrality"), jet.pt(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality);
+          registry.fill(HIST("hn_jet_Sxyz_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality);
         }
       }
     }
@@ -336,9 +353,9 @@ struct BjetCentMultTask {
     if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      registry.fill(HIST("hn_jet_3prong_Sxy_N1_centrality"), jet.pt(), maxSxy, massSV, centrality);
+      registry.fill(HIST("hn_jet_Sxy_N1_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), maxSxy, massSV, centrality);
       if (jet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_centrality"), jet.pt(), maxSxy, massSV, centrality);
+        registry.fill(HIST("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), maxSxy, massSV, centrality);
       }
     }
     if (fillSVxyz) {
@@ -347,16 +364,57 @@ struct BjetCentMultTask {
       if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
         auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
         auto massSV = bjetCandXYZ.m();
-        registry.fill(HIST("hn_jet_3prong_Sxyz_N1_centrality"), jet.pt(), maxSxyz, massSV, centrality);
+        registry.fill(HIST("hn_jet_Sxyz_N1_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), maxSxyz, massSV, centrality);
         if (jet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_centrality"), jet.pt(), maxSxyz, massSV, centrality);
+          registry.fill(HIST("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality"), jet.pt() - (rho * jet.area()), maxSxyz, massSV, centrality);
         }
       }
     }
   }
 
   template <typename T, typename U>
-  void fillHistogramSV3ProngMCD(T const& mcdjet, U const& /*prongs*/, float centrality, float eventWeight = 1.0)
+  void fillHistogramSVData(T const& jet, U const& /*prongs*/, float centrality)
+  {
+    if (jet.template secondaryVertices_as<U>().size() < 1)
+      return;
+    registry.fill(HIST("h2_jet_pt_centrality"), jet.pt(), centrality);
+    registry.fill(HIST("h2_jet_eta_centrality"), jet.eta(), centrality);
+    registry.fill(HIST("h2_jet_phi_centrality"), jet.phi(), centrality);
+    if (fillGeneralSVQA) {
+      registry.fill(HIST("h2_nprongs_centrality"), jet.template secondaryVertices_as<U>().size(), centrality);
+      for (const auto& prong : jet.template secondaryVertices_as<U>()) {
+        registry.fill(HIST("hn_jet_Sxy_centrality"), jet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality);
+        if (fillSVxyz) {
+          registry.fill(HIST("hn_jet_Sxyz_centrality"), jet.pt(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality);
+        }
+      }
+    }
+    bool checkSv = false;
+    auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<U>(jet, prongCuts->at(0), prongCuts->at(1), prongCuts->at(2), prongCuts->at(4), prongCuts->at(5), false, &checkSv);
+    if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
+      auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
+      auto massSV = bjetCand.m();
+      registry.fill(HIST("hn_jet_Sxy_N1_centrality"), jet.pt(), maxSxy, massSV, centrality);
+      if (jet.isTagged(BJetTaggingMethod::SV)) {
+        registry.fill(HIST("hn_taggedjet_Sxy_N1_centrality"), jet.pt(), maxSxy, massSV, centrality);
+      }
+    }
+    if (fillSVxyz) {
+      checkSv = false;
+      auto bjetCandXYZ = jettaggingutilities::jetFromProngMaxDecayLength<U>(jet, prongCuts->at(0), prongCuts->at(1), prongCuts->at(3), prongCuts->at(4), prongCuts->at(5), true, &checkSv);
+      if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
+        auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
+        auto massSV = bjetCandXYZ.m();
+        registry.fill(HIST("hn_jet_Sxyz_N1_centrality"), jet.pt(), maxSxyz, massSV, centrality);
+        if (jet.isTagged(BJetTaggingMethod::SV3D)) {
+          registry.fill(HIST("hn_taggedjet_Sxyz_N1_centrality"), jet.pt(), maxSxyz, massSV, centrality);
+        }
+      }
+    }
+  }
+
+  template <typename T, typename U>
+  void fillHistogramSVMCD(T const& mcdjet, U const& /*prongs*/, float centrality, float eventWeight = 1.0)
   {
     if (useEventWeight) {
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
@@ -371,11 +429,11 @@ struct BjetCentMultTask {
     registry.fill(HIST("h3_jet_eta_centrality_flavour"), mcdjet.eta(), centrality, origin, eventWeight);
     registry.fill(HIST("h3_jet_phi_centrality_flavour"), mcdjet.phi(), centrality, origin, eventWeight);
     if (fillGeneralSVQA) {
-      registry.fill(HIST("h3_3prong_nprongs_centrality_flavour"), mcdjet.template secondaryVertices_as<U>().size(), centrality, origin, eventWeight);
+      registry.fill(HIST("h3_nprongs_centrality_flavour"), mcdjet.template secondaryVertices_as<U>().size(), centrality, origin, eventWeight);
       for (const auto& prong : mcdjet.template secondaryVertices_as<U>()) {
-        registry.fill(HIST("hn_jet_3prong_Sxy_centrality_flavour"), mcdjet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality, origin, eventWeight);
+        registry.fill(HIST("hn_jet_Sxy_centrality_flavour"), mcdjet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality, origin, eventWeight);
         if (fillSVxyz) {
-          registry.fill(HIST("hn_jet_3prong_Sxyz_centrality_flavour"), mcdjet.pt(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality, origin, eventWeight);
+          registry.fill(HIST("hn_jet_Sxyz_centrality_flavour"), mcdjet.pt(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality, origin, eventWeight);
         }
       }
     }
@@ -384,9 +442,9 @@ struct BjetCentMultTask {
     if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      registry.fill(HIST("hn_jet_3prong_Sxy_N1_centrality_flavour"), mcdjet.pt(), maxSxy, massSV, centrality, origin, eventWeight);
+      registry.fill(HIST("hn_jet_Sxy_N1_centrality_flavour"), mcdjet.pt(), maxSxy, massSV, centrality, origin, eventWeight);
       if (mcdjet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_centrality_flavour"), mcdjet.pt(), maxSxy, massSV, centrality, origin, eventWeight);
+        registry.fill(HIST("hn_taggedjet_Sxy_N1_centrality_flavour"), mcdjet.pt(), maxSxy, massSV, centrality, origin, eventWeight);
       }
     }
     if (fillSVxyz) {
@@ -394,16 +452,16 @@ struct BjetCentMultTask {
       if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
         auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
         auto massSV = bjetCandXYZ.m();
-        registry.fill(HIST("hn_jet_3prong_Sxyz_N1_centrality_flavour"), mcdjet.pt(), maxSxyz, massSV, centrality, origin, eventWeight);
+        registry.fill(HIST("hn_jet_Sxyz_N1_centrality_flavour"), mcdjet.pt(), maxSxyz, massSV, centrality, origin, eventWeight);
         if (mcdjet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_centrality_flavour"), mcdjet.pt(), maxSxyz, massSV, centrality, origin, eventWeight);
+          registry.fill(HIST("hn_taggedjet_Sxyz_N1_centrality_flavour"), mcdjet.pt(), maxSxyz, massSV, centrality, origin, eventWeight);
         }
       }
     }
   }
 
   template <typename T, typename U>
-  void fillRhoAreaSubtractedHistogramSV3ProngMCD(T const& mcdjet, U const& /*prongs*/, float centrality, float rho, float eventWeight = 1.0)
+  void fillRhoAreaSubtractedHistogramSVMCD(T const& mcdjet, U const& /*prongs*/, float centrality, float rho, float eventWeight = 1.0)
   {
     if (useEventWeight) {
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
@@ -418,11 +476,11 @@ struct BjetCentMultTask {
     registry.fill(HIST("h3_jet_eta_rhoareasubtracted_centrality_flavour"), mcdjet.eta(), centrality, origin, eventWeight);
     registry.fill(HIST("h3_jet_phi_rhoareasubtracted_centrality_flavour"), mcdjet.phi(), centrality, origin, eventWeight);
     if (fillGeneralSVQA) {
-      registry.fill(HIST("h3_3prong_nprongs_rhoareasubtracted_centrality_flavour"), mcdjet.template secondaryVertices_as<U>().size(), centrality, origin, eventWeight);
+      registry.fill(HIST("h3_nprongs_rhoareasubtracted_centrality_flavour"), mcdjet.template secondaryVertices_as<U>().size(), centrality, origin, eventWeight);
       for (const auto& prong : mcdjet.template secondaryVertices_as<U>()) {
-        registry.fill(HIST("hn_jet_3prong_Sxy_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality, origin, eventWeight);
+        registry.fill(HIST("hn_jet_Sxy_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), centrality, origin, eventWeight);
         if (fillSVxyz) {
-          registry.fill(HIST("hn_jet_3prong_Sxyz_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality, origin, eventWeight);
+          registry.fill(HIST("hn_jet_Sxyz_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), centrality, origin, eventWeight);
         }
       }
     }
@@ -431,9 +489,9 @@ struct BjetCentMultTask {
     if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      registry.fill(HIST("hn_jet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxy, massSV, centrality, origin, eventWeight);
+      registry.fill(HIST("hn_jet_Sxy_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxy, massSV, centrality, origin, eventWeight);
       if (mcdjet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxy, massSV, centrality, origin, eventWeight);
+        registry.fill(HIST("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxy, massSV, centrality, origin, eventWeight);
       }
     }
     if (fillSVxyz) {
@@ -441,9 +499,9 @@ struct BjetCentMultTask {
       if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
         auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
         auto massSV = bjetCandXYZ.m();
-        registry.fill(HIST("hn_jet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxyz, massSV, centrality, origin, eventWeight);
+        registry.fill(HIST("hn_jet_Sxyz_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxyz, massSV, centrality, origin, eventWeight);
         if (mcdjet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxyz, massSV, centrality, origin, eventWeight);
+          registry.fill(HIST("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality_flavour"), mcdjet.pt() - (rho * mcdjet.area()), maxSxyz, massSV, centrality, origin, eventWeight);
         }
       }
     }
@@ -496,7 +554,7 @@ struct BjetCentMultTask {
   }
   PROCESS_SWITCH(BjetCentMultTask, processMCP, "Fill impact parameter imformation for mcp jets", false);
 
-  void processSV3ProngData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, aod::DataSecondaryVertex3Prongs const& prongs)
+  void processSVData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertexNProngIndices> const& jets, aod::DataSecondaryVertexNProngs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -510,12 +568,32 @@ struct BjetCentMultTask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistogramSV3ProngData(jet, prongs, centrality);
+      fillHistogramSVData(jet, prongs, centrality);
     }
   }
-  PROCESS_SWITCH(BjetCentMultTask, processSV3ProngData, "Fill 3prong imformation for data jets", false);
+  PROCESS_SWITCH(BjetCentMultTask, processSVData, "Fill n-prong imformation for data jets", false);
 
-  void processSV3ProngMCD(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
+  void processRhoAreaSubSVData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertexNProngIndices> const& jets, aod::DataSecondaryVertexNProngs const& prongs)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    float centrality = collision.centFT0M();
+    float rho = collision.rho();
+    registry.fill(HIST("h_event_rhoareasubtracted_centrality"), collision.centFT0M());
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      fillRhoAreaSubtractedHistogramSV(jet, prongs, centrality, rho);
+    }
+  }
+  PROCESS_SWITCH(BjetCentMultTask, processRhoAreaSubSVData, "Fill n-prong imformation for data jets with background subtraction", false);
+
+  void processSVMCD(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertexNProngIndices> const& mcdjets, aod::MCDSecondaryVertexNProngs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -533,12 +611,12 @@ struct BjetCentMultTask {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillHistogramSV3ProngMCD(mcdjet, prongs, centrality, weight);
+      fillHistogramSVMCD(mcdjet, prongs, centrality, weight);
     }
   }
-  PROCESS_SWITCH(BjetCentMultTask, processSV3ProngMCD, "Fill 3prong imformation for mcd jets", false);
+  PROCESS_SWITCH(BjetCentMultTask, processSVMCD, "Fill n-prong imformation for mcd jets", false);
 
-  void processSV3ProngMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, aod::MCDSecondaryVertex3Prongs const& prongs)
+  void processSVMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertexNProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, aod::MCDSecondaryVertexNProngs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -559,12 +637,12 @@ struct BjetCentMultTask {
       if (!mcdjet.has_matchedJetGeo()) {
         continue;
       }
-      fillHistogramSV3ProngMCD(mcdjet, prongs, centrality, weight);
+      fillHistogramSVMCD(mcdjet, prongs, centrality, weight);
     }
   }
-  PROCESS_SWITCH(BjetCentMultTask, processSV3ProngMCPMCDMatched, "Fill 3prong imformation for mcd jets matched", false);
+  PROCESS_SWITCH(BjetCentMultTask, processSVMCPMCDMatched, "Fill n-prong imformation for mcd jets matched", false);
 
-  void processRhoAreaSubSV3ProngMCD(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
+  void processRhoAreaSubSVMCD(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertexNProngIndices> const& mcdjets, aod::MCDSecondaryVertexNProngs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -583,12 +661,12 @@ struct BjetCentMultTask {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillRhoAreaSubtractedHistogramSV3ProngMCD(mcdjet, prongs, centrality, rho, weight);
+      fillRhoAreaSubtractedHistogramSVMCD(mcdjet, prongs, centrality, rho, weight);
     }
   }
-  PROCESS_SWITCH(BjetCentMultTask, processRhoAreaSubSV3ProngMCD, "Fill 3prong imformation for mcd jets with background subraction", false);
+  PROCESS_SWITCH(BjetCentMultTask, processRhoAreaSubSVMCD, "Fill n-prong imformation for mcd jets with background subraction", false);
 
-  void processRhoAreaSubSV3ProngMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs, aod::JCollisionOutliers, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, aod::MCDSecondaryVertex3Prongs const& prongs)
+  void processRhoAreaSubSVMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs, aod::JCollisionOutliers, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertexNProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, aod::MCDSecondaryVertexNProngs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -610,10 +688,10 @@ struct BjetCentMultTask {
       if (!mcdjet.has_matchedJetGeo()) {
         continue;
       }
-      fillRhoAreaSubtractedHistogramSV3ProngMCD(mcdjet, prongs, centrality, rho, weight);
+      fillRhoAreaSubtractedHistogramSVMCD(mcdjet, prongs, centrality, rho, weight);
     }
   }
-  PROCESS_SWITCH(BjetCentMultTask, processRhoAreaSubSV3ProngMCPMCDMatched, "Fill 3prong imformation for mcd jets matched with background subtraction", false);
+  PROCESS_SWITCH(BjetCentMultTask, processRhoAreaSubSVMCPMCDMatched, "Fill n-prong imformation for mcd jets matched with background subtraction", false);
 };
 
 using BjetCentMultChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;

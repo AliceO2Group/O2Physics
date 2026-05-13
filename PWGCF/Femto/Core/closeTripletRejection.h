@@ -18,8 +18,8 @@
 
 #include "PWGCF/Femto/Core/closePairRejection.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
 #include <cmath>
 #include <map>

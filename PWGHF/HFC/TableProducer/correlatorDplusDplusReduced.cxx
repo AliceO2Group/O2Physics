@@ -80,14 +80,14 @@ struct HfCorrelatorDplusDplusReduced {
   using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Filter filterMcGenMatching = (nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) || (fillCorrBkgs && (nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) != 0));
+  Filter filterMcGenMatching = (nabs(o2::aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) || (fillCorrBkgs && (nabs(o2::aod::hf_cand_mc_flag::flagMcMatchGen) != 0));
 
   Preslice<SelectedCandidates> tracksPerCollision = o2::aod::track::collisionId;
   Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
-  Partition<SelectedCandidatesMc> reconstructedCandSig = (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) || (fillCorrBkgs && (nabs(o2::aod::hf_cand_3prong::flagMcMatchRec) != 0));
-  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
-  Partition<SelectedCandidatesMcWithMl> reconstructedCandSigMl = (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) || (fillCorrBkgs && (nabs(o2::aod::hf_cand_3prong::flagMcMatchRec) != 0));
+  Partition<SelectedCandidatesMc> reconstructedCandSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) || (fillCorrBkgs && (nabs(o2::aod::hf_cand_mc_flag::flagMcMatchRec) != 0));
+  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
+  Partition<SelectedCandidatesMcWithMl> reconstructedCandSigMl = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) || (fillCorrBkgs && (nabs(o2::aod::hf_cand_mc_flag::flagMcMatchRec) != 0));
 
   HistogramRegistry registry{"registry"};
   Zorro zorro;
@@ -114,21 +114,21 @@ struct HfCorrelatorDplusDplusReduced {
       collision.posZ());
   }
 
-  template <typename Coll, bool doMc = false, bool doMl = false, typename T>
+  template <typename Coll, bool DoMc = false, bool DoMl = false, typename T>
   void fillCandidateTable(const T& candidate, int localEvIdx = -1, int sign = 1)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
 
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
     }
 
     std::vector<float> outputMl = {-999., -999.};
-    if constexpr (doMl) {
+    if constexpr (DoMl) {
       for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
       }
@@ -283,7 +283,10 @@ struct HfCorrelatorDplusDplusReduced {
     }
   }
 
-  void processData(aod::Collisions const& collisions, SelectedCandidates const& candidates, aod::Tracks const&)
+  void processData(aod::Collisions const& collisions,
+                   SelectedCandidates const& candidates,
+                   aod::Tracks const&,
+                   aod::BCsWithTimestamps const&)
   {
     static int lastRunNumber = -1;
     // reserve memory
@@ -315,16 +318,17 @@ struct HfCorrelatorDplusDplusReduced {
           continue;
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
-        auto prong_candidate = candidate.prong1_as<aod::Tracks>();
-        auto candidate_sign = prong_candidate.sign();
-        fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex(), candidate_sign);
+        auto prongCandidate = candidate.prong1_as<aod::Tracks>();
+        auto candidateSign = -prongCandidate.sign();
+        fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex(), candidateSign);
       }
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusDplusReduced, processData, "Process data per collision", false);
 
   void processMcRec(aod::Collisions const& collisions,
-                    SelectedCandidatesMc const& candidates)
+                    SelectedCandidatesMc const& candidates,
+                    aod::Tracks const&)
   {
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
@@ -342,15 +346,16 @@ struct HfCorrelatorDplusDplusReduced {
           continue;
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
-        auto prong_candidate = candidate.prong1_as<aod::Tracks>();
-        auto candidate_sign = prong_candidate.sign();
-        fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex(), candidate_sign);
+        auto prongCandidate = candidate.prong1_as<aod::Tracks>();
+        auto candidateSign = -prongCandidate.sign();
+        fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex(), candidateSign);
       }
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusDplusReduced, processMcRec, "Process data per collision", false);
 
-  void processMcGen(aod::McCollisions const& mccollisions, MatchedGenCandidatesMc const& mcparticles)
+  void processMcGen(aod::McCollisions const& mccollisions,
+                    MatchedGenCandidatesMc const& mcparticles)
   {
     // reserve memory
     rowCandidateMcCollisions.reserve(mccollisions.size());

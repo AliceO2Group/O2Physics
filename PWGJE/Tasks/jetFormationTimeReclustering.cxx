@@ -20,21 +20,37 @@
 //                                                        *
 //*********************************************************
 
-#ifndef PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
-#define PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
-
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h" // IWYU pragma: keep
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetReducedDataDQ.h"
-#include "PWGJE/DataModel/JetSubstructure.h" // new
+#include "PWGJE/DataModel/JetSubstructure.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
 
 #include <cmath>
 #include <cstdint>
+#include <utility>
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
@@ -67,42 +83,11 @@ DECLARE_SOA_TABLE(CEWSJetTFSSs, "AOD", "CEWSJETTFSS", jetTFsubstructure::JetPt, 
 
 } // namespace o2::aod
 
-#endif // PWGJE_DATAMODEL_JETFORMATIONTIMERECLUSTERING_H_
-
 //*********************************************************
 //                                                        *
 //              Begin of the task                         *
 //                                                        *
 //*********************************************************
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetSubstructureUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/runDataProcessing.h>
-
-#include <TMath.h>
-
-#include "fastjet/ClusterSequenceArea.hh"
-#include "fastjet/PseudoJet.hh"
-#include <fastjet/JetDefinition.hh>
-
-#include <cmath>
-#include <cstdint>
-#include <utility>
-
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
 
 struct JetFormationTimeReclustering {
 

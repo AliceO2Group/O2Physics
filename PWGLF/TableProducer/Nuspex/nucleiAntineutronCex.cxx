@@ -14,28 +14,32 @@
 /// \brief Analysis task for antineutron detection through cex interactions
 /// \author Fabiola Lugo
 ///
-#include <PWGLF/DataModel/LFAntinCexTables.h>
 
+#include <PWGLF/DataModel/LFAntinCexTables.h>
 #include <Common/DataModel/PIDResponseITS.h>
 
 #include <CommonConstants/MathConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Logger.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
-#include <TDatabasePDG.h>
 #include <TMCProcess.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TVector3.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <optional>
 
 using namespace o2;
@@ -567,6 +571,9 @@ struct NucleiAntineutronCex {
           int8_t antipTrkItsPidValid = 0;
           float antipTrkTgl = 0.f;
 
+          bool motherHasTrack = false;
+          int motherNHitIB = -1; // number of hits in IB (L0-L2)
+
           o2::aod::ITSResponse itsResponse;
 
           for (const auto& track : tracks) {
@@ -593,6 +600,11 @@ struct NucleiAntineutronCex {
             bool hitOuter = (hitL3 || hitL4 || hitL5 || hitL6);
             int nITS = track.itsNCls();
             bool layerCondition = (!hitIB) && hitOuter && (nITS >= kMinItsHits);
+
+            if (mc.globalIndex() == motherId) {
+              motherHasTrack = true;
+              motherNHitIB = static_cast<int>(hitL0) + static_cast<int>(hitL1) + static_cast<int>(hitL2);
+            }
 
             if (mc.globalIndex() == antipId) {
               antipTrkP = track.p();
@@ -816,6 +828,7 @@ struct NucleiAntineutronCex {
                 isCex,
                 motherPdg,
                 motherP,
+
                 colId,
                 pId,
                 antipId,
@@ -828,6 +841,13 @@ struct NucleiAntineutronCex {
                 antipVx,
                 antipVy,
                 antipVz,
+
+                static_cast<int16_t>(vtxNAll),
+                static_cast<int16_t>(vtxNCh),
+                static_cast<int16_t>(vtxNNeut),
+                static_cast<int16_t>(vtxNPi0),
+                static_cast<int16_t>(vtxNGamma),
+                static_cast<int16_t>(vtxNN),
 
                 cexPairTrkP,
                 cexPairTrkPt,

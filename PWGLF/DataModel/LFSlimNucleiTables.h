@@ -14,13 +14,12 @@
 /// \brief Slim nuclei tables
 ///
 
-#include "Common/DataModel/Centrality.h"
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -55,6 +54,7 @@ DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
 DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 DECLARE_SOA_COLUMN(McProcess, mcProcess, uint64_t);
+DECLARE_SOA_COLUMN(gEventMask, genEventMask, uint8_t);
 
 DECLARE_SOA_COLUMN(NsigmaTpc, nsigmaTpc, uint8_t);
 DECLARE_SOA_COLUMN(NsigmaTof, nsigmaTof, uint8_t);
@@ -206,6 +206,40 @@ DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
                   NucleiTableNS::PDGcode,
                   NucleiTableNS::MotherPDGcode);
 
+// Table for keeping track of selection of generated events
+DECLARE_SOA_TABLE(GenEventMCSel, "AOD", "GENEVENTMCSEL",
+                  NucleiTableNS::gEventMask);
+
+DECLARE_SOA_TABLE(NucleiTableMCExtension, "AOD", "NUCTABLEMCSEL",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::Beta,
+                  NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::ITSchi2,
+                  NucleiTableNS::TPCchi2,
+                  NucleiTableNS::TOFchi2,
+                  NucleiTableNS::Flags,
+                  NucleiTableNS::TPCfindableCls,
+                  NucleiTableNS::TPCcrossedRows,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls,
+                  NucleiTableNS::TPCnClsShared,
+                  NucleiTableNS::ITSclusterSizes,
+                  NucleiTableNS::SurvivedEventSelection,
+                  NucleiTableNS::gPt,
+                  NucleiTableNS::gEta,
+                  NucleiTableNS::gPhi,
+                  NucleiTableNS::PDGcode,
+                  NucleiTableNS::MotherPDGcode,
+                  NucleiTableNS::MotherDecRad,
+                  NucleiTableNS::AbsoDecL,
+                  NucleiTableNS::gEventMask);
 // Extended table with central PID information
 DECLARE_SOA_TABLE(NucleiTableExt, "AOD", "NUCLEITABLEEXT",
                   NucleiTableNS::NsigmaTpc,

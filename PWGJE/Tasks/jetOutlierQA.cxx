@@ -17,11 +17,9 @@
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
-
-#include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -29,17 +27,14 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TMathBase.h>
-#include <TRandom3.h>
 
-#include <algorithm>
 #include <cmath>
-#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <math.h>

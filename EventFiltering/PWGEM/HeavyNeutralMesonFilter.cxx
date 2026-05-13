@@ -14,6 +14,7 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt; Maximilian Korwieser (maximilian.korwieser@cern.ch) - Technical University Munich
 ///
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/filterTables.h"
 //
 #include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
@@ -44,7 +45,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TString.h>

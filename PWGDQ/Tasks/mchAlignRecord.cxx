@@ -16,58 +16,45 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
-#include "Common/DataModel/EventSelection.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsMCH/Cluster.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GRPGeomHelper.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/CallbackService.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <MCHAlign/Aligner.h>
+#include <MCHBase/TrackerParam.h>
+#include <MCHGeometryTransformer/Transformations.h>
+#include <MCHTracking/Track.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <MCHTracking/TrackFitter.h>
+#include <MCHTracking/TrackParam.h>
+#include <MathUtils/Cartesian.h>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsMCH/Cluster.h"
-#include "DataFormatsMCH/TrackMCH.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GRPGeomHelper.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "DetectorsCommonDataFormats/DetID.h"
-#include "DetectorsCommonDataFormats/DetectorNameConf.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/CallbackService.h"
-#include "Framework/Logger.h"
-#include "Framework/runDataProcessing.h"
-#include "MCHAlign/Aligner.h"
-#include "MCHBase/TrackerParam.h"
-#include "MCHGeometryTransformer/Transformations.h"
-#include "MCHTracking/Track.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackFitter.h"
-#include "MCHTracking/TrackParam.h"
-#include "ReconstructionDataFormats/TrackMCHMID.h"
-
-#include <TCanvas.h>
-#include <TChain.h>
-#include <TDatabasePDG.h>
-#include <TF1.h>
-#include <TFile.h>
-#include <TGraph.h>
-#include <TGraphErrors.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <TGeoManager.h>
 #include <TLegend.h>
-#include <TLine.h>
-#include <TMatrixD.h>
-#include <TParameter.h>
-#include <TSystem.h>
-#include <TTree.h>
-#include <TTreeReader.h>
-#include <TTreeReaderValue.h>
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <GPUROOTCartesianFwd.h>
+#include <RtypesCore.h>
 
 #include <cmath>
-#include <gsl/span>
-#include <iostream>
+#include <cstdint>
+#include <exception>
+#include <iterator>
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -76,8 +63,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 using namespace std;
-using std::cout;
-using std::endl;
 
 const int fgNCh = 10;
 const int fgNDetElemCh[fgNCh] = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};

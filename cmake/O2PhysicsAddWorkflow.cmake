@@ -47,7 +47,7 @@ function(o2physics_add_dpl_workflow baseTargetName)
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_COMPILE analysis)
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_LINK analysis)
 
-  if(A_REUSE_FROM)
+  if(A_REUSE_FROM AND NOT DEFINED ENV{USE_RECC})
     target_precompile_headers(${targetExeName} REUSE_FROM ${A_REUSE_FROM})
   endif()
 

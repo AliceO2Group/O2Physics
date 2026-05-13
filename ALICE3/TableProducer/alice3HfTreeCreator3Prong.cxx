@@ -16,14 +16,9 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Turin Polytechnic University and INFN Turin
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFRICH.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "Common/Core/RecoDecay.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -32,8 +27,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <cstddef>
 #include <cstdint>
-#include <vector>
+#include <numeric>
 
 using namespace o2;
 using namespace o2::analysis;

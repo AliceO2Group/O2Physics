@@ -22,6 +22,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFMCParticle.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
@@ -31,18 +32,30 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
+#include <TH1.h>
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 
+#include <sys/types.h>
+
+#include <array>
+#include <cmath>
 #include <cstdlib>
 #include <vector>
 
@@ -52,8 +65,10 @@ using namespace o2::framework;
 using namespace o2::constants::physics;
 
 using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
-using Alice3Tracks = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3, aod::TracksAlice3Pdg>;
+using Alice3TracksACTS = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3, aod::TracksAlice3Pdg>;
+using Alice3TracksOTF = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackWithDauLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3>;
 using Alice3MCParticles = soa::Join<aod::McParticles, aod::MCParticlesExtraA3>;
+
 struct Alice3strangenessFinder {
   SliceCache cache;
 
@@ -69,6 +84,13 @@ struct Alice3strangenessFinder {
   Configurable<float> nSigmaTOF{"nSigmaTOF", 5.0f, "Nsigma for TOF PID (if enabled)"};
   Configurable<float> dcaXYconstant{"dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+
+  ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, "K0 mass axis"};
+  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "Lambda mass axis"};
+  ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, "Xi mass axis"};
+  ConfigurableAxis axisMassOmega{"axisMassOmega", {200, 1.57f, 1.77f}, "Omega mass axis"};
+
+  ConfigurableAxis axisEta{"axisEta", {80, -4.f, 4.f}, "Eta axis"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.025f, 0.05f, 0.075f, 0.1f, 0.125f, 0.15f, 0.175f, 0.2f, 0.225f, 0.25f, 0.275f, 0.3f, 0.325f, 0.35f, 0.375f, 0.4f, 0.425f, 0.45f, 0.475f, 0.5f, 0.525f, 0.55f, 0.575f, 0.6f, 0.625f, 0.65f, 0.675f, 0.7f, 0.725f, 0.75f, 0.775f, 0.8f, 0.82f, 0.85f, 0.875f, 0.9f, 0.925f, 0.95f, 0.975f, 1.0f, 1.05f, 1.1f}, "pt axis for QA histograms"};
 
   Configurable<float> bachMinConstDCAxy{"bachMinConstDCAxy", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
@@ -76,26 +98,36 @@ struct Alice3strangenessFinder {
   Configurable<float> bachMinConstDCAz{"bachMinConstDCAz", -1.0f, "[0] in |DCAz| > [0]+[1]/pT"};
   Configurable<float> bachMinPtDepDCAz{"bachMinPtDepDCAz", 0.0, "[1] in |DCAz| > [0]+[1]/pT"};
 
-  // Vertexing
-  Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
-  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  Configurable<double> maxR{"maxR", 150., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 5, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> maxDXYIni{"maxDXYIni", 4, "reject (if>0) PCA candidate if tracks DXY exceeds threshold"};
-  Configurable<double> maxVtxChi2{"maxVtxChi2", 10, "reject (if>0) vtx. chi2 above this value"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> v0MaxDauDCA{"v0MaxDauDCA", 0.005f, "DCA between v0 daughters (cm)"};
+  Configurable<float> cascMaxDauDCA{"cascMaxDauDCA", 0.005f, "DCA between cascade daughters (cm)"};
+
+  // DCA Fitter
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgFitter";
+
+    // Vertexing
+    Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+    Configurable<double> maxR{"maxR", 150., "reject PCA's above this radius"};
+    Configurable<double> maxDZIni{"maxDZIni", 5, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+    Configurable<double> maxDXYIni{"maxDXYIni", 4, "reject (if>0) PCA candidate if tracks DXY exceeds threshold"};
+    Configurable<double> maxVtxChi2{"maxVtxChi2", 10, "reject (if>0) vtx. chi2 above this value"};
+    Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+
+    // propagation options
+    Configurable<bool> usePropagator{"usePropagator", false, "use external propagator"};
+    Configurable<bool> refitWithMatCorr{"refitWithMatCorr", false, "refit V0 applying material corrections"};
+    Configurable<bool> useCollinearV0{"useCollinearV0", true, "use collinear approximation for V0 fitting"};
+    Configurable<int> maxIter{"maxIter", 30, "maximum number of iterations for vertex fitter"};
+  } cfgFitter;
+
   Configurable<float> acceptedLambdaMassWindow{"acceptedLambdaMassWindow", 0.2f, "accepted Lambda mass window around PDG mass"};
 
   // Operation
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
-  // propagation options
-  Configurable<bool> usePropagator{"usePropagator", false, "use external propagator"};
-  Configurable<bool> refitWithMatCorr{"refitWithMatCorr", false, "refit V0 applying material corrections"};
-  Configurable<bool> useCollinearV0{"useCollinearV0", true, "use collinear approximation for V0 fitting"};
-  Configurable<int> maxIter{"maxIter", 30, "maximum number of iterations for vertex fitter"};
 
   // for the ACTS study
   Configurable<bool> isK0Gun{"isK0Gun", false, "is K0s Monte Carlo gun used"};
@@ -108,15 +140,32 @@ struct Alice3strangenessFinder {
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
-  // partitions for D mesons
-  Partition<Alice3Tracks> positiveSecondaryTracks =
+  // partitions for v0/casc dau tracks
+  Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
     aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<Alice3Tracks> negativeSecondaryTracks =
+  Partition<Alice3TracksACTS> negativeSecondaryTracksACTS =
     aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<Alice3Tracks> bachelorTracks =
+  Partition<Alice3TracksACTS> bachelorTracksACTS =
     nabs(aod::track::dcaXY) > bachMinConstDCAxy + bachMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > bachMinConstDCAz + bachMinPtDepDCAz* nabs(aod::track::signed1Pt);
+
+  Partition<Alice3TracksOTF> positiveSecondaryTracksOTF =
+    aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
+  Partition<Alice3TracksOTF> negativeSecondaryTracksOTF =
+    aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
+  Partition<Alice3TracksOTF> bachelorTracksOTF =
+    nabs(aod::track::dcaXY) > bachMinConstDCAxy + bachMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > bachMinConstDCAz + bachMinPtDepDCAz* nabs(aod::track::signed1Pt);
+
   Partition<Alice3MCParticles> positiveMCParticles = aod::mcparticle_alice3::charge > 0.0f;
   Partition<Alice3MCParticles> negativeMCParticles = aod::mcparticle_alice3::charge < 0.0f;
+
+  Partition<aod::McParticles> trueK0s = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kK0Short);
+  Partition<aod::McParticles> trueLambda = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kLambda0);
+  Partition<aod::McParticles> trueAntiLambda = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kLambda0Bar);
+  Partition<aod::McParticles> trueXi = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiMinus);
+  Partition<aod::McParticles> trueAntiXi = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiPlusBar);
+  Partition<aod::McParticles> trueOmega = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kOmegaMinus);
+  Partition<aod::McParticles> trueAntiOmega = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kOmegaPlusBar);
+
   // Partition<Alice3TracksWPid> negativeSecondaryPions = nabs(aod::upgrade_tof::nSigmaPionInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaPionOuterTOF) < nSigmaTOF && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
   // Partition<Alice3TracksWPid> positiveSecondaryPions = nabs(aod::upgrade_tof::nSigmaPionInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaPionOuterTOF) < nSigmaTOF && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
   // Partition<Alice3TracksWPid> secondaryProtons = nabs(aod::upgrade_tof::nSigmaProtonInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) < nSigmaTOF && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
@@ -139,18 +188,18 @@ struct Alice3strangenessFinder {
   {
     // Initialization code here
     fitter.setBz(magneticField);
-    fitter.setUseAbsDCA(useAbsDCA);
-    fitter.setPropagateToPCA(propagateToPCA);
-    fitter.setMaxR(maxR);
-    fitter.setMinParamChange(minParamChange);
-    fitter.setMinRelChi2Change(minRelChi2Change);
-    fitter.setMaxDZIni(maxDZIni);
-    fitter.setMaxDXYIni(maxDXYIni);
-    fitter.setMaxChi2(maxVtxChi2);
-    fitter.setUsePropagator(usePropagator);
-    fitter.setRefitWithMatCorr(refitWithMatCorr);
-    fitter.setCollinear(useCollinearV0);
-    fitter.setMaxIter(maxIter);
+    fitter.setUseAbsDCA(cfgFitter.useAbsDCA);
+    fitter.setPropagateToPCA(cfgFitter.propagateToPCA);
+    fitter.setMaxR(cfgFitter.maxR);
+    fitter.setMinParamChange(cfgFitter.minParamChange);
+    fitter.setMinRelChi2Change(cfgFitter.minRelChi2Change);
+    fitter.setMaxDZIni(cfgFitter.maxDZIni);
+    fitter.setMaxDXYIni(cfgFitter.maxDXYIni);
+    fitter.setMaxChi2(cfgFitter.maxVtxChi2);
+    fitter.setUsePropagator(cfgFitter.usePropagator);
+    fitter.setRefitWithMatCorr(cfgFitter.refitWithMatCorr);
+    fitter.setCollinear(cfgFitter.useCollinearV0);
+    fitter.setMaxIter(cfgFitter.maxIter);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
     histos.add("hFitterQA", "", kTH1D, {{10, 0, 10}}); // For QA reasons, counting found candidates at different stages
@@ -186,14 +235,29 @@ struct Alice3strangenessFinder {
     hV0Counter->GetXaxis()->SetBinLabel(3, "AntiLambda");
     hV0Counter->GetXaxis()->SetBinLabel(4, "Misidentified");
 
-    auto hCascadeCounter = histos.add<TH1>("hCascadeCounter", "hCascadeCounter", kTH1D, {{5, 0, 5}});
-    hCascadeCounter->GetXaxis()->SetBinLabel(1, "Xi");
-    hCascadeCounter->GetXaxis()->SetBinLabel(2, "AntiXi");
-    hCascadeCounter->GetXaxis()->SetBinLabel(3, "Omega");
-    hCascadeCounter->GetXaxis()->SetBinLabel(4, "AntiOmega");
-    hCascadeCounter->GetXaxis()->SetBinLabel(5, "Misidentified");
     histos.add("hRadiusVsHitsNeg", "", kTH2D, {{400, 0, 400}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
     histos.add("hRadiusVsHitsPos", "", kTH2D, {{400, 0, 400}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
+
+    auto hV0Building = histos.add<TH1>("hV0Building", "hV0Building", kTH1D, {{10, 0.5, 10.5}});
+    hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
+    hV0Building->GetXaxis()->SetBinLabel(2, "Pdg check");
+    hV0Building->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+
+    auto hCascadeBuilding = histos.add<TH1>("hCascadeBuilding", "hCascadeBuilding", kTH1D, {{10, 0.5, 10.5}});
+    hCascadeBuilding->GetXaxis()->SetBinLabel(1, "Attempts");
+    hCascadeBuilding->GetXaxis()->SetBinLabel(2, "La mass window");
+    hCascadeBuilding->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+
+    if (doprocessGenerated) {
+      histos.add("hGeneratedK0s", "hGeneratedK0s", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("hGeneratedLambda", "hGeneratedLambda", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("hGeneratedAntiLambda", "hGeneratedAntiLambda", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("hGeneratedXi", "hGeneratedXi", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("hGeneratedAntiXi", "hGeneratedAntiXi", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("hGeneratedOmega", "hGeneratedOmega", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
+    }
+
     histos.print();
   }
 
@@ -206,22 +270,34 @@ struct Alice3strangenessFinder {
   template <typename TTrackType>
   bool checkSameMother(TTrackType const& track1, TTrackType const& track2)
   {
-    bool returnValue = false;
-    // Association check
-    if (track1.has_mcParticle() && track2.has_mcParticle()) {
-      auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
-      auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
-      if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
-        for (const auto& mcParticleMother1 : mcParticle1.template mothers_as<aod::McParticles>()) {
-          for (const auto& mcParticleMother2 : mcParticle2.template mothers_as<aod::McParticles>()) {
-            if (mcParticleMother1.globalIndex() == mcParticleMother2.globalIndex()) {
-              returnValue = true;
+    // MC label points to McPartWithDaus
+    if constexpr (requires { track1.has_mcPartWithDau(); }) {
+      if (!track1.has_mcPartWithDau() || !track2.has_mcPartWithDau()) {
+        return false;
+      }
+      auto mcParticle1 = track1.template mcPartWithDau_as<aod::McPartWithDaus>();
+      auto mcParticle2 = track2.template mcPartWithDau_as<aod::McPartWithDaus>();
+      if (mcParticle1.mothersIds().empty() || mcParticle2.mothersIds().empty()) {
+        return false;
+      }
+      return mcParticle1.mothersIds()[0] == mcParticle2.mothersIds()[0];
+    } else { // MC label points directly to aod::McParticles
+      bool returnValue = false;
+      if (track1.has_mcParticle() && track2.has_mcParticle()) {
+        auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
+        auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
+        if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
+          for (const auto& m1 : mcParticle1.template mothers_as<aod::McParticles>()) {
+            for (const auto& m2 : mcParticle2.template mothers_as<aod::McParticles>()) {
+              if (m1.globalIndex() == m2.globalIndex()) {
+                returnValue = true;
+              }
             }
           }
         }
       }
-    } // end association check
-    return returnValue;
+      return returnValue;
+    }
   }
 
   template <typename TTrackType>
@@ -247,13 +323,13 @@ struct Alice3strangenessFinder {
       histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
       histos.fill(HIST("hFitterQA"), 1.5);
       if (nCand == 0) {
-        LOG(info) << "0 candidates found by fitter";
+        LOG(debug) << "0 candidates found by fitter";
         return false;
       }
       histos.fill(HIST("hFitterQA"), 2.5);
       //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
       if (!fitter.isPropagateTracksToVertexDone() && !fitter.propagateTracksToVertex()) {
-        LOG(info) << "RejProp failed";
+        LOG(debug) << "RejProp failed";
         return false;
       }
       histos.fill(HIST("hFitterQA"), 3.5);
@@ -330,39 +406,87 @@ struct Alice3strangenessFinder {
     }
   }
 
-  void processFindV0CandidateNoPid(aod::Collision const& collision, Alice3Tracks const&, aod::McParticles const&)
+  void processGenerated(aod::McParticles const&)
   {
-    auto negativeSecondaryTracksGrouped = negativeSecondaryTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto positiveSecondaryTracksGrouped = positiveSecondaryTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto bachelorTracksGrouped = bachelorTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    const std::array<float, 3> vtx = {collision.posX(), collision.posY(), collision.posZ()};
+    for (const auto& mcParticle : trueK0s) {
+      histos.fill(HIST("hGeneratedK0s"), mcParticle.pt(), mcParticle.eta());
+    }
+    for (const auto& mcParticle : trueLambda) {
+      histos.fill(HIST("hGeneratedLambda"), mcParticle.pt(), mcParticle.eta());
+    }
+    for (const auto& mcParticle : trueAntiLambda) {
+      histos.fill(HIST("hGeneratedAntiLambda"), mcParticle.pt(), mcParticle.eta());
+    }
+    for (const auto& mcParticle : trueXi) {
+      histos.fill(HIST("hGeneratedXi"), mcParticle.pt(), mcParticle.eta());
+    }
+    for (const auto& mcParticle : trueAntiXi) {
+      histos.fill(HIST("hGeneratedAntiXi"), mcParticle.pt(), mcParticle.eta());
+    }
+    for (const auto& mcParticle : trueOmega) {
+      histos.fill(HIST("hGeneratedOmega"), mcParticle.pt(), mcParticle.eta());
+    }
+    for (const auto& mcParticle : trueAntiOmega) {
+      histos.fill(HIST("hGeneratedAntiOmega"), mcParticle.pt(), mcParticle.eta());
+    }
+  }
 
+  template <typename TCollision, typename TTracksGrouped>
+  void processFindV0CandidateNoPid(TCollision collision, TTracksGrouped negTracksGrouped, TTracksGrouped posTracksGrouped, TTracksGrouped bachTracksGrouped)
+  {
+    const std::array<float, 3> vtx = {collision.posX(), collision.posY(), collision.posZ()};
     histos.fill(HIST("hEventCounter"), 1.0);
 
-    for (auto const& posTrack : positiveSecondaryTracksGrouped) {
+    for (auto const& posTrack : posTracksGrouped) {
       if (!posTrack.isReconstructed()) {
         continue; // no ghost tracks
       }
 
       o2::track::TrackParCov pos = getTrackParCov(posTrack);
 
-      for (auto const& negTrack : negativeSecondaryTracksGrouped) {
+      for (auto const& negTrack : negTracksGrouped) {
         if (!negTrack.isReconstructed()) {
           continue; // no ghost tracks
         }
 
+        histos.fill(HIST("hV0Building"), 1.0);
         if (mcSameMotherCheck && !checkSameMother(posTrack, negTrack)) {
           continue; // keep only if same mother
         }
-        if ((posTrack.pdgCode() != kPiPlus && negTrack.pdgCode() != kPiMinus) && isK0Gun)
-          continue;
-        if ((posTrack.pdgCode() != kProton && negTrack.pdgCode() != kPiMinus) && isLambdaGun)
-          continue;
+
+        // ACTS: pdg code attached to track
+        if constexpr (requires { posTrack.pdgCode(); }) {
+          if ((posTrack.pdgCode() != kPiPlus && negTrack.pdgCode() != kPiMinus) && isK0Gun) {
+            continue;
+          }
+          if ((posTrack.pdgCode() != kProton && negTrack.pdgCode() != kPiMinus) && isLambdaGun) {
+            continue;
+          }
+        }
+
+        // OTF: pdg code from mcParticle table
+        if constexpr (requires { posTrack.has_mcPartWithDau(); }) {
+          if (!posTrack.has_mcPartWithDau() && !negTrack.has_mcPartWithDau()) {
+            continue;
+          }
+          auto mcParticlePos = posTrack.template mcPartWithDau_as<aod::McPartWithDaus>();
+          auto mcParticleNeg = negTrack.template mcPartWithDau_as<aod::McPartWithDaus>();
+          if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
+            continue;
+          }
+          if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
+            continue;
+          }
+        }
+
+        histos.fill(HIST("hV0Building"), 2.0);
         o2::track::TrackParCov neg = getTrackParCov(negTrack);
         Candidate v0cand;
         if (!buildDecayCandidateTwoBody(pos, neg, vtx, v0cand)) {
           continue; // failed at building candidate
         }
+
+        histos.fill(HIST("hV0Building"), 3.0);
 
         // TODO: not all ACTS tracks have MC association, so this check is not possible for all candidates, fix is needed
         //  auto mcParticle1 = posTrack.template mcParticle_as<aod::McParticles>();
@@ -396,19 +520,22 @@ struct Alice3strangenessFinder {
                                                                        std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
                                                             std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
 
-        const bool inLambdaMassWindow = std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) < acceptedLambdaMassWindow;
-        const bool inAntiLambdaMassWindow = std::abs(antiLambdaMassHypothesis - o2::constants::physics::MassLambda0) < acceptedLambdaMassWindow;
         if (!buildCascade) {
           continue; // not building cascades, so skip the rest
         }
+
+        const bool inLambdaMassWindow = std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) < acceptedLambdaMassWindow;
+        const bool inAntiLambdaMassWindow = std::abs(antiLambdaMassHypothesis - o2::constants::physics::MassLambda0) < acceptedLambdaMassWindow;
         if (!inLambdaMassWindow && !inAntiLambdaMassWindow) {
           continue; // Likely not a lambda, should not be considered for cascade building
         }
-        for (const auto& bachTrack : bachelorTracksGrouped) {
+
+        for (const auto& bachTrack : bachTracksGrouped) {
           if (bachTrack.globalIndex() == posTrack.globalIndex() || bachTrack.globalIndex() == negTrack.globalIndex()) {
             continue; // avoid using any track that was already used
           }
 
+          histos.fill(HIST("hCascadeBuilding"), 1.0);
           if (inLambdaMassWindow && bachTrack.sign() > 0) {
             continue; // only consider lambda and neg bach track
           }
@@ -417,6 +544,8 @@ struct Alice3strangenessFinder {
             continue; // only consider anti-lambda and pos bach track
           }
 
+          histos.fill(HIST("hCascadeBuilding"), 2.0);
+
           // TODO mc same mother check
 
           Candidate cascCand;
@@ -424,6 +553,7 @@ struct Alice3strangenessFinder {
           if (!buildDecayCandidateTwoBody(v0, bach, vtx, cascCand)) {
             continue; // failed at building candidate
           }
+          histos.fill(HIST("hCascadeBuilding"), 3.0);
 
           const float massXi = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
                                                        std::array{cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2]}},
@@ -432,12 +562,6 @@ struct Alice3strangenessFinder {
           const float massOm = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
                                                        std::array{cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2]}},
                                             std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
-
-          tableCascadeIndices(0, // cascade index, dummy value
-                              posTrack.globalIndex(),
-                              negTrack.globalIndex(),
-                              bachTrack.globalIndex(),
-                              collision.globalIndex());
 
           const float dcaPosToPV = calculateDCAStraightToPV(posTrack.x(), posTrack.y(), posTrack.z(),
                                                             posTrack.px(), posTrack.py(), posTrack.pz(),
@@ -451,6 +575,12 @@ struct Alice3strangenessFinder {
                                                              bachTrack.px(), bachTrack.py(), bachTrack.pz(),
                                                              vtx[0], vtx[1], vtx[2]);
 
+          tableCascadeIndices(0, // cascade index, dummy value
+                              posTrack.globalIndex(),
+                              negTrack.globalIndex(),
+                              bachTrack.globalIndex(),
+                              collision.globalIndex());
+
           tableCascadeCores(bachTrack.sign(), massXi, massOm,
                             cascCand.posSV[0], cascCand.posSV[1], cascCand.posSV[2],
                             v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
@@ -461,23 +591,11 @@ struct Alice3strangenessFinder {
                             v0cand.dcaDau, cascCand.dcaDau,
                             dcaPosToPV, dcaNegToPV, dcaBachToPV,
                             cascCand.dcaToPV, cascCand.dcaToPV);
-
-          auto mcParticle2 = bachTrack.template mcParticle_as<aod::McParticles>();
-          if (mcParticle2.pdgCode() == PDG_t::kXiMinus) {
-            histos.fill(HIST("hCascadeCounter"), 0.5);
-          } else if (mcParticle2.pdgCode() == PDG_t::kXiPlusBar) {
-            histos.fill(HIST("hCascadeCounter"), 1.5);
-          } else if (mcParticle2.pdgCode() == PDG_t::kOmegaMinus) {
-            histos.fill(HIST("hCascadeCounter"), 2.5);
-          } else if (mcParticle2.pdgCode() == PDG_t::kOmegaPlusBar) {
-            histos.fill(HIST("hCascadeCounter"), 3.5);
-          } else {
-            histos.fill(HIST("hCascadeCounter"), 4.5);
-          }
         } // end bachTrack
       } // end negTrack
     } // end posTrack
   }
+
   void processMCTrueFromACTS(aod::McCollision const& collision, Alice3MCParticles const&)
   {
 
@@ -555,13 +673,31 @@ struct Alice3strangenessFinder {
   //         auto secondaryProtonsGrouped = secondaryProtons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
   //         auto secondaryAntiProtonsGrouped = secondaryAntiProtons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
   //     }
-  PROCESS_SWITCH(Alice3strangenessFinder, processFindV0CandidateNoPid, "find V0 without PID", true);
+
+  void processFindV0CandidateACTS(aod::Collision const& collision, Alice3TracksACTS const&, aod::McParticles const&)
+  {
+    auto negTracksGrouped = negativeSecondaryTracksACTS->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto posTracksGrouped = positiveSecondaryTracksACTS->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto bachTracksGrouped = bachelorTracksACTS->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    processFindV0CandidateNoPid(collision, negTracksGrouped, posTracksGrouped, bachTracksGrouped);
+  }
+
+  void processFindV0CandidateOTF(aod::Collision const& collision, Alice3TracksOTF const&, aod::McPartWithDaus const&)
+  {
+    auto negTracksGrouped = negativeSecondaryTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto posTracksGrouped = positiveSecondaryTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto bachTracksGrouped = bachelorTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    processFindV0CandidateNoPid(collision, negTracksGrouped, posTracksGrouped, bachTracksGrouped);
+  }
+
+  PROCESS_SWITCH(Alice3strangenessFinder, processGenerated, "process generated information", true);
+  PROCESS_SWITCH(Alice3strangenessFinder, processFindV0CandidateACTS, "find V0 without PID from ACTS reconstruction", true);
+  PROCESS_SWITCH(Alice3strangenessFinder, processFindV0CandidateOTF, "find V0 without PID from OTF simulations", false);
   PROCESS_SWITCH(Alice3strangenessFinder, processMCTrueFromACTS, "process MC truth from ACTS", false);
   // PROCESS_SWITCH(alice3strangenessFinder, processFindV0CandidateWithPid, "find V0 with PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<Alice3strangenessFinder>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3strangenessFinder>(cfgc)};
 }

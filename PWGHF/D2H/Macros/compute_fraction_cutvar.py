@@ -37,8 +37,8 @@ def main(config):
         infile_rawy = ROOT.TFile.Open(os.path.join(cfg["rawyields"]["inputdir"], filename_rawy))
         hist_rawy_name = cfg["rawyields"]["histoname"]
         hist_rawy.append(infile_rawy.Get(hist_rawy_name))
-        if(hist_rawy[-1] is None):
-            sys.exit(f"Fatal error: Histogram with raw yield \"{hist_rawy_name}\" is absent. Exit.")
+        if not isinstance(hist_rawy[-1], ROOT.TH1):
+            sys.exit(f"\33[31mFatal error: Histogram with raw yield \"{hist_rawy_name}\" is absent. Exit.\33[0m")
         hist_rawy[-1].SetDirectory(0)
         infile_rawy.Close()
 
@@ -47,31 +47,43 @@ def main(config):
         hist_effnp_name = cfg["efficiencies"]["histonames"]["nonprompt"]
         hist_effp.append(infile_eff.Get(hist_effp_name))
         hist_effnp.append(infile_eff.Get(hist_effnp_name))
-        if(hist_effp[-1] is None):
-            sys.exit(f"Fatal error: Histogram with efficiency for prompt \"{hist_effp_name}\" is absent. Exit.")
-        if(hist_effnp[-1] is None):
-            sys.exit(f"Fatal error: Histogram with efficiency for nonprompt \"{hist_effnp}\" is absent. Exit.")
+        if not isinstance(hist_effp[-1], ROOT.TH1):
+            sys.exit(f"\33[31mFatal error: Histogram with efficiency for prompt \"{hist_effp_name}\" is absent. Exit.\33[0m")
+        if not isinstance(hist_effnp[-1], ROOT.TH1):
+            sys.exit(f"\33[31mFatal error: Histogram with efficiency for nonprompt \"{hist_effnp}\" is absent. Exit.\33[0m")
         hist_effp[-1].SetDirectory(0)
         hist_effnp[-1].SetDirectory(0)
         infile_eff.Close()
 
     pt_bin_to_process = cfg.get("pt_bin_to_process", -1)
     if not isinstance(pt_bin_to_process, int):
-        sys.exit("Fatal error: pt_bin_to_process must be an integer value. Exit.")
+        sys.exit("\33[31mFatal error: pt_bin_to_process must be an integer value. Exit.")
     if (pt_bin_to_process != -1 and pt_bin_to_process < 1) or pt_bin_to_process > hist_rawy[0].GetNbinsX():
-        sys.exit("Fatal error: pt_bin_to_process must be a positive value up to number of bins in raw yield histogram. Exit.")
+        sys.exit("\33[31mFatal error: pt_bin_to_process must be a positive value up to number of bins in raw yield histogram. Exit.")
+
+    is_draw_title_rawy = cfg.get("is_draw_title", {}).get("rawy", True)
+    is_draw_title_eff = cfg.get("is_draw_title", {}).get("eff", False)
+    is_draw_title_frac = cfg.get("is_draw_title", {}).get("frac", False)
+    is_draw_title_cov = cfg.get("is_draw_title", {}).get("cov", False)
+    is_draw_title_unc = cfg.get("is_draw_title", {}).get("unc", True)
+
+    is_save_canvas_as_macro_rawy = cfg.get("is_save_canvas_as_macro", {}).get("rawy", False)
+    is_save_canvas_as_macro_eff = cfg.get("is_save_canvas_as_macro", {}).get("eff", False)
+    is_save_canvas_as_macro_frac = cfg.get("is_save_canvas_as_macro", {}).get("frac", False)
+    is_save_canvas_as_macro_cov = cfg.get("is_save_canvas_as_macro", {}).get("cov", False)
+    is_save_canvas_as_macro_unc = cfg.get("is_save_canvas_as_macro", {}).get("unc", False)
 
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
         infile_central_eff = ROOT.TFile.Open(infile_name)
         hist_central_effp_name = cfg["central_efficiency"]["histonames"]["prompt"]
         hist_central_effp = infile_central_eff.Get(hist_central_effp_name)
-        if(hist_central_effp is None):
-            sys.exit(f"Fatal error: Histogram with central efficiency for prompt \"{hist_central_effp_name}\" is absent. Exit.")
+        if not isinstance(hist_central_effp[-1], ROOT.TH1):
+            sys.exit(f"\33[31mFatal error: Histogram with central efficiency for prompt \"{hist_central_effp_name}\" is absent. Exit.\33[0m")
         hist_central_effnp_name = cfg["central_efficiency"]["histonames"]["nonprompt"]
         hist_central_effnp = infile_central_eff.Get(hist_central_effnp_name)
-        if(hist_central_effnp is None):
-            sys.exit(f"Fatal error: Histogram with central efficiency for nonprompt \"{hist_central_effnp_name}\" is absent. Exit.")
+        if not isinstance(hist_central_effnp[-1], ROOT.TH1):
+            sys.exit(f"\33[31mFatal error: Histogram with central efficiency for nonprompt \"{hist_central_effnp_name}\" is absent. Exit.\33[0m")
         hist_central_effp.SetDirectory(0)
         hist_central_effnp.SetDirectory(0)
         infile_central_eff.Close()
@@ -171,10 +183,10 @@ def main(config):
 
         if cfg["minimisation"]["correlated"]:
             if not (np.all(rawy[1:] > rawy[:-1]) or np.all(rawy[1:] < rawy[:-1])):
-                print("WARNING! main(): the raw yield vector is not monotonous. Check the input for stability.")
+                print("\0\33[33mWARNING! main(): the raw yield vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield vector elements = {rawy}\n")
             if not (np.all(unc_rawy[1:] > unc_rawy[:-1]) or np.all(unc_rawy[1:] < unc_rawy[:-1])):
-                print("WARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.")
+                print("\0\33[33mWARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
@@ -211,34 +223,49 @@ def main(config):
 
             hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
 
-            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_rawy = hist_bin_title if is_draw_title_rawy else ""
+            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rawy)
             output.cd()
             canv_rawy.Write()
             for _, hist in histos_rawy.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_rawy):
+                canv_rawy.SaveAs(f"canv_rawy_{ipt+1}.C")
 
-            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_unc = hist_bin_title if is_draw_title_unc else ""
+            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_unc)
             output.cd()
             canv_unc.Write()
             for _, hist in histos_unc.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_unc):
+                canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
 
-            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_eff = hist_bin_title if is_draw_title_eff else ""
+            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_eff)
             output.cd()
             canv_eff.Write()
             for _, hist in histos_eff.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_eff):
+                canv_eff.SaveAs(f"canv_eff_{ipt+1}.C")
 
-            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_frac = hist_bin_title if is_draw_title_frac else ""
+            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_frac)
             output.cd()
             canv_frac.Write()
             for _, hist in histos_frac.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_frac):
+                canv_frac.SaveAs(f"canv_frac_{ipt+1}.C")
 
-            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_cov = hist_bin_title if is_draw_title_cov else ""
+            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_cov)
             output.cd()
             canv_cov.Write()
             histo_cov.Write()
+            if (is_save_canvas_as_macro_cov):
+                canv_cov.SaveAs(f"canv_cov_{ipt+1}.C")
         else:
             print(f"Minimization for pT {pt_min}, {pt_max} not successful")
             canv_rawy = ROOT.TCanvas("c_rawy_minimization_error", "Minimization error", 500, 500)

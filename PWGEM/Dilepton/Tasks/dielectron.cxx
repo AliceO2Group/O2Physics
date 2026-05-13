@@ -14,11 +14,13 @@
 // This code is for dielectron analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-
 #include "PWGEM/Dilepton/Core/Dilepton.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+using namespace o2::framework;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

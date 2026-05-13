@@ -16,27 +16,47 @@
 #include "PWGEM/Dilepton/Utils/MlResponseO2Track.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
-#include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::soa;
@@ -75,13 +95,14 @@ struct skimmerPrimaryElectronQC {
   struct : ConfigurableGroup {
     std::string prefix = "trackcut";
     Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> mincrossedrows{"mincrossedrows", 40, "min. crossed rows"};
+    Configurable<int> mincrossedrows{"mincrossedrows", 0, "min. crossed rows"};
     Configurable<int> min_ncluster_its{"min_ncluster_its", 2, "min ncluster its"};
     Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 0, "min ncluster itsib"};
-    Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
+    Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.0, "min. TPC Ncr/Nf ratio"};
     Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-    Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-    Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
+    Configurable<float> maxchi2tpc{"maxchi2tpc", 1e+10, "max. chi2/NclsTPC"};
+    Configurable<float> minchi2tpc{"minchi2tpc", -1e+10, "min. chi2/NclsTPC"};
+    Configurable<float> maxchi2its{"maxchi2its", 1e+10, "max. chi2/NclsITS"}; // actual maximum is 36 in the reconstruction.
     Configurable<float> minchi2its{"minchi2its", -1e+10, "min. chi2/NclsITS"};
     Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
     Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
@@ -94,9 +115,9 @@ struct skimmerPrimaryElectronQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "tighttrackcut";
-    Configurable<int> min_ncluster_tpc_pid{"min_ncluster_tpc_pid", 60, "min ncluster tpc used for PID"};
+    Configurable<int> min_ncluster_tpc_pid{"min_ncluster_tpc_pid", 0, "min ncluster tpc used for PID"};
     Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> mincrossedrows{"mincrossedrows", 100, "min. crossed rows"};
+    Configurable<int> mincrossedrows{"mincrossedrows", 120, "min. crossed rows"};
     Configurable<int> min_ncluster_its{"min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 3, "min ncluster itsib"};
     Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
@@ -105,10 +126,18 @@ struct skimmerPrimaryElectronQC {
     Configurable<float> maxchi2its{"maxchi2its", 5.0, "max. chi2/NclsITS"};
     Configurable<float> dca_xy_max{"dca_xy_max", 0.2, "max DCAxy in cm"};
     Configurable<float> dca_z_max{"dca_z_max", 0.2, "max DCAz in cm"};
-    Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"}; // Don't change.
-    Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +2.0, "max. TPC n sigma for electron inclusion"}; // Don't change.
-    Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -2.0, "min. TOF n sigma for electron inclusion"}; // Don't change.
-    Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +2.0, "max. TOF n sigma for electron inclusion"}; // Don't change.
+    Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
+    Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +2.0, "max. TPC n sigma for electron inclusion"};
+    Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -2.0, "min. TOF n sigma for electron inclusion"};
+    Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +2.0, "max. TOF n sigma for electron inclusion"};
+
+    Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
+    Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
+    Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", -2.5, "min. TPC n sigma for kaon exclusion"};
+    Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.5, "max. TPC n sigma for proton exclusion"};
+    Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -2.5, "min. TPC n sigma for proton exclusion"};
+    Configurable<bool> requireTOF{"requireTOF", true, "require TOF hit"};
   } tighttrackcut;
 
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
@@ -125,7 +154,7 @@ struct skimmerPrimaryElectronQC {
   Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95}, "ML cuts per bin"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
   Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  // Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 
@@ -191,31 +220,6 @@ struct skimmerPrimaryElectronQC {
       fRegistry.add("Track/hProbElBDT", "probability to be e from BDT;p_{in} (GeV/c);BDT score;", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
       fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
     }
-
-    if (usePIDML) {
-      static constexpr int nClassesMl = 2;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
-      const uint32_t nBinsMl = binsMl.value.size() - 1;
-      const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      double cutsMlArr[nBinsMl][nClassesMl];
-      for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = 0.0;
-        cutsMlArr[i][1] = cutsMl.value[i];
-      }
-      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
-
-      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdburl);
-        mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, timestampCCDB.value);
-      } else {
-        mlResponseSingleTrack.setModelPathsLocal(onnxFileNames.value);
-      }
-      mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
-      mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
-      mlResponseSingleTrack.init(enableOptimizations.value);
-    } // end of PID ML
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -272,6 +276,32 @@ struct skimmerPrimaryElectronQC {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
+
+    if (usePIDML) {
+      static constexpr int nClassesMl = 2;
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
+      const uint32_t nBinsMl = binsMl.value.size() - 1;
+      const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      double cutsMlArr[nBinsMl][nClassesMl];
+      for (uint32_t i = 0; i < nBinsMl; i++) {
+        cutsMlArr[i][0] = 0.0;
+        cutsMlArr[i][1] = cutsMl.value[i];
+      }
+      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, bc.timestamp());
+      } else {
+        mlResponseSingleTrack.setModelPathsLocal(onnxFileNames.value);
+      }
+      mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
+      mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
+      mlResponseSingleTrack.init(enableOptimizations.value);
+    } // end of PID ML
+
     mRunNumber = bc.runNumber();
   }
 
@@ -309,7 +339,7 @@ struct skimmerPrimaryElectronQC {
     }
 
     if (track.hasTPC()) {
-      if (track.tpcChi2NCl() < 0.f || trackcut.maxchi2tpc < track.tpcChi2NCl()) {
+      if (track.tpcChi2NCl() < trackcut.minchi2tpc || trackcut.maxchi2tpc < track.tpcChi2NCl()) {
         return false;
       }
 
@@ -446,9 +476,19 @@ struct skimmerPrimaryElectronQC {
   template <typename TTrack>
   bool isElectronTight(TTrack const& track)
   {
-    bool is_El_TPC = tighttrackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tighttrackcut.maxTPCNsigmaEl;
-    bool is_El_TOF = tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl;
-    return is_El_TPC && is_El_TOF;
+    if (tighttrackcut.requireTOF) {
+      bool is_El_TPC = tighttrackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tighttrackcut.maxTPCNsigmaEl;
+      bool is_El_TOF = tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl;
+      return is_El_TPC && is_El_TOF;
+    } else { // TPC hadron band rejection OR TOFreq
+      bool is_el_included_TPC = tighttrackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tighttrackcut.maxTPCNsigmaEl;
+      bool is_el_included_TOF = track.hasTOF() ? tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl : true;
+      bool is_pi_excluded_TPC = !(tighttrackcut.minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tighttrackcut.maxTPCNsigmaPi);
+      bool is_ka_excluded_TPC = !(tighttrackcut.minTPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < tighttrackcut.maxTPCNsigmaKa);
+      bool is_pr_excluded_TPC = !(tighttrackcut.minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < tighttrackcut.maxTPCNsigmaPr);
+      bool is_el_included_TOFreq = tighttrackcut.minTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tighttrackcut.maxTOFNsigmaEl;
+      return (is_el_included_TPC && is_el_included_TOF && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC) || (is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOFreq);
+    }
   }
 
   template <bool isMC, typename TCollision, typename TTrack>
@@ -501,7 +541,7 @@ struct skimmerPrimaryElectronQC {
                        track.itsClusterSizes(),
                        track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
                        // trackParCov.getTgl(),
-                       isAssociatedToMPC, false, probaEl, mcTunedTPCSignal);
+                       isAssociatedToMPC, false, probaEl, track.flags(), mcTunedTPCSignal);
 
     emprimaryelectronscov(
       trackParCov.getX(),

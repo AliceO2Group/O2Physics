@@ -14,24 +14,40 @@
 /// \file jEPFlowAnalysis.cxx
 /// \since Jul 2024
 
-#include "FlowJHistManager.h"
+#include "PWGCF/JCorran/Core/FlowJHistManager.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TDatabasePDG.h>
+#include <THn.h>
+#include <TPDGCode.h>
+#include <TProfile3D.h>
 
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -45,7 +61,9 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::T
 using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
 using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
 
-struct jEPFlowAnalysis {
+struct JEPFlowAnalysis {
+
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   EventPlaneHelper helperEP;
@@ -55,9 +73,9 @@ struct jEPFlowAnalysis {
   o2::ccdb::CcdbApi ccdbApi;
 
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgURL{"cfgURL",
+    Configurable<std::string> cfgUrl{"cfgUrl",
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
+    Configurable<int64_t> nolaterthan{"nolaterthan",
                                       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                                       "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
@@ -76,6 +94,7 @@ struct jEPFlowAnalysis {
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag for efficiency correction"};
   Configurable<std::string> cfgEffCorDir{"cfgEffCorDir", "Users/n/nmallick/Run3OO/Eff/LHC25h3b_FT0C", "path for efficiency correction"};
 
+  Configurable<bool> cfgTrkSelFlag{"cfgTrkSelFlag", true, "flag for track selection"};
   Configurable<bool> cfgSystStudy{"cfgSystStudy", false, "flag for syst study"};
   Configurable<int> cfgITSNCls{"cfgITSNCls", 5, "minimum number of its clusters"};
   Configurable<int> cfgTPCNclsCR{"cfgTPCNclsCR", 70, "minimum number of tpc cluster crossed rows"};
@@ -92,14 +111,20 @@ struct jEPFlowAnalysis {
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
   Configurable<float> cfgVertexZ{"cfgVertexZ", 10.0, "Maximum vertex Z selection"};
 
+  Configurable<bool> cfgq2analysis{"cfgq2analysis", false, "ese analysis flag"};
+  Configurable<float> cfgq2high{"cfgq2high", 10.0, "high q2 selection"};
+  Configurable<float> cfgq2low{"cfgq2low", 0.0, "low q2 selection"};
+
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCNeg", "The name of detector for reference B"};
 
   ConfigurableAxis cfgAxisCent{"cfgAxisCent", {100, 0, 100}, ""};
   ConfigurableAxis cfgAxisPt{"cfgAxisPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 30.0, 50.0, 70.0, 100.0}, ""};
+  ConfigurableAxis cfgAxisEta{"cfgAxisEta", {20, -1, 1}, ""};
   ConfigurableAxis cfgAxisCos{"cfgAxisCos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {200, -5.0, 5.0}, ""};
+  ConfigurableAxis cfgAxisQ2{"cfgAxisQ2", {100, 0, 10}, ""};
 
   ConfigurableAxis cfgAxisCentMC{"cfgAxisCentMC", {5, 0, 100}, ""};
   ConfigurableAxis cfgAxisVtxZMC{"cfgAxisVtxZMC", {20, -10, 10}, ""};
@@ -116,6 +141,12 @@ struct jEPFlowAnalysis {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
+
+  float cent;
+
+  float minQvecAmp = 1e-5;
+  float minChg = 0.1;
+  float q2Mag;
 
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
@@ -142,6 +173,37 @@ struct jEPFlowAnalysis {
     } else {
       return 0;
     }
+  }
+
+  template <typename Col>
+  bool eventSel(const Col& coll)
+  {
+    if (std::abs(coll.posZ()) > cfgVertexZ)
+      return false;
+    switch (cfgEvtSel) {
+      case 0: // Sel8
+        if (!coll.sel8())
+          return false;
+        break;
+      case 1: // PbPb standard
+        if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+          return false;
+        break;
+      case 2: // PbPb with pileup
+        if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
+            !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+          return false;
+        break;
+      case 3: // Small systems (OO, NeNe, pp)
+        if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+          return false;
+        break;
+    }
+    // Check occupancy
+    if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
+      return false;
+
+    return true;
   }
 
   template <typename Trk>
@@ -173,138 +235,12 @@ struct jEPFlowAnalysis {
     return tracksel;
   }
 
-  double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
+  template <typename Col, typename Trk>
+  void fillvn(const Col& coll, const Trk& tracks)
   {
-    int effVars[4];
-    effVars[0] = eff->GetAxis(0)->FindBin(eta);
-    effVars[1] = eff->GetAxis(1)->FindBin(pt);
-    effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
-    effVars[3] = eff->GetAxis(3)->FindBin(posZ);
-
-    return eff->GetBinContent(effVars);
-  }
-
-  void init(InitContext const&)
-  {
-    ccdb->setURL(cfgCcdbParam.cfgURL);
-    ccdbApi.init("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-
-    detId = getdetId(cfgDetName);
-    refAId = getdetId(cfgRefAName);
-    refBId = getdetId(cfgRefBName);
-
-    AxisSpec axisMod{cfgnMode, 2., cfgnMode + 2.};
-    AxisSpec axisEvtPl{360, -constants::math::PI * 1.1, constants::math::PI * 1.1};
-    AxisSpec axisVertex{150, -12.5, 12.5};
-
-    AxisSpec axisCent{cfgAxisCent, "cent"};
-    AxisSpec axisPt{cfgAxisPt, "pT"};
-    AxisSpec axisCos{cfgAxisCos, "cos"};
-    AxisSpec axisQvec{cfgAxisQvec, "Qvec"};
-
-    AxisSpec axisCentMC{cfgAxisCentMC, "cent"};
-    AxisSpec axisVtxZMC{cfgAxisVtxZMC, "vtxz"};
-    AxisSpec axisEtaMC{cfgAxisEtaMC, "eta"};
-    AxisSpec axisPhiMC{cfgAxisPhiMC, "phi"};
-    AxisSpec axisPtMC{cfgAxisPtMC, "pt"};
-
-    epFlowHistograms.add("EpDet", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    epFlowHistograms.add("EpRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    epFlowHistograms.add("EpRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-
-    epFlowHistograms.add("EpResDetRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    epFlowHistograms.add("EpResDetRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    epFlowHistograms.add("EpResRefARefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-
-    epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
-    epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
-
-    epFlowHistograms.add("EpResQvecDetRefAxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-    epFlowHistograms.add("EpResQvecDetRefAxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-    epFlowHistograms.add("EpResQvecDetRefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-    epFlowHistograms.add("EpResQvecDetRefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-    epFlowHistograms.add("EpResQvecRefARefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-    epFlowHistograms.add("EpResQvecRefARefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-
-    epFlowHistograms.add("SPvnxx", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisQvec}});
-    epFlowHistograms.add("SPvnxy", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisQvec}});
-
-    epFlowHistograms.add("hCentrality", "", {HistType::kTH1F, {axisCent}});
-    epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});
-
-    epFlowHistograms.add("MC/hPartGen", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
-    epFlowHistograms.add("MC/hPartRecPr", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
-    epFlowHistograms.add("MC/hPartRec", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
-  }
-
-  void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
-  {
-    if (cfgAddEvtSel) {
-      if (std::abs(coll.posZ()) > cfgVertexZ)
-        return;
-      switch (cfgEvtSel) {
-        case 0: // Sel8
-          if (!coll.sel8())
-            return;
-          break;
-        case 1: // PbPb standard
-          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 2: // PbPb with pileup
-          if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
-              !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 3: // Small systems (OO, NeNe, pp)
-          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        default:
-          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
-      }
-      // Check occupancy
-      if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
-        return;
-    }
-
-    if (cfgEffCor) {
-      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
-      currentRunNumber = bc.runNumber();
-      if (currentRunNumber != lastRunNumber) {
-        effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
-        lastRunNumber = currentRunNumber;
-      }
-    }
-
-    float cent = coll.cent();
-    epFlowHistograms.fill(HIST("hCentrality"), cent);
-    epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
     float eps[3] = {0.};
     float qx_shifted[3] = {0.};
     float qy_shifted[3] = {0.};
-
-    if (cfgManShiftCorr) {
-      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
-      currentRunNumber = bc.runNumber();
-      if (currentRunNumber != lastRunNumber) {
-        shiftprofile.clear();
-        for (int i = 0; i < cfgnMode; i++) {
-          fullCCDBShiftCorrPath = cfgShiftPath;
-          fullCCDBShiftCorrPath += "/v";
-          fullCCDBShiftCorrPath += std::to_string(i + 2);
-          auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, bc.timestamp());
-          shiftprofile.push_back(objshift);
-        }
-        lastRunNumber = currentRunNumber;
-      }
-    }
-
-    if (coll.qvecAmp()[detId] < 1e-5 || coll.qvecAmp()[refAId] < 1e-5 || coll.qvecAmp()[refBId] < 1e-5)
-      return;
 
     for (int i = 0; i < cfgnMode; i++) {       // loop over different harmonic orders
       harmInd = cfgnTotalSystem * 4 * (i) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
@@ -351,10 +287,11 @@ struct jEPFlowAnalysis {
         qx_shifted[2] = coll.qvecRe()[4 * refBId + harmInd] * std::cos(deltapsiRefB) - coll.qvecIm()[4 * refBId + harmInd] * std::sin(deltapsiRefB);
         qy_shifted[2] = coll.qvecRe()[4 * refBId + harmInd] * std::sin(deltapsiRefB) + coll.qvecIm()[4 * refBId + harmInd] * std::cos(deltapsiRefB);
       }
-
       float resNumA = helperEP.GetResolution(eps[0], eps[1], i + 2);
       float resNumB = helperEP.GetResolution(eps[0], eps[2], i + 2);
       float resDenom = helperEP.GetResolution(eps[1], eps[2], i + 2);
+
+      q2Mag = std::sqrt(std::pow(qx_shifted[0], 2) + std::pow(qy_shifted[0], 2));
 
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
       epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
@@ -364,6 +301,8 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResDetRefB"), i + 2, cent, resNumB);
       epFlowHistograms.fill(HIST("EpResRefARefB"), i + 2, cent, resDenom);
 
+      epFlowHistograms.fill(HIST("hQ2"), i + 2, cent, q2Mag);
+
       epFlowHistograms.fill(HIST("EpResQvecDetRefAxx"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
       epFlowHistograms.fill(HIST("EpResQvecDetRefAxy"), i + 2, cent, qx_shifted[1] * qy_shifted[0] - qx_shifted[0] * qy_shifted[1]);
       epFlowHistograms.fill(HIST("EpResQvecDetRefBxx"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
@@ -372,7 +311,7 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, qx_shifted[2] * qy_shifted[1] - qx_shifted[1] * qy_shifted[2]);
 
       for (const auto& track : tracks) {
-        if (trackSel(track))
+        if (cfgTrkSelFlag && trackSel(track))
           continue;
 
         if (cfgEffCor) {
@@ -385,12 +324,137 @@ struct jEPFlowAnalysis {
         epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn, weight);
         epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin, weight);
 
-        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
-        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), track.eta(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+
+        if (cfgq2analysis) {
+          if (q2Mag > cfgq2high) {
+            epFlowHistograms.fill(HIST("SPvnxx_q2high"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+          } else if (q2Mag < cfgq2low) {
+            epFlowHistograms.fill(HIST("SPvnxx_q2low"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+          }
+        }
       }
     }
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, processDefault, "default process", true);
+
+  double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
+  {
+    int effVars[4];
+    effVars[0] = eff->GetAxis(0)->FindBin(eta);
+    effVars[1] = eff->GetAxis(1)->FindBin(pt);
+    effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
+    effVars[3] = eff->GetAxis(3)->FindBin(posZ);
+
+    return eff->GetBinContent(effVars);
+  }
+
+  void init(InitContext const&)
+  {
+    ccdb->setURL(cfgCcdbParam.cfgUrl);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
+    detId = getdetId(cfgDetName);
+    refAId = getdetId(cfgRefAName);
+    refBId = getdetId(cfgRefBName);
+
+    AxisSpec axisMod{cfgnMode, 2., cfgnMode + 2.};
+    AxisSpec axisEvtPl{360, -constants::math::PI * 1.1, constants::math::PI * 1.1};
+    AxisSpec axisVertex{150, -12.5, 12.5};
+
+    AxisSpec axisCent{cfgAxisCent, "cent"};
+    AxisSpec axisPt{cfgAxisPt, "pT"};
+    AxisSpec axisEta{cfgAxisEta, "eta"};
+    AxisSpec axisCos{cfgAxisCos, "cos"};
+    AxisSpec axisQvec{cfgAxisQvec, "Qvec"};
+    AxisSpec axisQ2{cfgAxisQ2, "Q2"};
+
+    AxisSpec axisCentMC{cfgAxisCentMC, "cent"};
+    AxisSpec axisVtxZMC{cfgAxisVtxZMC, "vtxz"};
+    AxisSpec axisEtaMC{cfgAxisEtaMC, "eta"};
+    AxisSpec axisPhiMC{cfgAxisPhiMC, "phi"};
+    AxisSpec axisPtMC{cfgAxisPtMC, "pt"};
+
+    epFlowHistograms.add("EpDet", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+
+    epFlowHistograms.add("EpResDetRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpResDetRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpResRefARefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+
+    epFlowHistograms.add("hQ2", "", {HistType::kTH3F, {axisMod, axisCent, axisQ2}});
+
+    epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
+    epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
+
+    epFlowHistograms.add("EpResQvecDetRefAxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecDetRefAxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecDetRefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecDetRefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecRefARefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecRefARefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+
+    epFlowHistograms.add("SPvnxx", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+    epFlowHistograms.add("SPvnxy", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+    if (cfgq2analysis) {
+      epFlowHistograms.add("SPvnxx_q2high", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+      epFlowHistograms.add("SPvnxx_q2low", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+    }
+
+    epFlowHistograms.add("hCentrality", "", {HistType::kTH1F, {axisCent}});
+    epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});
+
+    epFlowHistograms.add("MC/hPartGen", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
+    epFlowHistograms.add("MC/hPartRecPr", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
+    epFlowHistograms.add("MC/hPartRec", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
+  }
+
+  void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
+  {
+    if (cfgAddEvtSel) {
+      if (!eventSel(coll))
+        return;
+    }
+
+    if (cfgEffCor) {
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+      currentRunNumber = bc.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+        lastRunNumber = currentRunNumber;
+      }
+    }
+
+    cent = coll.cent();
+    epFlowHistograms.fill(HIST("hCentrality"), cent);
+    epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
+
+    if (cfgManShiftCorr) {
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+      currentRunNumber = bc.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        shiftprofile.clear();
+        for (int i = 0; i < cfgnMode; i++) {
+          fullCCDBShiftCorrPath = cfgShiftPath;
+          fullCCDBShiftCorrPath += "/v";
+          fullCCDBShiftCorrPath += std::to_string(i + 2);
+          auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, bc.timestamp());
+          shiftprofile.push_back(objshift);
+        }
+        lastRunNumber = currentRunNumber;
+      }
+    }
+
+    if (coll.qvecAmp()[detId] < minQvecAmp || coll.qvecAmp()[refAId] < minQvecAmp || coll.qvecAmp()[refBId] < minQvecAmp)
+      return;
+
+    fillvn(coll, tracks);
+  }
+  PROCESS_SWITCH(JEPFlowAnalysis, processDefault, "default process", true);
 
   void processMCRec(MyCollisionsMC::iterator const& coll, MyTracksMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
@@ -399,31 +463,7 @@ struct jEPFlowAnalysis {
     }
 
     if (cfgAddEvtSel) {
-      if (std::abs(coll.posZ()) > cfgVertexZ)
-        return;
-      switch (cfgEvtSel) {
-        case 0: // Sel8
-          if (!coll.sel8())
-            return;
-          break;
-        case 1: // PbPb standard
-          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 2: // PbPb with pileup
-          if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
-              !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 3: // Small systems (OO, NeNe, pp)
-          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        default:
-          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
-      }
-      // Check occupancy
-      if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
+      if (!eventSel(coll))
         return;
     }
 
@@ -438,7 +478,7 @@ struct jEPFlowAnalysis {
       }
     }
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.has_mcParticle()) {
         continue;
       }
@@ -450,11 +490,11 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("MC/hPartRec"), cent, coll.posZ(), trk.eta(), trk.phi(), trk.pt());
       auto mctrk = trk.mcParticle();
       if (mctrk.isPhysicalPrimary()) {
-        epFlowHistograms.fill(HIST("MChPartRecPr"), cent, coll.posZ(), trk.eta(), trk.phi(), trk.pt());
+        epFlowHistograms.fill(HIST("MC/hPartRecPr"), cent, coll.posZ(), trk.eta(), trk.phi(), trk.pt());
       }
     }
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, processMCRec, "process for MC", false);
+  PROCESS_SWITCH(JEPFlowAnalysis, processMCRec, "process for MC", false);
 
   void processMCGen(MyCollisionsMC::iterator const& coll, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
@@ -470,13 +510,13 @@ struct jEPFlowAnalysis {
 
     float cent = coll.centFT0C();
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.eta()) > cfgTrackCuts.cfgEtaMax)
         continue;
 
-      auto* p = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (p) {
-        if (std::abs(p->Charge()) < 1e-1) {
+      auto p = pdg->GetParticle(mcParticle.pdgCode());
+      if (p != nullptr) {
+        if (std::abs(p->Charge()) < minChg) {
           continue;
         }
       }
@@ -487,11 +527,11 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("MC/hPartGen"), cent, mcColl.posZ(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
     }
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, processMCGen, "process for MC", false);
+  PROCESS_SWITCH(JEPFlowAnalysis, processMCGen, "process for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<jEPFlowAnalysis>(cfgc)};
+    adaptAnalysisTask<JEPFlowAnalysis>(cfgc)};
 }

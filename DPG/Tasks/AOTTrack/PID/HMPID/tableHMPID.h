@@ -12,8 +12,8 @@
 #ifndef DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
 #define DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

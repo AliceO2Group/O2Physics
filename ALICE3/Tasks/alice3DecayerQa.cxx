@@ -19,16 +19,18 @@
 
 #include "ALICE3/DataModel/OTFMCParticle.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamRegistry.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
 
-#include <map>
 #include <vector>
 
 using namespace o2;
@@ -60,11 +62,11 @@ struct Alice3DecayerQA {
   Partition<aod::McParticles> trueKa = aod::mcparticle::pdgCode == static_cast<int>(kKMinus);
   Partition<aod::McParticles> truePr = aod::mcparticle::pdgCode == static_cast<int>(kProton);
 
-  Partition<aod::McPartsWithDau> trueElWithDau = aod::mcparticle::pdgCode == static_cast<int>(kElectron);
-  Partition<aod::McPartsWithDau> trueMuWithDau = aod::mcparticle::pdgCode == static_cast<int>(kMuonMinus);
-  Partition<aod::McPartsWithDau> truePiWithDau = aod::mcparticle::pdgCode == static_cast<int>(kPiPlus);
-  Partition<aod::McPartsWithDau> trueKaWithDau = aod::mcparticle::pdgCode == static_cast<int>(kKMinus);
-  Partition<aod::McPartsWithDau> truePrWithDau = aod::mcparticle::pdgCode == static_cast<int>(kProton);
+  Partition<aod::McPartWithDaus> trueElWithDau = aod::mcparticle::pdgCode == static_cast<int>(kElectron);
+  Partition<aod::McPartWithDaus> trueMuWithDau = aod::mcparticle::pdgCode == static_cast<int>(kMuonMinus);
+  Partition<aod::McPartWithDaus> truePiWithDau = aod::mcparticle::pdgCode == static_cast<int>(kPiPlus);
+  Partition<aod::McPartWithDaus> trueKaWithDau = aod::mcparticle::pdgCode == static_cast<int>(kKMinus);
+  Partition<aod::McPartWithDaus> truePrWithDau = aod::mcparticle::pdgCode == static_cast<int>(kProton);
 
   void init(o2::framework::InitContext&)
   {
@@ -123,7 +125,7 @@ struct Alice3DecayerQA {
     }
   }
 
-  void processMCWithDau(const aod::McCollision&, const aod::McPartsWithDau& particles)
+  void processMCWithDau(const aod::McCollision&, const aod::McPartWithDaus& particles)
   {
     for (const auto& particle : trueElWithDau) {
       histos.fill(HIST("MCWithDau/hElPt"), particle.pt());

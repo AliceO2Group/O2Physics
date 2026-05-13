@@ -28,13 +28,12 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
 
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
 #include <string>
 #include <vector>
 
@@ -299,7 +298,8 @@ struct AssociateDileptonToEMEvent {
 
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
-  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  // Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  Preslice<aod::EMPrimaryTrackEMEventIdsTMP> perCollision_track = aod::track::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -329,7 +329,7 @@ struct AssociateDileptonToEMEvent {
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
-  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  void processChargedTrack(aod::EMEvents const& collisions, soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIdsTMP> const& tracks)
   {
     fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   }

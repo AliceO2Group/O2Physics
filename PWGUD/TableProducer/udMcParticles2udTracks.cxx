@@ -16,13 +16,17 @@
 /// \brief  A task to create a reverse index from UDMcParticles to UDTracks
 ///
 
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/DataModel/UDIndex.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

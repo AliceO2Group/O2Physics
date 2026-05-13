@@ -20,10 +20,14 @@
 #ifndef PWGLF_UTILS_MCPARTICLE_H_
 #define PWGLF_UTILS_MCPARTICLE_H_
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <array>
+#include <cstdint>
 #include <string>
 #include <vector>
-
-#include "ReconstructionDataFormats/PID.h"
 
 namespace o2
 {
@@ -126,7 +130,12 @@ class PIDExtended
   static constexpr ID XiCCPlusPlus = PIDCounts + 36;
   static constexpr ID XiCPlus = PIDCounts + 37;
   static constexpr ID XiC0 = PIDCounts + 38;
-  static constexpr ID NIDsTot = PIDCounts + 39;
+  static constexpr ID Kstar = PIDCounts + 39;
+  static constexpr ID KstarPM = PIDCounts + 40;
+  static constexpr ID Kshort = PIDCounts + 41;
+  static constexpr ID Xi1530 = PIDCounts + 42;
+  static constexpr ID Lambda1520 = PIDCounts + 43;
+  static constexpr ID NIDsTot = PIDCounts + 44;
 
   static constexpr const char* sNames[NIDsTot + 1] = {
     o2::track::pid_constants::sNames[Electron],     // Electron
@@ -187,6 +196,11 @@ class PIDExtended
     "XiCCPlusPlus",                                 // XiCCPlusPlus
     "XiCPlus",                                      // XiCPlus
     "XiC0",                                         // XiC0
+    "Kstar",                                        // Kstar
+    "KstarPM",                                      // KstarPM
+    "Kshort",                                       // Kshort
+    "Xi1530",                                       // Xi1530
+    "Lambda1520",                                   // Lambda1520
     nullptr};
 
   static std::vector<std::string> arrayNames()
@@ -321,6 +335,16 @@ class PIDExtended
         return XiCPlus;
       case o2::constants::physics::Pdg::kXiC0:
         return XiC0;
+      case o2::constants::physics::Pdg::kK0Star892:
+        return Kstar;
+      case 323:
+        return KstarPM;
+      case 310:
+        return Kshort;
+      case 3324:
+        return Xi1530;
+      case 3124:
+        return Lambda1520;
       default:
         LOG(debug) << "Cannot identify particle with PDG code " << particle.pdgCode();
         break;

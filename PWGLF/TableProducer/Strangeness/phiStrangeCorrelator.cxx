@@ -18,10 +18,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -29,28 +26,27 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <Math/Vector4D.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <THn.h>
 #include <TMCProcess.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 
-#include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <optional>
@@ -99,6 +95,8 @@ struct PhiMesonCandProducer {
     Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } phiConfigs;
+
+  Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson"};
 
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
@@ -319,28 +317,41 @@ struct PhiMesonCandProducer {
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
-    for (const auto& mcParticle1 : mcParticles) {
-      if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax)
-        continue;
-
-      for (const auto& mcParticle2 : mcParticles) {
-        if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax)
+    if (trueGenPhi) {
+      for (const auto& mcParticle : mcParticles) {
+        if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::Pdg::kPhi)
+          continue;
+        if (mcParticle.pt() < phiConfigs.minPhiPt)
+          continue;
+        if (std::abs(mcParticle.y()) > phiConfigs.cfgYAcceptance)
           continue;
 
-        if (!(mcParticle1.pdgCode() == PDG_t::kKPlus && mcParticle2.pdgCode() == PDG_t::kKMinus) &&
-            !(mcParticle1.pdgCode() == PDG_t::kKMinus && mcParticle2.pdgCode() == PDG_t::kKPlus))
+        phimesonCandidatesMcGen(mcCollision.globalIndex(), 0, mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+      }
+    } else {
+      for (const auto& mcParticle1 : mcParticles) {
+        if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax)
           continue;
 
-        ROOT::Math::PxPyPzMVector genKPair = recMother(mcParticle1, mcParticle2, massKa, massKa);
+        for (const auto& mcParticle2 : mcParticles) {
+          if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax)
+            continue;
 
-        if (genKPair.Pt() < phiConfigs.minPhiPt)
-          continue;
-        if (genKPair.M() > phiConfigs.maxMPhi)
-          continue;
-        if (std::abs(genKPair.Rapidity()) > phiConfigs.cfgYAcceptance)
-          continue;
+          if (!(mcParticle1.pdgCode() == PDG_t::kKPlus && mcParticle2.pdgCode() == PDG_t::kKMinus) &&
+              !(mcParticle1.pdgCode() == PDG_t::kKMinus && mcParticle2.pdgCode() == PDG_t::kKPlus))
+            continue;
 
-        phimesonCandidatesMcGen(mcCollision.globalIndex(), genKPair.M(), genKPair.Pt(), genKPair.Rapidity(), genKPair.Phi());
+          ROOT::Math::PxPyPzMVector genKPair = recMother(mcParticle1, mcParticle2, massKa, massKa);
+
+          if (genKPair.Pt() < phiConfigs.minPhiPt)
+            continue;
+          if (genKPair.M() > phiConfigs.maxMPhi)
+            continue;
+          if (std::abs(genKPair.Rapidity()) > phiConfigs.cfgYAcceptance)
+            continue;
+
+          phimesonCandidatesMcGen(mcCollision.globalIndex(), genKPair.M(), genKPair.Pt(), genKPair.Rapidity(), genKPair.Phi());
+        }
       }
     }
   }
@@ -419,9 +430,9 @@ struct K0sReducedCandProducer {
   {
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec massK0sAxis = {200, 0.4f, 0.6f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
-    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0sAxis});
+    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
   }
 
   // Single track selection for strangeness sector
@@ -527,7 +538,7 @@ struct PionTrackProducer {
   HistogramRegistry histos{"pionTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for analysis mode
-  Configurable<int> analysisMode{"analysisMode", 1, "Analysis mode: 0 - old method with online normalization, 1 - new method with correlations"};
+  // Configurable<int> analysisMode{"analysisMode", 1, "Analysis mode: 0 - old method with online normalization, 1 - new method with correlations"};
 
   // Configurable on multiplicity bins
   Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
@@ -547,11 +558,15 @@ struct PionTrackProducer {
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
 
-    Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
+    // Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
-    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
-    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TPC"};
-    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TOF"};
+    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID rejection, kaon, proton"};
+    Configurable<bool> applyElRejection{"applyElRejection", false, "Apply or not the electron rejection"};
+    Configurable<std::pair<float, float>> pidRangeTPCEl{"pidRangeTPCEl", {-3.0f, 5.0f}, "nSigma TPC range for electrons"};
+    Configurable<float> pidTPCMaxHadrons{"pidTPCMaxHadrons", 3.0f, "maximum nSigma TPC for hadrons"};
+    Configurable<float> pidTOFMaxHadrons{"pidTOFMaxHadrons", 3.0f, "maximum nSigma TOF for hadrons"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{3.0f, 3.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{3.0f, 3.0f}, "maximum nSigma TOF"};
 
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } trackConfigs;
@@ -573,7 +588,7 @@ struct PionTrackProducer {
   using FilteredSimCollisions = soa::Filtered<SimCollisions>;
 
   // Defining the type of the tracks for data and MC
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
 
   void init(InitContext&)
@@ -590,7 +605,7 @@ struct PionTrackProducer {
     histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
   }
 
-  // PID selection for Pions
+  /*// PID selection for Pions
   template <typename T>
   bool pidSelectionPion(const T& track)
   {
@@ -627,6 +642,59 @@ struct PionTrackProducer {
     }
 
     return true;
+  }*/
+
+  // PID Hypotheses rejection for Pions
+  template <typename T>
+  bool pidHypothesesRejection(const T& track)
+  {
+    // Electron rejection (if enabled)
+    if (trackConfigs.applyElRejection) {
+      auto nSigmaTPCEl = aod::pidutils::tpcNSigma(o2::track::PID::Electron, track);
+
+      if (nSigmaTPCEl > trackConfigs.pidRangeTPCEl->first && nSigmaTPCEl < trackConfigs.pidRangeTPCEl->second) {
+        auto nSigmaTPCPi = aod::pidutils::tpcNSigma(o2::track::PID::Pion, track);
+        auto nSigmaTPCKa = aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track);
+        auto nSigmaTPCPr = aod::pidutils::tpcNSigma(o2::track::PID::Proton, track);
+
+        if (std::abs(nSigmaTPCPi) > trackConfigs.pidTPCMaxHadrons &&
+            std::abs(nSigmaTPCKa) > trackConfigs.pidTPCMaxHadrons &&
+            std::abs(nSigmaTPCPr) > trackConfigs.pidTPCMaxHadrons) {
+          return false;
+        }
+      }
+    }
+
+    // Other hadron species rejection
+    for (auto pid : {o2::track::PID::Kaon, o2::track::PID::Proton}) {
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMaxHadrons) {
+        // Reject if only TPC is within threshold and TOF is unavailable or if both TPC and TOF are within thresholds
+        if (!track.hasTOF() || std::abs(aod::pidutils::tofNSigma(pid, track)) < trackConfigs.pidTOFMaxHadrons) {
+          return false;
+        }
+      }
+    }
+
+    // Other hadron species rejection
+    /*for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
+      auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMax->at(speciesIndex)) { // Check TPC nSigma first
+        if (track.hasTOF()) {
+          auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) < trackConfigs.pidTOFMax->at(speciesIndex)) {
+            return false; // Reject if both TPC and TOF are within thresholds
+          }
+        } else {
+          return false; // Reject if only TPC is within threshold and TOF is unavailable
+        }
+      }
+    }*/
+
+    return true;
   }
 
   // Track selection for Pions
@@ -657,7 +725,10 @@ struct PionTrackProducer {
     if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF())
       return false;
 
-    if (analysisMode == 1 && !pidSelectionPion(track))
+    /*if (analysisMode == 1 && !pidSelectionPion(track))
+      return false;*/
+
+    if (!pidHypothesesRejection(track))
       return false;
 
     /*
@@ -685,7 +756,7 @@ struct PionTrackProducer {
       histos.fill(HIST("h3PionTPCnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       histos.fill(HIST("h3PionTOFnSigma"), collision.centFT0M(), track.pt(), track.tofNSigmaPi());
 
-      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi());
+      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi(), track.hasTOF());
     }
   }
 
@@ -715,7 +786,7 @@ struct PionTrackProducer {
         continue;
       }
 
-      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi());
+      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi(), track.hasTOF());
     }
   }
 
@@ -752,6 +823,8 @@ struct EventSelectionProducer {
     Configurable<float> minMPhiSignal{"minMPhiSignal", 1.0095f, "Upper limits on Phi mass for signal extraction"};
     Configurable<float> maxMPhiSignal{"maxMPhiSignal", 1.029f, "Upper limits on Phi mass for signal extraction"};
   } phiConfigs;
+
+  Configurable<bool> withTrueGenPhi{"withTrueGenPhi", false, "Require the presence of a true generated phi meson in the event"};
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
@@ -858,22 +931,26 @@ struct EventSelectionProducer {
   template <bool isMC, typename MC_T = void, typename T1, typename T2>
   bool eventHasPhi(const T1& collision, const T2& phiCandidates)
   {
-    uint16_t nPhi{0};
+    if (withTrueGenPhi) {
+      if (phiCandidates.size() < 1)
+        return false;
+    } else {
+      uint16_t nPhi{0};
 
-    for (const auto& phiCand : phiCandidates) {
+      for (const auto& phiCand : phiCandidates) {
+        if (phiCand.inMassRegion(phiConfigs.minMPhiSignal, phiConfigs.maxMPhiSignal))
+          nPhi++;
 
-      if (phiCand.inMassRegion(phiConfigs.minMPhiSignal, phiConfigs.maxMPhiSignal))
-        nPhi++;
+        // histos.fill(HIST("hEta"), track1.eta());
+        // histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
+        // histos.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
+        // histos.fill(HIST("h2DauTracksPhiDCAxy"), track1.pt(), track1.dcaXY());
+        // histos.fill(HIST("h2DauTracksPhiDCAz"), track1.pt(), track1.dcaZ());
+      }
 
-      // histos.fill(HIST("hEta"), track1.eta());
-      // histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
-      // histos.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
-      // histos.fill(HIST("h2DauTracksPhiDCAxy"), track1.pt(), track1.dcaXY());
-      // histos.fill(HIST("h2DauTracksPhiDCAz"), track1.pt(), track1.dcaZ());
+      if (nPhi == 0)
+        return false;
     }
-
-    if (nPhi == 0)
-      return false;
 
     float multPercentile{0.0f};
 

@@ -214,6 +214,8 @@ struct HfCorrelatorD0Hadrons {
   Produces<aod::D0CandRecoInfo> entryD0CandRecoInfo;
   Produces<aod::D0CandGenInfo> entryD0CandGenInfo;
   Produces<aod::D0TrackRecoInfo> entryTrackRecoInfo;
+  Produces<aod::D0> entryD0;
+  Produces<aod::D0Hadron> entryD0Hadron;
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -254,7 +256,7 @@ struct HfCorrelatorD0Hadrons {
   Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId;
 
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
+  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 1100.0f, 1900.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
   ConfigurableAxis multPoolBinsMcGen{"multPoolBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.3848, 2.3848}, "inv. mass (#pi K) (GeV/#it{c}^{2});entries"};
   ConfigurableAxis binsEta{"binsEta", {100, -5., 5.}, "#it{#eta}"};
@@ -264,8 +266,6 @@ struct HfCorrelatorD0Hadrons {
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsCentFt0m{"binsCentFt0m", {100, 0., 100.}, "Centrality percentile (FT0M)"};
-
-  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -285,9 +285,9 @@ struct HfCorrelatorD0Hadrons {
     AxisSpec const axisSignalStatus = {200, 0., 200., "Signal status"};
     AxisSpec axisEvtCount = {1, -0.5, 0.5};
     AxisSpec const axisTrkCount = {5, 0., 5.};
-    AxisSpec axisBdtScoreBkg = {100, 0., 1., "Bdt score background"};
-    AxisSpec axisBdtScorePrompt = {100, 0., 1., "Bdt score prompt"};
-    AxisSpec axisBdtScoreNonPrompt = {100, 0., 1., "Bdt score Nonprompt"};
+    AxisSpec axisBdtScoreBkg = {500, 0., 1., "Bdt score background"};
+    AxisSpec axisBdtScorePrompt = {200, 0., 1., "Bdt score prompt"};
+    AxisSpec axisBdtScoreNonPrompt = {200, 0., 1., "Bdt score Nonprompt"};
     AxisSpec axisOrigin = {10, 0., 10., "Candidate origin"};
     AxisSpec axisCent = {binsCentFt0m, "Centrality"};
 
@@ -308,6 +308,9 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hMassD0bar1D", "D0bar candidates mass", {HistType::kTH1F, {axisMassD}});
     registry.add("hMassD0VsPtVsCent", "D0 candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassD}, {axisPtD}, {axisCent}}});
     registry.add("hMLScoresVsMassVsPtVsEtaVsOriginVsCent", "D0, D0bar candidates BkgVspromptVsNonPromptVsMassVsPtVsEtaVsOrigin", {HistType::kTHnSparseD, {{axisBdtScoreBkg}, {axisBdtScorePrompt}, {axisBdtScoreNonPrompt}, {axisMassD}, {axisPtD}, {axisEta}, {axisOrigin}, {axisCent}}});
+    registry.add("hTracksBeforeSoftMix", "Tracks before soft pion reject offline mixing", {HistType::kTH1F, {axisPtHadron}});
+    registry.add("hTracksAfterSoftMix", "Tracks after soft pion reject offline mixing", {HistType::kTH1F, {axisPtHadron}});
+
     // Histograms for MC Reco
     registry.add("hPtCandRec", "D0, D0bar candidates - MC reco", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtProng0Rec", "D0, D0bar candidates prong 0 - MC reco", {HistType::kTH1F, {axisPtD}});
@@ -361,8 +364,15 @@ struct HfCorrelatorD0Hadrons {
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(SelectedCollisions::iterator const& collision,
                    SelectedTracks const& tracks,
-                   SelectedCandidatesDataMl const& candidates)
+                   SelectedCandidatesDataMl const& candidates,
+                   aod::BCsWithTimestamps const&)
   {
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
+
     // find leading particle
     if (correlateD0WithLeadingParticle) {
       leadingIndex = findLeadingParticle(tracks, etaTrackMax.value);
@@ -398,6 +408,30 @@ struct HfCorrelatorD0Hadrons {
     std::vector<float> outputMlD0 = {-1., -1., -1.};
     std::vector<float> outputMlD0bar = {-1., -1., -1.};
 
+    std::vector<int64_t> softPionTrackIdsForOfflineMixing;
+    std::vector<int> softPionStatusesForOfflineMixing;
+    bool hasAcceptedD0ForOfflineMixing = false;
+
+    auto addSoftPionTrackForOfflineMixing = [&softPionTrackIdsForOfflineMixing, &softPionStatusesForOfflineMixing](int64_t trackId, int softPiStatus) {
+      for (auto iTrack = 0u; iTrack < softPionTrackIdsForOfflineMixing.size(); ++iTrack) {
+        if (softPionTrackIdsForOfflineMixing[iTrack] == trackId) {
+          softPionStatusesForOfflineMixing[iTrack] |= softPiStatus;
+          return;
+        }
+      }
+      softPionTrackIdsForOfflineMixing.push_back(trackId);
+      softPionStatusesForOfflineMixing.push_back(softPiStatus);
+    };
+
+    auto getSoftPionStatusForOfflineMixing = [&softPionTrackIdsForOfflineMixing, &softPionStatusesForOfflineMixing](int64_t trackId) {
+      for (auto iTrack = 0u; iTrack < softPionTrackIdsForOfflineMixing.size(); ++iTrack) {
+        if (softPionTrackIdsForOfflineMixing[iTrack] == trackId) {
+          return softPionStatusesForOfflineMixing[iTrack];
+        }
+      }
+      return static_cast<int>(aod::hf_d0_assoc_tracks::NotSoftPi);
+    };
+
     for (const auto& candidate : candidates) {
       if (std::abs(HfHelper::yD0(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptTrackMax) {
         continue;
@@ -421,6 +455,10 @@ struct HfCorrelatorD0Hadrons {
       const auto invMassD0 = HfHelper::invMassD0ToPiK(candidate);
       const auto invMassD0bar = HfHelper::invMassD0barToKPi(candidate);
 
+      if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
+        hasAcceptedD0ForOfflineMixing = true;
+      }
+
       // ========================== Fill mass histo  ================================
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), invMassD0, candidate.pt(), efficiencyWeight);
@@ -431,6 +469,7 @@ struct HfCorrelatorD0Hadrons {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
         registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0[0], outputMlD0[1], outputMlD0[2], invMassD0, candidate.pt(), candidate.eta(), (candidate.isSelD0bar() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only, cent, efficiencyWeight);
+        entryD0(candidate.phi(), candidate.eta(), candidate.pt(), invMassD0, poolBin, gCollisionId, timeStamp, (candidate.isSelD0bar() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only);
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), invMassD0bar, candidate.pt(), efficiencyWeight);
@@ -441,6 +480,7 @@ struct HfCorrelatorD0Hadrons {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
         registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly, cent, efficiencyWeight);
+        entryD0(candidate.phi(), candidate.eta(), candidate.pt(), invMassD0bar, poolBin, gCollisionId, timeStamp, (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
       }
       entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
 
@@ -478,12 +518,14 @@ struct HfCorrelatorD0Hadrons {
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - invMassD0) - softPiMass) < ptSoftPionMax) {
+            addSoftPionTrackForOfflineMixing(track.globalIndex(), aod::hf_d0_assoc_tracks::SoftPiD0);
             continue;
           }
         }
 
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           if ((std::abs(invMassDstar2 - invMassD0bar) - softPiMass) < ptSoftPionMax) {
+            addSoftPionTrackForOfflineMixing(track.globalIndex(), aod::hf_d0_assoc_tracks::SoftPiD0bar);
             continue;
           }
         }
@@ -519,6 +561,20 @@ struct HfCorrelatorD0Hadrons {
       } // end inner loop (tracks)
 
     } // end outer loop
+
+    // loop to save tables for offline event mixing
+    if (hasAcceptedD0ForOfflineMixing) {
+      for (const auto& track : tracks) {
+        const auto softPiStatus = getSoftPionStatusForOfflineMixing(track.globalIndex());
+
+        registry.fill(HIST("hTracksBeforeSoftMix"), track.pt());
+        if (softPiStatus == aod::hf_d0_assoc_tracks::NotSoftPi) {
+          registry.fill(HIST("hTracksAfterSoftMix"), track.pt());
+        }
+
+        entryD0Hadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp, softPiStatus);
+      }
+    }
   }
   PROCESS_SWITCH(HfCorrelatorD0Hadrons, processData, "Process data", false);
 
@@ -529,6 +585,7 @@ struct HfCorrelatorD0Hadrons {
                     SelectedCandidatesMcRecMl const& candidates,
                     aod::McParticles const& mcParticles)
   {
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     // find leading particle
     if (correlateD0WithLeadingParticle) {
       leadingIndex = findLeadingParticle(tracks, etaTrackMax.value);
@@ -864,6 +921,7 @@ struct HfCorrelatorD0Hadrons {
                              SelectedCandidatesDataMl const& candidates,
                              SelectedTracks const& tracks)
   {
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     for (const auto& collision : collisions) {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("hZvtx"), collision.posZ());
@@ -952,6 +1010,7 @@ struct HfCorrelatorD0Hadrons {
                               SelectedTracksMcRec const& tracks,
                               aod::McParticles const& mcParticles)
   {
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesMcRecMl, SelectedTracksMcRec, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     bool isD0Prompt = false;

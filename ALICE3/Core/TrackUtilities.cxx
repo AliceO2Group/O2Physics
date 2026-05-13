@@ -17,6 +17,13 @@
 
 #include "TrackUtilities.h"
 
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TLorentzVector.h>
+
+#include <array>
+#include <cmath>
 #include <vector>
 
 void o2::upgrade::convertTLorentzVectorToO2Track(const int charge,
