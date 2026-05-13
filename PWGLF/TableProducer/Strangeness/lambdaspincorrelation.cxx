@@ -283,6 +283,7 @@ struct lambdaspincorrelation {
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using ResoV0s = aod::V0Datas;
+  Preslice<ResoV0s> perCollisionV0s = aod::v0data::collisionId;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using AllTrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::McTrackLabels>;
   void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s)
@@ -555,8 +556,9 @@ struct lambdaspincorrelation {
             occupancy < cfgCutOccupancy) {
 
           histos.fill(HIST("hEvtSelInfo"), 2.5);
+          auto groupedV0s = V0s.sliceBy(perCollisionV0s, collision.globalIndex());
 
-          for (const auto& v0 : V0s) {
+          for (const auto& v0 : groupedV0s) {
             histos.fill(HIST("hEvtSelInfo"), 3.5); // all V0s seen
             auto [lambdaTag, aLambdaTag, isValid] = getLambdaTagsMC(v0, collision);
 
