@@ -34,8 +34,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include <TFile.h>
+#include <TH1.h>
 
 #include <chrono>
 #include <cstdint>
