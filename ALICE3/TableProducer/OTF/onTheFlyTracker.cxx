@@ -1027,24 +1027,25 @@ struct OnTheFlyTracker {
 
       // use DCA fitters
       int nCand = 0;
-      bool dcaFitterOK_V0 = true;
+      bool dcaFitterV0Status = true;
       try {
         nCand = fitter.process(xiDaughterTrackParCovsTracked[1], xiDaughterTrackParCovsTracked[2]);
       } catch (...) {
-        // LOG(error) << "Exception caught in DCA fitter process call!";
-        dcaFitterOK_V0 = false;
+        LOG(error) << "Exception caught in DCA fitter for V0!";
+        dcaFitterV0Status = false;
       }
       if (nCand == 0) {
-        dcaFitterOK_V0 = false;
+        // LOG(info) << "No V0 candidate found in DCA fitter!";
+        dcaFitterV0Status = false;
       }
 
       fitter.propagateTracksToVertex();
       if (!fitter.isPropagateTracksToVertexDone()) {
-        dcaFitterOK_V0 = false;
+        dcaFitterV0Status = false;
       }
 
       // V0 found successfully
-      if (dcaFitterOK_V0) {
+      if (dcaFitterV0Status) {
         if (cascadeDecaySettings.doXiQA) {
           getHist(TH1, histPath + "hXiBuilding")->Fill(4.0f);
         }
@@ -1092,26 +1093,26 @@ struct OnTheFlyTracker {
 
         // dca fitter step
         nCand = 0;
-        bool dcaFitterOK_Cascade = true;
+        bool dcaFitterCascadeStatus = true;
         try {
           nCand = fitter.process(v0Track, xiDaughterTrackParCovsTracked[0]);
         } catch (...) {
-          // LOG(error) << "Exception caught in DCA fitter process call!";
-          dcaFitterOK_Cascade = false;
+          // LOG(error) << "Exception caught in DCA fitter cascade!";
+          dcaFitterCascadeStatus = false;
         }
         if (nCand == 0) {
-          dcaFitterOK_Cascade = false;
+          dcaFitterCascadeStatus = false;
         }
 
         fitter.propagateTracksToVertex();
         if (!fitter.isPropagateTracksToVertexDone()) {
-          dcaFitterOK_Cascade = false;
+          dcaFitterCascadeStatus = false;
         }
 
         const u_int8_t fitterStatusCode = fitter.getFitStatus();
         histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
         // Cascade found successfully
-        if (dcaFitterOK_Cascade) {
+        if (dcaFitterCascadeStatus) {
           if (cascadeDecaySettings.doXiQA) {
             getHist(TH1, histPath + "hXiBuilding")->Fill(6.0f);
           }
@@ -1376,7 +1377,6 @@ struct OnTheFlyTracker {
                int dNdEta,
                float eventCollisionTimeNS)
   {
-
     o2::track::TrackParCov trackParCov;
     o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
@@ -1506,36 +1506,33 @@ struct OnTheFlyTracker {
         fillHist(TH1, Form("V0Building_Configuration_%i/hV0Building", icfg), 2.0f);
       }
 
-      // assign indices of the particles we've used
-      // they should be the last ones to be filled, in order:
-      // n-1: positive Track from V0
-      // n-2: negative Track from V0
+      // assign indices of the daughter particles
       thisV0.mcParticleId = mcParticle.globalIndex();
       thisV0.negativeId = trackTableOffset + 1;
       thisV0.positiveId = trackTableOffset + 2;
 
       // use DCA fitters
       int nCand = 0;
-      bool dcaFitterOK_V0 = true;
+      bool dcaFitterV0Status = true;
       try {
         nCand = fitter.process(v0DaughterTrackParCovsTracked[0], v0DaughterTrackParCovsTracked[1]);
       } catch (...) {
         // LOG(error) << "Exception caught in DCA fitter process call!";
-        dcaFitterOK_V0 = false;
+        dcaFitterV0Status = false;
       }
       if (nCand == 0) {
-        dcaFitterOK_V0 = false;
+        dcaFitterV0Status = false;
       }
 
       fitter.propagateTracksToVertex();
       if (!fitter.isPropagateTracksToVertexDone()) {
-        dcaFitterOK_V0 = false;
+        dcaFitterV0Status = false;
       }
 
       const u_int8_t fitterStatusCode = fitter.getFitStatus();
       histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
       // V0 found successfully
-      if (dcaFitterOK_V0) {
+      if (dcaFitterV0Status) {
         if (v0DecaySettings.doV0QA) {
           fillHist(TH1, Form("V0Building_Configuration_%i/hV0Building", icfg), 3.0f);
         }
@@ -1767,29 +1764,32 @@ struct OnTheFlyTracker {
     // Now that the multiplicity is known, we can process the particles to smear them
     for (const auto& mcParticle : mcParticles) {
 
-      if ((std::fabs(mcParticle.eta()) > maxEta) || (mcParticle.pt() < minPt)) {
-        continue;
-      }
-      const bool isCascade = mcParticle.pdgCode() == kXiMinus;
-      if (isCascade && cascadeDecaySettings.decayXi) {
-        genCascades.push_back(mcParticle.globalIndex());
-      }
-      const bool isV0 = std::find(v0PDGs.begin(), v0PDGs.end(), mcParticle.pdgCode()) != v0PDGs.end();
-      if (isV0 && v0DecaySettings.decayV0) {
-        genV0s.push_back(mcParticle.globalIndex());
-      }
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
+
+      if ((std::fabs(mcParticle.eta()) > maxEta) || (mcParticle.pt() < minPt)) {
+        continue;
+      }
+
+      const bool isCascadeToDecay = (mcParticle.pdgCode() == kXiMinus) && cascadeDecaySettings.decayXi;
+      const bool isV0ToDecay = std::find(v0PDGs.begin(), v0PDGs.end(), mcParticle.pdgCode()) != v0PDGs.end()
+                               && v0DecaySettings.decayV0;
 
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
       const bool pdgsToBeHandled = longLivedToBeHandled ||
                                    (enableNucleiSmearing && nucleiToBeHandled) ||
-                                   (cascadeDecaySettings.decayXi && isCascade) ||
-                                   (v0DecaySettings.decayV0 && isV0);
+                                   (isCascadeToDecay) || (isV0ToDecay);
       if (!pdgsToBeHandled) {
         continue;
+      }
+
+      if (isCascadeToDecay) {
+        genCascades.push_back(mcParticle.globalIndex());
+      }
+      if (isV0ToDecay) {
+        genV0s.push_back(mcParticle.globalIndex());
       }
 
       multiplicityCounter++;
