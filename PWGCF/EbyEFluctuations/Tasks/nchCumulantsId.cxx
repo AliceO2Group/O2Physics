@@ -33,8 +33,8 @@
 #include <TPDGCode.h>
 
 #include <algorithm>
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
