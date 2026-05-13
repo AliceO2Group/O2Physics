@@ -1835,7 +1835,7 @@ struct taggingHFE {
             continue;
           }
 
-          emmllv0pair(leptonTable.lastIndex(),
+          emmllv0pair(leptonTable.lastIndex(), 0,
                       v0.pt(), v0.rapidity(0),
                       RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
@@ -1896,7 +1896,7 @@ struct taggingHFE {
             continue;
           }
 
-          emmllv0pair(leptonTable.lastIndex(),
+          emmllv0pair(leptonTable.lastIndex(), 1,
                       v0.pt(), v0.rapidity(1),
                       RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
@@ -1962,8 +1962,8 @@ struct taggingHFE {
             continue;
           }
 
-          emmllcascpair(leptonTable.lastIndex(),
-                        cascade.pt(), cascade.rapidity(0),
+          emmllcascpair(leptonTable.lastIndex(), 0,
+                        cascade.sign() / cascade.pt(), cascade.rapidity(0),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
@@ -2028,8 +2028,8 @@ struct taggingHFE {
             continue;
           }
 
-          emmllcascpair(leptonTable.lastIndex(),
-                        cascade.pt(), cascade.rapidity(2),
+          emmllcascpair(leptonTable.lastIndex(), 1,
+                        cascade.sign() / cascade.pt(), cascade.rapidity(2),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
@@ -2260,7 +2260,7 @@ struct taggingHFE {
             continue;
           }
 
-          emmllv0pair(leptonTable.lastIndex(),
+          emmllv0pair(leptonTable.lastIndex(), 0,
                       v0.pt(), v0.rapidity(0),
                       RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
@@ -2321,7 +2321,7 @@ struct taggingHFE {
             continue;
           }
 
-          emmllv0pair(leptonTable.lastIndex(),
+          emmllv0pair(leptonTable.lastIndex(), 2,
                       v0.pt(), v0.rapidity(1),
                       RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
@@ -2387,8 +2387,8 @@ struct taggingHFE {
             continue;
           }
 
-          emmllcascpair(leptonTable.lastIndex(),
-                        cascade.pt(), cascade.rapidity(0),
+          emmllcascpair(leptonTable.lastIndex(), 0,
+                        cascade.sign() / cascade.pt(), cascade.rapidity(0),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
@@ -2453,8 +2453,8 @@ struct taggingHFE {
             continue;
           }
 
-          emmllcascpair(leptonTable.lastIndex(),
-                        cascade.pt(), cascade.rapidity(2),
+          emmllcascpair(leptonTable.lastIndex(), 1,
+                        cascade.sign() / cascade.pt(), cascade.rapidity(2),
                         RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
