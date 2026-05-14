@@ -211,13 +211,14 @@ DECLARE_SOA_COLUMN(ImpParCYYL, impParCYYL, float);                //! sigma of i
 DECLARE_SOA_COLUMN(ImpParCZYL, impParCZYL, float);                //! sigma of impact parameter for lepton, correlaion term
 DECLARE_SOA_COLUMN(ImpParCZZL, impParCZZL, float);                //! sigma of impact parameter for lepton in Z
 DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);            //! pdg code of mother of lepton
+DECLARE_SOA_COLUMN(IsCorrectCollision, isCorrectCollision, bool); //! LH pair is associated to correct collision.
 } // namespace emmltrack
 
 DECLARE_SOA_TABLE(EMMLLeptons, "AOD", "EMMLLEPTON", //!
                   o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::SubGeneratorId,
                   emmltrack::Signed1PtL, emmltrack::EtaL,
                   emmltrack::ImpParXYL, emmltrack::ImpParZL, emmltrack::ImpParCYYL, emmltrack::ImpParCZYL, emmltrack::ImpParCZZL,
-                  emmltrack::IsMotherFromBeauty, emmltrack::PdgCodeMother);
+                  emmltrack::IsMotherFromBeauty, emmltrack::PdgCodeMother, emmltrack::IsCorrectCollision);
 // iterators
 using EMMLLepton = EMMLLeptons::iterator;
 
