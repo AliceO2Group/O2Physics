@@ -1690,7 +1690,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processFractionsSingleReco, "Process MC data to obtain fractions for V0 and protons particles", false);
 
-  void processFractionsSingleTruth(FilteredFDCollision const& col, FemtoRecoParticles const&)
+  void processFractionsSingleTruth(FilteredFDCollision const& col, FemtoFullParticles const&)
   {
     auto groupPartsOne = partsOneMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
