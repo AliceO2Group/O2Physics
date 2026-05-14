@@ -546,6 +546,8 @@ struct OnTheFlyTracker {
           insertHist(histPath + "h2dDeltaPtVsPt", "h2dDeltaPtVsPt;Gen p_{T};#Delta p_{T}", {kTH2F, {axes.axisMomentum, axes.axisDeltaPt}});
           insertHist(histPath + "h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt;Gen p_{T};#Delta #eta", {kTH2F, {axes.axisMomentum, axes.axisDeltaEta}});
 
+          insertHist(histPath + "nSiliconHitsCascadeProngs", "nSiliconHitsCascadeProngs", {kTH1F, {{40, -0.5f, 39.5f}}});
+          insertHist(histPath + "nTPCHitsCascadeProngs", "nTPCHitsCascadeProngs", {kTH1F, {{10, -0.5f, 9.5f}}});
           insertHist(histPath + "hFastTrackerHits", "hFastTrackerHits", {kTH2F, {axes.axisZ, axes.axisRadius}});
           insertHist(histPath + "hFastTrackerQA", "hFastTrackerQA", {kTH1F, {{8, -0.5f, 7.5f}}});
           getHist(TH1, histPath + "hFastTrackerQA")->GetXaxis()->SetBinLabel(1, "Negative eigenvalue");
@@ -860,7 +862,7 @@ struct OnTheFlyTracker {
       const auto pdg = std::abs(mcParticle.pdgCode());
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), pdg) != nucleiPDGs.end();
-      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled) || (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus);
+      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
       if (!pdgsToBeHandled) {
         continue;
       }
@@ -970,6 +972,8 @@ struct OnTheFlyTracker {
           getHist(TH1, histPath + "hFastTrackerQA")->Fill(o2::math_utils::abs(nHitsCascadeProngs[i]));
         }
 
+        getHist(TH1, histPath + "nSiliconHitsCascadeProngs")->Fill(nSiliconHitsCascadeProngs[i]);
+        getHist(TH1, histPath + "nTPCHitsCascadeProngs")->Fill(nTPCHitsCascadeProngs[i]);
         if (nSiliconHitsCascadeProngs[i] >= fastTrackerSettings.minSiliconHits ||
             (nSiliconHitsCascadeProngs[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed &&
              nTPCHitsCascadeProngs[i] >= fastTrackerSettings.minTPCClusters)) {
@@ -994,6 +998,7 @@ struct OnTheFlyTracker {
       }
 
       if (TMath::IsNaN(xiDaughterTrackParCovsTracked[i].getZ())) {
+        isReco[i] = false;
         continue;
       } else {
         getHist(TH1, histPath + "hXiBuilding")->Fill(4.0f);
@@ -1162,18 +1167,18 @@ struct OnTheFlyTracker {
 
               // find perfect intercept XYZ
               float targetX = 1e+3;
-              trackParCov.getXatLabR(layer.getRadius(), targetX, mMagneticField);
+              xiTrackParCov.getXatLabR(layer.getRadius(), targetX, mMagneticField);
               if (targetX > 999) {
                 continue; // failed to find intercept
               }
 
-              if (!trackParCov.propagateTo(targetX, mMagneticField)) {
+              if (!xiTrackParCov.propagateTo(targetX, mMagneticField)) {
                 continue; // failed to propagate
               }
 
               // get potential cluster position
               std::array<float, 3> posClusterCandidate;
-              trackParCov.getXYZGlo(posClusterCandidate);
+              xiTrackParCov.getXYZGlo(posClusterCandidate);
               float r{std::hypot(posClusterCandidate[0], posClusterCandidate[1])};
               float phi{std::atan2(-posClusterCandidate[1], -posClusterCandidate[0]) + o2::constants::math::PI};
 
@@ -1303,15 +1308,15 @@ struct OnTheFlyTracker {
         getHist(TH2, histPath + "h2dDeltaEtaVsPt")->Fill(thisCascade.pt, mcParticle.eta() - thisCascade.eta);
         getHist(TH2, histPath + "hFoundVsFindable")->Fill(thisCascade.findableClusters, thisCascade.foundClusters);
 
-        o2::track::TrackParCov trackParametrization(trackParCov);
+        o2::track::TrackParCov trackParametrization(xiTrackParCov);
         trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo);
         getHist(TH2, histPath + "h2dDCAxyCascade")->Fill(trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
         getHist(TH2, histPath + "h2dDCAzCascade")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
       }
       if (isReco[0]) {
         getHist(TH2, histPath + "hRecoPiFromXi")->Fill(xiDecayRadius2D, cascadeDecayProducts[0].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng0(tracksCascadeProngs[0]);
-        if (populateTracksDCA && tracksCascadeProngs[0].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the bachelor track
+        o2::track::TrackParCov trackParametrizationCascProng0(xiTrackParCov);
+        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the bachelor track
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
           getHist(TH2, histPath + "h2dDCAxyCascadeBachelor")->Fill(trackParametrizationCascProng0.getPt(), dcaXY * 1e+4); // in microns, please
@@ -1320,8 +1325,8 @@ struct OnTheFlyTracker {
       }
       if (isReco[1]) {
         getHist(TH2, histPath + "hRecoPiFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[1].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng1(tracksCascadeProngs[1]);
-        if (populateTracksDCA && tracksCascadeProngs[1].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the negative pion track
+        o2::track::TrackParCov trackParametrizationCascProng1(xiTrackParCov);
+        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the negative pion track
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
           getHist(TH2, histPath + "h2dDCAxyCascadeNegative")->Fill(trackParametrizationCascProng1.getPt(), dcaXY * 1e+4); // in microns, please
@@ -1330,8 +1335,8 @@ struct OnTheFlyTracker {
       }
       if (isReco[2]) {
         getHist(TH2, histPath + "hRecoPrFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[2].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng2(tracksCascadeProngs[2]);
-        if (populateTracksDCA && tracksCascadeProngs[2].propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the positive proton track
+        o2::track::TrackParCov trackParametrizationCascProng2(xiTrackParCov);
+        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the positive proton track
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
           getHist(TH2, histPath + "h2dDCAxyCascadePositive")->Fill(trackParametrizationCascProng2.getPt(), dcaXY * 1e+4); // in microns, please
