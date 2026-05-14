@@ -195,6 +195,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     Configurable<float> confLimitHel4{"confLimitHel4", -1.0, "Lowest value of the helicity angle"};
     ConfigurableAxis confInvMassMotherpTBinsHel{"confInvMassMotherpTBinsHel", {5, 0, 5}, "pT binning in the pT vs. InvMassMother plot for helicity"};
     ConfigurableAxis confInvMassMotherBinsHel{"confInvMassMotherBinsHel", {1000, 0.8, 1.4}, "InvMassMother binning in the pT vs. InvMassMother plot for helicity"};
+    Configurable<bool> isRealK0Short{"isRealK0Short", true, "If true, fill invariant mass for real K0Short; if false, fill invariant mass as if dealing with Lambda (needed for estimation of K0Short fraction in the Lambda sample)"};
     ConfigurableAxis confInvMassK0Short{"confInvMassK0Short", {1000, 0.2, 0.8}, "Invariant mass binning for K0 Short"}; // o2-linter: disable=lowerCamelCase (consistency with generally accepted particle name)
   } helicityconfigs;
 
@@ -330,10 +331,6 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/Mother/Data/hInvMassLambdaHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/Data/hInvMassLambdaHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/Data/hInvMassLambdaHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {helicityconfigs.confInvMassMotherpTBinsHel, helicityconfigs.confInvMassMotherBinsHel});
-    thetaRegistry.add("Theta/Mother/Data/hInvMassK0ShortHel1", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
-    thetaRegistry.add("Theta/Mother/Data/hInvMassK0ShortHel2", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
-    thetaRegistry.add("Theta/Mother/Data/hInvMassK0ShortHel3", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
-    thetaRegistry.add("Theta/Mother/Data/hInvMassK0ShortHel4", " ; M_{K^{0}_{S}}; ;", kTH1F, {helicityconfigs.confInvMassK0Short});
     thetaRegistry.add("Theta/Mother/MCReco/hInvMassLambdaMC", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/MCReco/hInvMassLambdaMCHel1", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/MCReco/hInvMassLambdaMCHel2", " ; M_{#Lambda}; ;", kTH1F, {helicityconfigs.confInvMassMotherBinsHel});
@@ -496,7 +493,6 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       auto negChildMass = pdg->Mass(V0configs.confPDGCodeNegChild);
       auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
       auto cosineTheta = (posChildBoosted.Px() * part.px() + posChildBoosted.Py() * part.py() + posChildBoosted.Pz() * part.pz()) / (posChildBoosted.P() * part.p());
-      auto invMassK0Short = TMath::Sqrt(TMath::Power(TMath::Sqrt(posChild.p() * posChild.p() + pdg->Mass(V0configs.confPDGCodePosChild) * pdg->Mass(V0configs.confPDGCodePosChild)) + TMath::Sqrt(negChild.p() * negChild.p() + pdg->Mass(V0configs.confPDGCodeNegChild) * pdg->Mass(V0configs.confPDGCodeNegChild)), 2) - TMath::Power(posChild.p() + negChild.p(), 2)); // "fake" K0Short invariant mass to estimate their fraction in the Lambda sample
 
       trackHistoPartTwo.fillQA<false, true>(part);
       posChildHistos.fillQA<false, true>(posChild);
@@ -512,19 +508,14 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaEta"), negChild.eta(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaPhi"), negChild.phi(), cosineTheta);
 
-      if (cosineTheta <= helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1) {
+      if (cosineTheta <= helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1)
         thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassLambdaHel1"), part.pt(), part.mLambda());
-        thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassK0ShortHel1"), invMassK0Short);
-      } else if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2) {
+      else if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2)
         thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassLambdaHel2"), part.pt(), part.mLambda());
-        thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassK0ShortHel2"), invMassK0Short);
-      } else if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3) {
+      else if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3)
         thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassLambdaHel3"), part.pt(), part.mLambda());
-        thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassK0ShortHel3"), invMassK0Short);
-      } else if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4) {
+      else if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4)
         thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassLambdaHel4"), part.pt(), part.mLambda());
-        thetaRegistry.fill(HIST("Theta/Mother/Data/hInvMassK0ShortHel4"), invMassK0Short);
-      }
 
       /// Histogramming for MC Reco to calculate fraction of K0Short in the Lambda sample for each helicity bin
       if constexpr (confIsMC) {
@@ -535,25 +526,41 @@ struct FemtoUniversePairTaskTrackV0Helicity {
             thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMC"), part.mKaon());
 
           if (cosineTheta <= helicityconfigs.confLimitHel0 && cosineTheta >= helicityconfigs.confLimitHel1) {
-            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0) {
               thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassLambdaMCHel1"), part.mLambda());
-            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
-              thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel1"), part.mKaon());
+            } else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short) {
+              if (helicityconfigs.isRealK0Short)
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel1"), part.mKaon());
+              else
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel1"), part.mLambda());
+            }
           } else if (cosineTheta < helicityconfigs.confLimitHel1 && cosineTheta >= helicityconfigs.confLimitHel2) {
-            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0) {
               thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassLambdaMCHel2"), part.mLambda());
-            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
-              thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel2"), part.mKaon());
+            } else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short) {
+              if (helicityconfigs.isRealK0Short)
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel2"), part.mKaon());
+              else
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel2"), part.mLambda());
+            }
           } else if (cosineTheta < helicityconfigs.confLimitHel2 && cosineTheta >= helicityconfigs.confLimitHel3) {
-            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0) {
               thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassLambdaMCHel3"), part.mLambda());
-            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
-              thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel3"), part.mKaon());
+            } else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short) {
+              if (helicityconfigs.isRealK0Short)
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel3"), part.mKaon());
+              else
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel3"), part.mLambda());
+            }
           } else if (cosineTheta < helicityconfigs.confLimitHel3 && cosineTheta >= helicityconfigs.confLimitHel4) {
-            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0)
+            if ((part.fdMCParticle()).pdgMCTruth() == kLambda0) {
               thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassLambdaMCHel4"), part.mLambda());
-            else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short)
-              thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel4"), part.mKaon());
+            } else if ((part.fdMCParticle()).pdgMCTruth() == kK0Short) {
+              if (helicityconfigs.isRealK0Short)
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel4"), part.mKaon());
+              else
+                thetaRegistry.fill(HIST("Theta/Mother/MCReco/hInvMassK0ShortMCHel4"), part.mLambda());
+            }
           }
         }
       }

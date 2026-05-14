@@ -111,6 +111,10 @@ struct JEPFlowAnalysis {
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
   Configurable<float> cfgVertexZ{"cfgVertexZ", 10.0, "Maximum vertex Z selection"};
 
+  Configurable<bool> cfgq2analysis{"cfgq2analysis", false, "ese analysis flag"};
+  Configurable<float> cfgq2high{"cfgq2high", 10.0, "high q2 selection"};
+  Configurable<float> cfgq2low{"cfgq2low", 0.0, "low q2 selection"};
+
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCNeg", "The name of detector for reference B"};
@@ -120,6 +124,7 @@ struct JEPFlowAnalysis {
   ConfigurableAxis cfgAxisEta{"cfgAxisEta", {20, -1, 1}, ""};
   ConfigurableAxis cfgAxisCos{"cfgAxisCos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {200, -5.0, 5.0}, ""};
+  ConfigurableAxis cfgAxisQ2{"cfgAxisQ2", {100, 0, 10}, ""};
 
   ConfigurableAxis cfgAxisCentMC{"cfgAxisCentMC", {5, 0, 100}, ""};
   ConfigurableAxis cfgAxisVtxZMC{"cfgAxisVtxZMC", {20, -10, 10}, ""};
@@ -141,6 +146,8 @@ struct JEPFlowAnalysis {
 
   float minQvecAmp = 1e-5;
   float minChg = 0.1;
+  float q2Mag;
+
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
 
@@ -284,6 +291,8 @@ struct JEPFlowAnalysis {
       float resNumB = helperEP.GetResolution(eps[0], eps[2], i + 2);
       float resDenom = helperEP.GetResolution(eps[1], eps[2], i + 2);
 
+      q2Mag = std::sqrt(std::pow(qx_shifted[0], 2) + std::pow(qy_shifted[0], 2));
+
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
       epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
       epFlowHistograms.fill(HIST("EpRefB"), i + 2, cent, eps[2]);
@@ -291,6 +300,8 @@ struct JEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResDetRefA"), i + 2, cent, resNumA);
       epFlowHistograms.fill(HIST("EpResDetRefB"), i + 2, cent, resNumB);
       epFlowHistograms.fill(HIST("EpResRefARefB"), i + 2, cent, resDenom);
+
+      epFlowHistograms.fill(HIST("hQ2"), i + 2, cent, q2Mag);
 
       epFlowHistograms.fill(HIST("EpResQvecDetRefAxx"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
       epFlowHistograms.fill(HIST("EpResQvecDetRefAxy"), i + 2, cent, qx_shifted[1] * qy_shifted[0] - qx_shifted[0] * qy_shifted[1]);
@@ -315,6 +326,14 @@ struct JEPFlowAnalysis {
 
         epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
         epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), track.eta(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+
+        if (cfgq2analysis) {
+          if (q2Mag > cfgq2high) {
+            epFlowHistograms.fill(HIST("SPvnxx_q2high"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+          } else if (q2Mag < cfgq2low) {
+            epFlowHistograms.fill(HIST("SPvnxx_q2low"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+          }
+        }
       }
     }
   }
@@ -351,6 +370,7 @@ struct JEPFlowAnalysis {
     AxisSpec axisEta{cfgAxisEta, "eta"};
     AxisSpec axisCos{cfgAxisCos, "cos"};
     AxisSpec axisQvec{cfgAxisQvec, "Qvec"};
+    AxisSpec axisQ2{cfgAxisQ2, "Q2"};
 
     AxisSpec axisCentMC{cfgAxisCentMC, "cent"};
     AxisSpec axisVtxZMC{cfgAxisVtxZMC, "vtxz"};
@@ -366,6 +386,8 @@ struct JEPFlowAnalysis {
     epFlowHistograms.add("EpResDetRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
     epFlowHistograms.add("EpResRefARefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
 
+    epFlowHistograms.add("hQ2", "", {HistType::kTH3F, {axisMod, axisCent, axisQ2}});
+
     epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
     epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
 
@@ -378,6 +400,10 @@ struct JEPFlowAnalysis {
 
     epFlowHistograms.add("SPvnxx", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
     epFlowHistograms.add("SPvnxy", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+    if (cfgq2analysis) {
+      epFlowHistograms.add("SPvnxx_q2high", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+      epFlowHistograms.add("SPvnxx_q2low", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
+    }
 
     epFlowHistograms.add("hCentrality", "", {HistType::kTH1F, {axisCent}});
     epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});

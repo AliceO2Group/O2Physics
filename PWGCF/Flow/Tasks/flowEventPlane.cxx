@@ -180,6 +180,7 @@ struct SpectatorPlaneTableProducer {
   // CCDB
   Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
   Configurable<std::string> cCcdbPath{"cCcdbPath", "Users/y/ypatley/DFOO", "Path for ccdb-object"};
+  Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
@@ -238,6 +239,8 @@ struct SpectatorPlaneTableProducer {
     // Set CCDB url
     ccdbService->setURL(cCcdbUrl.value);
     ccdbService->setCaching(true);
+    ccdbService->setLocalObjectValidityChecking();
+    ccdbService->setCreatedNotAfter(nolaterthan.value);
 
     // Define axes
     const AxisSpec axisZDCEnergy{500, 0, 500, "ZD[AC] Signal"};
@@ -379,7 +382,7 @@ struct SpectatorPlaneTableProducer {
     // Load ZDC gain calibration
     if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, 1);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
       CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
       CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
     }
@@ -407,7 +410,7 @@ struct SpectatorPlaneTableProducer {
         std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
 
         // Get object from CCDB
-        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, 1);
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
 
         // Check CCDB Object
         if (!ccdbObject) {
