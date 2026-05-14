@@ -305,6 +305,7 @@ struct lambdajetpolarizationionsderived {
   Configurable<bool> forcePerpToJet{"forcePerpToJet", false, "force jet direction to be perpendicular to jet estimator. For QA"};
   Configurable<bool> forceJetDirectionSmudge{"forceJetDirectionSmudge", false, "fluctuate jet direction by 10% of R around original axis. For QA (tests sensibility)"};
   Configurable<bool> forceRandJet{"forceRandJet", false, "makes jet direction random. A QA for AEE fake signal and its removal"};
+  Configurable<bool> forcePreviousJet{"forcePreviousJet", false, "uses previous event's jet direction instead of a random sample. A baseline for fake signal removal"};
   // Configurable<float> jetRForSmudging{"jetRForSmudging", 0.4, "QA quantity: the chosen R scale for the jet direction smudge"}; // Superseeded by jetR: kept the same scale in analysis and QA
   Configurable<float> jetR{"jetR", 0.4f, "Radius of the jet"}; // Provide manually, please.
   Configurable<float> minLeadParticlePt{"minLeadParticlePt", 2.0f, "Minimum Pt for a lead track to be considered a valid proxy for a jet (may be more restrictive than TableProducer)"};
@@ -709,6 +710,20 @@ struct lambdajetpolarizationionsderived {
     histos.get<TProfile>(HIST("EtaStudy/pRingEtaCutsLeadingP"))->GetXaxis()->SetBinLabel(8, "#eta_{LeadP} < 0, #eta_{#Lambda} #geq 0");
     histos.get<TProfile>(HIST("EtaStudy/pRingEtaCutsLeadingP"))->GetXaxis()->SetBinLabel(9, "#eta_{LeadP} < 0, #eta_{#Lambda} < 0");
 
+    // Studying the signal Vs background integral (a very naive estimative of the invariant mass peak)
+    histos.add("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground", "pRingEtaCutsLeadingP_MassSignalVsBackground; ; ;<#it{R}>", kTProfile2D, {{9, 0, 9}, {2, 0, 2}});
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(1, "All #Lambda");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(2, "#eta_{LeadP} #geq 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(3, "#eta_{LeadP} < 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(4, "#eta_{#Lambda} #geq 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(5, "#eta_{#Lambda} < 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(6, "#eta_{LeadP} #geq 0, #eta_{#Lambda} #geq 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(7, "#eta_{LeadP} #geq 0, #eta_{#Lambda} < 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(8, "#eta_{LeadP} < 0, #eta_{#Lambda} #geq 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(9, "#eta_{LeadP} < 0, #eta_{#Lambda} < 0");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetYaxis()->SetBinLabel(1, "#Lambda in mass peak");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetYaxis()->SetBinLabel(2, "#Lambda out of mass peak");
+
     // Fake polarization signal QA
     // --> The "negative helicity problem", where topologies with a proton decaying opposite to the Lambda momentum are enhanced by
     // efficiency of reconstruction. The geometries where the proton moves in the same direction as the boost will have a very small
@@ -906,6 +921,114 @@ struct lambdajetpolarizationionsderived {
     return -1.f;
   }
 
+  // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
+  void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
+                            float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi){
+    if (!forcePerpToJet && !forceJetDirectionSmudge && !forceRandJet && !forcePreviousJet)[[likely]] {
+      return; // Skip this function if none of the modifications are actually being executed!
+    }
+
+    // QA block -- Purposefully changing the jet direction (should kill signal, if any):
+    if (forcePerpToJet) {
+      // First, we build a vector perpendicular to the jet by picking an arbitrary vector not parallel to the jet
+      XYZVector refVec(1., 0., 0.);
+      if (std::abs(unitVec.Dot(refVec)) > 0.99)
+        refVec = XYZVector(0., 1., 0.);
+      
+      // Now we get a perpendicular vector to the jet direction:
+      XYZVector perpVec = unitVec.Cross(refVec).Unit();
+      
+      // Now we rotate around the jet axis by a random angle, just to make sure we are not introducing a bias in the QA:
+      // We will use Rodrigues' rotation formula (v_rot = v*cos(randomAngle) + (Jet \cross v)*sin(randomAngle))
+      double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
+      unitVec = perpVec * std::cos(randomAngle) + unitVec.Cross(perpVec) * std::sin(randomAngle);
+    } else if (forceJetDirectionSmudge) {
+      // Smear the jet direction by a small random angle to estimate sensitivity to
+      // jet axis uncertainty. We rotate the jet axis by angle theta around a uniformly
+      // random perpendicular axis -- this is isotropic and coordinate-independent,
+      // unlike smearing eta and phi separately (which would break azimuthal symmetry
+      // around the jet axis and depend on where in eta the jet sits).
+
+      // 1) We pick a uniformly random axis perpendicular to the jet.
+      // (re-using the same Rodrigues formula as in the forcePerpToJet block above)
+      XYZVector refVec(1., 0., 0.);
+      if (std::abs(unitVec.Dot(refVec)) > 0.99)
+        refVec = XYZVector(0., 1., 0.);
+      XYZVector perpVec = unitVec.Cross(refVec).Unit();
+      
+      // Rotate perpVec around the jet axis by a uniform random azimuth to get
+      // a uniformly distributed random perpendicular direction (the smear axis):
+      double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
+      XYZVector smearAxis = perpVec * std::cos(smearAzimuth) + unitVec.Cross(perpVec) * std::sin(smearAzimuth);
+      
+      // 2) draw the smearing polar angle from a Gaussian:
+      // sigma = 0.05 * R --> ~68% of events smeared within 5% of R,
+      //                      ~95% of events smeared within 10% of R,
+      //                       ~5% see a displacement > 0.1*R (a very "badly determined jet", for our QA purposes)
+      // std::abs() folds the symmetric Gaussian onto a half-normal ([0, inf))
+      // -- R is not really an angle: just gives me a scale for the angular shift I am performing.
+      // -- This may pose problems for forward jets: a small displacement in \theta becomes a large displacement in \eta space
+      double smearSigma = 0.05 * jetR;
+      double smearAngle = std::abs(randomGen.Gaus(0., smearSigma));
+      
+      // 3) rotate the jet axis by smearAngle around smearAxis.
+      // Rodrigues is v_rot = v*cos(theta) + (k \cross v)*sin(theta) + k*(k \cdot v)*(1-cos(theta))
+      // But the last term vanishes because smearAxis is perpendicular to unitVec:
+      unitVec = unitVec * std::cos(smearAngle) + smearAxis.Cross(unitVec) * std::sin(smearAngle);
+      // Also, rotation preserves the norm, so no re-normalisation is needed for this to be a unit vector.
+    } else if (forceRandJet) {
+      // This randomization was made different for each proxy (LeadP, LeadJet, SubLeadJet): bear that in mind!
+      // 1) Uniformly sample cos(theta) and phi to ensure an isotropic distribution (could also use TRandom::Sphere as well)
+        // Notice that uniformly sampling theta would make the distribution non-isotropic, thus we use cos(theta)!
+      double cosTheta = randomGen.Uniform(-1., 1.);
+      double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
+      double randPhi = randomGen.Uniform(0., o2::constants::math::TwoPI);
+
+      // 2) Construct the new random unit vector (there is no need to use the magnitude at all! We only need direction here):
+      unitVec = XYZVector(sinTheta * std::cos(randPhi), sinTheta * std::sin(randPhi), cosTheta);
+    } else if (forcePreviousJet) { // Use the jet direction from the immediately preceding collision. The simplest event mixing
+      const bool usableProxy = cacheHadProxy;
+      if (usableProxy) {
+        const float inverseCoshEta = 1.0f / std::cosh(cacheEta);
+        const float sinPhi = std::sin(cachePhi);
+        const float cosPhi = std::cos(cachePhi);
+        unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(cacheEta));
+      }
+      
+      // Update cache with the current event data:
+      cacheHadProxy = hasValidProxy;
+      cacheEta = eta; 
+      cachePhi = phi;
+      
+      // Current event cannot use previous-jet mixing if previous event lacked a proxy
+      if (!usableProxy)
+        hasValidProxy = false;
+    }
+
+    // Recalculating pT, phi and eta after distortions:
+    // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
+    if (hasValidProxy) { // If you don't check this flag here, the "if (!usableProxy)" change would be silently overwritten
+      // Calculating total jet momentum, which should be preserved, just to recalculate the new jet Pt:
+      double mag = pt * std::cosh(eta);
+      
+      // For stability (Rho is the projection on the transverse plane, badly behaved for high |eta|):
+      double transverseNorm = std::max(unitVec.Rho(), 1e-12); // Stability guard
+      
+      // Recalculate pT:
+      pt = mag * transverseNorm;
+      
+      // Recalculate phi:
+      phi = std::atan2(unitVec.Y(), unitVec.X());
+      
+      // Stable eta computation:
+      // Stabler than 0.5 * std::log((1. + cosTheta) / (1. - cosTheta))
+      eta = std::asinh(unitVec.Z() / transverseNorm);
+
+      // Recalculate the bool after distortion to see if we proceed with this jet proxy:
+      hasValidProxy = pt > minPtThreshold;
+    }
+  }
+
   // Initializing a random number generator for the worker (for perpendicular-to-jet direction QAs):
   TRandom3 randomGen{0}; // 0 means we auto-seed from machine entropy. This is called once per device in the pipeline, so we should not see repeated seeds across workers
 
@@ -917,6 +1040,14 @@ struct lambdajetpolarizationionsderived {
   void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s,
                                o2::aod::RingLeadPs const& leadPs)
   {
+    // Caching the previous collision's jet directions -- An optional feature for forcePreviousJet:
+    struct PrevJetCache {
+      bool hadLeadJet; float leadJetEta; float leadJetPhi; // Leading jet
+      bool hadSubJet; float subJetEta; float subJetPhi; // Subleading jet
+      bool hadLeadP; float leadPEta; float leadPPhi; // Leading particle
+    };
+    PrevJetCache prevJetCache{}; // Initializing struct before the collisions loop. This zero-initializes, so bools start as false
+
     for (auto const& collision : collisions) {
       const auto collId = collision.globalIndex(); // The self-index accessor
       const double centrality = getCentrality(collision);
@@ -975,53 +1106,18 @@ struct lambdajetpolarizationionsderived {
       XYZVector leadPUnitVec(1., 0., 0.); // dummy (overwritten below when hasValidLeadingP)
       if (hasValidLeadingP) {
         leadPUnitVec = XYZVector(leadPPx, leadPPy, leadPPz).Unit();
-        // QA: same direction-smearing/perp logic as for the leading jet estimator.
-        // The hLeadPEta histogram above intentionally uses the unmodified direction.
-        if (forcePerpToJet) {
-          XYZVector refVec(1., 0., 0.);
-          if (std::abs(leadPUnitVec.Dot(refVec)) > 0.99)
-            refVec = XYZVector(0., 1., 0.);
-          XYZVector perpVec = leadPUnitVec.Cross(refVec).Unit();
-          double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
-          leadPUnitVec = perpVec * std::cos(randomAngle) + leadPUnitVec.Cross(perpVec) * std::sin(randomAngle);
-        } else if (forceJetDirectionSmudge) {
-          XYZVector refVec(1., 0., 0.);
-          if (std::abs(leadPUnitVec.Dot(refVec)) > 0.99)
-            refVec = XYZVector(0., 1., 0.);
-          XYZVector perpVec = leadPUnitVec.Cross(refVec).Unit();
-          double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
-          XYZVector smearAxis = perpVec * std::cos(smearAzimuth) + leadPUnitVec.Cross(perpVec) * std::sin(smearAzimuth);
-          double smearAngle = std::abs(randomGen.Gaus(0., 0.05 * jetR));
-          leadPUnitVec = leadPUnitVec * std::cos(smearAngle) + smearAxis.Cross(leadPUnitVec) * std::sin(smearAngle);
-        } else if (forceRandJet){ 
-          // This randomization was made different for each proxy (LeadP, LeadJet, SubLeadJet): bear that in mind!
-          // 1) Uniformly sample cos(theta) and phi to ensure an isotropic distribution (could also use TRandom::Sphere as well)
-            // Notice that uniformly sampling theta would make the distribution non-isotropic, thus we use cos(theta)!
-          double cosTheta = randomGen.Uniform(-1., 1.);
-          double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
-          double randPhi = randomGen.Uniform(0., o2::constants::math::TwoPI);
+        
+        // Apply distortion logic:
+        const bool hadPreviousProxy = prevJetCache.hadLeadP;
+        applyProxyDistortion(hasValidLeadingP, leadPPt, leadPEta, leadPPhi, leadPUnitVec, 
+                             minLeadParticlePt, prevJetCache.hadLeadP, prevJetCache.leadPEta, prevJetCache.leadPPhi);
 
-          // 2) Construct the new random unit vector (there is no need to use the magnitude at all! We only need direction here):
-          leadPUnitVec = XYZVector(sinTheta * std::cos(randPhi), sinTheta * std::sin(randPhi), cosTheta);
+        // Fill distorted-proxy QA histograms:
+        // Do not gate on the post-distortion hasValidLeadingP (a pT cut) value here!
+        if (!forcePreviousJet || hadPreviousProxy){
+          histos.fill(HIST("JetKinematicsQA/hLeadPEta"), leadPEta);
+          histos.fill(HIST("JetKinematicsQA/hJetCounterPtLeadP"), leadPPt);
         }
-        // Recalculating pT, phi and eta after distortions:
-        // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
-          // Calculating total jet momentum, which should be preserved, just to recalculate the new jet Pt:
-        double leadPMag = leadPPt * std::cosh(leadPEta);
-          // Recalculate pT:
-        double transverseNorm = std::max(leadPUnitVec.Rho(), 1e-12); // For stability (Rho is the projection on the transverse plane, badly behaved for high |eta|)
-        leadPPt = leadPMag * transverseNorm;
-          // Recalculate phi:
-        leadPPhi = std::atan2(leadPUnitVec.Y(), leadPUnitVec.X());
-          // Stable eta computation:
-        leadPEta = std::asinh(leadPUnitVec.Z() / transverseNorm); // Stabler than 0.5 * std::log((1. + cosTheta) / (1. - cosTheta))        
-
-          // Filling histograms after distortions:
-        histos.fill(HIST("JetKinematicsQA/hLeadPEta"), leadPEta);
-        histos.fill(HIST("JetKinematicsQA/hJetCounterPtLeadP"), leadPPt);
-
-        // Recalculate the bool after distortion to see if we proceed with this jet proxy:
-        hasValidLeadingP = leadPPt > minLeadParticlePt;
       }
 
       // 3) Checking if the event has a leading jet:
@@ -1062,81 +1158,18 @@ struct lambdajetpolarizationionsderived {
         leadingJetPhi = leadingJet->jetPhi();
         // Using internal getters to make code cleaner:
         leadingJetUnitVec = XYZVector(leadingJet->jetPx(), leadingJet->jetPy(), leadingJet->jetPz()).Unit();
-        
-        // QA block -- Purposefully changing the jet direction (should kill signal, if any):
-        if (forcePerpToJet) { // Use modified jet direction (done outside loop to guarantee all V0s inside event use same fake jet)
-          // First, we build a vector perpendicular to the jet by picking an arbitrary vector not parallel to the jet
-          XYZVector refVec(1., 0., 0.);
-          if (std::abs(leadingJetUnitVec.Dot(refVec)) > 0.99)
-            refVec = XYZVector(0., 1., 0.);
-          // Now we get a perpendicular vector to the jet direction:
-          XYZVector perpVec = leadingJetUnitVec.Cross(refVec).Unit();
-          // Now we rotate around the jet axis by a random angle, just to make sure we are not introducing a bias in the QA:
-          // We will use Rodrigues' rotation formula (v_rot = v*cos(randomAngle) + (Jet \cross v)*sin(randomAngle))
-          double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
-          leadingJetUnitVec = perpVec * std::cos(randomAngle) + leadingJetUnitVec.Cross(perpVec) * std::sin(randomAngle);
-        } else if (forceJetDirectionSmudge) {
-          // Smear the jet direction by a small random angle to estimate sensitivity to
-          // jet axis uncertainty. We rotate the jet axis by angle theta around a uniformly
-          // random perpendicular axis -- this is isotropic and coordinate-independent,
-          // unlike smearing eta and phi separately (which would break azimuthal symmetry
-          // around the jet axis and depend on where in eta the jet sits).
 
-          // 1) We pick a uniformly random axis perpendicular to the jet.
-          // (re-using the same Rodrigues formula as in the forcePerpToJet block above)
-          XYZVector refVec(1., 0., 0.);
-          if (std::abs(leadingJetUnitVec.Dot(refVec)) > 0.99)
-            refVec = XYZVector(0., 1., 0.);
-          XYZVector perpVec = leadingJetUnitVec.Cross(refVec).Unit();
-          // Rotate perpVec around the jet axis by a uniform random azimuth to get
-          // a uniformly distributed random perpendicular direction (the smear axis):
-          double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
-          XYZVector smearAxis = perpVec * std::cos(smearAzimuth) + leadingJetUnitVec.Cross(perpVec) * std::sin(smearAzimuth);
+        // Apply distortion logic:
+        const bool hadPreviousProxy = prevJetCache.hadLeadJet;
+        applyProxyDistortion(hasValidLeadingJet, leadingJetPt, leadingJetEta, leadingJetPhi, leadingJetUnitVec, 
+                             minLeadJetPt, prevJetCache.hadLeadJet, prevJetCache.leadJetEta, prevJetCache.leadJetPhi);
 
-          // Step 2: draw the smearing polar angle from a Gaussian:
-          // sigma = 0.05 * R --> ~68% of events smeared within 5% of R,
-          //                      ~95% of events smeared within 10% of R,
-          //                       ~5% see a displacement > 0.1*R (a very "badly determined jet", for our QA purposes)
-          // std::abs() folds the symmetric Gaussian onto a half-normal ([0, inf))
-          // -- R is not really an angle: just gives me a scale for the angular shift I am performing.
-          // -- This may pose problems for forward jets: a small displacement in \theta becomes a large displacement in \eta space
-          double smearSigma = 0.05 * jetR;
-          double smearAngle = std::abs(randomGen.Gaus(0., smearSigma));
-
-          // Step 3: rotate the jet axis by smearAngle around smearAxis.
-          // Rodrigues is v_rot = v*cos(theta) + (k \cross v)*sin(theta) + k*(k \cdot v)*(1-cos(theta))
-          // But the last term vanishes because smearAxis is perpendicular to leadingJetUnitVec:
-          leadingJetUnitVec = leadingJetUnitVec * std::cos(smearAngle) + smearAxis.Cross(leadingJetUnitVec) * std::sin(smearAngle);
-          // Also, rotation preserves the norm, so no re-normalisation is needed for this to be a unit vector.
+        // Fill distorted-proxy QA histograms:
+        // Do not gate on the post-distortion hasValidLeadingJet (a pT cut) value here!
+        if (!forcePreviousJet || hadPreviousProxy) {
+          histos.fill(HIST("JetKinematicsQA/hLeadJetEta"), leadingJetEta);
+          histos.fill(HIST("JetKinematicsQA/hJetCounterPtJet"), leadingJetPt);
         }
-        else if (forceRandJet){
-          // Uniformly sample cos(theta) and phi to ensure an isotropic distribution
-            // Notice that uniformly sampling theta would make the distribution non-isotropic, thus we use cos(theta)!
-          double cosTheta = randomGen.Uniform(-1., 1.);
-          double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
-          double randPhi = randomGen.Uniform(0., o2::constants::math::TwoPI);
-
-          // Construct the new random unit vector (there is no need to use the magnitude at all! We only need direction here):
-          leadingJetUnitVec = XYZVector(sinTheta * std::cos(randPhi), sinTheta * std::sin(randPhi), cosTheta);
-        }
-        // Recalculating pT, phi and eta after distortions:
-        // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
-          // Calculating total jet momentum, which should be preserved, just to recalculate the new jet Pt:
-        double leadingJetMag = leadingJetPt * std::cosh(leadingJetEta);
-          // Recalculate pT:
-        double transverseNorm = std::max(leadingJetUnitVec.Rho(), 1e-12); // For stability (Rho is the projection on the transverse plane, badly behaved for high |eta|)
-        leadingJetPt = leadingJetMag * transverseNorm;
-          // Recalculate phi:
-        leadingJetPhi = std::atan2(leadingJetUnitVec.Y(), leadingJetUnitVec.X());
-          // Stable eta computation:
-        leadingJetEta = std::asinh(leadingJetUnitVec.Z() / transverseNorm); // Stabler than 0.5 * std::log((1. + cosTheta) / (1. - cosTheta))
-
-          // Filling histograms after distortions:
-        histos.fill(HIST("JetKinematicsQA/hLeadJetEta"), leadingJetEta);
-        histos.fill(HIST("JetKinematicsQA/hJetCounterPtJet"), leadingJetPt);
-
-        // Recalculate the bool after distortion to see if we proceed with this jet proxy:
-        hasValidLeadingJet = leadingJetPt > minLeadJetPt;
       }
 
       float subleadingJetEta = 0.;
@@ -1146,54 +1179,19 @@ struct lambdajetpolarizationionsderived {
         subleadingJetEta = subleadingJet->jetEta();
         subleadingJetPhi = subleadingJet->jetPhi();
         subJetUnitVec = XYZVector(subleadingJet->jetPx(), subleadingJet->jetPy(), subleadingJet->jetPz()).Unit();
-        histos.fill(HIST("JetKinematicsQA/hSubLeadJetEta"), subleadingJetEta); // Unmodified direction
-        histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
-        // QA: same direction-smearing/perp logic as for the leading jet estimator.
-        if (forcePerpToJet) {
-          XYZVector refVec(1., 0., 0.);
-          if (std::abs(subJetUnitVec.Dot(refVec)) > 0.99)
-            refVec = XYZVector(0., 1., 0.);
-          XYZVector perpVec = subJetUnitVec.Cross(refVec).Unit();
-          double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
-          subJetUnitVec = perpVec * std::cos(randomAngle) + subJetUnitVec.Cross(perpVec) * std::sin(randomAngle);
-        } else if (forceJetDirectionSmudge) {
-          XYZVector refVec(1., 0., 0.);
-          if (std::abs(subJetUnitVec.Dot(refVec)) > 0.99)
-            refVec = XYZVector(0., 1., 0.);
-          XYZVector perpVec = subJetUnitVec.Cross(refVec).Unit();
-          double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
-          XYZVector smearAxis = perpVec * std::cos(smearAzimuth) + subJetUnitVec.Cross(perpVec) * std::sin(smearAzimuth);
-          double smearAngle = std::abs(randomGen.Gaus(0., 0.05 * jetR));
-          subJetUnitVec = subJetUnitVec * std::cos(smearAngle) + smearAxis.Cross(subJetUnitVec) * std::sin(smearAngle);
+
+        // Apply distortion logic:
+        const bool hadPreviousProxy = prevJetCache.hadSubJet;
+        applyProxyDistortion(hasValidSubJet, subleadingJetPt, subleadingJetEta, subleadingJetPhi, subJetUnitVec, 
+                             minSubLeadJetPt, prevJetCache.hadSubJet, prevJetCache.subJetEta, prevJetCache.subJetPhi);
+
+       
+        // Fill distorted-proxy QA histograms:
+        // Do not gate on the post-distortion hasValidSubJet (a pT cut) value here!
+        if (!forcePreviousJet || hadPreviousProxy) {
+          histos.fill(HIST("JetKinematicsQA/hSubLeadJetEta"), subleadingJetEta);
+          histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
         }
-        else if (forceRandJet){
-          // Uniformly sample cos(theta) and phi to ensure an isotropic distribution
-            // Notice that uniformly sampling theta would make the distribution non-isotropic, thus we use cos(theta)!
-          double cosTheta = randomGen.Uniform(-1., 1.);
-          double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
-          double randPhi = randomGen.Uniform(0., o2::constants::math::TwoPI);
-
-          // Construct the new random unit vector (there is no need to use the magnitude at all! We only need direction here):
-          subJetUnitVec = XYZVector(sinTheta * std::cos(randPhi), sinTheta * std::sin(randPhi), cosTheta);
-        }
-        // Recalculating pT, phi and eta after distortions:
-        // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
-          // Calculating total jet momentum, which should be preserved, just to recalculate the new jet Pt:
-        double subleadingJetMag = subleadingJetPt * std::cosh(subleadingJetEta);
-          // Recalculate pT:
-        double transverseNorm = std::max(subJetUnitVec.Rho(), 1e-12); // For stability (Rho is the projection on the transverse plane, badly behaved for high |eta|)
-        subleadingJetPt = subleadingJetMag * transverseNorm;
-          // Recalculate phi:
-        subleadingJetPhi = std::atan2(subJetUnitVec.Y(), subJetUnitVec.X());
-          // Stable eta computation:
-        subleadingJetEta = std::asinh(subJetUnitVec.Z() / transverseNorm); // Stabler than 0.5 * std::log((1. + cosTheta) / (1. - cosTheta))
-
-          // Filling histograms after distortions:
-        histos.fill(HIST("JetKinematicsQA/hSubLeadJetEta"), subleadingJetEta);
-        histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
-
-        // Recalculate the bool after distortion to see if we proceed with this jet proxy:
-        hasValidSubJet = subleadingJetPt > minSubLeadJetPt;
       }
 
       // (jet eta cuts only meaningful when the jet actually exists)
@@ -1263,6 +1261,7 @@ struct lambdajetpolarizationionsderived {
         PtEtaPhiMVector lambdaLike4Vec(v0pt, v0eta, v0phi, v0LambdaLikeMass);
         PtEtaPhiMVector protonLike4Vec(protonLikePt, protonLikeEta, protonLikePhi, protonMass);
         const float lambdaRapidity = lambdaLike4Vec.Rapidity(); // For further kinematic selections
+        const int v0InMassPeak = (v0LambdaLikeMass >= 1.1020593 && v0LambdaLikeMass <= 1.1288811); // Very naive estimator. Based on signal extractions from outside this code
 
         // Boosting proton into lambda frame:
         XYZVector beta = lambdaLike4Vec.BoostToCM(); // Boost trivector that goes from laboratory frame to Lambda's rest frame (convenient new function, different from TLorentzVector's BoostVector())
@@ -1608,6 +1607,8 @@ struct lambdajetpolarizationionsderived {
         if (hasValidLeadingP) {
           histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP"), 0, ringObservableLeadP);
           histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP"), lambdaEtaPos ? 3 : 4, ringObservableLeadP);
+          histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"), 0, v0InMassPeak, ringObservableLeadP);
+          histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"), lambdaEtaPos ? 3 : 4, v0InMassPeak, ringObservableLeadP);
 
           histos.fill(HIST("EtaStudy/hFakePolCountsLeadP"), cosFakePol, 0);
           histos.fill(HIST("EtaStudy/hFakePolCountsLeadP"), cosFakePol, lambdaEtaPos ? 3 : 4);
@@ -1620,6 +1621,8 @@ struct lambdajetpolarizationionsderived {
           if (leadPEtaPos) {
             histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP"), 1, ringObservableLeadP);
             histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP"), lambdaEtaPos ? 5 : 6, ringObservableLeadP);
+            histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"), 1, v0InMassPeak, ringObservableLeadP);
+            histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"), lambdaEtaPos ? 5 : 6, v0InMassPeak, ringObservableLeadP);
 
             histos.fill(HIST("EtaStudy/hFakePolCountsLeadP"), cosFakePol, 1);
             histos.fill(HIST("EtaStudy/hFakePolCountsLeadP"), cosFakePol, lambdaEtaPos ? 5 : 6);
@@ -1629,6 +1632,8 @@ struct lambdajetpolarizationionsderived {
           else {
             histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP"), 2, ringObservableLeadP);
             histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP"), lambdaEtaPos ? 7 : 8, ringObservableLeadP);
+            histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"), 2, v0InMassPeak, ringObservableLeadP);
+            histos.fill(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"), lambdaEtaPos ? 7 : 8, v0InMassPeak, ringObservableLeadP);
 
             histos.fill(HIST("EtaStudy/hFakePolCountsLeadP"), cosFakePol, 2);
             histos.fill(HIST("EtaStudy/hFakePolCountsLeadP"), cosFakePol, lambdaEtaPos ? 7 : 8);
