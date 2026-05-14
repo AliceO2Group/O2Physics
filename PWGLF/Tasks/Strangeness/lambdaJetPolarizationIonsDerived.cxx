@@ -55,6 +55,8 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <random>
+#include <array>
 
 using namespace o2;
 using namespace o2::framework;
@@ -294,7 +296,7 @@ struct lambdajetpolarizationionsderived {
   Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", false, "process AntiLambda-like candidates"};
   Configurable<bool> analyseMagField{"analyseMagField", true, "analyse efficiency effects wrt magnetic field"}; // Older DerivedData lacks magField. "if constexpr (requires { collision.magField(); })" would only see the current header definition, so need a flag for retro-comp.
-  Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
+  // Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
 
   // Centrality:
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFV0A)"}; // Default is FT0M
@@ -306,6 +308,7 @@ struct lambdajetpolarizationionsderived {
   Configurable<bool> forceJetDirectionSmudge{"forceJetDirectionSmudge", false, "fluctuate jet direction by 10% of R around original axis. For QA (tests sensibility)"};
   Configurable<bool> forceRandJet{"forceRandJet", false, "makes jet direction random. A QA for AEE fake signal and its removal"};
   Configurable<bool> forcePreviousJet{"forcePreviousJet", false, "uses previous event's jet direction instead of a random sample. A baseline for fake signal removal"};
+  Configurable<bool> forceDatalikeJet{"forceDatalikeJet", false, "A compromise between forceRandJet and forcePreviousJet. Parameterized distribution from data"};
   // Configurable<float> jetRForSmudging{"jetRForSmudging", 0.4, "QA quantity: the chosen R scale for the jet direction smudge"}; // Superseeded by jetR: kept the same scale in analysis and QA
   Configurable<float> jetR{"jetR", 0.4f, "Radius of the jet"}; // Provide manually, please.
   Configurable<float> minLeadParticlePt{"minLeadParticlePt", 2.0f, "Minimum Pt for a lead track to be considered a valid proxy for a jet (may be more restrictive than TableProducer)"};
@@ -921,26 +924,40 @@ struct lambdajetpolarizationionsderived {
     return -1.f;
   }
 
+  // Initializing a random number generator for the worker (for perpendicular-to-jet direction QAs):
+  TRandom3 randomGen{0}; // 0 means we auto-seed from machine entropy. This is called once per device in the pipeline, so we should not see repeated seeds across workers
+  std::mt19937 rng{std::random_device{}()};
+
+  // Pre-computed values for helper below:
+  const double smearSigma = 0.05 * jetR;
+  // Normalized eta weights spanning -0.9 to 0.9 (46 bins) and phi weights for the 50 bins spanning [0, 2pi]:
+  static constexpr std::array<double, 46> etaLeadPWeights = {{0.01782505198123039,0.01826119427561306,0.01890047073124532,0.01942224199989093,0.01993380780273602,0.02047274597515178,0.02094135547756474,0.02140259654932778,0.02178490245182078,0.02218346916434517,0.02252861343224298,0.02278214932340838,0.02297395476452691,0.02311861709583109,0.02322295246943318,0.02329274166449468,0.02335344516182264,0.02335971904087711,0.02340163522424806,0.02352868368676468,0.02345839093195849,0.02295391718536531,0.02306543716698383,0.02293131780181040,0.02265098126991631,0.02318893563623931,0.02322457978177088,0.02316188601954564,0.02308812992419636,0.02305831097751334,0.02300695504254397,0.02296398287895598,0.02286956017362988,0.02274321888486162,0.02254049413132752,0.02233024817234042,0.02204811997596179,0.02170252191737713,0.02130517220864903,0.02086349641950970,0.02036590755841183,0.01987946074337928,0.01934550418314029,0.01879487530409137,0.01812577211265362,0.01766945805710696}};
+  static constexpr std::array<double, 50> phiLeadPWeights = {{0.01907529231698144,0.02044679008716434,0.01948618554713157,0.02046288887443206,0.02142057576726765,0.01961361841611185,0.02174981627752354,0.02160945937846856,0.02027231236207667,0.02153799273983672,0.02107609996106984,0.02001899849606885,0.02196516947939817,0.02047654705787587,0.02059561382369167,0.02148625027035289,0.02001510925188416,0.02183059661361331,0.02111406548114694,0.01881826666371129,0.02112797285609031,0.02034071592473790,0.01968993216337670,0.02126946766383166,0.02025580366897253,0.02061136834815962,0.02083881238552183,0.01994368379135331,0.02046280212696892,0.02131631148368759,0.01967275608960357,0.02064965975476278,0.02155758091535052,0.02012557837329328,0.02084718400924722,0.02065094443305587,0.01969546187428681,0.02136531489392276,0.02084491659074202,0.01970883494847568,0.02080349992636310,0.02098440611808174,0.02159984658204099,0.02045819959592145,0.01952755742791563,0.02166002908586709,0.02017512590511229,0.01932658087972190,0.02108933627170306,0.02019288778648293}};
+    // Build discrete eta distribution for sampling:
+  std::discrete_distribution<int> etaLeadPDist{etaLeadPWeights.begin(),etaLeadPWeights.end()}; // Will be passed as the etaDist variable
+  std::discrete_distribution<int> phiLeadPDist{phiLeadPWeights.begin(), phiLeadPWeights.end()};
+  
   // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
-  void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
-                            float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi){
-    if (!forcePerpToJet && !forceJetDirectionSmudge && !forceRandJet && !forcePreviousJet)[[likely]] {
+  inline void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
+                            float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi,
+                            std::discrete_distribution<int>& etaDist, std::discrete_distribution<int>& phiDist, std::mt19937& rng){
+    if (!forcePerpToJet && !forceJetDirectionSmudge && !forceRandJet && !forcePreviousJet && !forceDatalikeJet)[[likely]] {
       return; // Skip this function if none of the modifications are actually being executed!
     }
 
     // QA block -- Purposefully changing the jet direction (should kill signal, if any):
     if (forcePerpToJet) {
       // First, we build a vector perpendicular to the jet by picking an arbitrary vector not parallel to the jet
-      XYZVector refVec(1., 0., 0.);
-      if (std::abs(unitVec.Dot(refVec)) > 0.99)
-        refVec = XYZVector(0., 1., 0.);
-      
-      // Now we get a perpendicular vector to the jet direction:
-      XYZVector perpVec = unitVec.Cross(refVec).Unit();
+      XYZVector perpVec;
+      if (std::abs(unitVec.X()) > 0.99) {
+        perpVec = XYZVector(-unitVec.Z(), 0., unitVec.X()).Unit(); // Cross product with Y-axis (0, 1, 0)
+      } else {
+        perpVec = XYZVector(0., unitVec.Z(), -unitVec.Y()).Unit(); // Cross product with X-axis (1, 0, 0)
+      }
       
       // Now we rotate around the jet axis by a random angle, just to make sure we are not introducing a bias in the QA:
       // We will use Rodrigues' rotation formula (v_rot = v*cos(randomAngle) + (Jet \cross v)*sin(randomAngle))
-      double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
+      const double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
       unitVec = perpVec * std::cos(randomAngle) + unitVec.Cross(perpVec) * std::sin(randomAngle);
     } else if (forceJetDirectionSmudge) {
       // Smear the jet direction by a small random angle to estimate sensitivity to
@@ -951,14 +968,16 @@ struct lambdajetpolarizationionsderived {
 
       // 1) We pick a uniformly random axis perpendicular to the jet.
       // (re-using the same Rodrigues formula as in the forcePerpToJet block above)
-      XYZVector refVec(1., 0., 0.);
-      if (std::abs(unitVec.Dot(refVec)) > 0.99)
-        refVec = XYZVector(0., 1., 0.);
-      XYZVector perpVec = unitVec.Cross(refVec).Unit();
+      XYZVector perpVec;
+      if (std::abs(unitVec.X()) > 0.99) {
+        perpVec = XYZVector(-unitVec.Z(), 0., unitVec.X()).Unit(); // Cross product with Y-axis (0, 1, 0)
+      } else {
+        perpVec = XYZVector(0., unitVec.Z(), -unitVec.Y()).Unit(); // Cross product with X-axis (1, 0, 0)
+      }
       
       // Rotate perpVec around the jet axis by a uniform random azimuth to get
       // a uniformly distributed random perpendicular direction (the smear axis):
-      double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
+      const double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
       XYZVector smearAxis = perpVec * std::cos(smearAzimuth) + unitVec.Cross(perpVec) * std::sin(smearAzimuth);
       
       // 2) draw the smearing polar angle from a Gaussian:
@@ -968,8 +987,7 @@ struct lambdajetpolarizationionsderived {
       // std::abs() folds the symmetric Gaussian onto a half-normal ([0, inf))
       // -- R is not really an angle: just gives me a scale for the angular shift I am performing.
       // -- This may pose problems for forward jets: a small displacement in \theta becomes a large displacement in \eta space
-      double smearSigma = 0.05 * jetR;
-      double smearAngle = std::abs(randomGen.Gaus(0., smearSigma));
+      const double smearAngle = std::abs(randomGen.Gaus(0., smearSigma));
       
       // 3) rotate the jet axis by smearAngle around smearAxis.
       // Rodrigues is v_rot = v*cos(theta) + (k \cross v)*sin(theta) + k*(k \cdot v)*(1-cos(theta))
@@ -978,20 +996,20 @@ struct lambdajetpolarizationionsderived {
       // Also, rotation preserves the norm, so no re-normalisation is needed for this to be a unit vector.
     } else if (forceRandJet) {
       // This randomization was made different for each proxy (LeadP, LeadJet, SubLeadJet): bear that in mind!
-      // 1) Uniformly sample cos(theta) and phi to ensure an isotropic distribution (could also use TRandom::Sphere as well)
+      // 1) Uniformly sample cos(theta) and phi to ensure an isotropic distribution (could also use TRandom::Sphere as well, but may be slower)
         // Notice that uniformly sampling theta would make the distribution non-isotropic, thus we use cos(theta)!
-      double cosTheta = randomGen.Uniform(-1., 1.);
-      double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
-      double randPhi = randomGen.Uniform(0., o2::constants::math::TwoPI);
+      const double cosTheta = randomGen.Uniform(-1., 1.);
+      const double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
+      const double randPhi = randomGen.Uniform(0., o2::constants::math::TwoPI);
 
       // 2) Construct the new random unit vector (there is no need to use the magnitude at all! We only need direction here):
       unitVec = XYZVector(sinTheta * std::cos(randPhi), sinTheta * std::sin(randPhi), cosTheta);
     } else if (forcePreviousJet) { // Use the jet direction from the immediately preceding collision. The simplest event mixing
       const bool usableProxy = cacheHadProxy;
       if (usableProxy) {
-        const float inverseCoshEta = 1.0f / std::cosh(cacheEta);
-        const float sinPhi = std::sin(cachePhi);
-        const float cosPhi = std::cos(cachePhi);
+        const double inverseCoshEta = 1.0 / std::cosh(cacheEta);
+        const double sinPhi = std::sin(cachePhi);
+        const double cosPhi = std::cos(cachePhi);
         unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(cacheEta));
       }
       
@@ -1003,16 +1021,33 @@ struct lambdajetpolarizationionsderived {
       // Current event cannot use previous-jet mixing if previous event lacked a proxy
       if (!usableProxy)
         hasValidProxy = false;
+    } else if (forceDatalikeJet){ // A compromise between forceRandJet and forcePreviousJet, using data-like weights for sampling jets
+      const float etaMin = -0.92f;
+      const float etaBinWidth = 0.04f;
+      constexpr float phiBinWidth = constants::math::TwoPI / 50.f;
+
+      // Pick one of the 46 bins according to etaWeights:
+      const int binEtaIdx = etaDist(rng);
+      const int binPhiIdx = phiDist(rng);
+
+      // Uniformly smear inside the chosen bin:
+      eta = etaMin + etaBinWidth * (binEtaIdx + std::generate_canonical<float, 24>(rng));
+      phi = phiBinWidth * (binPhiIdx + std::generate_canonical<float, 24>(rng));
+
+      const double inverseCoshEta = 1.0 / std::cosh(eta);
+      const double sinPhi = std::sin(phi);
+      const double cosPhi = std::cos(phi);
+      unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(eta));
     }
 
     // Recalculating pT, phi and eta after distortions:
     // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
     if (hasValidProxy) { // If you don't check this flag here, the "if (!usableProxy)" change would be silently overwritten
       // Calculating total jet momentum, which should be preserved, just to recalculate the new jet Pt:
-      double mag = pt * std::cosh(eta);
+      const double mag = pt * std::cosh(eta);
       
       // For stability (Rho is the projection on the transverse plane, badly behaved for high |eta|):
-      double transverseNorm = std::max(unitVec.Rho(), 1e-12); // Stability guard
+      const double transverseNorm = std::max(unitVec.Rho(), 1e-12); // Stability guard
       
       // Recalculate pT:
       pt = mag * transverseNorm;
@@ -1028,9 +1063,6 @@ struct lambdajetpolarizationionsderived {
       hasValidProxy = pt > minPtThreshold;
     }
   }
-
-  // Initializing a random number generator for the worker (for perpendicular-to-jet direction QAs):
-  TRandom3 randomGen{0}; // 0 means we auto-seed from machine entropy. This is called once per device in the pipeline, so we should not see repeated seeds across workers
 
   // Preslices for correct collisions association:
   // (TODO: test using custom grouping)
@@ -1110,7 +1142,8 @@ struct lambdajetpolarizationionsderived {
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadLeadP;
         applyProxyDistortion(hasValidLeadingP, leadPPt, leadPEta, leadPPhi, leadPUnitVec, 
-                             minLeadParticlePt, prevJetCache.hadLeadP, prevJetCache.leadPEta, prevJetCache.leadPPhi);
+                             minLeadParticlePt, prevJetCache.hadLeadP, prevJetCache.leadPEta, prevJetCache.leadPPhi,
+                             etaLeadPDist, phiLeadPDist, rng);
 
         // Fill distorted-proxy QA histograms:
         // Do not gate on the post-distortion hasValidLeadingP (a pT cut) value here!
@@ -1162,7 +1195,8 @@ struct lambdajetpolarizationionsderived {
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadLeadJet;
         applyProxyDistortion(hasValidLeadingJet, leadingJetPt, leadingJetEta, leadingJetPhi, leadingJetUnitVec, 
-                             minLeadJetPt, prevJetCache.hadLeadJet, prevJetCache.leadJetEta, prevJetCache.leadJetPhi);
+                             minLeadJetPt, prevJetCache.hadLeadJet, prevJetCache.leadJetEta, prevJetCache.leadJetPhi,
+                             etaLeadPDist, phiLeadPDist, rng);
 
         // Fill distorted-proxy QA histograms:
         // Do not gate on the post-distortion hasValidLeadingJet (a pT cut) value here!
@@ -1183,7 +1217,8 @@ struct lambdajetpolarizationionsderived {
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadSubJet;
         applyProxyDistortion(hasValidSubJet, subleadingJetPt, subleadingJetEta, subleadingJetPhi, subJetUnitVec, 
-                             minSubLeadJetPt, prevJetCache.hadSubJet, prevJetCache.subJetEta, prevJetCache.subJetPhi);
+                             minSubLeadJetPt, prevJetCache.hadSubJet, prevJetCache.subJetEta, prevJetCache.subJetPhi,
+                             etaLeadPDist, phiLeadPDist, rng);
 
        
         // Fill distorted-proxy QA histograms:
