@@ -703,7 +703,7 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         auto bcRCT = col.bc_as<TBCs>();
         histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
-        if(!myRCTChecker(bcRCT)){
+        if (!myRCTChecker(bcRCT)) {
           histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
           continue;
         }
@@ -753,7 +753,7 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         auto bcRCT = col.bc_as<TBCs>();
         histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
-        if(!myRCTChecker(bcRCT)){
+        if (!myRCTChecker(bcRCT)) {
           histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
           continue;
         }
@@ -800,7 +800,7 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         auto bcRCT = col.bc_as<TBCs>();
         histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
-        if(!myRCTChecker(bcRCT)){
+        if (!myRCTChecker(bcRCT)) {
           histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
           continue;
         }
