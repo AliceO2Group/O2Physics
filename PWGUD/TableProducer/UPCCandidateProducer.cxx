@@ -51,11 +51,11 @@
 #include <limits>
 #include <map>
 #include <numeric>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <string>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
