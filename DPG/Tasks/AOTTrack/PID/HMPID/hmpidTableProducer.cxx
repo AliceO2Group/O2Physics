@@ -47,6 +47,7 @@
 #include "HMPIDBase/Param.h"
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <unordered_set>
 
@@ -350,18 +351,18 @@ struct HmpidTableProducer {
       std::array<double, 3> x = {
         globalTrack.x() * cosA - globalTrack.y() * sinA,
         globalTrack.x() * sinA + globalTrack.y() * cosA,
-        (double)globalTrack.z()};
+        static_cast<double>(globalTrack.z())};
 
       std::array<double, 3> p = {
-        (double)globalTrack.px(),
-        (double)globalTrack.py(),
-        (double)globalTrack.pz()};
+        static_cast<double>(globalTrack.px()),
+        static_cast<double>(globalTrack.py()),
+        static_cast<double>(globalTrack.pz())};
 
       // int charge = (globalTrack.signed1Pt() > 0) ? +1 : -1;
-      short charge = globalTrack.sign();
+      int16_t charge = globalTrack.sign();
 
       auto prop = o2::base::Propagator::Instance();
-      double bz = (double)prop->getNominalBz(); // positive sign
+      double bz = static_cast<double>(prop->getNominalBz()); // positive sign
 
       int chamberM1 = getHmpidChamber(x, p, bz, charge);
 
