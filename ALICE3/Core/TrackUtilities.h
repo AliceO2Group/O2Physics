@@ -49,7 +49,7 @@ class OTFParticle
     mVy = particle.vy();
     mVz = particle.vz();
     mIsFromMcParticles = true;
-    if (particle.hasMothers()) {
+    if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
   }
