@@ -52,6 +52,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -488,7 +489,7 @@ struct DalitzSelection {
     }
   }
 
-  void initNewRun(long timestamp)
+  void initNewRun(int64_t timestamp)
   {
 
     VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
