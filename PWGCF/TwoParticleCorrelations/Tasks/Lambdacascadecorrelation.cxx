@@ -396,7 +396,7 @@ namespace lcorr_const
 constexpr int kLambdaPdg = ::kLambda0; // 3122, Λ (uds)
 constexpr int kXiMinusPdg = ::kXiMinus; // 3312, Ξ⁻ (dss)
 constexpr int kOmegaMinusPdg = ::kOmegaMinus;  // 3334, Ω⁻ (sss)
-constexpr int kSigma0Pdg = ::kSigma0; // 3212, Σ⁰ (uds, EM-decay → Λγ)
+[[maybe_unused]] constexpr int kSigma0Pdg = ::kSigma0; // 3212, Σ⁰ (uds, EM-decay → Λγ)
 
 // ITS Inner-Barrel layer mask (Layers 0,1,2 in itsClusterMap bitfield).
 // Used by the "≥1 daughter has an IB hit" primary-Λ requirement.
@@ -417,7 +417,7 @@ constexpr int kVetoModeStrict = 1; // veto only when BOTH daughters shared
 constexpr int kVetoModeLoose  = 2; // veto when EITHER daughter shared
 
 // cItsTrackMode values.
-constexpr int kItsTrackModeOff = 0; // ignore ITS-tracking flag
+[[maybe_unused]] constexpr int kItsTrackModeOff = 0; // ignore ITS-tracking flag
 constexpr int kItsTrackModeRequired = 1; // require isItsTracked == true
 constexpr int kItsTrackModeRescue = 2; // accept isItsTracked OR truth-match
 } // namespace lcorr_const
