@@ -60,7 +60,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::soa;
 
-//using MyEvents = soa::Join<aod::Collisions, aod::EvSels>
+// using MyEvents = soa::Join<aod::Collisions, aod::EvSels>
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -69,8 +69,8 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullMu,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
-//constexpr static uint32_t EventFillMap = VarManager::ObjTypes::Collision;
-constexpr static uint32_t EventFillMapWithCent = VarManager::ObjTypes::Collision| VarManager::ObjTypes::CollisionCent;
+// constexpr static uint32_t EventFillMap = VarManager::ObjTypes::Collision;
+constexpr static uint32_t EventFillMapWithCent = VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t TrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID;
 
 struct DalitzSelection {
@@ -129,7 +129,7 @@ struct DalitzSelection {
   std::map<int, uint8_t> fTrackmapProbe;  // whether it is selected with probe cut
   std::map<int, uint8_t> fDalitzmap;      // whether it is selected as dalitz decay daughter with symmetric or tag cut
   std::map<int, uint8_t> fDalitzmapProbe; // whether it is selected as dalitz decay daughter with probe cut
-  
+
   // maps to remove ambiguities
   std::map<int, uint8_t> fDalitzmapAmbiguity;
   std::map<int, uint8_t> fDalitzmapProbeAmbiguity;
@@ -316,8 +316,7 @@ struct DalitzSelection {
         VarManager::FillTrack<TTrackFillMap>(fullTrack);
         VarManager::FillTrackCollision<TTrackFillMap>(fullTrack, collision);
         fullTrackIdx = fullTrack.globalIndex();
-      }
-      else {
+      } else {
         VarManager::FillTrack<TTrackFillMap>(track1);
         fullTrackIdx = track1.globalIndex();
       }
@@ -352,9 +351,9 @@ struct DalitzSelection {
       fDalitzmapAmbiguity = fDalitzmap;
       fDalitzmapProbeAmbiguity = fDalitzmapProbe;
     }
-    
+
     for (const auto& [track1, track2] : o2::soa::combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      
+
       int trackIdx1;
       int trackIdx2;
       bool isLikeSign;
@@ -364,13 +363,12 @@ struct DalitzSelection {
         trackIdx1 = fullTrack1.globalIndex();
         trackIdx2 = fullTrack2.globalIndex();
         isLikeSign = (fullTrack1.sign() * fullTrack2.sign() > 0);
-      }
-      else {
+      } else {
         trackIdx1 = track1.globalIndex();
         trackIdx2 = track2.globalIndex();
         isLikeSign = (track1.sign() * track2.sign() > 0);
       }
-    
+
       if (trackIdx1 == trackIdx2) {
         continue;
       }
@@ -391,11 +389,9 @@ struct DalitzSelection {
         auto const& fullTrack1 = track1.template track_as<MyBarrelTracks>();
         auto const& fullTrack2 = track2.template track_as<MyBarrelTracks>();
         VarManager::FillPair<TPairType, TTrackFillMap>(fullTrack1, fullTrack2);
-      }
-      else {
+      } else {
         VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
       }
-
 
       // Fill pair selection map and fill pair histogram
       int icut = 0;
@@ -457,23 +453,22 @@ struct DalitzSelection {
             filterMap &= ~previousFilterMap;
             filterMapProbe &= ~previousFilterMapProbe;
           }
-          
+
           if (!filterMap && !filterMapProbe) {
             continue;
           }
-          
+
           VarManager::FillTrack<TTrackFillMap>(fullTrack);
           // The caveat here is that we only fill the DCA to the first selected collision
           VarManager::FillTrackCollision<TTrackFillMap>(fullTrack, collision);
-        }
-        else {
+        } else {
           filterMap = fDalitzmap[track.globalIndex()];
           filterMapProbe = fDalitzmapProbe[track.globalIndex()];
-          
+
           if (!filterMap && !filterMapProbe) {
             continue;
           }
-          
+
           VarManager::FillTrack<TTrackFillMap>(track);
         }
 
@@ -555,7 +550,7 @@ struct DalitzSelection {
       dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
     }
   }
-  
+
   void processFullTracksWithAssoc(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const&, MyBarrelTracks const& tracks, TrackAssoc const& trackAssocs)
   {
 
@@ -621,7 +616,6 @@ struct DalitzSelection {
     for (const auto& track : tracks) { // Fill dalitz bits
       dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
     }
-  
   }
 
   void processDummy(MyEventsWithCent const&)
