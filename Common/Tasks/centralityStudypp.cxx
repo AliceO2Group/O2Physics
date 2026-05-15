@@ -63,15 +63,15 @@ struct centralityStudypp {
   TProfile* hVtxZFDDA = nullptr;
   TProfile* hVtxZFDDC = nullptr;
 
-  // calibration histograms 
-  TH1 *hCentralityFV0A = nullptr;
-  TH1 *hCentralityFT0A = nullptr;
-  TH1 *hCentralityFT0C = nullptr;
-  TH1 *hCentralityFT0M = nullptr;
-  TH1 *hCentralityFDDM = nullptr;
-  TH1 *hCentralityNTPV = nullptr;
-  TH1 *hCentralityNGlo = nullptr;
-  TH1 *hCentralityMFT = nullptr;
+  // calibration histograms
+  TH1* hCentralityFV0A = nullptr;
+  TH1* hCentralityFT0A = nullptr;
+  TH1* hCentralityFT0C = nullptr;
+  TH1* hCentralityFT0M = nullptr;
+  TH1* hCentralityFDDM = nullptr;
+  TH1* hCentralityNTPV = nullptr;
+  TH1* hCentralityNGlo = nullptr;
+  TH1* hCentralityMFT = nullptr;
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
@@ -104,14 +104,14 @@ struct centralityStudypp {
   // For profile Z
   ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
   ConfigurableAxis axisZN{"axisZN", {1100, -50.0f, +500.0f}, "ZN"};
-  // For centrality QA 
+  // For centrality QA
   ConfigurableAxis axisCentrality{"axisCentrality", {10000, 0, 100}, "centrality percentile"};
 
   // ccdb matters
   Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
   Configurable<std::string> pathVertexZ{"pathVertexZ", "Users/d/ddobrigk/Centrality/Calibration", "Path to vertexZ profiles"};
-  Configurable<std::string> pathCentrality{"pathCentrality", "Users/d/ddobrigk/Centrality/Estimators", "Path to centrality calibration"};  
+  Configurable<std::string> pathCentrality{"pathCentrality", "Users/d/ddobrigk/Centrality/Estimators", "Path to centrality calibration"};
 
   void init(InitContext&)
   {
@@ -264,7 +264,7 @@ struct centralityStudypp {
       histPointers.insert({histPath + "hNPVContributors_Unequalized", histos.add((histPath + "hNPVContributors_Unequalized").c_str(), "hNPVContributors_Unequalized", {kTH1D, {{axisMultUltraFinePVContributors}}})});
     }
 
-    if (doCentralityQA.value) { 
+    if (doCentralityQA.value) {
       histPointers.insert({histPath + "hCentralityDistributionFV0A", histos.add((histPath + "hCentralityDistributionFV0A").c_str(), "hCentralityDistributionFV0A", {kTH1D, {{axisCentrality}}})});
       histPointers.insert({histPath + "hCentralityDistributionFT0A", histos.add((histPath + "hCentralityDistributionFT0A").c_str(), "hCentralityDistributionFT0A", {kTH1D, {{axisCentrality}}})});
       histPointers.insert({histPath + "hCentralityDistributionFT0C", histos.add((histPath + "hCentralityDistributionFT0C").c_str(), "hCentralityDistributionFT0C", {kTH1D, {{axisCentrality}}})});
@@ -293,7 +293,7 @@ struct centralityStudypp {
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
 
-    if (applySel8 && !collision.multSel8()){
+    if (applySel8 && !collision.multSel8()) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 1);
@@ -380,7 +380,7 @@ struct centralityStudypp {
 
     // _______________________________________________________
 
-    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10){
+    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 2);
@@ -471,29 +471,29 @@ struct centralityStudypp {
 
     if (doCentralityQA.value) {
       // generate centralities on the spot in case the centrality histograms are in memory
-      if(hCentralityFV0A){
-        getHist(TH1, histPath + "hCentralityDistributionFV0A")->Fill( hCentralityFV0A->GetBinContent( hCentralityFV0A->FindBin(multFV0A)));
+      if (hCentralityFV0A) {
+        getHist(TH1, histPath + "hCentralityDistributionFV0A")->Fill(hCentralityFV0A->GetBinContent(hCentralityFV0A->FindBin(multFV0A)));
       }
-      if(hCentralityFT0A){
-        getHist(TH1, histPath + "hCentralityDistributionFT0A")->Fill( hCentralityFT0A->GetBinContent( hCentralityFT0A->FindBin(multFT0A)));
+      if (hCentralityFT0A) {
+        getHist(TH1, histPath + "hCentralityDistributionFT0A")->Fill(hCentralityFT0A->GetBinContent(hCentralityFT0A->FindBin(multFT0A)));
       }
-      if(hCentralityFT0C){
-        getHist(TH1, histPath + "hCentralityDistributionFT0C")->Fill( hCentralityFT0C->GetBinContent( hCentralityFT0C->FindBin(multFT0C)));
+      if (hCentralityFT0C) {
+        getHist(TH1, histPath + "hCentralityDistributionFT0C")->Fill(hCentralityFT0C->GetBinContent(hCentralityFT0C->FindBin(multFT0C)));
       }
-      if(hCentralityFT0M){
-        getHist(TH1, histPath + "hCentralityDistributionFT0M")->Fill( hCentralityFT0M->GetBinContent( hCentralityFT0M->FindBin(multFT0A+multFT0C)));
+      if (hCentralityFT0M) {
+        getHist(TH1, histPath + "hCentralityDistributionFT0M")->Fill(hCentralityFT0M->GetBinContent(hCentralityFT0M->FindBin(multFT0A + multFT0C)));
       }
-      if(hCentralityFDDM){
-        getHist(TH1, histPath + "hCentralityDistributionFDDM")->Fill( hCentralityFDDM->GetBinContent( hCentralityFDDM->FindBin(multFDDA+multFDDC)));
+      if (hCentralityFDDM) {
+        getHist(TH1, histPath + "hCentralityDistributionFDDM")->Fill(hCentralityFDDM->GetBinContent(hCentralityFDDM->FindBin(multFDDA + multFDDC)));
       }
-      if(hCentralityNTPV){
-        getHist(TH1, histPath + "hCentralityDistributionNTPV")->Fill( hCentralityNTPV->GetBinContent( hCentralityNTPV->FindBin(multNTracksGlobal)));
+      if (hCentralityNTPV) {
+        getHist(TH1, histPath + "hCentralityDistributionNTPV")->Fill(hCentralityNTPV->GetBinContent(hCentralityNTPV->FindBin(multNTracksGlobal)));
       }
-      if(hCentralityNGlo){
-        getHist(TH1, histPath + "hCentralityDistributionNGlobal")->Fill( hCentralityNGlo->GetBinContent( hCentralityNGlo->FindBin(hCentralityNGlo)));
+      if (hCentralityNGlo) {
+        getHist(TH1, histPath + "hCentralityDistributionNGlobal")->Fill(hCentralityNGlo->GetBinContent(hCentralityNGlo->FindBin(hCentralityNGlo)));
       }
-      if(hCentralityMFT){
-        getHist(TH1, histPath + "hCentralityDistributionMFT")->Fill( hCentralityMFT->GetBinContent( hCentralityMFT->FindBin(hCentralityMFT)));
+      if (hCentralityMFT) {
+        getHist(TH1, histPath + "hCentralityDistributionMFT")->Fill(hCentralityMFT->GetBinContent(hCentralityMFT->FindBin(hCentralityMFT)));
       }
     }
   }
