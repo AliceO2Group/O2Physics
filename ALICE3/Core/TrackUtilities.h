@@ -22,12 +22,12 @@
 
 #include <TLorentzVector.h>
 
+#include <array>
+#include <span>
 #include <vector>
 
 namespace o2::upgrade
 {
-
-
 
 class OTFParticle
 {
@@ -48,6 +48,9 @@ class OTFParticle
     mVy = particle.vy();
     mVz = particle.vz();
     mIsFromMcParticles = true;
+    if (particle.hasMothers()) {
+      mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
+    }
   }
 
   // Setters
@@ -78,21 +81,25 @@ class OTFParticle
   bool isAlive() const { return mIsAlive; }
   bool isPrimary() const { return mIsPrimary; }
   bool isFromMcParticles() const { return mIsFromMcParticles; }
-  float weight() const {
+  float weight() const
+  {
     static constexpr float Weight = 1.f;
-  return Weight; 
+    return Weight;
   }
-  uint8_t flags() const {
+  uint8_t flags() const
+  {
     static constexpr uint8_t Flags = 1;
-  return Flags; 
+    return Flags;
   }
-  float vt()const {
+  float vt() const
+  {
     static constexpr float Vt = 1.f;
-  return Vt; 
+    return Vt;
   }
-  int statusCode()const {
-  static constexpr int StatusCode = 1;
-  return StatusCode; 
+  int statusCode() const
+  {
+    static constexpr int StatusCode = 1;
+    return StatusCode;
   }
   float vx() const { return mVx; }
   float vy() const { return mVy; }
@@ -113,7 +120,7 @@ class OTFParticle
     if ((p() - mPz) < Tolerance) {
       return (mPz < 0.0f) ? -100.0f : 100.0f;
     } else {
-      return  0.5f * std::log((p() + mPz) / (p() - mPz));
+      return 0.5f * std::log((p() + mPz) / (p() - mPz));
     }
   }
 
@@ -129,13 +136,14 @@ class OTFParticle
   }
 
   bool hasDaughters() const { return (mIndicesDaughter[0] > 0); }
+  bool hasMothers() const { return (mIndicesMother[0] > 0); }
   int getMotherIndexStart() const { return mIndicesMother[0]; }
   int getMotherIndexStop() const { return mIndicesMother[1]; }
   int getDaughterIndexStart() const { return mIndicesDaughter[0]; }
   int getDaughterIndexStop() const { return mIndicesDaughter[1]; }
   std::array<int, 2> getMothers() const { return mIndicesMother; }
-  std::span<const int> getMotherSpan() const { return std::span<const int>(mIndicesMother.data(), 2); }
   std::array<int, 2> getDaughters() const { return mIndicesDaughter; }
+  std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
 
   bool hasNaN() const
   {
@@ -148,7 +156,6 @@ class OTFParticle
     return (mGlobalIndex != -1);
   }
 
-
  private:
   int mPdgCode{}, mGlobalIndex{-1};
   int mCollisionId{};
@@ -158,9 +165,8 @@ class OTFParticle
   bool mIsAlive{}, mIsFromMcParticles{false};
   bool mIsPrimary{};
 
-  std::array<int, 2> mIndicesMother{}, mIndicesDaughter{-1, -1};
+  std::array<int, 2> mIndicesMother{-1, -1}, mIndicesDaughter{-1, -1};
 };
-
 
 /// Function to convert a TLorentzVector into a perfect Track
 /// \param charge particle charge (integer)

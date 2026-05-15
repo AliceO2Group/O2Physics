@@ -39,9 +39,9 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
-#include <gsl/span>
 #include <map>
 #include <ostream>
 #include <span>
@@ -97,7 +97,7 @@ struct OnTheFlyDecayer {
     decayer.setBField(magneticField);
     for (int i = 0; i < NumDecays; ++i) {
       if (enabledDecays->get(ParticleNames[i].c_str(), "enable")) {
-        LOG(info) << " --- Decay enabled: " << ParticleNames[i].c_str();
+        LOG(info) << " --- Decay enabled: " << pdgCodes[i];
         mEnabledDecays.push_back(pdgCodes[i]);
       }
     }
@@ -122,11 +122,11 @@ struct OnTheFlyDecayer {
     int ndau = 0;
     for (int i = start; i < stop; i++) {
       o2::upgrade::OTFParticle& particle = allParticles[i];
-      if (particle.hasIndex()) {
+      if (particle.isFromMcParticles()) {
         particle.setIsPrimary(true);
         particle.setIsAlive(true);
       }
-      
+
       if (!canDecay(particle)) {
         continue;
       }
