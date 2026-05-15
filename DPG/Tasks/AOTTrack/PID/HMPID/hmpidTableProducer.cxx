@@ -11,38 +11,24 @@
 
 #include "tableHMPID.h"
 
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/MatLayerCylSet.h"
 #include "DetectorsBase/Propagator.h"
-#include "MathUtils/Utils.h"
-#include "ReconstructionDataFormats/TrackParametrizationWithError.h"
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/PID.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <TGeoManager.h>
-#include <TMath.h>
 
 #include "HMPIDBase/Param.h"
 
