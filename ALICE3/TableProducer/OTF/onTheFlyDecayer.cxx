@@ -85,6 +85,7 @@ struct OnTheFlyDecayer {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  int mCollisionId{-1};
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
   {
@@ -134,7 +135,7 @@ struct OnTheFlyDecayer {
       particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
       for (o2::upgrade::OTFParticle daughter : decayStack) {
         daughter.setIndicesMother(i, i);
-        daughter.setCollisionId(particle.collisionId());
+        daughter.setCollisionId(mCollisionId);
         daughter.setIsAlive(true);
         daughter.setIsPrimary(false);
         allParticles.push_back(daughter);
@@ -149,8 +150,9 @@ struct OnTheFlyDecayer {
     decayParticles(stop, stop + ndau);
   }
 
-  void process(aod::McCollision const&, aod::McParticles const& mcParticles)
+  void process(aod::McCollision const& collision, aod::McParticles const& mcParticles)
   {
+    mCollisionId = collision.globalIndex();
     allParticles.clear();
 
     // First we copy the particles from the table into a vector that is extendable
