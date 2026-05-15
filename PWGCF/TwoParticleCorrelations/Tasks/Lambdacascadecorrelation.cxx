@@ -76,26 +76,17 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-// [Phase 12d → reverted Phase 16b] Data-model declarations inlined back into
+// Data-model declarations inlined back into
 // the .cxx so the task is contained in a single source file (ALICE submission
-// policy). Originally extracted to a sibling header in Phase 12d.
+// policy). Originally extracted to a sibling header.
 //
-// Phase log:
-//   Phase 8  — CascadeFlags::IsTrueCascade (MC-truth purity tag)
-//   Phase 8  — LambdaTracks::DcaV0ToPV / V0Radius / Pos+NegItsNCls /
-//              PassesPrimaryTopo
-//   Phase 9  — CascadeFlags::IsItsTracked  (ITS strangeness tracking)
-//   Phase 9  — LambdaTracks::Pos+NegItsClusterMap
-//   Phase 10 — LambdaTracks::LProper, Pos+NegDcaXY
-//   Phase 14 — CascadeFlags::CascCutBits, LambdaTracks::CutBits +
-//              raw cut inputs (tpcNSigma, mK0Short, qtArm, alphaArm, cTau)
 
 namespace o2::aod
 {
 namespace cascadeflags
 {
 DECLARE_SOA_COLUMN(IsSelected, isSelected, int); //~!
-// [Phase 8] MC-truth purity flag for the cascade row.
+// MC-truth purity flag for the cascade row.
 // True iff the cascade has a matched MC particle whose pdgCode is
 // ±3312 (Ξ) or ±3334 (Ω) AND that MC particle is physical-primary.
 // False on data and for combinatorial fakes (typical failure: a primary
@@ -103,7 +94,7 @@ DECLARE_SOA_COLUMN(IsSelected, isSelected, int); //~!
 // fit). Lets the correlator filter out non-Ξ/Ω cascades when MC truth
 // is available (LabeledCascades branch).
 DECLARE_SOA_COLUMN(IsTrueCascade, isTrueCascade, bool);
-// [Phase 9] ITS-strangeness-tracking flag for the cascade row.
+// ITS-strangeness-tracking flag for the cascade row.
 // True iff the cascade has a matching aod::AssignedTrackedCascades row,
 // i.e. ITS reconstructed a track segment for the parent Ξ⁻/Ω⁻ in
 // the IB layers (cτ_Ξ ≈ 4.91 cm — the Ξ traverses the inner barrel
@@ -112,7 +103,7 @@ DECLARE_SOA_COLUMN(IsTrueCascade, isTrueCascade, bool);
 // Available on Run 3 only; ITS strangeness tracking is not produced
 // for Run 2 AODs.
 DECLARE_SOA_COLUMN(IsItsTracked, isItsTracked, bool);
-// [Phase 14] Per-cascade bitmask: each bit = "passed cut N". Lets the
+// Per-cascade bitmask: each bit = "passed cut N". Lets the
 // downstream tree consumer reconstruct any cascade selection offline
 // without re-running the workflow. Bit semantics defined by enum
 // CascCutBit below.
@@ -174,34 +165,34 @@ DECLARE_SOA_COLUMN(DcaDau, dcaDau, float);
 DECLARE_SOA_COLUMN(V0Type, v0Type, int8_t);
 DECLARE_SOA_COLUMN(V0PrmScd, v0PrmScd, int8_t);
 DECLARE_SOA_COLUMN(CorrFact, corrFact, float);
-// [Phase 7] Mother PDG of the truth-matched MC Λ. 0 on data (no truth).
+// Mother PDG of the truth-matched MC Λ. 0 on data (no truth).
 // In MC: 0 if the standalone Λ has no MC particle; else the parent PDG.
 // Lets downstream consumers tag feed-down (e.g., motherPdg == ±3312 for
 // Ξ-feeddown, ±3334 for Ω-feeddown, ±3212 for Σ⁰, etc.) without rerunning
 // MC truth-matching themselves.
 DECLARE_SOA_COLUMN(MotherPdg, motherPdg, int);
-// [Phase 8] Per-V0 topology snapshot stored on the row so:
-//   (i)  the optional Λ TTree carries the variables needed to do a
-//        pT-differential primary-fraction template fit on data,
-//   (ii) the partition can gate on a topology-only "looks primary" flag
-//        on data (where v0PrmScd is uninformative).
+// Per-V0 topology snapshot stored on the row so:
+// (i)  the optional Λ TTree carries the variables needed to do a
+// pT-differential primary-fraction template fit on data,
+// (ii) the partition can gate on a topology-only "looks primary" flag
+// on data (where v0PrmScd is uninformative).
 DECLARE_SOA_COLUMN(DcaV0ToPV, dcaV0ToPV, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(PosItsNCls, posItsNCls, int8_t);
 DECLARE_SOA_COLUMN(NegItsNCls, negItsNCls, int8_t);
-// [Phase 8] Topology-only "looks primary" flag, computed in the V0 loop
+// Topology-only "looks primary" flag, computed in the V0 loop
 // from the primCfg bundle:
-//    dcav0topv      < cPrimMaxDcaV0ToPv
-// && v0cosPA(PV)    > cPrimMinV0CosPA
-// && v0radius       < cPrimMaxV0Radius
+// dcav0topv < cPrimMaxDcaV0ToPv
+// && v0cosPA(PV) > cPrimMinV0CosPA
+// && v0radius < cPrimMaxV0Radius
 // && |dcapostopv|, |dcanegtopv| < cPrimMaxDauDcaToPv
-// && posItsNCls, negItsNCls    >= cPrimMinDauItsNCls
+// && posItsNCls, negItsNCls >= cPrimMinDauItsNCls
 // On data this is the only handle on primary-Λ-ness, so the trigger
 // partition AND's it. On MC the partition AND's it WITH the truth bit
 // (v0PrmScd==kPrimary), and the Λ TTree exposes the components so an
 // external macro can build templates per motherPdg and refine the cuts.
 DECLARE_SOA_COLUMN(PassesPrimaryTopo, passesPrimaryTopo, bool);
-// [Phase 9] ITS hit-map per V0 daughter (uint8_t bitmask, one bit per
+// ITS hit-map per V0 daughter (uint8_t bitmask, one bit per
 // of the 7 ITS layers). Lets a downstream macro do a geometric
 // consistency check: a daughter from a V0 vertex at radius r > r_layer
 // CANNOT have a hit on that layer — if it does, the V0 is mislocated
@@ -209,35 +200,35 @@ DECLARE_SOA_COLUMN(PassesPrimaryTopo, passesPrimaryTopo, bool);
 // itsNCls integer count, free at this stage (just propagated through).
 DECLARE_SOA_COLUMN(PosItsClusterMap, posItsClusterMap, uint8_t);
 DECLARE_SOA_COLUMN(NegItsClusterMap, negItsClusterMap, uint8_t);
-// [Phase 10] Pseudo-proper transverse decay length L_proper = L_xy * M_Λ / pT.
+// Pseudo-proper transverse decay length L_proper = L_xy * M_Λ / pT.
 // Computed treating the V0 vertex distance from PV as L_xy. For primary
 // Λ this is the actual proper-time projection (exponential with cτ=7.89 cm);
 // for feed-down Λ it OVER-estimates because L_xy includes the parent
 // flight (e.g. Ξ cτ ≈ 4.91 cm). The discriminator is the upper tail.
 DECLARE_SOA_COLUMN(LProper, lProper, float);
-// [Phase 10] Per-daughter DCA-XY-to-PV (signed). Already-cut on at production
+// Per-daughter DCA-XY-to-PV (signed). Already-cut on at production
 // (cMinDcaProtonToPV / cMinDcaPionToPV) but not previously exposed downstream.
 // Needed for the optional MVA / template-fit refinement and for inspecting
 // the low-pT regime where these tighten primary-Λ purity.
 DECLARE_SOA_COLUMN(PosDcaXY, posDcaXY, float);
 DECLARE_SOA_COLUMN(NegDcaXY, negDcaXY, float);
-// [Phase 14] Per-V0 cut bitmask: each bit = "passed cut N". Computed
+// Per-V0 cut bitmask: each bit = "passed cut N". Computed
 // unconditionally for every accepted V0 (and every V0 when the
 // diagnostic mode cFillLambdaTreeAllCandidates is on). Lets a downstream
 // macro reconstruct any cut combination offline without re-running.
 // Bit semantics defined by enum LambdaCutBit below.
 DECLARE_SOA_COLUMN(CutBits, cutBits, uint32_t);
-// [Phase 14] Raw cut-input values exposed on the Λ row so post-hoc cuts
+// Raw cut-input values exposed on the Λ row so post-hoc cuts
 // can be tightened/loosened without re-running. tpcNSigma values are
 // matched to the v0Type hypothesis (proton-leg vs pion-leg).
 DECLARE_SOA_COLUMN(TpcNSigmaPosPr, tpcNSigmaPosPr, float);  // proton hypothesis on positive daughter
-DECLARE_SOA_COLUMN(TpcNSigmaNegPi, tpcNSigmaNegPi, float);  // pion   hypothesis on negative daughter
-DECLARE_SOA_COLUMN(TpcNSigmaPosPi, tpcNSigmaPosPi, float);  // pion   hypothesis on positive daughter
+DECLARE_SOA_COLUMN(TpcNSigmaNegPi, tpcNSigmaNegPi, float);  // pion hypothesis on negative daughter
+DECLARE_SOA_COLUMN(TpcNSigmaPosPi, tpcNSigmaPosPi, float);  // pion hypothesis on positive daughter
 DECLARE_SOA_COLUMN(TpcNSigmaNegPr, tpcNSigmaNegPr, float);  // proton hypothesis on negative daughter
-DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);              // K0s mass hypothesis (for sideband studies)
-DECLARE_SOA_COLUMN(QtArm, qtArm, float);                    // Armenteros qT
-DECLARE_SOA_COLUMN(AlphaArm, alphaArm, float);              // Armenteros α
-DECLARE_SOA_COLUMN(CTau, cTau, float);                      // proper time × c (ctau)
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float); // K0s mass hypothesis (for sideband studies)
+DECLARE_SOA_COLUMN(QtArm, qtArm, float); // Armenteros qT
+DECLARE_SOA_COLUMN(AlphaArm, alphaArm, float); // Armenteros α
+DECLARE_SOA_COLUMN(CTau, cTau, float); // proper time × c (ctau)
 } // namespace lambdatrack
 DECLARE_SOA_TABLE(LambdaTracks, "AOD", "LAMBDATRACKS", o2::soa::Index<>,
                   lambdatrack::LambdaCollisionId,
@@ -321,7 +312,7 @@ using MyCollisionsMult = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>
 using MyCascades = soa::Filtered<aod::CascDataExtSelected>;
 using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
-// [Phase 12d] All Λ-side data-model declarations live in
+// All Λ-side data-model declarations live in
 // Lambdacascadecorrelation_DataModel.h, included above.
 
 enum CollisionLabels {
@@ -395,88 +386,88 @@ enum DMCType {
   kMC
 };
 
-// [Phase 12a] Centralised constants — replace scattered magic literals.
+// Centralised constants — replace scattered magic literals.
 // PDG codes are taken from ROOT's TPDGCode.h enum (PDG_t) so the o2 linter
 // is happy and the source of truth is the upstream framework header.
 namespace lcorr_const
 {
 // PDG codes for the cascades we tag/filter on. Drawn from ::kXiMinus etc.
 // in <TPDGCode.h> so the magic-literal-detector won't complain.
-constexpr int kLambdaPdg     = ::kLambda0;     // 3122, Λ (uds)
-constexpr int kXiMinusPdg    = ::kXiMinus;     // 3312, Ξ⁻ (dss)
+constexpr int kLambdaPdg = ::kLambda0; // 3122, Λ (uds)
+constexpr int kXiMinusPdg = ::kXiMinus; // 3312, Ξ⁻ (dss)
 constexpr int kOmegaMinusPdg = ::kOmegaMinus;  // 3334, Ω⁻ (sss)
-constexpr int kSigma0Pdg     = ::kSigma0;      // 3212, Σ⁰ (uds, EM-decay → Λγ)
+constexpr int kSigma0Pdg = ::kSigma0; // 3212, Σ⁰ (uds, EM-decay → Λγ)
 
 // ITS Inner-Barrel layer mask (Layers 0,1,2 in itsClusterMap bitfield).
-// Used by the Phase 10 "≥1 daughter has an IB hit" primary-Λ requirement.
+// Used by the "≥1 daughter has an IB hit" primary-Λ requirement.
 constexpr uint8_t kItsIBMask = 0x07;
 
-// [Phase 16j] Cascade species-selection flag values written into the
+// Cascade species-selection flag values written into the
 // cascadeflags::IsSelected column. Promoted to namespace scope so both
 // LambdaCascadeProducer (sets them) and LambdaXiCorrelation (consumes
 // them) can refer to the same names.
-constexpr int kFlagRejected   = 0; // rejected by processCandidate cut chain
-constexpr int kFlagXiOnly     = 1; // bachelor passes pion-PID only → Ξ-eligible
+constexpr int kFlagRejected = 0; // rejected by processCandidate cut chain
+constexpr int kFlagXiOnly = 1; // bachelor passes pion-PID only → Ξ-eligible
 constexpr int kFlagXiAndOmega = 2; // bachelor passes both pion AND kaon PID → both
 constexpr int kFlagOmegaOnly  = 3; // bachelor passes kaon-PID only → Ω-eligible
 
-// [Phase 16j] cVetoMode values for the auto-correlation veto policy.
-constexpr int kVetoModeOff    = 0; // no veto
+// cVetoMode values for the auto-correlation veto policy.
+constexpr int kVetoModeOff = 0; // no veto
 constexpr int kVetoModeStrict = 1; // veto only when BOTH daughters shared
 constexpr int kVetoModeLoose  = 2; // veto when EITHER daughter shared
 
-// [Phase 16j] cItsTrackMode values.
-constexpr int kItsTrackModeOff      = 0; // ignore ITS-tracking flag
+// cItsTrackMode values.
+constexpr int kItsTrackModeOff = 0; // ignore ITS-tracking flag
 constexpr int kItsTrackModeRequired = 1; // require isItsTracked == true
-constexpr int kItsTrackModeRescue   = 2; // accept isItsTracked OR truth-match
+constexpr int kItsTrackModeRescue = 2; // accept isItsTracked OR truth-match
 } // namespace lcorr_const
 
-// [Phase 14] Per-Λ cut-bit enum. Bit i in lambdatrack::cutBits = 1 iff the
+// Per-Λ cut-bit enum. Bit i in lambdatrack::cutBits = 1 iff the
 // candidate passed cut i. Computed UNCONDITIONALLY for every V0 row
 // emitted into the LambdaTracks table — i.e. early-return short-circuits
 // in selV0Particle do NOT hide later-stage results. This lets an offline
 // macro reconstruct any cut combination from the tree without re-running.
 enum LambdaCutBit : uint32_t {
-  kCutMassWindow      = 0,   // cMinV0Mass < mLambda < cMaxV0Mass (matched to v0Type)
-  kCutDauPid          = 1,   // |nσ(p)| < cTpcNsigmaCut AND |nσ(π)| < cut
-  kCutDauTrackQual    = 2,   // selTrack on both daughters
-  kCutDauDcaToPV      = 3,   // proton-leg DCA > min AND pion-leg DCA > min
-  kCutKinematic       = 4,   // pT and |y or η| within cMinV0Pt..cMaxV0Pt and cMaxV0Rap
-  kCutDcaV0Dau        = 5,   // dcaV0daughters in [min,max]
-  kCutDcaV0ToPV       = 6,   // dcav0topv in [min,max]
-  kCutV0Radius        = 7,   // v0radius in [min,max]
-  kCutCtau            = 8,   // ctau in [min,max]
-  kCutCosPA           = 9,   // v0cosPA > cMinV0CosPA
-  kCutK0sRej          = 10,  // K0s mass-window rejection passed (or flag off)
-  kCutAmbiguousVeto   = 11,  // !hasAmbiguousDaughters or veto disabled
-  kCutMcTrueLambda    = 12,  // MC: selTrueMcRecLambda (always true on data)
-  kCutPhase10Prim     = 13,  // passesPrimaryTopo (set in V0 loop)
-  kCutBitMax          = 14
+  kCutMassWindow = 0, // cMinV0Mass < mLambda < cMaxV0Mass (matched to v0Type)
+  kCutDauPid = 1, // |nσ(p)| < cTpcNsigmaCut AND |nσ(π)| < cut
+  kCutDauTrackQual = 2, // selTrack on both daughters
+  kCutDauDcaToPV = 3, // proton-leg DCA > min AND pion-leg DCA > min
+  kCutKinematic = 4, // pT and |y or η| within cMinV0Pt..cMaxV0Pt and cMaxV0Rap
+  kCutDcaV0Dau = 5, // dcaV0daughters in [min,max]
+  kCutDcaV0ToPV = 6, // dcav0topv in [min,max]
+  kCutV0Radius = 7, // v0radius in [min,max]
+  kCutCtau = 8, // ctau in [min,max]
+  kCutCosPA = 9, // v0cosPA > cMinV0CosPA
+  kCutK0sRej = 10,  // K0s mass-window rejection passed (or flag off)
+  kCutAmbiguousVeto = 11,  // !hasAmbiguousDaughters or veto disabled
+  kCutMcTrueLambda = 12,  // MC: selTrueMcRecLambda (always true on data)
+  kCutPhase10Prim = 13,  // passesPrimaryTopo (set in V0 loop)
+  kCutBitMax = 14
 };
 
-// [Phase 14] Per-cascade cut-bit enum. Bit i in cascadeflags::cascCutBits
+// Per-cascade cut-bit enum. Bit i in cascadeflags::cascCutBits
 // = 1 iff the candidate passed cut i. Mirrors the structure of
 // LambdaCutBit but for the cascade selection chain in processCandidate.
 enum CascCutBit : uint32_t {
-  kCascCutTpcRowsV0Dau   = 0,   // V0-daughter tpcNClsCrossedRows
-  kCascCutTpcRowsBach    = 1,   // bachelor tpcNClsCrossedRows
-  kCascCutItsClsV0Dau    = 2,   // V0-daughter itsNCls
-  kCascCutItsClsBach     = 3,   // bachelor itsNCls
-  kCascCutItsChi2        = 4,   // ITS chi²/cluster (V0 + bachelor)
-  kCascCutTpcChi2        = 5,   // TPC chi²/cluster (V0 + bachelor)
-  kCascCutCascPt         = 6,   // casc.pt() > cMinCascPt
-  kCascCutTopology       = 7,   // v0radius/cascradius/cosPA/dcav0topv/v0mass
-  kCascCutRadiusOrder    = 8,   // cascRadius < v0Radius (consistency)
-  kCascCutTrackEta       = 9,   // |η| of V0 dau + bachelor
-  kCascCutCascEta        = 10,  // |η| of cascade
-  kCascCutTpcNSigPr      = 11,  // proton-leg TPC nσ
-  kCascCutTpcNSigPi      = 12,  // pion-leg TPC nσ
-  kCascCutBachPidXi      = 13,  // bachelor pion nσ (Ξ hypothesis)
-  kCascCutBachPidOm      = 14,  // bachelor kaon nσ (Ω hypothesis)
+  kCascCutTpcRowsV0Dau = 0, // V0-daughter tpcNClsCrossedRows
+  kCascCutTpcRowsBach = 1, // bachelor tpcNClsCrossedRows
+  kCascCutItsClsV0Dau = 2, // V0-daughter itsNCls
+  kCascCutItsClsBach = 3, // bachelor itsNCls
+  kCascCutItsChi2 = 4, // ITS chi²/cluster (V0 + bachelor)
+  kCascCutTpcChi2 = 5, // TPC chi²/cluster (V0 + bachelor)
+  kCascCutCascPt = 6, // casc.pt() > cMinCascPt
+  kCascCutTopology = 7, // v0radius/cascradius/cosPA/dcav0topv/v0mass
+  kCascCutRadiusOrder = 8, // cascRadius < v0Radius (consistency)
+  kCascCutTrackEta = 9, // |η| of V0 dau + bachelor
+  kCascCutCascEta = 10,  // |η| of cascade
+  kCascCutTpcNSigPr = 11,  // proton-leg TPC nσ
+  kCascCutTpcNSigPi = 12,  // pion-leg TPC nσ
+  kCascCutBachPidXi = 13,  // bachelor pion nσ (Ξ hypothesis)
+  kCascCutBachPidOm = 14,  // bachelor kaon nσ (Ω hypothesis)
   kCascCutCompetingMass  = 15,  // competing-mass cut (Ω vs Ξ)
   kCascCutMcTrueXiOmega  = 16,  // MC: pdgCode ∈ {±3312,±3334} && isPhysPrim
-  kCascCutItsTracked     = 17,  // matched in aod::AssignedTrackedCascades
-  kCascCutBitMax         = 18
+  kCascCutItsTracked = 17,  // matched in aod::AssignedTrackedCascades
+  kCascCutBitMax = 18
 };
 
 enum CorrHistDim {
@@ -498,7 +489,7 @@ enum PrmScdPairType {
 };
 
 // =============================================================================
-// [P1][R1] Shared event-selection helpers
+// Shared event-selection helpers
 //
 // Both LambdaTableProducer (selCollision) and CascadeSelector (eventSelection)
 // historically applied their own, slightly different, sets of event cuts. That
@@ -507,11 +498,11 @@ enum PrmScdPairType {
 // Λ-Ξ correlator's normalisation.
 //
 // This namespace provides:
-//   - a POD `EventCuts` describing every cut either producer might apply,
-//   - a templated `applyEventSelection<RunType>(col, cuts, centValue, &reason)`
-//     that evaluates only the cuts whose `use*` flag is true,
-//   - a `logEventCuts(tag, cuts)` that prints the cut configuration in a
-//     unified, single-line, grep-friendly format.
+// - a POD `EventCuts` describing every cut either producer might apply,
+// - a templated `applyEventSelection<RunType>(col, cuts, centValue, &reason)`
+// that evaluates only the cuts whose `use*` flag is true,
+// - a `logEventCuts(tag, cuts)` that prints the cut configuration in a
+// unified, single-line, grep-friendly format.
 //
 // Each producer builds an `EventCuts` from its own Configurables in init() and
 // uses the shared function. Defaults are unchanged — nothing differs at
@@ -661,7 +652,7 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
 } // namespace lcorr_evsel
 
 // =============================================================================
-// [Phase 4] LambdaCascadeProducer — merger of LambdaTableProducer (LTP) and
+// LambdaCascadeProducer — merger of LambdaTableProducer (LTP) and
 // the standalone CascadeSelector (CSEL).
 //
 // Why merged: event selection used to run twice (once in LTP, once in CSEL),
@@ -671,9 +662,9 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
 // and the cascade flagging — they can no longer disagree.
 //
 // Output tables (unchanged from before):
-//   - aod::LambdaCollisions, aod::LambdaTracks                     (Lambda)
-//   - aod::LambdaMcGenCollisions, aod::LambdaMcGenTracks            (Lambda MC)
-//   - aod::CascadeFlags                                             (Cascade)
+// - aod::LambdaCollisions, aod::LambdaTracks (Lambda)
+// - aod::LambdaMcGenCollisions, aod::LambdaMcGenTracks (Lambda MC)
+// - aod::CascadeFlags (Cascade)
 //
 // Histogram registries: kept distinct (`histos` for Lambda-side, `cascRegistry`
 // for cascade-side) so every existing path in AnalysisResults.root stays
@@ -745,16 +736,16 @@ struct LambdaCascadeProducer {
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
 
   // V0s MC
-  // [Phase 16m] Removed dead Configurables: cHasMcFlag, cGenPrimaryLambda,
+  // Removed dead Configurables: cHasMcFlag, cGenPrimaryLambda,
   // cGenSecondaryLambda — declared but never gated any logic. cSelMCPSV0
-  // kept as a no-op for back-compat (deprecated in Phase 16l).
+  // kept as a no-op for back-compat (deprecated).
   Configurable<bool> cSelectTrueLambda{"cSelectTrueLambda", true, "Select True Lambda"};
-  Configurable<bool> cSelMCPSV0{"cSelMCPSV0", true, "[DEPRECATED Phase 16l] no-op; v0PrmScd is always tagged from MC truth"};
+  Configurable<bool> cSelMCPSV0{"cSelMCPSV0", true, "[DEPRECATED] no-op; v0PrmScd is always tagged from MC truth"};
   Configurable<bool> cCheckRecoDauFlag{"cCheckRecoDauFlag", true, "Check for reco daughter PID"};
   Configurable<bool> cGenDecayChannel{"cGenDecayChannel", true, "Gen Level Decay Channel Flag"};
   Configurable<bool> cRecoMomResoFlag{"cRecoMomResoFlag", false, "Check effect of momentum space smearing on balance function"};
 
-  // [Phase 14] Diagnostic mode — emit EVERY V0 candidate (not just those
+  // Diagnostic mode — emit EVERY V0 candidate (not just those
   // passing selV0Particle) into LambdaTracks, with the full cut bitmask
   // showing which stage each one failed. Use to build offline cutflow
   // plots and tune cut values without re-running. Default false because
@@ -778,12 +769,12 @@ struct LambdaCascadeProducer {
   // is the live URL — see init() comment).
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  // [Phase 4] PDG service for cascade competing-mass cut, brought in from
+  // PDG service for cascade competing-mass cut, brought in from
   // the former CascadeSelector struct.
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // ===========================================================================
-  // [Phase 4 fix] All cascade-side Configurables and Axes bundled into a
+  // All cascade-side Configurables and Axes bundled into a
   // single ConfigurableGroup. Reason: the framework's StructToTuple has a
   // hard cap of 99 task members (DPL_HOMOGENEOUS_APPLY_ENTRY (9,9)). Without
   // grouping, the merged struct lands at 129 members. ConfigurableGroup
@@ -793,23 +784,23 @@ struct LambdaCascadeProducer {
   // Code references go from `tpcNsigmaProton` → `cascCfg.tpcNsigmaProton`.
   // ===========================================================================
   struct : ConfigurableGroup {
-    // [Phase 4] Deprecated CSEL-style event-selection knobs. Echoed in the
+    // Deprecated CSEL-style event-selection knobs. Echoed in the
     // init-time deprecation warning but no longer affect event acceptance.
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB url (cascade-side; cosmetic — LTP's cUrlCCDB drives the actual CCDB fetches)"};
-    // [Phase 16e] Removed unused Configurables: useTrigger / triggerList.
+    // Removed unused Configurables: useTrigger / triggerList.
     // Trigger-skim path was deleted in an earlier phase but the knobs were
     // left behind — toggling them in JSON had zero effect. Cleared now.
-    Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "[DEPRECATED Phase 4] event selection delegated to LTP"};
-    Configurable<bool> doSel8{"doSel8", true, "[DEPRECATED Phase 4] sel8 is enforced by LTP's cSel8Trig"};
-    Configurable<bool> doNoSameBunchPileUp{"doNoSameBunchPileUp", true, "[DEPRECATED Phase 4] pileup veto is enforced by LTP's cPileupReject"};
-    Configurable<int> INEL{"INEL", 0, "[DEPRECATED Phase 4] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable (back-compat: deprecated ALICE INEL knob name kept for JSON config compatibility)
-    Configurable<double> maxVertexZ{"maxVertexZ", 10., "[DEPRECATED Phase 4] |Vz| cut is enforced by LTP's cMin/cMaxZVtx"};
+    Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "[DEPRECATED] event selection delegated to LTP"};
+    Configurable<bool> doSel8{"doSel8", true, "[DEPRECATED] sel8 is enforced by LTP's cSel8Trig"};
+    Configurable<bool> doNoSameBunchPileUp{"doNoSameBunchPileUp", true, "[DEPRECATED] pileup veto is enforced by LTP's cPileupReject"};
+    Configurable<int> INEL{"INEL", 0, "[DEPRECATED] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable (back-compat: deprecated ALICE INEL knob name kept for JSON config compatibility)
+    Configurable<double> maxVertexZ{"maxVertexZ", 10., "[DEPRECATED] |Vz| cut is enforced by LTP's cMin/cMaxZVtx"};
 
     // Cascade kinematic / selection.
     Configurable<float> etaCascades{"etaCascades", 0.8, "min/max of eta for cascades"};
     Configurable<bool> doCompetingMassCut{"doCompetingMassCut", true, "Switch to apply a competing mass cut for the Omega's"};
     Configurable<float> competingMassWindow{"competingMassWindow", 0.01, "Mass window for the competing mass cut"};
-    // [Phase 12b] Cascade pT lower cap. Drops very low-pT cascades where
+    // Cascade pT lower cap. Drops very low-pT cascades where
     // topology resolution is poor and the V0+bachelor combinatorial
     // background dominates. Default 0.6 GeV/c is a typical PWG-LF Ξ floor.
     Configurable<float> cMinCascPt{"cMinCascPt", 0.6f, "Minimum cascade pT [GeV/c]"};
@@ -823,7 +814,7 @@ struct LambdaCascadeProducer {
     Configurable<float> etaTracks{"etaTracks", 1.0, "min/max of eta for cascade daughter tracks"};
     Configurable<float> tpcChi2{"tpcChi2", 4, "TPC Chi2 (cascade tracks)"};
     Configurable<float> itsChi2{"itsChi2", 36, "ITS Chi2 (cascade tracks)"};
-    // [Phase 12b] Bachelor-specific track-quality knobs. Default-equal to
+    // Bachelor-specific track-quality knobs. Default-equal to
     // the V0-daughter values so existing behaviour is preserved unless the
     // user tightens them. A real bachelor π/K typically wants stricter cuts
     // than a V0 daughter because mis-association is more common at the
@@ -835,7 +826,7 @@ struct LambdaCascadeProducer {
 
     // Cascade selection criteria.
     // Cascade selection criteria.
-    // [Phase 16u] The following Configurables intentionally use snake_case
+    // The following Configurables intentionally use snake_case
     // names matching the long-standing ALICE V0/cascade-builder JSON
     // convention shared across PWGCF / PWGLF tasks. Renaming would break
     // back-compat with every existing config file.
@@ -845,7 +836,7 @@ struct LambdaCascadeProducer {
     Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
     Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
     Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"}; // o2-linter: disable=name/configurable (back-compat: cascade-builder JSON key)
-    // [Phase 16e] Removed unused Configurables: cascadesetting_dcacascdau /
+    // Removed unused Configurables: cascadesetting_dcacascdau /
     // cascadesetting_dcabachtopv. These were declared but never used in the
     // cut chain — only `casc.dcacascdaughters()` / `casc.dcabachtopv()` (the
     // row values) are read for QA fills. The cascade-builder upstream applies
@@ -866,10 +857,10 @@ struct LambdaCascadeProducer {
     ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
   } cascCfg;
 
-  // [Phase 8] Topology bundle for "primary-Λ-on-data" trigger purity.
+  // Topology bundle for "primary-Λ-on-data" trigger purity.
   // Wrapped in a ConfigurableGroup to (a) keep them under one logical
   // section in JSON and (b) avoid blowing the StructToTuple 99-member
-  // limit of the parent task struct (the same trick we used in Phase 4
+  // limit of the parent task struct (the same trick we used
   // for cascCfg).
   // Defaults are tuned for pp/pPb at moderate Λ pT. PbPb may want a
   // tighter cMaxV0Radius (large feed-down tail) and a looser
@@ -884,12 +875,12 @@ struct LambdaCascadeProducer {
     Configurable<float> cPrimMaxV0Radius{"cPrimMaxV0Radius", 30.0f, "[cm] Upper bound on V0 transverse decay radius"};
     Configurable<float> cPrimMaxDauDcaToPv{"cPrimMaxDauDcaToPv", 1.0f, "[cm] Soft upper bound on |daughter DCA-XY-to-PV|"};
     Configurable<int> cPrimMinDauItsNCls{"cPrimMinDauItsNCls", 1, "Minimum ITS hits per V0 daughter"};
-    // [Phase 10] Pseudo-proper-decay-length upper bound. Set to a few cτ
+    // Pseudo-proper-decay-length upper bound. Set to a few cτ
     // beyond the primary peak to keep most primary Λ; feed-down's L_proper
     // shifts upward by the parent flight, so a cap here cleanly trims the tail.
     // Default 25 cm ≈ 3 cτ — tunable per centrality / collision system.
     Configurable<float> cPrimMaxLProper{"cPrimMaxLProper", 25.0f, "[cm] Upper bound on L_proper = L_xy * M_Λ / pT (kills feed-down tail)"};
-    // [Phase 10] Require at least ONE V0 daughter to have a hit on the
+    // Require at least ONE V0 daughter to have a hit on the
     // ITS Inner Barrel (Layers 0,1,2 — bits 0,1,2 of itsClusterMap).
     // Strong primary tag at low pT: a feed-down Λ at low pT typically
     // has its decay vertex outside the IB, so daughters miss those layers.
@@ -908,7 +899,7 @@ struct LambdaCascadeProducer {
   // Histogram Registry (Lambda-side — preserves all LTP-style paths).
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // [Phase 4] Cascade-side HistogramRegistry — verbatim port of CSEL's
+  // Cascade-side HistogramRegistry — verbatim port of CSEL's
   // initializer-list registry. Histogram paths under this registry are
   // identical to what CSEL emitted before, so AnalysisResults.root structure
   // is unchanged downstream.
@@ -1005,10 +996,10 @@ struct LambdaCascadeProducer {
          (int)cGenDecayChannel, (int)cRecoMomResoFlag,
          (int)cCorrectionFlag, (int)cGetEffFact, (int)cGetPrimFrac);
 
-    // [P1][R1] Unified event-selection log (compare to [EVENTSEL-CSEL]).
+    // Unified event-selection log (compare to [EVENTSEL-CSEL]).
     lcorr_evsel::logEventCuts("EVENTSEL-LTP", buildEventCuts());
 
-    // [Phase 8+10+14] Primary-Λ topology bundle + diagnostic-mode flag.
+    // Primary-Λ topology bundle + diagnostic-mode flag.
     LOGF(info,
          "[CFG-LCP-prim] enable=%d reqBothDauITS=%d reqItsIB=%d "
          "maxDcaV0ToPv=%.4f minV0CosPA=%.6f maxV0Radius=%.2f maxLProper=%.2f "
@@ -1163,7 +1154,7 @@ struct LambdaCascadeProducer {
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPFCorrPtRapCent, "kPFCorrPtRapCent");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNoPFCorr, "kNoPFCorr");
 
-    // ===== [Phase 4] Cascade-side init (verbatim from former CascadeSelector) =====
+    // ===== Cascade-side init (verbatim from former CascadeSelector) =====
     // Cascade-side selection-status & event-selection histograms.
     auto h = cascRegistry.add<TH1>("hSelectionStatus", "hSelectionStatus", HistType::kTH1I, {{10, 0, 10, "status"}});
     h->GetXaxis()->SetBinLabel(1, "All");
@@ -1176,16 +1167,16 @@ struct LambdaCascadeProducer {
     h->GetXaxis()->SetBinLabel(8, "V0 PID OK");
     h->GetXaxis()->SetBinLabel(9, "Bach PID OK");
 
-    // [Phase 4] Cascade-side hEventSel: bins reinterpreted as
-    //   0 = "All cascades seen"
-    //   1 = "Event accepted by LTP -> casc proceeds to candidate cuts"
-    //   2 = "Event rejected by LTP -> casc auto-flagged 0"
+    // Cascade-side hEventSel: bins reinterpreted as
+    // 0 = "All cascades seen"
+    // 1 = "Event accepted by LTP -> casc proceeds to candidate cuts"
+    // 2 = "Event rejected by LTP -> casc auto-flagged 0"
     auto hEventSel = cascRegistry.add<TH1>("hEventSel", "hEventSel", HistType::kTH1I, {{3, 0, 3, "0=all, 1=LTP-accepted, 2=LTP-rejected"}});
     hEventSel->GetXaxis()->SetBinLabel(1, "All");
     hEventSel->GetXaxis()->SetBinLabel(2, "LTP-accepted");
     hEventSel->GetXaxis()->SetBinLabel(3, "LTP-rejected");
 
-    // [Phase 4] Cascade MC reco-matched histograms (created on demand).
+    // Cascade MC reco-matched histograms (created on demand).
     if (doprocessMCRecoRun3) {
       cascRegistry.add("truerec/hV0Radius", "hV0Radius", HistType::kTH1F, {cascCfg.cascRadiusAxis});
       cascRegistry.add("truerec/hCascRadius", "hCascRadius", HistType::kTH1F, {cascCfg.cascRadiusAxis});
@@ -1216,7 +1207,7 @@ struct LambdaCascadeProducer {
       cascRegistry.add("truerec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {cascCfg.cascPtAxis, cascCfg.cascRapidityAxis});
     }
 
-    // [Phase 4] Cascade MC gen-only histograms (created on demand).
+    // Cascade MC gen-only histograms (created on demand).
     if (doprocessCascadeGenMC) {
       cascRegistry.add("gen/hXiMinus", "hXiMinus", HistType::kTH2F, {cascCfg.cascPtAxis, cascCfg.cascRapidityAxis});
       cascRegistry.add("gen/hXiPlus", "hXiPlus", HistType::kTH2F, {cascCfg.cascPtAxis, cascCfg.cascRapidityAxis});
@@ -1230,12 +1221,12 @@ struct LambdaCascadeProducer {
       cascRegistry.add("gen/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events"}});
     }
 
-    // [Phase 4] Loud deprecation note: CSEL-style event-selection knobs no
+    // Loud deprecation note: CSEL-style event-selection knobs no
     // longer affect what events are accepted. The single source of truth is
     // LTP's selCollision (configured via cSel8Trig, cMin/cMaxZVtx,
     // cPileupReject, cTriggerTvxSel, cTFBorder, cNoItsROBorder, etc.).
     LOGF(info,
-         "[Phase 4] CSEL-style event-selection configurables are now ignored: "
+         "CSEL-style event-selection configurables are now ignored: "
          "doSel8=%d doNoSameBunchPileUp=%d INEL=%d maxVertexZ=%.2f doTFBorderCut=%d. "
          "Event acceptance is driven exclusively by LTP's selCollision (see "
          "[CFG-LTP] above). To change event cuts, set the corresponding "
@@ -1243,19 +1234,19 @@ struct LambdaCascadeProducer {
          (int)cascCfg.doSel8, (int)cascCfg.doNoSameBunchPileUp, (int)cascCfg.INEL,
          (double)cascCfg.maxVertexZ, (int)cascCfg.doTFBorderCut);
 
-    // [Phase 4] CCDB URL conflict check.
+    // CCDB URL conflict check.
     if (std::string(cUrlCCDB.value) != std::string(cascCfg.ccdbUrl.value)) {
       LOGF(warning,
-           "[Phase 4] cUrlCCDB and cascCfg.ccdbUrl differ ('%s' vs '%s'). Only "
+           "cUrlCCDB and cascCfg.ccdbUrl differ ('%s' vs '%s'). Only "
            "cUrlCCDB drives the live CCDB service; cascCfg.ccdbUrl is cosmetic.",
            cUrlCCDB.value.c_str(), cascCfg.ccdbUrl.value.c_str());
     }
   }
 
-  // [P1][R1] Build the EventCuts struct from this producer's configurables.
+  // Build the EventCuts struct from this producer's configurables.
   // Defaults map 1:1 to current behaviour: only the Configurables already
   // toggled on are forwarded as `use*=true` to the shared selector.
-  // [Phase 4 fix] Cannot be `const`: Configurable<T>'s implicit conversion to T
+  // Cannot be `const`: Configurable<T>'s implicit conversion to T
   // is non-const, so reading any Configurable<> in a const-qualified method
   // fails. Drop the const qualifier; the function does not modify state anyway.
   lcorr_evsel::EventCuts buildEventCuts()
@@ -1287,7 +1278,7 @@ struct LambdaCascadeProducer {
   template <RunType run, typename C>
   bool selCollision(C const& col)
   {
-    // [P1][R1] LTP-specific side-effects: pick centrality estimator, then
+    // LTP-specific side-effects: pick centrality estimator, then
     // delegate to the shared selector. After acceptance, set `mult` global.
     if constexpr (run == kRun3) {
       if (cCentEstimator == kCentFT0M) {
@@ -1522,7 +1513,7 @@ struct LambdaCascadeProducer {
     return true;
   }
 
-  // [Phase 14] Compute the per-V0 cut bitmask UNCONDITIONALLY. Each bit
+  // Compute the per-V0 cut bitmask UNCONDITIONALLY. Each bit
   // mirrors a stage of the existing selV0Particle / topoCutSelection /
   // selDaughterTracks chain, but no early-return short-circuits. The
   // resulting uint32 captures the cut state of EVERY candidate so an
@@ -1558,7 +1549,7 @@ struct LambdaCascadeProducer {
 
     // 3. Daughter DCA-to-PV
     float dcaProton = (v0Type == kLambda) ? std::abs(v0.dcapostopv()) : std::abs(v0.dcanegtopv());
-    float dcaPion   = (v0Type == kLambda) ? std::abs(v0.dcanegtopv()) : std::abs(v0.dcapostopv());
+    float dcaPion = (v0Type == kLambda) ? std::abs(v0.dcanegtopv()) : std::abs(v0.dcapostopv());
     if (dcaProton >= cMinDcaProtonToPV && dcaPion >= cMinDcaPionToPV)
       bits |= (1u << kCutDauDcaToPV);
 
@@ -1701,7 +1692,7 @@ struct LambdaCascadeProducer {
 
     // Get Efficiency Factor
     if (cGetEffFact) {
-      // [Phase 16o] Guard against nullptr from FindObject — the named
+      // Guard against nullptr from FindObject — the named
       // histogram may be missing from the CCDB TList. Previously the
       // subsequent ->Clone() dereferenced nullptr and crashed.
       const auto effName = Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str());
@@ -1729,7 +1720,7 @@ struct LambdaCascadeProducer {
     // Get Primary Fraction
     // (The dimension of this could be different than efficiency because of large errors !!!)
     if (cGetPrimFrac) {
-      // [Phase 16o] Same null-guard as the efficiency lookup above.
+      // Same null-guard as the efficiency lookup above.
       const auto pfName = Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str());
       TObject* objPrm = reinterpret_cast<TObject*>(ccdbObj->FindObject(pfName));
       if (!objPrm) {
@@ -1755,7 +1746,7 @@ struct LambdaCascadeProducer {
     return primFrac * effCorrFact;
   }
 
-  // [Phase 7] Truth-level mother PDG of a (possibly truth-matched) reco V0.
+  // Truth-level mother PDG of a (possibly truth-matched) reco V0.
   // Returns 0 on data and on MC V0s that have no MC particle / no mother.
   // Used to populate aod::lambdatrack::MotherPdg so downstream consumers can
   // tag Ξ feed-down (motherPdg == ±3312), Ω feed-down (±3334), Σ⁰ resonance
@@ -1775,7 +1766,7 @@ struct LambdaCascadeProducer {
   void fillLambdaMothers(V const& v0, T const&)
   {
     auto mcpart = v0.template mcParticle_as<aod::McParticles>();
-    // [Phase 16p] Defensive — a "secondary" V0 should always have ≥1 mother
+    // Defensive — a "secondary" V0 should always have ≥1 mother
     // by definition, but some AOD generators occasionally strip mother links.
     // Without this guard, lambdaMothers[0] dereferences an empty range → UB.
     if (!mcpart.has_mothers())
@@ -1911,14 +1902,14 @@ struct LambdaCascadeProducer {
       rap = v0.yLambda();
       phi = v0.phi();
 
-      // [Phase 7] Mother PDG: 0 on data, parent PDG on MC.
+      // Mother PDG: 0 on data, parent PDG on MC.
       int motherPdg = 0;
 
       // do MC analysis
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h2f_tracks_pid_before_sel"), v0.mcParticle().pdgCode(), v0.pt());
 
-        // [Phase 16l] Always tag primary/secondary from MC truth on MC reco.
+        // Always tag primary/secondary from MC truth on MC reco.
         // Previously gated by cSelMCPSV0 — when disabled, v0PrmScdType
         // stayed kPrimary for ALL candidates, which silently broke the
         // downstream goodPrimaryLambda partition (it became equivalent
@@ -1973,58 +1964,58 @@ struct LambdaCascadeProducer {
         fillKinematicHists<kRec, kAntiLambda>(v0.pt(), v0.eta(), v0.yLambda(), v0.phi());
       }
 
-      // [Phase 8] Per-V0 topology snapshot — written on every Λ row so
+      // Per-V0 topology snapshot — written on every Λ row so
       // (i) the optional Λ TTree carries the variables for a downstream
       // template fit, (ii) the partition can gate on passesPrimaryTopo
       // on data without re-resolving daughter tracks at correlator time.
       auto posTrk = v0.template posTrack_as<T>();
       auto negTrk = v0.template negTrack_as<T>();
-      float dcaV0ToPV_v   = v0.dcav0topv();        // V0 line vs PV
-      float v0Radius_v    = v0.v0radius();         // transverse decay radius
+      float dcaV0ToPV_v = v0.dcav0topv(); // V0 line vs PV
+      float v0Radius_v = v0.v0radius(); // transverse decay radius
       int8_t posItsNCls_v = static_cast<int8_t>(posTrk.itsNCls());
       int8_t negItsNCls_v = static_cast<int8_t>(negTrk.itsNCls());
-      // [Phase 9] ITS hit-map per daughter (uint8_t bitmask, bit i = layer i).
+      // ITS hit-map per daughter (uint8_t bitmask, bit i = layer i).
       uint8_t posItsClusterMap_v = static_cast<uint8_t>(posTrk.itsClusterMap());
       uint8_t negItsClusterMap_v = static_cast<uint8_t>(negTrk.itsClusterMap());
-      // [Phase 10] Per-daughter signed DCA-XY-to-PV (V0Datas already exposes
+      // Per-daughter signed DCA-XY-to-PV (V0Datas already exposes
       // these as helices propagated to the PV).
       float posDcaXY_v = v0.dcapostopv();
       float negDcaXY_v = v0.dcanegtopv();
-      // [Phase 10] Pseudo-proper transverse decay length L_proper.
+      // Pseudo-proper transverse decay length L_proper.
       // Guard against pT==0 to avoid div-by-zero for pathological rows.
       float lProper_v = (v0.pt() > 0.f)
                           ? (v0Radius_v * static_cast<float>(MassLambda0) / v0.pt())
                           : 0.f;
 
-      // [Phase 14] Raw cut-input variables for offline re-cutting.
+      // Raw cut-input variables for offline re-cutting.
       float tpcNSigmaPosPr_v = posTrk.tpcNSigmaPr();
       float tpcNSigmaNegPi_v = negTrk.tpcNSigmaPi();
       float tpcNSigmaPosPi_v = posTrk.tpcNSigmaPi();
       float tpcNSigmaNegPr_v = negTrk.tpcNSigmaPr();
-      float mK0Short_v       = v0.mK0Short();
-      float qtArm_v          = v0.qtarm();
-      float alphaArm_v       = v0.alpha();
-      float cTau_v           = v0.distovertotmom(collision.posX(),
+      float mK0Short_v = v0.mK0Short();
+      float qtArm_v = v0.qtarm();
+      float alphaArm_v = v0.alpha();
+      float cTau_v = v0.distovertotmom(collision.posX(),
                                                  collision.posY(),
                                                  collision.posZ()) * MassLambda0;
-      // [Phase 16a] When the producer-side gate is disabled, default to
+      // When the producer-side gate is disabled, default to
       // `true` so the column means "no opinion / everything passes". The
       // previous default of `false` silently emptied the partition when the
       // correlator's cPrimaryRequireTopo was flipped on without enabling
       // cPrimEnable here — a confusing zero-pair failure mode.
-      bool passesPrim     = !primCfg.cPrimEnable;
+      bool passesPrim = !primCfg.cPrimEnable;
       if (primCfg.cPrimEnable) {
         bool topoOk =
-            std::abs(dcaV0ToPV_v)            < primCfg.cPrimMaxDcaV0ToPv  &&
-            v0.v0cosPA()                     > primCfg.cPrimMinV0CosPA   &&
-            v0Radius_v                       < primCfg.cPrimMaxV0Radius  &&
-            std::abs(posDcaXY_v)             < primCfg.cPrimMaxDauDcaToPv &&
-            std::abs(negDcaXY_v)             < primCfg.cPrimMaxDauDcaToPv &&
-            lProper_v                        < primCfg.cPrimMaxLProper;
+            std::abs(dcaV0ToPV_v) < primCfg.cPrimMaxDcaV0ToPv  &&
+            v0.v0cosPA() > primCfg.cPrimMinV0CosPA &&
+            v0Radius_v < primCfg.cPrimMaxV0Radius  &&
+            std::abs(posDcaXY_v) < primCfg.cPrimMaxDauDcaToPv &&
+            std::abs(negDcaXY_v) < primCfg.cPrimMaxDauDcaToPv &&
+            lProper_v < primCfg.cPrimMaxLProper;
         bool itsOk = primCfg.cPrimRequireBothDauItsHits
                          ? (posItsNCls_v >= primCfg.cPrimMinDauItsNCls && negItsNCls_v >= primCfg.cPrimMinDauItsNCls)
                          : (posItsNCls_v >= primCfg.cPrimMinDauItsNCls || negItsNCls_v >= primCfg.cPrimMinDauItsNCls);
-        // [Phase 10] ITS-IB requirement (bits 0,1,2 = Layers 0,1,2).
+        // ITS-IB requirement (bits 0,1,2 = Layers 0,1,2).
         // OR'd across both daughters: at least ONE daughter must have an
         // IB hit. Optional via the Configurable.
         bool itsIBOk = !primCfg.cPrimRequireItsIBHit
@@ -2032,7 +2023,7 @@ struct LambdaCascadeProducer {
         passesPrim = topoOk && itsOk && itsIBOk;
       }
 
-      // [Phase 14] Per-V0 cut bitmask. Bits 0-11 reflect the standalone-V0
+      // Per-V0 cut bitmask. Bits 0-11 reflect the standalone-V0
       // selection chain; bit 12 reflects MC truth (always 1 on data; set
       // post-hoc on MC reco); bit 13 reflects passesPrimaryTopo. Computed
       // inline so the row carries the full diagnostic.
@@ -2043,7 +2034,7 @@ struct LambdaCascadeProducer {
         ambVetoOk = !cRemoveAmbiguousTracks || !hasAmbiguousDaughters(v0, tracks);
       }
       uint32_t cutBits_v = computeLambdaCutBits(collision, v0, tracks, v0Type, ambVetoOk);
-      // [Phase 16q] Bit 12 (MC truth) — set independently of cSelectTrueLambda.
+      // Bit 12 (MC truth) — set independently of cSelectTrueLambda.
       // On data: always set (truth is N/A; bit means "no MC reason to drop").
       // On MC reco: set iff selTrueMcRecLambda actually passes. Previously
       // this was set unconditionally on the assumption that cSelectTrueLambda
@@ -2058,7 +2049,7 @@ struct LambdaCascadeProducer {
       if (passesPrim)
         cutBits_v |= (1u << kCutPhase10Prim);
 
-      // Fill Λ/Λ̄ row — [P7] motherPdg · [P8] topo+flag · [P9] ITS maps · [P10] L_proper + dau DCAs · [P14] cutBits + raw inputs
+      // Fill Λ/Λ̄ row — motherPdg · topo+flag · ITS maps · L_proper + dau DCAs · cutBits + raw inputs
       lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0.px(), v0.py(), v0.pz(),
                        pt, eta, phi, rap, mass, posTrk.index(), negTrk.index(),
                        v0.v0cosPA(), v0.dcaV0daughters(), (int8_t)v0Type, v0PrmScdType, corr_fact, motherPdg,
@@ -2217,11 +2208,11 @@ struct LambdaCascadeProducer {
   Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCollision = aod::v0data::collisionId;
 
   // ===========================================================================
-  // [Phase 4] Cascade-side helpers (verbatim from former CascadeSelector,
+  // Cascade-side helpers (verbatim from former CascadeSelector,
   // s/registry/cascRegistry/g).
   // ===========================================================================
 
-  // [Phase 4 fix] Templated on TTracks so the call site can pass whichever
+  // Templated on TTracks so the call site can pass whichever
   // track type is bound in its process function (Tracks for data,
   // TracksMC for MC reco). Avoids hardcoding FullTracksExtIUWithPID, which
   // is TracksIU-based and incompatible with our merged Tracks-based binding.
@@ -2236,7 +2227,7 @@ struct LambdaCascadeProducer {
     if (!gen.isPhysicalPrimary())
       return;
     int genpdg = gen.pdgCode();
-    // [Phase 16j] flag<3 (== 1 or 2) means Ξ-eligible; flag>1 (== 2 or 3)
+    // flag<3 (== 1 or 2) means Ξ-eligible; flag>1 (== 2 or 3)
     // means Ω-eligible. Spelled out with named constants.
     const bool xiLike = (flag == lcorr_const::kFlagXiOnly || flag == lcorr_const::kFlagXiAndOmega);
     const bool omLike = (flag == lcorr_const::kFlagXiAndOmega || flag == lcorr_const::kFlagOmegaOnly);
@@ -2282,7 +2273,7 @@ struct LambdaCascadeProducer {
     }
   }
 
-  // [Phase 4 fix] Templated on TTracks so the call site picks the bound track
+  // Templated on TTracks so the call site picks the bound track
   // type (Tracks for data, TracksMC for MC reco). Eliminates the framework's
   // multi-track-table index resolution conflict.
   template <typename TTracks, typename TCascade, typename TCollision>
@@ -2319,11 +2310,11 @@ struct LambdaCascadeProducer {
 
     cascRegistry.fill(HIST("hSelectionStatus"), 0);
 
-    // [Phase 12b] Cascade pT lower cap — drop very-low-pT cascades early.
+    // Cascade pT lower cap — drop very-low-pT cascades early.
     if (casc.pt() < cascCfg.cMinCascPt)
       return 0;
 
-    // [Phase 12b] Split V0-daughter and bachelor-track quality so the
+    // Split V0-daughter and bachelor-track quality so the
     // bachelor can be tightened independently. Default values match the
     // V0-daughter values, so existing behaviour is preserved.
     if (posTrack.tpcNClsCrossedRows() < cascCfg.minTPCCrossedRows ||
@@ -2361,7 +2352,7 @@ struct LambdaCascadeProducer {
       return 0;
     cascRegistry.fill(HIST("hSelectionStatus"), 4);
 
-    // [Phase 8] Cascade-topology consistency: a real Ξ⁻/Ω⁻ decays first
+    // Cascade-topology consistency: a real Ξ⁻/Ω⁻ decays first
     // (cascRadius), then its Λ-daughter flies further out and decays
     // (v0Radius). Reject candidates where this ordering is violated —
     // those are typically primary Λ paired with a stray bachelor whose
@@ -2429,7 +2420,7 @@ struct LambdaCascadeProducer {
     return flag;
   }
 
-  // [Phase 14] Compute the per-cascade cut bitmask UNCONDITIONALLY. Mirrors
+  // Compute the per-cascade cut bitmask UNCONDITIONALLY. Mirrors
   // every stage of processCandidate but doesn't short-circuit, so the bits
   // capture the cut state of EVERY cascade (even rejected ones). Cheap:
   // ~15 comparisons per cascade.
@@ -2466,10 +2457,10 @@ struct LambdaCascadeProducer {
     if (casc.pt() >= cascCfg.cMinCascPt) bits |= (1u << kCascCutCascPt);
 
     double pvx = collision.posX(), pvy = collision.posY(), pvz = collision.posZ();
-    bool topoOk = (casc.v0radius()         >= cascCfg.v0setting_radius           &&
-                   casc.cascradius()       >= cascCfg.cascadesetting_cascradius  &&
-                   casc.v0cosPA(pvx,pvy,pvz)   >= cascCfg.v0setting_cospa            &&
-                   casc.casccosPA(pvx,pvy,pvz) >= cascCfg.cascadesetting_cospa       &&
+    bool topoOk = (casc.v0radius() >= cascCfg.v0setting_radius &&
+                   casc.cascradius() >= cascCfg.cascadesetting_cascradius  &&
+                   casc.v0cosPA(pvx,pvy,pvz) >= cascCfg.v0setting_cospa &&
+                   casc.casccosPA(pvx,pvy,pvz) >= cascCfg.cascadesetting_cospa &&
                    casc.dcav0topv(pvx,pvy,pvz) >= cascCfg.cascadesetting_mindcav0topv &&
                    std::abs(casc.mLambda() - MassLambda0) <= cascCfg.cascadesetting_v0masswindow);
     if (topoOk) bits |= (1u << kCascCutTopology);
@@ -2509,12 +2500,12 @@ struct LambdaCascadeProducer {
     return bits;
   }
 
-  // [Phase 4] Helper for the per-collision cascade-flag loop. Emits one row
+  // Helper for the per-collision cascade-flag loop. Emits one row
   // into cascflags per cascade in this collision (preserving the joinability
   // invariant with aod::CascDataExt). When eventOk=false, all flags are 0.
   // When eventOk=true and applyMcMatch=true (MC reco path), additionally
   // calls fillMatchedHistos to populate truerec/* histograms.
-  // [Phase 4 fix] TTracks added so the call site forwards the bound
+  // TTracks added so the call site forwards the bound
   // track type to processCandidate / fillMatchedHistos.
   template <bool ApplyMcMatch, typename TTracks, typename TCascades, typename TCollision>
   void cascadeFlagLoop(TCascades const& Cascades, TCollision const& collision, bool eventOk,
@@ -2528,7 +2519,7 @@ struct LambdaCascadeProducer {
         continue;
       }
       int flag = processCandidate<TTracks>(casc, collision);
-      // [Phase 8] MC-truth purity flag.
+      // MC-truth purity flag.
       bool isTrueCasc = false;
       if constexpr (ApplyMcMatch) {
         if (flag != 0 && casc.has_mcParticle()) {
@@ -2540,16 +2531,16 @@ struct LambdaCascadeProducer {
           }
         }
       }
-      // [Phase 9] ITS-tracking flag.
+      // ITS-tracking flag.
       bool isItsTracked = (itsTrackedCascIds.find(casc.cascadeId()) != itsTrackedCascIds.end());
 
-      // [Phase 14] Per-cascade cut bitmask. Computed unconditionally — if
+      // Per-cascade cut bitmask. Computed unconditionally — if
       // the cascade was rejected by processCandidate (flag==0) we still
       // record which stages it passed/failed. Bits 0-15 from
       // computeCascadeCutBits; bits 16-17 set here from the truth /
       // ITS-tracking lookups above.
       uint32_t cascCutBits = computeCascadeCutBits<TTracks>(casc, collision);
-      if (isTrueCasc)    cascCutBits |= (1u << kCascCutMcTrueXiOmega);
+      if (isTrueCasc) cascCutBits |= (1u << kCascCutMcTrueXiOmega);
       if (isItsTracked)  cascCutBits |= (1u << kCascCutItsTracked);
 
       cascflags(flag, isTrueCasc, isItsTracked, cascCutBits);
@@ -2561,7 +2552,7 @@ struct LambdaCascadeProducer {
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::PVMults>;
   using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::PVMults>;
-  // [Phase 4 fix] aod::pidTPCKa added so the merged process function can
+  // aod::pidTPCKa added so the merged process function can
   // bind ONE track type and have it serve both V0 daughter cuts (Pi/Pr) and
   // cascade bachelor cuts (Ka). Without this, the merged process function
   // had to declare two track types and the framework's "last one wins" rule
@@ -2572,11 +2563,11 @@ struct LambdaCascadeProducer {
   using TracksMCRun2 = soa::Join<TracksRun2, aod::McTrackLabels>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
-  // [Phase 4] processDataRun3 ABSORBS the former CascadeSelector::processRecData.
+  // processDataRun3 ABSORBS the former CascadeSelector::processRecData.
   // Single event-selection call drives both the V0-side LambdaCollections row
   // emission (inside fillLambdaRecoTables) and the Cascade-side flag emission
   // (inside cascadeFlagLoop). Impossible for the two halves to disagree.
-  // [Phase 4 fix] Drop the explicit FullTracksExtIUWithPID arg: with one
+  // Drop the explicit FullTracksExtIUWithPID arg: with one
   // bound track type (Tracks) the framework no longer mis-resolves V0 vs
   // cascade index targets. Cascade helpers see the same Tracks join via
   // the TTracks template parameter.
@@ -2586,7 +2577,7 @@ struct LambdaCascadeProducer {
                        aod::BCsWithTimestamps const&)
   {
     bool eventOk = selCollision<kRun3>(collision);
-    // [Phase 9] Empty ITS-tracked set — variant without strangeness tracking.
+    // Empty ITS-tracked set — variant without strangeness tracking.
     // Use processDataRun3WithItsTracking when the AOD actually contains
     // O2tracasccoll (aod::AssignedTrackedCascades). Many derived AODs drop it.
     static const std::unordered_set<int64_t> emptySet;
@@ -2599,7 +2590,7 @@ struct LambdaCascadeProducer {
 
   PROCESS_SWITCH(LambdaCascadeProducer, processDataRun3, "Process for Run3 DATA (Lambda + Cascade, no ITS strangeness tracking)", true);
 
-  // [Phase 9] ITS-tracking-aware data variant. Same as processDataRun3 but
+  // ITS-tracking-aware data variant. Same as processDataRun3 but
   // also consumes aod::AssignedTrackedCascades; turn this on (and turn
   // processDataRun3 off) only when the AOD actually contains the
   // O2tracasccoll tree. Otherwise the AOD reader will fail at startup
@@ -2629,7 +2620,7 @@ struct LambdaCascadeProducer {
 
   PROCESS_SWITCH(LambdaCascadeProducer, processDataRun2, "Process for Run2 DATA (Lambda only — no cascade in Run2)", false);
 
-  // [Phase 4] processMCRecoRun3 ABSORBS the former CascadeSelector::processRecMC.
+  // processMCRecoRun3 ABSORBS the former CascadeSelector::processRecMC.
   // Same pattern as processDataRun3 plus truth-matching on the cascade side
   // (fillMatchedHistos populates truerec/* histograms).
   void processMCRecoRun3(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
@@ -2638,7 +2629,7 @@ struct LambdaCascadeProducer {
                          aod::BCsWithTimestamps const&)
   {
     bool eventOk = selCollision<kRun3>(collision);
-    // [Phase 9] No ITS-tracking variant. Toggle to processMCRecoRun3WithItsTracking
+    // No ITS-tracking variant. Toggle to processMCRecoRun3WithItsTracking
     // when the AOD has O2tracasccoll.
     static const std::unordered_set<int64_t> emptySet;
     cascadeFlagLoop<true, TracksMC>(Cascades, collision, eventOk, emptySet);
@@ -2650,7 +2641,7 @@ struct LambdaCascadeProducer {
 
   PROCESS_SWITCH(LambdaCascadeProducer, processMCRecoRun3, "Run3 MC reco (Lambda + Cascade with truth match, no ITS strangeness tracking)", false);
 
-  // [Phase 9] ITS-tracking-aware MC reco variant.
+  // ITS-tracking-aware MC reco variant.
   void processMCRecoRun3WithItsTracking(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
                                         McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&,
                                         LabeledCascades const& Cascades,
@@ -2723,13 +2714,13 @@ struct LambdaCascadeProducer {
   PROCESS_SWITCH(LambdaCascadeProducer, processMCGenOnlyRun3, "Gen-only Run3 (no reco tables)", false);
 
   // ===========================================================================
-  // [Phase 4] Cascade-side MC truth-only path (port of former
+  // Cascade-side MC truth-only path (port of former
   // CascadeSelector::processGenMC). Self-contained MC-truth event selection
   // (INELgtN on McParticles, MC z-vertex), distinct from the reco-level
   // selCollision because it operates on McCollisions/McParticles directly.
   // Used as a closure/efficiency check for the cascade MC truth side.
   //
-  // [Phase 4 fix] DO NOT add `private:` access specifiers here. Any non-public
+  // DO NOT add `private:` access specifiers here. Any non-public
   // non-static data member breaks the struct's aggregate-ness, and the
   // framework's `brace_constructible_size` (which uses brace-init to count
   // members for StructToTuple dispatch) collapses, mis-routing dispatch to
@@ -2738,7 +2729,7 @@ struct LambdaCascadeProducer {
   // `mCascCounter` was unused and has been removed.
   // ===========================================================================
 
-  // [Phase 4 fix] Use CollisionsRun3 (which carries CentFT0Ms etc.) instead of
+  // Use CollisionsRun3 (which carries CentFT0Ms etc.) instead of
   // the old CSEL MyCollisions Join — selCollision<kRun3> needs centFT0M().
   void processCascadeGenMC(aod::McCollision const& mcCollision,
                             soa::SmallGroups<soa::Join<aod::McCollisionLabels, CollisionsRun3>> const& collisions,
@@ -2758,8 +2749,8 @@ struct LambdaCascadeProducer {
       if (std::abs(mcPart.eta()) > cascCfg.etaCascades)
         continue;
       switch (mcPart.pdgCode()) {
-        case lcorr_const::kXiMinusPdg:     cascRegistry.fill(HIST("gen/hXiMinus"),    mcPart.pt(), mcPart.y()); break;
-        case -lcorr_const::kXiMinusPdg:    cascRegistry.fill(HIST("gen/hXiPlus"),     mcPart.pt(), mcPart.y()); break;
+        case lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("gen/hXiMinus"), mcPart.pt(), mcPart.y()); break;
+        case -lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("gen/hXiPlus"), mcPart.pt(), mcPart.y()); break;
         case lcorr_const::kOmegaMinusPdg:  cascRegistry.fill(HIST("gen/hOmegaMinus"), mcPart.pt(), mcPart.y()); break;
         case -lcorr_const::kOmegaMinusPdg: cascRegistry.fill(HIST("gen/hOmegaPlus"),  mcPart.pt(), mcPart.y()); break;
       }
@@ -2789,8 +2780,8 @@ struct LambdaCascadeProducer {
       if (std::abs(mcPart.eta()) > cascCfg.etaCascades)
         continue;
       switch (mcPart.pdgCode()) {
-        case lcorr_const::kXiMinusPdg:     cascRegistry.fill(HIST("genwithrec/hXiMinus"),    mcPart.pt(), mcPart.y()); break;
-        case -lcorr_const::kXiMinusPdg:    cascRegistry.fill(HIST("genwithrec/hXiPlus"),     mcPart.pt(), mcPart.y()); break;
+        case lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y()); break;
+        case -lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y()); break;
         case lcorr_const::kOmegaMinusPdg:  cascRegistry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y()); break;
         case -lcorr_const::kOmegaMinusPdg: cascRegistry.fill(HIST("genwithrec/hOmegaPlus"),  mcPart.pt(), mcPart.y()); break;
       }
@@ -2844,7 +2835,7 @@ struct LambdaTracksExtProducer {
 
     histos.addClone("Reco/", "SharingDau/");
 
-    // [P11] Flag-preference order is implicit (first matching else-if wins).
+    // Flag-preference order is implicit (first matching else-if wins).
     // Warn loudly if the user enabled more than one strategy at once.
     int nStrategies = (cAcceptAllLambda ? 1 : 0) + (cRejAllLambdaShaDau ? 1 : 0) +
                       (cSelLambdaMassPdg ? 1 : 0) + (cSelLambdaTScore ? 1 : 0);
@@ -2918,7 +2909,7 @@ struct LambdaTracksExtProducer {
           vSharedDauLambdaIndex.push_back(track.index());
           lambdaSharingDauFlag = true;
 
-          // [Phase 16k] Fill the per-pair sharing-daughter Δη-Δφ histos
+          // Fill the per-pair sharing-daughter Δη-Δφ histos
           // ONCE per unordered pair. The outer/inner loops iterate every
           // ordered pair, so without this guard each unique (A,B) shared
           // pair would fill twice (with opposite Δη/Δφ sign on the second
@@ -2999,14 +2990,14 @@ struct LambdaTracksExtProducer {
 
 
 // =============================================================================
-// [Phase 5] Dead structs removed:
+// Dead structs removed:
 //
-//   - LambdaR2Correlation  (was struct at this position; commented out of the
-//     workflow since Phase 1, ~340 lines of unused code)
-//   - CascadeSelector_REMOVED_PHASE4 (#if 0 block from Phase 4, kept temporarily
-//     for reference, ~575 lines)
-//   - CascadeCorrelations  (was struct after Phase 4 CSEL block; commented out
-//     of the workflow since Phase 1, ~450 lines)
+// - LambdaR2Correlation  (was struct at this position; commented out of the
+// workflow, ~340 lines of unused code)
+// - CascadeSelector_REMOVED_PHASE4 (#if 0 block, kept temporarily
+// for reference, ~575 lines)
+// - CascadeCorrelations  (was struct CSEL block; commented out
+// of the workflow, ~450 lines)
 //
 // Total: roughly 1370 fewer lines compiled per build. All three structs are
 // available in git history if anyone wants to revive them.
@@ -3015,7 +3006,7 @@ struct LambdaTracksExtProducer {
 
 
 
-// [Phase 12d → reverted Phase 16b] TTree branch structs + connectors inlined
+// TTree branch structs + connectors inlined
 // back into the .cxx (ALICE submission policy: one source file). Plain POD,
 // no O2 framework types — only ROOT TTree is used.
 namespace lxicorr
@@ -3031,14 +3022,14 @@ struct CascBranches {
   // MC truth-matching (filled only in MC mode; default = no match)
   int pdgCode{0}; // PDG of matched McParticle (0 = no match = background)
   bool isPhysPrim{false};
-  // [Phase 14] Per-cascade cut bitmask + bachelor PID inputs for offline
+  // Per-cascade cut bitmask + bachelor PID inputs for offline
   // re-cutting. cascCutBits semantics defined by enum CascCutBit below.
   unsigned int cascCutBits{0};
   float bachTpcNSigmaPi{0.f};
   float bachTpcNSigmaKa{0.f};
-  int   bachItsNCls{0};
-  int   bachTpcNClsCrossedRows{0};
-  float mLambdaInside{0.f};   // V0 mass-hypothesis as seen by the cascade fit
+  int bachItsNCls{0};
+  int bachTpcNClsCrossedRows{0};
+  float mLambdaInside{0.f}; // V0 mass-hypothesis as seen by the cascade fit
 };
 
 // Holds branch data for both Xi and Omega — one raw pointer covers both.
@@ -3049,44 +3040,44 @@ struct GenBranches {
   bool isPhysPrim;
 };
 
-// [Phase 7] Λ TTree branches. Both reco-level (with topo + truth fields)
+// Λ TTree branches. Both reco-level (with topo + truth fields)
 // and gen-level. The motherPdg field lets the user filter feed-down sources
 // post-hoc (e.g., motherPdg==±3312 → Ξ-feeddown). isPhysPrim duplicates the
 // primary/secondary tag from lambdatrack::V0PrmScd for convenience.
 struct LambdaBranches {
   float pt, eta, rap, phi, mass;
   float cosPA, dcaDau;
-  int   v0Type;     // 0=Λ, 1=Λ̄  (matches enum ParticleType)
-  int   v0PrmScd;   // 0=primary, 1=secondary (only meaningful in MC)
+  int v0Type; // 0=Λ, 1=Λ̄  (matches enum ParticleType)
+  int v0PrmScd; // 0=primary, 1=secondary (only meaningful in MC)
   bool  trueLambdaFlag;
   float corrFact;
   float cent, pvZ;
   // MC-only
-  int   pdgCode{0};
+  int pdgCode{0};
   bool  isPhysPrim{false};
-  int   motherPdg{0};
-  // [Phase 8] Topology snapshot — the inputs of a downstream
+  int motherPdg{0};
+  // Topology snapshot — the inputs of a downstream
   // primary-fraction template fit. Per-V0, filled on every row.
   float dcaV0ToPV{0.f};
   float v0Radius{0.f};
-  int   posItsNCls{0};
-  int   negItsNCls{0};
+  int posItsNCls{0};
+  int negItsNCls{0};
   bool  passesPrimaryTopo{false};
-  // [Phase 9] Per-daughter 7-bit ITS hit-map for geometric consistency
+  // Per-daughter 7-bit ITS hit-map for geometric consistency
   // checks downstream (vetoes against impossible inner-layer hits when
   // the V0 vertex is outside that layer).
   unsigned int posItsClusterMap{0};
   unsigned int negItsClusterMap{0};
-  // [Phase 10] Pseudo-proper decay length and per-daughter DCA-XY.
+  // Pseudo-proper decay length and per-daughter DCA-XY.
   float lProper{0.f};
   float posDcaXY{0.f};
   float negDcaXY{0.f};
-  // [Phase 14] Per-V0 cut bitmask + raw cut inputs for offline re-cutting.
+  // Per-V0 cut bitmask + raw cut inputs for offline re-cutting.
   unsigned int cutBits{0};
-  float tpcNSigmaPosPr{0.f};   // proton hypothesis on positive daughter
-  float tpcNSigmaNegPi{0.f};   // pion hypothesis on negative daughter
-  float tpcNSigmaPosPi{0.f};   // pion hypothesis on positive daughter (anti-Λ side)
-  float tpcNSigmaNegPr{0.f};   // proton hypothesis on negative daughter (anti-Λ side)
+  float tpcNSigmaPosPr{0.f}; // proton hypothesis on positive daughter
+  float tpcNSigmaNegPi{0.f}; // pion hypothesis on negative daughter
+  float tpcNSigmaPosPi{0.f}; // pion hypothesis on positive daughter (anti-Λ side)
+  float tpcNSigmaNegPr{0.f}; // proton hypothesis on negative daughter (anti-Λ side)
   float mK0Short{0.f};
   float qtArm{0.f};
   float alphaArm{0.f};
@@ -3095,8 +3086,8 @@ struct LambdaBranches {
 
 struct LambdaGenBranches {
   float pt, eta, rap, phi;
-  int   v0Type;
-  int   v0PrmScd;
+  int v0Type;
+  int v0PrmScd;
   float cent, pvZ;
 };
 
@@ -3130,13 +3121,13 @@ inline void connectBranches(TTree* t, CascBranches* b)
   t->Branch("pvZ", &b->pvZ);
   t->Branch("pdgCode", &b->pdgCode);
   t->Branch("isPhysPrim", &b->isPhysPrim);
-  // [Phase 14] Per-cascade cut bitmask + bachelor PID + V0-inside mass.
-  t->Branch("cascCutBits",            &b->cascCutBits);
-  t->Branch("bachTpcNSigmaPi",        &b->bachTpcNSigmaPi);
-  t->Branch("bachTpcNSigmaKa",        &b->bachTpcNSigmaKa);
-  t->Branch("bachItsNCls",            &b->bachItsNCls);
+  // Per-cascade cut bitmask + bachelor PID + V0-inside mass.
+  t->Branch("cascCutBits", &b->cascCutBits);
+  t->Branch("bachTpcNSigmaPi", &b->bachTpcNSigmaPi);
+  t->Branch("bachTpcNSigmaKa", &b->bachTpcNSigmaKa);
+  t->Branch("bachItsNCls", &b->bachItsNCls);
   t->Branch("bachTpcNClsCrossedRows", &b->bachTpcNClsCrossedRows);
-  t->Branch("mLambdaInside",          &b->mLambdaInside);
+  t->Branch("mLambdaInside", &b->mLambdaInside);
 }
 
 inline void connectGenBranches(TTree* t, GenBranches* b)
@@ -3149,7 +3140,7 @@ inline void connectGenBranches(TTree* t, GenBranches* b)
   t->Branch("pvZ", &b->pvZ);
 }
 
-// [Phase 7] Λ-side connectors.
+// Λ-side connectors.
 inline void connectLambdaBranches(TTree* t, LambdaBranches* b)
 {
   t->Branch("pt", &b->pt);
@@ -3168,30 +3159,30 @@ inline void connectLambdaBranches(TTree* t, LambdaBranches* b)
   t->Branch("pdgCode", &b->pdgCode);
   t->Branch("isPhysPrim", &b->isPhysPrim);
   t->Branch("motherPdg", &b->motherPdg);
-  // [Phase 8] Topology snapshot for primary-fraction template fits on data.
+  // Topology snapshot for primary-fraction template fits on data.
   t->Branch("dcaV0ToPV", &b->dcaV0ToPV);
   t->Branch("v0Radius", &b->v0Radius);
   t->Branch("posItsNCls", &b->posItsNCls);
   t->Branch("negItsNCls", &b->negItsNCls);
   t->Branch("passesPrimaryTopo", &b->passesPrimaryTopo);
-  // [Phase 9] ITS hit-map (7 bits used). Stored as unsigned int for
+  // ITS hit-map (7 bits used). Stored as unsigned int for
   // ROOT-friendly typing on the read side.
   t->Branch("posItsClusterMap", &b->posItsClusterMap);
   t->Branch("negItsClusterMap", &b->negItsClusterMap);
-  // [Phase 10] L_proper (cm) and per-daughter signed DCA-XY-to-PV (cm).
+  // L_proper (cm) and per-daughter signed DCA-XY-to-PV (cm).
   t->Branch("lProper", &b->lProper);
   t->Branch("posDcaXY", &b->posDcaXY);
   t->Branch("negDcaXY", &b->negDcaXY);
-  // [Phase 14] Per-V0 cut bitmask + raw cut inputs.
-  t->Branch("cutBits",        &b->cutBits);
+  // Per-V0 cut bitmask + raw cut inputs.
+  t->Branch("cutBits", &b->cutBits);
   t->Branch("tpcNSigmaPosPr", &b->tpcNSigmaPosPr);
   t->Branch("tpcNSigmaNegPi", &b->tpcNSigmaNegPi);
   t->Branch("tpcNSigmaPosPi", &b->tpcNSigmaPosPi);
   t->Branch("tpcNSigmaNegPr", &b->tpcNSigmaNegPr);
-  t->Branch("mK0Short",       &b->mK0Short);
-  t->Branch("qtArm",          &b->qtArm);
-  t->Branch("alphaArm",       &b->alphaArm);
-  t->Branch("cTau",           &b->cTau);
+  t->Branch("mK0Short", &b->mK0Short);
+  t->Branch("qtArm", &b->qtArm);
+  t->Branch("alphaArm", &b->alphaArm);
+  t->Branch("cTau", &b->cTau);
 }
 
 inline void connectLambdaGenBranches(TTree* t, LambdaGenBranches* b)
@@ -3213,7 +3204,7 @@ struct LambdaXiCorrelation {
   // --- Configurables ---
   Configurable<float> maxY{"maxY", 0.5, "Max |y| for Lambda, Xi and Omega"};
   Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
-  // [Phase 6] Cascade efficiency weighting (mirror of useEff for Lambdas).
+  // Cascade efficiency weighting (mirror of useEff for Lambdas).
   // When true, the pair loops include a cascade-side weight via
   // getCascadeEfficiency<>(...). The default helper returns 1.0 — wire
   // CCDB loading into it when you have an efficiency map (TODO comment in
@@ -3225,7 +3216,7 @@ struct LambdaXiCorrelation {
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0f, 10.0f, 30.0f, 50.0f, 80.0f, 100.0f}, "FT0M centrality (%)"};
   Configurable<bool> saveCascTree{"saveCascTree", false, "Save TTree of cascade topological variables into AnalysisResults.root"};
 
-  // [Phase 7] Use only Λ flagged kPrimary in the standalone Λ list. In MC
+  // Use only Λ flagged kPrimary in the standalone Λ list. In MC
   // this filters truly-primary Λ via mcParticle.isPhysicalPrimary() (set by
   // LambdaCascadeProducer when cSelMCPSV0=true). On data, every Λ is
   // unconditionally tagged kPrimary, so this toggle is effectively a no-op
@@ -3234,30 +3225,30 @@ struct LambdaXiCorrelation {
   Configurable<bool> cUsePrimaryLambdasOnly{"cUsePrimaryLambdasOnly", true,
       "Restrict the trigger Λ list to v0PrmScd==kPrimary (MC-meaningful)"};
 
-  // [Phase 7] Save a per-Λ TTree of the standalone V0 candidates. Useful for
+  // Save a per-Λ TTree of the standalone V0 candidates. Useful for
   // offline cut tuning, primary-fraction template fits, and feed-down
   // post-tagging via the motherPdg branch.
   Configurable<bool> saveLambdaTree{"saveLambdaTree", false,
       "Save TTree of standalone-Λ candidates into AnalysisResults.root"};
 
-  // [Phase 6] Auto-correlation veto policy (replaces previous bool
+  // Auto-correlation veto policy (replaces previous bool
   // cVetoSharedDau). Three modes for systematic studies:
-  //   0 = off (keep all pairs, including same-Λ self-pairs)
-  //   1 = strict — drop pair if pos AND neg daughter tracks both match
-  //                the cascade's V0 daughters. (Default; matches the old
-  //                cVetoSharedDau=true behaviour.)
-  //   2 = loose  — drop pair if EITHER daughter matches. Catches the
-  //                rare case where the standalone V0 was fit to one
-  //                cascade-V0 daughter plus a different second track.
+  // 0 = off (keep all pairs, including same-Λ self-pairs)
+  // 1 = strict — drop pair if pos AND neg daughter tracks both match
+  // the cascade's V0 daughters. (Default; matches the old
+  // cVetoSharedDau=true behaviour.)
+  // 2 = loose  — drop pair if EITHER daughter matches. Catches the
+  // rare case where the standalone V0 was fit to one
+  // cascade-V0 daughter plus a different second track.
   // The legacy `cVetoSharedDau` Configurable is still parsed from JSON
   // for backward compatibility but ignored at runtime — set cVetoMode
   // instead.
   Configurable<int> cVetoMode{"cVetoMode", 1,
       "Auto-correlation veto: 0=off, 1=strict (both daughters shared), 2=loose (any daughter)"};
   Configurable<bool> cVetoSharedDau{"cVetoSharedDau", true,
-      "[DEPRECATED Phase 6] use cVetoMode instead. Value is ignored at runtime."};
+      "[DEPRECATED] use cVetoMode instead. Value is ignored at runtime."};
 
-  // [Phase 6] Histogram-axis bundle. ConfigurableGroup makes this one
+  // Histogram-axis bundle. ConfigurableGroup makes this one
   // StructToTuple slot while still exposing every axis as JSON-tunable
   // (cDphiAxis.values, etc.). Lets users adjust correlation-function
   // resolution without recompiling — change a JSON value, rerun.
@@ -3269,7 +3260,7 @@ struct LambdaXiCorrelation {
     ConfigurableAxis cMassXiAxis{"cMassXiAxis", {100, 1.28, 1.36}, "Ξ inv-mass"};
     ConfigurableAxis cMassOmAxis{"cMassOmAxis", {100, 1.62, 1.72}, "Ω inv-mass"};
     ConfigurableAxis cRapAxis{"cRapAxis", {100, -1.0f, 1.0f}, "rapidity"};
-    // [Phase 11] φ axis on single-particle (y, φ) histograms — needed
+    // φ axis on single-particle (y, φ) histograms — needed
     // to build ρ₁(y, φ) and convolve into ρ₁⊗ρ₁ in (Δy, Δφ).
     ConfigurableAxis cPhiAxis{"cPhiAxis", {72, 0.f, 2.0f * static_cast<float>(M_PI)}, "φ (rad)"};
   } histAxes;
@@ -3283,13 +3274,13 @@ struct LambdaXiCorrelation {
   OutputObj<TTree> treeOmega{"OmegaCandidates", OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<TTree> treeXiGen{"XiCandidatesGen", OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<TTree> treeOmegaGen{"OmegaCandidatesGen", OutputObjHandlingPolicy::AnalysisObject};
-  // [Phase 7] Λ trees (reco + gen).
+  // Λ trees (reco + gen).
   OutputObj<TTree> treeLambda{"LambdaCandidates", OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<TTree> treeLambdaGen{"LambdaCandidatesGen", OutputObjHandlingPolicy::AnalysisObject};
   // Single raw pointer covers all six branch sets — 1 StructToTuple slot
   lxicorr::BranchPair* bp{nullptr};
 
-  // [Phase 16f] Last-seen collision index for the Λ-side singles + tree fill.
+  // Last-seen collision index for the Λ-side singles + tree fill.
   // analyzeSinglesLambda() is invoked from BOTH processMCRecoXi() and
   // processMCRecoOmega() (and the equivalent data process functions). When
   // multiple of those flags are on simultaneously — the default for full
@@ -3300,7 +3291,7 @@ struct LambdaXiCorrelation {
   // -1 marks "no event seen yet" (legal collisionId is >= 0).
   int64_t mLastLamSinglesCollIdx{-1};
 
-  // [Phase 16f → split Phase 16n] Idempotence guards for Event/hEventCount.
+  // Idempotence guards for Event/hEventCount.
   // Previously a single mLastEventCountCollIdx — but reco process functions
   // pass LambdaCollisions::globalIndex() and gen ones pass
   // LambdaMcGenCollisions::globalIndex(), which live in different ID spaces.
@@ -3311,7 +3302,7 @@ struct LambdaXiCorrelation {
   int64_t mLastEventCountRecoCollIdx{-1};
   int64_t mLastEventCountGenCollIdx{-1};
 
-  // [Phase 16i] Gen-Λ singles guard. processMCGenXi and processMCGenOmega
+  // Gen-Λ singles guard. processMCGenXi and processMCGenOmega
   // both iterate the same LambdaMcGenTracks table and fill the same
   // McGen/Singles/Lambda/* histograms. When both flags are on (typical for
   // a full Λ-Ξ + Λ-Ω closure run) every gen Λ would be counted twice.
@@ -3319,7 +3310,7 @@ struct LambdaXiCorrelation {
   int64_t mLastGenLamSinglesCollIdx{-1};
 
   // Helper: fill the per-event counter exactly once per reco collision.
-  // [Phase 16n] Reco-side guard. The histogram itself is filled here so
+  // Reco-side guard. The histogram itself is filled here so
   // hEventCount reports unique reco collisions (the canonical event count
   // used everywhere downstream).
   void fillEventCountOnce(int64_t collIdx)
@@ -3331,7 +3322,7 @@ struct LambdaXiCorrelation {
     histos.fill(HIST("Event/hEventCount"), 0.5);
   }
 
-  // [Phase 16n] Gen-side guard. Only tracks "have we visited this gen
+  // Gen-side guard. Only tracks "have we visited this gen
   // collision yet" for downstream fills that need it (currently nothing
   // calls this; reserved). Does NOT fill hEventCount — that is the reco
   // counter's job.
@@ -3344,20 +3335,20 @@ struct LambdaXiCorrelation {
     return true;
   }
 
-  // [Phase 16g] Count cascades eligible for a given species in THIS event.
+  // Count cascades eligible for a given species in THIS event.
   // The slice from CascDataExt/LabeledCascades contains both Ξ and Ω
   // candidates; without species filtering, hLamXi and hLamOm both report
   // total cascades (Ξ+Ω) → identical numbers. flag semantics defined as
   // named constants below.
   // Applies the same |y|<maxY cut as the corresponding pair loop so the
   // diagnostic matches actual pair-formation potential.
-  // [Phase 16j] Aliases of namespace-scope constants so existing call sites
+  // Aliases of namespace-scope constants so existing call sites
   // (analyzePairs, analyzeXiXiPairs, …) keep their short names while the
   // single source of truth lives in lcorr_const.
-  static constexpr int kFlagRejected     = lcorr_const::kFlagRejected;
-  static constexpr int kFlagXiOnly       = lcorr_const::kFlagXiOnly;
-  static constexpr int kFlagXiAndOmega   = lcorr_const::kFlagXiAndOmega;
-  static constexpr int kFlagOmegaOnly    = lcorr_const::kFlagOmegaOnly;
+  static constexpr int kFlagRejected = lcorr_const::kFlagRejected;
+  static constexpr int kFlagXiOnly = lcorr_const::kFlagXiOnly;
+  static constexpr int kFlagXiAndOmega = lcorr_const::kFlagXiAndOmega;
+  static constexpr int kFlagOmegaOnly = lcorr_const::kFlagOmegaOnly;
 
   template <bool IsOmega, typename TCascades, typename TFlagsRow>
   int countSpeciesEligible(TCascades const& cascades, TFlagsRow const& flagsStart)
@@ -3385,13 +3376,13 @@ struct LambdaXiCorrelation {
   // --- Data Slicing Definitions ---
   using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
   Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-  // [Phase 7] Primary-only Λ partition (MC-meaningful; on data v0PrmScd is
+  // Primary-only Λ partition (MC-meaningful; on data v0PrmScd is
   // always kPrimary so the partition coincides with goodLambda).
   Partition<GoodLambdas> goodPrimaryLambda =
       aod::lambdatrackext::trueLambdaFlag == true &&
       aod::lambdatrack::v0PrmScd == (int8_t)kPrimary;
 
-  // [Phase 8] Topology-only primary-Λ partition. Combine with the truth
+  // Topology-only primary-Λ partition. Combine with the truth
   // partition to get the strictest trigger list: AND of (trueLambdaFlag,
   // v0PrmScd==kPrimary, passesPrimaryTopo). On data the v0PrmScd term is
   // identically true so the partition reduces to (trueLambdaFlag &&
@@ -3402,13 +3393,13 @@ struct LambdaXiCorrelation {
       aod::lambdatrack::v0PrmScd == (int8_t)kPrimary &&
       aod::lambdatrack::passesPrimaryTopo == true;
 
-  // [Phase 8] Pick which "primary Λ" partition the trigger uses.
-  //   true  → goodPureLambda (truth AND topology; recommended for data)
-  //   false → goodPrimaryLambda (truth-only; use for MC closure tests)
+  // Pick which "primary Λ" partition the trigger uses.
+  // true  → goodPureLambda (truth AND topology; recommended for data)
+  // false → goodPrimaryLambda (truth-only; use for MC closure tests)
   Configurable<bool> cPrimaryRequireTopo{"cPrimaryRequireTopo", true,
       "Require passesPrimaryTopo on the trigger Λ list (data-friendly tightening)"};
 
-  // [Phase 8] MC-only filter: reject cascades whose CascadeFlags::IsTrueCascade
+  // MC-only filter: reject cascades whose CascadeFlags::IsTrueCascade
   // is false (i.e., the cascade was not truth-matched to a physical-primary
   // Ξ⁻/Ω⁻). On data this flag is always false (no truth available), so the
   // filter is automatically disabled in the data process functions — it only
@@ -3418,33 +3409,33 @@ struct LambdaXiCorrelation {
   Configurable<bool> cRequireTrueCascade{"cRequireTrueCascade", true,
       "MC: drop cascade candidates not flagged IsTrueCascade==true"};
 
-  // [Phase 9] ITS strangeness-tracking gating policy. Lets you A/B-compare
+  // ITS strangeness-tracking gating policy. Lets you A/B-compare
   // what the IsItsTracked flag adds without recompiling.
   //
-  //   0 = OFF      — ignore IsItsTracked entirely (current behaviour).
-  //   1 = REQUIRE  — accept ONLY cascades flagged IsItsTracked. Highest
-  //                  purity on data (ITS confirmed the Ξ flight) but
-  //                  trades a lot of statistics: ITS strangeness-tracking
-  //                  efficiency is typically 5–20% of the topological
-  //                  cascade yield in pp, depending on pT and η.
-  //   2 = RESCUE   — keep cascades that fail purity gates (in particular
-  //                  cRequireTrueCascade on MC) IF IsItsTracked is true.
-  //                  Useful for data-side high-purity systematic where
-  //                  the truth flag is unavailable but ITS confirms.
-  //   3 = QA-ONLY  — no gating; only fill QA histos so you can plot
-  //                  the IsItsTracked fraction vs cascade pT/centrality.
+  // 0 = OFF — ignore IsItsTracked entirely (current behaviour).
+  // 1 = REQUIRE  — accept ONLY cascades flagged IsItsTracked. Highest
+  // purity on data (ITS confirmed the Ξ flight) but
+  // trades a lot of statistics: ITS strangeness-tracking
+  // efficiency is typically 5–20% of the topological
+  // cascade yield in pp, depending on pT and η.
+  // 2 = RESCUE — keep cascades that fail purity gates (in particular
+  // cRequireTrueCascade on MC) IF IsItsTracked is true.
+  // Useful for data-side high-purity systematic where
+  // the truth flag is unavailable but ITS confirms.
+  // 3 = QA-ONLY  — no gating; only fill QA histos so you can plot
+  // the IsItsTracked fraction vs cascade pT/centrality.
   //
   // QA histograms are filled regardless of the mode so the comparison is
   // always available downstream.
   Configurable<int> cItsTrackMode{"cItsTrackMode", 0,
       "ITS strangeness-tracking gate: 0=off, 1=require, 2=rescue, 3=qa-only"};
 
-  // [Phase 12b] Trigger-pT-differential pair histograms (off by default to
+  // Trigger-pT-differential pair histograms (off by default to
   // avoid bloating output for the centrality-only analyses).
   Configurable<bool> cFillPtDifferentialPairs{"cFillPtDifferentialPairs", false,
       "Fill PairsPt/<sign>/hPtDeltaPhiDeltaY (3D pT_Λ × Δφ × Δy)"};
 
-  // [Phase 13a] Pair-type selectors. Each toggle gates BOTH the histogram
+  // Pair-type selectors. Each toggle gates BOTH the histogram
   // booking and the fill, so disabled pair types cost zero memory and
   // zero CPU. Defaults: the standard Λ-Ξ / Λ-Ω physics + Λ-Λ on; the
   // same-species cascade pairs and the Ξ-Ω cross-species pairs are off
@@ -3458,13 +3449,13 @@ struct LambdaXiCorrelation {
     Configurable<bool> cFillXiOm{"cFillXiOm", false, "Ξ–Ω cross-species pairs (4 sign combos)"};
   } pairCfg;
 
-  // [Phase 13b] Per-event yields. One toggle, one ConfigurableAxis bundle.
+  // Per-event yields. One toggle, one ConfigurableAxis bundle.
   // Each species gets 5 histograms under Yields/<species>/:
-  //   hNPerEvent      — multiplicity distribution (TH1F)         → ⟨N_β⟩ = Mean
-  //   hMeanPtPerEvent — per-event ⟨pT⟩ distribution (TH1F)       → ⟨pT⟩ = Mean
-  //   hMeanNvsCent    — TProfile ⟨N_β⟩ vs centrality
-  //   hMeanPtVsCent   — TProfile ⟨pT⟩ vs centrality
-  //   hNvsPt2D        — (N, ⟨pT⟩) per event (TH2F)               (correlation)
+  // hNPerEvent — multiplicity distribution (TH1F) → ⟨N_β⟩ = Mean
+  // hMeanPtPerEvent — per-event ⟨pT⟩ distribution (TH1F) → ⟨pT⟩ = Mean
+  // hMeanNvsCent — TProfile ⟨N_β⟩ vs centrality
+  // hMeanPtVsCent — TProfile ⟨pT⟩ vs centrality
+  // hNvsPt2D — (N, ⟨pT⟩) per event (TH2F) (correlation)
   // Filled exclusively by the dedicated processYields function so that the
   // count is correct regardless of which pair-process functions are on.
   struct : ConfigurableGroup {
@@ -3477,7 +3468,7 @@ struct LambdaXiCorrelation {
   Preslice<aod::CascDataExt> cascadesPerCollision = aod::cascdata::collisionId;
   Preslice<LabeledCascades> labeledCascPerCollision = aod::cascdata::collisionId;
 
-  // [Phase 12a] Single source of truth for the trigger-Λ partition pick.
+  // Single source of truth for the trigger-Λ partition pick.
   // Replaces a 4-line ternary that was duplicated verbatim in each of the
   // four process functions (processXi/Omega/MCRecoXi/MCRecoOmega). The
   // partitions all slice to the same SOA type, so a single auto-returning
@@ -3492,7 +3483,7 @@ struct LambdaXiCorrelation {
              : goodPrimaryLambda->sliceBy(lambdasPerCollision, lambdacoll.globalIndex());
   }
 
-  // [Phase 12a] Per-cascade purity gate: combines truth (MC) + ITS-tracking
+  // Per-cascade purity gate: combines truth (MC) + ITS-tracking
   // mode logic that was duplicated in 4 analyze functions. Returns true if
   // the cascade should be KEPT for filling. IsMC template param compiles
   // away the truth check on the data path.
@@ -3520,7 +3511,7 @@ struct LambdaXiCorrelation {
   //  so |pdg|==3312 AND |pdg|==3334 would always be false.)
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
-  // [Phase 6] Cascade efficiency weight (mirror of useEff for the Λ side).
+  // Cascade efficiency weight (mirror of useEff for the Λ side).
   // Returns 1/eff so multiplying it into the pair weight yields an
   // efficiency-corrected count. The default implementation returns 1.0
   // (no correction) — fill in the CCDB-load body once you have an
@@ -3528,18 +3519,18 @@ struct LambdaXiCorrelation {
   // and 1 for Ω so the map can be specialised by particle.
   //
   // Usage in pair loops:
-  //   float wCasc = getCascadeEfficiency<0/*Xi*/>(casc.sign(), casc.pt(), xiY);
-  //   float wPair = wLam * wCasc;
+  // float wCasc = getCascadeEfficiency<0/*Xi*/>(casc.sign(), casc.pt(), xiY);
+  // float wPair = wLam * wCasc;
   //
   // Suggested CCDB-load skeleton (uncomment + adapt when you have a map):
-  //   if (!cUseCascEff) return 1.0f;
-  //   static TList* effList = ccdb->getForTimeStamp<TList>(cCascEffPath, -1);
-  //   const char* hName = (kKind == 0)
-  //     ? (sign < 0 ? "hEffXiMinus" : "hEffXiPlus")
-  //     : (sign < 0 ? "hEffOmegaMinus" : "hEffOmegaPlus");
-  //   auto* h = static_cast<TH3*>(effList->FindObject(hName));
-  //   double e = h->GetBinContent(h->FindBin(/*cent*/, pt, rap));
-  //   return (e > 0) ? 1.0f / static_cast<float>(e) : 1.0f;
+  // if (!cUseCascEff) return 1.0f;
+  // static TList* effList = ccdb->getForTimeStamp<TList>(cCascEffPath, -1);
+  // const char* hName = (kKind == 0)
+  // ? (sign < 0 ? "hEffXiMinus" : "hEffXiPlus")
+  // : (sign < 0 ? "hEffOmegaMinus" : "hEffOmegaPlus");
+  // auto* h = static_cast<TH3*>(effList->FindObject(hName));
+  // double e = h->GetBinContent(h->FindBin(/*cent*/, pt, rap));
+  // return (e > 0) ? 1.0f / static_cast<float>(e) : 1.0f;
   template <int kKind /*0=Xi, 1=Omega*/>
   float getCascadeEfficiency(int /*sign*/, float /*pt*/, float /*rap*/)
   {
@@ -3599,7 +3590,7 @@ struct LambdaXiCorrelation {
          (int)doprocessAllPairs, (int)doprocessYields,
          (int)doprocessMCGenXi, (int)doprocessMCGenOmega);
 
-    // [Phase 6] Three-way veto policy. Loud warning when the user disables
+    // Three-way veto policy. Loud warning when the user disables
     // it or picks the loose mode for a systematic study.
     if (cVetoMode == lcorr_const::kVetoModeOff) {
       LOGF(warning,
@@ -3616,7 +3607,7 @@ struct LambdaXiCorrelation {
            "[LXi] cVetoMode=%d is not one of {0,1,2}; treating as 0 (off).",
            (int)cVetoMode);
     }
-    // [Phase 6] Legacy cVetoSharedDau is parsed for back-compat but not used.
+    // Legacy cVetoSharedDau is parsed for back-compat but not used.
     // If the user set it to false on the assumption it'd disable the veto,
     // remind them to migrate.
     if (!cVetoSharedDau) {
@@ -3626,17 +3617,17 @@ struct LambdaXiCorrelation {
            (int)cVetoMode);
     }
 
-    // [P4] Data-side primary tag is not informative.
+    // Data-side primary tag is not informative.
     if (doprocessXi || doprocessOmega) {
       LOGF(warning,
            "[LXi] Running on DATA process functions: the Λ row's v0PrmScd "
            "field is unconditionally kPrimary regardless of physics origin "
            "(see LambdaCascadeProducer::fillLambdaRecoTables). Treat any "
            "primary/secondary partitioning as meaningful only in MC.");
-      // [Phase 7] Loud reminder when the user wires primary-only on data.
+      // Loud reminder when the user wires primary-only on data.
       if (cUsePrimaryLambdasOnly) {
         LOGF(warning,
-             "[LXi][Phase 7] cUsePrimaryLambdasOnly=true on data: the partition "
+             "[LXi]cUsePrimaryLambdasOnly=true on data: the partition "
              "filters on v0PrmScd==kPrimary, but on data EVERY Λ has that tag. "
              "The trigger pool is therefore identical to the all-Λ pool. To "
              "actually enrich primaries on data, tighten the topological cuts "
@@ -3645,12 +3636,12 @@ struct LambdaXiCorrelation {
       }
     }
 
-    // [P4][C1] Warnings for known foot-guns until the deeper fixes land.
+    // Warnings for known foot-guns until the deeper fixes land.
     if (doprocessXi && doprocessOmega) {
       LOGF(warning,
            "[LXi] Both processXi and processOmega are enabled. Until the "
-           "single-pass refactor (Phase 4), Lambda singles will be filled "
-           "TWICE per event. Disable one of them, or wait for Phase 4.");
+           "single-pass refactor, Lambda singles will be filled "
+           "TWICE per event. Disable one of them, or disable one.");
     }
     // Efficiency map sanity (P9): numerator and denominator come from
     // different process functions; warn if only one side is active.
@@ -3676,7 +3667,7 @@ struct LambdaXiCorrelation {
     }
 
     // --- 1. Axis Definitions ---
-    // [Phase 6] Pair / single axes now come from the histAxes ConfigurableGroup
+    // Pair / single axes now come from the histAxes ConfigurableGroup
     // — change binning via JSON, no recompile.
     const AxisSpec dphi{histAxes.cDphiAxis, "#Delta#varphi"};
     const AxisSpec dy{histAxes.cDyAxis, "#Delta y"};
@@ -3690,8 +3681,8 @@ struct LambdaXiCorrelation {
     const AxisSpec cpa{100, 0.9, 1.0, "Cos(PA)"};
     const AxisSpec dca{100, 0.0, 5.0, "DCA (cm)"};
     const AxisSpec pvDca{100, -10.0, 10.0, "DCA to PV (cm)"};
-    // [C5] tpcRows AxisSpec removed alongside the unfilled QA/Casc/hTPCRows
-    // bookings; will return in Phase 4 when the analyser carries tracks.
+    // tpcRows AxisSpec removed alongside the unfilled QA/Casc/hTPCRows
+    // bookings; will return when the analyser carries tracks.
 
     // --- 2. Histograms ---
     histos.add("Event/hEventCount", "Event Counter", kTH1F, {{1, 0, 1, "Count"}});
@@ -3703,9 +3694,9 @@ struct LambdaXiCorrelation {
     histos.add("Singles/Lambda/hPtVsMass", "Lambda p_{T} vs Mass", kTH2F, {massLam, pt});
     histos.add("Singles/AntiLambda/hPtVsMass", "AntiLambda p_{T} vs Mass", kTH2F, {massLam, pt});
 
-    // [Phase 11] 2D (y, φ) singles — input to ρ₁⊗ρ₁ for the offline R₂ recipe.
+    // 2D (y, φ) singles — input to ρ₁⊗ρ₁ for the offline R₂ recipe.
     const AxisSpec phi{histAxes.cPhiAxis, "φ (rad)"};
-    histos.add("Singles/Lambda/hYPhi",     "Lambda (y, φ)",     kTH2F, {rap, phi});
+    histos.add("Singles/Lambda/hYPhi", "Lambda (y, φ)", kTH2F, {rap, phi});
     histos.add("Singles/AntiLambda/hYPhi", "AntiLambda (y, φ)", kTH2F, {rap, phi});
 
     // Singles: Xi & QA
@@ -3718,17 +3709,17 @@ struct LambdaXiCorrelation {
     histos.add("QA/Xi/hDCANegToPV", "DCA Neg to PV", kTH1F, {pvDca});
     histos.add("QA/Xi/hDCABachToPV", "DCA Bach to PV", kTH1F, {pvDca});
 
-    // [C5] QA/Casc/hTPCRows{Pos,Neg,Bach} were booked here but never filled.
+    // QA/Casc/hTPCRows{Pos,Neg,Bach} were booked here but never filled.
     // To fill them properly we need track access (FullTracksExtIUWithPID)
     // inside the analyser, which processXi does not currently take. They are
-    // re-introduced in Phase 4 once the analyser carries the tracks template.
+    // re-introduced once the analyser carries the tracks template.
 
     histos.add("Singles/XiMinus/hPtVsMass", "Xi^{-} p_{T} vs Mass", kTH2F, {massXi, pt});
     histos.add("Singles/XiPlus/hPtVsMass", "Xi^{+} p_{T} vs Mass", kTH2F, {massXi, pt});
     histos.add("Singles/XiMinus/hRap", "Xi^{-} Rapidity", kTH1F, {rap});
     histos.add("Singles/XiPlus/hRap", "Xi^{+} Rapidity", kTH1F, {rap});
 
-    // [Phase 11] 2D (y, φ) singles for Ξ.
+    // 2D (y, φ) singles for Ξ.
     histos.add("Singles/XiMinus/hYPhi", "Xi^{-} (y, φ)", kTH2F, {rap, phi});
     histos.add("Singles/XiPlus/hYPhi",  "Xi^{+} (y, φ)", kTH2F, {rap, phi});
 
@@ -3748,11 +3739,11 @@ struct LambdaXiCorrelation {
     histos.add("Singles/OmegaMinus/hRap", "Omega^{-} Rapidity", kTH1F, {rap});
     histos.add("Singles/OmegaPlus/hRap", "Omega^{+} Rapidity", kTH1F, {rap});
 
-    // [Phase 11] 2D (y, φ) singles for Ω.
+    // 2D (y, φ) singles for Ω.
     histos.add("Singles/OmegaMinus/hYPhi", "Omega^{-} (y, φ)", kTH2F, {rap, phi});
     histos.add("Singles/OmegaPlus/hYPhi",  "Omega^{+} (y, φ)", kTH2F, {rap, phi});
 
-    // [Phase 13a] All pair-type bookings gated by pairCfg toggles.
+    // All pair-type bookings gated by pairCfg toggles.
     // Pairs: Λ–Ξ (R2 inputs)
     if (pairCfg.cFillLamXi) {
       histos.add("Pairs/Lam_XiM/hDeltaPhiDeltaY", "L-Xi-", kTH3F, {cent, dphi, dy});
@@ -3771,9 +3762,9 @@ struct LambdaXiCorrelation {
 
     // Pairs: Λ–Λ same-event (3 sign combos)
     if (pairCfg.cFillLamLam) {
-      histos.add("Pairs/Lam_Lam/hDeltaPhiDeltaY",         "L-L",     kTH3F, {cent, dphi, dy});
-      histos.add("Pairs/Lam_AntiLam/hDeltaPhiDeltaY",     "L-AL",    kTH3F, {cent, dphi, dy});
-      histos.add("Pairs/AntiLam_AntiLam/hDeltaPhiDeltaY", "AL-AL",   kTH3F, {cent, dphi, dy});
+      histos.add("Pairs/Lam_Lam/hDeltaPhiDeltaY", "L-L", kTH3F, {cent, dphi, dy});
+      histos.add("Pairs/Lam_AntiLam/hDeltaPhiDeltaY", "L-AL", kTH3F, {cent, dphi, dy});
+      histos.add("Pairs/AntiLam_AntiLam/hDeltaPhiDeltaY", "AL-AL", kTH3F, {cent, dphi, dy});
     }
 
     // Pairs: Ξ–Ξ same-event (3 sign combos)
@@ -3798,11 +3789,11 @@ struct LambdaXiCorrelation {
       histos.add("Pairs/XiP_OmP/hDeltaPhiDeltaY", "Xi+-Om+", kTH3F, {cent, dphi, dy});
     }
 
-    // [Phase 12b] Like-sign / opposite-sign baryon-number combined pair
+    // Like-sign / opposite-sign baryon-number combined pair
     // histograms. The four sign combos above split into:
-    //   LS_LamXi (BB or B̄B̄) = Lam_XiM + AntiLam_XiP
-    //   OS_LamXi (BB̄ or B̄B) = Lam_XiP + AntiLam_XiM
-    //   (same for Λ-Ω)
+    // LS_LamXi (BB or B̄B̄) = Lam_XiM + AntiLam_XiP
+    // OS_LamXi (BB̄ or B̄B) = Lam_XiP + AntiLam_XiM
+    // (same for Λ-Ω)
     // Filled in the pair loop alongside the four-way split, so users can
     // do baryon-number correlation studies without offline summing.
     histos.add("Pairs/LS_LamXi/hDeltaPhiDeltaY", "LS Λ-Ξ", kTH3F, {cent, dphi, dy});
@@ -3810,7 +3801,7 @@ struct LambdaXiCorrelation {
     histos.add("Pairs/LS_LamOm/hDeltaPhiDeltaY", "LS Λ-Ω", kTH3F, {cent, dphi, dy});
     histos.add("Pairs/OS_LamOm/hDeltaPhiDeltaY", "OS Λ-Ω", kTH3F, {cent, dphi, dy});
 
-    // [Phase 12b] Per-trigger-pT pair histograms (3D: pT_Λ × Δφ × Δy).
+    // Per-trigger-pT pair histograms (3D: pT_Λ × Δφ × Δy).
     // Centrality is integrated here to keep the storage manageable. Fill
     // gated by cFillPtDifferentialPairs so users opt in only when needed.
     if (cFillPtDifferentialPairs) {
@@ -3824,25 +3815,25 @@ struct LambdaXiCorrelation {
       histos.add("PairsPt/AntiLam_OmP/hPtDeltaPhiDeltaY", "AL-Om+ (pT_AL, Δφ, Δy)", kTH3F, {pt, dphi, dy});
     }
 
-    // [P3] Auto-correlation bookkeeping: per-event distributions of total
+    // Auto-correlation bookkeeping: per-event distributions of total
     // pair count vs vetoed (shared-daughter) pair count. Compare the two
     // to estimate the bias of running without the veto.
     const AxisSpec axisPairCount{200, 0., 200., "pairs/event"};
-    histos.add("QA/AutoCorr/hXiPairsTotal",   "Λ-Ξ total pairs/event",   kTH1F, {axisPairCount});
+    histos.add("QA/AutoCorr/hXiPairsTotal", "Λ-Ξ total pairs/event", kTH1F, {axisPairCount});
     histos.add("QA/AutoCorr/hXiPairsVetoed",  "Λ-Ξ vetoed pairs/event",  kTH1F, {axisPairCount});
-    histos.add("QA/AutoCorr/hOmPairsTotal",   "Λ-Ω total pairs/event",   kTH1F, {axisPairCount});
+    histos.add("QA/AutoCorr/hOmPairsTotal", "Λ-Ω total pairs/event", kTH1F, {axisPairCount});
     histos.add("QA/AutoCorr/hOmPairsVetoed",  "Λ-Ω vetoed pairs/event",  kTH1F, {axisPairCount});
 
-    // [Phase 9] ITS strangeness-tracking diagnostics. Filled regardless
+    // ITS strangeness-tracking diagnostics. Filled regardless
     // of cItsTrackMode so the comparison is always available downstream.
     // X axis: 0 = topology-passing cascade, 1 = also IsItsTracked.
     // Reading: bin 1 / bin 0 = ITS-tracking efficiency × "real Ξ" purity.
     const AxisSpec axisItsTrackBin{2, -0.5, 1.5, "ITS-tracked"};
     const AxisSpec axisCascPt{50, 0, 10, "p_{T} (GeV/c)"};
-    histos.add("QA/ItsTrack/hXiTotalVsTracked",   "Ξ topology-pass vs ITS-tracked",       kTH2F, {axisItsTrackBin, axisCascPt});
-    histos.add("QA/ItsTrack/hOmegaTotalVsTracked","Ω topology-pass vs ITS-tracked",       kTH2F, {axisItsTrackBin, axisCascPt});
+    histos.add("QA/ItsTrack/hXiTotalVsTracked", "Ξ topology-pass vs ITS-tracked", kTH2F, {axisItsTrackBin, axisCascPt});
+    histos.add("QA/ItsTrack/hOmegaTotalVsTracked","Ω topology-pass vs ITS-tracked", kTH2F, {axisItsTrackBin, axisCascPt});
 
-    // [Phase 13b] Per-event yield histograms — one block per species,
+    // Per-event yield histograms — one block per species,
     // 5 histos each: hNPerEvent, hMeanPtPerEvent, hMeanNvsCent,
     // hMeanPtVsCent, hNvsPt2D. Filled exclusively by processYields so
     // counts are correct regardless of which pair-process functions run.
@@ -3851,11 +3842,11 @@ struct LambdaXiCorrelation {
       const AxisSpec axisYieldPt{yieldCfg.cYieldPtAxis, "⟨p_{T}⟩ per event (GeV/c)"};
       const std::array<const char*, 6> species{"Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
       for (const auto& sp : species) {
-        histos.add(Form("Yields/%s/hNPerEvent",      sp), Form("%s N/event", sp),         kTH1F,    {axisYieldN});
-        histos.add(Form("Yields/%s/hMeanPtPerEvent", sp), Form("%s ⟨pT⟩/event", sp),     kTH1F,    {axisYieldPt});
-        histos.add(Form("Yields/%s/hMeanNvsCent",    sp), Form("%s ⟨N⟩ vs cent", sp),    kTProfile,{cent});
-        histos.add(Form("Yields/%s/hMeanPtVsCent",   sp), Form("%s ⟨pT⟩ vs cent", sp),   kTProfile,{cent});
-        histos.add(Form("Yields/%s/hNvsPt2D",        sp), Form("%s (N, ⟨pT⟩)", sp),      kTH2F,    {axisYieldN, axisYieldPt});
+        histos.add(Form("Yields/%s/hNPerEvent", sp), Form("%s N/event", sp), kTH1F, {axisYieldN});
+        histos.add(Form("Yields/%s/hMeanPtPerEvent", sp), Form("%s ⟨pT⟩/event", sp), kTH1F, {axisYieldPt});
+        histos.add(Form("Yields/%s/hMeanNvsCent", sp), Form("%s ⟨N⟩ vs cent", sp), kTProfile,{cent});
+        histos.add(Form("Yields/%s/hMeanPtVsCent", sp), Form("%s ⟨pT⟩ vs cent", sp), kTProfile,{cent});
+        histos.add(Form("Yields/%s/hNvsPt2D", sp), Form("%s (N, ⟨pT⟩)", sp), kTH2F, {axisYieldN, axisYieldPt});
       }
     }
 
@@ -3872,17 +3863,17 @@ struct LambdaXiCorrelation {
     histos.add("McGen/Singles/OmegaMinus/hPtVsRap", "Gen #Omega^{-} p_{T} vs y", kTH2F, {rap, pt});
     histos.add("McGen/Singles/OmegaPlus/hPtVsRap", "Gen #Omega^{+} p_{T} vs y", kTH2F, {rap, pt});
 
-    // [Phase 16t] Closure-test inputs: 2D (y, φ) singles for the ρ₁⊗ρ₁
+    // Closure-test inputs: 2D (y, φ) singles for the ρ₁⊗ρ₁
     // convolution. compute_r2.C consumes these via the --gen switch.
     // Mirrors the reco-side Singles/.../hYPhi histograms used in production.
-    histos.add("McGen/Singles/Lambda/hYPhi",     "Gen #Lambda (y, #varphi)",     kTH2F, {rap, phi});
+    histos.add("McGen/Singles/Lambda/hYPhi", "Gen #Lambda (y, #varphi)", kTH2F, {rap, phi});
     histos.add("McGen/Singles/AntiLambda/hYPhi", "Gen #bar{#Lambda} (y, #varphi)", kTH2F, {rap, phi});
-    histos.add("McGen/Singles/XiMinus/hYPhi",    "Gen #Xi^{-} (y, #varphi)",     kTH2F, {rap, phi});
-    histos.add("McGen/Singles/XiPlus/hYPhi",     "Gen #Xi^{+} (y, #varphi)",     kTH2F, {rap, phi});
+    histos.add("McGen/Singles/XiMinus/hYPhi", "Gen #Xi^{-} (y, #varphi)", kTH2F, {rap, phi});
+    histos.add("McGen/Singles/XiPlus/hYPhi", "Gen #Xi^{+} (y, #varphi)", kTH2F, {rap, phi});
     histos.add("McGen/Singles/OmegaMinus/hYPhi", "Gen #Omega^{-} (y, #varphi)",  kTH2F, {rap, phi});
     histos.add("McGen/Singles/OmegaPlus/hYPhi",  "Gen #Omega^{+} (y, #varphi)",  kTH2F, {rap, phi});
 
-    // [Phase 16t] Gen event counter (canonical denominator for gen-level R₂).
+    // Gen event counter (canonical denominator for gen-level R₂).
     histos.add("McGen/Event/hEventCount", "Gen Event Counter", kTH1F, {{1, 0, 1, "Count"}});
 
     // Pairs: gen Lam-Xi
@@ -3897,15 +3888,15 @@ struct LambdaXiCorrelation {
     histos.add("McGen/Pairs/AntiLam_OmM/hDeltaPhiDeltaY", "Gen AL-Om-", kTH3F, {cent, dphi, dy});
     histos.add("McGen/Pairs/AntiLam_OmP/hDeltaPhiDeltaY", "Gen AL-Om+", kTH3F, {cent, dphi, dy});
 
-    // [Phase 16a] Per-event coincidence counters: how often does a given
+    // Per-event coincidence counters: how often does a given
     // collision contain BOTH a primary-Λ trigger AND a reco cascade? This
     // is the dominant statistical bottleneck on small AODs (the pair loop
     // only fires when both species coexist), so we instrument it directly.
     // Read-off:
-    //   bin(0,0)        → events with neither species
-    //   row > 0, col 0  → events with only Λ
-    //   row 0, col > 0  → events with only cascade
-    //   row > 0, col > 0→ events that contribute pair candidates
+    // bin(0,0) → events with neither species
+    // row > 0, col 0  → events with only Λ
+    // row 0, col > 0  → events with only cascade
+    // row > 0, col > 0→ events that contribute pair candidates
     const AxisSpec axisCoincLam{31, -0.5,  30.5, "N_{primary Λ}"};
     const AxisSpec axisCoincXi {16, -0.5,  15.5, "N_{Ξ}"};
     const AxisSpec axisCoincOm {16, -0.5,  15.5, "N_{Ω}"};
@@ -3945,7 +3936,7 @@ struct LambdaXiCorrelation {
       lxicorr::connectGenBranches(treeXiGen.object.get(), &bp->xiGen);
       lxicorr::connectGenBranches(treeOmegaGen.object.get(), &bp->omGen);
     }
-    // [Phase 7] Λ TTrees.
+    // Λ TTrees.
     if (saveLambdaTree) {
       treeLambda.setObject(new TTree("LambdaCandidates", "Λ standalone-V0 topo + truth"));
       treeLambdaGen.setObject(new TTree("LambdaCandidatesGen", "Λ gen-level kinematics"));
@@ -3956,12 +3947,12 @@ struct LambdaXiCorrelation {
 
   // --- Analysis Functions ---
 
-  // [Phase 7] Optional: a per-event PV used as the centVal/pvZ source for the
+  // Optional: a per-event PV used as the centVal/pvZ source for the
   // Λ tree. We get these from the LambdaCollision the caller passes in.
   template <typename T, typename C>
   void analyzeSinglesLambda(T const& tracks, C const& lambdacoll)
   {
-    // [Phase 16f] Idempotence guard — see mLastLamSinglesCollIdx declaration.
+    // Idempotence guard — see mLastLamSinglesCollIdx declaration.
     // Returns early on the 2nd+ call within the same event so that running
     // both processMCRecoXi and processMCRecoOmega doesn't double-fill the
     // Λ singles histograms or LambdaCandidates tree.
@@ -3976,10 +3967,10 @@ struct LambdaXiCorrelation {
         continue;
 
       float w = useEff ? track.corrFact() : 1.0f;
-      // [P6] Use the typed enum instead of magic literal "1".
+      // Use the typed enum instead of magic literal "1".
       bool isAnti = (track.v0Type() == (int8_t)kAntiLambda);
 
-      // [Phase 11] φ wrapped to [0, 2π) for ρ₁(y, φ) accumulation.
+      // φ wrapped to [0, 2π) for ρ₁(y, φ) accumulation.
       float phiWrapped = RecoDecay::constrainAngle(track.phi(), 0.f);
       if (!isAnti) {
         histos.fill(HIST("Singles/Lambda/hPt"), track.pt(), w);
@@ -3991,7 +3982,7 @@ struct LambdaXiCorrelation {
         histos.fill(HIST("Singles/AntiLambda/hYPhi"), track.rap(), phiWrapped, w);
       }
 
-      // [Phase 7+8 fix] Λ TTree fill — must AND with saveLambdaTree because bp
+      // Λ TTree fill — must AND with saveLambdaTree because bp
       // is shared with the cascade trees. With saveCascTree=true & saveLambdaTree=false
       // bp is allocated but treeLambda is NEVER setObject-ed; reaching Fill()
       // dereferences a null TTree and segfaults.
@@ -4011,7 +4002,7 @@ struct LambdaXiCorrelation {
         b.cent = lambdacoll.cent();
         b.pvZ = lambdacoll.posZ();
         b.motherPdg = track.motherPdg();
-        // [Phase 16a] Populate pdgCode from the truth tag + v0Type so downstream
+        // Populate pdgCode from the truth tag + v0Type so downstream
         // selectors of the form `abs(pdgCode)==3122` work uniformly with the
         // cascade trees. On data trueLambdaFlag falls back to topology, which
         // makes pdgCode best-effort but never wrong: it is non-zero only when
@@ -4024,29 +4015,29 @@ struct LambdaXiCorrelation {
           b.pdgCode = 0;
         }
         b.isPhysPrim = (track.v0PrmScd() == (int8_t)kPrimary);
-        // [Phase 8] Topology snapshot — primary-fraction template-fit inputs.
+        // Topology snapshot — primary-fraction template-fit inputs.
         b.dcaV0ToPV = track.dcaV0ToPV();
         b.v0Radius = track.v0Radius();
         b.posItsNCls = static_cast<int>(track.posItsNCls());
         b.negItsNCls = static_cast<int>(track.negItsNCls());
         b.passesPrimaryTopo = track.passesPrimaryTopo();
-        // [Phase 9] ITS hit-map per daughter for downstream geometric checks.
+        // ITS hit-map per daughter for downstream geometric checks.
         b.posItsClusterMap = static_cast<unsigned int>(track.posItsClusterMap());
         b.negItsClusterMap = static_cast<unsigned int>(track.negItsClusterMap());
-        // [Phase 10] L_proper + per-daughter DCAs.
+        // L_proper + per-daughter DCAs.
         b.lProper  = track.lProper();
         b.posDcaXY = track.posDcaXY();
         b.negDcaXY = track.negDcaXY();
-        // [Phase 14] cut bitmask + raw cut inputs.
-        b.cutBits        = static_cast<unsigned int>(track.cutBits());
+        // cut bitmask + raw cut inputs.
+        b.cutBits = static_cast<unsigned int>(track.cutBits());
         b.tpcNSigmaPosPr = track.tpcNSigmaPosPr();
         b.tpcNSigmaNegPi = track.tpcNSigmaNegPi();
         b.tpcNSigmaPosPi = track.tpcNSigmaPosPi();
         b.tpcNSigmaNegPr = track.tpcNSigmaNegPr();
-        b.mK0Short       = track.mK0Short();
-        b.qtArm          = track.qtArm();
-        b.alphaArm       = track.alphaArm();
-        b.cTau           = track.cTau();
+        b.mK0Short = track.mK0Short();
+        b.qtArm = track.qtArm();
+        b.alphaArm = track.alphaArm();
+        b.cTau = track.cTau();
         treeLambda->Fill();
       }
     }
@@ -4058,7 +4049,7 @@ struct LambdaXiCorrelation {
     for (const auto& casc : cascades) {
       auto fr = flagsStart + casc.globalIndex();
       const int f = fr.isSelected();
-      // [Phase 16h] Species filter — only Ξ-flagged cascades enter the Ξ
+      // Species filter — only Ξ-flagged cascades enter the Ξ
       // singles / tree fill. Previously, the loop accepted ANY non-rejected
       // cascade (flag 1/2/3), which meant flag==3 (Ω-only) candidates were
       // silently classified as Ξ and their mass/rapidity projected under the
@@ -4066,17 +4057,17 @@ struct LambdaXiCorrelation {
       if (f != kFlagXiOnly && f != kFlagXiAndOmega)
         continue;
 
-      // [Phase 9] QA: count topology-passers and the ITS-tracked subset.
+      // QA: count topology-passers and the ITS-tracked subset.
       // Filled BEFORE any further gating so the ratio is meaningful.
       histos.fill(HIST("QA/ItsTrack/hXiTotalVsTracked"), 0., casc.pt());
       if (fr.isItsTracked())
         histos.fill(HIST("QA/ItsTrack/hXiTotalVsTracked"), 1., casc.pt());
 
-      // [Phase 12a] Centralised purity gate (truth + ITS-tracking modes 1/2).
+      // Centralised purity gate (truth + ITS-tracking modes 1/2).
       if (!passesCascadePurityGate<IsMC>(fr))
         continue;
 
-      // [P2] Cascade row's own rapidity uses the correct charged-Xi mass.
+      // Cascade row's own rapidity uses the correct charged-Xi mass.
       // Avoid recomputing with MassXi0 (the neutral-cascade mass).
       float xiY = casc.yXi();
       if (std::abs(xiY) > maxY)
@@ -4092,7 +4083,7 @@ struct LambdaXiCorrelation {
       histos.fill(HIST("QA/Xi/hDCANegToPV"), casc.dcanegtopv());
       histos.fill(HIST("QA/Xi/hDCABachToPV"), casc.dcabachtopv());
 
-      // [Phase 11] φ wrapped to [0, 2π) for ρ₁(y, φ) accumulation.
+      // φ wrapped to [0, 2π) for ρ₁(y, φ) accumulation.
       float xiPhiWrapped = RecoDecay::constrainAngle(casc.phi(), 0.f);
       if (casc.sign() < 0) {
         histos.fill(HIST("Singles/XiMinus/hPtVsMass"), casc.mXi(), casc.pt());
@@ -4117,7 +4108,7 @@ struct LambdaXiCorrelation {
         }
       }
 
-      // [Phase 8 fix] Same gating issue as the Λ tree: bp is shared between
+      // Same gating issue as the Λ tree: bp is shared between
       // cascade and Λ trees, so guard the Xi fill on saveCascTree explicitly.
       if (bp && saveCascTree) {
         auto& b = bp->xi;
@@ -4151,14 +4142,14 @@ struct LambdaXiCorrelation {
           b.pdgCode = 0;
           b.isPhysPrim = false;
         }
-        // [Phase 14] Per-cascade cut bitmask + bachelor PID inputs.
+        // Per-cascade cut bitmask + bachelor PID inputs.
         b.cascCutBits = static_cast<unsigned int>(fr.cascCutBits());
         auto bachTrk = casc.template bachelor_as<FullTracksExtIUWithPID>();
-        b.bachTpcNSigmaPi        = bachTrk.tpcNSigmaPi();
-        b.bachTpcNSigmaKa        = bachTrk.tpcNSigmaKa();
-        b.bachItsNCls            = static_cast<int>(bachTrk.itsNCls());
+        b.bachTpcNSigmaPi = bachTrk.tpcNSigmaPi();
+        b.bachTpcNSigmaKa = bachTrk.tpcNSigmaKa();
+        b.bachItsNCls = static_cast<int>(bachTrk.itsNCls());
         b.bachTpcNClsCrossedRows = static_cast<int>(bachTrk.tpcNClsCrossedRows());
-        b.mLambdaInside          = casc.mLambda();
+        b.mLambdaInside = casc.mLambda();
         treeXi->Fill();
       }
     }
@@ -4171,7 +4162,7 @@ struct LambdaXiCorrelation {
     for (const auto& casc : cascades) {
       auto fr = flagsStart + casc.globalIndex();
       const int f = fr.isSelected();
-      // [Phase 16h] Species filter — only Ω-flagged cascades enter the Ω
+      // Species filter — only Ω-flagged cascades enter the Ω
       // singles / tree fill. Previously, the loop accepted any non-rejected
       // cascade, so flag==1 (Ξ-only) candidates leaked in. The kaon nσ cut
       // below filtered most of them, but a defensive flag gate is cheaper
@@ -4179,16 +4170,16 @@ struct LambdaXiCorrelation {
       if (f != kFlagOmegaOnly && f != kFlagXiAndOmega)
         continue;
 
-      // [Phase 9] QA: total Ω topology-passers and the ITS-tracked subset.
+      // QA: total Ω topology-passers and the ITS-tracked subset.
       histos.fill(HIST("QA/ItsTrack/hOmegaTotalVsTracked"), 0., casc.pt());
       if (fr.isItsTracked())
         histos.fill(HIST("QA/ItsTrack/hOmegaTotalVsTracked"), 1., casc.pt());
 
-      // [Phase 12a] Centralised purity gate.
+      // Centralised purity gate.
       if (!passesCascadePurityGate<IsMC>(fr))
         continue;
 
-      // [P2] Cascade row's own rapidity (correct charged-Omega mass).
+      // Cascade row's own rapidity (correct charged-Omega mass).
       float omY = casc.yOmega();
       if (std::abs(omY) > maxY)
         continue;
@@ -4208,7 +4199,7 @@ struct LambdaXiCorrelation {
       histos.fill(HIST("QA/Om/hDCANegToPV"), casc.dcanegtopv());
       histos.fill(HIST("QA/Om/hDCABachToPV"), casc.dcabachtopv());
 
-      // [Phase 11] φ wrapped to [0, 2π).
+      // φ wrapped to [0, 2π).
       float omPhiWrapped = RecoDecay::constrainAngle(casc.phi(), 0.f);
       if (casc.sign() < 0) {
         histos.fill(HIST("Singles/OmegaMinus/hPtVsMass"), casc.mOmega(), casc.pt());
@@ -4233,7 +4224,7 @@ struct LambdaXiCorrelation {
         }
       }
 
-      // [Phase 8 fix] Gate on saveCascTree (treeOmega is only setObject-ed when on).
+      // Gate on saveCascTree (treeOmega is only setObject-ed when on).
       if (bp && saveCascTree) {
         auto& b = bp->om;
         b.pt = casc.pt();
@@ -4266,16 +4257,16 @@ struct LambdaXiCorrelation {
           b.pdgCode = 0;
           b.isPhysPrim = false;
         }
-        // [Phase 16e fix] Per-cascade cut bitmask + bachelor PID inputs.
+        // Per-cascade cut bitmask + bachelor PID inputs.
         // These were assigned on the Xi tree path but forgotten on Ω, so
         // OmegaCandidates branches cascCutBits / bach* / mLambdaInside
         // were silently always 0. Now mirrors the Xi-side write block.
         b.cascCutBits = static_cast<unsigned int>(fr.cascCutBits());
-        b.bachTpcNSigmaPi        = bachTrack.tpcNSigmaPi();
-        b.bachTpcNSigmaKa        = bachTrack.tpcNSigmaKa();
-        b.bachItsNCls            = static_cast<int>(bachTrack.itsNCls());
+        b.bachTpcNSigmaPi = bachTrack.tpcNSigmaPi();
+        b.bachTpcNSigmaKa = bachTrack.tpcNSigmaKa();
+        b.bachItsNCls = static_cast<int>(bachTrack.itsNCls());
         b.bachTpcNClsCrossedRows = static_cast<int>(bachTrack.tpcNClsCrossedRows());
-        b.mLambdaInside          = casc.mLambda();
+        b.mLambdaInside = casc.mLambda();
         treeOmega->Fill();
       }
     }
@@ -4284,7 +4275,7 @@ struct LambdaXiCorrelation {
   template <bool IsMC = false, typename L, typename C, typename F>
   void analyzePairs(L const& lambdas, C const& cascades, F const& flagsStart, float centVal)
   {
-    // [P3] Per-event auto-correlation bookkeeping for Λ-Ξ.
+    // Per-event auto-correlation bookkeeping for Λ-Ξ.
     int nXiPairsTotal = 0;
     int nXiPairsVetoed = 0;
 
@@ -4292,31 +4283,31 @@ struct LambdaXiCorrelation {
       if (std::abs(lam.rap()) > maxY)
         continue;
       float wLam = useEff ? lam.corrFact() : 1.0f;
-      // [P6] Use the typed enum instead of magic literal "1".
+      // Use the typed enum instead of magic literal "1".
       bool isAntiLam = (lam.v0Type() == (int8_t)kAntiLambda);
 
       for (const auto& casc : cascades) {
         auto fr = flagsStart + casc.globalIndex();
         const int f = fr.isSelected();
-        // [Phase 16h] Species filter — only Ξ-flagged cascades pair as Ξ.
+        // Species filter — only Ξ-flagged cascades pair as Ξ.
         if (f != kFlagXiOnly && f != kFlagXiAndOmega)
           continue;
 
-        // [Phase 12a] Centralised purity gate.
+        // Centralised purity gate.
         if (!passesCascadePurityGate<IsMC>(fr))
           continue;
 
-        // [P2] Use the cascade row's own Xi rapidity (correct mass).
+        // Use the cascade row's own Xi rapidity (correct mass).
         float xiY = casc.yXi();
         if (std::abs(xiY) > maxY)
           continue;
 
         ++nXiPairsTotal;
 
-        // [Phase 6] Three-way auto-correlation veto driven by cVetoMode:
-        //   1 (strict, default) — both pos AND neg daughters shared
-        //   2 (loose)           — either pos OR neg daughter shared
-        //   0 (off)             — keep all pairs (use only for systematic studies)
+        // Three-way auto-correlation veto driven by cVetoMode:
+        // 1 (strict, default) — both pos AND neg daughters shared
+        // 2 (loose) — either pos OR neg daughter shared
+        // 0 (off) — keep all pairs (use only for systematic studies)
         const bool posMatch = (lam.posTrackId() == casc.posTrackId());
         const bool negMatch = (lam.negTrackId() == casc.negTrackId());
         const bool veto =
@@ -4327,7 +4318,7 @@ struct LambdaXiCorrelation {
           continue;
         }
 
-        // [Phase 6] Per-cascade efficiency weight (scaffold). Default helper
+        // Per-cascade efficiency weight (scaffold). Default helper
         // returns 1.0; fill in CCDB loading inside getCascadeEfficiency<>
         // when you have an efficiency map.
         float wCascXi = getCascadeEfficiency<0 /*Xi*/>(casc.sign(), casc.pt(), xiY);
@@ -4338,9 +4329,9 @@ struct LambdaXiCorrelation {
 
         bool isXiPlus = (casc.sign() > 0);
 
-        // [Phase 12b] Baryon-number labels:
-        //   Λ:B=+1, Λ̄:B=-1, Ξ⁻:B=+1 (sign<0), Ξ⁺:B=-1 (sign>0)
-        //   LS = same baryon number, OS = opposite.
+        // Baryon-number labels:
+        // Λ:B=+1, Λ̄:B=-1, Ξ⁻:B=+1 (sign<0), Ξ⁺:B=-1 (sign>0)
+        // LS = same baryon number, OS = opposite.
         bool isLS = (isAntiLam == isXiPlus);  // (Λ̄, Ξ⁺) ↔ (Λ, Ξ⁻) both LS
 
         if (pairCfg.cFillLamXi) {
@@ -4354,13 +4345,13 @@ struct LambdaXiCorrelation {
             histos.fill(HIST("Pairs/AntiLam_XiP/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
         }
 
-        // [Phase 12b] Baryon-LS / OS combined fills.
+        // Baryon-LS / OS combined fills.
         if (isLS)
           histos.fill(HIST("Pairs/LS_LamXi/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
         else
           histos.fill(HIST("Pairs/OS_LamXi/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
 
-        // [Phase 12b] pT-differential pair fill (opt-in via Configurable).
+        // pT-differential pair fill (opt-in via Configurable).
         if (cFillPtDifferentialPairs) {
           float ptL = lam.pt();
           if (!isAntiLam && !isXiPlus)
@@ -4375,7 +4366,7 @@ struct LambdaXiCorrelation {
       }
     }
 
-    // [P3] Per-event auto-correlation summary.
+    // Per-event auto-correlation summary.
     histos.fill(HIST("QA/AutoCorr/hXiPairsTotal"), nXiPairsTotal);
     histos.fill(HIST("QA/AutoCorr/hXiPairsVetoed"), nXiPairsVetoed);
     if (nXiPairsVetoed > 0) {
@@ -4390,7 +4381,7 @@ struct LambdaXiCorrelation {
   template <bool IsMC = false, typename L, typename C, typename F>
   void analyzeOmegaPairs(L const& lambdas, C const& cascades, F const& flagsStart, float centVal)
   {
-    // [P3] Per-event auto-correlation bookkeeping for Λ-Ω.
+    // Per-event auto-correlation bookkeeping for Λ-Ω.
     int nOmPairsTotal = 0;
     int nOmPairsVetoed = 0;
 
@@ -4398,17 +4389,17 @@ struct LambdaXiCorrelation {
       if (std::abs(lam.rap()) > maxY)
         continue;
       float wLam = useEff ? lam.corrFact() : 1.0f;
-      // [P6] Use the typed enum instead of magic literal "1".
+      // Use the typed enum instead of magic literal "1".
       bool isAntiLam = (lam.v0Type() == (int8_t)kAntiLambda);
 
       for (const auto& casc : cascades) {
         auto fr = flagsStart + casc.globalIndex();
         const int f = fr.isSelected();
-        // [Phase 16h] Species filter — only Ω-flagged cascades pair as Ω.
+        // Species filter — only Ω-flagged cascades pair as Ω.
         if (f != kFlagOmegaOnly && f != kFlagXiAndOmega)
           continue;
 
-        // [Phase 12a] Centralised purity gate.
+        // Centralised purity gate.
         if (!passesCascadePurityGate<IsMC>(fr))
           continue;
 
@@ -4416,14 +4407,14 @@ struct LambdaXiCorrelation {
         if (std::abs(bachTrack.tpcNSigmaKa()) > tpcNsigmaBachKaon)
           continue;
 
-        // [P2] Use the cascade row's own Omega rapidity (correct mass).
+        // Use the cascade row's own Omega rapidity (correct mass).
         float omY = casc.yOmega();
         if (std::abs(omY) > maxY)
           continue;
 
         ++nOmPairsTotal;
 
-        // [Phase 6] cVetoMode (see processXi pair loop for full doc).
+        // cVetoMode (see processXi pair loop for full doc).
         const bool posMatch = (lam.posTrackId() == casc.posTrackId());
         const bool negMatch = (lam.negTrackId() == casc.negTrackId());
         const bool veto =
@@ -4434,7 +4425,7 @@ struct LambdaXiCorrelation {
           continue;
         }
 
-        // [Phase 6] Cascade efficiency weight (Ω flavour).
+        // Cascade efficiency weight (Ω flavour).
         float wCascOm = getCascadeEfficiency<1 /*Omega*/>(casc.sign(), casc.pt(), omY);
         float wPair = wLam * wCascOm;
 
@@ -4455,13 +4446,13 @@ struct LambdaXiCorrelation {
             histos.fill(HIST("Pairs/AntiLam_OmP/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
         }
 
-        // [Phase 12b] Baryon-LS / OS combined fills.
+        // Baryon-LS / OS combined fills.
         if (isLS)
           histos.fill(HIST("Pairs/LS_LamOm/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
         else
           histos.fill(HIST("Pairs/OS_LamOm/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
 
-        // [Phase 12b] pT-differential pair fill (opt-in).
+        // pT-differential pair fill (opt-in).
         if (cFillPtDifferentialPairs) {
           float ptL = lam.pt();
           if (!isAntiLam && !isOmPlus)
@@ -4476,7 +4467,7 @@ struct LambdaXiCorrelation {
       }
     }
 
-    // [P3] Per-event auto-correlation summary.
+    // Per-event auto-correlation summary.
     histos.fill(HIST("QA/AutoCorr/hOmPairsTotal"), nOmPairsTotal);
     histos.fill(HIST("QA/AutoCorr/hOmPairsVetoed"), nOmPairsVetoed);
     if (nOmPairsVetoed > 0) {
@@ -4491,13 +4482,13 @@ struct LambdaXiCorrelation {
                  GoodLambdas const& /*lambdas*/,
                  aod::CascDataExt const& cascades,
                  aod::CascadeFlags const& cascflags,
-                 FullTracksExtIUWithPID const& /*tracks*/)  // [Phase 14] needed for bachelor_as<>
+                 FullTracksExtIUWithPID const& /*tracks*/)  // needed for bachelor_as<>
   {
-    // [Phase 16r] Event count is now owned by processYields (always-on by
+    // Event count is now owned by processYields (always-on by
     // default). Removed from here to avoid N× inflation under DPL's
     // batch-by-process-function execution.
 
-    // [Phase 12a] Trigger-Λ partition choice extracted into pickLambdaPartition().
+    // Trigger-Λ partition choice extracted into pickLambdaPartition().
     auto lambdasInThisEvent = pickLambdaPartition(lambdacoll);
     const int64_t refCollisionIndex = lambdacoll.refCollId();
     auto cascadesInThisEvent = cascades.sliceBy(cascadesPerCollision, refCollisionIndex);
@@ -4508,14 +4499,14 @@ struct LambdaXiCorrelation {
 
     auto flagsStart = cascflags.begin();
 
-    // [Phase 16s] Λ singles fill is owned by processYields (single canonical
+    // Λ singles fill is owned by processYields (single canonical
     // owner across the workflow — neither processXi nor processMCRecoXi
     // calls it anymore to avoid duplicate fills under any process-switch
     // combination).
     float centVal = lambdacoll.cent();
     analyzeSinglesXi(cascadesInThisEvent, flagsStart, pvX, pvY, pvZ, centVal);
     analyzePairs(lambdasInThisEvent, cascadesInThisEvent, flagsStart, centVal);
-    // [Phase 16a → fixed Phase 16g] Per-event coincidence: how many primary-Λ
+    // Per-event coincidence: how many primary-Λ
     // vs how many Ξ candidates share THIS collision. Now species-filtered via
     // countSpeciesEligible<>() so hLamXi reflects Ξ-only multiplicity, not
     // the combined Ξ+Ω cascade slice. Underflow row/col still reveals
@@ -4532,7 +4523,7 @@ struct LambdaXiCorrelation {
                     aod::CascadeFlags const& cascflags,
                     FullTracksExtIUWithPID const& /*tracks*/)
   {
-    // [Phase 16r] Event count is now owned by processYields (always-on by
+    // Event count is now owned by processYields (always-on by
     // default). Removed from here to avoid N× inflation under DPL's
     // batch-by-process-function execution.
 
@@ -4546,12 +4537,12 @@ struct LambdaXiCorrelation {
 
     auto flagsStart = cascflags.begin();
 
-    // [Phase 16r] Λ singles fill is owned by processXi (data) / processMCRecoXi (MC).
+    // Λ singles fill is owned by processXi (data) / processMCRecoXi (MC).
     // Skipped here to prevent double-fill when both Ξ and Ω process functions are on.
     float centVal = lambdacoll.cent();
     analyzeSinglesOmega(cascadesInThisEvent, flagsStart, pvX, pvY, pvZ, centVal);
     analyzeOmegaPairs(lambdasInThisEvent, cascadesInThisEvent, flagsStart, centVal);
-    // [Phase 16a → fixed Phase 16g] Per-event coincidence — Ω-eligible only.
+    // Per-event coincidence — Ω-eligible only.
     histos.fill(HIST("Yields/Coincidence/hLamOm"),
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<true>(cascadesInThisEvent, flagsStart));
@@ -4566,10 +4557,10 @@ struct LambdaXiCorrelation {
                        GoodLambdas const& /*lambdas*/,
                        LabeledCascades const& cascades,
                        aod::CascadeFlags const& cascflags,
-                       FullTracksExtIUWithPID const& /*tracks*/,  // [Phase 14] for bachelor_as<>
+                       FullTracksExtIUWithPID const& /*tracks*/,  // for bachelor_as<>
                        aod::McParticles const& /*mcparts*/)
   {
-    // [Phase 16r] Event count is now owned by processYields (always-on by
+    // Event count is now owned by processYields (always-on by
     // default). Removed from here to avoid N× inflation under DPL's
     // batch-by-process-function execution.
 
@@ -4583,11 +4574,11 @@ struct LambdaXiCorrelation {
 
     auto flagsStart = cascflags.begin();
 
-    // [Phase 16s] Λ singles owned by processYields.
+    // Λ singles owned by processYields.
     float centVal = lambdacoll.cent();
     analyzeSinglesXi<true>(cascadesInThisEvent, flagsStart, pvX, pvY, pvZ, centVal);
     analyzePairs<true>(lambdasInThisEvent, cascadesInThisEvent, flagsStart, centVal);
-    // [Phase 16a → fixed Phase 16g] Per-event coincidence — Ξ-eligible only.
+    // Per-event coincidence — Ξ-eligible only.
     histos.fill(HIST("Yields/Coincidence/hLamXi"),
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<false>(cascadesInThisEvent, flagsStart));
@@ -4605,7 +4596,7 @@ struct LambdaXiCorrelation {
                           FullTracksExtIUWithPID const& /*tracks*/,
                           aod::McParticles const& /*mcparts*/)
   {
-    // [Phase 16r] Event count is now owned by processYields (always-on by
+    // Event count is now owned by processYields (always-on by
     // default). Removed from here to avoid N× inflation under DPL's
     // batch-by-process-function execution.
 
@@ -4619,11 +4610,11 @@ struct LambdaXiCorrelation {
 
     auto flagsStart = cascflags.begin();
 
-    // [Phase 16r] Λ singles owned by processMCRecoXi. Skipped to avoid double-fill.
+    // Λ singles owned by processMCRecoXi. Skipped to avoid double-fill.
     float centVal = lambdacoll.cent();
     analyzeSinglesOmega<true>(cascadesInThisEvent, flagsStart, pvX, pvY, pvZ, centVal);
     analyzeOmegaPairs<true>(lambdasInThisEvent, cascadesInThisEvent, flagsStart, centVal);
-    // [Phase 16a → fixed Phase 16g] Per-event coincidence — Ω-eligible only.
+    // Per-event coincidence — Ω-eligible only.
     histos.fill(HIST("Yields/Coincidence/hLamOm"),
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<true>(cascadesInThisEvent, flagsStart));
@@ -4631,7 +4622,7 @@ struct LambdaXiCorrelation {
   PROCESS_SWITCH(LambdaXiCorrelation, processMCRecoOmega, "MC reco Λ–Ω (truth-tagged tree)", false);
 
   // ===========================================================================
-  // [Phase 13a] Same-species and cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)
+  // Same-species and cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)
   // ===========================================================================
 
   // Λ-Λ pair loop: distinct V0s within the trigger partition. The auto-
@@ -4666,7 +4657,7 @@ struct LambdaXiCorrelation {
         float w2 = useEff ? lam2.corrFact() : 1.0f;
         float wPair = w1 * w2;
         float dphi = RecoDecay::constrainAngle(lam2.phi() - lam1.phi(), -PIHalf);
-        float dy   = lam2.rap() - lam1.rap();
+        float dy = lam2.rap() - lam1.rap();
 
         if (!isAnti1 && !isAnti2)
           histos.fill(HIST("Pairs/Lam_Lam/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
@@ -4688,7 +4679,7 @@ struct LambdaXiCorrelation {
     for (auto i = cascades.begin(); i != cascades.end(); ++i) {
       const auto& c1 = *i;
       auto fr1 = flagsStart + c1.globalIndex();
-      // [Phase 16h] Named flag constants (was: magic 1/2).
+      // Named flag constants (was: magic 1/2).
       const int f1 = fr1.isSelected();
       if (f1 != kFlagXiOnly && f1 != kFlagXiAndOmega)
         continue;
@@ -4711,7 +4702,7 @@ struct LambdaXiCorrelation {
         float w2 = getCascadeEfficiency<0>(c2.sign(), c2.pt(), c2.yXi());
         float wPair = w1 * w2;
         float dphi = RecoDecay::constrainAngle(c2.phi() - c1.phi(), -PIHalf);
-        float dy   = c2.yXi() - c1.yXi();
+        float dy = c2.yXi() - c1.yXi();
         bool m1 = (c1.sign() < 0), m2 = (c2.sign() < 0);
         if (m1 && m2)
           histos.fill(HIST("Pairs/XiM_XiM/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
@@ -4735,7 +4726,7 @@ struct LambdaXiCorrelation {
       const auto& c1 = *i;
       auto fr1 = flagsStart + c1.globalIndex();
       int f1 = fr1.isSelected();
-      // [Phase 16h] Named flag constants (was: magic 2/3).
+      // Named flag constants (was: magic 2/3).
       if (f1 != kFlagXiAndOmega && f1 != kFlagOmegaOnly)
         continue;
       if (!passesCascadePurityGate<IsMC>(fr1))
@@ -4757,7 +4748,7 @@ struct LambdaXiCorrelation {
         float w2 = getCascadeEfficiency<1>(c2.sign(), c2.pt(), c2.yOmega());
         float wPair = w1 * w2;
         float dphi = RecoDecay::constrainAngle(c2.phi() - c1.phi(), -PIHalf);
-        float dy   = c2.yOmega() - c1.yOmega();
+        float dy = c2.yOmega() - c1.yOmega();
         bool m1 = (c1.sign() < 0), m2 = (c2.sign() < 0);
         if (m1 && m2)
           histos.fill(HIST("Pairs/OmM_OmM/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
@@ -4783,7 +4774,7 @@ struct LambdaXiCorrelation {
         continue;
       if (!passesCascadePurityGate<IsMC>(fr1))
         continue;
-      // [Phase 16h] Treat c1 as Ξ if it passes Ξ-eligibility AND |yXi|<maxY.
+      // Treat c1 as Ξ if it passes Ξ-eligibility AND |yXi|<maxY.
       if ((f1 != kFlagXiOnly && f1 != kFlagXiAndOmega) || std::abs(c1.yXi()) > maxY)
         continue;
       for (const auto& c2 : cascades) {
@@ -4793,14 +4784,14 @@ struct LambdaXiCorrelation {
         const int f2 = fr2.isSelected();
         if (!passesCascadePurityGate<IsMC>(fr2))
           continue;
-        // [Phase 16h] Treat c2 as Ω if it passes Ω-eligibility AND |yΩ|<maxY.
+        // Treat c2 as Ω if it passes Ω-eligibility AND |yΩ|<maxY.
         if ((f2 != kFlagXiAndOmega && f2 != kFlagOmegaOnly) || std::abs(c2.yOmega()) > maxY)
           continue;
         float w1 = getCascadeEfficiency<0>(c1.sign(), c1.pt(), c1.yXi());
         float w2 = getCascadeEfficiency<1>(c2.sign(), c2.pt(), c2.yOmega());
         float wPair = w1 * w2;
         float dphi = RecoDecay::constrainAngle(c2.phi() - c1.phi(), -PIHalf);
-        float dy   = c2.yOmega() - c1.yXi();
+        float dy = c2.yOmega() - c1.yXi();
         bool xiM = (c1.sign() < 0), omM = (c2.sign() < 0);
         if (xiM && omM)
           histos.fill(HIST("Pairs/XiM_OmM/hDeltaPhiDeltaY"), centVal, dphi, dy, wPair);
@@ -4815,7 +4806,7 @@ struct LambdaXiCorrelation {
   }
 
   // ---------------------------------------------------------------------------
-  // [Phase 13a] Pair driver. Single process function that runs ALL the
+  // Pair driver. Single process function that runs ALL the
   // same/cross-species pair loops on demand. Use this WITHOUT processXi /
   // processOmega when you want full coverage; use the older Λ-X functions
   // alone if you only need the Λ-trigger correlations.
@@ -4826,7 +4817,7 @@ struct LambdaXiCorrelation {
                        aod::CascadeFlags const& cascflags,
                        FullTracksExtIUWithPID const& /*tracks*/)
   {
-    // [Phase 16r] Event count is now owned by processYields (always-on by
+    // Event count is now owned by processYields (always-on by
     // default). Removed from here to avoid N× inflation under DPL's
     // batch-by-process-function execution.
     auto lambdasInThisEvent = pickLambdaPartition(lambdacoll);
@@ -4842,7 +4833,7 @@ struct LambdaXiCorrelation {
   PROCESS_SWITCH(LambdaXiCorrelation, processAllPairs, "All same-/cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)", false);
 
   // ---------------------------------------------------------------------------
-  // [Phase 13b] processYields — fills the per-event multiplicity + ⟨pT⟩
+  // processYields — fills the per-event multiplicity + ⟨pT⟩
   // histograms ONCE per event for every species, regardless of which pair-
   // process functions are also enabled. Default ON.
   // ---------------------------------------------------------------------------
@@ -4851,12 +4842,12 @@ struct LambdaXiCorrelation {
                      aod::CascDataExt const& cascades,
                      aod::CascadeFlags const& cascflags)
   {
-    // [Phase 16r] processYields is the canonical owner of Event/hEventCount.
+    // processYields is the canonical owner of Event/hEventCount.
     // Default-on, fires exactly once per LambdaCollision iterator → unique
     // event count regardless of which other process functions are active.
     fillEventCountOnce(lambdacoll.globalIndex());
     auto lambdasInThisEvent = pickLambdaPartition(lambdacoll);
-    // [Phase 16s] processYields is ALSO the canonical owner of the Λ
+    // processYields is ALSO the canonical owner of the Λ
     // singles histograms + LambdaCandidates tree fill. Previously these
     // were in processXi / processMCRecoXi but DPL appears to fire them
     // double under some process-switch combinations.
@@ -4869,14 +4860,14 @@ struct LambdaXiCorrelation {
     float centVal = lambdacoll.cent();
 
     // Per-event accumulators.
-    int    nLam = 0, nALam = 0, nXiM = 0, nXiP = 0, nOmM = 0, nOmP = 0;
+    int nLam = 0, nALam = 0, nXiM = 0, nXiP = 0, nOmM = 0, nOmP = 0;
     double sLam = 0, sALam = 0, sXiM = 0, sXiP = 0, sOmM = 0, sOmP = 0;
 
     for (const auto& l : lambdasInThisEvent) {
       if (std::abs(l.rap()) > maxY)
         continue;
       if (l.v0Type() == (int8_t)kLambda) { ++nLam;  sLam  += l.pt(); }
-      else                                { ++nALam; sALam += l.pt(); }
+      else { ++nALam; sALam += l.pt(); }
     }
     for (const auto& c : cascadesInThisEvent) {
       auto fr = flagsStart + c.globalIndex();
@@ -4886,12 +4877,12 @@ struct LambdaXiCorrelation {
       // Ξ-eligible (flag 1 or 2)
       if ((f == kFlagXiOnly || f == kFlagXiAndOmega) && std::abs(c.yXi()) <= maxY) {
         if (c.sign() < 0) { ++nXiM; sXiM += c.pt(); }
-        else              { ++nXiP; sXiP += c.pt(); }
+        else { ++nXiP; sXiP += c.pt(); }
       }
       // Ω-eligible (flag 2 or 3)
       if ((f == kFlagXiAndOmega || f == kFlagOmegaOnly) && std::abs(c.yOmega()) <= maxY) {
         if (c.sign() < 0) { ++nOmM; sOmM += c.pt(); }
-        else              { ++nOmP; sOmP += c.pt(); }
+        else { ++nOmP; sOmP += c.pt(); }
       }
     }
 
@@ -4955,7 +4946,7 @@ struct LambdaXiCorrelation {
   // McParticles are sliced per McCollision using the stored refMcCollId.
   // No reconstruction, no PID cuts — pure truth-level R2.
   // ---------------------------------------------------------------------------
-  // [Phase 5] Single-pass MC gen Λ-Ξ: classify Lambdas and Xis once, then
+  // Single-pass MC gen Λ-Ξ: classify Lambdas and Xis once, then
   // do a single pair loop over the classified vectors. The previous version
   // scanned `genLambdasAll` four times (Lambda singles, AntiLambda singles,
   // Lam-pairs, AntiLam-pairs) and `genXis` three times. With this rewrite
@@ -4965,11 +4956,11 @@ struct LambdaXiCorrelation {
                       aod::McParticles const& allMcParts)
   {
     int32_t thisColId = mcgencol.globalIndex();
-    // [Phase 16n] gen process functions do NOT fill Event/hEventCount —
+    // gen process functions do NOT fill Event/hEventCount —
     // that's the reco counter's job. seenGenCollOnce is reserved for any
     // future gen-side idempotence needs.
     (void)seenGenCollOnce(static_cast<int64_t>(thisColId));
-    // [Phase 16t] Gen event counter (R₂ closure-test denominator). Owned
+    // Gen event counter (R₂ closure-test denominator). Owned
     // by processMCGenXi (canonical gen "first owner").
     histos.fill(HIST("McGen/Event/hEventCount"), 0.5);
     float centVal = mcgencol.cent();
@@ -4977,12 +4968,12 @@ struct LambdaXiCorrelation {
     int64_t mcCollId = mcgencol.refMcCollId();
     auto genXis = allMcParts.sliceBy(mcParticlesPerMcCollision, mcCollId);
 
-    // [Phase 16r] processMCGenXi owns the gen-Λ singles + tree fill.
+    // processMCGenXi owns the gen-Λ singles + tree fill.
     // processMCGenOmega skips Λ fills (only builds local vectors). This is
     // the ownership model — a per-event guard would not work because DPL
     // batches by process function, not by event.
 
-    // [Phase 5] Pre-classified caches. Reserved sizes are heuristic for typical
+    // Pre-classified caches. Reserved sizes are heuristic for typical
     // Pb-Pb central event populations.
     struct LamLite { float pt, rap, phi; };
     struct XiLite  { float pt, rap, phi; bool isPlus; };
@@ -5001,7 +4992,7 @@ struct LambdaXiCorrelation {
       if (std::abs(lam.rap()) > maxY)
         continue;
       LamLite l{static_cast<float>(lam.pt()), static_cast<float>(lam.rap()), static_cast<float>(lam.phi())};
-      // [Phase 16t] Wrap φ to [0, 2π) to match the reco-side convention.
+      // Wrap φ to [0, 2π) to match the reco-side convention.
       float phiWrapped = RecoDecay::constrainAngle(lam.phi(), 0.f);
       if (lam.v0Type() == (int8_t)kLambda) {
         histos.fill(HIST("McGen/Singles/Lambda/hPt"), lam.pt());
@@ -5013,17 +5004,17 @@ struct LambdaXiCorrelation {
         goodAntiLam.push_back(l);
       }
 
-      // [Phase 16a → Phase 16r] Gen-Λ TTree fill. Owned by processMCGenXi.
+      // Gen-Λ TTree fill. Owned by processMCGenXi.
       if (bp && saveLambdaTree) {
         auto& g = bp->lamGen;
-        g.pt       = lam.pt();
-        g.eta      = lam.eta();
-        g.rap      = lam.rap();
-        g.phi      = lam.phi();
-        g.v0Type   = static_cast<int>(lam.v0Type());
+        g.pt = lam.pt();
+        g.eta = lam.eta();
+        g.rap = lam.rap();
+        g.phi = lam.phi();
+        g.v0Type = static_cast<int>(lam.v0Type());
         g.v0PrmScd = static_cast<int>(lam.v0PrmScd());
-        g.cent     = centVal;
-        g.pvZ      = mcgencol.posZ();
+        g.cent = centVal;
+        g.pvZ = mcgencol.posZ();
         treeLambdaGen->Fill();
       }
     }
@@ -5038,7 +5029,7 @@ struct LambdaXiCorrelation {
       if (std::abs(xiY) > maxY)
         continue;
       bool isPlus = (xi.pdgCode() == -lcorr_const::kXiMinusPdg);
-      // [Phase 16t] φ for closure-test (y, φ) singles.
+      // φ for closure-test (y, φ) singles.
       float xiPhiWrapped = RecoDecay::constrainAngle(xi.phi(), 0.f);
       if (!isPlus) {
         histos.fill(HIST("McGen/Singles/XiMinus/hPtVsRap"), xiY, xi.pt());
@@ -5049,7 +5040,7 @@ struct LambdaXiCorrelation {
         histos.fill(HIST("McGen/Singles/XiPlus/hYPhi"), xiY, xiPhiWrapped);
         histos.fill(HIST("Eff/Gen/XiPlus/hCentPtRap"), centVal, xi.pt(), xiY);
       }
-      // [Phase 8 fix] treeXiGen is only setObject-ed when saveCascTree=true.
+      // treeXiGen is only setObject-ed when saveCascTree=true.
       if (bp && saveCascTree) {
         auto& b = bp->xiGen;
         b.pt = xi.pt();
@@ -5092,13 +5083,13 @@ struct LambdaXiCorrelation {
   // Same structure as processMCGenXi but uses |PDG| == 3334 (Omega).
   // No kaon PID cut needed — truth level.
   // ---------------------------------------------------------------------------
-  // [Phase 5] Single-pass MC gen Λ-Ω, structured identically to processMCGenXi.
+  // Single-pass MC gen Λ-Ω, structured identically to processMCGenXi.
   void processMCGenOmega(aod::LambdaMcGenCollisions::iterator const& mcgencol,
                          aod::LambdaMcGenTracks const& genLambdasAll,
                          aod::McParticles const& allMcParts)
   {
     int32_t thisColId = mcgencol.globalIndex();
-    // [Phase 16n] gen process functions do NOT fill Event/hEventCount —
+    // gen process functions do NOT fill Event/hEventCount —
     // that's the reco counter's job. seenGenCollOnce is reserved for any
     // future gen-side idempotence needs.
     (void)seenGenCollOnce(static_cast<int64_t>(thisColId));
@@ -5107,7 +5098,7 @@ struct LambdaXiCorrelation {
     int64_t mcCollId = mcgencol.refMcCollId();
     auto genOmegas = allMcParts.sliceBy(mcParticlesPerMcCollision, mcCollId);
 
-    // [Phase 16r] Gen-Λ singles + tree are owned by processMCGenXi (DPL
+    // Gen-Λ singles + tree are owned by processMCGenXi (DPL
     // batches by process function, so a per-event guard would fail). Here
     // we only need to BUILD the goodLam/goodAntiLam vectors for the local
     // Λ-Ω pair loop — no histogram or tree side effects.
@@ -5145,7 +5136,7 @@ struct LambdaXiCorrelation {
       if (std::abs(omY) > maxY)
         continue;
       bool isPlus = (om.pdgCode() == -lcorr_const::kOmegaMinusPdg);
-      // [Phase 16t] φ for closure-test (y, φ) singles.
+      // φ for closure-test (y, φ) singles.
       float omPhiWrapped = RecoDecay::constrainAngle(om.phi(), 0.f);
       if (!isPlus) {
         histos.fill(HIST("McGen/Singles/OmegaMinus/hPtVsRap"), omY, om.pt());
@@ -5156,7 +5147,7 @@ struct LambdaXiCorrelation {
         histos.fill(HIST("McGen/Singles/OmegaPlus/hYPhi"), omY, omPhiWrapped);
         histos.fill(HIST("Eff/Gen/OmegaPlus/hCentPtRap"), centVal, om.pt(), omY);
       }
-      // [Phase 8 fix] treeOmegaGen is only setObject-ed when saveCascTree=true.
+      // treeOmegaGen is only setObject-ed when saveCascTree=true.
       if (bp && saveCascTree) {
         auto& b = bp->omGen;
         b.pt = om.pt();
@@ -5199,9 +5190,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
 
-    // [Phase 4] LambdaCascadeProducer absorbs the former LambdaTableProducer
+    // LambdaCascadeProducer absorbs the former LambdaTableProducer
     // and CascadeSelector — single event selection, single source of truth.
-    // [Phase 5] LambdaR2Correlation, CascadeSelector (#if 0 block), and
+    // LambdaR2Correlation, CascadeSelector (#if 0 block), and
     // CascadeCorrelations were removed entirely from this file.
     adaptAnalysisTask<LambdaCascadeProducer>(cfgc),
     adaptAnalysisTask<LambdaTracksExtProducer>(cfgc),
