@@ -78,7 +78,7 @@ struct FlowCumulantsUpc {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum number of crossed TPC Rows")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum number of found TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum number of ITS clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCChi2NCl, int, 4, "max chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCChi2NCl, float, 4.0f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")

@@ -99,9 +99,12 @@ std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH1> hEvtMC;
 std::shared_ptr<TH1> hImpactParamGen;
+std::shared_ptr<TH1> hImpactParamGenOneReco;
 std::shared_ptr<TH1> hImpactParamReco;
 std::shared_ptr<TH1> hGen3HLBeforeEvtSel;
 std::shared_ptr<TH1> hGen3HLAfterSel;
+std::shared_ptr<TH1> hGenOneRecoCentrality;
+std::shared_ptr<TH1> hRecoCentrality;
 std::shared_ptr<TH2> hGenEventsNchEta05;
 std::shared_ptr<TH2> hGenEventsNchEta08;
 std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta05;
@@ -348,6 +351,7 @@ struct hyperRecoTask {
     hCentFT0M = qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
 
     if (doprocessEventLossMC) {
+      // Infomation for all generated collisions
       hEvtMC = qaRegistry.add<TH1>("QAEvent/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
       hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
       hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
@@ -358,25 +362,28 @@ struct hyperRecoTask {
       hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      // Infomation for all generated collisions collisions
       hImpactParamGen = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
-      hGenCentralityColvsMultiplicityGenEta05 = qaRegistry.add<TH2>("QAEvent/McColAll/hGenCentralityColvsMultiplicityGenEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hGenCentralityColvsMultiplicityGenEta08 = qaRegistry.add<TH2>("QAEvent/McColAll/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hGenCentralityColvsImpactParamGen = qaRegistry.add<TH2>("QAEvent/McColAll/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
-      hGenCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColAll/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
-      // Infomation for generated collisions collisions with at least one rec. event
+      // Infomation for generated collisions which at least one rec. collision and passed the event selection
+      hImpactParamGenOneReco = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      hGenOneRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      hGenCentralityColvsMultiplicityGenEta05 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      hGenCentralityColvsMultiplicityGenEta08 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      hGenCentralityColvsImpactParamGen = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      hGenCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt and passed the event selection; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      // Infomation for all reconstructed collisions passed the event selection (for Event Splitting)
       hImpactParamReco = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
-      hRecoCentralityColvsMultiplicityRecoEta05 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hRecoCentralityColvsMultiplicityRecoEta08 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hRecoCentralityColvsImpactParamReco = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
-      hRecoCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      hRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColAll/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      hRecoCentralityColvsMultiplicityRecoEta05 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      hRecoCentralityColvsMultiplicityRecoEta08 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      hRecoCentralityColvsImpactParamReco = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in reconstructed MC events passed the event selection; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      hRecoCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in reconstructed MC events passed the event selection; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
       // Information of generated 3HL in generated events
       hGen3HLBeforeEvtSel = qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLBeforeEvtSel", "3HL generated #it{p}_{T} distribution in all gen evt;#it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
       hGen3HLvsImpactParameterBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in all gen evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
       hGen3HLvsMultiplicityGenEta05BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
       hGen3HLvsMultiplicityGenEta08BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
       hGen3HLvsMultiplicityFT0CBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
-      // Information of generated 3HL in generated events with at least one rec. event
+      // Information of generated 3HL in generated events with at least one rec. event and passed the event selection
       hGen3HLAfterSel = qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLAfterSel", "3HL generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
       hGen3HLvsImpactParameterAfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
       hGen3HLvsMultiplicityGenEta05AfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
@@ -1081,29 +1088,36 @@ struct hyperRecoTask {
     // Define the generated events with at least one reconstructed event
     bool atLeastOneRecoEvt = false;
     auto centralityFT0C = -999.;
+    int biggestNContribs = -1;
 
     for (auto const& col : collisions) {
       if (!passEvtSel(col)) {
         continue;
       }
-      centralityFT0C = col.centFT0C();
+      // In case of multiple reconstructed collisions associated to the same generated one, only consider the one with the biggest number of contributors
+      if (biggestNContribs < col.numContrib()) {
+        biggestNContribs = col.numContrib();
+        centralityFT0C = col.centFT0C();
+      }
       atLeastOneRecoEvt = true;
+      hImpactParamReco->Fill(mcCollision.impactParameter());
+      hRecoCentrality->Fill(col.centFT0C());
+      hRecoCentralityColvsMultiplicityRecoEta05->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta05());
+      hRecoCentralityColvsMultiplicityRecoEta08->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta08());
+      hRecoCentralityColvsImpactParamReco->Fill(col.centFT0C(), mcCollision.impactParameter());
+      hRecoCentralityColvsFT0Cmultiplicity->Fill(col.centFT0C(), mcCollision.multMCFT0C());
     }
-
-    hGenCentralityColvsMultiplicityGenEta05->Fill(centralityFT0C, mcCollision.multMCNParticlesEta05());
-    hGenCentralityColvsMultiplicityGenEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
-    hGenCentralityColvsImpactParamGen->Fill(centralityFT0C, mcCollision.impactParameter());
-    hGenCentralityColvsFT0Cmultiplicity->Fill(centralityFT0C, mcCollision.multMCFT0C());
 
     if (atLeastOneRecoEvt) {
       hEvtMC->Fill(2);
       hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 1);
       hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
-      hImpactParamReco->Fill(mcCollision.impactParameter());
-      hRecoCentralityColvsMultiplicityRecoEta05->Fill(centralityFT0C, mcCollision.multMCNParticlesEta05());
-      hRecoCentralityColvsMultiplicityRecoEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
-      hRecoCentralityColvsImpactParamReco->Fill(centralityFT0C, mcCollision.impactParameter());
-      hRecoCentralityColvsFT0Cmultiplicity->Fill(centralityFT0C, mcCollision.multMCFT0C());
+      hImpactParamGenOneReco->Fill(mcCollision.impactParameter());
+      hGenOneRecoCentrality->Fill(centralityFT0C);
+      hGenCentralityColvsMultiplicityGenEta05->Fill(centralityFT0C, mcCollision.multMCNParticlesEta05());
+      hGenCentralityColvsMultiplicityGenEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
+      hGenCentralityColvsImpactParamGen->Fill(centralityFT0C, mcCollision.impactParameter());
+      hGenCentralityColvsFT0Cmultiplicity->Fill(centralityFT0C, mcCollision.multMCFT0C());
     }
     // Construct the H3L 4-vector based on the generated daugthers identification by PDG
     ROOT::Math::PxPyPzMVector daugh1, daugh2, mother;

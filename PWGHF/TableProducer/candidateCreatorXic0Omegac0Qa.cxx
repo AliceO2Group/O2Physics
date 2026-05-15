@@ -258,16 +258,15 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   HfEventSelection hfEvSel;
 
   // PDG Id of daughter tracks & V0s & cascades & charm baryons - Used in KFParticle
-  int pdgIdOfV0DauPos, pdgIdOfV0DauNeg, pdgIdOfBach, pdgIdOfCharmBach;
-  int pdgIdOfAntiV0DauPos, pdgIdOfAntiV0DauNeg, pdgIdOfAntiBach, pdgIdOfAntiCharmBach;
-  int pdgIdOfV0, pdgIdOfCascade, pdgIdOfCharmBaryon;
+  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfCharmBach{};
+  int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
   // Track PID - Used in DCAFitter
-  int trackPidOfCascade;
+  int trackPidOfCascade{};
 
   // Mass of daughter tracks & V0s & cascades & charm baryons;
-  float massOfV0DauPos, massOfV0DauNeg, massOfBach, massOfCharmBach;
-  float massOfV0, massOfCascade, massOfCharmBaryon;
+  float massOfV0DauPos{}, massOfV0DauNeg{}, massOfCharmBach{};
+  float massOfV0{}, massOfCascade{};
 
   // Pointer of histograms for QA
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaKa;
@@ -317,11 +316,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfBach = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
 
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kPiPlus;
-      pdgIdOfAntiCharmBach = kPiMinus;
-
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kXiMinus;
       pdgIdOfCharmBaryon = kXiC0;
@@ -338,11 +332,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
       pdgIdOfCharmBach = kPiPlus;
-
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kKPlus;
-      pdgIdOfAntiCharmBach = kPiMinus;
 
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kOmegaMinus;
@@ -361,11 +350,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfBach = kKMinus;
       pdgIdOfCharmBach = kKPlus;
 
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kKPlus;
-      pdgIdOfAntiCharmBach = kKMinus;
-
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
@@ -383,11 +367,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     LOGF(info, "PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
     LOGF(info, "PDG ID of Bachelor: %d", pdgIdOfBach);
     LOGF(info, "PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "PDG ID of anti V0 positive daughter: %d", pdgIdOfAntiV0DauPos);
-    LOGF(info, "PDG ID of anti V0 negative daughter: %d", pdgIdOfAntiV0DauNeg);
-    LOGF(info, "PDG ID of anti Bachelor: %d", pdgIdOfAntiBach);
-    LOGF(info, "PDG ID of anti Charm Bachelor: %d", pdgIdOfAntiCharmBach);
     LOGF(info, "-------------------------------------------");
     LOGF(info, "PDG ID of V0: %d", pdgIdOfV0);
     LOGF(info, "PDG ID of Cascade: %d", pdgIdOfCascade);
@@ -511,12 +490,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     registry.add("hCascPt", "Pt of reconstructed cascade;pT;Entries", {HistType::kTH1F, {{configs.nBinPtCasc, configs.minPtCasc, configs.maxPtCasc}}});
 
   } // end of initialization
-
-  ////////////////////////////////////////////////////////////
-  //                                                        //
-  //         Candidate reconstruction with DCAFitter        //
-  //                                                        //
-  ////////////////////////////////////////////////////////////
 
   // template function for running charm baryon reconstruction with DCAFitter
   /// \brief centEstimator is for different centrality estimators
@@ -962,10 +935,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
       bool isAnti = (bachTrack.signed1Pt() > 0 ? true : false);
 
-      KFParticle kfPos(kfTrack0, (isAnti ? pdgIdOfAntiV0DauPos : pdgIdOfV0DauPos));
-      KFParticle kfNeg(kfTrack1, (isAnti ? pdgIdOfAntiV0DauNeg : pdgIdOfV0DauNeg));
-      KFParticle kfBach(kfTrackBach, (isAnti ? pdgIdOfAntiBach : pdgIdOfBach));
-      KFParticle kfBachRej(kfTrackBach, (isAnti ? pdgIdOfAntiBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
+      KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
+      KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
+      KFParticle kfBach(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach));
+      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
 
       // ~~~~~~~Construct V0 with KF~~~~~~~
       const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
@@ -1049,7 +1022,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       //~~~~~~~Construct Charm Baryon with KF~~~~~~~
       auto trackCharmBachelor = tracks.rawIteratorAt(cand.prong0Id());
       const KFPTrack kfTrackCharmBach = createKFPTrackFromTrack(trackCharmBachelor);
-      const KFParticle kfCharmBach(kfTrackCharmBach, (isAnti ? pdgIdOfAntiCharmBach : pdgIdOfCharmBach));
+      const KFParticle kfCharmBach(kfTrackCharmBach, (isAnti ? -pdgIdOfCharmBach : pdgIdOfCharmBach));
       const KFParticle* charmBaryonDaughters[2] = {&kfCharmBach, &kfCasc};
 
       KFParticle kfCharmBaryon;

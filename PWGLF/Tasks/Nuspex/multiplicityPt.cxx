@@ -67,6 +67,7 @@ struct MultiplicityPt {
   static constexpr int CentBinMax = 100;
   static constexpr int MultBinMax = 200;
   static constexpr int RecMultBinMax = 100;
+  static constexpr int ParticlesType = 4;
 
   enum INELCutSelection : int {
     INEL = 0,
@@ -111,6 +112,16 @@ struct MultiplicityPt {
   Configurable<float> cfgCutNsigmaPi{"cfgCutNsigmaPi", 3.0f, "nsigma cut for pions"};
   Configurable<float> cfgCutNsigmaKa{"cfgCutNsigmaKa", 2.5f, "nsigma cut for kaons"};
   Configurable<float> cfgCutNsigmaPr{"cfgCutNsigmaPr", 2.5f, "nsigma cut for protons"};
+  // Histogram names for V0s dE/dx analysis
+  static constexpr std::string_view DedxvsMomentumPos[ParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
+  static constexpr std::string_view DedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
+  // Particle fractions histograms
+  static constexpr std::string_view ParticleFractionsVsMomentumPos[ParticlesType + 1] = {"hFractionVsMomentum_Pion_Pos", "hFractionVsMomentum_Kaon_Pos", "hFractionVsMomentum_Proton_Pos", "hFractionVsMomentum_Electron_Pos", "hFractionVsMomentum_Muon_Pos"};
+
+  static constexpr std::string_view ParticleFractionsVsPtPos[ParticlesType + 1] = {"hFractionVsPt_Pion_Pos", "hFractionVsPt_Kaon_Pos", "hFractionVsPt_Proton_Pos", "hFractionVsPt_Electron_Pos", "hFractionVsPt_Muon_Pos"};
+  static constexpr std::string_view ParticleFractionsVsMomentumNeg[ParticlesType + 1] = {"hFractionVsMomentum_Pion_Neg", "hFractionVsMomentum_Kaon_Neg", "hFractionVsMomentum_Proton_Neg", "hFractionVsMomentum_Electron_Neg", "hFractionVsMomentum_Muon_Neg"};
+
+  static constexpr std::string_view ParticleFractionsVsPtNeg[ParticlesType + 1] = {"hFractionVsPt_Pion_Neg", "hFractionVsPt_Kaon_Neg", "hFractionVsPt_Proton_Neg", "hFractionVsPt_Electron_Neg", "hFractionVsPt_Muon_Neg"};
 
   TrackSelection customTrackCuts;
   TF1* fphiCutLow = nullptr;
@@ -346,6 +357,9 @@ void MultiplicityPt::init(InitContext const&)
   // Axis definitions
   ConfigurableAxis ptBinning{"ptBinning", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, "pT bin limits"};
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+  AxisSpec dedxAxis{100, 0.0, 100.0, "dE/dx (a. u.)"};
+  AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
+  AxisSpec pAxis = {ptBinning, "#it{p} (GeV/#it{c})"};
 
   std::vector<double> centBinningStd = {0., 1., 5., 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100.};
   AxisSpec centAxis = {centBinningStd, "FT0M Centrality (%)"};
@@ -450,11 +464,47 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("hEventsReco_Cent", "Reconstructed events vs centrality;FT0M Centrality (%);Counts", HistType::kTH1D, {centAxis});
   ue.add("hEventsINEL_Cent", "INEL>0 events vs centrality;FT0M Centrality (%);Counts", HistType::kTH1D, {centAxis});
 
-  ue.add("hNclFoundTPC", "Number of TPC found clusters", HistType::kTH1D, {{200, 0, 200}});
-  ue.add("hNclPIDTPC", "Number of TPC PID clusters", HistType::kTH1D, {{200, 0, 200}});
+  ue.add("hNclFoundTPCBefore", "Number of TPC found clusters before tkr cuts", HistType::kTH1D, {{200, 0, 200}});
+  ue.add("hNclPIDTPCBefore", "Number of TPC PID clusters before tkr cuts", HistType::kTH1D, {{200, 0, 200}});
+  ue.add("hNclFoundTPCAfter", "Number of TPC found after tkr cuts", HistType::kTH1D, {{200, 0, 200}});
+  ue.add("hNclPIDTPCAfter", "Number of TPC PID after tkr cuts", HistType::kTH1D, {{200, 0, 200}});
   ue.add("hEta", "Track eta;#eta;Counts", HistType::kTH1D, {{20, -0.8, 0.8}});
   ue.add("hPhi", "Track phi;#varphi (rad);Counts", HistType::kTH1D, {{64, 0, TwoPI}});
   ue.add("hvtxZ", "Vertex Z (data);Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
+
+  // De/Dx for ch and v0 particles
+  for (int i = 0; i < ParticlesType; ++i) {
+    ue.add(("DedxVsMomentum/" + std::string(DedxvsMomentumPos[i])).c_str(),
+           "dE/dx vs Momentum Positive", HistType::kTH3F,
+           {{pAxis}, {dedxAxis}, {etaAxis}});
+    ue.add(("DedxVsMomentum/" + std::string(DedxvsMomentumNeg[i])).c_str(),
+           "dE/dx vs Momentum Negative", HistType::kTH3F,
+           {{pAxis}, {dedxAxis}, {etaAxis}});
+  }
+
+  // ===== Particle Fractions as function of p and pT =====
+  ue.add("ParticleFractions/hTotalCountsVsMomentumPos", "Total counts vs momentum;#it{p} (GeV/#it{c});Counts", HistType::kTH2D, {{etaAxis}, {pAxis}});
+  ue.add("ParticleFractions/hTotalCountsVsPtPos", "Total counts vs pT;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH2D, {{etaAxis}, {ptAxis}});
+  ue.add("ParticleFractions/hTotalCountsVsMomentumNeg", "Total counts vs momentum;#it{p} (GeV/#it{c});Counts", HistType::kTH2D, {{etaAxis}, {pAxis}});
+  ue.add("ParticleFractions/hTotalCountsVsPtNeg", "Total counts vs pT;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH2D, {{etaAxis}, {ptAxis}});
+
+  for (int i = 0; i < ParticlesType + 1; ++i) {
+    ue.add(("ParticleFractions/" + std::string(ParticleFractionsVsMomentumPos[i])).c_str(),
+           "Particle fraction vs momentum", HistType::kTH2D, {{etaAxis}, {pAxis}});
+    ue.add(("ParticleFractions/" + std::string(ParticleFractionsVsPtPos[i])).c_str(),
+           "Particle fraction vs pT", HistType::kTH2D, {{etaAxis}, {ptAxis}});
+    ue.add(("ParticleFractions/" + std::string(ParticleFractionsVsMomentumNeg[i])).c_str(),
+           "Particle fraction vs momentum", HistType::kTH2D, {{etaAxis}, {pAxis}});
+    ue.add(("ParticleFractions/" + std::string(ParticleFractionsVsPtNeg[i])).c_str(),
+           "Particle fraction vs pT", HistType::kTH2D, {{etaAxis}, {ptAxis}});
+  }
+  // pt vs p
+  ue.add(
+    "heta_vs_pt_vs_p_all_Neg", "eta_vs_pT_vs_p", HistType::kTH3F,
+    {{etaAxis}, {ptAxis}, {pAxis}});
+  ue.add(
+    "heta_vs_pt_vs_p_all_Pos", "eta_vs_pT_vs_p", HistType::kTH3F,
+    {{etaAxis}, {ptAxis}, {pAxis}});
 
   LOG(info) << "=== Initialization complete ===";
 }
@@ -679,27 +729,67 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         continue;
       if (track.collisionId() != collId)
         continue;
+      // Ncl distribution before cuts
+      ue.fill(HIST("hNclFoundTPCBefore"), track.tpcNClsFound());
+      ue.fill(HIST("hNclPIDTPCBefore"), track.tpcNClsPID());
 
       if (!passesTrackSelection(track, magField))
         continue;
 
       nTracksInEvent++;
-
-      ue.fill(HIST("hNclFoundTPC"), track.tpcNClsFound());
-      ue.fill(HIST("hNclPIDTPC"), track.tpcNClsPID());
+      // Ncl distribution before cuts
+      ue.fill(HIST("hNclFoundTPCAfter"), track.tpcNClsFound());
+      ue.fill(HIST("hNclPIDTPCAfter"), track.tpcNClsPID());
       ue.fill(HIST("hEta"), track.eta());
       ue.fill(HIST("hPhi"), track.phi());
       ue.fill(HIST("Inclusive/hPtReco"), track.pt());
 
+      // ===== dE/dx and momentum for V0 cross-check histograms =====
+      float tpcSignal = track.tpcSignal();
+      float momentum = track.p(); // momentum total
+      float eta = track.eta();
+      int charge = track.sign();
+
+      // dedx for all particles
+      if (charge > 0) {
+        ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
+        ue.fill(HIST("heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
+      } else {
+        ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
+        ue.fill(HIST("heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
+      }
+
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle();
         int pdgCode = std::abs(particle.pdgCode());
+        if (pdgCode == PDG_t::kPiPlus || pdgCode == PDG_t::kKPlus || pdgCode == PDG_t::kProton || pdgCode == PDG_t::kElectron || pdgCode == PDG_t::kMuonPlus) {
+          if (particle.isPhysicalPrimary()) {
+            // Fill total counts for fractions
+            if (charge > 0) {
+              ue.fill(HIST("ParticleFractions/hTotalCountsVsMomentumPos"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hTotalCountsVsPtPos"), eta, track.pt());
+            } else {
+              ue.fill(HIST("ParticleFractions/hTotalCountsVsMomentumNeg"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hTotalCountsVsPtNeg"), eta, track.pt());
+            }
+          }
+        }
 
         if (pdgCode == PDG_t::kPiPlus) {
           ue.fill(HIST("Pion/hPtReco"), track.pt());
           if (particle.isPhysicalPrimary()) {
             ue.fill(HIST("Pion/hPtPrimReco"), track.pt());
             ue.fill(HIST("Inclusive/hPtPrimReco"), track.pt());
+            if (charge > 0) {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Pion_Pos"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Pion_Pos"), eta, track.pt());
+              ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pi_v0_Pos"), momentum, tpcSignal, eta);
+            } else {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Pion_Neg"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Pion_Neg"), eta, track.pt());
+              ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pi_v0_Neg"), momentum, tpcSignal, eta);
+            }
+
           } else {
             ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
           }
@@ -708,6 +798,13 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           if (particle.isPhysicalPrimary()) {
             ue.fill(HIST("Kaon/hPtPrimReco"), track.pt());
             ue.fill(HIST("Inclusive/hPtPrimReco"), track.pt());
+            if (charge > 0) {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Kaon_Pos"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Kaon_Pos"), eta, track.pt());
+            } else {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Kaon_Neg"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Kaon_Neg"), eta, track.pt());
+            }
           } else {
             ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
           }
@@ -716,8 +813,39 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           if (particle.isPhysicalPrimary()) {
             ue.fill(HIST("Proton/hPtPrimReco"), track.pt());
             ue.fill(HIST("Inclusive/hPtPrimReco"), track.pt());
+            if (charge > 0) {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Proton_Pos"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Proton_Pos"), eta, track.pt());
+              ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pr_v0_Pos"), momentum, tpcSignal, eta);
+            } else {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Proton_Neg"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Proton_Neg"), eta, track.pt());
+              ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pr_v0_Neg"), momentum, tpcSignal, eta);
+            }
           } else {
             ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
+          }
+        } else if (pdgCode == PDG_t::kElectron) {
+          if (particle.isPhysicalPrimary()) {
+            if (charge > 0) {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Electron_Pos"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Electron_Pos"), eta, track.pt());
+              ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_El_v0_Pos"), momentum, tpcSignal, eta);
+            } else {
+              ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_El_v0_Neg"), momentum, tpcSignal, eta);
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Electron_Neg"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Electron_Neg"), eta, track.pt());
+            }
+          }
+        } else if (pdgCode == PDG_t::kMuonPlus) {
+          if (particle.isPhysicalPrimary()) {
+            if (charge > 0) {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Muon_Pos"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Muon_Pos"), eta, track.pt());
+            } else {
+              ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Muon_Neg"), eta, momentum);
+              ue.fill(HIST("ParticleFractions/hFractionVsPt_Muon_Neg"), eta, track.pt());
+            }
           }
         }
       }

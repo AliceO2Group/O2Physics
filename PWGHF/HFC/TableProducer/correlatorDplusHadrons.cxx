@@ -21,6 +21,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -181,6 +182,12 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::TrkRecInfoDplus> entryTrackRecoInfo;
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
+  Produces<aod::HfcRedCollisions> collReduced;
+  Produces<aod::HcCandReduceds> candReduced;
+  Produces<aod::HcCandSelInfos> candSelInfo;
+  Produces<aod::AssocTrackReds> assocTrackReduced;
+  Produces<aod::AssocTrackSels> assocTrackSelInfo;
+
   static constexpr std::size_t NDaughters{3u};
   static constexpr float EtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
 
@@ -231,10 +238,13 @@ struct HfCorrelatorDplusHadrons {
   // filter on selection of Dplus meson and decay channel Dplus->KPiPi
   Filter dplusFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) != static_cast<uint8_t>(0)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  // Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
   Preslice<aod::McParticles> presliceMc{aod::mcparticle::mcCollisionId};
   Preslice<CandDplusMcGen> candMcGenPerMcCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<CandidatesDplusData> candsDplusPerCollision = aod::hf_cand::collisionId;
+  Preslice<TracksData> trackIndicesPerCollision = aod::track::collisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> recoCollisionsPerMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
-  // Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
   ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
@@ -244,6 +254,7 @@ struct HfCorrelatorDplusHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -261,6 +272,7 @@ struct HfCorrelatorDplusHadrons {
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
     AxisSpec const axisRapidity = {100, -2, 2, "Rapidity"};
+    AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
 
     registry.add("hPtCand", "Dplus,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtProng0", "Dplus,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}});
@@ -281,6 +293,7 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hMassDplusData", "Dplus candidates;inv. mass (K^{-}#pi^{+}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{axisMassD}}});
     registry.add("hDplusPoolBin", "D+ candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
+    registry.add("hDcaXYVsPt", "DCA xy vs pt", {HistType::kTH2F, {{axisDcaXY}, {axisPtHadron}}});
     // Histograms for MC Reco analysis
     registry.add("hSelectionStatusMCRec", "Dplus,Hadron candidates - MC reco;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}});
     registry.add("hMCEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}});
@@ -527,6 +540,46 @@ struct HfCorrelatorDplusHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
+
+  void processDerivedDataDplus(SelCollisionsWithDplus const& collisions,
+                               CandidatesDplusData const& candidates,
+                               TracksData const& tracks)
+  {
+
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDplusThisColl = candidates.sliceBy(candsDplusPerCollision, thisCollId);
+      auto tracksThisColl = tracks.sliceBy(trackIndicesPerCollision, thisCollId);
+
+      int indexHfcReducedCollision = collReduced.lastIndex() + 1;
+
+      // Ds fill histograms and Dplus candidates information stored
+      for (const auto& candidate : candsDplusThisColl) {
+        std::vector<float> outputMl = {-1., -1., -1.};
+        // candidate selected
+        if (candidate.isSelDplusToPiKPi() >= selectionFlagDplus) {
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+          }
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), HfHelper::invMassDplusToPiKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
+        }
+      }
+
+      // tracks information
+      for (const auto& track : tracksThisColl) {
+        if (!track.isGlobalTrackWoDCA()) {
+          continue;
+        }
+        registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
+        assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt());
+        assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
+      }
+
+      collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
+    }
+  }
+  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processDerivedDataDplus, "Process derived data D+", false);
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(SelCollisionsWithDplus::iterator const& collision,

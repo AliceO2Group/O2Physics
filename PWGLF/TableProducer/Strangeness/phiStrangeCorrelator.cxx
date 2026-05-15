@@ -96,6 +96,8 @@ struct PhiMesonCandProducer {
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } phiConfigs;
 
+  Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson"};
+
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
 
@@ -315,28 +317,41 @@ struct PhiMesonCandProducer {
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
-    for (const auto& mcParticle1 : mcParticles) {
-      if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax)
-        continue;
-
-      for (const auto& mcParticle2 : mcParticles) {
-        if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax)
+    if (trueGenPhi) {
+      for (const auto& mcParticle : mcParticles) {
+        if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::Pdg::kPhi)
+          continue;
+        if (mcParticle.pt() < phiConfigs.minPhiPt)
+          continue;
+        if (std::abs(mcParticle.y()) > phiConfigs.cfgYAcceptance)
           continue;
 
-        if (!(mcParticle1.pdgCode() == PDG_t::kKPlus && mcParticle2.pdgCode() == PDG_t::kKMinus) &&
-            !(mcParticle1.pdgCode() == PDG_t::kKMinus && mcParticle2.pdgCode() == PDG_t::kKPlus))
+        phimesonCandidatesMcGen(mcCollision.globalIndex(), 0, mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+      }
+    } else {
+      for (const auto& mcParticle1 : mcParticles) {
+        if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax)
           continue;
 
-        ROOT::Math::PxPyPzMVector genKPair = recMother(mcParticle1, mcParticle2, massKa, massKa);
+        for (const auto& mcParticle2 : mcParticles) {
+          if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax)
+            continue;
 
-        if (genKPair.Pt() < phiConfigs.minPhiPt)
-          continue;
-        if (genKPair.M() > phiConfigs.maxMPhi)
-          continue;
-        if (std::abs(genKPair.Rapidity()) > phiConfigs.cfgYAcceptance)
-          continue;
+          if (!(mcParticle1.pdgCode() == PDG_t::kKPlus && mcParticle2.pdgCode() == PDG_t::kKMinus) &&
+              !(mcParticle1.pdgCode() == PDG_t::kKMinus && mcParticle2.pdgCode() == PDG_t::kKPlus))
+            continue;
 
-        phimesonCandidatesMcGen(mcCollision.globalIndex(), genKPair.M(), genKPair.Pt(), genKPair.Rapidity(), genKPair.Phi());
+          ROOT::Math::PxPyPzMVector genKPair = recMother(mcParticle1, mcParticle2, massKa, massKa);
+
+          if (genKPair.Pt() < phiConfigs.minPhiPt)
+            continue;
+          if (genKPair.M() > phiConfigs.maxMPhi)
+            continue;
+          if (std::abs(genKPair.Rapidity()) > phiConfigs.cfgYAcceptance)
+            continue;
+
+          phimesonCandidatesMcGen(mcCollision.globalIndex(), genKPair.M(), genKPair.Pt(), genKPair.Rapidity(), genKPair.Phi());
+        }
       }
     }
   }
@@ -546,6 +561,7 @@ struct PionTrackProducer {
     // Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
     Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID rejection, kaon, proton"};
+    Configurable<bool> applyElRejection{"applyElRejection", false, "Apply or not the electron rejection"};
     Configurable<std::pair<float, float>> pidRangeTPCEl{"pidRangeTPCEl", {-3.0f, 5.0f}, "nSigma TPC range for electrons"};
     Configurable<float> pidTPCMaxHadrons{"pidTPCMaxHadrons", 3.0f, "maximum nSigma TPC for hadrons"};
     Configurable<float> pidTOFMaxHadrons{"pidTOFMaxHadrons", 3.0f, "maximum nSigma TOF for hadrons"};
@@ -632,18 +648,20 @@ struct PionTrackProducer {
   template <typename T>
   bool pidHypothesesRejection(const T& track)
   {
-    // Electron rejection
-    auto nSigmaTPCEl = aod::pidutils::tpcNSigma(o2::track::PID::Electron, track);
+    // Electron rejection (if enabled)
+    if (trackConfigs.applyElRejection) {
+      auto nSigmaTPCEl = aod::pidutils::tpcNSigma(o2::track::PID::Electron, track);
 
-    if (nSigmaTPCEl > trackConfigs.pidRangeTPCEl->first && nSigmaTPCEl < trackConfigs.pidRangeTPCEl->second) {
-      auto nSigmaTPCPi = aod::pidutils::tpcNSigma(o2::track::PID::Pion, track);
-      auto nSigmaTPCKa = aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track);
-      auto nSigmaTPCPr = aod::pidutils::tpcNSigma(o2::track::PID::Proton, track);
+      if (nSigmaTPCEl > trackConfigs.pidRangeTPCEl->first && nSigmaTPCEl < trackConfigs.pidRangeTPCEl->second) {
+        auto nSigmaTPCPi = aod::pidutils::tpcNSigma(o2::track::PID::Pion, track);
+        auto nSigmaTPCKa = aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track);
+        auto nSigmaTPCPr = aod::pidutils::tpcNSigma(o2::track::PID::Proton, track);
 
-      if (std::abs(nSigmaTPCPi) > trackConfigs.pidTPCMaxHadrons &&
-          std::abs(nSigmaTPCKa) > trackConfigs.pidTPCMaxHadrons &&
-          std::abs(nSigmaTPCPr) > trackConfigs.pidTPCMaxHadrons) {
-        return false;
+        if (std::abs(nSigmaTPCPi) > trackConfigs.pidTPCMaxHadrons &&
+            std::abs(nSigmaTPCKa) > trackConfigs.pidTPCMaxHadrons &&
+            std::abs(nSigmaTPCPr) > trackConfigs.pidTPCMaxHadrons) {
+          return false;
+        }
       }
     }
 
@@ -806,6 +824,8 @@ struct EventSelectionProducer {
     Configurable<float> maxMPhiSignal{"maxMPhiSignal", 1.029f, "Upper limits on Phi mass for signal extraction"};
   } phiConfigs;
 
+  Configurable<bool> withTrueGenPhi{"withTrueGenPhi", false, "Require the presence of a true generated phi meson in the event"};
+
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
@@ -911,22 +931,26 @@ struct EventSelectionProducer {
   template <bool isMC, typename MC_T = void, typename T1, typename T2>
   bool eventHasPhi(const T1& collision, const T2& phiCandidates)
   {
-    uint16_t nPhi{0};
+    if (withTrueGenPhi) {
+      if (phiCandidates.size() < 1)
+        return false;
+    } else {
+      uint16_t nPhi{0};
 
-    for (const auto& phiCand : phiCandidates) {
+      for (const auto& phiCand : phiCandidates) {
+        if (phiCand.inMassRegion(phiConfigs.minMPhiSignal, phiConfigs.maxMPhiSignal))
+          nPhi++;
 
-      if (phiCand.inMassRegion(phiConfigs.minMPhiSignal, phiConfigs.maxMPhiSignal))
-        nPhi++;
+        // histos.fill(HIST("hEta"), track1.eta());
+        // histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
+        // histos.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
+        // histos.fill(HIST("h2DauTracksPhiDCAxy"), track1.pt(), track1.dcaXY());
+        // histos.fill(HIST("h2DauTracksPhiDCAz"), track1.pt(), track1.dcaZ());
+      }
 
-      // histos.fill(HIST("hEta"), track1.eta());
-      // histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
-      // histos.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
-      // histos.fill(HIST("h2DauTracksPhiDCAxy"), track1.pt(), track1.dcaXY());
-      // histos.fill(HIST("h2DauTracksPhiDCAz"), track1.pt(), track1.dcaZ());
+      if (nPhi == 0)
+        return false;
     }
-
-    if (nPhi == 0)
-      return false;
 
     float multPercentile{0.0f};
 
