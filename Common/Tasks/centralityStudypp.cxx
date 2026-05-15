@@ -91,6 +91,8 @@ struct centralityStudypp {
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC"};
 
+  Configurable<float> vertexZcut{"vertexZcut", 10.0f, "vertex Z cut (cm)"};
+
   // For one-dimensional plots, where binning is no issue
   ConfigurableAxis axisMultUltraFineFV0A{"axisMultUltraFineFV0A", {60000, 0, 60000}, "FV0A amplitude"};
   ConfigurableAxis axisMultUltraFineFT0A{"axisMultUltraFineFT0A", {60000, 0, 60000}, "FT0A amplitude"};
@@ -380,7 +382,7 @@ struct centralityStudypp {
 
     // _______________________________________________________
 
-    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10) {
+    if (applyVtxZ && TMath::Abs(collision.multPVz()) > vertexZcut.value) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 2);
@@ -487,13 +489,14 @@ struct centralityStudypp {
         getHist(TH1, histPath + "hCentralityDistributionFDDM")->Fill(hCentralityFDDM->GetBinContent(hCentralityFDDM->FindBin(multFDDA + multFDDC)));
       }
       if (hCentralityNTPV) {
-        getHist(TH1, histPath + "hCentralityDistributionNTPV")->Fill(hCentralityNTPV->GetBinContent(hCentralityNTPV->FindBin(multNTracksGlobal)));
+        // note: not vertex-Z-equalized to match what is done in central framework for this estimator
+        getHist(TH1, histPath + "hCentralityDistributionNTPV")->Fill(hCentralityNTPV->GetBinContent(hCentralityNTPV->FindBin(collision.multNTracksPV())));
       }
       if (hCentralityNGlo) {
-        getHist(TH1, histPath + "hCentralityDistributionNGlobal")->Fill(hCentralityNGlo->GetBinContent(hCentralityNGlo->FindBin(hCentralityNGlo)));
+        getHist(TH1, histPath + "hCentralityDistributionNGlobal")->Fill(hCentralityNGlo->GetBinContent(hCentralityNGlo->FindBin(multNTracksGlobal)));
       }
       if (hCentralityMFT) {
-        getHist(TH1, histPath + "hCentralityDistributionMFT")->Fill(hCentralityMFT->GetBinContent(hCentralityMFT->FindBin(hCentralityMFT)));
+        getHist(TH1, histPath + "hCentralityDistributionMFT")->Fill(hCentralityMFT->GetBinContent(hCentralityMFT->FindBin(mftNtracks)));
       }
     }
   }
