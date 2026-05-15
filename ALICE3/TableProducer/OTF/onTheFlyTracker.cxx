@@ -982,7 +982,7 @@ struct OnTheFlyTracker {
           continue; // extra sure
         }
         if (cascadeDecaySettings.doXiQA) {
-          getHist(TH1, histPath + "hXiBuilding")->Fill(static_cast<float>(i+1));
+          getHist(TH1, histPath + "hXiBuilding")->Fill(static_cast<float>(i + 1));
         }
         isReco[i] = true;
 
@@ -993,7 +993,7 @@ struct OnTheFlyTracker {
         isReco[i] = true;
         xiDaughterTrackParCovsTracked[i] = xiDaughterTrackParCovsPerfect[i];
         if (cascadeDecaySettings.doXiQA) {
-          getHist(TH1, histPath + "hXiBuilding")->Fill(static_cast<float>(i+1));
+          getHist(TH1, histPath + "hXiBuilding")->Fill(static_cast<float>(i + 1));
         }
       }
 
@@ -1452,8 +1452,8 @@ struct OnTheFlyTracker {
         nV0SiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
         nV0TPCHits[i] = fastTracker[icfg]->GetNGasPoints();
 
-        if (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHits || 
-            (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && 
+        if (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHits ||
+            (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed &&
              nV0TPCHits[i] >= fastTrackerSettings.minTPCClusters)) {
           isV0Reco[i] = true;
         } else {
@@ -1606,7 +1606,7 @@ struct OnTheFlyTracker {
 
     if (!fillV0Table) {
       tracksV0Daugs.clear(); // clear the tracks added for this V0 since we won't be filling the table
-      return; // don't fill the table if we didn't find a V0 candidate
+      return;                // don't fill the table if we didn't find a V0 candidate
     }
 
     // populate V0s
@@ -1778,8 +1778,7 @@ struct OnTheFlyTracker {
       }
 
       const bool isCascadeToDecay = (mcParticle.pdgCode() == kXiMinus) && cascadeDecaySettings.decayXi;
-      const bool isV0ToDecay = std::find(v0PDGs.begin(), v0PDGs.end(), mcParticle.pdgCode()) != v0PDGs.end()
-                               && v0DecaySettings.decayV0;
+      const bool isV0ToDecay = std::find(v0PDGs.begin(), v0PDGs.end(), mcParticle.pdgCode()) != v0PDGs.end() && v0DecaySettings.decayV0;
 
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
