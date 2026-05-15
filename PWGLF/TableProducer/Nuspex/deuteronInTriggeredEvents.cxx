@@ -118,7 +118,6 @@ struct NucleusCandidate {
 
 namespace nuclei
 {
-constexpr int nITSlayers = 7;
 constexpr double bbMomScalingDefault[5][2]{
   {1., 1.},
   {1., 1.},
