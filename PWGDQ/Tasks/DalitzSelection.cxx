@@ -487,9 +487,10 @@ struct DalitzSelection {
       }
     }
   }
-  
-  void initNewRun(long timestamp) {
-  
+
+  void initNewRun(long timestamp)
+  {
+
     VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
 
     // We setup the magnetic field, because the conversion rejection cut might depend on it
@@ -519,7 +520,6 @@ struct DalitzSelection {
       VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
       VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
     }
-
   }
 
   void processFullTracks(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
