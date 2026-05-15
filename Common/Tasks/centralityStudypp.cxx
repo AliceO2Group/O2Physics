@@ -14,11 +14,9 @@
 // multCentTable output
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPECSObject.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -34,7 +32,6 @@
 #include <TList.h>
 #include <TProfile.h>
 
-#include <bitset>
 #include <cstdint>
 #include <format>
 #include <map>
@@ -53,19 +50,28 @@ struct centralityStudypp {
   std::map<std::string, HistPtr> histPointers;
   std::string histPath;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  uint64_t startOfRunTimestamp;
+  int mRunNumber = -1;
 
   // vertex Z equalization
-  TList* hCalibObjects;
-  TProfile* hVtxZFV0A;
-  TProfile* hVtxZFT0A;
-  TProfile* hVtxZFT0C;
-  TProfile* hVtxZNTracks;
-  TProfile* hVtxZNGlobals;
-  TProfile* hVtxZMFT;
-  TProfile* hVtxZFDDA;
-  TProfile* hVtxZFDDC;
+  TList* hCalibObjects = nullptr;
+  TProfile* hVtxZFV0A = nullptr;
+  TProfile* hVtxZFT0A = nullptr;
+  TProfile* hVtxZFT0C = nullptr;
+  TProfile* hVtxZNTracks = nullptr;
+  TProfile* hVtxZNGlobals = nullptr;
+  TProfile* hVtxZMFT = nullptr;
+  TProfile* hVtxZFDDA = nullptr;
+  TProfile* hVtxZFDDC = nullptr;
+
+  // calibration histograms 
+  TH1 *hCentralityFV0A = nullptr;
+  TH1 *hCentralityFT0A = nullptr;
+  TH1 *hCentralityFT0C = nullptr;
+  TH1 *hCentralityFT0M = nullptr;
+  TH1 *hCentralityFDDM = nullptr;
+  TH1 *hCentralityNTPV = nullptr;
+  TH1 *hCentralityNGlo = nullptr;
+  TH1 *hCentralityMFT = nullptr;
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
@@ -73,6 +79,7 @@ struct centralityStudypp {
   // event selection criteria
   Configurable<bool> applyVertexZEqualization{"applyVertexZEqualization", false, "0 - no, 1 - yes"};
   Configurable<bool> saveUnequalized{"saveUnequalized", false, "save unequalized raw: 0 - no, 1 - yes"};
+  Configurable<bool> doCentralityQA{"doCentralityQA", false, "do centrality QA: 0 - no, 1 - yes"};
   Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
   Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
   Configurable<bool> requireINELgtZERO{"requireINELgtZERO", true, "0 no, 1 - yes"};
@@ -97,11 +104,14 @@ struct centralityStudypp {
   // For profile Z
   ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
   ConfigurableAxis axisZN{"axisZN", {1100, -50.0f, +500.0f}, "ZN"};
+  // For centrality QA 
+  ConfigurableAxis axisCentrality{"axisCentrality", {10000, 0, 100}, "centrality percentile"};
 
   // ccdb matters
   Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
   Configurable<std::string> pathVertexZ{"pathVertexZ", "Users/d/ddobrigk/Centrality/Calibration", "Path to vertexZ profiles"};
+  Configurable<std::string> pathCentrality{"pathCentrality", "Users/d/ddobrigk/Centrality/Estimators", "Path to centrality calibration"};  
 
   void init(InitContext&)
   {
@@ -114,6 +124,15 @@ struct centralityStudypp {
     hVtxZMFT = nullptr;
     hVtxZFDDA = nullptr;
     hVtxZFDDC = nullptr;
+
+    hCentralityFV0A = nullptr;
+    hCentralityFT0A = nullptr;
+    hCentralityFT0C = nullptr;
+    hCentralityFT0M = nullptr;
+    hCentralityFDDM = nullptr;
+    hCentralityNTPV = nullptr;
+    hCentralityNGlo = nullptr;
+    hCentralityMFT = nullptr;
 
     const AxisSpec axisCollisions{100, -0.5f, 99.5f, "Number of collisions"};
     histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{20, -0.5f, +19.5f}});
@@ -171,19 +190,37 @@ struct centralityStudypp {
       LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
       hCalibObjects = ccdb->getForRun<TList>(pathVertexZ, mRunNumber);
 
-      hVtxZFV0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
-      hVtxZFT0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
-      hVtxZFT0C = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
-      hVtxZFDDA = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
-      hVtxZFDDC = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
-      hVtxZNTracks = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
-      hVtxZNGlobals = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
-      hVtxZMFT = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
+      hVtxZFV0A = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
+      hVtxZFT0A = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
+      hVtxZFT0C = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
+      hVtxZFDDA = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
+      hVtxZFDDC = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
+      hVtxZNTracks = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
+      hVtxZNGlobals = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
+      hVtxZMFT = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
 
       // Capture error
       if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks || !hVtxZNGlobals || !hVtxZMFT) {
         LOGF(error, "Problem loading CCDB objects! Please check");
       }
+    }
+
+    if (doCentralityQA.value) {
+      // acquire vertex-Z equalization histograms if requested
+      LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
+      TList* hCentralityObjects = nullptr;
+      hCentralityObjects = ccdb->getForRun<TList>(pathCentrality, mRunNumber);
+
+      hCentralityFV0A = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFV0"));
+      hCentralityFT0A = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFT0A"));
+      hCentralityFT0C = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFT0C"));
+      hCentralityFT0M = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFT0"));
+      hCentralityFDDM = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFDD"));
+      hCentralityNTPV = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqNTracksPV"));
+      hCentralityNGlo = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqNGlobal"));
+      hCentralityMFT = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
+
+      // won't capture null pointers -> explicitly check for those when attempting to evaluate
     }
 
     histPath = std::format("Run_{}/", mRunNumber);
@@ -227,6 +264,17 @@ struct centralityStudypp {
       histPointers.insert({histPath + "hNPVContributors_Unequalized", histos.add((histPath + "hNPVContributors_Unequalized").c_str(), "hNPVContributors_Unequalized", {kTH1D, {{axisMultUltraFinePVContributors}}})});
     }
 
+    if (doCentralityQA.value) { 
+      histPointers.insert({histPath + "hCentralityDistributionFV0A", histos.add((histPath + "hCentralityDistributionFV0A").c_str(), "hCentralityDistributionFV0A", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionFT0A", histos.add((histPath + "hCentralityDistributionFT0A").c_str(), "hCentralityDistributionFT0A", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionFT0C", histos.add((histPath + "hCentralityDistributionFT0C").c_str(), "hCentralityDistributionFT0C", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionFT0M", histos.add((histPath + "hCentralityDistributionFT0M").c_str(), "hCentralityDistributionFT0M", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionFDDM", histos.add((histPath + "hCentralityDistributionFDDM").c_str(), "hCentralityDistributionFDDM", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionNPTV", histos.add((histPath + "hCentralityDistributionNPTV").c_str(), "hCentralityDistributionNPTV", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionNGlobal", histos.add((histPath + "hCentralityDistributionNGlobal").c_str(), "hCentralityDistributionNGlobal", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionMFT", histos.add((histPath + "hCentralityDistributionMFT").c_str(), "hCentralityDistributionMFT", {kTH1D, {{axisCentrality}}})});
+    }
+
     histPointers.insert({histPath + "hFT0AvsPVz_Collisions", histos.add((histPath + "hFT0AvsPVz_Collisions").c_str(), "hFT0AvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     histPointers.insert({histPath + "hFT0CvsPVz_Collisions", histos.add((histPath + "hFT0CvsPVz_Collisions").c_str(), "hFT0CvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     histPointers.insert({histPath + "hFDDAvsPVz_Collisions", histos.add((histPath + "hFDDAvsPVz_Collisions").c_str(), "hFDDAvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
@@ -245,8 +293,9 @@ struct centralityStudypp {
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
 
-    if (applySel8 && !collision.multSel8())
+    if (applySel8 && !collision.multSel8()){
       return;
+    }
     histos.fill(HIST("hCollisionSelection"), 1);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(1);
 
@@ -331,8 +380,9 @@ struct centralityStudypp {
 
     // _______________________________________________________
 
-    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10)
+    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10){
       return;
+    }
     histos.fill(HIST("hCollisionSelection"), 2);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(2);
 
@@ -417,6 +467,34 @@ struct centralityStudypp {
       getHist(TH1, histPath + "hFV0A_Collisions_Unequalized")->Fill(collision.multFV0A());
       getHist(TH1, histPath + "hNGlobalTracks_Unequalized")->Fill(collision.multNTracksGlobal());
       getHist(TH1, histPath + "hNMFTTracks_Unequalized")->Fill(collision.mftNtracks());
+    }
+
+    if (doCentralityQA.value) {
+      // generate centralities on the spot in case the centrality histograms are in memory
+      if(hCentralityFV0A){
+        getHist(TH1, histPath + "hCentralityDistributionFV0A")->Fill( hCentralityFV0A->GetBinContent( hCentralityFV0A->FindBin(multFV0A)));
+      }
+      if(hCentralityFT0A){
+        getHist(TH1, histPath + "hCentralityDistributionFT0A")->Fill( hCentralityFT0A->GetBinContent( hCentralityFT0A->FindBin(multFT0A)));
+      }
+      if(hCentralityFT0C){
+        getHist(TH1, histPath + "hCentralityDistributionFT0C")->Fill( hCentralityFT0C->GetBinContent( hCentralityFT0C->FindBin(multFT0C)));
+      }
+      if(hCentralityFT0M){
+        getHist(TH1, histPath + "hCentralityDistributionFT0M")->Fill( hCentralityFT0M->GetBinContent( hCentralityFT0M->FindBin(multFT0A+multFT0C)));
+      }
+      if(hCentralityFDDM){
+        getHist(TH1, histPath + "hCentralityDistributionFDDM")->Fill( hCentralityFDDM->GetBinContent( hCentralityFDDM->FindBin(multFDDA+multFDDC)));
+      }
+      if(hCentralityNTPV){
+        getHist(TH1, histPath + "hCentralityDistributionNTPV")->Fill( hCentralityNTPV->GetBinContent( hCentralityNTPV->FindBin(multNTracksGlobal)));
+      }
+      if(hCentralityNGlo){
+        getHist(TH1, histPath + "hCentralityDistributionNGlobal")->Fill( hCentralityNGlo->GetBinContent( hCentralityNGlo->FindBin(hCentralityNGlo)));
+      }
+      if(hCentralityMFT){
+        getHist(TH1, histPath + "hCentralityDistributionMFT")->Fill( hCentralityMFT->GetBinContent( hCentralityMFT->FindBin(hCentralityMFT)));
+      }
     }
   }
 
