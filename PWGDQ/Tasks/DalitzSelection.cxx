@@ -487,6 +487,40 @@ struct DalitzSelection {
       }
     }
   }
+  
+  void initNewRun(long timestamp) {
+  
+    VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
+
+    // We setup the magnetic field, because the conversion rejection cut might depend on it
+    float magField = 0.;
+    if (fConfigOptions.fUseRemoteField.value) {
+      grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigOptions.grpmagPath, timestamp);
+      if (grpmag != nullptr) {
+        magField = grpmag->getNominalL3Field();
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+      }
+    } else {
+      magField = fConfigOptions.fConfigMagField.value;
+    }
+    LOGF(info, "setting mag field to %f", magField);
+    if (magField == 0.) {
+      LOGF(fatal, "magnetic field not set correctly, please check");
+    }
+    VarManager::SetMagneticField(magField);
+
+    if (fConfigOptions.fConfigComputeTPCpostCalib) {
+      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigOptions.fConfigCcdbPathTPC.value, timestamp);
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+    }
+
+  }
 
   void processFullTracks(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
   {
@@ -508,35 +542,7 @@ struct DalitzSelection {
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
         if (fCurrentRun != bc.runNumber()) {
-          VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
-
-          // We setup the magnetic field, because the conversion rejection cut might depend on it
-          float magField = 0.;
-          if (fConfigOptions.fUseRemoteField.value) {
-            grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigOptions.grpmagPath, bc.timestamp());
-            if (grpmag != nullptr) {
-              magField = grpmag->getNominalL3Field();
-            } else {
-              LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
-            }
-          } else {
-            magField = fConfigOptions.fConfigMagField.value;
-          }
-          LOGF(info, "setting mag field to %f", magField);
-          if (magField == 0.) {
-            LOGF(fatal, "magnetic field not set correctly, please check");
-          }
-          VarManager::SetMagneticField(magField);
-
-          if (fConfigOptions.fConfigComputeTPCpostCalib) {
-            auto calibList = fCCDB->getForTimeStamp<TList>(fConfigOptions.fConfigCcdbPathTPC.value, bc.timestamp());
-            VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-            VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-            VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-            VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-            VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-            VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
-          }
+          initNewRun(bc.timestamp());
           fCurrentRun = bc.runNumber();
         }
 
@@ -575,35 +581,7 @@ struct DalitzSelection {
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
         if (fCurrentRun != bc.runNumber()) {
-          VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
-
-          // We setup the magnetic field, because the conversion rejection cut might depend on it
-          float magField = 0.;
-          if (fConfigOptions.fUseRemoteField.value) {
-            grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigOptions.grpmagPath, bc.timestamp());
-            if (grpmag != nullptr) {
-              magField = grpmag->getNominalL3Field();
-            } else {
-              LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
-            }
-          } else {
-            magField = fConfigOptions.fConfigMagField.value;
-          }
-          LOGF(info, "setting mag field to %f", magField);
-          if (magField == 0.) {
-            LOGF(fatal, "magnetic field not set correctly, please check");
-          }
-          VarManager::SetMagneticField(magField);
-
-          if (fConfigOptions.fConfigComputeTPCpostCalib) {
-            auto calibList = fCCDB->getForTimeStamp<TList>(fConfigOptions.fConfigCcdbPathTPC.value, bc.timestamp());
-            VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-            VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-            VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-            VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-            VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-            VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
-          }
+          initNewRun(bc.timestamp());
           fCurrentRun = bc.runNumber();
         }
 
