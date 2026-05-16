@@ -454,6 +454,8 @@ struct centralityStudypp {
     getHist(TH1, histPath + "hFT0A_Collisions")->Fill(multFT0A);
     getHist(TH1, histPath + "hFT0C_Collisions")->Fill(multFT0C);
     getHist(TH1, histPath + "hFT0M_Collisions")->Fill((multFT0A + multFT0C));
+    getHist(TH1, histPath + "hFDDA_Collisions")->Fill(multFDDA);
+    getHist(TH1, histPath + "hFDDC_Collisions")->Fill(multFDDC);
     getHist(TH1, histPath + "hFV0A_Collisions")->Fill(multFV0A);
     getHist(TH1, histPath + "hNGlobalTracks")->Fill(multNTracksGlobal);
     getHist(TH1, histPath + "hNMFTTracks")->Fill(mftNtracks);
