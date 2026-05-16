@@ -369,10 +369,10 @@ struct HfDataCreatorHiddenCharmReduced {
             float ptEtac = RecoDecay::pt(RecoDecay::sumOfVec(pVec1, pVec2));
             registry.fill(HIST("hInvMass"), ptEtac, invMass);
             if (config.fillSparses.value) {
-              if(t1.sign() > 0){
+              if (t1.sign() > 0) {
                 registry.fill(HIST("hMassPtCutVars"), invMass, ptEtac, t1.pt(), t1.tpcNSigmaPr(), t1.tofNSigmaPr(), t1.dcaXY(), t2.pt(), t2.tpcNSigmaPr(), t2.tofNSigmaPr(), t2.dcaXY());
               } else {
-		            registry.fill(HIST("hMassPtCutVars"), invMass, ptEtac, t2.pt(), t2.tpcNSigmaPr(), t2.tofNSigmaPr(), t2.dcaXY(), t1.pt(), t1.tpcNSigmaPr(), t1.tofNSigmaPr(), t1.dcaXY());
+                registry.fill(HIST("hMassPtCutVars"), invMass, ptEtac, t2.pt(), t2.tpcNSigmaPr(), t2.tofNSigmaPr(), t2.dcaXY(), t1.pt(), t1.tpcNSigmaPr(), t1.tofNSigmaPr(), t1.dcaXY());
               }
             }
           }
