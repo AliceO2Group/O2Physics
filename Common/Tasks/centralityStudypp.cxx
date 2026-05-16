@@ -208,22 +208,40 @@ struct centralityStudypp {
     }
 
     if (doCentralityQA.value) {
-      // acquire vertex-Z equalization histograms if requested
-      LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
+      LOGF(info, "Acquiring centrality calibration for run %i", mRunNumber);
       TList* hCentralityObjects = nullptr;
       hCentralityObjects = ccdb->getForRun<TList>(pathCentrality, mRunNumber);
 
-      hCentralityFV0A = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFV0"));
-      hCentralityFT0A = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFT0A"));
-      hCentralityFT0C = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFT0C"));
-      hCentralityFT0M = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFT0"));
-      hCentralityFDDM = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqFDD"));
-      hCentralityNTPV = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqNTracksPV"));
-      hCentralityNGlo = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqNGlobal"));
-      hCentralityMFT = dynamic_cast<TProfile*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
+      hCentralityFV0A = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFV0"));
+      hCentralityFT0A = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0A"));
+      hCentralityFT0C = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0C"));
+      hCentralityFT0M = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0"));
+      hCentralityFDDM = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFDD"));
+      hCentralityNTPV = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqNTracksPV"));
+      hCentralityNGlo = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqNGlobal"));
+      hCentralityMFT = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
 
       // won't capture null pointers -> explicitly check for those when attempting to evaluate
+      auto reportSuccess = [](TH1* a, TString name) {
+        if(!a){ 
+          LOGF(info, "Calibration missing for %s", name.data());
+        }else{ 
+          LOGF(info, "Calibration loaded for %s", name.Data())
+        }
+      }; 
+
+      reportSucess(hCentralityFV0A, "FV0A");
+      reportSucess(hCentralityFT0A, "FT0A");
+      reportSucess(hCentralityFT0C, "FT0C");
+      reportSucess(hCentralityFT0M, "FT0M");
+      reportSucess(hCentralityFDDM, "FDDM");
+      reportSucess(hCentralityNTPV, "NTPV");
+      reportSucess(hCentralityNGlo, "NGlobals");
+      reportSucess(hCentralityMFT, "MFT");
+
+      LOGF(info, "Centrality calibration loading done.")
     }
+
 
     histPath = std::format("Run_{}/", mRunNumber);
 
