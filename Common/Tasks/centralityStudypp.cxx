@@ -239,7 +239,7 @@ struct centralityStudypp {
       reportSucess(hCentralityNGlo, "NGlobals");
       reportSucess(hCentralityMFT, "MFT");
 
-      LOGF(info, "Centrality calibration loading done.")
+      LOGF(info, "Centrality calibration loading done.");
     }
 
 
