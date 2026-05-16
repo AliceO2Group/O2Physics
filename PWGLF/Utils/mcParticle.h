@@ -339,9 +339,9 @@ class PIDExtended
         return Kstar;
       case -o2::constants::physics::Pdg::kK0Star892:
         return Kstar;
-      case 323:
+      case o2::constants::physics::Pdg::kKPlusStar892:
         return KstarPM;
-      case -323:
+      case -o2::constants::physics::Pdg::kKPlusStar892:
         return KstarPM;
       case 310:
         return Kshort;
