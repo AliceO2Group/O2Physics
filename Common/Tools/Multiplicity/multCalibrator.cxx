@@ -236,15 +236,15 @@ void multCalibrator::SetRun3AdaptiveBoundaries()
   // Function to set standard adaptive boundaries
   // Run 3 exclusive: goes to 0.00001% binning for highest multiplicity
   // Warning: this setting requires well filled input histograms
-  // 
-  // -> at 0.00001%, one needs 10 million events to get a single one in the highest 
-  // category. In Run 3, at 500 kHz, this corresponds to 20 seconds of dataking; 
-  // any run lasting over 5 minutes should have enough to calibrate to the highest 
-  // boundary. 
-  // 
-  // QA when using hyperfine binning is still advised: 
-  // Selecting very fine percentages may select on spurious situations 
-  // such as beam-background, pileup, etc. 
+  //
+  // -> at 0.00001%, one needs 10 million events to get a single one in the highest
+  // category. In Run 3, at 500 kHz, this corresponds to 20 seconds of dataking;
+  // any run lasting over 5 minutes should have enough to calibrate to the highest
+  // boundary.
+  //
+  // QA when using hyperfine binning is still advised:
+  // Selecting very fine percentages may select on spurious situations
+  // such as beam-background, pileup, etc.
 
   lNDesiredBoundaries = 0;
   lDesiredBoundaries = new Double_t[1100];
@@ -293,28 +293,28 @@ void multCalibrator::SetStandardOnePercentBoundaries()
 }
 
 //________________________________________________________________
-bool multCalibrator::IsBinningSane(TH1 *histogram)
+bool multCalibrator::IsBinningSane(TH1* histogram)
 {
   // check if binning that will be attempted is too fine for this histogram
-  double minimumBinWidth = 1000.0f; 
-  for(int ib = 0; ib<lNDesiredBoundaries-1; ib++){
-    if(std::abs(lDesiredBoundaries[ib+1]-lDesiredBoundaries[ib])<minimumBinWidth){
-      minimumBinWidth = std::abs(lDesiredBoundaries[ib+1]-lDesiredBoundaries[ib]); 
+  double minimumBinWidth = 1000.0f;
+  for (int ib = 0; ib < lNDesiredBoundaries - 1; ib++) {
+    if (std::abs(lDesiredBoundaries[ib + 1] - lDesiredBoundaries[ib]) < minimumBinWidth) {
+      minimumBinWidth = std::abs(lDesiredBoundaries[ib + 1] - lDesiredBoundaries[ib]);
     }
   }
-  if(minimumBinWidth<1e-9){
-    cout << "Excessively fine binning requested: minimum bin width registers as "<< minimumBinWidth << endl;
-    return false; // not reasonable 
+  if (minimumBinWidth < 1e-9) {
+    cout << "Excessively fine binning requested: minimum bin width registers as " << minimumBinWidth << endl;
+    return false; // not reasonable
   }
-  if(histogram->GetEntries() < 1000.0/minimumBinWidth){ 
-    cout << "Histogram "<<histogram->GetName()<<" does not have enough entries ("<<histogram->GetEntries()<<") to calibrate!" << endl;
-    return false; 
+  if (histogram->GetEntries() < 1000.0 / minimumBinWidth) {
+    cout << "Histogram " << histogram->GetName() << " does not have enough entries (" << histogram->GetEntries() << ") to calibrate!" << endl;
+    return false;
   }
-  if(std::abs(histogram->GetMean())<1e-9){ 
-    cout << "Histogram "<<histogram->GetName()<<" has suspicious mean: "<<histogram->GetMean()<<endl; 
-    return false; 
+  if (std::abs(histogram->GetMean()) < 1e-9) {
+    cout << "Histogram " << histogram->GetName() << " has suspicious mean: " << histogram->GetMean() << endl;
+    return false;
   }
-  cout << "Sanity check: " << histogram->GetName() << ", entries = " << histogram->GetEntries() << ", 1/(min bin width) = " <<100.0/minimumBinWidth << " -> OK ! " << endl;
+  cout << "Sanity check: " << histogram->GetName() << ", entries = " << histogram->GetEntries() << ", 1/(min bin width) = " << 100.0 / minimumBinWidth << " -> OK ! " << endl;
   return true;
 }
 
@@ -334,13 +334,13 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
     cout << "Last boundary: " << lDesiredBoundaries[0] << endl;
   }
 
-  // binning check 
-  if(!IsBinningSane(histoRaw)){ 
-    cout << "Requested binning is not viable for input histogram named "<<histoRaw->GetName()<<"! Will return 100.5 for all requests." <<endl; 
-    Double_t lDummyBounds[2]; 
+  // binning check
+  if (!IsBinningSane(histoRaw)) {
+    cout << "Requested binning is not viable for input histogram named " << histoRaw->GetName() << "! Will return 100.5 for all requests." << endl;
+    Double_t lDummyBounds[2];
     lDummyBounds[0] = 0;
     lDummyBounds[1] = 1.0;
-    TH1F *hCalib = new TH1F(lHistoName.Data(), "", 1, lDummyBounds); 
+    TH1F* hCalib = new TH1F(lHistoName.Data(), "", 1, lDummyBounds);
     hCalib->SetBinContent(0, 100.5);
     hCalib->SetBinContent(1, 100.5);
     hCalib->SetBinContent(2, 100.5);
@@ -369,16 +369,16 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
     TString lPrecisionString = "(Precision OK)";
     if (ii != 0 && ii != lNDesiredBoundaries - 1) {
       // check precision, please
-      if ((lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii])) > fkPrecisionWarningThreshold){
+      if ((lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii])) > fkPrecisionWarningThreshold) {
         lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
         warnUser = true;
       }
-      if ((lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii])) > fkPrecisionWarningThreshold){
+      if ((lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii])) > fkPrecisionWarningThreshold) {
         lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
         warnUser = true;
       }
     }
-    if(warnUser){
+    if (warnUser) {
       cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[lDisplacedii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
     }
   }
