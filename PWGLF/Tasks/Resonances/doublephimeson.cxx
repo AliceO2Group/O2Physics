@@ -510,6 +510,60 @@ struct doublephimeson {
         }
       }
     }
+    if (PIDStrategy == 4) {
+      // pT <= 0.5 GeV/c (TPC-only)
+      if (ptcand <= 0.5f) {
+        if (ptcand < 0.4f) {
+          if (nsigmaTPC > -2.7f && nsigmaTPC < 2.3f)
+            return true;
+        } else {
+          if (nsigmaTPC > -2.5f && nsigmaTPC < 2.5f)
+            return true;
+        }
+      } else if (ptcand > 0.5f && ptcand < 1.0f) {
+        // 0.5 < pT < 1.0 GeV/c
+        if (TOFHit == 1) {
+          if (TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < 2.5f)
+            return true;
+        } else {
+          if (ptcand >= 0.5f && ptcand < 0.6f) {
+            if (nsigmaTPC > -1.5f && nsigmaTPC < 2.5f)
+              return true;
+          } else if (ptcand >= 0.6f && ptcand < 0.7f) {
+            if (nsigmaTPC > -0.75f && nsigmaTPC < 2.5f)
+              return true;
+          } else if (ptcand >= 0.7f && ptcand < 0.8f) {
+            if (nsigmaTPC > -0.3f && nsigmaTPC < 2.5f)
+              return true;
+          } else { // 0.8 - 1.0
+            if (nsigmaTPC > 0.0f && nsigmaTPC < 2.5f)
+              return true;
+          }
+        }
+      } else if (ptcand >= 1.0f && ptcand < 1.8f) {
+        // 1.0 <= pT < 1.8 GeV/c
+        if (TOFHit == 1) {
+          if (TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < 2.5f)
+            return true;
+        } else {
+          if (nsigmaTPC > -2.0f && nsigmaTPC < 0.0f)
+            return true;
+        }
+      } else if (ptcand >= 1.8f && ptcand < 5.0f) {
+        // 1.8 < pT < 5.0 GeV/c
+        if (TOFHit == 1) {
+          if (TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < 2.0f)
+            return true;
+        } else {
+          if (nsigmaTPC > -2.5f && nsigmaTPC < 1.0f)
+            return true;
+        }
+      } else {
+        // pT >= 5.0 GeV/c (TPC-only, low stats)
+        if (nsigmaTPC > -2.5f && nsigmaTPC < 1.5f)
+          return true;
+      }
+    }
     return false;
   }
 
