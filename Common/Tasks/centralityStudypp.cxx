@@ -272,7 +272,7 @@ struct centralityStudypp {
       histPointers.insert({histPath + "hCentralityDistributionFT0C", histos.add((histPath + "hCentralityDistributionFT0C").c_str(), "hCentralityDistributionFT0C", {kTH1D, {{axisCentrality}}})});
       histPointers.insert({histPath + "hCentralityDistributionFT0M", histos.add((histPath + "hCentralityDistributionFT0M").c_str(), "hCentralityDistributionFT0M", {kTH1D, {{axisCentrality}}})});
       histPointers.insert({histPath + "hCentralityDistributionFDDM", histos.add((histPath + "hCentralityDistributionFDDM").c_str(), "hCentralityDistributionFDDM", {kTH1D, {{axisCentrality}}})});
-      histPointers.insert({histPath + "hCentralityDistributionNPTV", histos.add((histPath + "hCentralityDistributionNPTV").c_str(), "hCentralityDistributionNPTV", {kTH1D, {{axisCentrality}}})});
+      histPointers.insert({histPath + "hCentralityDistributionNTPV", histos.add((histPath + "hCentralityDistributionNTPV").c_str(), "hCentralityDistributionNTPV", {kTH1D, {{axisCentrality}}})});
       histPointers.insert({histPath + "hCentralityDistributionNGlobal", histos.add((histPath + "hCentralityDistributionNGlobal").c_str(), "hCentralityDistributionNGlobal", {kTH1D, {{axisCentrality}}})});
       histPointers.insert({histPath + "hCentralityDistributionMFT", histos.add((histPath + "hCentralityDistributionMFT").c_str(), "hCentralityDistributionMFT", {kTH1D, {{axisCentrality}}})});
     }
