@@ -263,6 +263,7 @@ struct centralityStudypp {
 
     histPointers.insert({histPath + "hFDDA_Collisions", histos.add((histPath + "hFDDA_Collisions").c_str(), "hFDDA_Collisions", {kTH1D, {{axisMultUltraFineFDDA}}})});
     histPointers.insert({histPath + "hFDDC_Collisions", histos.add((histPath + "hFDDC_Collisions").c_str(), "hFDDC_Collisions", {kTH1D, {{axisMultUltraFineFDDC}}})});
+    histPointers.insert({histPath + "hFDDM_Collisions", histos.add((histPath + "hFDDM_Collisions").c_str(), "hFDDM_Collisions", {kTH1D, {{axisMultUltraFineFDDC}}})});
 
     histPointers.insert({histPath + "hFV0A_Collisions", histos.add((histPath + "hFV0A_Collisions").c_str(), "hFV0A_Collisions", {kTH1D, {{axisMultUltraFineFV0A}}})});
     histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
@@ -276,6 +277,7 @@ struct centralityStudypp {
 
       histPointers.insert({histPath + "hFDDA_Collisions_Unequalized", histos.add((histPath + "hFDDA_Collisions_Unequalized").c_str(), "hFDDA_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDA}}})});
       histPointers.insert({histPath + "hFDDC_Collisions_Unequalized", histos.add((histPath + "hFDDC_Collisions_Unequalized").c_str(), "hFDDC_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDC}}})});
+      histPointers.insert({histPath + "hFDDM_Collisions_Unequalized", histos.add((histPath + "hFDDM_Collisions_Unequalized").c_str(), "hFDDM_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFDDC}}})});
 
       histPointers.insert({histPath + "hFV0A_Collisions_Unequalized", histos.add((histPath + "hFV0A_Collisions_Unequalized").c_str(), "hFV0A_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFV0A}}})});
       histPointers.insert({histPath + "hNGlobalTracks_Unequalized", histos.add((histPath + "hNGlobalTracks_Unequalized").c_str(), "hNGlobalTracks_Unequalized", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
@@ -456,13 +458,13 @@ struct centralityStudypp {
     getHist(TH1, histPath + "hCollisionSelection")->Fill(11);
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hNPVContributors"), collision.multNTracksPV());
-    histos.fill(HIST("hFT0A_Collisions"), collision.multFT0A());
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
-    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()));
-    histos.fill(HIST("hFDDA_Collisions"), collision.multFDDA());
-    histos.fill(HIST("hFDDC_Collisions"), collision.multFDDC());
-    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A());
+    histos.fill(HIST("hNPVContributors"), multNTracksPV);
+    histos.fill(HIST("hFT0A_Collisions"), multFT0A);
+    histos.fill(HIST("hFT0C_Collisions"), multFT0C);
+    histos.fill(HIST("hFT0M_Collisions"), multFT0A + multFT0C);
+    histos.fill(HIST("hFDDA_Collisions"), multFDDA);
+    histos.fill(HIST("hFDDC_Collisions"), multFDDC);
+    histos.fill(HIST("hFV0A_Collisions"), multFV0A);
     histos.fill(HIST("hNGlobalTracks"), collision.multNTracksGlobal());
     histos.fill(HIST("hNMFTTracks"), collision.mftNtracks());
 
@@ -473,6 +475,7 @@ struct centralityStudypp {
     getHist(TH1, histPath + "hFT0M_Collisions")->Fill((multFT0A + multFT0C));
     getHist(TH1, histPath + "hFDDA_Collisions")->Fill(multFDDA);
     getHist(TH1, histPath + "hFDDC_Collisions")->Fill(multFDDC);
+    getHist(TH1, histPath + "hFDDM_Collisions")->Fill(multFDDA + multFDDC);
     getHist(TH1, histPath + "hFV0A_Collisions")->Fill(multFV0A);
     getHist(TH1, histPath + "hNGlobalTracks")->Fill(multNTracksGlobal);
     getHist(TH1, histPath + "hNMFTTracks")->Fill(mftNtracks);
