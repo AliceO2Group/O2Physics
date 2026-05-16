@@ -224,9 +224,9 @@ struct centralityStudypp {
       // won't capture null pointers -> explicitly check for those when attempting to evaluate
       auto reportSuccess = [](TH1* a, TString name) {
         if(!a){ 
-          LOGF(info, "Calibration missing for %s", name.data());
+          LOGF(info, "Calibration missing for %s", name.Data());
         }else{ 
-          LOGF(info, "Calibration loaded for %s", name.Data())
+          LOGF(info, "Calibration loaded for %s", name.Data());
         }
       }; 
 
