@@ -334,7 +334,10 @@ struct StrangenessInJetsIons {
     }
 
     // Histograms for mc generated
-    if (doprocessMCgenerated) {
+    if (doprocessMCgenerated || doprocessMCmodels) {
+      if (doprocessMCgenerated && doprocessMCmodels) {
+        LOG(fatal) << "processMCgenerated and processMCmodels cannot be selected at the same time. Exit." << endl;
+      }
 
       // Event counter
       registryMC.add("number_of_events_mc_gen", "number of gen events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
@@ -1952,7 +1955,6 @@ struct StrangenessInJetsIons {
       if (fjParticles.size() < 1)
         continue;
       registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
-      
 
       // Cluster MC particles into jets using anti-kt algorithm
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
@@ -2237,7 +2239,7 @@ struct StrangenessInJetsIons {
       const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
 
       FillMBEventHistoMCREC(collision, mcParticles, v0sPerColl,
-                              cascPerColl, tracksPerColl, multiplicity);
+                            cascPerColl, tracksPerColl, multiplicity);
 
       // Loop over reconstructed tracks
       for (auto const& track : tracksPerColl) {
@@ -2570,6 +2572,291 @@ struct StrangenessInJetsIons {
     }
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processMCreconstructed, "process reconstructed events", false);
+
+  void processMCmodels(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const& collisions,
+                       aod::McParticles const& mcParticles)
+  {
+    // Define per-event particle containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> strHadronMomentum;
+    std::vector<int> pdg;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over MC collisions
+    for (const auto& collision : collisions) {
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      strHadronMomentum.clear();
+      pdg.clear();
+
+      // Fill event counter before any selection
+      registryMC.fill(HIST("number_of_events_mc_gen"), 0.5);
+
+      // Require vertex position within the allowed z range
+      // if (std::fabs(collision.posZ()) > zVtx)
+      //   continue;
+
+      // Fill event counter after selection on z-vertex
+      registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
+
+      // Multiplicity of generated event retrived from corresponding MC RECO collision
+      // float genMultiplicity = multiplicity;
+
+      // Multiplicity of generated event
+      float genMultiplicity;
+      if (centrEstimator == 0) {
+        genMultiplicity = collision.centFT0C();
+      } else {
+        genMultiplicity = collision.centFT0M();
+      }
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_MB"), genMultiplicity);
+
+      // MC particles per collision
+      auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
+
+      // Loop over all MC particles and select physical primaries within acceptance
+      for (const auto& particle : mcParticlesPerColl) {
+        // Store properties of strange hadrons
+        int pdgAbs = std::abs(particle.pdgCode());
+        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) { // TODO: add protons, kaons, pions
+          pdg.emplace_back(particle.pdgCode());
+          strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
+        }
+
+        double minPtParticle = 0.1f;
+        if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
+          continue;
+
+        // false --> do not fill histograms with reco events
+        FillMBEventHistoMCGEN(particle, genMultiplicity, false);
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+          continue;
+
+        // Build 4-momentum assuming charged pion mass
+        static constexpr float kMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+        const double energy = std::sqrt(particle.p() * particle.p() + kMassPionChargedSquared);
+        fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
+        fourMomentum.set_user_index(particle.pdgCode());
+        fjParticles.emplace_back(fourMomentum);
+      }
+
+      // Skip events with no particles
+      if (fjParticles.size() < 1)
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
+
+      // Cluster MC particles into jets using anti-kt algorithm
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+
+      // Estimate background energy density (rho) in perpendicular cone
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Loop over clustered jets
+      int countSelJet = 0; // number of selected jets
+      for (const auto& jet : jets) {
+
+        // Jet must be fully contained in acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
+          continue;
+
+        // Subtract background energy from jet
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+
+        // Apply jet pT threshold
+        if (jetMinusBkg.pt() < minJetPt)
+          continue;
+        countSelJet++;
+        registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
+
+        // Set up two perpendicular cone axes for underlying event estimation
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        double coneRadius = std::sqrt(jet.area() / PI);
+        TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
+        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+          continue;
+        }
+
+        // Loop over strange hadrons
+        int index = -1;
+        for (const auto& hadron : strHadronMomentum) {
+          // Particle index
+          index++;
+
+          // Compute distance of particles from jet and UE axes
+          double deltaEtaJet = hadron.Eta() - jetAxis.Eta();
+          double deltaPhiJet = getDeltaPhi(hadron.Phi(), jetAxis.Phi());
+          double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          double deltaEtaUe1 = hadron.Eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(hadron.Phi(), ueAxis1.Phi());
+          double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          double deltaEtaUe2 = hadron.Eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(hadron.Phi(), ueAxis2.Phi());
+          double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Select particles inside jet
+          if (deltaRJet < coneRadius) {
+            switch (pdg[index]) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProton:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProtonBar:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+
+          // Select particles inside UE cones
+          if (deltaRUe1 < coneRadius || deltaRUe2 < coneRadius) {
+            switch (pdg[index]) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProton:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProtonBar:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      }
+      // Fill jet counter
+      registryMC.fill(HIST("n_jets_vs_mult_mc_gen"), genMultiplicity, countSelJet);
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJetsIons, processMCmodels, "Process MC generated events (with models)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
