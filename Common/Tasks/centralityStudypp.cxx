@@ -222,26 +222,25 @@ struct centralityStudypp {
       hCentralityMFT = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
 
       // won't capture null pointers -> explicitly check for those when attempting to evaluate
-      auto reportSuccess = [](TH1* a, TString name) {
+      auto reportSuccess = [](TH1* a, std::string name) {
         if(!a){ 
-          LOGF(info, "Calibration missing for %s", name.Data());
+          LOGF(info, "Calibration missing for %s", name);
         }else{ 
-          LOGF(info, "Calibration loaded for %s", name.Data());
+          LOGF(info, "Calibration loaded for %s", name);
         }
       }; 
 
-      reportSucess(hCentralityFV0A, "FV0A");
-      reportSucess(hCentralityFT0A, "FT0A");
-      reportSucess(hCentralityFT0C, "FT0C");
-      reportSucess(hCentralityFT0M, "FT0M");
-      reportSucess(hCentralityFDDM, "FDDM");
-      reportSucess(hCentralityNTPV, "NTPV");
-      reportSucess(hCentralityNGlo, "NGlobals");
-      reportSucess(hCentralityMFT, "MFT");
+      reportSuccess(hCentralityFV0A, "FV0A");
+      reportSuccess(hCentralityFT0A, "FT0A");
+      reportSuccess(hCentralityFT0C, "FT0C");
+      reportSuccess(hCentralityFT0M, "FT0M");
+      reportSuccess(hCentralityFDDM, "FDDM");
+      reportSuccess(hCentralityNTPV, "NTPV");
+      reportSuccess(hCentralityNGlo, "NGlobals");
+      reportSuccess(hCentralityMFT, "MFT");
 
       LOGF(info, "Centrality calibration loading done.");
     }
-
 
     histPath = std::format("Run_{}/", mRunNumber);
 
