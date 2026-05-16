@@ -346,9 +346,11 @@ struct StrangenessInJetsIons {
 
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen_w_reco", "number of events vs multiplicity (gen with reco)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // For MB
       registryMC.add("number_of_events_vsmultiplicity_gen_MB", "number of events vs multiplicity (MB)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen_w_reco_MB", "number of events vs multiplicity (MB gen with reco)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Jet counters
       registryMC.add("n_jets_vs_mult_pT_mc_gen", "n_jets_vs_mult_pT_mc_gen", HistType::kTH2F, {multAxis, ptJetAxis});
@@ -1187,9 +1189,9 @@ struct StrangenessInJetsIons {
     return std::abs(yParticle) < rapidityCut;
   }
 
-  void FillFullEventHistoMCGEN(aod::McParticle const& particle,
-                               const double& genMultiplicity,
-                               bool hasReco = false)
+  void FillMBEventHistoMCGEN(aod::McParticle const& particle,
+                             const double& genMultiplicity,
+                             bool hasReco = false)
   {
     if (particle.isPhysicalPrimary() && passedRapidityCut(particle.y(), configV0.rapidityMax)) {
       switch (particle.pdgCode()) {
@@ -1275,12 +1277,12 @@ struct StrangenessInJetsIons {
 
   // Fill Minimum Bias histograms
   template <typename MCRecoCollision, typename V0PerColl, typename CascPerColl, typename TracksPerColl>
-  void FillFullEventHistoMCREC(MCRecoCollision collision,
-                               aod::McParticles const& mcParticles,
-                               V0PerColl const& v0sPerColl,
-                               CascPerColl const& cascPerColl,
-                               TracksPerColl const& tracksPerColl,
-                               const double& multiplicity)
+  void FillMBEventHistoMCREC(MCRecoCollision collision,
+                             aod::McParticles const& mcParticles,
+                             V0PerColl const& v0sPerColl,
+                             CascPerColl const& cascPerColl,
+                             TracksPerColl const& tracksPerColl,
+                             const double& multiplicity)
   {
     // V0 particles
     if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -1913,6 +1915,8 @@ struct StrangenessInJetsIons {
         genMultiplicity = collision.centFT0M();
       }
       registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_MB"), genMultiplicity);
+      if (hasReco)
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_w_reco_MB"), genMultiplicity);
 
       // MC particles per collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
@@ -1930,7 +1934,7 @@ struct StrangenessInJetsIons {
         if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
           continue;
 
-        FillFullEventHistoMCGEN(particle, genMultiplicity, hasReco);
+        FillMBEventHistoMCGEN(particle, genMultiplicity, hasReco);
 
         // Select physical primary particles or HF decay products
         if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
@@ -1948,6 +1952,7 @@ struct StrangenessInJetsIons {
       if (fjParticles.size() < 1)
         continue;
       registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
+      
 
       // Cluster MC particles into jets using anti-kt algorithm
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
@@ -1974,6 +1979,8 @@ struct StrangenessInJetsIons {
         countSelJet++;
         registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
         registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
+        if (hasReco)
+          registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_w_reco"), genMultiplicity);
 
         // Fill jet counter
         registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
@@ -2229,7 +2236,7 @@ struct StrangenessInJetsIons {
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
       const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
 
-      FillFullEventHistoMCREC(collision, mcParticles, v0sPerColl,
+      FillMBEventHistoMCREC(collision, mcParticles, v0sPerColl,
                               cascPerColl, tracksPerColl, multiplicity);
 
       // Loop over reconstructed tracks
