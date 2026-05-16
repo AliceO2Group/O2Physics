@@ -223,12 +223,12 @@ struct centralityStudypp {
 
       // won't capture null pointers -> explicitly check for those when attempting to evaluate
       auto reportSuccess = [](TH1* a, std::string name) {
-        if(!a){ 
+        if (!a) {
           LOGF(info, "Calibration missing for %s", name);
-        }else{ 
+        } else {
           LOGF(info, "Calibration loaded for %s", name);
         }
-      }; 
+      };
 
       reportSuccess(hCentralityFV0A, "FV0A");
       reportSuccess(hCentralityFT0A, "FT0A");
