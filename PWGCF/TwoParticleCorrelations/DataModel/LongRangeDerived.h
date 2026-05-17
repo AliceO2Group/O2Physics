@@ -184,20 +184,21 @@ inline float unPackSymmetric(const typename binningType::binned_t& b)
 namespace binning
 {
 
-template <typename T, float Min, float Max>
+template <std::pair<float, float> lim, typename binVariable = int8_t>
 struct binningParent {
  public:
-  using binned_t = T;
+  typedef binVariable binned_t;
 
   // Reserve two bins: one for overflow and one for underflow
   static constexpr int nbins = (1 << (8 * sizeof(binned_t))) - 2;
   static constexpr binned_t overflowBin = nbins;
   static constexpr binned_t underflowBin = -1;
-  static constexpr float binned_min = static_cast<float>(Min);
-  static constexpr float binned_max = static_cast<float>(Max);
+  static constexpr float binned_min = lim.first;
+  static constexpr float binned_max = lim.second;
   static constexpr float binned_center = 0.5 * (binned_min + binned_max);
   static constexpr float bin_width = (binned_max - binned_min) / static_cast<float>(nbins);
   static constexpr float inv_bin_width = 1. / bin_width;
+  static_assert(binned_min < binned_max, "Invalid binning range");
   static void print()
   {
     LOG(info) << "Binning: " << binned_min << " - " << binned_max << " with " << nbins << " bins, width = "
@@ -205,12 +206,12 @@ struct binningParent {
   }
 };
 
-using trkdca_v0 = binningParent<int8_t, -2.0f, 2.0f>;
-using trkphi_v0 = binningParent<uint16_t, 0.0f, o2::constants::math::TwoPI>;
-using trkamp_v0 = binningParent<uint16_t, 0.0f, 5000.0f>;
-using trkpt_v0 = binningParent<uint16_t, 0.0f, 20.0f>;
-using trketa_v0 = binningParent<int16_t, -5.0f, 5.0f>;
-using trkchi2_v0 = binningParent<int8_t, 0.0f, 10.0f>;
+using trkdca_v0 = binningParent<std::pair<float, float>(-2.0f, 2.0f), int8_t>;
+using trkphi_v0 = binningParent<std::pair<float, float>(0.0f, o2::constants::math::TwoPI), uint16_t>;
+using trkamp_v0 = binningParent<std::pair<float, float>(0.0f, 5000.0f), uint16_t>;
+using trkpt_v0 = binningParent<std::pair<float, float>(0.0f, 10.0f), uint16_t>;
+using trketa_v0 = binningParent<std::pair<float, float>(-5.0f, 5.0f), int16_t>;
+using trkchi2_v0 = binningParent<std::pair<float, float>(0.0f, 10.0f), int8_t>;
 
 using trkdca = trkdca_v0;
 using trkchi2 = trkchi2_v0;
