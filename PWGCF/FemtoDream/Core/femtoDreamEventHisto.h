@@ -16,10 +16,9 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMEVENTHISTO_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMEVENTHISTO_H_
 
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-using namespace o2::framework;
 namespace o2::analysis::femtoDream
 {
 /// \class FemtoDreamEventHisto
@@ -31,18 +30,18 @@ class FemtoDreamEventHisto
   virtual ~FemtoDreamEventHisto() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry, bool isMC = false)
+  void init(o2::framework::HistogramRegistry* registry, bool isMC = false)
   {
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/hZvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/hMultPercentile", "; Multiplicity Percentile (FT0M); Entries", kTH1F, {{110, 0, 110}});
-    mHistogramRegistry->add("Event/hMultNTr", "; Multiplicity (MultNtr); Entries", kTH1F, {{200, 0, 200}});
-    mHistogramRegistry->add("Event/hMultNTrVsZvtx", "; Multiplicity (MultNtr); vtx_{z} (cm)", kTH2F, {{200, 0, 200}, {300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/hMultNTrVsMultPercentile", "; Multiplicity (MultNtr); Multiplicity Percentile (FT0M)", kTH2F, {{200, 0, 200}, {110, 0, 110}});
-    mHistogramRegistry->add("Event/hMultPercentileVsZvtx", "; Multiplicity Percentile (FT0M); vtx_{z} (cm)", kTH2F, {{110, 0, 110}, {300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/hZvtx", "; vtx_{z} (cm); Entries", o2::framework::HistType::kTH1F, {{300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/hMultPercentile", "; Multiplicity Percentile (FT0M); Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
+    mHistogramRegistry->add("Event/hMultNTr", "; Multiplicity (MultNtr); Entries", o2::framework::HistType::kTH1F, {{200, 0, 200}});
+    mHistogramRegistry->add("Event/hMultNTrVsZvtx", "; Multiplicity (MultNtr); vtx_{z} (cm)", o2::framework::HistType::kTH2F, {{200, 0, 200}, {300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/hMultNTrVsMultPercentile", "; Multiplicity (MultNtr); Multiplicity Percentile (FT0M)", o2::framework::HistType::kTH2F, {{200, 0, 200}, {110, 0, 110}});
+    mHistogramRegistry->add("Event/hMultPercentileVsZvtx", "; Multiplicity Percentile (FT0M); vtx_{z} (cm)", o2::framework::HistType::kTH2F, {{110, 0, 110}, {300, -12.5, 12.5}});
 
     if (isMC) {
-      mHistogramRegistry->add("Event_MC/hGenMult08VsMultPercentile", "; generated MC multiplicity (#eta<0.8); Multiplicity Percentile (FT0M)", kTH2F, {{200, 0, 200}, {110, 0, 110}});
+      mHistogramRegistry->add("Event_MC/hGenMult08VsMultPercentile", "; generated MC multiplicity (#eta<0.8); Multiplicity Percentile (FT0M)", o2::framework::HistType::kTH2F, {{200, 0, 200}, {110, 0, 110}});
     }
   }
 
@@ -69,7 +68,7 @@ class FemtoDreamEventHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry; ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry; ///< For QA output
 };
 } // namespace o2::analysis::femtoDream
 

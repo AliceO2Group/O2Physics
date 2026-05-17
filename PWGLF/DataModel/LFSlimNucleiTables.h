@@ -14,13 +14,12 @@
 /// \brief Slim nuclei tables
 ///
 
-#include "Common/DataModel/Centrality.h"
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

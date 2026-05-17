@@ -20,36 +20,36 @@
 //
 
 #include "PWGLF/DataModel/LFSigmaTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TFile.h>
-#include <TH2F.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -57,7 +57,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using std::array;
 using Sigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::SigmaCollRef>;
 using MCSigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::Sigma0MCCores, aod::SigmaCollRef>;
 using Sigma0sWithEMCal = soa::Join<aod::Sigma0Cores, aod::Sigma0EMPhotons, aod::Sigma0LambdaExtras, aod::SigmaCollRef>;
@@ -89,6 +88,9 @@ struct sigmaanalysis {
 
   //__________________________________________________
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Species
+  Configurable<bool> doLambdaStar{"doLambdaStar", false, "Build Lambda(1520) instead of Sigma0"};
 
   // Event level
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
@@ -1617,13 +1619,13 @@ struct sigmaanalysis {
       return false;
 
     // Sigma0 specific selections
-    float sigma0Y = cand.sigma0Y();
+    float rapidity = doLambdaStar ? cand.lambdaStarY() : cand.sigma0Y();
     if constexpr (requires { cand.sigma0MCY(); }) { // If MC
-      sigma0Y = cand.sigma0MCY();
+      rapidity = cand.sigma0MCY();
     }
 
     // Rapidity
-    if ((sigma0Y < sigma0Selections.Sigma0MinRapidity) || (sigma0Y > sigma0Selections.Sigma0MaxRapidity))
+    if ((rapidity < sigma0Selections.Sigma0MinRapidity) || (rapidity > sigma0Selections.Sigma0MaxRapidity))
       return false;
 
     // V0Pair Radius

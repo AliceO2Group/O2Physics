@@ -21,7 +21,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
-#include <DataFormatsParameters/GRPMagField.h> // FIXME: remove
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Configurable.h>

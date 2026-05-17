@@ -12,9 +12,11 @@
 #ifndef PWGLF_DATAMODEL_LFZDCSPTABLES_H_
 #define PWGLF_DATAMODEL_LFZDCSPTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Centrality.h"
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

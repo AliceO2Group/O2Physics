@@ -19,7 +19,6 @@
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -378,7 +377,7 @@ struct DileptonPolarization {
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
     fRegistry.addClone("Pair/same/", "Pair/mix/");
     fRegistry.add("Pair/same/uls/hEta", "#eta_{ll}", kTH1D, {{2000, -10, 10}}, true);
-    fRegistry.add("Pair/mix/uls/hBeta", "#beta for Lorentz boost;#beta^{same};(#beta^{mix} - #beta^{same})/#beta^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
+    // fRegistry.add("Pair/mix/uls/hBeta", "#beta for Lorentz boost;#beta^{same};(#beta^{mix} - #beta^{same})/#beta^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
   }
 
   template <typename TCollision, typename TDilepton, typename TMixingBin>
@@ -484,13 +483,13 @@ struct DileptonPolarization {
           phiPol = std::fabs(phiPol);
         }
         fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-        fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
+        // fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
 
       } // end of pair2 loop
     } // end of pair1 loop
   }
 
-  Filter collisionFilter_centrality = eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax;
+  Filter collisionFilter_centrality = eventcuts.cfgCentMin < o2::aod::emthinevent::centrality && o2::aod::emthinevent::centrality < eventcuts.cfgCentMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using filteredCollisions = soa::Filtered<aod::EMThinEvents>;
@@ -516,7 +515,7 @@ struct DileptonPolarization {
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
-      float centrality = collision.centFT0C();
+      float centrality = collision.centrality();
       if (centrality < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centrality) {
         continue;
       }
@@ -525,7 +524,7 @@ struct DileptonPolarization {
       fRegistry.fill(HIST("Event/after/hZvtx"), collision.posZ());
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 9);
       fRegistry.fill(HIST("Event/after/hCorrOccupancy"), collision.ft0cOccupancyInTimeRange(), collision.trackOccupancyInTimeRange());
-      fRegistry.fill(HIST("Event/after/hEP2_CentFT0C_forMix"), collision.centFT0C(), ep2);
+      fRegistry.fill(HIST("Event/after/hEP2_CentFT0C_forMix"), centrality, ep2);
 
       // event mixing
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;

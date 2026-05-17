@@ -21,29 +21,41 @@
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector4D.h"
-#include "TRandom3.h"
+#include <TH2.h>
+#include <TH3.h>
+#include <TMath.h>
+#include <TRandom3.h>
+#include <TString.h>
 
+#include <fmt/format.h>
+
+#include <GPUROOTCartesianFwd.h>
+
+#include <array>
 #include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

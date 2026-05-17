@@ -15,35 +15,44 @@
 /// \since 31 May 2023
 
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+#include "PWGCF/Femto3D/DataModel/PIDutils.h"
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/Utils.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TH1F.h>
+#include <TH1.h>
 #include <TLorentzVector.h>
-#include <TParameter.h>
+#include <TString.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>

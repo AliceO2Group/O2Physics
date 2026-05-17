@@ -45,11 +45,13 @@ enum class DileptonPairType : int {
 enum class DileptonAnalysisType : int {
   kQC = 0,
   kUPC = 1,
-  kFlowV2 = 2,
-  kFlowV3 = 3,
+  kFlowV2SP = 2,
+  kFlowV3SP = 3,
   kPolarization = 4,
   kHFll = 5,
   kBootstrapv2 = 6,
+  kFlowV2EP = 7,
+  kFlowV3EP = 8,
 };
 
 enum class DileptonHadronAnalysisType : int {

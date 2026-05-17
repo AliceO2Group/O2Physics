@@ -124,7 +124,6 @@ struct TaskPi0FlowEMC {
   Configurable<bool> cfgDoM02{"cfgDoM02", false, "Flag to enable flow vs M02 for single photons"};
   Configurable<bool> cfgDoPlaneQA{"cfgDoPlaneQA", false, "Flag to enable QA plots comparing in and out of plane"};
   Configurable<float> cfgMaxQVector{"cfgMaxQVector", 20.f, "Maximum allowed absolute QVector value."};
-  Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", 0.1f, "Maximum allowed asymmetry for photon pairs used in calibration."};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
@@ -226,7 +225,7 @@ struct TaskPi0FlowEMC {
     std::string prefix = "mixingConfig";
     ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgCentBins{"cfgCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Mixing bins - centrality"};
-    ConfigurableAxis cfgEPBins{"cfgEPBins", {8, o2::constants::math::PIHalf, o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
+    ConfigurableAxis cfgEPBins{"cfgEPBins", {8, -o2::constants::math::PIHalf, o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
     ConfigurableAxis cfgOccupancyBins{"cfgOccupancyBins", {VARIABLE_WIDTH, 0, 100, 500, 1000, 2000}, "Mixing bins - occupancy"};
     Configurable<int> cfgMixingDepth{"cfgMixingDepth", 2, "Mixing depth"};
   } mixingConfig;
@@ -1342,6 +1341,10 @@ struct TaskPi0FlowEMC {
         // event selection
         continue;
       }
+      if (!isQvecGood(getAllQvec(c1)) || !isQvecGood(getAllQvec(c2))) {
+        // selection based on QVector
+        continue;
+      }
       runNow = c1.runNumber();
       if (runNow != runBefore) {
         initCCDB(c1);
@@ -1440,8 +1443,6 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("clusterQA/hEClusterBefore"), photon.e());                      // before cuts
           registry.fill(HIST("clusterQA/hClusterEtaPhiBefore"), photon.phi(), photon.eta()); // before cuts
         }
-        auto matchedPrimsPerCluster = matchedPrims.sliceBy(perEMCClusterMT, photon.globalIndex());
-        auto matchedSecondsPerCluster = matchedSeconds.sliceBy(perEMCClusterMS, photon.globalIndex());
         if (!(emcFlags.test(photon.globalIndex()))) {
           continue;
         }
@@ -1468,7 +1469,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("p3DM02Flow"), photon.m02(), photon.pt(), cent, scalprodCand);
           registry.fill(HIST("h3DSparsePi0"), photon.m02(), photon.pt(), cent);
         }
-        return;
+        continue;
       } // end of loop over single cluster
     } // end of loop over collisions
   } // processM02
@@ -1500,8 +1501,8 @@ struct TaskPi0FlowEMC {
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(g1.corrPt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));

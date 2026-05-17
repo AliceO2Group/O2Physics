@@ -18,12 +18,25 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -40,6 +53,7 @@ struct FemtoUniverseEfficiencyBase {
   Configurable<bool> confIsDebug{"confIsDebug", true, "Enable debug histograms"};
   Configurable<bool> confIsMCGen{"confIsMCGen", false, "Enable QA histograms for MC Gen"};
   Configurable<bool> confIsMCReco{"confIsMCReco", false, "Enable QA histograms for MC Reco"};
+  Configurable<bool> fillSecTrkContHistos{"fillSecTrkContHistos", false, "Enable histograms for secondary track contamination"};
 
   Configurable<bool> confDoPartNsigmaRejection{"confDoPartNsigmaRejection", false, "Enable particle nSigma rejection"};
   Configurable<bool> forceTof{"forceTof", false, "Enable to reject tracks without TOF for PID, set to false for processes with V0"};
@@ -180,6 +194,8 @@ struct FemtoUniverseEfficiencyBase {
   HistogramRegistry registryPDG{"PDGHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryCuts{"CutsPtHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCOrigin{"MCOriginHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryTOFMatch{"TOFMatchHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registrySecTrkCont{"registrySecTrkCont", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   void init(InitContext&)
   {
@@ -188,11 +204,13 @@ struct FemtoUniverseEfficiencyBase {
     registryCuts.add("part1/cutsVspT", ";#it{p}_{T} (GeV/c) ;Cut no.", {HistType::kTH2F, {{500, 0, 5}, {7, 0, 7}}});
     trackHistoPartOneGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, confIsMCGen, confPDGCodePartOne, false);
     trackHistoPartOneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartOne, confIsDebug);
-    registryMCOrigin.add("part1/hPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
-    registryMCOrigin.add("part1/hTofMatchingPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
-    registryMCOrigin.add("part1/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
-    registryPDG.add("part1/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
-    registryPDG.add("part1/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
+    registryMCOrigin.add("part1/hRecoPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryMCOrigin.add("part1/hTruthPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtBeforePID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtAfterPID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryPDG.add("part1/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
+    registryPDG.add("part1/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
     if (confParticleTypePartOne == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
       trackHistoV0OneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarCPABins, 0, confPDGCodePartOne, confIsDebug);
       trackHistoV0OneChildPosRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, 0, 0, confIsDebug, "posChildV0_1");
@@ -200,22 +218,42 @@ struct FemtoUniverseEfficiencyBase {
       registryPDG.add("part1/dpositive/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
       registryPDG.add("part1/dnegative/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     }
+    if (fillSecTrkContHistos) {
+      registrySecTrkCont.add("part1/hDCAxy_Primary", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+      registrySecTrkCont.add("part1/hDCAxy_Daughter", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+      registrySecTrkCont.add("part1/hDCAxy_Material", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+      registrySecTrkCont.add("part1/hDCAxy_WrongCollision", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+      registrySecTrkCont.add("part1/hDCAxy_Fake", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+      registrySecTrkCont.add("part1/hDCAxy_Else", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+      registrySecTrkCont.add("part1/hDCAxy_NoMCTruthOrgin", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+    }
 
-    registryPDG.add("part2/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
-    registryPDG.add("part2/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     if (!confIsSame) {
       registryCuts.add("part2/cutsVspT", ";#it{p}_{T} (GeV/c) ;Cut no.", {HistType::kTH2F, {{500, 0, 5}, {7, 0, 7}}});
       trackHistoPartTwoGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, confIsMCGen, confPDGCodePartTwo, false);
       trackHistoPartTwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartTwo, confIsDebug);
-      registryMCOrigin.add("part2/hPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
-      registryMCOrigin.add("part2/hTofMatchingPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
-      registryMCOrigin.add("part2/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
+      registryMCOrigin.add("part2/hRecoPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryMCOrigin.add("part2/hTruthPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtBeforePID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtAfterPID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryPDG.add("part2/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
+      registryPDG.add("part2/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
       if (confParticleTypePartTwo == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
         trackHistoV0TwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarCPABins, 0, confPDGCodePartTwo, confIsDebug);
         trackHistoV0TwoChildPosRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, 0, 0, confIsDebug, "posChildV0_2");
         trackHistoV0TwoChildNegRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, 0, 0, confIsDebug, "negChildV0_2");
         registryPDG.add("part2/dpositive/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
         registryPDG.add("part2/dnegative/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
+      }
+      if (fillSecTrkContHistos) {
+        registrySecTrkCont.add("part2/hDCAxy_Primary", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+        registrySecTrkCont.add("part2/hDCAxy_Daughter", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+        registrySecTrkCont.add("part2/hDCAxy_Material", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+        registrySecTrkCont.add("part2/hDCAxy_WrongCollision", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+        registrySecTrkCont.add("part2/hDCAxy_Fake", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+        registrySecTrkCont.add("part2/hDCAxy_Else", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
+        registrySecTrkCont.add("part2/hDCAxy_NoMCTruthOrgin", ";#it{p}_{T} (GeV/c); DCA_{xy} (cm)", {HistType::kTH2F, {{confTempFitVarpTBins}, {confTempFitVarDCABins}}});
       }
     }
   }
@@ -251,7 +289,6 @@ struct FemtoUniverseEfficiencyBase {
       return true;
     }
 
-    // if (mom <= ConfBothTracks.confMomProton || !partHasTof) {
     if (mom <= ConfBothTracks.confMomProton || !partHasTof) {
       if (std::abs(nsigmaTPCPi) < ConfBothTracks.confNsigmaPrRejectPiNsigma) {
         return true;
@@ -603,6 +640,12 @@ struct FemtoUniverseEfficiencyBase {
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 2);
 
+      if (!part.has_fdMCParticle()) {
+        continue;
+      }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 3);
+      registryTOFMatch.fill(HIST("part1/hTofMatchPtBeforePID"), part.pt());
+
       if (!ConfTracksPid.trkUsePassPIDSelection) {
         if (!isParticleNSigma(confPDGCodePartOne, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
           continue;
@@ -615,18 +658,30 @@ struct FemtoUniverseEfficiencyBase {
           continue;
         }
       }
-
-      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 3);
-
-      if (!part.has_fdMCParticle()) {
-        continue;
-      }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 4);
 
+      // Get the coresponding MC particle
       const auto mcParticle = part.fdMCParticle();
 
       registryPDG.fill(HIST("part1/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
-      trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
+
+      if (fillSecTrkContHistos) {
+        if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_Primary"), part.pt(), part.tempFitVar());
+        } else if ((mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterLambda) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaplus)) {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_Daughter"), part.pt(), part.tempFitVar());
+        } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial) {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_Material"), part.pt(), part.tempFitVar());
+        } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kWrongCollision) {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_WrongCollision"), part.pt(), part.tempFitVar());
+        } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake) {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_Fake"), part.pt(), part.tempFitVar());
+        } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kElse) {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_Else"), part.pt(), part.tempFitVar());
+        } else {
+          registrySecTrkCont.fill(HIST("part1/hDCAxy_NoMCTruthOrgin"), part.pt(), part.tempFitVar());
+        }
+      }
 
       if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         continue;
@@ -637,14 +692,15 @@ struct FemtoUniverseEfficiencyBase {
         continue;
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 6);
-
+      trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
       registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
-      registryMCOrigin.fill(HIST("part1/hPt"), mcParticle.pt());
+      registryMCOrigin.fill(HIST("part1/hRecoPt"), part.pt());
+      registryMCOrigin.fill(HIST("part1/hTruthPt"), mcParticle.pt());
       // TOF Matching efficiency
       if (part.mLambda() == 1) {
-        registryMCOrigin.fill(HIST("part1/hTofMatchingPt"), mcParticle.pt());
+        registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPID"), part.pt());
       } else {
-        registryMCOrigin.fill(HIST("part1/hTpcPt"), mcParticle.pt());
+        registryTOFMatch.fill(HIST("part1/hTpcPt"), part.pt());
       }
     }
 
@@ -662,6 +718,12 @@ struct FemtoUniverseEfficiencyBase {
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 2);
 
+        if (!part.has_fdMCParticle()) {
+          continue;
+        }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 3);
+        registryTOFMatch.fill(HIST("part2/hTofMatchPtBeforePID"), part.pt());
+
         if (!ConfTracksPid.trkUsePassPIDSelection) {
           if (!isParticleNSigma(confPDGCodePartTwo, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
             continue;
@@ -674,17 +736,30 @@ struct FemtoUniverseEfficiencyBase {
             continue;
           }
         }
-
-        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 3);
-
-        if (!part.has_fdMCParticle()) {
-          continue;
-        }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 4);
+
+        // Get the coresponding MC particle
         const auto mcParticle = part.fdMCParticle();
 
         registryPDG.fill(HIST("part2/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
-        trackHistoPartTwoRec.fillQA<isMC, isDebug>(part);
+
+        if (fillSecTrkContHistos) {
+          if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_Primary"), part.pt(), part.tempFitVar());
+          } else if ((mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterLambda) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaplus)) {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_Daughter"), part.pt(), part.tempFitVar());
+          } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial) {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_Material"), part.pt(), part.tempFitVar());
+          } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kWrongCollision) {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_WrongCollision"), part.pt(), part.tempFitVar());
+          } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake) {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_Fake"), part.pt(), part.tempFitVar());
+          } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kElse) {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_Else"), part.pt(), part.tempFitVar());
+          } else {
+            registrySecTrkCont.fill(HIST("part2/hDCAxy_NoMCTruthOrgin"), part.pt(), part.tempFitVar());
+          }
+        }
 
         if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
           continue;
@@ -695,14 +770,15 @@ struct FemtoUniverseEfficiencyBase {
           continue;
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 6);
-
+        trackHistoPartTwoRec.fillQA<isMC, isDebug>(part);
         registryPDG.fill(HIST("part2/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
-        registryMCOrigin.fill(HIST("part2/hPt"), mcParticle.pt());
+        registryMCOrigin.fill(HIST("part2/hRecoPt"), part.pt());
+        registryMCOrigin.fill(HIST("part2/hTruthPt"), mcParticle.pt());
         // TOF Matching efficiency
         if (part.mLambda() == 1) {
-          registryMCOrigin.fill(HIST("part2/hTofMatchingPt"), mcParticle.pt());
+          registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPID"), part.pt());
         } else {
-          registryMCOrigin.fill(HIST("part2/hTpcPt"), mcParticle.pt());
+          registryTOFMatch.fill(HIST("part2/hTpcPt"), mcParticle.pt());
         }
       }
     }
@@ -913,7 +989,7 @@ struct FemtoUniverseEfficiencyBase {
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoRec = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     if (confIsDebug) {
-      if (confIsMCGen) {
+      if (confIsMCReco) {
         doMCRecTrackTrack<true, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
       } else {
         doMCRecTrackTrack<false, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);

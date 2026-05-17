@@ -17,17 +17,23 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 

@@ -13,7 +13,7 @@
 /// \brief Source of class for V0 photon selection.
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "V0PhotonCut.h"
 
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 

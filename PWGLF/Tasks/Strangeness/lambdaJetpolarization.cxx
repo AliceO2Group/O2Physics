@@ -10,51 +10,50 @@
 // or submit itself to any jurisdiction.
 ///
 
-// o2-linter: disable=name/workflow-file
-
 /// \author Youpeng Su (yousu@cern.ch)
-#include "PWGLF/DataModel/lambdaJetpolarization.h"
 
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TProfile2D.h"
-#include <TFile.h>
-// #include <TLorentzVector.h>
-#include <TMatrixD.h>
-#include <TTree.h>
-
-#include <fastjet/AreaDefinition.hh>
-#include <fastjet/ClusterSequence.hh>
-#include <fastjet/ClusterSequenceArea.hh>
-#include <fastjet/GhostedAreaSpec.hh>
-#include <fastjet/PseudoJet.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/tools/JetMedianBackgroundEstimator.hh>
-#include <fastjet/tools/Subtractor.hh>
-
-#include <cmath>
-// #include <iostream>
 #include "PWGLF/DataModel/mcCentrality.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMath.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
+#include <TTree.h>
+#include <TVector3.h>
+
+#include <fastjet/AreaDefinition.hh>
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 

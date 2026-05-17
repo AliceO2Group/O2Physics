@@ -13,12 +13,9 @@
 /// \author Salman Malik
 /// \author Balwan Singh
 
-#include "TRandom.h"
-#include <TH1F.h>
-
-// O2 includes
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -32,8 +29,32 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <unordered_set>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TRandom.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -419,6 +440,7 @@ struct FactorialMomentsTask {
         checkpT(track);
       }
     }
+
     for (int iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);

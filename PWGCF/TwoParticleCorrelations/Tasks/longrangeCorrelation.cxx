@@ -16,48 +16,52 @@
 /// \since April 22, 2025
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <FT0Base/Geometry.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <TComplex.h>
-#include <TH1F.h>
-#include <TMath.h>
-#include <TPDGCode.h>
+#include <TH3.h>
+#include <TRandom.h>
+#include <TString.h>
 
+#include <sys/types.h>
+
+#include <array>
 #include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
