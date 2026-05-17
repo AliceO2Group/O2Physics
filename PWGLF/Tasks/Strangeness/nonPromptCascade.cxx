@@ -205,7 +205,6 @@ struct NonPromptCascadeTask {
   using TracksWithSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   using TracksWithLabelSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels>;
 
-
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
   Preslice<TracksWithSel> perCollisionSel = aod::track::collisionId;
@@ -821,9 +820,9 @@ struct NonPromptCascadeTask {
   // mcCollisions: aod::McCollisions
   // mcParticles : aod::McParticles
   void processdNdetaMC(CollisionCandidatesRun3MC const& colls,
-                     aod::McCollisions const& mcCollisions,
-                     aod::McParticles const& mcParticles,
-                     TracksWithLabelSel const& tracks)
+                       aod::McCollisions const& mcCollisions,
+                       aod::McParticles const& mcParticles,
+                       TracksWithLabelSel const& tracks)
   {
     // ------------------------------------------------------------
     // Helper: accepted generated charged primary
@@ -868,10 +867,10 @@ struct NonPromptCascadeTask {
     // mcid: mc collision row of mc particle
     // ------------------------------------------------------------
     std::vector<int> mcMult(mcCollisions.size(), 0);
-    //std::cout << "mcCollisions size:" << mcCollisions.size() << std::endl;
+    // std::cout << "mcCollisions size:" << mcCollisions.size() << std::endl;
     for (auto const& mcp : mcParticles) {
       const int mcid = mcp.mcCollisionId();
-      //std::cout << "mcid:" << mcid << std::endl; 
+      // std::cout << "mcid:" << mcid << std::endl;
       if (mcid < 0 || static_cast<size_t>(mcid) >= mcMult.size()) {
         std::cout << "0 This should never happen ?" << std::endl;
         continue;
@@ -915,9 +914,9 @@ struct NonPromptCascadeTask {
       }
 
       const int collRowId = trk.collisionId();
-      //std::cout << collRowId << std::endl;
+      // std::cout << collRowId << std::endl;
       if (collRowId < 0 || collRowId > maxCollRowId) {
-        //std::cout << "2 This should never happen ?" << std::endl;
+        // std::cout << "2 This should never happen ?" << std::endl;
         continue;
       }
       const int dIdx = collRowIdToDense[collRowId];
@@ -944,7 +943,6 @@ struct NonPromptCascadeTask {
         mcCollisionHasRecoCollision[mcid] = 1;
       } else {
         std::cout << "4 This should never happen ?" << std::endl;
-
       }
     }
 
@@ -1036,10 +1034,10 @@ struct NonPromptCascadeTask {
       const float ptMC = mcPar.pt();
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"),
-                          multMC,
-                          multReco,
-                          ptMC,
-                          ptReco);
+                           multMC,
+                           multReco,
+                           ptMC,
+                           ptReco);
 
       if (writeMcCollision[mcCollId]) {
         // Matched: accepted truth particle reconstructed inside the fiducial reco phase space.
@@ -1074,8 +1072,8 @@ struct NonPromptCascadeTask {
       const float multMC = mcMult[mcid];
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"),
-                          multMC,
-                          mcp.pt());
+                           multMC,
+                           mcp.pt());
 
       if (writeMcCollision[mcid]) {
         // Missed track: accepted truth particle in a reconstructed MC collision, but no accepted reco track.
@@ -1103,8 +1101,8 @@ struct NonPromptCascadeTask {
         }
 
         mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"),
-                            multMC,
-                            mcp.pt());
+                             multMC,
+                             mcp.pt());
 
         if (writeMcCollision[mcid]) {
           // Missed collision: accepted truth particle from an MC collision with no reconstructed collision.
