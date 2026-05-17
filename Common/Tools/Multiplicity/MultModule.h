@@ -318,8 +318,8 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   // MFT track counter configurables
   o2::framework::Configurable<int> minNclsMFTTrack{"minNclsMFTTrack", 5, "min. number of MFT clusters for MFT tracks"};
   o2::framework::Configurable<float> maxDCAxyToPVMFTTrack{"maxDCAxyToPVMFTTrack", 2.0f, "max DCAxy to PV for MFT tracks (cm)"};
-  o2::framework::Configurable<float> minEtaMFTTrack{"minEtaMFTTrack", -1e+09f, "min. pseudorapidity for MFT tracks (nominal: -3.6)"};
-  o2::framework::Configurable<float> maxEtaMFTTrack{"maxEtaMFTTrack", 1e+09f, "max. pseudorapidity for MFT tracks (nominal: -2.45)"};
+  o2::framework::Configurable<float> minEtaMFTTrack{"minEtaMFTTrack", -3.9f, "min. pseudorapidity for MFT tracks (nominal: -3.6)"};
+  o2::framework::Configurable<float> maxEtaMFTTrack{"maxEtaMFTTrack", -2.0f, "max. pseudorapidity for MFT tracks (nominal: -2.45)"};
 
   // ccdb information
   o2::framework::Configurable<std::string> ccdbPathVtxZ{"ccdbPathVtxZ", "Centrality/Calibration", "The CCDB path for vertex-Z calibration"};
