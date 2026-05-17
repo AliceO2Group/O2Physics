@@ -278,7 +278,7 @@ struct muonQa {
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
 
-  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
   Preslice<MyMuonsWithCov> fwdtracksPerCollision = aod::fwdtrack::collisionId;
   Preslice<MyMFTs> mftPerCollision = aod::fwdtrack::collisionId;
 

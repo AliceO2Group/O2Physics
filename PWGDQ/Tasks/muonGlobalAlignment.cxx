@@ -237,7 +237,7 @@ struct muonGlobalAlignment {
   };
   std::map<int, AlignmentCorrections> mMchAlignmentCorrections;
 
-  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
 
