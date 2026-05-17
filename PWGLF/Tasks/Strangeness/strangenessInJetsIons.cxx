@@ -22,6 +22,7 @@
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
+// #include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -68,6 +69,7 @@
 #include <map>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace std;
@@ -130,6 +132,7 @@ struct StrangenessInJetsIons {
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
   Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
+  Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -561,6 +564,12 @@ struct StrangenessInJetsIons {
       deltaPhi = TwoPI - diff;
 
     return deltaPhi;
+  }
+
+  // Compute energy
+  double GetEnergy(double px, double py, double pz, double mass)
+  {
+    return std::sqrt(px * px + py * py + pz * pz + mass * mass);
   }
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
@@ -1529,6 +1538,145 @@ struct StrangenessInJetsIons {
     }
   }
 
+  /**
+   * @brief Identifies the index of the common mother for two MC particles.
+   *
+   * @tparam T Type of the MC particle objects
+   * @param posParticle MC particle associated with the positive daughter
+   * @param negParticle MC particle associated with the negative daughter
+   * @return int The index of the common mother, or -1 if no common mother exists.
+   */
+  template <typename T>
+  int GetCommonMotherId(aod::McParticles const& mcParticles,
+                        const T& posParticle, const T& negParticle)
+  {
+    int motherIdPos = posParticle.mothersIds()[0];
+    int motherIdNeg = negParticle.mothersIds()[0];
+
+    const auto& motherPos = mcParticles.iteratorAt(motherIdPos);
+    const auto& motherNeg = mcParticles.iteratorAt(motherIdNeg);
+    if (motherPos != motherNeg) {
+      return -1; // Return -1 if they originate from different parents
+    }
+
+    return motherIdPos; // Return mother ID
+  }
+
+  /**
+   * Returns true if the track is a daughter of the V0 candidate
+   * Adapted from: PWGJE/Core/JetV0Utilities.h
+   *
+   * @param track track that is being checked
+   * @param candidate V0 candidate that is being checked
+   */
+  template <typename T, typename U>
+  bool isV0DaughterTrack(T& track, U& candidate)
+  {
+    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * @brief Add V0s as input for the jet finder algorithm in MC reco (detector level)
+   *
+   * @tparam Track
+   * @tparam V0PerColl The container type holding the sliced V0 candidates for the current collision.
+   *
+   * @param[in,out] fjInput Vector of FastJet PseudoJets where valid V0s will be appended.
+   * @param[in]     fjTracks Vector containing tracks already selected for jet finder input.
+   * @param[in]     v0sPerColl Sliced V0 candidates belonging to this specific collision.
+   * @param[in]     mcParticles Global MC particles table used to look up mother particle truth information.
+   * @param[in]     vtxPos TVector3 object representing the vertex position.
+   */
+  template <typename Track, typename V0PerColl>
+  void AddV0sForJetReconstructionMC(std::vector<fastjet::PseudoJet>& fjInput,
+                                    const std::vector<Track>& fjTracks,
+                                    V0PerColl const& v0sPerColl,
+                                    aod::McParticles const& mcParticles,
+                                    const TVector3& vtxPos)
+  {
+    // Vector of labels: if true remove the element from fjInput
+    std::vector<bool> isTrackReplaced(fjTracks.size(), false);
+    std::vector<fastjet::PseudoJet> v0PseudoJets; // V0s to use as input for jet finder
+
+    for (const auto& v0 : v0sPerColl) {
+      const auto& pos = v0.template posTrack_as<DaughterTracksMC>();
+      const auto& neg = v0.template negTrack_as<DaughterTracksMC>();
+
+      // Get MC particles
+      if (!pos.has_mcParticle() || !neg.has_mcParticle()) {
+        continue;
+      }
+      const auto& posParticle = pos.template mcParticle_as<aod::McParticles>();
+      const auto& negParticle = neg.template mcParticle_as<aod::McParticles>();
+      if (!posParticle.has_mothers() || !negParticle.has_mothers()) {
+        continue;
+      }
+
+      // Select particles originating from the same parent
+      int motherId = GetCommonMotherId(mcParticles, posParticle, negParticle);
+      if (motherId < 0)
+        continue; // if motherId is -1, it means no common mother was found
+      const auto& mother = mcParticles.iteratorAt(motherId);
+      // const bool isPhysPrim = mother.isPhysicalPrimary();
+      int pdgParent = mother.pdgCode();
+
+      /// NOTE: V0s are not required to be primary particles;
+      bool isK0S = false, isLambda = false, isAntiLambda = false;
+      // K0s
+      if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short) {
+        // LOG(info) << "[AddV0sForJetReconstructionMC] Add K0S as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassK0Short);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isK0S = true;
+      }
+      // Lambda
+      if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0) {
+        // LOG(info) << "[AddV0sForJetReconstructionMC] Add Lambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isLambda = true;
+      }
+      // AntiLambda
+      if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar) {
+        // LOG(info) << "[AddV0sForJetReconstructionMC] Add AntiLambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0Bar);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isAntiLambda = true;
+      }
+
+      // Exclude daughter tracks in case a V0 is found
+      bool isV0 = isK0S || isLambda || isAntiLambda;
+      if (!isV0)
+        continue;
+      for (int i = 0; i < fjTracks.size(); ++i) {
+        if (isV0DaughterTrack(fjTracks[i], v0)) {
+          // LOG(info) << "[AddV0sForJetReconstructionMC] V0 daughter track found in fjTracks.";
+          isTrackReplaced[i] = true;
+        }
+      }
+    }
+
+    std::vector<fastjet::PseudoJet> cleanFjInput;
+    cleanFjInput.reserve(fjInput.size());
+    for (size_t i = 0; i < fjInput.size(); ++i) {
+      if (!isTrackReplaced[i])
+        cleanFjInput.push_back(fjInput[i]);
+    }
+    for (const auto& v0pj : v0PseudoJets) {
+      cleanFjInput.push_back(v0pj);
+    }
+    // LOG(info) << "[AddV0sForJetReconstructionMC] Size fjInput: " << fjInput.size();
+    fjInput = std::move(cleanFjInput);
+    // LOG(info) << "[AddV0sForJetReconstructionMC] Size fjInput dopo move: " << fjInput.size();
+  }
+
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
                    aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
@@ -2190,6 +2338,9 @@ struct StrangenessInJetsIons {
 
       const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
 
+      // Vertex position vector
+      TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
       // Clear containers at the start of the event loop
       fjParticles.clear();
       selectedJet.clear();
@@ -2242,6 +2393,7 @@ struct StrangenessInJetsIons {
                             cascPerColl, tracksPerColl, multiplicity);
 
       // Loop over reconstructed tracks
+      std::vector<std::decay_t<decltype(*tracksPerColl.begin())>> fjTracks;
       for (auto const& track : tracksPerColl) {
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
@@ -2249,7 +2401,14 @@ struct StrangenessInJetsIons {
         // 4-momentum representation of a particle
         fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
         fjParticles.emplace_back(fourMomentum);
+        fjTracks.push_back(track);
       }
+
+      // Include V0s as tracks for jet reconstruction
+      if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+        AddV0sForJetReconstructionMC(fjParticles, fjTracks, v0sPerColl, mcParticles, vtxPos);
+      }
+      fjTracks.clear();
 
       // Reject empty events
       if (fjParticles.size() < 1)
@@ -2405,6 +2564,17 @@ struct StrangenessInJetsIons {
             if (pdgParent == 0)
               continue;
 
+            // --- alternative method to avoid double for loop
+            int motherId = GetCommonMotherId(mcParticles, posParticle, negParticle);
+            if (motherId < 0)
+              continue; // if motherId is -1, it means no common mother was found
+            const auto& motherTest = mcParticles.iteratorAt(motherId);
+            // const bool isPhysPrimTest = motherTest.isPhysicalPrimary();
+            int pdgParentTest = motherTest.pdgCode();
+            if (pdgParent != pdgParentTest)
+              LOG(warning) << "pdgParent != pdgParentTest" << endl;
+            // ---
+
             // Compute distance from jet and UE axes
             double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
             double deltaPhiJet = getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
@@ -2415,9 +2585,6 @@ struct StrangenessInJetsIons {
             double deltaEtaUe2 = v0dir.Eta() - ue2[i].Eta();
             double deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-            // Vertex position vector
-            TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
             // Fill Armenteros-Podolanski TH2
             // registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
