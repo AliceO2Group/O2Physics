@@ -171,8 +171,8 @@ struct Photonhbt {
   ConfigurableAxis confPtBins{"confPtBins", {100, 0.f, 2.f}, "pT bins (GeV/c)"};
   ConfigurableAxis confEtaBins{"confEtaBins", {80, -0.8f, 0.8f}, "eta bins"};
   ConfigurableAxis confPhiBins{"confPhiBins", {90, 0.f, o2::constants::math::TwoPI}, "phi bins (rad)"};
-  ConfigurableAxis confDeltaEtaBins{"confDeltaEtaBins", {180, -1.6f, +1.6f}, "Delta-eta bins"};
-  ConfigurableAxis confDeltaPhiBins{"confDeltaPhiBins", {180, -o2::constants::math::PI, o2::constants::math::PI}, "Delta-phi bins (rad)"};
+  ConfigurableAxis confDeltaEtaBins{"confDeltaEtaBins", {360, -1.6f, +1.6f}, "Delta-eta bins"};
+  ConfigurableAxis confDeltaPhiBins{"confDeltaPhiBins", {360, -o2::constants::math::PI, o2::constants::math::PI}, "Delta-phi bins (rad)"};
   ConfigurableAxis confEllipseValBins{"confEllipseValBins", {200, 0.f, 10.f}, "ellipse value bins"};
   ConfigurableAxis confCosThetaBins{"confCosThetaBins", {100, 0.f, 1.f}, "cos(theta*) bins"};
   ConfigurableAxis confOpeningAngleBins{"confOpeningAngleBins", {100, 0.f, o2::constants::math::PI}, "opening angle bins (rad)"};
@@ -184,6 +184,8 @@ struct Photonhbt {
   ConfigurableAxis confDeltaZBins{"confDeltaZBins", {200, -100.f, 100.f}, "#Deltaz bins (cm)"};
   ConfigurableAxis confOccupancyQA{"confOccupancyQA", {100, 0.f, 50000.f}, "occupancy"};
   ConfigurableAxis confCentQABins{"confCentQABins", {110, 0.f, 110.f}, "centrality (%)"};
+  ConfigurableAxis confLegPtBins{"confLegPtBins", {40, 0.f, 2.f}, "leg p_{T} bins (GeV/c)"};
+  ConfigurableAxis confLegDRBins{"confLegDRBins", {200, 0.f, 1.0f}, "#DeltaR_{legs} bins"};
 
   // ─── Axis specs ────────────────────────────────────────────────────────────
 
@@ -209,6 +211,8 @@ struct Photonhbt {
   const AxisSpec axisDeltaZ{confDeltaZBins, "#Delta z (cm)"};
   const AxisSpec axisOccupancy{confOccupancyQA, "occupancy"};
   const AxisSpec axisCentQA{confCentQABins, "centrality (%)"};
+  const AxisSpec axisLegPt{confLegPtBins, "p_{T,leg} (GeV/c)"};
+  const AxisSpec axisLegDR{confLegDRBins, "#DeltaR_{legs}"};
 
   // ─── Configurables: QA flags ───────────────────────────────────────────────
 
@@ -545,6 +549,45 @@ struct Photonhbt {
     bool valid = true;
   };
 
+  struct LegPairObservables {
+    float dEtaPP = 0.f, dPhiPP = 0.f, dRPP = 0.f;
+    float dEtaNN = 0.f, dPhiNN = 0.f, dRNN = 0.f;
+    float dEtaPN12 = 0.f, dPhiPN12 = 0.f, dRPN12 = 0.f;
+    float dEtaNP12 = 0.f, dPhiNP12 = 0.f, dRNP12 = 0.f;
+    float minDR_LS = 0.f;
+    float minLegPt_PP = 0.f, maxLegPt_PP = 0.f;
+    float minLegPt_NN = 0.f, maxLegPt_NN = 0.f;
+    float ptG1 = 0.f;
+    float ptG2 = 0.f;
+  };
+
+  template <typename TGamma, typename TLeg>
+  static LegPairObservables buildLegPairObservables(TGamma const& g1, TGamma const& g2,
+                                                    TLeg const& pos1, TLeg const& ele1,
+                                                    TLeg const& pos2, TLeg const& ele2)
+  {
+    LegPairObservables o{};
+    auto comp = [](auto const& a, auto const& b, float& de, float& dp, float& dr) {
+      de = a.eta() - b.eta();
+      dp = RecoDecay::constrainAngle(a.phi() - b.phi(), -o2::constants::math::PI);
+      dr = std::sqrt(de * de + dp * dp);
+    };
+    comp(pos1, pos2, o.dEtaPP, o.dPhiPP, o.dRPP);
+    comp(ele1, ele2, o.dEtaNN, o.dPhiNN, o.dRNN);
+    comp(pos1, ele2, o.dEtaPN12, o.dPhiPN12, o.dRPN12);
+    comp(ele1, pos2, o.dEtaNP12, o.dPhiNP12, o.dRNP12);
+    o.minDR_LS = std::min(o.dRPP, o.dRNN);
+
+    o.minLegPt_PP = std::min(static_cast<float>(pos1.pt()), static_cast<float>(pos2.pt()));
+    o.maxLegPt_PP = std::max(static_cast<float>(pos1.pt()), static_cast<float>(pos2.pt()));
+    o.minLegPt_NN = std::min(static_cast<float>(ele1.pt()), static_cast<float>(ele2.pt()));
+    o.maxLegPt_NN = std::max(static_cast<float>(ele1.pt()), static_cast<float>(ele2.pt()));
+
+    o.ptG1 = static_cast<float>(g1.pt());
+    o.ptG2 = static_cast<float>(g2.pt());
+    return o;
+  }
+
   struct TruthGamma {
     int id = -1, posId = -1, negId = -1;
     float eta = 0.f, phi = 0.f, pt = 0.f;
@@ -620,6 +663,70 @@ struct Photonhbt {
     fRegistryPairQA.add((path + "hSparseDeltaRDeltaZKt").c_str(), "|R_{1}-R_{2}|,#Delta z,k_{T}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisKt}, true);
   }
 
+  void addLegPairQAForStep(const std::string& path)
+  {
+    // LS positive
+    fRegistryPairQA.add((path + "LegLS/hDEtaDPhi_PP").c_str(),
+                        "e^{+}e^{+} #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)",
+                        kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
+    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_kT_minLegPt_PP").c_str(),
+                        "e^{+}e^{+} #Delta#eta,#Delta#phi,k_{T},min(p_{T,leg})",
+                        kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt, axisLegPt}, true);
+    fRegistryPairQA.add((path + "LegLS/hDR_PP").c_str(),
+                        "e^{+}e^{+} #DeltaR;#DeltaR;counts",
+                        kTH1D, {axisLegDR}, true);
+    fRegistryPairQA.add((path + "LegLS/hLegPtLow_vs_LegPtHigh_PP").c_str(),
+                        "e^{+}e^{+} p_{T,low} vs p_{T,high};p_{T,low}^{leg};p_{T,high}^{leg}",
+                        kTH2D, {axisLegPt, axisLegPt}, true);
+    fRegistryPairQA.add((path + "LegLS/hDR_PP_vs_minLegPt").c_str(),
+                        "e^{+}e^{+} #DeltaR vs min(p_{T,leg});#DeltaR;min(p_{T,leg}) (GeV/c)",
+                        kTH2D, {axisLegDR, axisLegPt}, true);
+
+    // LS negative
+    fRegistryPairQA.add((path + "LegLS/hDEtaDPhi_NN").c_str(),
+                        "e^{-}e^{-} #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)",
+                        kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
+    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_kT_minLegPt_NN").c_str(),
+                        "e^{-}e^{-} #Delta#eta,#Delta#phi,k_{T},min(p_{T,leg})",
+                        kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt, axisLegPt}, true);
+    fRegistryPairQA.add((path + "LegLS/hDR_NN").c_str(),
+                        "e^{-}e^{-} #DeltaR;#DeltaR;counts",
+                        kTH1D, {axisLegDR}, true);
+    fRegistryPairQA.add((path + "LegLS/hLegPtLow_vs_LegPtHigh_NN").c_str(),
+                        "e^{-}e^{-} p_{T,low} vs p_{T,high};p_{T,low}^{leg};p_{T,high}^{leg}",
+                        kTH2D, {axisLegPt, axisLegPt}, true);
+    fRegistryPairQA.add((path + "LegLS/hDR_NN_vs_minLegPt").c_str(),
+                        "e^{-}e^{-} #DeltaR vs min(p_{T,leg});#DeltaR;min(p_{T,leg}) (GeV/c)",
+                        kTH2D, {axisLegDR, axisLegPt}, true);
+
+    fRegistryPairQA.add((path + "LegLS/hMinDR_LS_vs_Kt").c_str(),
+                        "min(#DeltaR_{LS}) vs k_{T};#DeltaR_{LS}^{min};k_{T} (GeV/c)",
+                        kTH2D, {axisLegDR, axisKt}, true);
+
+    // US cross
+    fRegistryPairQA.add((path + "LegUScross/hDEtaDPhi_PN12").c_str(),
+                        "pos1-ele2 #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)",
+                        kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
+    fRegistryPairQA.add((path + "LegUScross/hDEtaDPhi_NP12").c_str(),
+                        "ele1-pos2 #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)",
+                        kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
+
+    // 4D Photon-pT diagnostics
+    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP").c_str(),
+                        "e^{+}e^{+} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2};"
+                        "#Delta#eta;#Delta#phi (rad);p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
+                        kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, true);
+    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN").c_str(),
+                        "e^{-}e^{-} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2};"
+                        "#Delta#eta;#Delta#phi (rad);p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
+                        kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, true);
+
+    // Photon-pT Scatter (Sanity)
+    fRegistryPairQA.add((path + "LegLS/hPtG1_vs_PtG2").c_str(),
+                        "p_{T,#gamma 1} vs p_{T,#gamma 2};p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
+                        kTH2D, {axisPt, axisPt}, true);
+  }
+
   void addhistograms()
   {
     static constexpr std::string_view det[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
@@ -660,10 +767,15 @@ struct Photonhbt {
     addQAHistogramsForStep("Pair/same/QA/AfterRZ/");
     addQAHistogramsForStep("Pair/same/QA/AfterEllipse/");
 
+    addLegPairQAForStep("Pair/same/QA/Before/");
+    addLegPairQAForStep("Pair/same/QA/AfterEllipse/");
+
     addMCHistograms();
+
     fRegistryPairQA.addClone("Pair/same/QA/", "Pair/mix/QA/");
     fRegistryPairMC.addClone("Pair/same/MC/", "Pair/mix/MC/");
     addFullRangeHistograms("Pair/same/FullRange/");
+
     fRegistry.addClone("Pair/same/", "Pair/mix/");
 
     fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_sameSideLegs",
@@ -947,6 +1059,43 @@ struct Photonhbt {
     const float sE = ggpaircuts.cfgEllipseSigEta.value, sP = ggpaircuts.cfgEllipseSigPhi.value;
     if (sE > kMinSigma && sP > kMinSigma)
       fRegistryPairQA.fill(HIST(base) + HIST("hEllipseVal"), (o.deta / sE) * (o.deta / sE) + (o.dphi / sP) * (o.dphi / sP));
+  }
+
+  template <int step_id>
+  inline void fillLegPairQAStep(LegPairObservables const& lo, float kt)
+  {
+    if (!qaflags.doPairQa)
+      return;
+    constexpr auto base = qaPrefix<0, step_id>();
+
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDEtaDPhi_PP"), lo.dEtaPP, lo.dPhiPP);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_kT_minLegPt_PP"),
+                         lo.dEtaPP, lo.dPhiPP, kt, lo.minLegPt_PP);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_PP"), lo.dRPP);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hLegPtLow_vs_LegPtHigh_PP"),
+                         lo.minLegPt_PP, lo.maxLegPt_PP);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_PP_vs_minLegPt"),
+                         lo.dRPP, lo.minLegPt_PP);
+
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDEtaDPhi_NN"), lo.dEtaNN, lo.dPhiNN);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_kT_minLegPt_NN"),
+                         lo.dEtaNN, lo.dPhiNN, kt, lo.minLegPt_NN);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_NN"), lo.dRNN);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hLegPtLow_vs_LegPtHigh_NN"),
+                         lo.minLegPt_NN, lo.maxLegPt_NN);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_NN_vs_minLegPt"),
+                         lo.dRNN, lo.minLegPt_NN);
+
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hMinDR_LS_vs_Kt"), lo.minDR_LS, kt);
+
+    fRegistryPairQA.fill(HIST(base) + HIST("LegUScross/hDEtaDPhi_PN12"), lo.dEtaPN12, lo.dPhiPN12);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegUScross/hDEtaDPhi_NP12"), lo.dEtaNP12, lo.dPhiNP12);
+
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP"),
+                         lo.dEtaPP, lo.dPhiPP, lo.ptG1, lo.ptG2);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN"),
+                         lo.dEtaNN, lo.dPhiNN, lo.ptG1, lo.ptG2);
+    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hPtG1_vs_PtG2"), lo.ptG1, lo.ptG2);
   }
 
   template <typename TPhoton, typename TLegs, typename TMCParticles>
@@ -1304,6 +1453,107 @@ struct Photonhbt {
                     kTH2D, {axisKt, AxisSpec{3, -0.5f, 2.5f, "N correctly built"}}, true);
   }
 
+  void addLegPairMCHistograms()
+  {
+    static constexpr std::array<std::string_view, 6> kTypes = {
+      "TrueTrueDistinct/", "TrueTrueSamePhoton/", "SharedMcLeg/",
+      "TrueFake/", "FakeFake/", "Pi0Daughters/"};
+
+    for (const auto& label : kTypes) {
+      const std::string base = std::string("Pair/same/MC/") + std::string(label) + "LegLS/";
+      fRegistryPairMC.add((base + "hDR_PP_vs_minLegPt").c_str(),
+                          "e^{+}e^{+} #DeltaR vs min(p_{T,leg});#DeltaR;min(p_{T,leg}) (GeV/c)",
+                          kTH2D, {axisLegDR, axisLegPt}, true);
+      fRegistryPairMC.add((base + "hDR_NN_vs_minLegPt").c_str(),
+                          "e^{-}e^{-} #DeltaR vs min(p_{T,leg});#DeltaR;min(p_{T,leg}) (GeV/c)",
+                          kTH2D, {axisLegDR, axisLegPt}, true);
+      fRegistryPairMC.add((base + "hSparse_DR_kT_minLegPt_PP").c_str(),
+                          "e^{+}e^{+} #DeltaR,k_{T},min(p_{T,leg})",
+                          kTHnSparseD, {axisLegDR, axisKt, axisLegPt}, true);
+      fRegistryPairMC.add((base + "hSparse_DR_kT_minLegPt_NN").c_str(),
+                          "e^{-}e^{-} #DeltaR,k_{T},min(p_{T,leg})",
+                          kTHnSparseD, {axisLegDR, axisKt, axisLegPt}, true);
+      fRegistryPairMC.add((base + "hDEtaDPhi_PP").c_str(),
+                          "e^{+}e^{+} #Delta#eta vs #Delta#phi", kTH2D,
+                          {axisDeltaEta, axisDeltaPhi}, true);
+      fRegistryPairMC.add((base + "hDEtaDPhi_NN").c_str(),
+                          "e^{-}e^{-} #Delta#eta vs #Delta#phi", kTH2D,
+                          {axisDeltaEta, axisDeltaPhi}, true);
+
+      fRegistryPairMC.add((base + "hSparse_DEtaDPhi_PtG1_PtG2_PP").c_str(),
+                          "e^{+}e^{+} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2}",
+                          kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, true);
+      fRegistryPairMC.add((base + "hSparse_DEtaDPhi_PtG1_PtG2_NN").c_str(),
+                          "e^{-}e^{-} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2}",
+                          kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, true);
+      fRegistryPairMC.add((base + "hPtG1_vs_PtG2").c_str(),
+                          "p_{T,#gamma 1} vs p_{T,#gamma 2};p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
+                          kTH2D, {axisPt, axisPt}, true);
+    }
+
+    const AxisSpec axisTruthType{{0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5}, "truth type"};
+    fRegistryPairMC.add("Pair/same/MC/hMinDR_LS_vs_Kt_TruthType",
+                        "min(#DeltaR_{LS}) vs k_{T} vs truth type",
+                        kTHnSparseD, {axisLegDR, axisKt, axisTruthType}, true);
+  }
+
+  template <PairTruthType TruthT>
+  inline void fillLegPairMCTyped(LegPairObservables const& lo, float kt)
+  {
+    constexpr auto base = []() constexpr -> const char* {
+      if constexpr (TruthT == PairTruthType::TrueTrueDistinct)
+        return "Pair/same/MC/TrueTrueDistinct/LegLS/";
+      if constexpr (TruthT == PairTruthType::TrueTrueSamePhoton)
+        return "Pair/same/MC/TrueTrueSamePhoton/LegLS/";
+      if constexpr (TruthT == PairTruthType::SharedMcLeg)
+        return "Pair/same/MC/SharedMcLeg/LegLS/";
+      if constexpr (TruthT == PairTruthType::TrueFake)
+        return "Pair/same/MC/TrueFake/LegLS/";
+      if constexpr (TruthT == PairTruthType::FakeFake)
+        return "Pair/same/MC/FakeFake/LegLS/";
+      return "Pair/same/MC/Pi0Daughters/LegLS/";
+    }();
+    fRegistryPairMC.fill(HIST(base) + HIST("hDR_PP_vs_minLegPt"), lo.dRPP, lo.minLegPt_PP);
+    fRegistryPairMC.fill(HIST(base) + HIST("hDR_NN_vs_minLegPt"), lo.dRNN, lo.minLegPt_NN);
+    fRegistryPairMC.fill(HIST(base) + HIST("hSparse_DR_kT_minLegPt_PP"), lo.dRPP, kt, lo.minLegPt_PP);
+    fRegistryPairMC.fill(HIST(base) + HIST("hSparse_DR_kT_minLegPt_NN"), lo.dRNN, kt, lo.minLegPt_NN);
+    fRegistryPairMC.fill(HIST(base) + HIST("hDEtaDPhi_PP"), lo.dEtaPP, lo.dPhiPP);
+    fRegistryPairMC.fill(HIST(base) + HIST("hDEtaDPhi_NN"), lo.dEtaNN, lo.dPhiNN);
+    fRegistryPairMC.fill(HIST(base) + HIST("hSparse_DEtaDPhi_PtG1_PtG2_PP"),
+                         lo.dEtaPP, lo.dPhiPP, lo.ptG1, lo.ptG2);
+    fRegistryPairMC.fill(HIST(base) + HIST("hSparse_DEtaDPhi_PtG1_PtG2_NN"),
+                         lo.dEtaNN, lo.dPhiNN, lo.ptG1, lo.ptG2);
+    fRegistryPairMC.fill(HIST(base) + HIST("hPtG1_vs_PtG2"), lo.ptG1, lo.ptG2);
+  }
+
+  inline void fillLegPairMC(PairTruthType t, LegPairObservables const& lo, float kt)
+  {
+    switch (t) {
+      case PairTruthType::TrueTrueDistinct:
+        fillLegPairMCTyped<PairTruthType::TrueTrueDistinct>(lo, kt);
+        break;
+      case PairTruthType::TrueTrueSamePhoton:
+        fillLegPairMCTyped<PairTruthType::TrueTrueSamePhoton>(lo, kt);
+        break;
+      case PairTruthType::SharedMcLeg:
+        fillLegPairMCTyped<PairTruthType::SharedMcLeg>(lo, kt);
+        break;
+      case PairTruthType::TrueFake:
+        fillLegPairMCTyped<PairTruthType::TrueFake>(lo, kt);
+        break;
+      case PairTruthType::FakeFake:
+        fillLegPairMCTyped<PairTruthType::FakeFake>(lo, kt);
+        break;
+      case PairTruthType::Pi0Daughters:
+        fillLegPairMCTyped<PairTruthType::Pi0Daughters>(lo, kt);
+        break;
+      default:
+        break;
+    }
+    fRegistryPairMC.fill(HIST("Pair/same/MC/hMinDR_LS_vs_Kt_TruthType"),
+                         lo.minDR_LS, kt, static_cast<int>(t));
+  }
+
   template <PairTruthType TruthT, bool IsMix>
   inline void fillMCPairQATyped(PairQAObservables const& obs, bool doSparse, bool doMCQA)
   {
@@ -1542,8 +1792,11 @@ struct Photonhbt {
         if (!obs.valid)
           continue;
         const bool doQA = passQinvQAGate(obs.qinv), doFR = passQinvFullRangeGate(obs.qinv);
+        const auto legObs = buildLegPairObservables(g1, g2, pos1, ele1, pos2, ele2);
         if (doQA)
           fillPairQAStep<0, 0>(obs, centForQA, occupancy);
+        if (doQA)
+          fillLegPairQAStep<0>(legObs, obs.kt);
         if (doFR)
           fillFullRangeDeltaRCosOA<0>(obs.qinv, obs.drOverCosOA);
         fRegistry.fill(HIST("Pair/same/hDeltaRCosOA"), obs.drOverCosOA);
@@ -1565,6 +1818,8 @@ struct Photonhbt {
         idsAfterEllipse.insert(g2.globalIndex());
         if (doQA)
           fillPairQAStep<0, 3>(obs, centForQA, occupancy);
+        if (doQA)
+          fillLegPairQAStep<3>(legObs, obs.kt);
         if (doFR)
           fillFullRangeQA<0>(obs, centForQA, occupancy);
         fillPairHistogram<0>(collision, obs.v1, obs.v2, 1.f);
@@ -1714,8 +1969,10 @@ struct Photonhbt {
         if (!obs.valid)
           continue;
         const bool doQA = passQinvQAGate(obs.qinv), doFR = passQinvFullRangeGate(obs.qinv);
+        const auto legObs = buildLegPairObservables(g1, g2, pos1, ele1, pos2, ele2);
         if (doQA)
           fillPairQAStep<0, 0>(obs, centForQA, occupancy);
+        fillLegPairQAStep<0>(legObs, obs.kt);
         if (doFR)
           fillFullRangeDeltaRCosOA<0>(obs.qinv, obs.drOverCosOA);
         fRegistry.fill(HIST("Pair/same/hDeltaRCosOA"), obs.drOverCosOA);
@@ -1737,6 +1994,7 @@ struct Photonhbt {
         idsAfterEllipse.insert(g2.globalIndex());
         if (doQA)
           fillPairQAStep<0, 3>(obs, centForQA, occupancy);
+        fillLegPairQAStep<3>(legObs, obs.kt);
         if (doFR)
           fillFullRangeQA<0>(obs, centForQA, occupancy);
         fillPairHistogram<0>(collision, obs.v1, obs.v2, 1.f);
@@ -1757,6 +2015,7 @@ struct Photonhbt {
         } else {
           const bool doMCQA = passQinvMCQAGate(obs.qinv);
           fillMCPairQA<false>(truthType, obs, doQA, doMCQA);
+          fillLegPairMC(truthType, legObs, obs.kt);
           if (doFR)
             fillMCPairQAFullRange<false>(truthType, obs);
           const bool isTruePair = (truthType == PairTruthType::TrueTrueDistinct ||
