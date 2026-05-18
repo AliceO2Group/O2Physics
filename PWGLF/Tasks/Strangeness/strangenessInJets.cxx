@@ -1664,7 +1664,8 @@ struct StrangenessInJets {
           if (!motherPos.isPhysicalPrimary())
             continue;
 
-          if (std::abs(motherPos.eta()) > 0.8)
+          const double maxPseudorap = 0.8;
+          if (std::abs(motherPos.eta()) > maxPseudorap)
             continue;
 
           // K0s
@@ -1744,8 +1745,8 @@ struct StrangenessInJets {
           if (!mcParticle.isPhysicalPrimary()) {
             continue;
           }
-
-          if (std::abs(mcParticle.eta()) > 0.8) {
+          const double maxPseudorap = 0.8;
+          if (std::abs(mcParticle.eta()) > maxPseudorap) {
             continue;
           }
 
@@ -1786,9 +1787,10 @@ struct StrangenessInJets {
         }
       }
 
-      for (auto& particle : mcParticlesPerColl) {
+      const double maxPseudorap = 0.8;
+      for (auto const& particle : mcParticlesPerColl) {
 
-        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= 0.8) {
+        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= maxPseudorap) {
           switch (particle.pdgCode()) {
             case kK0Short:
               if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -1889,8 +1891,8 @@ struct StrangenessInJets {
             continue;
           if (!motherPos.isPhysicalPrimary())
             continue;
-
-          if (std::abs(motherPos.eta()) > 0.8)
+          double maxPseudorap = 0.8;
+          if (std::abs(motherPos.eta()) > maxPseudorap)
             continue;
 
           // K0s
@@ -1908,9 +1910,9 @@ struct StrangenessInJets {
         }
       }
 
-      for (auto& particle : mcParticlesPerColl) {
-
-        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= 0.8) {
+      for (auto const& particle : mcParticlesPerColl) {
+        double maxPseudorap = 0.8;
+        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= maxPseudorap) {
           switch (particle.pdgCode()) {
             case kK0Short:
               if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -1936,7 +1938,7 @@ struct StrangenessInJets {
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
 
-        for (auto& particle : mcParticlesPerColl) {
+        for (auto const& particle : mcParticlesPerColl) {
 
           const ParticlePositionWithRespectToJet positionMC{particle.px(), particle.py(), particle.pz(), selectedJet[i], ue1[i], ue2[i]};
 
