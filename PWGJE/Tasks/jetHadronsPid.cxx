@@ -36,6 +36,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include <TPDGCode.h>
 #include <TVector3.h>
 
 #include <cmath>
@@ -361,7 +362,7 @@ struct jetHadronsPid {
 
     auto collTracks = globalTracks.sliceBy(tracksPerCollision, baseCollId);
 
-    for (auto& jet : jets) {
+    for (auto const& jet : jets) {
 
       if (!isppRefAnalysis && ((std::abs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
         continue;
@@ -396,7 +397,7 @@ struct jetHadronsPid {
       int constituentCount = 0;
       std::set<int> tracksInJetsSet;
 
-      for (auto& jtrack : jet.tracks_as<soa::Join<aod::JetTracks, aod::JTrackPIs>>()) {
+      for (auto const& jtrack : jet.tracks_as<soa::Join<aod::JetTracks, aod::JTrackPIs>>()) {
         constituentCount++;
 
         auto track = jtrack.track_as<HadronTracks>();
@@ -592,7 +593,7 @@ struct jetHadronsPid {
         registryData.fill(HIST("rec_pion_all"), pt);
         registryData.fill(HIST("contamination_matrix_pion"), pdg, pt);
         if (isPrimary) {
-          if (pdg == 211)
+          if (pdg == PDG_t::kPiPlus)
             registryData.fill(HIST("mc_rec_pion_pt"), pt);
         } else {
           registryData.fill(HIST("mc_sec_pion_pt"), pt);
@@ -603,7 +604,7 @@ struct jetHadronsPid {
         registryData.fill(HIST("rec_kaon_all"), pt);
         registryData.fill(HIST("contamination_matrix_kaon"), pdg, pt);
         if (isPrimary) {
-          if (pdg == 321)
+          if (pdg == PDG_t::kKPlus)
             registryData.fill(HIST("mc_rec_kaon_pt"), pt);
         } else {
           registryData.fill(HIST("mc_sec_kaon_pt"), pt);
@@ -614,7 +615,7 @@ struct jetHadronsPid {
         registryData.fill(HIST("rec_proton_all"), pt);
         registryData.fill(HIST("contamination_matrix_proton"), pdg, pt);
         if (isPrimary) {
-          if (pdg == 2212)
+          if (pdg == PDG_t::kProton)
             registryData.fill(HIST("mc_rec_proton_pt"), pt);
         } else {
           registryData.fill(HIST("mc_sec_proton_pt"), pt);
@@ -642,11 +643,11 @@ struct jetHadronsPid {
       int pdg = std::abs(mcpart.pdgCode());
       double pt = mcpart.pt();
 
-      if (pdg == 211) {
+      if (pdg == PDG_t::kPiPlus) {
         registryData.fill(HIST("mc_gen_pion_pt"), pt);
-      } else if (pdg == 321) {
+      } else if (pdg == PDG_t::kKPlus) {
         registryData.fill(HIST("mc_gen_kaon_pt"), pt);
-      } else if (pdg == 2212) {
+      } else if (pdg == PDG_t::kProton) {
         registryData.fill(HIST("mc_gen_proton_pt"), pt);
       }
     }
