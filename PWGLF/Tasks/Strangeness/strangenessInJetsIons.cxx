@@ -69,6 +69,8 @@
 #include <map>
 #include <ostream>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -131,6 +133,7 @@ struct StrangenessInJetsIons {
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
   Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
+  Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -335,7 +338,10 @@ struct StrangenessInJetsIons {
     }
 
     // Histograms for mc generated
-    if (doprocessMCgenerated) {
+    if (doprocessMCgenerated || doprocessMCmodels) {
+      if (doprocessMCgenerated && doprocessMCmodels) {
+        LOG(fatal) << "processMCgenerated and processMCmodels cannot be selected at the same time. Exit." << endl;
+      }
 
       // Event counter
       registryMC.add("number_of_events_mc_gen", "number of gen events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
@@ -347,9 +353,11 @@ struct StrangenessInJetsIons {
 
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen_w_reco", "number of events vs multiplicity (gen with reco)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // For MB
       registryMC.add("number_of_events_vsmultiplicity_gen_MB", "number of events vs multiplicity (MB)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen_w_reco_MB", "number of events vs multiplicity (MB gen with reco)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Jet counters
       registryMC.add("n_jets_vs_mult_pT_mc_gen", "n_jets_vs_mult_pT_mc_gen", HistType::kTH2F, {multAxis, ptJetAxis});
@@ -557,6 +565,12 @@ struct StrangenessInJetsIons {
       deltaPhi = TwoPI - diff;
 
     return deltaPhi;
+  }
+
+  // Compute energy
+  double GetEnergy(double px, double py, double pz, double mass)
+  {
+    return std::sqrt(px * px + py * py + pz * pz + mass * mass);
   }
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
@@ -1188,9 +1202,9 @@ struct StrangenessInJetsIons {
     return std::abs(yParticle) < rapidityCut;
   }
 
-  void FillFullEventHistoMCGEN(aod::McParticle const& particle,
-                               const double& genMultiplicity,
-                               bool hasReco = false)
+  void FillMBEventHistoMCGEN(aod::McParticle const& particle,
+                             const double& genMultiplicity,
+                             bool hasReco = false)
   {
     if (particle.isPhysicalPrimary() && passedRapidityCut(particle.y(), configV0.rapidityMax)) {
       switch (particle.pdgCode()) {
@@ -1276,12 +1290,12 @@ struct StrangenessInJetsIons {
 
   // Fill Minimum Bias histograms
   template <typename MCRecoCollision, typename V0PerColl, typename CascPerColl, typename TracksPerColl>
-  void FillFullEventHistoMCREC(MCRecoCollision collision,
-                               aod::McParticles const& mcParticles,
-                               V0PerColl const& v0sPerColl,
-                               CascPerColl const& cascPerColl,
-                               TracksPerColl const& tracksPerColl,
-                               const double& multiplicity)
+  void FillMBEventHistoMCREC(MCRecoCollision collision,
+                             aod::McParticles const& mcParticles,
+                             V0PerColl const& v0sPerColl,
+                             CascPerColl const& cascPerColl,
+                             TracksPerColl const& tracksPerColl,
+                             const double& multiplicity)
   {
     // V0 particles
     if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -1525,11 +1539,292 @@ struct StrangenessInJetsIons {
     }
   }
 
+  /**
+   * @brief Identifies the index of the common mother for two MC particles.
+   *
+   * @tparam T Type of the MC particle objects
+   * @param posParticle MC particle associated with the positive daughter
+   * @param negParticle MC particle associated with the negative daughter
+   * @return int The index of the common mother, or -1 if no common mother exists.
+   */
+  template <typename T>
+  int GetCommonMotherId(aod::McParticles const& mcParticles,
+                        const T& posParticle, const T& negParticle)
+  {
+    int motherIdPos = posParticle.mothersIds()[0];
+    int motherIdNeg = negParticle.mothersIds()[0];
+
+    const auto& motherPos = mcParticles.iteratorAt(motherIdPos);
+    const auto& motherNeg = mcParticles.iteratorAt(motherIdNeg);
+    if (motherPos != motherNeg) {
+      return -1; // Return -1 if they originate from different parents
+    }
+
+    return motherIdPos; // Return mother ID
+  }
+
+  /**
+   * Returns true if the track is a daughter of the V0 candidate
+   * Adapted from: PWGJE/Core/JetV0Utilities.h
+   *
+   * @param track track that is being checked
+   * @param candidate V0 candidate that is being checked
+   */
+  template <typename T, typename U>
+  bool isV0DaughterTrack(T& track, U& candidate)
+  {
+    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * @brief Add V0s as input for the jet finder algorithm in DATA
+   *
+   * @tparam Track
+   * @tparam V0PerColl The container type holding the sliced V0 candidates for the current collision.
+   *
+   * @param[in,out] fjInput Vector of FastJet PseudoJets where valid V0s will be appended.
+   * @param[in]     fjTracks Vector containing tracks already selected for jet finder input.
+   * @param[in]     v0sPerColl V0 candidates belonging to this specific collision.
+   * @param[in]     vtxPos TVector3 object representing the vertex position.
+   */
+  template <typename Track, typename V0PerColl>
+  void AddV0sForJetReconstructionData(std::vector<fastjet::PseudoJet>& fjInput,
+                                      const std::vector<Track>& fjTracks,
+                                      V0PerColl const& v0sPerColl,
+                                      const TVector3& vtxPos)
+  {
+    // Vector of labels: if true remove the element from fjInput
+    std::vector<bool> isTrackReplaced(fjTracks.size(), false);
+    std::vector<fastjet::PseudoJet> v0PseudoJets; // V0s to use as input for jet finder
+
+    for (const auto& v0 : v0sPerColl) {
+      const auto& pos = v0.template posTrack_as<DaughterTracks>();
+      const auto& neg = v0.template negTrack_as<DaughterTracks>();
+
+      bool isK0S = false, isLambda = false, isAntiLambda = false;
+      // K0s
+      if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
+        // LOG(info) << "[AddV0sForJetReconstructionData] Add K0S as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassK0Short);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isK0S = true;
+      }
+      // Lambda
+      if (passedLambdaSelection(v0, pos, neg, vtxPos)) {
+        // LOG(info) << "[AddV0sForJetReconstructionData] Add Lambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isLambda = true;
+      }
+      // AntiLambda
+      if (passedAntiLambdaSelection(v0, pos, neg, vtxPos)) {
+        // LOG(info) << "[AddV0sForJetReconstructionData] Add AntiLambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0Bar);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isAntiLambda = true;
+      }
+
+      // Exclude daughter tracks in case a V0 is found
+      bool isV0 = isK0S || isLambda || isAntiLambda;
+      if (!isV0)
+        continue;
+      for (int i = 0; i < int(fjTracks.size()); ++i) {
+        if (isV0DaughterTrack(fjTracks[i], v0)) {
+          // LOG(info) << "[AddV0sForJetReconstructionData] V0 daughter track found in fjTracks.";
+          isTrackReplaced[i] = true;
+        }
+      }
+    }
+
+    std::vector<fastjet::PseudoJet> cleanFjInput;
+    cleanFjInput.reserve(fjInput.size());
+    for (int i = 0; i < int(fjInput.size()); ++i) {
+      if (!isTrackReplaced[i])
+        cleanFjInput.push_back(fjInput[i]);
+    }
+    for (const auto& v0pj : v0PseudoJets) {
+      cleanFjInput.push_back(v0pj);
+    }
+    // LOG(info) << "[AddV0sForJetReconstructionData] Size fjInput: " << fjInput.size();
+    fjInput = std::move(cleanFjInput);
+    // LOG(info) << "[AddV0sForJetReconstructionData] Size fjInput dopo move: " << fjInput.size();
+  }
+
+  /**
+   * @brief Add V0s as input for the jet finder algorithm in MC reco (detector level)
+   *
+   * @tparam Track
+   * @tparam V0PerColl The container type holding the sliced V0 candidates for the current collision.
+   *
+   * @param[in,out] fjInput Vector of FastJet PseudoJets where valid V0s will be appended.
+   * @param[in]     fjTracks Vector containing tracks already selected for jet finder input.
+   * @param[in]     v0sPerColl Sliced V0 candidates belonging to this specific collision.
+   * @param[in]     mcParticles Global MC particles table used to look up mother particle truth information.
+   * @param[in]     vtxPos TVector3 object representing the vertex position.
+   */
+  template <typename Track, typename V0PerColl>
+  void AddV0sForJetReconstructionMCD(std::vector<fastjet::PseudoJet>& fjInput,
+                                     const std::vector<Track>& fjTracks,
+                                     V0PerColl const& v0sPerColl,
+                                     aod::McParticles const& mcParticles,
+                                     const TVector3& vtxPos)
+  {
+    // Vector of labels: if true remove the element from fjInput
+    std::vector<bool> isTrackReplaced(fjTracks.size(), false);
+    std::vector<fastjet::PseudoJet> v0PseudoJets; // V0s to use as input for jet finder
+
+    for (const auto& v0 : v0sPerColl) {
+      const auto& pos = v0.template posTrack_as<DaughterTracksMC>();
+      const auto& neg = v0.template negTrack_as<DaughterTracksMC>();
+
+      // Get MC particles
+      if (!pos.has_mcParticle() || !neg.has_mcParticle()) {
+        continue;
+      }
+      const auto& posParticle = pos.template mcParticle_as<aod::McParticles>();
+      const auto& negParticle = neg.template mcParticle_as<aod::McParticles>();
+      if (!posParticle.has_mothers() || !negParticle.has_mothers()) {
+        continue;
+      }
+
+      // Select particles originating from the same parent
+      int motherId = GetCommonMotherId(mcParticles, posParticle, negParticle);
+      if (motherId < 0)
+        continue; // if motherId is -1, it means no common mother was found
+      const auto& mother = mcParticles.iteratorAt(motherId);
+      const bool isPhysPrim = mother.isPhysicalPrimary();
+      int pdgParent = mother.pdgCode();
+
+      /// NOTE: V0s are required to be primary particles;
+      bool isK0S = false, isLambda = false, isAntiLambda = false;
+      // K0s
+      if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
+        // LOG(info) << "[AddV0sForJetReconstructionMCD] Add K0S as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassK0Short);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isK0S = true;
+      }
+      // Lambda
+      if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0 && isPhysPrim) {
+        // LOG(info) << "[AddV0sForJetReconstructionMCD] Add Lambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isLambda = true;
+      }
+      // AntiLambda
+      if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar && isPhysPrim) {
+        // LOG(info) << "[AddV0sForJetReconstructionMCD] Add AntiLambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0Bar);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isAntiLambda = true;
+      }
+
+      // Exclude daughter tracks in case a V0 is found
+      bool isV0 = isK0S || isLambda || isAntiLambda;
+      if (!isV0)
+        continue;
+      for (int i = 0; i < int(fjTracks.size()); ++i) {
+        if (isV0DaughterTrack(fjTracks[i], v0)) {
+          // LOG(info) << "[AddV0sForJetReconstructionMCD] V0 daughter track found in fjTracks.";
+          isTrackReplaced[i] = true;
+        }
+      }
+    }
+
+    std::vector<fastjet::PseudoJet> cleanFjInput;
+    cleanFjInput.reserve(fjInput.size());
+    for (int i = 0; i < int(fjInput.size()); ++i) {
+      if (!isTrackReplaced[i])
+        cleanFjInput.push_back(fjInput[i]);
+    }
+    for (const auto& v0pj : v0PseudoJets) {
+      cleanFjInput.push_back(v0pj);
+    }
+    // LOG(info) << "[AddV0sForJetReconstructionMCD] Size fjInput: " << fjInput.size();
+    fjInput = std::move(cleanFjInput);
+    // LOG(info) << "[AddV0sForJetReconstructionMCD] Size fjInput dopo move: " << fjInput.size();
+  }
+
+  /**
+   * @brief Add V0s as input for the jet finder algorithm at Particle Level (MC Generated)
+   *
+   * @tparam McParticleType
+   * @tparam ParticleColl The container type holding the sliced MC particles.
+   *
+   * @param[in,out] fjInput Vector of FastJet PseudoJets where V0s will be appended.
+   * @param[in]     fjParticleObj Vector containing the MC particles already selected for jet finder input.
+   * @param[in]     mcParticlesPerColl MC particles belonging to this specific collision.
+   * @param[in]     mcParticles Full McParticles.
+   */
+  template <typename McParticleType, typename ParticleColl>
+  void AddV0sForJetReconstructionMCP(std::vector<fastjet::PseudoJet>& fjInput,
+                                     const std::vector<McParticleType>& fjParticleObj,
+                                     ParticleColl const& mcParticlesPerColl,
+                                     aod::McParticles const& mcParticles)
+  {
+    std::vector<bool> isTrackReplaced(fjParticleObj.size(), false);
+    std::vector<fastjet::PseudoJet> v0PseudoJets;
+
+    // Add V0s to the input list for the jet finder and eventually remove their daughter particles
+    for (const auto& p : mcParticlesPerColl) {
+      int pdgAbs = std::abs(p.pdgCode());
+      /// NOTE: p.isPhysicalPrimary() is required
+      if (p.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0)) {
+        double mass = (pdgAbs == kK0Short) ? o2::constants::physics::MassK0Short : o2::constants::physics::MassLambda0;
+        double energy = std::sqrt(p.p() * p.p() + mass * mass);
+
+        fastjet::PseudoJet pj(p.px(), p.py(), p.pz(), energy);
+        pj.set_user_index(p.pdgCode());
+        v0PseudoJets.push_back(pj);
+        // LOG(info) << "[AddV0sForJetReconstructionMCP] Add V0 as input for jet finder.";
+
+        // Remove V0 daughter particles if already in the input list for the jet finder
+        for (int i = 0; i < int(fjParticleObj.size()); ++i) {
+          const auto& mcPart = fjParticleObj[i];
+          if (!mcPart.has_mothers())
+            continue;
+          auto mother = mcParticles.iteratorAt(mcPart.mothersIds()[0]);
+          int motherPdg = std::abs(mother.pdgCode());
+          if (motherPdg == kK0Short || motherPdg == kLambda0) {
+            isTrackReplaced[i] = true;
+            // LOG(info) << "[AddV0sForJetReconstructionMCP] V0 daughter particle found in fjParticleObj.";
+          }
+        }
+      }
+    }
+
+    std::vector<fastjet::PseudoJet> cleanFjInput;
+    cleanFjInput.reserve(fjInput.size());
+    for (int i = 0; i < int(fjInput.size()); ++i) {
+      if (!isTrackReplaced[i])
+        cleanFjInput.push_back(fjInput[i]);
+    }
+    for (const auto& v0pj : v0PseudoJets) {
+      cleanFjInput.push_back(v0pj);
+    }
+    // LOG(info) << "[AddV0sForJetReconstructionMCP] Size fjInput: " << fjInput.size();
+    fjInput = std::move(cleanFjInput);
+    // LOG(info) << "[AddV0sForJetReconstructionMCP] Size fjInput dopo move: " << fjInput.size();
+  }
+
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
                    aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
                    aod::BCsWithTimestamps const&)
   {
+    // Vertex position vector
+    TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
     // Fill event counter before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
 
@@ -1586,6 +1881,7 @@ struct StrangenessInJetsIons {
 
     // Loop over reconstructed tracks
     std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<std::decay_t<decltype(*tracks.begin())>> fjTracks;
     for (auto const& track : tracks) {
 
       // Require that tracks pass selection criteria
@@ -1595,7 +1891,14 @@ struct StrangenessInJetsIons {
       // 4-momentum representation of a particle
       fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
       fjParticles.emplace_back(fourMomentum);
+      fjTracks.push_back(track);
     }
+
+    // Include V0s as tracks for jet reconstruction
+    if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+      AddV0sForJetReconstructionData(fjParticles, fjTracks, fullV0s, vtxPos);
+    }
+    fjTracks.clear();
 
     // Reject empty events
     if (fjParticles.size() < 1)
@@ -1686,9 +1989,6 @@ struct StrangenessInJetsIons {
           const float deltaEtaUe2 = v0dir.Eta() - ue2[i].Eta();
           const float deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
           const float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-          // Vertex position vector
-          TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
           // Fill Armenteros-Podolanski TH2
           // registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
@@ -1914,11 +2214,14 @@ struct StrangenessInJetsIons {
         genMultiplicity = collision.centFT0M();
       }
       registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_MB"), genMultiplicity);
+      if (hasReco)
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_w_reco_MB"), genMultiplicity);
 
       // MC particles per collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
 
       // Loop over all MC particles and select physical primaries within acceptance
+      std::vector<std::decay_t<decltype(*mcParticlesPerColl.begin())>> fjParticleObj;
       for (const auto& particle : mcParticlesPerColl) {
         // Store properties of strange hadrons
         int pdgAbs = std::abs(particle.pdgCode());
@@ -1931,7 +2234,7 @@ struct StrangenessInJetsIons {
         if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
           continue;
 
-        FillFullEventHistoMCGEN(particle, genMultiplicity, hasReco);
+        FillMBEventHistoMCGEN(particle, genMultiplicity, hasReco);
 
         // Select physical primary particles or HF decay products
         if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
@@ -1943,6 +2246,727 @@ struct StrangenessInJetsIons {
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
+        fjParticleObj.push_back(particle);
+      }
+
+      if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+        AddV0sForJetReconstructionMCP(fjParticles, fjParticleObj, mcParticlesPerColl, mcParticles);
+      }
+
+      // Skip events with no particles
+      if (fjParticles.size() < 1)
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
+
+      // Cluster MC particles into jets using anti-kt algorithm
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+
+      // Estimate background energy density (rho) in perpendicular cone
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Loop over clustered jets
+      int countSelJet = 0; // number of selected jets
+      for (const auto& jet : jets) {
+
+        // Jet must be fully contained in acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
+          continue;
+
+        // Subtract background energy from jet
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+
+        // Apply jet pT threshold
+        if (jetMinusBkg.pt() < minJetPt)
+          continue;
+        countSelJet++;
+        registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
+        if (hasReco)
+          registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_w_reco"), genMultiplicity);
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
+
+        // Set up two perpendicular cone axes for underlying event estimation
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        double coneRadius = std::sqrt(jet.area() / PI);
+        TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
+        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+          continue;
+        }
+
+        // Loop over strange hadrons
+        int index = -1;
+        for (const auto& hadron : strHadronMomentum) {
+          // Particle index
+          index++;
+
+          // Compute distance of particles from jet and UE axes
+          double deltaEtaJet = hadron.Eta() - jetAxis.Eta();
+          double deltaPhiJet = getDeltaPhi(hadron.Phi(), jetAxis.Phi());
+          double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          double deltaEtaUe1 = hadron.Eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(hadron.Phi(), ueAxis1.Phi());
+          double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          double deltaEtaUe2 = hadron.Eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(hadron.Phi(), ueAxis2.Phi());
+          double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Select particles inside jet
+          if (deltaRJet < coneRadius) {
+            switch (pdg[index]) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProton:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProtonBar:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+
+          // Select particles inside UE cones
+          if (deltaRUe1 < coneRadius || deltaRUe2 < coneRadius) {
+            switch (pdg[index]) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKPlus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProton:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kPiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+                  registryMC.fill(HIST("PionNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kKMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+                  registryMC.fill(HIST("KaonNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProtonBar:
+                if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+                  registryMC.fill(HIST("ProtonNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      }
+      // Fill jet counter
+      registryMC.fill(HIST("n_jets_vs_mult_mc_gen"), genMultiplicity, countSelJet);
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJetsIons, processMCgenerated, "Process MC generated events", false);
+
+  // Reconstructed MC events
+  void processMCreconstructed(SimCollisions const& collisions,
+                              soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const&,
+                              DaughterTracksMC const& mcTracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
+                              aod::CascDataExt const& Cascades, aod::McParticles const& mcParticles)
+  {
+    // Define per-event containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> selectedJet;
+    std::vector<TVector3> ue1;
+    std::vector<TVector3> ue2;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over reconstructed collisions
+    for (const auto& collision : collisions) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
+
+      // Vertex position vector
+      TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      selectedJet.clear();
+      ue1.clear();
+      ue2.clear();
+
+      // Fill event counter before any selection
+      registryMC.fill(HIST("number_of_events_mc_rec"), 0.5);
+      if (!collision.sel8())
+        continue;
+
+      // Fill event counter after event selection
+      registryMC.fill(HIST("number_of_events_mc_rec"), 1.5);
+      if (std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Fill event counter after selection on z-vertex
+      registryMC.fill(HIST("number_of_events_mc_rec"), 2.5);
+
+      // Reject collisions associated to the same found BC
+      if (requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      // Fill event counter after selection kNoSameBunchPileup
+      registryMC.fill(HIST("number_of_events_mc_rec"), 3.5);
+
+      // Compatible z_vtx from FT0 and from PV
+      if (requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+
+      // Fill event counter after selection kIsGoodZvtxFT0vsPV
+      registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
+
+      // Event multiplicity
+      float multiplicity;
+      if (centrEstimator == 0) {
+        multiplicity = mcCollision.centFT0C();
+      } else {
+        multiplicity = mcCollision.centFT0M();
+      }
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec_MB"), multiplicity);
+
+      // Number of V0 and cascades per collision
+      auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
+      auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+      const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
+
+      FillMBEventHistoMCREC(collision, mcParticles, v0sPerColl,
+                            cascPerColl, tracksPerColl, multiplicity);
+
+      // Loop over reconstructed tracks
+      std::vector<std::decay_t<decltype(*tracksPerColl.begin())>> fjTracks;
+      for (auto const& track : tracksPerColl) {
+        if (!passedTrackSelectionForJetReconstruction(track))
+          continue;
+
+        // 4-momentum representation of a particle
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
+        fjParticles.emplace_back(fourMomentum);
+        fjTracks.push_back(track);
+      }
+
+      // Include V0s as tracks for jet reconstruction
+      if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+        AddV0sForJetReconstructionMCD(fjParticles, fjTracks, v0sPerColl, mcParticles, vtxPos);
+      }
+      fjTracks.clear();
+
+      // Reject empty events
+      if (fjParticles.size() < 1)
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_rec"), 5.5);
+
+      // Cluster particles using the anti-kt algorithm
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Jet selection
+      bool isAtLeastOneJetSelected = false;
+      std::vector<double> jetPt;
+
+      // Loop over clustered jets
+      for (const auto& jet : jets) {
+
+        // jet must be fully contained in the acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
+          continue;
+
+        // jet pt must be larger than threshold
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+        if (jetMinusBkg.pt() < minJetPt)
+          continue;
+        isAtLeastOneJetSelected = true;
+
+        // Perpendicular cones
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
+        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+          continue;
+        }
+
+        // Store selected jet and UE cone axes
+        selectedJet.emplace_back(jetAxis);
+        ue1.emplace_back(ueAxis1);
+        ue2.emplace_back(ueAxis2);
+        jetPt.emplace_back(jetMinusBkg.pt());
+      }
+      if (!isAtLeastOneJetSelected)
+        continue;
+
+      // Fill event counter for events with at least one selected jet
+      registryMC.fill(HIST("number_of_events_mc_rec"), 6.5);
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
+      registryMC.fill(HIST("n_jets_vs_mult_mc_rec"), multiplicity, static_cast<int>(selectedJet.size()));
+
+      // Loop over selected jets
+      for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_rec"), multiplicity, jetPt[i]);
+
+        // ------------------------------------------------
+        // --- Generated hadrons in reconstructed jets ----
+        for (const auto& particle : mcParticlesPerColl) {
+          if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > 0.8)
+            continue;
+
+          int absPdg = std::abs(particle.pdgCode());
+          if (absPdg != kK0Short && absPdg != kLambda0)
+            continue;
+
+          TVector3 momVec(particle.px(), particle.py(), particle.pz());
+
+          // Compute distance of particles from jet and UE axes
+          const double deltaEtaJet = momVec.Eta() - selectedJet[i].Eta();
+          const double deltaPhiJet = getDeltaPhi(momVec.Phi(), selectedJet[i].Phi());
+          const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          const double deltaEtaUe1 = momVec.Eta() - ue1[i].Eta();
+          const double deltaPhiUe1 = getDeltaPhi(momVec.Phi(), ue1[i].Phi());
+          const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          const double deltaEtaUe2 = momVec.Eta() - ue2[i].Eta();
+          const double deltaPhiUe2 = getDeltaPhi(momVec.Phi(), ue2[i].Phi());
+          const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Select particles inside jet
+          if (deltaRJet < rJet) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+          if (deltaRUe1 < rJet || deltaRUe2 < rJet) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        }
+        // ----------------------------------------
+
+        // V0 particles
+        if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+          for (const auto& v0 : v0sPerColl) {
+            const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+            const auto& neg = v0.negTrack_as<DaughterTracksMC>();
+            TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+
+            // Get MC particles
+            if (!pos.has_mcParticle() || !neg.has_mcParticle())
+              continue;
+            auto posParticle = pos.mcParticle_as<aod::McParticles>();
+            auto negParticle = neg.mcParticle_as<aod::McParticles>();
+            if (!posParticle.has_mothers() || !negParticle.has_mothers())
+              continue;
+
+            // Select particles originating from the same parent
+            int pdgParent(0);
+            bool isPhysPrim = false;
+            for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+              for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+                if (particleMotherOfNeg == particleMotherOfPos) {
+                  pdgParent = particleMotherOfNeg.pdgCode();
+                  isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
+                }
+              }
+            }
+            if (pdgParent == 0)
+              continue;
+
+            // --- alternative method to avoid double for loop
+            // int motherId = GetCommonMotherId(mcParticles, posParticle, negParticle);
+            // if (motherId < 0)
+            //   continue; // if motherId is -1, it means no common mother was found
+            // const auto& motherTest = mcParticles.iteratorAt(motherId);
+            // // const bool isPhysPrimTest = motherTest.isPhysicalPrimary();
+            // int pdgParentTest = motherTest.pdgCode();
+            // if (pdgParent != pdgParentTest)
+            //   LOG(warning) << "pdgParent != pdgParentTest" << endl;
+            // ---
+
+            // Compute distance from jet and UE axes
+            double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
+            double deltaPhiJet = getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
+            double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+            double deltaEtaUe1 = v0dir.Eta() - ue1[i].Eta();
+            double deltaPhiUe1 = getDeltaPhi(v0dir.Phi(), ue1[i].Phi());
+            double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+            double deltaEtaUe2 = v0dir.Eta() - ue2[i].Eta();
+            double deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
+            double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+            // Fill Armenteros-Podolanski TH2
+            // registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
+
+            // K0s
+            if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("K0s_reconstructed_jet"), multiplicity, v0.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("K0s_reconstructed_ue"), multiplicity, v0.pt());
+              }
+            }
+            // Lambda
+            if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0 && isPhysPrim) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("Lambda_reconstructed_ue"), multiplicity, v0.pt());
+              }
+            }
+            // AntiLambda
+            if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar && isPhysPrim) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("AntiLambda_reconstructed_ue"), multiplicity, v0.pt());
+              }
+            }
+
+            // Fill inclusive spectra
+            // K0s
+            if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("K0s_reconstructed_jet_incl"), multiplicity, v0.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("K0s_reconstructed_ue_incl"), multiplicity, v0.pt());
+              }
+            }
+            // Lambda
+            if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("Lambda_reconstructed_jet_incl"), multiplicity, v0.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("Lambda_reconstructed_ue_incl"), multiplicity, v0.pt());
+              }
+            }
+            // AntiLambda
+            if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("AntiLambda_reconstructed_jet_incl"), multiplicity, v0.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("AntiLambda_reconstructed_ue_incl"), multiplicity, v0.pt());
+              }
+            }
+          }
+        }
+
+        // Cascades
+        if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+          for (const auto& casc : cascPerColl) {
+            auto bach = casc.bachelor_as<DaughterTracksMC>();
+            auto pos = casc.posTrack_as<DaughterTracksMC>();
+            auto neg = casc.negTrack_as<DaughterTracksMC>();
+
+            // Get MC particles
+            if (!bach.has_mcParticle() || !pos.has_mcParticle() || !neg.has_mcParticle())
+              continue;
+            auto posParticle = pos.mcParticle_as<aod::McParticles>();
+            auto negParticle = neg.mcParticle_as<aod::McParticles>();
+            auto bachParticle = bach.mcParticle_as<aod::McParticles>();
+            if (!posParticle.has_mothers() || !negParticle.has_mothers() || !bachParticle.has_mothers())
+              continue;
+
+            // Select particles originating from the same parent
+            int pdgParent(0);
+            bool isPhysPrim = false;
+            for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+              for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+                for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
+                  if (particleMotherOfNeg != particleMotherOfPos)
+                    continue;
+                  if (std::abs(particleMotherOfNeg.pdgCode()) != kLambda0)
+                    continue;
+                  isPhysPrim = particleMotherOfBach.isPhysicalPrimary();
+                  pdgParent = particleMotherOfBach.pdgCode();
+                }
+              }
+            }
+            if (pdgParent == 0)
+              continue;
+            if (!isPhysPrim)
+              continue;
+
+            // Compute distances from jet and UE axes
+            TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
+            double deltaEtaJet = cascadeDir.Eta() - selectedJet[i].Eta();
+            double deltaPhiJet = getDeltaPhi(cascadeDir.Phi(), selectedJet[i].Phi());
+            double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+            double deltaEtaUe1 = cascadeDir.Eta() - ue1[i].Eta();
+            double deltaPhiUe1 = getDeltaPhi(cascadeDir.Phi(), ue1[i].Phi());
+            double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+            double deltaEtaUe2 = cascadeDir.Eta() - ue2[i].Eta();
+            double deltaPhiUe2 = getDeltaPhi(cascadeDir.Phi(), ue2[i].Phi());
+            double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+            // Xi+
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("XiPos_reconstructed_ue"), multiplicity, casc.pt());
+              }
+            }
+            // Xi-
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("XiNeg_reconstructed_jet"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("XiNeg_reconstructed_ue"), multiplicity, casc.pt());
+              }
+            }
+            // Omega+
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("OmegaPos_reconstructed_jet"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("OmegaPos_reconstructed_ue"), multiplicity, casc.pt());
+              }
+            }
+            // Omega-
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("OmegaNeg_reconstructed_ue"), multiplicity, casc.pt());
+              }
+            }
+          }
+        }
+      }
+      jetPt.clear();
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJetsIons, processMCreconstructed, "process reconstructed events", false);
+
+  void processMCmodels(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const& collisions,
+                       aod::McParticles const& mcParticles)
+  {
+    // Define per-event particle containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> strHadronMomentum;
+    std::vector<int> pdg;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over MC collisions
+    for (const auto& collision : collisions) {
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      strHadronMomentum.clear();
+      pdg.clear();
+
+      // Fill event counter before any selection
+      registryMC.fill(HIST("number_of_events_mc_gen"), 0.5);
+
+      // Require vertex position within the allowed z range
+      // if (std::fabs(collision.posZ()) > zVtx)
+      //   continue;
+
+      // Fill event counter after selection on z-vertex
+      registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
+
+      // Multiplicity of generated event
+      float genMultiplicity;
+      if (centrEstimator == 0) {
+        genMultiplicity = collision.centFT0C();
+      } else {
+        genMultiplicity = collision.centFT0M();
+      }
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_gen_MB"), genMultiplicity);
+
+      // MC particles per collision
+      auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
+
+      // Loop over all MC particles and select physical primaries within acceptance
+      std::vector<std::decay_t<decltype(*mcParticlesPerColl.begin())>> fjParticleObj;
+      for (const auto& particle : mcParticlesPerColl) {
+        // Store properties of strange hadrons
+        int pdgAbs = std::abs(particle.pdgCode());
+        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) { // TODO: add protons, kaons, pions
+          pdg.emplace_back(particle.pdgCode());
+          strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
+        }
+
+        double minPtParticle = 0.1f;
+        if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
+          continue;
+
+        // false --> do not fill histograms with reco events
+        FillMBEventHistoMCGEN(particle, genMultiplicity, false);
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+          continue;
+
+        // Build 4-momentum assuming charged pion mass
+        static constexpr float kMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+        const double energy = std::sqrt(particle.p() * particle.p() + kMassPionChargedSquared);
+        fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
+        fourMomentum.set_user_index(particle.pdgCode());
+        fjParticles.emplace_back(fourMomentum);
+        fjParticleObj.push_back(particle);
+      }
+
+      if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+        AddV0sForJetReconstructionMCP(fjParticles, fjParticleObj, mcParticlesPerColl, mcParticles);
       }
 
       // Skip events with no particles
@@ -2156,414 +3180,7 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("n_jets_vs_mult_mc_gen"), genMultiplicity, countSelJet);
     }
   }
-  PROCESS_SWITCH(StrangenessInJetsIons, processMCgenerated, "Process MC generated events", false);
-
-  // Reconstructed MC events
-  void processMCreconstructed(SimCollisions const& collisions,
-                              soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const&,
-                              DaughterTracksMC const& mcTracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                              aod::CascDataExt const& Cascades, aod::McParticles const& mcParticles)
-  {
-    // Define per-event containers
-    std::vector<fastjet::PseudoJet> fjParticles;
-    std::vector<TVector3> selectedJet;
-    std::vector<TVector3> ue1;
-    std::vector<TVector3> ue2;
-
-    // Jet and area definitions
-    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
-
-    // Loop over reconstructed collisions
-    for (const auto& collision : collisions) {
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-
-      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
-
-      // Clear containers at the start of the event loop
-      fjParticles.clear();
-      selectedJet.clear();
-      ue1.clear();
-      ue2.clear();
-
-      // Fill event counter before any selection
-      registryMC.fill(HIST("number_of_events_mc_rec"), 0.5);
-      if (!collision.sel8())
-        continue;
-
-      // Fill event counter after event selection
-      registryMC.fill(HIST("number_of_events_mc_rec"), 1.5);
-      if (std::fabs(collision.posZ()) > zVtx)
-        continue;
-
-      // Fill event counter after selection on z-vertex
-      registryMC.fill(HIST("number_of_events_mc_rec"), 2.5);
-
-      // Reject collisions associated to the same found BC
-      if (requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
-        continue;
-
-      // Fill event counter after selection kNoSameBunchPileup
-      registryMC.fill(HIST("number_of_events_mc_rec"), 3.5);
-
-      // Compatible z_vtx from FT0 and from PV
-      if (requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-        continue;
-
-      // Fill event counter after selection kIsGoodZvtxFT0vsPV
-      registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
-
-      // Event multiplicity
-      float multiplicity;
-      if (centrEstimator == 0) {
-        multiplicity = mcCollision.centFT0C();
-      } else {
-        multiplicity = mcCollision.centFT0M();
-      }
-      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec_MB"), multiplicity);
-
-      // Number of V0 and cascades per collision
-      auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
-      auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
-      auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
-      const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
-
-      FillFullEventHistoMCREC(collision, mcParticles, v0sPerColl,
-                              cascPerColl, tracksPerColl, multiplicity);
-
-      // Loop over reconstructed tracks
-      for (auto const& track : tracksPerColl) {
-        if (!passedTrackSelectionForJetReconstruction(track))
-          continue;
-
-        // 4-momentum representation of a particle
-        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
-        fjParticles.emplace_back(fourMomentum);
-      }
-
-      // Reject empty events
-      if (fjParticles.size() < 1)
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_rec"), 5.5);
-
-      // Cluster particles using the anti-kt algorithm
-      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
-      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
-
-      // Jet selection
-      bool isAtLeastOneJetSelected = false;
-      std::vector<double> jetPt;
-
-      // Loop over clustered jets
-      for (const auto& jet : jets) {
-
-        // jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
-          continue;
-
-        // jet pt must be larger than threshold
-        auto jetForSub = jet;
-        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
-          continue;
-        isAtLeastOneJetSelected = true;
-
-        // Perpendicular cones
-        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
-        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
-        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
-          continue;
-        }
-
-        // Store selected jet and UE cone axes
-        selectedJet.emplace_back(jetAxis);
-        ue1.emplace_back(ueAxis1);
-        ue2.emplace_back(ueAxis2);
-        jetPt.emplace_back(jetMinusBkg.pt());
-      }
-      if (!isAtLeastOneJetSelected)
-        continue;
-
-      // Fill event counter for events with at least one selected jet
-      registryMC.fill(HIST("number_of_events_mc_rec"), 6.5);
-      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
-      registryMC.fill(HIST("n_jets_vs_mult_mc_rec"), multiplicity, static_cast<int>(selectedJet.size()));
-
-      // Loop over selected jets
-      for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
-
-        // Fill jet counter
-        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_rec"), multiplicity, jetPt[i]);
-
-        // ------------------------------------------------
-        // --- Generated hadrons in reconstructed jets ----
-        for (const auto& particle : mcParticlesPerColl) {
-          if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > 0.8)
-            continue;
-
-          int absPdg = std::abs(particle.pdgCode());
-          if (absPdg != kK0Short && absPdg != kLambda0)
-            continue;
-
-          TVector3 momVec(particle.px(), particle.py(), particle.pz());
-
-          // Compute distance of particles from jet and UE axes
-          const double deltaEtaJet = momVec.Eta() - selectedJet[i].Eta();
-          const double deltaPhiJet = getDeltaPhi(momVec.Phi(), selectedJet[i].Phi());
-          const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-          const double deltaEtaUe1 = momVec.Eta() - ue1[i].Eta();
-          const double deltaPhiUe1 = getDeltaPhi(momVec.Phi(), ue1[i].Phi());
-          const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          const double deltaEtaUe2 = momVec.Eta() - ue2[i].Eta();
-          const double deltaPhiUe2 = getDeltaPhi(momVec.Phi(), ue2[i].Phi());
-          const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-          // Select particles inside jet
-          if (deltaRJet < rJet) {
-            switch (particle.pdgCode()) {
-              case kK0Short:
-                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-                  registryMC.fill(HIST("K0s_gen_recoEvent_jet"), multiplicity, momVec.Pt());
-                }
-                break;
-              case kLambda0:
-                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-                  registryMC.fill(HIST("Lambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
-                }
-                break;
-              case kLambda0Bar:
-                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
-                }
-                break;
-              default:
-                break;
-            }
-          }
-          if (deltaRUe1 < rJet || deltaRUe2 < rJet) {
-            switch (particle.pdgCode()) {
-              case kK0Short:
-                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-                  registryMC.fill(HIST("K0s_gen_recoEvent_ue"), multiplicity, momVec.Pt());
-                }
-                break;
-              case kLambda0:
-                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-                  registryMC.fill(HIST("Lambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
-                }
-                break;
-              case kLambda0Bar:
-                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
-                }
-                break;
-              default:
-                break;
-            }
-          }
-        }
-        // ----------------------------------------
-
-        // V0 particles
-        if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-          for (const auto& v0 : v0sPerColl) {
-            const auto& pos = v0.posTrack_as<DaughterTracksMC>();
-            const auto& neg = v0.negTrack_as<DaughterTracksMC>();
-            TVector3 v0dir(v0.px(), v0.py(), v0.pz());
-
-            // Get MC particles
-            if (!pos.has_mcParticle() || !neg.has_mcParticle())
-              continue;
-            auto posParticle = pos.mcParticle_as<aod::McParticles>();
-            auto negParticle = neg.mcParticle_as<aod::McParticles>();
-            if (!posParticle.has_mothers() || !negParticle.has_mothers())
-              continue;
-
-            // Select particles originating from the same parent
-            int pdgParent(0);
-            bool isPhysPrim = false;
-            for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-              for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-                if (particleMotherOfNeg == particleMotherOfPos) {
-                  pdgParent = particleMotherOfNeg.pdgCode();
-                  isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
-                }
-              }
-            }
-            if (pdgParent == 0)
-              continue;
-
-            // Compute distance from jet and UE axes
-            double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
-            double deltaPhiJet = getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
-            double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-            double deltaEtaUe1 = v0dir.Eta() - ue1[i].Eta();
-            double deltaPhiUe1 = getDeltaPhi(v0dir.Phi(), ue1[i].Phi());
-            double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-            double deltaEtaUe2 = v0dir.Eta() - ue2[i].Eta();
-            double deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
-            double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-            // Vertex position vector
-            TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
-
-            // Fill Armenteros-Podolanski TH2
-            // registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
-
-            // K0s
-            if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("K0s_reconstructed_jet"), multiplicity, v0.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("K0s_reconstructed_ue"), multiplicity, v0.pt());
-              }
-            }
-            // Lambda
-            if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0 && isPhysPrim) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("Lambda_reconstructed_ue"), multiplicity, v0.pt());
-              }
-            }
-            // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar && isPhysPrim) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("AntiLambda_reconstructed_ue"), multiplicity, v0.pt());
-              }
-            }
-
-            // Fill inclusive spectra
-            // K0s
-            if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("K0s_reconstructed_jet_incl"), multiplicity, v0.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("K0s_reconstructed_ue_incl"), multiplicity, v0.pt());
-              }
-            }
-            // Lambda
-            if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("Lambda_reconstructed_jet_incl"), multiplicity, v0.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("Lambda_reconstructed_ue_incl"), multiplicity, v0.pt());
-              }
-            }
-            // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("AntiLambda_reconstructed_jet_incl"), multiplicity, v0.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("AntiLambda_reconstructed_ue_incl"), multiplicity, v0.pt());
-              }
-            }
-          }
-        }
-
-        // Cascades
-        if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
-          for (const auto& casc : cascPerColl) {
-            auto bach = casc.bachelor_as<DaughterTracksMC>();
-            auto pos = casc.posTrack_as<DaughterTracksMC>();
-            auto neg = casc.negTrack_as<DaughterTracksMC>();
-
-            // Get MC particles
-            if (!bach.has_mcParticle() || !pos.has_mcParticle() || !neg.has_mcParticle())
-              continue;
-            auto posParticle = pos.mcParticle_as<aod::McParticles>();
-            auto negParticle = neg.mcParticle_as<aod::McParticles>();
-            auto bachParticle = bach.mcParticle_as<aod::McParticles>();
-            if (!posParticle.has_mothers() || !negParticle.has_mothers() || !bachParticle.has_mothers())
-              continue;
-
-            // Select particles originating from the same parent
-            int pdgParent(0);
-            bool isPhysPrim = false;
-            for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-              for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-                for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
-                  if (particleMotherOfNeg != particleMotherOfPos)
-                    continue;
-                  if (std::abs(particleMotherOfNeg.pdgCode()) != kLambda0)
-                    continue;
-                  isPhysPrim = particleMotherOfBach.isPhysicalPrimary();
-                  pdgParent = particleMotherOfBach.pdgCode();
-                }
-              }
-            }
-            if (pdgParent == 0)
-              continue;
-            if (!isPhysPrim)
-              continue;
-
-            // Compute distances from jet and UE axes
-            TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
-            double deltaEtaJet = cascadeDir.Eta() - selectedJet[i].Eta();
-            double deltaPhiJet = getDeltaPhi(cascadeDir.Phi(), selectedJet[i].Phi());
-            double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-            double deltaEtaUe1 = cascadeDir.Eta() - ue1[i].Eta();
-            double deltaPhiUe1 = getDeltaPhi(cascadeDir.Phi(), ue1[i].Phi());
-            double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-            double deltaEtaUe2 = cascadeDir.Eta() - ue2[i].Eta();
-            double deltaPhiUe2 = getDeltaPhi(cascadeDir.Phi(), ue2[i].Phi());
-            double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-            // Xi+
-            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("XiPos_reconstructed_ue"), multiplicity, casc.pt());
-              }
-            }
-            // Xi-
-            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("XiNeg_reconstructed_jet"), multiplicity, casc.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("XiNeg_reconstructed_ue"), multiplicity, casc.pt());
-              }
-            }
-            // Omega+
-            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("OmegaPos_reconstructed_jet"), multiplicity, casc.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("OmegaPos_reconstructed_ue"), multiplicity, casc.pt());
-              }
-            }
-            // Omega-
-            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("OmegaNeg_reconstructed_ue"), multiplicity, casc.pt());
-              }
-            }
-          }
-        }
-      }
-      jetPt.clear();
-    }
-  }
-  PROCESS_SWITCH(StrangenessInJetsIons, processMCreconstructed, "process reconstructed events", false);
+  PROCESS_SWITCH(StrangenessInJetsIons, processMCmodels, "Process MC generated events (with models)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
