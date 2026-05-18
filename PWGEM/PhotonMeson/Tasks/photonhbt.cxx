@@ -775,6 +775,7 @@ struct Photonhbt {
     fRegistryPairQA.addClone("Pair/same/QA/", "Pair/mix/QA/");
     fRegistryPairMC.addClone("Pair/same/MC/", "Pair/mix/MC/");
     addFullRangeHistograms("Pair/same/FullRange/");
+    addLegPairMCHistograms();
 
     fRegistry.addClone("Pair/same/", "Pair/mix/");
 
