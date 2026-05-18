@@ -12,7 +12,7 @@
 /// \file lambda1520Analysispo.cxx
 /// \brief Task for Lambda(1520) resonance reconstruction via proton-kaon invariant mass analysis for pO system
 ///
-/// \author Yash Patley <yash.patley@cern.ch>, Durgesh Bhatt <durgesh.bhatt@cern.ch>
+/// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
@@ -224,8 +224,10 @@ struct Lambda1520Analysispo {
     allHistograms.add("QAafter/Proton/tpcNSigmaPionContamVsPt", "Proton track: TPC nSigma pion contamination check", kTH2F, {axisPtForPID, axisTPCNSigma});
     allHistograms.add("QAafter/Proton/tpcNSigmaKaonContamVsPt", "Proton track: TPC nSigma kaon contamination check", kTH2F, {axisPtForPID, axisTPCNSigma});
     allHistograms.add("QAafter/Proton/tpcNSigmaVsMomentum", "Proton TPC nSigma vs total momentum (after cuts)", kTH2F, {axisMomentumForPID, axisTPCNSigma});
+    allHistograms.add("QAafter/Proton/tpcNSigmaVsCentrality", "Proton TPC nSigma vs centrality", kTH2F, {axisCentralityPercent, axisTPCNSigma});
     allHistograms.add("QAafter/Proton/tofNSigmaVsPt", "Proton TOF nSigma vs pT (after cuts)", kTH2F, {axisPtForPID, axisTOFNSigma});
     allHistograms.add("QAafter/Proton/tofNSigmaVsMomentum", "Proton TOF nSigma vs total momentum (after cuts)", kTH2F, {axisMomentumForPID, axisTOFNSigma});
+    allHistograms.add("QAafter/Proton/tofNSigmaVsCentrality", "Proton TOF nSigma vs centrality", kTH2F, {axisCentralityPercent, axisTOFNSigma});
     allHistograms.add("QAafter/Proton/tofNSigmaPionContamVsMomentum", "Proton track: TOF nSigma pion contamination check", kTH2F, {axisMomentumForPID, axisTOFNSigma});
     allHistograms.add("QAafter/Proton/tofNSigmaKaonContamVsMomentum", "Proton track: TOF nSigma kaon contamination check", kTH2F, {axisMomentumForPID, axisTOFNSigma});
     allHistograms.add("QAafter/Proton/tofNSigmaVsTPCNSigma", "Proton TOF nSigma vs TPC nSigma (after cuts)", kTH2F, {axisTPCNSigma, axisTOFNSigma});
@@ -240,8 +242,10 @@ struct Lambda1520Analysispo {
     allHistograms.add("QAafter/Kaon/tpcNSigmaProtonContamVsMomentum", "Kaon track: TPC nSigma proton contamination check", kTH2F, {axisMomentumForPID, axisTPCNSigma});
     allHistograms.add("QAafter/Kaon/tpcNSigmaVsPt", "Kaon TPC nSigma vs pT (after cuts)", kTH2F, {axisPtForPID, axisTPCNSigma});
     allHistograms.add("QAafter/Kaon/tpcNSigmaVsMomentum", "Kaon TPC nSigma vs total momentum (after cuts)", kTH2F, {axisMomentumForPID, axisTPCNSigma});
+    allHistograms.add("QAafter/Kaon/tpcNSigmaVsCentrality", "Kaon TPC nSigma vs centrality", kTH2F, {axisCentralityPercent, axisTPCNSigma});
     allHistograms.add("QAafter/Kaon/tofNSigmaVsPt", "Kaon TOF nSigma vs pT (after cuts)", kTH2F, {axisPtForPID, axisTOFNSigma});
     allHistograms.add("QAafter/Kaon/tofNSigmaVsMomentum", "Kaon TOF nSigma vs total momentum (after cuts)", kTH2F, {axisMomentumForPID, axisTOFNSigma});
+    allHistograms.add("QAafter/Kaon/tofNSigmaVsCentrality", "Kaon TOF nSigma vs centrality", kTH2F, {axisCentralityPercent, axisTOFNSigma});
     allHistograms.add("QAafter/Kaon/tofNSigmaPionContamVsMomentum", "Kaon track: TOF nSigma pion contamination check", kTH2F, {axisMomentumForPID, axisTOFNSigma});
     allHistograms.add("QAafter/Kaon/tofNSigmaProtonContamVsMomentum", "Kaon track: TOF nSigma proton contamination check", kTH2F, {axisMomentumForPID, axisTOFNSigma});
     allHistograms.add("QAafter/Kaon/tofNSigmaVsTPCNSigma", "Kaon TOF nSigma vs TPC nSigma (after cuts)", kTH2F, {axisTPCNSigma, axisTOFNSigma});
@@ -610,6 +614,7 @@ struct Lambda1520Analysispo {
         allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaPionContamVsPt"), protonTotalMomentum, protonTrack.tpcNSigmaPi());
         allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaKaonContamVsPt"), protonTotalMomentum, protonTrack.tpcNSigmaKa());
         allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsMomentum"), protonTotalMomentum, tpcNSigProton);
+        allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsCentrality"), tpcNSigProton, centralityPercent);
         allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsPt"), ptProton, tpcNSigProton);
         allHistograms.fill(HIST("QAafter/Proton/tpcCrossedRowsVsPt"), ptProton, protonTrack.tpcNClsCrossedRows());
         allHistograms.fill(HIST("QAafter/Proton/tpcClustersFoundVsPt"), ptProton, protonTrack.tpcNClsFound());
@@ -617,6 +622,7 @@ struct Lambda1520Analysispo {
         if (!useTPCOnlyPID && protonTrack.hasTOF()) {
           auto tofNSigProton = protonTrack.tofNSigmaPr();
           allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsMomentum"), protonTotalMomentum, tofNSigProton);
+          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsCentrality"), tofNSigProton, centralityPercent);
           allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsPt"), ptProton, tofNSigProton);
           allHistograms.fill(HIST("QAafter/Proton/tofNSigmaPionContamVsMomentum"), protonTotalMomentum, protonTrack.tofNSigmaPi());
           allHistograms.fill(HIST("QAafter/Proton/tofNSigmaKaonContamVsMomentum"), protonTotalMomentum, protonTrack.tofNSigmaKa());
@@ -633,6 +639,7 @@ struct Lambda1520Analysispo {
         allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaPionContamVsPt"), kaonTotalMomentum, kaonTrack.tpcNSigmaPi());
         allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaProtonContamVsMomentum"), kaonTotalMomentum, kaonTrack.tpcNSigmaPr());
         allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsMomentum"), kaonTotalMomentum, tpcNSigKaon);
+        allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsCentrality"), tpcNSigKaon, centralityPercent);
         allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsPt"), ptKaon, tpcNSigKaon);
         allHistograms.fill(HIST("QAafter/Kaon/tpcCrossedRowsVsPt"), ptKaon, kaonTrack.tpcNClsCrossedRows());
         allHistograms.fill(HIST("QAafter/Kaon/tpcClustersFoundVsPt"), ptKaon, kaonTrack.tpcNClsFound());
@@ -641,6 +648,7 @@ struct Lambda1520Analysispo {
           auto tofNSigKaon = kaonTrack.tofNSigmaKa();
           allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsMomentum"), kaonTotalMomentum, tofNSigKaon);
           allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsPt"), ptKaon, tofNSigKaon);
+          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsCentrality"), tofNSigKaon, centralityPercent);
           allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaPionContamVsMomentum"), kaonTotalMomentum, kaonTrack.tofNSigmaPi());
           allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaProtonContamVsMomentum"), kaonTotalMomentum, kaonTrack.tofNSigmaPr());
           allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsTPCNSigma"), tpcNSigKaon, tofNSigKaon);
