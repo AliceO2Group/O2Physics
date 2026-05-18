@@ -872,7 +872,7 @@ struct NonPromptCascadeTask {
       const int mcid = mcp.mcCollisionId();
       // std::cout << "mcid:" << mcid << std::endl;
       if (mcid < 0 || static_cast<size_t>(mcid) >= mcMult.size()) {
-        std::cout << "0 This should never happen ?" << std::endl;
+        LOG(info) << "0 This should never happen ?";
         continue;
       }
       if (!isAcceptedMCParticle(mcp)) {
@@ -898,7 +898,7 @@ struct NonPromptCascadeTask {
       if (collRowId >= 0 && collRowId <= maxCollRowId) {
         collRowIdToDense[collRowId] = denseIdx;
       } else {
-        std::cout << "1 This should never happen ?" << std::endl;
+        LOG(info) << "1 This should never happen ?";
       }
       ++denseIdx;
     }
@@ -922,7 +922,7 @@ struct NonPromptCascadeTask {
       const int dIdx = collRowIdToDense[collRowId];
       if (dIdx < 0) {
         // Tracks has collId which is not in the list created above
-        std::cout << "3 This should never happen ?" << std::endl;
+        LOG(info) << "3 This should never happen ?";
         continue;
       }
       ++recoMultDense[dIdx];
@@ -942,7 +942,7 @@ struct NonPromptCascadeTask {
       if (mcid >= 0 && static_cast<size_t>(mcid) < mcCollisionHasRecoCollision.size()) {
         mcCollisionHasRecoCollision[mcid] = 1;
       } else {
-        std::cout << "4 This should never happen ?" << std::endl;
+        LOG(info) << "4 This should never happen ?";
       }
     }
 
@@ -952,7 +952,7 @@ struct NonPromptCascadeTask {
     for (auto const& mcColl : mcCollisions) {
       const int mcid = mcColl.globalIndex();
       if (mcid < 0 || static_cast<size_t>(mcid) >= writeMcCollision.size()) {
-        std::cout << "5 This should never happen ?" << std::endl;
+        LOG(info) << "5 This should never happen ?";
         continue;
       }
       if ((ds % cfgDownscaleMB) == 0) {
@@ -1158,7 +1158,7 @@ struct NonPromptCascadeTask {
                      coll.centFT0M(),
                      coll.multFT0M());
         auto collIdx = NPCollsTable.lastIndex();
-        for (auto const pt : recoPts) {
+        for (auto const& pt : recoPts) {
           NPRecoCandTable(collIdx, pt);
         }
       }
