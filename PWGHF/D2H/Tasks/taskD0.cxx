@@ -884,7 +884,6 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(d0Type));
           if (storeCentrality) {
             valuesToFill.push_back(centrality);
-            valuesToFill.push_back(static_cast<double>(numPvContributors));
           }
           if (storeOccupancyAndIR) {
             valuesToFill.push_back(occ);
