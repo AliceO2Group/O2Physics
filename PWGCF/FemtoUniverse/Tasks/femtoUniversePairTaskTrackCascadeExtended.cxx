@@ -844,7 +844,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       }
     }
 
-    if (trackparticleconfigs.confChargePart1 != trackparticleconfigs.confChargePart2)
+    if (trackparticleconfigs.confChargePart1 != trackparticleconfigs.confChargePart2) {
       for (const auto& part : groupPartsTwo) {
         if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
           /// PID plot for the first track particle
@@ -874,6 +874,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           }
         }
       }
+    }
 
     auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
       // PID for the first track particle
