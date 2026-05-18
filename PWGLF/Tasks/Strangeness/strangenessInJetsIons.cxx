@@ -2961,6 +2961,7 @@ struct StrangenessInJetsIons {
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
+        fjParticleObj.push_back(particle);
       }
 
       if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
