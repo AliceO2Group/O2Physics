@@ -16,6 +16,7 @@
 ///
 
 #include "ALICE3/Core/Decayer.h"
+#include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFMCParticle.h"
 

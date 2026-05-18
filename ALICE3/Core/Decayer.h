@@ -19,6 +19,7 @@
 #ifndef ALICE3_CORE_DECAYER_H_
 #define ALICE3_CORE_DECAYER_H_
 
+#include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
