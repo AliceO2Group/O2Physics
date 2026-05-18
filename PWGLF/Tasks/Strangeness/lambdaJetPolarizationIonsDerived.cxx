@@ -895,10 +895,15 @@ struct lambdajetpolarizationionsderived {
     // (calculated for leading jets only)
     histos.add("IntegratedCuts/pRingVsNV0s", "pRingVsNV0s; N_{#Lambda}+N_{#bar{#Lambda}};<#it{R}>", kTProfile, {{20, 0, 20}});
 
-    // Leading Jet QA:
+    // Proxy Eta QA:
     histos.add("JetKinematicsQA/hLeadJetEta", "hLeadJetEta", kTH1D, {axisConfigurations.axisEta});
     histos.add("JetKinematicsQA/hSubLeadJetEta", "hSubLeadJetEta", kTH1D, {axisConfigurations.axisEta});
     histos.add("JetKinematicsQA/hLeadPEta", "hLeadPEta", kTH1D, {axisConfigurations.axisEta});
+    
+    // Proxy Phi QA:
+    histos.add("JetKinematicsQA/hLeadJetPhi", "hLeadJetPhi", kTH1D, {axisConfigurations.axisPhi});
+    histos.add("JetKinematicsQA/hSubLeadJetPhi", "hSubLeadJetPhi", kTH1D, {axisConfigurations.axisPhi});
+    histos.add("JetKinematicsQA/hLeadPPhi", "hLeadPPhi", kTH1D, {axisConfigurations.axisPhi});
 
     // Counting the number of jets/proxies themselves (these count at most once per event) -- Similar to the FOLDER/QA/hPtJet counters:
     histos.add("JetKinematicsQA/hJetCounterPtJet", "hJetCounterPtJet; p_{T}^{Jet} (GeV/c)", kTH1D, {axisConfigurations.axisJetPt});
@@ -1040,6 +1045,7 @@ struct lambdajetpolarizationionsderived {
       unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(eta));
     }
 
+    // TODO: avoid recalculation for forcePreviousJet and forceDatalikeJet, where we already know eta and phi variables
     // Recalculating pT, phi and eta after distortions:
     // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
     if (hasValidProxy) { // If you don't check this flag here, the "if (!usableProxy)" change would be silently overwritten
@@ -1054,6 +1060,8 @@ struct lambdajetpolarizationionsderived {
       
       // Recalculate phi:
       phi = std::atan2(unitVec.Y(), unitVec.X());
+      if (phi < 0.0f)
+        phi += o2::constants::math::TwoPI; // Notice that atan2 outputs values from -PI to PI, and DataModel convention was from 0 to 2PI as per FastJet's phi() getter
       
       // Stable eta computation:
       // Stabler than 0.5 * std::log((1. + cosTheta) / (1. - cosTheta))
@@ -1149,6 +1157,7 @@ struct lambdajetpolarizationionsderived {
         // Do not gate on the post-distortion hasValidLeadingP (a pT cut) value here!
         if (!forcePreviousJet || hadPreviousProxy){
           histos.fill(HIST("JetKinematicsQA/hLeadPEta"), leadPEta);
+          histos.fill(HIST("JetKinematicsQA/hLeadPPhi"), leadPPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtLeadP"), leadPPt);
         }
       }
@@ -1202,6 +1211,7 @@ struct lambdajetpolarizationionsderived {
         // Do not gate on the post-distortion hasValidLeadingJet (a pT cut) value here!
         if (!forcePreviousJet || hadPreviousProxy) {
           histos.fill(HIST("JetKinematicsQA/hLeadJetEta"), leadingJetEta);
+          histos.fill(HIST("JetKinematicsQA/hLeadJetPhi"), leadingJetPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtJet"), leadingJetPt);
         }
       }
@@ -1225,6 +1235,7 @@ struct lambdajetpolarizationionsderived {
         // Do not gate on the post-distortion hasValidSubJet (a pT cut) value here!
         if (!forcePreviousJet || hadPreviousProxy) {
           histos.fill(HIST("JetKinematicsQA/hSubLeadJetEta"), subleadingJetEta);
+          histos.fill(HIST("JetKinematicsQA/hSubLeadJetPhi"), subleadingJetPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
         }
       }
@@ -1327,7 +1338,7 @@ struct lambdajetpolarizationionsderived {
         float pX = protonLikeStarUnit3Vec.Y() * lambdaLikeUnit3Vec.X() - protonLikeStarUnit3Vec.X() * lambdaLikeUnit3Vec.Y();
         // pY = p_z - L_z * (p_proton_star dot p_lambda_hat) 
         float pY = protonLikeStarUnit3Vec.Z() - lambdaLikeUnit3Vec.Z() * cosFakePol; // (Reusing cosFakePol calculated earlier!)
-        float phiStar = std::atan2(pY, pX);
+        float phiStar = std::atan2(pY, pX); // This will give an output from -PI to PI
 
         // Another reconstruction efficiency measure:
         // (Formula is: p_{Lambda} \cross p_{Daughter}^{*} \cdot B, and B points in Z)

@@ -1688,7 +1688,7 @@ struct lambdajetpolarizationions {
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), jetsInEvent, cosTheta);
         }
       }
-      if (doJetKinematicsQA) {
+      if (doJetKinematicsQA) { // Fills even when the jet is outside of the (0.9f - jetConfigurations.radiusJet) eta window.
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJet.pt());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetEta"), leadingJet.eta());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPhi"), leadingJet.phi());
