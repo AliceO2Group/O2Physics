@@ -160,16 +160,16 @@ constexpr double DownscalingDefault[5][1]{
   {1.},
   {1.},
   {1.}};
-constexpr int species{5};                                                                             // Number of analysed species
-constexpr int codes[5]{2212, 1000010020, 1000010030, 1000020030, 1000020040};                         // PGD code of these particles
-constexpr float charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};                                                  // Their charge
-constexpr float masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};              // Their masses
-static const std::vector<std::string> matter{"M", "A"};                                               // Type of particles (matter or antimatter)
-static const std::vector<std::string> pidName{"TPC", "TOF"};                                          // Type of PID
-static const std::vector<int> hfMothCodes{511, 521, 531, 541, 5122};                                  // b-mesons + Lambda_b
-static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};          // Particles name
-static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};           // TO BE UNDERSTAND
-static const std::vector<std::string> DCAConfigNames{"Save DCA hist", "Matter/Antimatter"};           // TO BE UNDERSTAND
+constexpr int species{5};                                                                    // Number of analysed species
+constexpr int codes[5]{2212, 1000010020, 1000010030, 1000020030, 1000020040};                // PGD code of these particles
+constexpr float charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};                                         // Their charge
+constexpr float masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};     // Their masses
+static const std::vector<std::string> matter{"M", "A"};                                      // Type of particles (matter or antimatter)
+static const std::vector<std::string> pidName{"TPC", "TOF"};                                 // Type of PID
+static const std::vector<int> hfMothCodes{511, 521, 531, 541, 5122};                         // b-mesons + Lambda_b
+static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"}; // Particles name
+static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
+static const std::vector<std::string> DCAConfigNames{"Save DCA hist", "Matter/Antimatter"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};                   // label for nsigmaTPC selection
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};                        // label for DCA selection
 static const std::vector<std::string> DownscalingConfigName{"Fraction of kept candidates"};           // Fraction of candidates to be kept
@@ -459,8 +459,8 @@ struct DeuteronInTriggeredEvents {
     const AxisSpec ptResAxis{cfgMomResBins, "#Delta#it{p}_{T}/#it{p}_{T}"};
     const AxisSpec nITSClusAxis{cfgNITSClusBins, "N ITS clusters"};
     const AxisSpec nTPCClusAxis{cfgNTPCClusBins, "N TPC clusters"};
-    const AxisSpec hasTRDAxis{2, -0.5, 1.5, "Has TRD"};       // TO BE CHECKED
-    const AxisSpec correctPVAxis{2, -0.5, 1.5, "Correct PV"}; // TO BE CHECKED
+    const AxisSpec hasTRDAxis{2, -0.5, 1.5, "Has TRD"};
+    const AxisSpec correctPVAxis{2, -0.5, 1.5, "Correct PV"};
     const AxisSpec isSecondaryAxis{2, -0.5, 1.5, "Is secondary"};
     const AxisSpec fromWeakDecayAxis{2, -0.5, 1.5, "From weak decay"};
 
@@ -812,7 +812,7 @@ struct DeuteronInTriggeredEvents {
       float beta{o2::pid::tof::Beta::GetBeta(track)};
       spectra.fill(HIST("hTpcSignalDataSelected"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
       spectra.fill(HIST("hTofSignalData"), correctedTpcInnerParam, beta);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta));                       /// sometimes beta > 1 or < 0, to be checked
+      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta));                       /// sometimes beta > 1 or < 0
       uint16_t flag = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12); // Store the PID of the track in the 12-15 bit
       std::array<float, 5> tofMasses{-3.f, -3.f, -3.f, -3.f, -3.f};
       bool fillTree{false};
