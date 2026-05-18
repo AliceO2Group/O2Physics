@@ -48,6 +48,7 @@
 #include <TMath.h>
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -98,7 +99,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   /// configurations for cascades
   Configurable<int> confCascPDGCode{"confCascPDGCode", 3312, "Particle 2 (Cascade) - PDG code"};
-  Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
+  Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade and cascade-cascade combination"};
   Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
   Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of cascade"};
   Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of cascade"};
@@ -139,8 +140,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   } twotracksconfigs;
 
   // Efficiency
-  Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
-  Configurable<std::string> confCCDBEfficiency{"confCCDBEfficiency", "", "CCDB path to efficiency object"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
+    Configurable<std::string> confCCDBEfficiency{"confCCDBEfficiency", "", "CCDB path to efficiency object"};
+    Configurable<int64_t> confCCDBNoLaterThanTrack{"confCCDBNoLaterThanTrack", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> confCCDBNoLaterThanCasc{"confCCDBNoLaterThanCasc", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  } ccdbEffLoader;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < narrowcuts.confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
@@ -383,10 +388,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         pairCloseRejectionCasc.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value, 0, 0, confIsSameSignCPR.value);
     }
 
-    if (!confLocalEfficiency.value.empty()) {
-      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(confLocalEfficiency.value.c_str(), "read"));
+    if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {
+      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ccdbEffLoader.confLocalEfficiency.value.c_str(), "read"));
       if (!plocalEffFile || plocalEffFile.get()->IsZombie())
-        LOGF(fatal, "Could not load efficiency histogram from %s", confLocalEfficiency.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram from %s", ccdbEffLoader.confLocalEfficiency.value.c_str());
       if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
         pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
         pEffHistp2 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
@@ -396,20 +401,19 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
         LOGF(info, "Loaded efficiency histograms for Cascade-Cascade.");
       }
-    } else if (!confCCDBEfficiency.value.empty()) {
+    } else if (!ccdbEffLoader.confCCDBEfficiency.value.empty()) {
       ccdb->setURL("http://alice-ccdb.cern.ch");
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
 
-      auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-      ccdb->setCreatedNotAfter(now);
+      ccdb->setCreatedNotAfter(std::max(ccdbEffLoader.confCCDBNoLaterThanTrack.value, ccdbEffLoader.confCCDBNoLaterThanCasc.value));
       if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
-        pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/PrPlus", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/PrMinus", now)); // note: works only for protons for now
-        pEffHistp2 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/Cascade", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/AntiCascade", now));
+        pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); /// works only for protons
+        pEffHistp2 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
         LOGF(info, "Loaded efficiency histograms for track-Cascade from CCDB");
       } else if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask) {
-        pEffHistp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/Cascade", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/AntiCascade", now));
-        pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/Cascade", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(confCCDBEfficiency.value + "/AntiCascade", now));
+        pEffHistp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
+        pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
         LOGF(info, "Loaded efficiency histograms for Cascade-Cascade from CCDB.");
       }
     }
