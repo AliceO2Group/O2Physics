@@ -1580,6 +1580,83 @@ struct StrangenessInJetsIons {
   }
 
   /**
+   * @brief Add V0s as input for the jet finder algorithm in DATA
+   *
+   * @tparam Track
+   * @tparam V0PerColl The container type holding the sliced V0 candidates for the current collision.
+   *
+   * @param[in,out] fjInput Vector of FastJet PseudoJets where valid V0s will be appended.
+   * @param[in]     fjTracks Vector containing tracks already selected for jet finder input.
+   * @param[in]     v0sPerColl V0 candidates belonging to this specific collision.
+   * @param[in]     vtxPos TVector3 object representing the vertex position.
+   */
+  template <typename Track, typename V0PerColl>
+  void AddV0sForJetReconstructionData(std::vector<fastjet::PseudoJet>& fjInput,
+                                      const std::vector<Track>& fjTracks,
+                                      V0PerColl const& v0sPerColl,
+                                      const TVector3& vtxPos)
+  {
+    // Vector of labels: if true remove the element from fjInput
+    std::vector<bool> isTrackReplaced(fjTracks.size(), false);
+    std::vector<fastjet::PseudoJet> v0PseudoJets; // V0s to use as input for jet finder
+
+    for (const auto& v0 : v0sPerColl) {
+      const auto& pos = v0.template posTrack_as<DaughterTracks>();
+      const auto& neg = v0.template negTrack_as<DaughterTracks>();
+
+      bool isK0S = false, isLambda = false, isAntiLambda = false;
+      // K0s
+      if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
+        // LOG(info) << "[AddV0sForJetReconstructionData] Add K0S as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassK0Short);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isK0S = true;
+      }
+      // Lambda
+      if (passedLambdaSelection(v0, pos, neg, vtxPos)) {
+        // LOG(info) << "[AddV0sForJetReconstructionData] Add Lambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isLambda = true;
+      }
+      // AntiLambda
+      if (passedAntiLambdaSelection(v0, pos, neg, vtxPos)) {
+        // LOG(info) << "[AddV0sForJetReconstructionData] Add AntiLambda as input for jet finder.";
+        double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0Bar);
+        fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+        v0PseudoJets.emplace_back(fourMomentum);
+        isAntiLambda = true;
+      }
+
+      // Exclude daughter tracks in case a V0 is found
+      bool isV0 = isK0S || isLambda || isAntiLambda;
+      if (!isV0)
+        continue;
+      for (int i = 0; i < fjTracks.size(); ++i) {
+        if (isV0DaughterTrack(fjTracks[i], v0)) {
+          // LOG(info) << "[AddV0sForJetReconstructionData] V0 daughter track found in fjTracks.";
+          isTrackReplaced[i] = true;
+        }
+      }
+    }
+
+    std::vector<fastjet::PseudoJet> cleanFjInput;
+    cleanFjInput.reserve(fjInput.size());
+    for (size_t i = 0; i < fjInput.size(); ++i) {
+      if (!isTrackReplaced[i])
+        cleanFjInput.push_back(fjInput[i]);
+    }
+    for (const auto& v0pj : v0PseudoJets) {
+      cleanFjInput.push_back(v0pj);
+    }
+    // LOG(info) << "[AddV0sForJetReconstructionData] Size fjInput: " << fjInput.size();
+    fjInput = std::move(cleanFjInput);
+    // LOG(info) << "[AddV0sForJetReconstructionData] Size fjInput dopo move: " << fjInput.size();
+  }
+
+  /**
    * @brief Add V0s as input for the jet finder algorithm in MC reco (detector level)
    *
    * @tparam Track
@@ -1592,11 +1669,11 @@ struct StrangenessInJetsIons {
    * @param[in]     vtxPos TVector3 object representing the vertex position.
    */
   template <typename Track, typename V0PerColl>
-  void AddV0sForJetReconstructionMC(std::vector<fastjet::PseudoJet>& fjInput,
-                                    const std::vector<Track>& fjTracks,
-                                    V0PerColl const& v0sPerColl,
-                                    aod::McParticles const& mcParticles,
-                                    const TVector3& vtxPos)
+  void AddV0sForJetReconstructionMCD(std::vector<fastjet::PseudoJet>& fjInput,
+                                     const std::vector<Track>& fjTracks,
+                                     V0PerColl const& v0sPerColl,
+                                     aod::McParticles const& mcParticles,
+                                     const TVector3& vtxPos)
   {
     // Vector of labels: if true remove the element from fjInput
     std::vector<bool> isTrackReplaced(fjTracks.size(), false);
@@ -1628,7 +1705,7 @@ struct StrangenessInJetsIons {
       bool isK0S = false, isLambda = false, isAntiLambda = false;
       // K0s
       if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short) {
-        // LOG(info) << "[AddV0sForJetReconstructionMC] Add K0S as input for jet finder.";
+        // LOG(info) << "[AddV0sForJetReconstructionMCD] Add K0S as input for jet finder.";
         double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassK0Short);
         fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
         v0PseudoJets.emplace_back(fourMomentum);
@@ -1636,7 +1713,7 @@ struct StrangenessInJetsIons {
       }
       // Lambda
       if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0) {
-        // LOG(info) << "[AddV0sForJetReconstructionMC] Add Lambda as input for jet finder.";
+        // LOG(info) << "[AddV0sForJetReconstructionMCD] Add Lambda as input for jet finder.";
         double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0);
         fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
         v0PseudoJets.emplace_back(fourMomentum);
@@ -1644,7 +1721,7 @@ struct StrangenessInJetsIons {
       }
       // AntiLambda
       if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar) {
-        // LOG(info) << "[AddV0sForJetReconstructionMC] Add AntiLambda as input for jet finder.";
+        // LOG(info) << "[AddV0sForJetReconstructionMCD] Add AntiLambda as input for jet finder.";
         double energy = GetEnergy(v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda0Bar);
         fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
         v0PseudoJets.emplace_back(fourMomentum);
@@ -1657,7 +1734,7 @@ struct StrangenessInJetsIons {
         continue;
       for (int i = 0; i < fjTracks.size(); ++i) {
         if (isV0DaughterTrack(fjTracks[i], v0)) {
-          // LOG(info) << "[AddV0sForJetReconstructionMC] V0 daughter track found in fjTracks.";
+          // LOG(info) << "[AddV0sForJetReconstructionMCD] V0 daughter track found in fjTracks.";
           isTrackReplaced[i] = true;
         }
       }
@@ -1672,9 +1749,9 @@ struct StrangenessInJetsIons {
     for (const auto& v0pj : v0PseudoJets) {
       cleanFjInput.push_back(v0pj);
     }
-    // LOG(info) << "[AddV0sForJetReconstructionMC] Size fjInput: " << fjInput.size();
+    // LOG(info) << "[AddV0sForJetReconstructionMCD] Size fjInput: " << fjInput.size();
     fjInput = std::move(cleanFjInput);
-    // LOG(info) << "[AddV0sForJetReconstructionMC] Size fjInput dopo move: " << fjInput.size();
+    // LOG(info) << "[AddV0sForJetReconstructionMCD] Size fjInput dopo move: " << fjInput.size();
   }
 
   // Process data
@@ -1682,6 +1759,9 @@ struct StrangenessInJetsIons {
                    aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
                    aod::BCsWithTimestamps const&)
   {
+    // Vertex position vector
+    TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
     // Fill event counter before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
 
@@ -1738,6 +1818,7 @@ struct StrangenessInJetsIons {
 
     // Loop over reconstructed tracks
     std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<std::decay_t<decltype(*tracks.begin())>> fjTracks;
     for (auto const& track : tracks) {
 
       // Require that tracks pass selection criteria
@@ -1747,7 +1828,14 @@ struct StrangenessInJetsIons {
       // 4-momentum representation of a particle
       fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
       fjParticles.emplace_back(fourMomentum);
+      fjTracks.push_back(track);
     }
+
+    // Include V0s as tracks for jet reconstruction
+    if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+      AddV0sForJetReconstructionData(fjParticles, fjTracks, fullV0s, vtxPos);
+    }
+    fjTracks.clear();
 
     // Reject empty events
     if (fjParticles.size() < 1)
@@ -1838,9 +1926,6 @@ struct StrangenessInJetsIons {
           const float deltaEtaUe2 = v0dir.Eta() - ue2[i].Eta();
           const float deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
           const float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-          // Vertex position vector
-          TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
           // Fill Armenteros-Podolanski TH2
           // registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
@@ -2406,7 +2491,7 @@ struct StrangenessInJetsIons {
 
       // Include V0s as tracks for jet reconstruction
       if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
-        AddV0sForJetReconstructionMC(fjParticles, fjTracks, v0sPerColl, mcParticles, vtxPos);
+        AddV0sForJetReconstructionMCD(fjParticles, fjTracks, v0sPerColl, mcParticles, vtxPos);
       }
       fjTracks.clear();
 
