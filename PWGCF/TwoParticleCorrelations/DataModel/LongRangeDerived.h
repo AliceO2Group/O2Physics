@@ -209,7 +209,7 @@ struct binningParent {
 using trkdca_v0 = binningParent<std::pair<float, float>(-2.0f, 2.0f), int8_t>;
 using trkphi_v0 = binningParent<std::pair<float, float>(0.0f, o2::constants::math::TwoPI), uint16_t>;
 using trkamp_v0 = binningParent<std::pair<float, float>(0.0f, 5000.0f), uint16_t>;
-using trkpt_v0 = binningParent<std::pair<float, float>(0.0f, 10.0f), uint16_t>;
+using trkpt_v0 = binningParent<std::pair<float, float>(0.0f, 10.0f), uint8_t>;
 using trketa_v0 = binningParent<std::pair<float, float>(-5.0f, 5.0f), int16_t>;
 using trkchi2_v0 = binningParent<std::pair<float, float>(0.0f, 10.0f), int8_t>;
 
