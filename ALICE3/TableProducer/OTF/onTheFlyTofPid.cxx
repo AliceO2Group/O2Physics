@@ -707,7 +707,9 @@ struct OnTheFlyTofPid {
       } else {
         float x = 0.f;
         o2track.getXatLabR(simConfig.innerTOFRadius, x, mMagneticField);
-        histos.fill(HIST("iTOF/h2HitMap"), o2track.getZAt(x, mMagneticField), simConfig.innerTOFRadius * o2track.getPhiAt(x, mMagneticField));
+        if (plotsConfig.doQAplots) {
+          histos.fill(HIST("iTOF/h2HitMap"), o2track.getZAt(x, mMagneticField), simConfig.innerTOFRadius * o2track.getPhiAt(x, mMagneticField));
+        }
       }
 
       const bool activeOuterTOF = isInOuterTOFActiveArea(o2track);
@@ -716,7 +718,9 @@ struct OnTheFlyTofPid {
       } else {
         float x = 0.f;
         o2track.getXatLabR(simConfig.outerTOFRadius, x, mMagneticField);
-        histos.fill(HIST("oTOF/h2HitMap"), o2track.getZAt(x, mMagneticField), simConfig.outerTOFRadius * o2track.getPhiAt(x, mMagneticField));
+        if (plotsConfig.doQAplots) {
+          histos.fill(HIST("oTOF/h2HitMap"), o2track.getZAt(x, mMagneticField), simConfig.outerTOFRadius * o2track.getPhiAt(x, mMagneticField));
+        }
       }
 
       // get mass to calculate velocity
@@ -938,15 +942,15 @@ struct OnTheFlyTofPid {
             }
           }
         }
-      }
 
-      const float deltaTrackLengthInnerTOF = std::abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
-      if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0) {
-        histos.fill(HIST("iTOF/h2dDeltaTrackLengthInnerVsPt"), noSmearingPt, deltaTrackLengthInnerTOF);
-      }
-      const float deltaTrackLengthOuterTOF = std::abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
-      if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0) {
-        histos.fill(HIST("oTOF/h2dDeltaTrackLengthOuterVsPt"), noSmearingPt, deltaTrackLengthOuterTOF);
+        const float deltaTrackLengthInnerTOF = std::abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
+        if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0) {
+          histos.fill(HIST("iTOF/h2dDeltaTrackLengthInnerVsPt"), noSmearingPt, deltaTrackLengthInnerTOF);
+        }
+        const float deltaTrackLengthOuterTOF = std::abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
+        if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0) {
+          histos.fill(HIST("oTOF/h2dDeltaTrackLengthOuterVsPt"), noSmearingPt, deltaTrackLengthOuterTOF);
+        }
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
