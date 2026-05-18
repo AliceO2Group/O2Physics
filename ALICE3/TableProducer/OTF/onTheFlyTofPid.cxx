@@ -448,81 +448,6 @@ struct OnTheFlyTofPid {
     return outerTOFLayer.isTrackInActiveArea(track);
   }
 
-  /// function to calculate track length of this track up to a certain radius
-  /// \param track the input track
-  /// \param radius the radius of the layer you're calculating the length to
-  /// \param magneticField the magnetic field to use when propagating
-  static float computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField)
-  {
-    // don't make use of the track parametrization
-    float length = -100;
-
-    o2::math_utils::CircleXYf_t trcCircle;
-    float sna, csa;
-    track.getCircleParams(magneticField, trcCircle, sna, csa);
-
-    // distance between circle centers (one circle is at origin -> easy)
-    const float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
-
-    // condition of circles touching - if not satisfied returned length will be -100
-    if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
-      length = 0.0f;
-
-      // base radical direction
-      const float ux = trcCircle.xC / centerDistance;
-      const float uy = trcCircle.yC / centerDistance;
-      // calculate perpendicular vector (normalized) for +/- displacement
-      const float vx = -uy;
-      const float vy = +ux;
-      // calculate coordinate for radical line
-      const float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
-      // calculate absolute displacement from center-to-center axis
-      const float displace = (0.5f / centerDistance) * std::sqrt(
-                                                         (-centerDistance + trcCircle.rC - radius) *
-                                                         (-centerDistance - trcCircle.rC + radius) *
-                                                         (-centerDistance + trcCircle.rC + radius) *
-                                                         (centerDistance + trcCircle.rC + radius));
-
-      // possible intercept points of track and TOF layer in 2D plane
-      const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
-      const float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
-
-      // decide on correct intercept point
-      std::array<float, 3> mom;
-      track.getPxPyPzGlo(mom);
-      const float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
-      const float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
-
-      // get start point
-      std::array<float, 3> startPoint;
-      track.getXYZGlo(startPoint);
-
-      float cosAngle = -1000, modulus = -1000;
-
-      if (scalarProduct1 > scalarProduct2) {
-        modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
-      } else {
-        modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
-      }
-      cosAngle /= modulus;
-      length = trcCircle.rC * std::acos(cosAngle);
-      length *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
-    }
-    return length;
-  }
-
-  /// returns velocity in centimeters per picoseconds
-  /// \param momentum the momentum of the tarck
-  /// \param mass the mass of the particle
-  float computeParticleVelocity(float momentum, float mass)
-  {
-    const float a = momentum / mass;
-    // uses light speed in cm/ps so output is in those units
-    return o2::constants::physics::LightSpeedCm2PS * a / std::sqrt((1.f + a * a));
-  }
-
   struct TracksWithTime {
     TracksWithTime(int pdgCode,
                    std::pair<float, float> innerTOFTime,
@@ -696,8 +621,8 @@ struct OnTheFlyTofPid {
       }
       float trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (xPv > kTrkXThreshold) {
-        trackLengthInnerTOF = computeTrackLength(o2track, simConfig.innerTOFRadius, mMagneticField);
-        trackLengthOuterTOF = computeTrackLength(o2track, simConfig.outerTOFRadius, mMagneticField);
+        trackLengthInnerTOF = o2::upgrade::computeTrackLength(o2track, simConfig.innerTOFRadius, mMagneticField);
+        trackLengthOuterTOF = o2::upgrade::computeTrackLength(o2track, simConfig.outerTOFRadius, mMagneticField);
       }
 
       // Check if the track hit a sensitive area of the TOF
@@ -730,7 +655,7 @@ struct OnTheFlyTofPid {
         upgradeTofMC(-999.f, -999.f, -999.f, -999.f);
         continue;
       }
-      const float v = computeParticleVelocity(o2track.getP(), pdgInfo->Mass());
+      const float v = o2::upgrade::computeParticleVelocity(o2track.getP(), pdgInfo->Mass());
       const float expectedTimeInnerTOF = trackLengthInnerTOF > 0 ? trackLengthInnerTOF / v + eventCollisionTimePS : -999.f; // arrival time to the Inner TOF in ps
       const float expectedTimeOuterTOF = trackLengthOuterTOF > 0 ? trackLengthOuterTOF / v + eventCollisionTimePS : -999.f; // arrival time to the Outer TOF in ps
       upgradeTofMC(expectedTimeInnerTOF, trackLengthInnerTOF, expectedTimeOuterTOF, trackLengthOuterTOF);
@@ -748,8 +673,8 @@ struct OnTheFlyTofPid {
         xPv = recoTrack.getX();
       }
       if (xPv > kTrkXThreshold) {
-        trackLengthRecoInnerTOF = computeTrackLength(recoTrack, simConfig.innerTOFRadius, mMagneticField);
-        trackLengthRecoOuterTOF = computeTrackLength(recoTrack, simConfig.outerTOFRadius, mMagneticField);
+        trackLengthRecoInnerTOF = o2::upgrade::computeTrackLength(recoTrack, simConfig.innerTOFRadius, mMagneticField);
+        trackLengthRecoOuterTOF = o2::upgrade::computeTrackLength(recoTrack, simConfig.outerTOFRadius, mMagneticField);
       }
 
       // cache the track info needed for the event time calculation
@@ -870,7 +795,7 @@ struct OnTheFlyTofPid {
         nSigmaOuterTOF[ii] = -100;
 
         momentumHypotheses[ii] = rigidity * kParticleCharges[ii]; // Total momentum for this hypothesis
-        const float v = computeParticleVelocity(momentumHypotheses[ii], kParticleMasses[ii]);
+        const float v = o2::upgrade::computeParticleVelocity(momentumHypotheses[ii], kParticleMasses[ii]);
 
         expectedTimeInnerTOF[ii] = trackLengthInnerTOF / v;
         expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;

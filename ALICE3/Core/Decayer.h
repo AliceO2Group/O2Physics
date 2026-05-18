@@ -61,13 +61,12 @@ class Decayer
     const double ctau = o2::constants::physics::LightSpeedCm2S * particleInfo->Lifetime(); // cm
     const double betaGamma = particle.p() / mass;
     const double rxyz = -betaGamma * ctau * std::log(1 - u);
-    double vx, vy, vz;
     double px, py, e;
 
     if (!charge) {
-      vx = particle.vx() + rxyz * (particle.px() / particle.p());
-      vy = particle.vy() + rxyz * (particle.py() / particle.p());
-      vz = particle.vz() + rxyz * (particle.pz() / particle.p());
+      mVx = particle.vx() + rxyz * (particle.px() / particle.p());
+      mVy = particle.vy() + rxyz * (particle.py() / particle.p());
+      mVz = particle.vz() + rxyz * (particle.pz() / particle.p());
       px = particle.px();
       py = particle.py();
     } else {
@@ -75,14 +74,14 @@ class Decayer
       o2::math_utils::CircleXYf_t circle;
       o2::upgrade::convertOTFParticleToO2Track(particle, track, pdgDB);
 
-      float sna, csa;
+      float sna{}, csa{};
       track.getCircleParams(mBz, circle, sna, csa);
       const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
       const double theta = rxy / circle.rC;
 
-      vx = ((particle.vx() - circle.xC) * std::cos(theta) - (particle.vy() - circle.yC) * std::sin(theta)) + circle.xC;
-      vy = ((particle.vy() - circle.yC) * std::cos(theta) + (particle.vx() - circle.xC) * std::sin(theta)) + circle.yC;
-      vz = particle.vz() + rxyz * (particle.pz() / track.getP());
+      mVx = ((particle.vx() - circle.xC) * std::cos(theta) - (particle.vy() - circle.yC) * std::sin(theta)) + circle.xC;
+      mVy = ((particle.vy() - circle.yC) * std::cos(theta) + (particle.vx() - circle.xC) * std::sin(theta)) + circle.yC;
+      mVz = particle.vz() + rxyz * (particle.pz() / track.getP());
 
       px = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
       py = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
@@ -125,7 +124,7 @@ class Decayer
       o2::upgrade::OTFParticle particle;
       TLorentzVector dau = *decay.GetDecay(i);
       particle.setPDG(pdgCodesDaughters[i]);
-      particle.setVxVyVz(vx, vy, vz);
+      particle.setVxVyVz(mVx, mVy, mVz);
       particle.setPxPyPzE(dau.Px(), dau.Py(), dau.Pz(), dau.E());
       decayProducts.push_back(particle);
     }
@@ -133,17 +132,24 @@ class Decayer
     return decayProducts;
   }
 
+  // Setters
+  void setBField(const double b) { mBz = b; }
   void setSeed(const int seed)
   {
     mRand3.SetSeed(seed);   // For decay length sampling
     gRandom->SetSeed(seed); // For TGenPhaseSpace
   }
 
-  void setBField(const double b) { mBz = b; }
+  // Getters
+  float getSecondaryVertexX() const { return static_cast<float>(mVx); }
+  float getSecondaryVertexY() const { return static_cast<float>(mVy); }
+  float getSecondaryVertexZ() const { return static_cast<float>(mVz); }
+  float getDecayRadius() const { return static_cast<float>(std::hypot(mVx, mVy)); }
 
  private:
-  TRandom3 mRand3;
-  double mBz;
+  double mBz{20.}; // kG
+  double mVx{-1.}, mVy{-1.}, mVz{-1.};
+  TRandom3 mRand3{};
 };
 
 } // namespace upgrade
