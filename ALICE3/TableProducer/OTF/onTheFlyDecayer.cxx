@@ -77,6 +77,7 @@ struct OnTheFlyDecayer {
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
   std::map<int, std::vector<o2::upgrade::OTFParticle>> mDecayDaughters;
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
@@ -84,9 +85,9 @@ struct OnTheFlyDecayer {
                                                 {DefaultParameters[0], NumDecays, NumParameters, ParticleNames, ParameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
 
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  static constexpr float PicoToNano = 1.e-3f;
   int mCollisionId{-1};
+
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
   {
@@ -133,12 +134,29 @@ struct OnTheFlyDecayer {
 
       particle.setIsAlive(false);
       std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
+      const float decayRadius = decayer.getDecayRadius();
+      const float trackVelocity = o2::upgrade::computeParticleVelocity(particle.p(), pdgDB->GetParticle(particle.pdgCode())->Mass());
+      const int charge = pdgDB->GetParticle(particle.pdgCode())->Charge() / 3;
+      float trackLength{-1.f};
+      if (!charge) {
+        const float dx = particle.vx() - decayer.getSecondaryVertexX();
+        const float dy = particle.vy() - decayer.getSecondaryVertexY();
+        const float dz = particle.vz() - decayer.getSecondaryVertexZ();
+        trackLength = std::hypot(dx, dy, dz);
+      } else {
+        o2::track::TrackParCov o2track;
+        o2::upgrade::convertOTFParticleToO2Track(particle, o2track, pdgDB);
+        trackLength = o2::upgrade::computeTrackLength(o2track, decayRadius, magneticField);
+      }
+
+      const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
       particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
       for (o2::upgrade::OTFParticle daughter : decayStack) {
         daughter.setIndicesMother(i, i);
         daughter.setCollisionId(mCollisionId);
         daughter.setIsAlive(true);
         daughter.setIsPrimary(false);
+        daughter.setProductionTime(trackTimeNS);
         allParticles.push_back(daughter);
         ndau++;
       }
@@ -175,7 +193,7 @@ struct OnTheFlyDecayer {
         histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      // todo: status codes and vt
+      // todo: status codes
       tableMcParticlesWithDau(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(),
                               otfParticle.flags(), otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
                               otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
