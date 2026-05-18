@@ -1455,7 +1455,7 @@ struct StrangenessInJets {
 
         // Set up two perpendicular cone axes for underlying event estimation
         const TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        const double coneRadius = std::sqrt(jet.area() / PI);
+        const double coneRadius = rJet;
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
