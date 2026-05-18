@@ -1971,6 +1971,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("correlation-emu")) {
       hm->AddHistogram(histClass, "DeltaPhiPair2_DeltaEtaPair2", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2, 350, 1.5, 5.0, VarManager::kDeltaEtaPair2);
       hm->AddHistogram(histClass, "DeltaPhiPair2_Pt", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2, 200, 0.0, 20.0, VarManager::kPt);
+      // 4D correlation map: (Delta phi_pair, Delta eta_pair, p_T^{e}, p_T^{mu}). Per-track pT axes use kPt1/kPt2,
+      // which FillPair populates for SE and FillPairME (patched in this PR) populates for ME. Stored as THnSparse so
+      // running with many MC-matched hist classes (track cut x muon cut x signal x QA variant) does not blow the
+      // 1 GB TBufferFile limit during the final ROOT serialization.
+      int varsEmu4D[4] = {VarManager::kDeltaPhiPair2, VarManager::kDeltaEtaPair2, VarManager::kPt1, VarManager::kPt2};
+      int binsEmu4D[4] = {60, 35, 20, 20};
+      double xminEmu4D[4] = {-o2::constants::math::PIHalf, 1.5, 0.0, 0.0};
+      double xmaxEmu4D[4] = {1.5 * o2::constants::math::PI, 5.0, 20.0, 20.0};
+      hm->AddHistogram(histClass, "DeltaPhiPair2_DeltaEtaPair2_PtE_PtMu", "", 4, varsEmu4D, binsEmu4D, xminEmu4D, xmaxEmu4D, nullptr, -1, kTRUE);
     }
     if (subGroupStr.Contains("dielectrons")) {
       if (subGroupStr.Contains("prefilter")) {

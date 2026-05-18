@@ -3998,6 +3998,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
 
+  // Per-track quantities so ME histograms can use kPt1/kPt2/kEta1/kEta2/kPhi1/kPhi2 just like SE FillPair does.
+  values[kPt1] = t1.pt();
+  values[kEta1] = t1.eta();
+  values[kPhi1] = t1.phi();
+  values[kPt2] = t2.pt();
+  values[kEta2] = t2.eta();
+  values[kPhi2] = t2.phi();
+
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2ME = v1.Phi() - v2.Phi();
     if (phipair2ME > 3 * TMath::Pi() / 2) {
