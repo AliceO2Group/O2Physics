@@ -150,6 +150,7 @@ struct muonGlobalAlignment {
   Configurable<uint32_t> fMftTracksMultiplicityMax{"cfgMftTracksMultiplicityMax", 0, "Maximum number of MFT tracks to be processed per event (zero means no limit)"};
 
   Configurable<float> fVertexZshift{"cfgVertexZshift", 0.0f, "Correction to the vertex z position"};
+  Configurable<float> fDipoleZshift{"cfgDipoleZshift", 0.0f, "Correction to the dipole z position"};
 
   ////   Variables for MFT alignment corrections
   struct : ConfigurableGroup {
@@ -1200,6 +1201,15 @@ struct muonGlobalAlignment {
     if (mchTrack.getZ() < absBack && z > absFront) {
       // extrapolation through the absorber in the upstream direction
       o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, z);
+    } else if (z < absBack) {
+      // extrapolation downstream of the absorber, correct for dipole longitudinal shift if needed
+      if (fDipoleZshift.value != 0) {
+        mchTrack.setZ(mchTrack.getZ() + fDipoleZshift.value);
+        o2::mch::TrackExtrap::extrapToZCov(mchTrack, z + fDipoleZshift.value);
+        mchTrack.setZ(mchTrack.getZ() - fDipoleZshift.value);
+      } else {
+        o2::mch::TrackExtrap::extrapToZCov(mchTrack, z);
+      }
     } else {
       // all other cases
       o2::mch::TrackExtrap::extrapToZCov(mchTrack, z);
@@ -1389,7 +1399,24 @@ struct muonGlobalAlignment {
       o2::mch::TrackExtrap::extrapToZ(mftTrackProp, -466.f);
       UpdateTrackMomentum(mftTrackProp, mchTrackPar);
     }
-    o2::mch::TrackExtrap::extrapToZ(mftTrackProp, z);
+
+    if (fDipoleZshift.value != 0) {
+      // extrapolate to the back of the absorber, taking into account the dipole shift,
+      // to avoid that the correction bring the track starting point back into the absorber
+      if (fDipoleZshift.value < 0) {
+        o2::mch::TrackExtrap::extrapToZ(mftTrackProp, -505.f);
+      } else if (fDipoleZshift.value > 0) {
+        o2::mch::TrackExtrap::extrapToZ(mftTrackProp, -505.f - fDipoleZshift.value);
+      }
+      // shift the track starting point
+      mftTrackProp.setZ(mftTrackProp.getZ() + fDipoleZshift.value);
+      // extrapolate to the final z, corrected for the dipole shift
+      o2::mch::TrackExtrap::extrapToZ(mftTrackProp, z + fDipoleZshift.value);
+      // remove the shift from the extrapolated track
+      mftTrackProp.setZ(mftTrackProp.getZ() - fDipoleZshift.value);
+    } else {
+      o2::mch::TrackExtrap::extrapToZ(mftTrackProp, z);
+    }
 
     return MCHtoFwd(mftTrackProp);
   }
@@ -1595,6 +1622,11 @@ struct muonGlobalAlignment {
         transformNew[cluster.deId()].LocalToMaster(local, master);
       }
 
+      // shift the clusters to correct the longitudinal shift of the dipole
+      if (fDipoleZshift.value != 0) {
+        master.SetZ(master.z() + fDipoleZshift.value);
+      }
+
       if (applyCorrections) {
         auto correctionsIt = mMchAlignmentCorrections.find(cluster.deId());
         if (correctionsIt != mMchAlignmentCorrections.end()) {
@@ -1626,6 +1658,12 @@ struct muonGlobalAlignment {
       removable = RemoveTrack(convertedTrack);
     } else {
       LOGF(fatal, "Muon track %d has no associated clusters.", mchTrack.globalIndex());
+    }
+
+    // subtract the longitudinal shift of the dipole from the track z
+    if (fDipoleZshift.value != 0) {
+      auto& trackParam = *(convertedTrack.begin());
+      trackParam.setZ(trackParam.getZ() - fDipoleZshift.value);
     }
 
     return !removable;
