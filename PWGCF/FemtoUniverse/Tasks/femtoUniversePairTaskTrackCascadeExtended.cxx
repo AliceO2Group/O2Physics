@@ -46,6 +46,7 @@
 #include <TMath.h>
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>

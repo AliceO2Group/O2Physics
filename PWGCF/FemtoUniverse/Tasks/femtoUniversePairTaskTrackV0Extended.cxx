@@ -48,6 +48,7 @@
 #include <TPDGCode.h>
 #include <TRandom2.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
