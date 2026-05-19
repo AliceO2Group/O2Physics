@@ -132,7 +132,7 @@ struct JetMatching {
 
 struct AntinucleiInJets {
 
-  // Random engine
+  // Random engine (Mersenne Twister)
   std::mt19937 rng;
   std::uniform_int_distribution<int> generateRandomNr{0, 1};
 
