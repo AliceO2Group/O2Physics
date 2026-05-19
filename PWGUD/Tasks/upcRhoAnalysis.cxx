@@ -206,8 +206,8 @@ struct UpcRhoAnalysis {
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal?"};
   Configurable<bool> useRecoFlag{"useRecoFlag", false, "use UPC/STD reconstruction flag for event selection?"};
   Configurable<int> cutRecoFlag{"cutRecoFlag", 1, "0 = std mode, 1 = upc mode"};
-  Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection?"};
-  Configurable<int> cutRctFlag{"cutRctFlag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
+  Configurable<bool> useRctFlag{"useRctFlag", true, "use RCT flags for event selection?"};
+  Configurable<int> cutRctFlag{"cutRctFlag", 1, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
   Configurable<bool> selectRuns{"selectRuns", false, "select runs?"};
   Configurable<std::vector<int>> selectedRuns{"selectedRuns", {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312}, "list of selected runs"};
@@ -352,6 +352,7 @@ struct UpcRhoAnalysis {
       rSystem.add("system/all/unlike-sign/hM", ";#it{m} (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
       rSystem.add("system/all/unlike-sign/hRecoSettingVsM", ";#it{m} (GeV/#it{c}^{2});reco setting;counts", kTH2D, {mAxis, {2, -0.5, 1.5}});
       rSystem.add("system/all/unlike-sign/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      rSystem.add("system/all/unlike-sign/hPtReweighting", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {{40, 0.0, 0.2}});
       rSystem.add("system/all/unlike-sign/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
       rSystem.add("system/all/unlike-sign/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
       rSystem.add("system/all/unlike-sign/hPt2VsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH2D, {mAxis, pt2Axis});
@@ -499,6 +500,7 @@ struct UpcRhoAnalysis {
     if (cuts == 0) {
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hM"), mass);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt"), pt);
+      rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPtReweighting"), pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt2"), pt * pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPtVsM"), mass, pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt2VsM"), mass, pt * pt);
@@ -511,6 +513,7 @@ struct UpcRhoAnalysis {
     } else {
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hM"), mass);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt"), pt);
+      rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPtReweighting"), pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt2"), pt * pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPtVsM"), mass, pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt2VsM"), mass, pt * pt);
