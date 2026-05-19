@@ -17,7 +17,11 @@
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -155,9 +159,9 @@ DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
                   qamatching::PzAtVtx);
 } // namespace o2::aod
 
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
-using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
+using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyMFTs = aod::MFTTracks;
 using MyMFTCovariances = aod::MFTTracksCov;
 using MyMFTsMC = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
@@ -2734,7 +2738,7 @@ struct QaMatching {
 
         // run the ML model
         std::vector<float> output;
-        std::vector<float> inputML = mlResponse.getInputFeaturesGlob(muonTrack, mchTrackProp, mftTrackProp, collision);
+        std::vector<float> inputML = mlResponse.getInputFeatures(muonTrack, mftTrack, mchTrack, mftTrackProp, mchTrackProp, collision);
         mlResponse.isSelectedMl(inputML, 0, output);
         float matchScore = output[0];
         float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
