@@ -131,9 +131,10 @@ struct UpcCandProducer {
   Configurable<bool> fRequireNoTimeFrameBorder{"requireNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection bit"};
   Configurable<bool> fRequireNoITSROFrameBorder{"requireNoITSROFrameBorder", true, "Require kNoITSROFrameBorder selection bit"};
 
-  Configurable<std::string> rctLabel{"rctLabel", "CBT_muon", "RCT label to use, options: CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
+  Configurable<std::string> rctLabel{"rctLabel", "muon", "RCT label to use, options: CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo, muon = FV0 + MID + MCH, muon_glo = muon + MFT, none = do not use RCT flags"};
   Configurable<bool> checkZDC{"checkZDC", false, "Consider ZDC quality"};
   Configurable<bool> useLAasBad{"useLAasBad", false, "Consider Lim acc flag as Bad"};
+  bool useRCTflags = true;
 
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -159,7 +160,39 @@ struct UpcCandProducer {
     upcCuts = (UPCCutparHolder)inputCuts;
 
     // initialize RCT flag checker
-    myRCTChecker.init(rctLabel.value, checkZDC.value, useLAasBad.value);
+    if (rctLabel.value != "none" && rctLabel.value != "muon" && rctLabel.value != "muon_glo") {
+      myRCTChecker.init(rctLabel.value, checkZDC.value, useLAasBad.value);
+    }
+    else if (rctLabel.value == "none"){
+      useRCTflags = false;
+      myRCTChecker.init("CBT_muon");
+    }
+    else if (rctLabel.value == "muon"){
+      std::initializer_list<RCTSelectionFlags> flags = {kFV0Bad, kMCHBad, kMIDBad};
+      if(checkZDC.value && useLAasBad.value){
+        flags = {kFV0Bad, kMCHBad, kMIDBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr};
+      }
+      else if(checkZDC.value){
+        flags = {kFV0Bad, kMCHBad, kMIDBad, kZDCBad};
+      }
+      else if(useLAasBad.value){
+        flags = {kFV0Bad, kMCHBad, kMIDBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr};
+      }
+      myRCTChecker.init(flags);
+    }
+    else if (rctLabel.value == "muon_glo"){
+      std::initializer_list<RCTSelectionFlags> flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad};
+      if(checkZDC.value && useLAasBad.value){
+        flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr};
+      }
+      else if(checkZDC.value){
+        flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad};
+      }
+      else if(useLAasBad.value){
+        flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr};
+      }
+      myRCTChecker.init(flags);
+    } 
 
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
@@ -704,7 +737,7 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         auto bcRCT = col.bc_as<TBCs>();
         histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
-        if (!myRCTChecker(bcRCT)) {
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
           histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
           continue;
         }
@@ -754,7 +787,7 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         auto bcRCT = col.bc_as<TBCs>();
         histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
-        if (!myRCTChecker(bcRCT)) {
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
           histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
           continue;
         }
@@ -801,7 +834,7 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         auto bcRCT = col.bc_as<TBCs>();
         histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
-        if (!myRCTChecker(bcRCT)) {
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
           histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
           continue;
         }
