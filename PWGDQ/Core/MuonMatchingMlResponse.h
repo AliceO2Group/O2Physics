@@ -20,6 +20,7 @@
 
 #include <Framework/Logger.h>
 
+#include <concepts>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -35,12 +36,46 @@
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
-// by calling the corresponding GETTER=FEATURE from track
+// by calling the corresponding GETTER expression
 #define CHECK_AND_FILL_FEATURE(FEATURE, GETTER)                    \
   case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
     inputFeature = (GETTER);                                       \
     break;                                                         \
   }
+
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, and if OBJECT.GETTER() is a valid function invocation,
+// the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER function
+#define CHECK_AND_FILL_FEATURE_OPTIONAL_NO_EXPR(FEATURE, OBJECT, GETTER) \
+  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): {       \
+    if constexpr (requires(decltype(OBJECT) t) { { t.GETTER() } -> std::convertible_to<float>; }) {                    \
+      inputFeature = (OBJECT.GETTER());                                  \
+    } else {                                                             \
+      inputFeature = 0;                                                  \
+    }                                                                    \
+    break;                                                               \
+  }
+
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, and if OBJECT.FUNC() is a valid function invocation,
+// the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER expression
+#define CHECK_AND_FILL_FEATURE_OPTIONAL_WITH_EXPR(FEATURE, OBJECT, FUNC, GETTER) \
+  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): {               \
+    if constexpr (requires(decltype(OBJECT) t) { { t.FUNC() } -> std::convertible_to<float>; }) {                            \
+      inputFeature = (GETTER);                                                   \
+    } else {                                                                     \
+      inputFeature = 0;                                                          \
+    }                                                                            \
+    break;                                                                       \
+  }
+
+#define __EXPAND(x) x
+#define __GET_MACRO(_1, _2, _3, _4, name, ...) name
+#define CHECK_AND_FILL_FEATURE_OPTIONAL(...) __EXPAND(__GET_MACRO(__VA_ARGS__, CHECK_AND_FILL_FEATURE_OPTIONAL_WITH_EXPR, CHECK_AND_FILL_FEATURE_OPTIONAL_NO_EXPR)(__VA_ARGS__))
 
 namespace o2::analysis
 {
@@ -287,27 +322,27 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_FEATURE(posX, collision.posX());
       CHECK_AND_FILL_FEATURE(posY, collision.posY());
       CHECK_AND_FILL_FEATURE(posZ, collision.posZ());
-      CHECK_AND_FILL_FEATURE(numContrib, collision.numContrib());
-      CHECK_AND_FILL_FEATURE(trackOccupancyInTimeRange, collision.trackOccupancyInTimeRange());
-      CHECK_AND_FILL_FEATURE(ft0cOccupancyInTimeRange, collision.ft0cOccupancyInTimeRange());
-      CHECK_AND_FILL_FEATURE(multMFT, collision.mftNtracks());
-      CHECK_AND_FILL_FEATURE(multFT0A, collision.multFT0A());
-      CHECK_AND_FILL_FEATURE(multFT0C, collision.multFT0C());
-      CHECK_AND_FILL_FEATURE(multNTracksPV, collision.multNTracksPV());
-      CHECK_AND_FILL_FEATURE(multNTracksPVeta1, collision.multNTracksPVeta1());
-      CHECK_AND_FILL_FEATURE(multNTracksPVetaHalf, collision.multNTracksPVetaHalf());
-      CHECK_AND_FILL_FEATURE(isInelGt0, collision.isInelGt0());
-      CHECK_AND_FILL_FEATURE(isInelGt1, collision.isInelGt1());
-      CHECK_AND_FILL_FEATURE(multFT0M, collision.multFT0M());
-      CHECK_AND_FILL_FEATURE(centFT0M, collision.centFT0M());
-      CHECK_AND_FILL_FEATURE(centFT0A, collision.centFT0A());
-      CHECK_AND_FILL_FEATURE(centFT0C, collision.centFT0C());
+      CHECK_AND_FILL_FEATURE_OPTIONAL(numContrib, collision, numContrib);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(trackOccupancyInTimeRange, collision, trackOccupancyInTimeRange);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(ft0cOccupancyInTimeRange, collision, ft0cOccupancyInTimeRange);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multMFT, collision, mftNtracks);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multFT0A, collision, multFT0A);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multFT0C, collision, multFT0C);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multNTracksPV, collision, multNTracksPV);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multNTracksPVeta1, collision, multNTracksPVeta1);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multNTracksPVetaHalf, collision, multNTracksPVetaHalf);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(isInelGt0, collision, isInelGt0);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(isInelGt1, collision, isInelGt1);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(multFT0M, collision, multFT0M);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(centFT0M, collision, centFT0M);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(centFT0A, collision, centFT0A);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(centFT0C, collision, centFT0C);
       // global forward track parameters
       CHECK_AND_FILL_FEATURE(chi2MCHMFT, muon.chi2MatchMCHMFT());
       CHECK_AND_FILL_FEATURE(chi2GlobMUON, muon.chi2());
-      CHECK_AND_FILL_FEATURE(dcaX, muon.fwdDcaX());
-      CHECK_AND_FILL_FEATURE(dcaY, muon.fwdDcaX());
-      CHECK_AND_FILL_FEATURE(isAmbig, (muon.compatibleCollIds().size() == 1) ? 0 : 1);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(dcaX, muon, fwdDcaX);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(dcaY, muon, fwdDcaX);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(isAmbig, muon, compatibleCollIds, (muon.compatibleCollIds().size() == 1) ? 0 : 1);
     }
     return inputFeature;
   }
