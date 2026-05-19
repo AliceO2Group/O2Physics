@@ -16,17 +16,18 @@
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
-#include <vector>
-#include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGUD/DataModel/UDTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 
 #include "TLorentzVector.h"
 #include "TRandom3.h"
+
+#include <unordered_map>
+#include <vector>
 
 // table for saving tree with info on data
 namespace dimu
@@ -410,14 +411,14 @@ struct FwdMuonsUPC {
       }
     }
 
-    //select events with exactly 2 forward tracks
+    // select events with exactly 2 forward tracks
     if (cand.numContrib() != 2) {
       return;
     }
 
     // select opposite charge events only
     if (cand.netCharge() != 0) {
-      //registry.fill(HIST("hSameSign"), cand.numContrib());
+      // registry.fill(HIST("hSameSign"), cand.numContrib());
       return;
     }
 
@@ -539,7 +540,7 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != kMuonPDG || std::abs(McPart2.pdgCode()) != kMuonPDG){
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG || std::abs(McPart2.pdgCode()) != kMuonPDG) {
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
       return;
     }
@@ -619,7 +620,7 @@ struct FwdMuonsUPC {
 
     // select opposite charge events only
     if (cand.netCharge() != 0) {
-      //registry.fill(HIST("hSameSign"), cand.numContrib());
+      // registry.fill(HIST("hSameSign"), cand.numContrib());
       return;
     }
 
