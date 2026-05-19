@@ -339,7 +339,7 @@ struct JEPFlowAnalysis {
           epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
           epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
           epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2high"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
-      } else if (q2sel(q2Mag, false)) {
+        } else if (q2sel(q2Mag, false)) {
           epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
           epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
           epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2low"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
