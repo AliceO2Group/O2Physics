@@ -91,6 +91,12 @@ struct JetSpectraEseTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
   Configurable<float> trackPtMax{"trackPtMax", 200.0, "maximum pT acceptance for tracks"};
+  Configurable<float> trackDCAzMax{"trackDCAzMax", 2.0, "maximum DCAz for tracks"};
+  Configurable<float> cfgNTPCXrows{"cfgNTPCXrows", 70, "minimum number of crossed rows in the TPC for tracks"};
+  Configurable<float> cfgNTPCCls{"cfgNTPCCls", 50, "minimum number of clusters in the TPC for tracks"};
+  Configurable<float> cfgChi2PrTPCcls{"cfgChi2PrTPCcls", 2.5, "cut for chi2 per TPC cluster for tracks"};
+  Configurable<float> cfgChi2PrITScls{"cfgChi2PrITScls", 36, "cut for chi2 per ITS cluster for tracks"};
+
   Configurable<float> trackPtMinRhoPhi{"trackPtMinRhoPhi", 0.2, "minimum pT acceptance for tracks used in rho(phi) calculation"};
   Configurable<float> trackPtMaxRhoPhi{"trackPtMaxRhoPhi", 5.0, "maximum pT acceptance for tracks used in rho(phi) calculation"};
 
@@ -137,13 +143,16 @@ struct JetSpectraEseTask {
   ConfigurableAxis binsCentrality{"binsCentrality", {VARIABLE_WIDTH, 0.0, 10., 30., 50, 70., 100.}, "Mixing bins - centrality"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
 
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "apply RCT selections"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events"};
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   std::vector<int> eventSelectionBits;
   int trackSelection{-1};
 
-  static constexpr float Scaler = 100.0f;
-  static constexpr float Acceptance = 0.9f;
+  static constexpr float RScale = 100.0f;
+  static constexpr float EtaAcceptance = 0.9f;
   static constexpr float LowFT0Cut = 1e-8;
 
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -155,13 +164,15 @@ struct JetSpectraEseTask {
   } cfg;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * Scaler) && nabs(aod::jet::eta) < Acceptance - jetR;
+  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * RScale) && nabs(aod::jet::eta) < EtaAcceptance - jetR;
   Filter colFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   using ChargedMCDJets = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>>;
   Preslice<ChargedMCDJets> mcdjetsPerJCollision = o2::aod::jet::collisionId;
   Preslice<aod::JetTracks> tracksPerJCollision = o2::aod::jtrack::collisionId;
   Preslice<aod::JetTracksMCD> mcdTracksPerJCollision = o2::aod::jtrack::collisionId;
+  
+  using ETracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>; 
 
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0C>;
@@ -551,6 +562,8 @@ struct JetSpectraEseTask {
       for (const auto& track : tracks) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
+        if (!isTrackSelected(track.template track_as<ETracks>()))
+          continue;
         double weff = getEfficiency(track, collision.posZ());
         if (weff < 0)
           continue;
@@ -568,6 +581,8 @@ struct JetSpectraEseTask {
       registry.fill(HIST("trackQA/before/hTrackEta"), centrality, track.eta());
       registry.fill(HIST("trackQA/before/hTrackPhi"), centrality, track.phi());
       if (!jetderiveddatautilities::selectTrack(track, trackSelection))
+        continue;
+      if (!isTrackSelected(track.template track_as<ETracks>()))
         continue;
       registry.fill(HIST("trackQA/after/hTrackPt"), centrality, track.pt(), weff);
       registry.fill(HIST("trackQA/after/hTrackEta"), centrality, track.eta());
@@ -591,9 +606,9 @@ struct JetSpectraEseTask {
       registry.fill(HIST("eventQA/before/hVtxZMixed"), c1.posZ());
       registry.fill(HIST("eventQA/before/hVtxZMixed2"), c2.posZ());
       registry.fill(HIST("eventQA/hEventCounterMixed"), kFilteredInputEv);
-      if (!jetderiveddatautilities::selectCollision(c1, eventSelectionBits))
+      if (!jetderiveddatautilities::selectCollision(c1, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
         continue;
-      if (!jetderiveddatautilities::selectCollision(c2, eventSelectionBits))
+      if (!jetderiveddatautilities::selectCollision(c2, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
         continue;
       registry.fill(HIST("eventQA/hEventCounterMixed"), kEventSel);
       if (cfgEvSelOccupancy && !isOccupancyAccepted(c1))
@@ -649,6 +664,8 @@ struct JetSpectraEseTask {
         for (const auto& track : tracks2) {
           if (!jetderiveddatautilities::selectTrack(track, trackSelection))
             continue;
+          if (!isTrackSelected(track.template track_as<ETracks>()))
+            continue;
           double weff = getEfficiency(track, c2.posZ());
           if (weff < 0)
             continue;
@@ -667,6 +684,8 @@ struct JetSpectraEseTask {
         registry.fill(HIST("trackQA/before/hTrackPhiMixed"), centrality, track.phi());
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
+        if (!isTrackSelected(track.template track_as<ETracks>()))
+          continue;
         registry.fill(HIST("trackQA/after/hTrackPtMixed"), centrality, track.pt(), weff);
         registry.fill(HIST("trackQA/after/hTrackEtaMixed"), centrality, track.eta());
         registry.fill(HIST("trackQA/after/hTrackPhiMixed"), centrality, track.phi());
@@ -676,11 +695,11 @@ struct JetSpectraEseTask {
 
   void processESEDataCharged(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
                              soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
-                             aod::JetTracks const& tracks, aod::JBCs const&)
+                             soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, aod::JBCs const&, ETracks const&)
   {
     registry.fill(HIST("eventQA/hEventCounter"), kFilteredInputEv);
     registry.fill(HIST("eventQA/before/hVtxZ"), collision.posZ());
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
       return;
     registry.fill(HIST("eventQA/hEventCounter"), kEventSel);
 
@@ -696,7 +715,7 @@ struct JetSpectraEseTask {
 
   void processESEDataChargedMixed(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs> const& collisions,
                                   soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
-                                  aod::JetTracks const& tracks, aod::JBCs const&)
+                                  soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, aod::JBCs const&, ETracks const&)
   {
     jetMixed(collisions, jets, tracks);
   }
@@ -707,7 +726,7 @@ struct JetSpectraEseTask {
                         aod::JetTracks const&)
   {
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
       return;
 
     if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
@@ -737,7 +756,7 @@ struct JetSpectraEseTask {
     registry.fill(HIST("hPsiOccupancy"), collision.centFT0M(), psi.psi2, occupancy);
     registry.fill(HIST("hOccupancy"), collision.centFT0M(), occupancy);
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
       return;
     registry.fill(HIST("hEventCounterOcc"), count++);
     registry.fill(HIST("hOccupancyEv"), collision.centFT0M(), occupancy);
@@ -788,7 +807,7 @@ struct JetSpectraEseTask {
         centrality = col.centFT0M();
       if (cfgEvSelOccupancy && !isOccupancyAccepted(col))
         fOccupancy = false;
-      if (!jetderiveddatautilities::selectCollision(col, eventSelectionBits))
+      if (!jetderiveddatautilities::selectCollision(col, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
         eventSel = false;
     }
     if (cfgEvSelOccupancy && !fOccupancy)
@@ -814,7 +833,7 @@ struct JetSpectraEseTask {
   {
     float counter{0.5f};
     registry.fill(HIST("mcd/hEventCounter"), counter++);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
       return;
     registry.fill(HIST("mcd/hEventCounter"), counter++);
     if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
@@ -863,7 +882,7 @@ struct JetSpectraEseTask {
       }
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections))
         return;
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
@@ -911,7 +930,7 @@ struct JetSpectraEseTask {
     if (!(std::abs(collision.posZ()) < vertexZCut)) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (cfgEvSelOccupancy && !isOccupancyAccepted(collision)) {
@@ -949,8 +968,8 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processMCGenTrack, "jet MC process: Generated track", false);
   void processMCRecoTrack(soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator const& mcCollision,
                           soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                          aod::JetTracksMCD const& tracks,
-                          aod::JetParticles const&)
+                          soa::Join<aod::JetTracksMCD, aod::JTrackPIs> const& tracks,
+                          aod::JetParticles const&, ETracks const&)
   {
     if (mcCollision.size() < 1) {
       return;
@@ -967,7 +986,7 @@ struct JetSpectraEseTask {
       if (!(std::abs(collision.posZ()) < vertexZCut)) {
         continue;
       }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         continue;
       }
       if (cfgEvSelOccupancy && !isOccupancyAccepted(collision)) {
@@ -982,6 +1001,9 @@ struct JetSpectraEseTask {
       auto tracksInCollision = tracks.sliceBy(mcdTracksPerJCollision, collision.globalIndex());
       for (const auto& track : tracksInCollision) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+          continue;
+        }
+        if (!isTrackSelected(track.template track_as<ETracks>())) {
           continue;
         }
         if (!track.has_mcParticle()) {
@@ -1237,7 +1259,7 @@ struct JetSpectraEseTask {
   template <typename TCollisions, typename TJets, typename TTracks>
   void bkgFluctuationsRandomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
@@ -1484,6 +1506,35 @@ struct JetSpectraEseTask {
     }
     return true;
   }
+  template <bool fill=false, typename TTrack>
+  bool isTrackSelected(TTrack const& track)
+  {
+    //if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+    //  return false;
+    //}
+    if (track.pt() < trackPtMin || track.pt() >= trackPtMax) {
+      return false;
+    }
+    if (track.eta() <= trackEtaMin || track.eta() >= trackEtaMax) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() <= cfgNTPCXrows) {
+      return false;
+    }
+    if (track.tpcNClsFound() <= cfgNTPCCls) {
+      return false;
+    }
+    if (std::fabs(track.dcaZ()) >= trackDCAzMax) {
+      return false;
+    }
+    if (track.tpcChi2NCl() > cfgChi2PrTPCcls) {
+      return false;
+    }
+    if (track.itsChi2NCl() > cfgChi2PrITScls) {
+      return false;
+    }
+    return true;
+  }
 
   template <typename TTracks, typename TJets>
   bool isAcceptedJet(TJets const& jet, bool mcLevelIsParticleLevel = false)
@@ -1520,5 +1571,5 @@ struct JetSpectraEseTask {
     }
     return true;
   }
-};
+  };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetSpectraEseTask>(cfgc)}; }
