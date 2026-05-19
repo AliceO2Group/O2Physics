@@ -362,12 +362,12 @@ struct QaMatching {
     std::array<Configurable<std::string>*, MlModelsNum> modelNames{
       &cfgMlModelName1, &cfgMlModelName2, &cfgMlModelName3, &cfgMlModelName4, &cfgMlModelName5};
 
-    Configurable<std::string> cfgMlInputFeatures1{"cfgMlInputFeatures1", "chi2MCHMFT", "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures2{"cfgMlInputFeatures2", std::string{""}, "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures3{"cfgMlInputFeatures3", std::string{""}, "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures4{"cfgMlInputFeatures4", std::string{""}, "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures5{"cfgMlInputFeatures5", std::string{""}, "Names of ML model input features"};
-    std::array<Configurable<std::string>*, MlModelsNum> inputFeatures{
+    Configurable<std::vector<std::string>> cfgMlInputFeatures1{"cfgMlInputFeatures1", std::vector<std::string>{"chi2MCHMFT"}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures2{"cfgMlInputFeatures2", std::vector<std::string>{}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures3{"cfgMlInputFeatures3", std::vector<std::string>{}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures4{"cfgMlInputFeatures4", std::vector<std::string>{}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures5{"cfgMlInputFeatures5", std::vector<std::string>{}, "Names of ML model input features"};
+    std::array<Configurable<std::vector<std::string>>*, MlModelsNum> inputFeatures{
       &cfgMlInputFeatures1, &cfgMlInputFeatures2, &cfgMlInputFeatures3, &cfgMlInputFeatures4, &cfgMlInputFeatures5};
 
     Configurable<float> cfgMlModelMatchingScoreCut1{"cfgMlModelMatchingScoreCut1", 0.f, "Minimum score value for selecting good matches"};
@@ -1158,12 +1158,12 @@ struct QaMatching {
       auto matchingPlaneZ = configMlOptions.matchingPlaneZs[modelId]->value;
       auto extrapMethod = configMlOptions.matchingExtrapMethods[modelId]->value;
 
-      if (label == "" || modelPath == "" || inputFeatures == "" || modelName == "")
+      if (label == "" || modelPath == "" || inputFeatures.empty() || modelName == "")
         break;
 
       matchingMlResponses[label].configure(binsPtMl, mycutsMl, cutDirMl, 1);
       matchingMlResponses[label].setModelPathsCCDB(std::vector<std::string>{modelName}, fCCDBApi, std::vector<std::string>{modelPath}, configCcdb.cfgCcdbNoLaterThan.value);
-      matchingMlResponses[label].cacheInputFeaturesIndices(std::vector<std::string>{inputFeatures});
+      matchingMlResponses[label].cacheInputFeaturesIndices(inputFeatures);
       matchingMlResponses[label].init();
 
       matchingScoreCuts[label] = scoreMin;

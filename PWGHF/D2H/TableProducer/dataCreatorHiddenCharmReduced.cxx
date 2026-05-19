@@ -147,6 +147,7 @@ struct HfDataCreatorHiddenCharmReduced {
 
     if (config.fillHistograms) {
       const AxisSpec axisPt{360, 0., 36., "#it{p}_{T}^{proton} (GeV/#it{c})"};
+      const AxisSpec axisPtEtaC{100, 0., 10., "#it{p}_{T}^{#eta_{c}} (GeV/#it{c})"};
       const AxisSpec axisEta{100, -1., 1., "#eta"};
       const AxisSpec axisDca{400, -2., 2., "DCA_{xy} to primary vertex (cm)"};
       const AxisSpec axisNSigmaTPC{100, -5., 5., "n#sigma_{TPC}"};
@@ -169,10 +170,9 @@ struct HfDataCreatorHiddenCharmReduced {
       registry.add("hTpcChi2NCl", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c}); TpcChi2NCl", {HistType::kTH2D, {axisPt, {10, 0., 10, "TpcChi2NCl"}}});
       registry.add("hItsNCls", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c});ItsNCls", {HistType::kTH2D, {axisPt, {7, 0, 7, "ItsNCls"}}});
       registry.add("hItsChi2NCl", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c}); ItsChi2NCl", {HistType::kTH2D, {axisPt, {10, 0., 10, "ItsChi2NCl"}}});
-      registry.add("hInvMass", "Invariant mass of selected proton with all other tracks in the event;#it{p}_{T}^{proton} (GeV/#it{c});", {HistType::kTH2D, {axisPt, axisMass}});
-      registry.add("hInvMassSparse", "Invariant mass of selected proton with all other tracks in the event;#it{p}_{T}^{proton} (GeV/#it{c});", {HistType::kTH2D, {axisPt, axisMass}});
+      registry.add("hInvMass", "Invariant mass of selected protons pairs;#it{p}_{T}^{#eta_{c}} (GeV/#it{c});", {HistType::kTH2D, {axisPtEtaC, axisMass}});
       registry.add("hDeDxTPCProton", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c});TPC dE/dx (a.u.)", {HistType::kTH2D, {axisPt, AxisSpec{100, 0., 200., "TPC dE/dx (a.u.)"}}});
-      registry.add("hMassPtCutVars", "Charmonia candidates;#it{M} (p#overline{p}) (GeV/#it{c}^{2});#it{p}_{T}(cc) (GeV/#it{c}); n#sigma_{TPC}^{p1}; n#sigma_{TOF}^{p1}; dca_{xy}^{p1}; n#sigma_{TPC}^{p2}; n#sigma_{TOF}^{p2}; dca_{xy}^{p2}", {HistType::kTHnSparseF, {axisMass, axisPt, axisNSigmaTPC, axisNSigmaTOF, axisDca, axisNSigmaTPC, axisNSigmaTOF, axisDca}});
+      registry.add("hMassPtCutVars", "Charmonia candidates;#it{M} (p#overline{p}) (GeV/#it{c}^{2});#it{p}_{T}(cc) (GeV/#it{c}); p_{T}^{p}; n#sigma_{TPC}^{p}; n#sigma_{TOF}^{p}; dca_{xy}^{p}; p_{T}^{#overline{p}}; n#sigma_{TPC}^{#overline{p}}; n#sigma_{TOF}^{#overline{p}}; dca_{xy}^{#overline{p}}", {HistType::kTHnSparseF, {axisMass, axisPtEtaC, axisPt, axisNSigmaTPC, axisNSigmaTOF, axisDca, axisPt, axisNSigmaTPC, axisNSigmaTOF, axisDca}});
     }
 
     // init HF event selection helper
@@ -340,6 +340,7 @@ struct HfDataCreatorHiddenCharmReduced {
           registry.fill(HIST("hTpcChi2NCl"), trk.pt(), trk.tpcChi2NCl());
           registry.fill(HIST("hItsNCls"), trk.pt(), trk.itsNCls());
           registry.fill(HIST("hItsChi2NCl"), trk.pt(), trk.itsChi2NCl());
+          registry.fill(HIST("hDeDxTPCProton"), trk.pt(), trk.tpcSignal());
         }
       }
       // skip event if not at least a pair of tracks skimming selection
@@ -368,7 +369,11 @@ struct HfDataCreatorHiddenCharmReduced {
             float ptEtac = RecoDecay::pt(RecoDecay::sumOfVec(pVec1, pVec2));
             registry.fill(HIST("hInvMass"), ptEtac, invMass);
             if (config.fillSparses.value) {
-              registry.fill(HIST("hMassPtCutVars"), invMass, ptEtac, t1.tpcNSigmaPr(), t1.tofNSigmaPr(), t1.dcaXY(), t2.tpcNSigmaPr(), t2.tofNSigmaPr(), t2.dcaXY());
+              if (t1.sign() > 0) {
+                registry.fill(HIST("hMassPtCutVars"), invMass, ptEtac, t1.pt(), t1.tpcNSigmaPr(), t1.tofNSigmaPr(), t1.dcaXY(), t2.pt(), t2.tpcNSigmaPr(), t2.tofNSigmaPr(), t2.dcaXY());
+              } else {
+                registry.fill(HIST("hMassPtCutVars"), invMass, ptEtac, t2.pt(), t2.tpcNSigmaPr(), t2.tofNSigmaPr(), t2.dcaXY(), t1.pt(), t1.tpcNSigmaPr(), t1.tofNSigmaPr(), t1.dcaXY());
+              }
             }
           }
         }

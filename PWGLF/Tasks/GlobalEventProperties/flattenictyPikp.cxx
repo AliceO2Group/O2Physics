@@ -84,9 +84,10 @@ using namespace o2::constants::math;
 using namespace o2::aod::rctsel;
 
 auto static constexpr CminCharge = 3.f;
-static constexpr float CnullInt = 0;
+static constexpr int CnullInt = 0;
 static constexpr float Cnull = 0.0f;
-static constexpr float ConeInt = 1;
+static constexpr int ConeInt = 1;
+static constexpr int CtwoInt = 2;
 static constexpr float Cone = 1.0f;
 
 // FV0 specific constants
@@ -756,26 +757,11 @@ struct FlattenictyPikp {
       registryMC.add({"Events/ResponseGen", ";N_{ch,FV0};1-#rho_{FV0};", {kTHnSparseF, {multAxis, flatAxis}}});
       registryMC.add("Events/h1flatencityFV0MCGen", "", {kTH1F, {flatAxis}});
       registryMC.add("Events/hFlatMCGen", "Events/hFlatMCGen", {kTH1F, {flatAxis}});
-      registryMC.add("Events/hFlatMCRec", "Events/hFlatMCRec", {kTH1F, {flatAxis}});
-      // Event counter
-      auto h = registryMC.add<TH1>("Events/hEvtGenRec", "Generated and Reconstructed MC Collisions", kTH1F, {{3, 0.5, 3.5}});
-      h->GetXaxis()->SetBinLabel(1, "Gen coll");
-      h->GetXaxis()->SetBinLabel(2, "Rec coll");
-      h->GetXaxis()->SetBinLabel(3, "INEL>0");
       registryMC.add("Events/hEvtMcGen", "Events/hEvtMcGen", {kTH1F, {{4, 0.f, 4.f}}});
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(1, "all");
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(2, "z-vtx");
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(3, "INELgt0");
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(4, "INELgt0TVX");
-      registryMC.add("Events/hEvtMCRec", "Events/hEvtMCRec", {kTH1F, {{3, 0.f, 3.f}}});
-      registryMC.get<TH1>(HIST("Events/hEvtMCRec"))->GetXaxis()->SetBinLabel(1, "all");
-      registryMC.get<TH1>(HIST("Events/hEvtMCRec"))->GetXaxis()->SetBinLabel(2, "evt sel");
-      registryMC.get<TH1>(HIST("Events/hEvtMCRec"))->GetXaxis()->SetBinLabel(3, "INELgt0");
-      registryMC.add("Events/hEvtMcGenColls", "Number of events; Cut; #Events Passed Cut", {kTH1F, {{4, 0.5, 4.5}}});
-      registryMC.get<TH1>(HIST("Events/hEvtMcGenColls"))->GetXaxis()->SetBinLabel(1, "Gen. coll");
-      registryMC.get<TH1>(HIST("Events/hEvtMcGenColls"))->GetXaxis()->SetBinLabel(2, "At least 1 reco");
-      registryMC.get<TH1>(HIST("Events/hEvtMcGenColls"))->GetXaxis()->SetBinLabel(3, "Reco. coll.");
-      registryMC.get<TH1>(HIST("Events/hEvtMcGenColls"))->GetXaxis()->SetBinLabel(4, "Reco. good coll.");
       //
       registryMC.add("Events/hNchGenVsCent", "Gen Nch vs Cent; mult; Gen Nch (|#eta|<0.8)", {kTH2F, {nChAxis, multAxis}});
       registryMC.add("Events/hVtxZRec", "MC Rec vertex z position", kTH1F, {vtxzAxis});
@@ -2357,74 +2343,13 @@ struct FlattenictyPikp {
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     auto multMC = -1.;
-    if (evtSelOpt.useMultMCmidrap || multEst == 2) { // use generated Nch in ∣eta∣ < 0.8
+    if (evtSelOpt.useMultMCmidrap || multEst == CtwoInt) { // use generated Nch in ∣eta∣ < 0.8
       multMC = countPart(particles);
     } else {
       multMC = getMultMC(mcCollision); // using McCentFT0Ms
     }
     const float flatMC = fillFlatMC<true>(particles);
     registryMC.fill(HIST("Events/hFlatMCGen"), flatMC);
-
-    // Loop on rec collisions
-    // Obtain here: Denominator of tracking efficiency; Numerator event and signal loss
-    //
-    bool gtZeroColl = false;
-    auto multRecGt1 = -999;
-    auto flatRec = -999;
-    for (const auto& collision : collisions) {
-      if (!isGoodEvent<false>(collision)) {
-        continue;
-      }
-      registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0"), multRecGt1, flatRec); // Evt split den
-      if (evtSelOpt.cfgRemoveSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
-        continue;
-      }
-      registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0wRecEvt"), multRecGt1, flatRec); // Evt split num,  w/ Nrec > 0
-      gtZeroColl = true;
-      multRecGt1 = getMult(collision);
-      flatRec = fillFlat<true>(collision);
-    }
-
-    if (gtZeroColl) {
-      registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0wRecEvtSel"), multRecGt1, flatRec); // Evt split num,  w/ Nrec > 0 + Evt. sel
-      registryMC.fill(HIST("Events/hNchGenVsCent"), multMC, multRecGt1);
-      registryMC.fill(HIST("Events/hNchVsFlatGenINELgt0wRecEvtSel"), multMC, flatMC); // Evt loss num,   w/ Nrec > 0 + Evt. sel
-    }
-
-    for (const auto& particle : particles) {
-      if (!isChrgParticle(particle.pdgCode())) {
-        continue;
-      }
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-      if (std::abs(particle.eta()) > trkSelOpt.cfgTrkEtaMax) {
-        continue;
-      }
-      if (particle.pt() < trkSelOpt.cfgTrkPtMin) {
-        continue;
-      }
-      if (gtZeroColl) {
-        static_for<0, 1>([&](auto pidSgn) {
-          fillMCGenRecEvt<pidSgn, o2::track::PID::Pion, true>(particle, multMC, flatMC);
-          fillMCGenRecEvt<pidSgn, o2::track::PID::Kaon, true>(particle, multMC, flatMC);
-          fillMCGenRecEvt<pidSgn, o2::track::PID::Proton, true>(particle, multMC, flatMC);
-        });
-        static_for<0, 4>([&](auto i) {
-          constexpr int Cidx = i.value;
-          if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
-            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTrecCollPrimSgn), multMC, flatMC, particle.pt());        // Sgn loss num
-            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffGenPrimRecEvt), multRecGt1, flatRec, particle.pt()); // Tracking eff. den
-          }
-        });
-      } else {
-        static_for<0, 1>([&](auto pidSgn) {
-          fillMCGenRecEvt<pidSgn, o2::track::PID::Pion>(particle, multMC, flatMC);
-          fillMCGenRecEvt<pidSgn, o2::track::PID::Kaon>(particle, multMC, flatMC);
-          fillMCGenRecEvt<pidSgn, o2::track::PID::Proton>(particle, multMC, flatMC);
-        });
-      }
-    }
 
     // Loop on rec collisions
     // Obtain here: Numerator of tracking efficiency; Secondary contamination correction
@@ -2437,13 +2362,70 @@ struct FlattenictyPikp {
           runNumber = currentRun;
         }
       }
-      if (!isGoodEvent<false>(collision)) {
-        continue;
-      }
-      registryMC.fill(HIST("Events/hVtxZRec"), collision.posZ());
+      registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0"), getMult(collision), fillFlat<false>(collision)); // Evt split den
       if (evtSelOpt.cfgRemoveSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
+      registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0wRecEvt"), getMult(collision), fillFlat<false>(collision)); // Evt split num,  w/ Nrec > 0
+
+      for (const auto& particle : particles) {
+        if (!isChrgParticle(particle.pdgCode())) {
+          continue;
+        }
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::abs(particle.eta()) > trkSelOpt.cfgTrkEtaMax) {
+          continue;
+        }
+        if (particle.pt() < trkSelOpt.cfgTrkPtMin) {
+          continue;
+        }
+        static_for<0, 1>([&](auto pidSgn) {
+          fillMCGenRecEvt<pidSgn, o2::track::PID::Pion>(particle, multMC, flatMC);
+          fillMCGenRecEvt<pidSgn, o2::track::PID::Kaon>(particle, multMC, flatMC);
+          fillMCGenRecEvt<pidSgn, o2::track::PID::Proton>(particle, multMC, flatMC);
+        });
+      }
+      if (!isGoodEvent<false>(collision)) {
+        continue;
+      }
+      const float multRecGt1 = getMult(collision);
+      const float flatRec = fillFlat<true>(collision);
+
+      registryMC.fill(HIST("Events/hVtxZRec"), collision.posZ());
+      registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0wRecEvtSel"), multRecGt1, flatRec); // Evt split num,  w/ Nrec > 0 + Evt. sel
+      registryMC.fill(HIST("Events/hNchGenVsCent"), multMC, multRecGt1);
+      registryMC.fill(HIST("Events/hNchVsFlatGenINELgt0wRecEvtSel"), multMC, flatMC); // Evt loss num,   w/ Nrec > 0 + Evt. sel
+
+      // Obtain here: Denominator of tracking efficiency; Numerator event and signal loss
+      for (const auto& particle : particles) {
+        if (!isChrgParticle(particle.pdgCode())) {
+          continue;
+        }
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::abs(particle.eta()) > trkSelOpt.cfgTrkEtaMax) {
+          continue;
+        }
+        if (particle.pt() < trkSelOpt.cfgTrkPtMin) {
+          continue;
+        }
+        static_for<0, 1>([&](auto pidSgn) {
+          fillMCGenRecEvt<pidSgn, o2::track::PID::Pion, true>(particle, multMC, flatMC);
+          fillMCGenRecEvt<pidSgn, o2::track::PID::Kaon, true>(particle, multMC, flatMC);
+          fillMCGenRecEvt<pidSgn, o2::track::PID::Proton, true>(particle, multMC, flatMC);
+        });
+        static_for<0, 4>([&](auto i) {
+          constexpr int Cidx = i.value;
+          if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
+            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTrecCollPrimSgn), multMC, flatMC, particle.pt());        // Sgn loss num
+            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffGenPrimRecEvt), multRecGt1, flatRec, particle.pt()); // Tracking eff. den
+          }
+        });
+      }
+
       // Rec tracks; track selection w/ DCA open (for secondaries), w/ DCA close (for efficiency)
       // Obtain here: DCAxy for sec contamination, MC closure
       const auto& groupedTrks = tracks.sliceBy(perCollTrk, collision.globalIndex());

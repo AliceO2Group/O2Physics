@@ -22,7 +22,9 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -36,12 +38,24 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TMCProcess.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
+#include <TString.h>
+#include <TVector3.h>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <memory>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -110,10 +124,6 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
   TrackSelectionFlags::kTPCNCls |
   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   TrackSelectionFlags::kTPCChi2NDF;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
-  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
-  TrackSelectionFlags::kDCAxy;
 
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
@@ -133,19 +143,45 @@ struct PtmultCorr {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<ccdb::BasicCCDBManager> ccdb;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
-  Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
+  Configurable<float> etaRange{"etaRange", 0.8f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> occuRange{"occuRange", 500.0f, "Occupancy range to consider"};
-  Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.15f, "minimum accepted track pT"};
+  Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.1f, "minimum accepted track pT"};
+  Configurable<float> cfgPtCutMax{"cfgPtCutMax", 1e9f, "maximum accepted track pT"};
   Configurable<float> extraphicut1{"extraphicut1", 3.07666f, "Extra Phi cut 1"};
   Configurable<float> extraphicut2{"extraphicut2", 3.12661f, "Extra Phi cut 2"};
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
   Configurable<float> extraphicut4{"extraphicut4", 6.253f, "Extra Phi cut 4"};
+
+  // Track quality cuts (matching piKpRAA analysis)
+  Configurable<uint8_t> cfgMinNClusITS{"cfgMinNClusITS", 7, "Minimum ITS clusters"};
+  Configurable<int16_t> cfgMinNCrossedRows{"cfgMinNCrossedRows", 70, "Minimum TPC crossed rows"};
+  Configurable<int16_t> cfgMinNcls{"cfgMinNcls", 130, "Minimum TPC clusters (applied only if cfgApplyNclSel is true)"};
+  Configurable<bool> cfgApplyNclSel{"cfgApplyNclSel", true, "Enable minimum TPC cluster selection"};
+  Configurable<bool> cfgUseNclsPID{"cfgUseNclsPID", false, "Use NclsPID instead of NclsFound for the Ncls cut"};
+  Configurable<float> cfgMinChi2ClsTPC{"cfgMinChi2ClsTPC", 0.5f, "Minimum TPC chi2/cls"};
+  Configurable<float> cfgMaxChi2ClsTPC{"cfgMaxChi2ClsTPC", 4.0f, "Maximum TPC chi2/cls"};
+  Configurable<float> cfgMaxChi2ClsITS{"cfgMaxChi2ClsITS", 36.0f, "Maximum ITS chi2/cls"};
+  Configurable<float> cfgNSigmaDCAxy{"cfgNSigmaDCAxy", 1.0f, "nSigma scaling for DCAxy cut"};
+  Configurable<float> cfgNSigmaDCAz{"cfgNSigmaDCAz", 1.0f, "nSigma scaling for DCAz cut"};
+
+  // CCDB paths for pT-dependent DCA cuts
+  Configurable<std::string> pathDCAxy{"pathDCAxy", "", "CCDB path for DCAxy parametrisation (leave empty to skip)"};
+  Configurable<std::string> pathDCAz{"pathDCAz", "", "CCDB path for DCAz parametrisation (leave empty to skip)"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable CCDB timestamp"};
+
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
+
+  //  DCA cache (loaded from CCDB)
+  struct ConfigDCA {
+    TH1F* hDCAxy = nullptr;
+    TH1F* hDCAz = nullptr;
+    bool loaded = false;
+  } cfgDCA;
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
@@ -159,6 +195,19 @@ struct PtmultCorr {
 
   void init(InitContext const&)
   {
+    // Load  DCA parametrisations from CCDB (matching piKpRAA)
+    if (!pathDCAxy.value.empty()) {
+      cfgDCA.hDCAxy = ccdb->getForTimeStamp<TH1F>(pathDCAxy, ccdbNoLaterThan);
+      if (cfgDCA.hDCAxy == nullptr)
+        LOGF(fatal, "Could not load DCAxy histogram from %s", pathDCAxy.value.c_str());
+    }
+    if (!pathDCAz.value.empty()) {
+      cfgDCA.hDCAz = ccdb->getForTimeStamp<TH1F>(pathDCAz, ccdbNoLaterThan);
+      if (cfgDCA.hDCAz == nullptr)
+        LOGF(fatal, "Could not load DCAz histogram from %s", pathDCAz.value.c_str());
+    }
+    if (cfgDCA.hDCAxy && cfgDCA.hDCAz)
+      cfgDCA.loaded = true;
     AxisSpec centAxis = {centralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
@@ -290,9 +339,59 @@ struct PtmultCorr {
   template <typename CheckTrack>
   bool isTrackSelected(CheckTrack const& track)
   {
+    // --- eta (applied to all track types) ---
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
+
+    // --- pT (applied to all track types) ---
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
+      return false;
+    }
+
+    if (track.hasTPC()) {
+      // ---- Global (ITS+TPC) tracks:
+
+      // ITS inner-barrel hit: must fire layer 0 or layer 1
+      if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
+        return false;
+      }
+      if (track.itsNCls() < cfgMinNClusITS) {
+        return false;
+      }
+      if (track.tpcNClsCrossedRows() < cfgMinNCrossedRows) {
+        return false;
+      }
+      // optional minimum TPC clusters (found or PID, matching piKpRAA applyNclSel)
+      if (cfgApplyNclSel) {
+        const int16_t ncl = cfgUseNclsPID ? track.tpcNClsPID() : track.tpcNClsFound();
+        if (ncl < cfgMinNcls) {
+          return false;
+        }
+      }
+      if (track.tpcChi2NCl() < cfgMinChi2ClsTPC || track.tpcChi2NCl() > cfgMaxChi2ClsTPC) {
+        return false;
+      }
+      if (track.itsChi2NCl() > cfgMaxChi2ClsITS) {
+        return false;
+      }
+      // pT-dependent DCA cuts from CCDB
+      if (cfgDCA.loaded) {
+        const float pt = track.pt();
+        const double dcaXYcut = cfgNSigmaDCAxy * (cfgDCA.hDCAxy->GetBinContent(1) +
+                                                  cfgDCA.hDCAxy->GetBinContent(2) /
+                                                    std::pow(std::abs(pt), cfgDCA.hDCAxy->GetBinContent(3)));
+        const double dcaZcut = cfgNSigmaDCAz * (cfgDCA.hDCAz->GetBinContent(1) +
+                                                cfgDCA.hDCAz->GetBinContent(2) /
+                                                  std::pow(std::abs(pt), cfgDCA.hDCAz->GetBinContent(3)));
+        if (std::abs(track.dcaZ()) > dcaZcut || std::abs(track.dcaXY()) > dcaXYcut) {
+          return false;
+        }
+      }
+    }
+    // ITS-only tracks: quality already ensured by the framework-level fTrackSelectionITS filter
+
+    // --- optional phi cut (applied to all track types) ---
     histos.fill(HIST("PhiVsEtaHistNoCut"), track.phi(), track.eta());
     if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
@@ -330,8 +429,7 @@ struct PtmultCorr {
                               ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
   Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                      ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
-  Filter fTrackSelectionDCA = ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
-                                     ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
+  // DCA is now applied manually inside isTrackSelected() using pT-dependent CCDB parametrisation
   Filter fTracksPt = aod::track::pt > cfgPtCutMin;
 
   void processDataPbPb(ColDataTablePbPb::iterator const& cols, FilTrackDataTable const& tracks)
