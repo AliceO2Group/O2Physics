@@ -1635,7 +1635,7 @@ struct StrangenessInJetsIons {
       bool isV0 = isK0S || isLambda || isAntiLambda;
       if (!isV0)
         continue;
-      for (int i = 0; i < int(fjTracks.size()); ++i) {
+      for (long unsigned int i = 0; i < fjTracks.size(); ++i) {
         if (isV0DaughterTrack(fjTracks[i], v0)) {
           // LOG(info) << "[AddV0sForJetReconstructionData] V0 daughter track found in fjTracks.";
           isTrackReplaced[i] = true;
@@ -1645,7 +1645,7 @@ struct StrangenessInJetsIons {
 
     std::vector<fastjet::PseudoJet> cleanFjInput;
     cleanFjInput.reserve(fjInput.size());
-    for (int i = 0; i < int(fjInput.size()); ++i) {
+    for (long unsigned int i = 0; i < fjInput.size(); ++i) {
       if (!isTrackReplaced[i])
         cleanFjInput.push_back(fjInput[i]);
     }
@@ -1733,7 +1733,7 @@ struct StrangenessInJetsIons {
       bool isV0 = isK0S || isLambda || isAntiLambda;
       if (!isV0)
         continue;
-      for (int i = 0; i < int(fjTracks.size()); ++i) {
+      for (long unsigned int i = 0; i < fjTracks.size(); ++i) {
         if (isV0DaughterTrack(fjTracks[i], v0)) {
           // LOG(info) << "[AddV0sForJetReconstructionMCD] V0 daughter track found in fjTracks.";
           isTrackReplaced[i] = true;
@@ -1743,7 +1743,7 @@ struct StrangenessInJetsIons {
 
     std::vector<fastjet::PseudoJet> cleanFjInput;
     cleanFjInput.reserve(fjInput.size());
-    for (int i = 0; i < int(fjInput.size()); ++i) {
+    for (long unsigned int i = 0; i < fjInput.size(); ++i) {
       if (!isTrackReplaced[i])
         cleanFjInput.push_back(fjInput[i]);
     }
@@ -1789,7 +1789,7 @@ struct StrangenessInJetsIons {
         // LOG(info) << "[AddV0sForJetReconstructionMCP] Add V0 as input for jet finder.";
 
         // Remove V0 daughter particles if already in the input list for the jet finder
-        for (int i = 0; i < int(fjParticleObj.size()); ++i) {
+        for (long unsigned int i = 0; i < fjParticleObj.size(); ++i) {
           const auto& mcPart = fjParticleObj[i];
           if (!mcPart.has_mothers())
             continue;
@@ -1805,7 +1805,7 @@ struct StrangenessInJetsIons {
 
     std::vector<fastjet::PseudoJet> cleanFjInput;
     cleanFjInput.reserve(fjInput.size());
-    for (int i = 0; i < int(fjInput.size()); ++i) {
+    for (long unsigned int i = 0; i < fjInput.size(); ++i) {
       if (!isTrackReplaced[i])
         cleanFjInput.push_back(fjInput[i]);
     }
