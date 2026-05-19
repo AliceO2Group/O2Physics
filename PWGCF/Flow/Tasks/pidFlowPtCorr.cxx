@@ -130,14 +130,6 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
 
     O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
-    O2_DEFINE_CONFIGURABLE(cfgPidEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "Pi, Ka, Pr, CCDB path to PID efficiency(pt, cent) object")
-
-    O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
-    O2_DEFINE_CONFIGURABLE(cfgPidEfficiencyPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "Pi, Ka, Pr, CCDB path to PID efficiency(pt, cent) object")
-
-    O2_DEFINE_CONFIGURABLE(cfgNUEOption, int, 1, "do NUE, 1: use 1D eff, 2: Using Eff(pt, cent), 3: use pid 1D eff, 4: use pid 2D eff, other: dont do NUE")
   } correctionPathOpts;
 
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
@@ -154,7 +146,6 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug");
     O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
     O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
-    O2_DEFINE_CONFIGURABLE(cfgUseITSOnly4MeanPt, bool, false, "use ITS only to calculate mean pt");
     O2_DEFINE_CONFIGURABLE(cfgClosureTest, int, 0, "choose (val) percent particle from charged to pass Pion PID selection");
   } switchsOpts;
 
@@ -323,8 +314,7 @@ struct PidFlowPtCorr {
 
   // graphs for NUE / NUA
   std::vector<GFWWeights*> mAcceptance;
-  std::vector<TH1*> mEfficiency;
-  std::vector<TH1*> mEfficiency4ITSOnly;
+  std::vector<TH2*> mEfficiency;
 
   bool correctionsLoaded = false;
 
@@ -413,6 +403,13 @@ struct PidFlowPtCorr {
     registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorr", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtPi", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorrPi", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtKa", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorrKa", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtPr", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorrPr", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
 
     registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
@@ -460,7 +457,6 @@ struct PidFlowPtCorr {
       registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       // ITS only
-      registry.add("correction/hPtCentMcRec4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
 
       // hist for Pi eff
       registry.add("correction/hPtCentMcRecPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
@@ -478,8 +474,6 @@ struct PidFlowPtCorr {
       registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
-
-      registry.add("ptSpectra/hPtCentData4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
 
       registry.add("c22PrimeVsc22/Pi", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
       registry.add("c22PrimeVsc22/Ka", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
@@ -1372,112 +1366,30 @@ struct PidFlowPtCorr {
     // here needs to load 2 NUE graph selected from 6 ccdb path
     /// @note when using eff 2D, convert TH1* to (TH2D *)
     // pid eff is not available now...
-    std::vector<std::string> effPath1D = correctionPathOpts.cfgEfficiencyPath.value;
-    std::vector<std::string> effPath2D = correctionPathOpts.cfgEfficiency2DPath.value;
-    std::vector<std::string> effPathPid = correctionPathOpts.cfgPidEfficiencyPath.value;
+    // Load NUE (PID Efficiency)
+    std::vector<std::string> effPath = correctionPathOpts.cfgEfficiencyPath.value;
 
-    std::vector<std::string> effPath1D4ITSOnly = correctionPathOpts.cfgEfficiencyPath4ITSOnly.value;
-    std::vector<std::string> effPath2D4ITSOnly = correctionPathOpts.cfgEfficiency2DPath4ITSOnly.value;
-    std::vector<std::string> effPathPid4ITSOnly = correctionPathOpts.cfgPidEfficiencyPath4ITSOnly.value;
+    if (effPath.size() == static_cast<uint64_t>(nspecies)) {
+      for (int i = 0; i <= nspecies - 1; i++) {
+        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
+      }
+      if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
+        LOGF(info, "Loaded PID efficiency histogram");
+      else
+        LOGF(warning, "Could not load PID efficiency histogram");
+    }
 
-    switch (correctionPathOpts.cfgNUEOption.value) {
-      case 1: // use 1D eff
-        // load 1d eff for global track
-        if (effPath1D.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path 1d size != 1, skip eff 1d load");
-          break;
-        }
-        mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPath1D[0], timestamp));
-        if (mEfficiency.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load efficiency histogram");
-        }
-        // end load 1d eff for global track
+    if (effPath.size() == static_cast<uint64_t>(totalSpecies)) {
+      for (int i = 0; i <= totalSpecies - 1; i++) {
+        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
+      }
+      if (mEfficiency.size() == static_cast<uint64_t>(totalSpecies))
+        LOGF(info, "Loaded PID efficiency histogram * 4");
+      else
+        LOGF(warning, "Could not load PID efficiency histogram * 4");
+    }
 
-        // load 1d eff for ITS only
-        if (effPath1D4ITSOnly.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path for its 1d size != 1, skip its eff 1d load");
-          break;
-        }
-        mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPath1D4ITSOnly[0], timestamp));
-        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded ITS only efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load ITS only efficiency histogram");
-        }
-        // end load 1d eff for its only
-
-        break;
-        // end use 1d eff
-
-      case 2: // Use 2D eff
-        // load 2d eff for global track
-        if (effPath2D.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path 2d size != 1, skip eff 2d load");
-          break;
-        }
-        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath2D[0], timestamp));
-        if (mEfficiency.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded 2D efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load 2D efficiency histogram");
-        }
-        // end load 2d eff for global track
-
-        // load 2d eff for ITS only
-        if (effPath2D4ITSOnly.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path for its 2d size != 1, skip its eff 2d load");
-          break;
-        }
-        mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH2>(effPath2D4ITSOnly[0], timestamp));
-        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded ITS only 2D efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load ITS only 2D efficiency histogram");
-        }
-        // end load 2d eff for its only
-
-        break;
-        // end use 2d eff
-
-      case 3: // use pid 1D eff
-        // load pid 1d eff for ITS + global track
-        if (effPathPid.size() != static_cast<uint64_t>(3)) {
-          LOGF(warning, "eff path pid 1d size != 3, skip pid eff 1d load");
-          break;
-        }
-        for (std::size_t i = 0; i < NSpecies; i++) {
-          mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPathPid[i], timestamp));
-        }
-        if (mEfficiency.size() == static_cast<uint64_t>(3)) {
-          LOGF(info, "Loaded PID efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load PID efficiency histogram");
-        }
-        // end load pid 1d eff for ITS + global track
-
-        // load pid 1d eff for ITS only
-        if (effPathPid4ITSOnly.size() != static_cast<uint64_t>(3)) {
-          LOGF(warning, "eff path for its pid 1d size != 3, skip its pid eff 1d load");
-          break;
-        }
-        for (std::size_t i = 0; i < NSpecies; i++) {
-          mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPathPid4ITSOnly[i], timestamp));
-        }
-        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(3)) {
-          LOGF(info, "Loaded ITS only PID efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load ITS only PID efficiency histogram");
-        }
-        // end load pid 1d eff for its only
-
-        break;
-        // end use pid 1d eff
-
-      default: // not do NUE
-        break;
-    } // end switch load eff
+    // End load PID efficiency for ITS + global track
 
     correctionsLoaded = true;
   }
@@ -1530,87 +1442,58 @@ struct PidFlowPtCorr {
     return true;
   }
 
-  /**
-   * @brief Set the Particle Nue Weight, for global track and ITS track, use different eff path
-   *
-   * @tparam TrackObject
-   * @param weight_nue
-   * @param track
-   * @param cent
-   * @param isGlobalTrack
-   * @return true weight setted succesfully, note that weight == 1 also return true;
-   * @return false eff got from graph == 0
-   */
   template <typename TrackObject>
-  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent, bool isGlobalTrack)
+  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent)
   {
-    float eff = 1.;
+    if (mEfficiency.size() == static_cast<uint64_t>(1) || mEfficiency.size() == static_cast<uint64_t>(4)) {
+      TH2* eff2D = mEfficiency[0];
+      int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
+      int centBin = eff2D->GetYaxis()->FindBin(cent);
+      float eff = eff2D->GetBinContent(ptBin, centBin);
 
-    uint64_t sizeOfEffVec = mEfficiency.size();
-    uint64_t sizeOfEffVec4ITS = mEfficiency4ITSOnly.size();
-
-    TH2* eff2D = 0;
-    TH2* eff2D4ITS = 0;
-
-    /// @note 1. size check 2. load eff 3. dividezero check
-    switch (correctionPathOpts.cfgNUEOption.value) {
-      case 1: // 1d
-        if (sizeOfEffVec != 1)
-          break;
-        if (sizeOfEffVec4ITS != 1)
-          break;
-
-        if (isGlobalTrack)
-          eff = mEfficiency[0]->GetBinContent(mEfficiency[0]->FindBin(track.pt()));
-        else
-          eff = mEfficiency4ITSOnly[0]->GetBinContent(mEfficiency4ITSOnly[0]->FindBin(track.pt()));
-
-        if (eff == 0.)
-          return false;
-
-        break;
-        // end 1d
-
-      case 2: // 2d
-        if (sizeOfEffVec != 1)
-          break;
-        if (sizeOfEffVec4ITS != 1)
-          break;
-
-        eff2D = dynamic_cast<TH2*>(mEfficiency[0]);
-        eff2D4ITS = dynamic_cast<TH2*>(mEfficiency4ITSOnly[0]);
-
-        if (!eff2D || !eff2D4ITS) {
-          LOGF(warning, "failed while converting TH1 to TH2! skip eff apply");
-          break;
-        }
-
-        if (isGlobalTrack) {
-          int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
-          int centBin = eff2D->GetYaxis()->FindBin(cent);
-          eff = eff2D->GetBinContent(ptBin, centBin);
-        } else {
-          int ptBin = eff2D4ITS->GetXaxis()->FindBin(track.pt());
-          int centBin = eff2D4ITS->GetYaxis()->FindBin(cent);
-          eff = eff2D4ITS->GetBinContent(ptBin, centBin);
-        }
-
-        if (eff == 0.)
-          return false;
-
-        break;
-        // end 2d
-
-      /// @todo add pid NUE eff
-      case 3: // pid
-        break;
-        // end pid
-
-      default:
-        break;
+      if (eff == 0.) {
+        weight_nue = 1.;
+        return true;
+      }
+      weight_nue = 1. / eff;
+    } else {
+      weight_nue = 1.;
     }
+    return true;
+  }
 
-    weight_nue = 1. / eff;
+  template <typename TrackObject>
+  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent, int pid)
+  {
+    if (mEfficiency.size() == static_cast<uint64_t>(4)) {
+      TH2* eff2D = nullptr;
+      switch (pid) {
+        case MyParticleType::kPion:
+          eff2D = mEfficiency[1];
+          break;
+        case MyParticleType::kKaon:
+          eff2D = mEfficiency[2];
+          break;
+        case MyParticleType::kProton:
+          eff2D = mEfficiency[3];
+          break;
+        default:
+          weight_nue = 1.;
+          return true;
+      }
+
+      int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
+      int centBin = eff2D->GetYaxis()->FindBin(cent);
+      float eff = eff2D->GetBinContent(ptBin, centBin);
+
+      if (eff == 0.) {
+        weight_nue = 1.;
+        return true;
+      }
+      weight_nue = 1. / eff;
+    } else {
+      weight_nue = 1.;
+    }
     return true;
   }
 
@@ -1991,13 +1874,6 @@ struct PidFlowPtCorr {
     for (const auto& track : tracks) {
       float weff = 1;
 
-      // do nue
-      if (switchsOpts.cfgUseITSOnly4MeanPt.value)
-        setParticleNUEWeight(weff, track, cent, false);
-      else
-        setParticleNUEWeight(weff, track, cent, true);
-      // end do nue
-
       // track cut ITS only
       if (!trackSelectedGlobal(track))
         continue;
@@ -2005,21 +1881,16 @@ struct PidFlowPtCorr {
         continue;
       if (!trackSelected4ITS(track))
         continue;
+      if (!track.hasTPC())
+        continue;
+      if (!trackSelected4TPC(track))
+        continue;
 
-      if (switchsOpts.cfgUseITSOnly4MeanPt.value) {
-        if (track.hasTPC())
-          continue;
-      } else {
-        if (!track.hasTPC())
-          continue;
-        if (!trackSelected4TPC(track))
-          continue;
-      }
       // end track cut its only
 
-      if (switchsOpts.cfgOutPutPtSpectra.value) {
-        registry.fill(HIST("ptSpectra/hPtCentData4ITSOnly"), track.pt(), cent);
-      }
+      // do nue
+      setParticleNUEWeight(weff, track, cent);
+      // end do nue
 
       // calculate ncharged(nch with weight) and pt
       if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
@@ -2033,26 +1904,30 @@ struct PidFlowPtCorr {
         // Unified PID logic (configurable)
         // ------------------------------
         int pid = getPidConfigurable(track);
+        float weffPid = 1.;
+        // do nue
+        setParticleNUEWeight(weffPid, track, cent, pid);
+        // end do nue
 
         // Fill PID variables based on unified result
         if (pid == MyParticleType::kPion) {
-          nPionWeighted += weff;
-          nPionSquare += weff * weff;
-          pionPtSum += weff * track.pt();
-          pionPtSumw2 += weff * weff * track.pt();
-          pionPtSquareSum += weff * weff * track.pt() * track.pt();
+          nPionWeighted += weffPid;
+          nPionSquare += weffPid * weffPid;
+          pionPtSum += weffPid * track.pt();
+          pionPtSumw2 += weffPid * weffPid * track.pt();
+          pionPtSquareSum += weffPid * weffPid * track.pt() * track.pt();
         } else if (pid == MyParticleType::kKaon) {
-          nKaonWeighted += weff;
-          nKaonSquare += weff * weff;
-          kaonPtSum += weff * track.pt();
-          kaonPtSumw2 += weff * weff * track.pt();
-          kaonPtSquareSum += weff * weff * track.pt() * track.pt();
+          nKaonWeighted += weffPid;
+          nKaonSquare += weffPid * weffPid;
+          kaonPtSum += weffPid * track.pt();
+          kaonPtSumw2 += weffPid * weffPid * track.pt();
+          kaonPtSquareSum += weffPid * weffPid * track.pt() * track.pt();
         } else if (pid == MyParticleType::kProton) {
-          nProtonWeighted += weff;
-          nProtonSquare += weff * weff;
-          protonPtSum += weff * track.pt();
-          protonPtSumw2 += weff * weff * track.pt();
-          protonPtSquareSum += weff * weff * track.pt() * track.pt();
+          nProtonWeighted += weffPid;
+          nProtonSquare += weffPid * weffPid;
+          protonPtSum += weffPid * track.pt();
+          protonPtSumw2 += weffPid * weffPid * track.pt();
+          protonPtSquareSum += weffPid * weffPid * track.pt() * track.pt();
         }
         // else: do nothing (ambiguous or not identified)
       }
@@ -2060,16 +1935,8 @@ struct PidFlowPtCorr {
 
       nchCorrectedPassed += weff;
       nchPassedSelection += 1;
-
-      if (weff == 1. && switchsOpts.cfgDebugMyCode.value) {
-        LOGF(info, "weff is 1, if nue opt is open and this message appears a lot, check!");
-      }
     }
     // end pt calculation using ITS only
-
-    if (switchsOpts.cfgDebugMyCode.value) {
-      LOGF(info, Form("its only track num %f", nchPassedSelection));
-    }
 
     int totalGlobalTrack = 0;
     // calculate number of pid particle
@@ -2085,7 +1952,7 @@ struct PidFlowPtCorr {
 
       // do NUE && NUA
       setParticleNUAWeight(wacc, track, vtxz);
-      setParticleNUEWeight(weff, track, cent, true);
+      setParticleNUEWeight(weff, track, cent);
       // end do NUE && NUA
 
       if (switchsOpts.cfgDoLocDenCorr.value) {
@@ -2132,6 +1999,7 @@ struct PidFlowPtCorr {
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hPt"), track.pt());
+      registry.fill(HIST("hPtCorr"), track.pt(), weff);
       // end fill QA hist
 
       // pt spectra
@@ -2148,29 +2016,37 @@ struct PidFlowPtCorr {
       // ------------------------------
       int pid = getPidConfigurable(track);
       float waccPid = 1;
+      float weffPid = 1;
       this->setParticleNUAWeight(waccPid, track, vtxz, pid);
+      this->setParticleNUEWeight(weffPid, track, cent, pid);
 
       // Fill GFW and counters based on unified result
       if (pid == MyParticleType::kPion) {
         // bitmask 18: 0010010
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 2);
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 16, wacc * weff);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 2);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 16, wacc * weff);
         registry.fill(HIST("hPhiPi"), track.phi());
         registry.fill(HIST("hPhicorrPi"), track.phi(), waccPid);
+        registry.fill(HIST("hPtPi"), track.pt());
+        registry.fill(HIST("hPtCorrPi"), track.pt(), weffPid);
         numOfPi++;
       } else if (pid == MyParticleType::kKaon) {
         // bitmask 36: 0100100
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 4);
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 32, wacc * weff);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 4);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 32, wacc * weff);
         registry.fill(HIST("hPhiKa"), track.phi());
         registry.fill(HIST("hPhicorrKa"), track.phi(), waccPid);
+        registry.fill(HIST("hPtKa"), track.pt());
+        registry.fill(HIST("hPtCorrKa"), track.pt(), weffPid);
         numOfKa++;
       } else if (pid == MyParticleType::kProton) {
         // bitmask 72: 1001000
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 8);
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weff, 64, wacc * weff);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 8);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 64, wacc * weff);
         registry.fill(HIST("hPhiPr"), track.phi());
         registry.fill(HIST("hPhicorrPr"), track.phi(), waccPid);
+        registry.fill(HIST("hPtPr"), track.pt());
+        registry.fill(HIST("hPtCorrPr"), track.pt(), weffPid);
         numOfPr++;
       }
       // else: do nothing (ambiguous or not identified)
@@ -2626,12 +2502,6 @@ struct PidFlowPtCorr {
             // end identify particle and fill graph
           }
           // end global track, fill rec hist
-
-          /// @note ITS track. fill rec hist
-          if (track.hasITS() && !track.hasTPC() && trackSelected4ITS(track)) {
-            registry.fill(HIST("correction/hPtCentMcRec4ITSOnly"), track.pt(), cent);
-          }
-          // end ITS track. fill rec hist
         }
         // end fill graph
       }

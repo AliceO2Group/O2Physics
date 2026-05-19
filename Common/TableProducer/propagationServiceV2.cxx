@@ -76,11 +76,6 @@ struct propagationServiceV2 {
   o2::common::StandardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
   o2::common::StandardCCDBLoader ccdbLoader;
 
-  // Declarative CCDB path overrides (replace grpmagPath / mVtxPath in StandardCCDBLoaderConfigurables)
-  // Option names: "ccdb:fGRPMagField" and "ccdb:fMeanVertex" respectively.
-  o2::framework::ConfigurableCCDBPath<o2::aod::ccdbGlo::GRPMagField> grpmagPath;
-  o2::framework::ConfigurableCCDBPath<o2::aod::ccdbGlo::MeanVertex> mVtxPath;
-
   // boilerplate: strangeness builder stuff
   o2::pwglf::strangenessbuilder::products products;
   o2::pwglf::strangenessbuilder::coreConfigurables baseOpts;

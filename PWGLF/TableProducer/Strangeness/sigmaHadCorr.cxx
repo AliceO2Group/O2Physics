@@ -42,7 +42,6 @@
 
 #include <array>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <numeric>
 #include <vector>
@@ -631,14 +630,12 @@ struct sigmaHadCorrTask {
   SliceCache cache;
   using BinningTypeNumContrib = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   using BinningTypeMultNTracksPV = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
-  BinningTypeNumContrib colBinningNumContrib{{CfgVtxBins, CfgMultBins}, true};
-  BinningTypeMultNTracksPV colBinningPVMult{{CfgVtxBins, CfgMultBins}, true};
 
   void processMixedEvent(const CollisionsFull& collisions, const aod::KinkCands& kinkCands, const TracksFull& tracks)
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
-           selfCombinations(colBinningPVMult, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeMultNTracksPV{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         sigmaHadCandidates.clear();
@@ -661,7 +658,7 @@ struct sigmaHadCorrTask {
       }
     } else {
       for (auto const& [collision1, collision2] :
-           selfCombinations(colBinningNumContrib, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeNumContrib{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         sigmaHadCandidates.clear();
@@ -772,7 +769,7 @@ struct sigmaHadCorrTask {
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
-           selfCombinations(colBinningPVMult, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeMultNTracksPV{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         sigmaHadCandidates.clear();
@@ -821,7 +818,7 @@ struct sigmaHadCorrTask {
       }
     } else {
       for (auto const& [collision1, collision2] :
-           selfCombinations(colBinningNumContrib, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeNumContrib{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         sigmaHadCandidates.clear();

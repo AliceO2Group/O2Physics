@@ -1336,6 +1336,7 @@ struct lambdaspincorrderived {
   {
     return std::abs(deltaPhiMinusPiToPi(phiA, phiB));
   }
+
   // symmetric neighbors for phi: no wrap at edge
   static inline void collectNeighborBinsPhi(int b, int nPhi, int nNeighbor, std::vector<int>& out)
   {
@@ -1350,6 +1351,7 @@ struct lambdaspincorrderived {
     std::sort(out.begin(), out.end());
     out.erase(std::unique(out.begin(), out.end()), out.end());
   }
+
   static inline void collectNeighborBinsClamp(int b, int nBins, int nNeighbor, std::vector<int>& out)
   {
     out.clear();
@@ -1361,6 +1363,22 @@ struct lambdaspincorrderived {
       }
     }
   }
+  static inline void collectNeighborBinsMass(int b, int nBins, int nNeighbor, std::vector<int>& out)
+  {
+    out.clear();
+    out.reserve(2 * nNeighbor + 1);
+
+    for (int d = -nNeighbor; d <= nNeighbor; ++d) {
+      const int bb = b + d;
+      if (bb >= 0 && bb < nBins) {
+        out.push_back(bb);
+      }
+    }
+
+    std::sort(out.begin(), out.end());
+    out.erase(std::unique(out.begin(), out.end()), out.end());
+  }
+
   static inline int getMassRegionFromEdges(float m, const std::vector<float>& edges)
   {
     if (edges.size() != 4) {
@@ -1818,6 +1836,7 @@ struct lambdaspincorrderived {
     }
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 with radius buffer", false);
+
   void processMCMEV6(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
   {
     MixBinnerR mb{

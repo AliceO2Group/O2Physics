@@ -121,6 +121,7 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);
+DECLARE_SOA_COLUMN(MultNTracksNP, multNTracksNP, int);
 DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(NoSameBunchPileup, noSameBunchPileup, bool);
@@ -454,13 +455,14 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
 DECLARE_SOA_TABLE(NPMCChargedTable, "AOD", "NPMCChargedTABLE",
                   NPCascadeTable::PtGen,
                   NPCascadeTable::PtRec,
-                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::MultNTracksNP,
                   NPCascadeTable::MultGen);
 DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
                   NPCascadeTable::RunNumber,
                   NPCascadeTable::GlobalBC,
                   aod::collision::NumContrib,
                   NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::MultNTracksNP,
                   NPCascadeTable::CentFT0M,
                   NPCascadeTable::MultFT0M);
 DECLARE_SOA_INDEX_COLUMN_FULL(NPCollision, npCollision, int32_t, NPCollisionTable, "");

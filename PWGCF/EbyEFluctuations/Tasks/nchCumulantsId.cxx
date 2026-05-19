@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file nchCumulantsId.cxx
+/// \file NchCumulantsId.cxx
 /// \brief Event by Event conserved charges fluctuations
 /// \author Pravata Panigrahi <pravata.panigrahi@cern.ch> :: Sadhana Dash(sadhana@phy.iitb.ac.in)
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -20,28 +21,19 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 
-#include <TH2.h>
 #include <TPDGCode.h>
 
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
+#include <algorithm>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -113,17 +105,13 @@ struct NchCumulantsId {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "cut for eta"};
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
-  Configurable<int> netChBin{"netChBin", 160, "bins for netch"};
-  Configurable<float> netChMax{"netChMax", 80.0, "max for netch"};
-  Configurable<float> netChMin{"netChMin", -80.0, "min for netch"};
-  Configurable<int> chBins{"chBins", 501, "bins for ch"};
-  Configurable<float> chMax{"chMax", 500.0, "max for ch"};
-  Configurable<float> chMin{"chMin", -1.0, "min for ch"};
-  Configurable<float> midRapMax{"midRapMax", 1000.0, "max for midrapmult"};
-  Configurable<int> midRapBins{"midRapBins", 1001, "bins for midrapmult"};
 
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
+
+  Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
+  Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
+  Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
 
   // Configurables for particle Identification
   Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
@@ -133,31 +121,31 @@ struct NchCumulantsId {
   Configurable<bool> cfgId05DoTpcInnerParamId{"cfgId05DoTpcInnerParamId", false, "cfgId05DoTpcInnerParamId"};
 
   Configurable<float> cfgIdPi01ThrPforTOF{"cfgIdPi01ThrPforTOF", 0.7, "cfgIdPi01ThrPforTOF"};
-  Configurable<int> cfgIdPi02IdCutTypeLowP{"cfgIdPi02IdCutTypeLowP", 0, "cfgIdPi02IdCutTypeLowP"};
+  Configurable<int> cfgIdPi02IdCutTypeLowP{"cfgIdPi02IdCutTypeLowP", 1, "cfgIdPi02IdCutTypeLowP"};
   Configurable<float> cfgIdPi03NSigmaTPCLowP{"cfgIdPi03NSigmaTPCLowP", 2.0, "cfgIdPi03NSigmaTPCLowP"};
   Configurable<float> cfgIdPi04NSigmaTOFLowP{"cfgIdPi04NSigmaTOFLowP", 2.0, "cfgIdPi04NSigmaTOFLowP"};
   Configurable<float> cfgIdPi05NSigmaRadLowP{"cfgIdPi05NSigmaRadLowP", 4.0, "cfgIdPi05NSigmaRadLowP"};
-  Configurable<int> cfgIdPi06IdCutTypeHighP{"cfgIdPi06IdCutTypeHighP", 0, "cfgIdPi06IdCutTypeHighP"};
+  Configurable<int> cfgIdPi06IdCutTypeHighP{"cfgIdPi06IdCutTypeHighP", 1, "cfgIdPi06IdCutTypeHighP"};
   Configurable<float> cfgIdPi07NSigmaTPCHighP{"cfgIdPi07NSigmaTPCHighP", 2.0, "cfgIdPi07NSigmaTPCHighP"};
   Configurable<float> cfgIdPi08NSigmaTOFHighP{"cfgIdPi08NSigmaTOFHighP", 2.0, "cfgIdPi08NSigmaTOFHighP"};
   Configurable<float> cfgIdPi09NSigmaRadHighP{"cfgIdPi09NSigmaRadHighP", 4.0, "cfgIdPi09NSigmaRadHighP"};
 
   Configurable<float> cfgIdKa01ThrPforTOF{"cfgIdKa01ThrPforTOF", 0.8, "cfgIdKa01ThrPforTOF"};
-  Configurable<int> cfgIdKa02IdCutTypeLowP{"cfgIdKa02IdCutTypeLowP", 0, "cfgIdKa02IdCutTypeLowP"};
+  Configurable<int> cfgIdKa02IdCutTypeLowP{"cfgIdKa02IdCutTypeLowP", 1, "cfgIdKa02IdCutTypeLowP"};
   Configurable<float> cfgIdKa03NSigmaTPCLowP{"cfgIdKa03NSigmaTPCLowP", 2.0, "cfgIdKa03NSigmaTPCLowP"};
   Configurable<float> cfgIdKa04NSigmaTOFLowP{"cfgIdKa04NSigmaTOFLowP", 2.0, "cfgIdKa04NSigmaTOFLowP"};
   Configurable<float> cfgIdKa05NSigmaRadLowP{"cfgIdKa05NSigmaRadLowP", 4.0, "cfgIdKa05NSigmaRadLowP"};
-  Configurable<int> cfgIdKa06IdCutTypeHighP{"cfgIdKa06IdCutTypeHighP", 0, "cfgIdKa06IdCutTypeHighP"};
+  Configurable<int> cfgIdKa06IdCutTypeHighP{"cfgIdKa06IdCutTypeHighP", 1, "cfgIdKa06IdCutTypeHighP"};
   Configurable<float> cfgIdKa07NSigmaTPCHighP{"cfgIdKa07NSigmaTPCHighP", 2.0, "cfgIdKa07NSigmaTPCHighP"};
   Configurable<float> cfgIdKa08NSigmaTOFHighP{"cfgIdKa08NSigmaTOFHighP", 2.0, "cfgIdKa08NSigmaTOFHighP"};
   Configurable<float> cfgIdKa09NSigmaRadHighP{"cfgIdKa09NSigmaRadHighP", 4.0, "cfgIdKa09NSigmaRadHighP"};
 
   Configurable<float> cfgIdPr01ThrPforTOF{"cfgIdPr01ThrPforTOF", 0.8, "cfgIdPr01ThrPforTOF"};
-  Configurable<int> cfgIdPr02IdCutTypeLowP{"cfgIdPr02IdCutTypeLowP", 0, "cfgIdPr02IdCutTypeLowP"};
+  Configurable<int> cfgIdPr02IdCutTypeLowP{"cfgIdPr02IdCutTypeLowP", 1, "cfgIdPr02IdCutTypeLowP"};
   Configurable<float> cfgIdPr03NSigmaTPCLowP{"cfgIdPr03NSigmaTPCLowP", 2.0, "cfgIdPr03NSigmaTPCLowP"};
   Configurable<float> cfgIdPr04NSigmaTOFLowP{"cfgIdPr04NSigmaTOFLowP", 2.0, "cfgIdPr04NSigmaTOFLowP"};
   Configurable<float> cfgIdPr05NSigmaRadLowP{"cfgIdPr05NSigmaRadLowP", 4.0, "cfgIdPr05NSigmaRadLowP"};
-  Configurable<int> cfgIdPr06IdCutTypeHighP{"cfgIdPr06IdCutTypeHighP", 0, "cfgIdPr06IdCutTypeHighP"};
+  Configurable<int> cfgIdPr06IdCutTypeHighP{"cfgIdPr06IdCutTypeHighP", 1, "cfgIdPr06IdCutTypeHighP"};
   Configurable<float> cfgIdPr07NSigmaTPCHighP{"cfgIdPr07NSigmaTPCHighP", 2.0, "cfgIdPr07NSigmaTPCHighP"};
   Configurable<float> cfgIdPr08NSigmaTOFHighP{"cfgIdPr08NSigmaTOFHighP", 2.0, "cfgIdPr08NSigmaTOFHighP"};
   Configurable<float> cfgIdPr09NSigmaRadHighP{"cfgIdPr09NSigmaRadHighP", 4.0, "cfgIdPr09NSigmaRadHighP"};
@@ -245,16 +233,16 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNch(netChBin, netChMin, netChMax, "Net_charge_dN");
-    const AxisSpec axisPosCh(chBins, chMin, chMax, "Pos_charge");
-    const AxisSpec axisNegCh(chBins, chMin, chMax, "Neg_charge");
-    const AxisSpec axisNt(midRapBins, chMin, midRapMax, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(chBins, chMin, chMax, "Pr_charge");
-    const AxisSpec axisAPrCh(chBins, chMin, chMax, "APr_charge");
-    const AxisSpec axisKaCh(chBins, chMin, chMax, "Ka_charge");
-    const AxisSpec axisAKaCh(chBins, chMin, chMax, "AKa_charge");
-    const AxisSpec axisPiCh(chBins, chMin, chMax, "Pion_Positive");
-    const AxisSpec axisAPiCh(chBins, chMin, chMax, "Pion_Negative");
+    const AxisSpec axisNch(100, -50, 50, "Net_charge_dN");
+    const AxisSpec axisPosCh(101, -1, 100, "Pos_charge");
+    const AxisSpec axisNegCh(101, -1, 100, "Neg_charge");
+    const AxisSpec axisNt(201, -1, 200, "Mult_midRap_Nch");
+    const AxisSpec axisPrCh(101, -1, 100, "Pr_charge");
+    const AxisSpec axisAPrCh(101, -1, 100, "APr_charge");
+    const AxisSpec axisKaCh(101, -1, 100, "Ka_charge");
+    const AxisSpec axisAKaCh(101, -1, 100, "AKa_charge");
+    const AxisSpec axisPiCh(101, -1, 100, "Pion_Positive");
+    const AxisSpec axisAPiCh(101, -1, 100, "Pion_Negative");
 
     HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPrCh, axisAPrCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
     HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPiCh, axisAPiCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
@@ -894,6 +882,28 @@ struct NchCumulantsId {
     fillIdentificationQA<mode, kPr, NoId>(hist, track); // Look at Proton
   }
 
+  //  template <int Mode, int pidMode, typename H, typename T>
+  //  void fillGenTrackQA(H& histReg, const T& mcTrack)
+  //  {
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h12_p"), mcTrack.p());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h13_pt"), mcTrack.pt());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), mcTrack.eta());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), mcTrack.phi());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), mcTrack.y());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
+  //  }
+  //
+  //  template <int Mode, int pidMode, typename H, typename T>
+  //  void fillRecoTrackQA(H& histReg, const T& track)
+  //  {
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h12_p"), track.p());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h13_pt"), track.pt());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), track.eta());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), track.phi());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), track.y());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), track.pt(), track.eta());
+  //  }
+
   template <HistRegEnum2 DIR, PidEnum P, ChargeEnum C, typename TrackType>
   void fillGenTrackQA(HistogramRegistry& r, const TrackType& t)
   {
@@ -1026,12 +1036,27 @@ struct NchCumulantsId {
   using MyAllTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
                                 aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl,
                                 aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>;
-  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels>;
 
   using MyTracksWithMclabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTOFmass,
                                          aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe,
                                          aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe, aod::McTrackLabels>;
-  using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels, aod::McCollisionLabels>;
+
+  template <typename CollisionType>
+  bool isEventSelected(const CollisionType& col)
+  {
+    if (cfgEvSel01doNoSameBunchPileup &&
+        !col.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (cfgEvSel02doIsGoodZvtxFT0vsPV &&
+        !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (cfgEvSel03doIsGoodITSLayersAll &&
+        !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
+      return false;
+    return true;
+  }
 
   // tracks and collision filters
   Filter col = aod::evsel::sel8 == true;
@@ -1081,6 +1106,8 @@ struct NchCumulantsId {
 
     if constexpr (analysisType == doDataProcessing) {
       for (const auto& col : collisions) {
+        if (!isEventSelected(col))
+          continue;
         nP = 0;
         nM = 0;
         nCh = 0;
@@ -1171,6 +1198,8 @@ struct NchCumulantsId {
           LOG(warning) << "No MC collision for this collision, skip...";
           continue;
         }
+        if (!isEventSelected(col))
+          continue;
         float nP = 0;
         float nM = 0;
         float nCh = 0;
@@ -1297,6 +1326,8 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this event, skip...";
         continue;
       }
+      if (!isEventSelected(col))
+        continue;
       const auto& mcColl = col.mcCollision();
 
       // ---- apply same Vz cut as data/reco ----
@@ -1330,6 +1361,7 @@ struct NchCumulantsId {
         int pdg = mcTrack.pdgCode();
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
           nP++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
@@ -1339,6 +1371,7 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
           nM++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
@@ -1350,21 +1383,27 @@ struct NchCumulantsId {
         }
         // ----- Pions -----
         if (pdg == kPiPlus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kPiMinus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kKPlus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kProton) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nAPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
@@ -1399,6 +1438,8 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this collision, skip...";
         continue;
       }
+      if (!isEventSelected(col))
+        continue;
       auto mcCollision = col.mcCollision();
 
       if (checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ)
@@ -1429,6 +1470,7 @@ struct NchCumulantsId {
         int pdg = mcTrack.pdgCode();
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
           nPGen++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
@@ -1438,6 +1480,7 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
           nMGen++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
@@ -1447,23 +1490,29 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         }
-
+        // ----- Pions -----
         if (pdg == kPiPlus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kPiMinus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kKPlus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kProton) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nAPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
@@ -1584,23 +1633,20 @@ struct NchCumulantsId {
         }
         // purity check - check pdg aginst sign
         bool purityPion = false;
+        bool purityKaon = false;
+        bool purityProton = false;
+
         if (trackIsPion) {
           if (track.sign() > 0 && pdg == kPiPlus)
             purityPion = true;
           if (track.sign() < 0 && pdg == kPiMinus)
             purityPion = true;
-        }
-
-        bool purityKaon = false;
-        if (trackIsKaon) {
+        } else if (trackIsKaon) {
           if (track.sign() > 0 && pdg == kKPlus)
             purityKaon = true;
           if (track.sign() < 0 && pdg == kKMinus)
             purityKaon = true;
-        }
-
-        bool purityProton = false;
-        if (trackIsProton) {
+        } else if (trackIsProton) {
           if (track.sign() > 0 && pdg == kProton)
             purityProton = true;
           if (track.sign() < 0 && pdg == kProtonBar)
