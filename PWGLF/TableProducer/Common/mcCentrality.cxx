@@ -143,7 +143,6 @@ struct McCentrality {
         } else {
           LOG(fatal) << "Could not open histogram " << name << " from TList";
         }
-        hist->SetDirectory(0);
       }
       return hist;
     };
