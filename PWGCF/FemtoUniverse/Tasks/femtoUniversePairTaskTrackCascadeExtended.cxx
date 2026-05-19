@@ -91,7 +91,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
     Configurable<int> confTrkPDGCodePartTwo{"confTrkPDGCodePartTwo", 2212, "Particle 1 (Track) - PDG code"};
     Configurable<int> confChargePart1{"confChargePart1", 1, "sign of track particle 1"};
-    Configurable<int> confChargePart2{"confChargePart2", -1, "sign of track particle 2"};
+    Configurable<int> confChargePart2{"confChargePart2", 1, "sign of track particle 2"};
     Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "higher limit for pt of track particle"};
     Configurable<float> confLPtPart1{"confLPtPart1", 0.5f, "lower limit for pt of track particle"};
     Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "combined TPC and TOF Sigma for track particle for momentum > Confmom"};
@@ -400,6 +400,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         pEffHistp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
         pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
         LOGF(info, "Loaded efficiency histograms for Cascade-Cascade.");
+      } else if (doprocessSameEventTrack || doprocessSameEventTrackBitmask || doprocessMixedEventTrack || doprocessMixedEventTrackBitmask) {
+        pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        pEffHistp2 = (trackparticleconfigs.confChargePart2 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
       }
     } else if (!ccdbEffLoader.confCCDBEfficiency.value.empty()) {
       ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -415,6 +418,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         pEffHistp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
         pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
         LOGF(info, "Loaded efficiency histograms for Cascade-Cascade from CCDB.");
+      } else if (doprocessSameEventTrack || doprocessSameEventTrackBitmask || doprocessMixedEventTrack || doprocessMixedEventTrackBitmask) {
+        pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); /// works only for protons
+        pEffHistp2 = (trackparticleconfigs.confChargePart2 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); /// works only for protons
       }
     }
   }
