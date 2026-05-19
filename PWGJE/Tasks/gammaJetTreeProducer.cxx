@@ -1442,7 +1442,7 @@ struct GammaJetTreeProducer {
       mcParticlesTable(storedColIndex, particle.energy(), particle.eta(), particle.phi(), particle.pt(), particle.pdgCode(), mcIsolation, origin);
 
       // DEBUGGING for photons. If it is a photon, print the origin and then print the chain
-      // leaving this in here 
+      // leaving this in here
       // if (particle.pdgCode() == PDG_t::kGamma) {
       //   LOG(info) << "Particle PDG: " << particle.pdgCode() << " isPhysicalPrimary: " << particle.isPhysicalPrimary() << " getGenStatusCode: " << particle.getGenStatusCode();
       //   LOG(info) << "Origin: " << "kPromptPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPromptPhoton))) << "), kDirectPromptPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDirectPromptPhoton))) << "), kFragmentationPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kFragmentationPhoton))) << "), kDecayPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhoton))) << "), kDecayPhotonPi0 (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonPi0))) << "), kDecayPhotonEta (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonEta))) << "), kDecayPhotonOther (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonOther))) << "), kPi0 (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPi0))) << ")";
