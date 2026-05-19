@@ -162,30 +162,33 @@ struct UpcCandProducer {
     // initialize RCT flag checker
     if (rctLabel.value != "none" && rctLabel.value != "muon" && rctLabel.value != "muon_glo") {
       myRCTChecker.init(rctLabel.value, checkZDC.value, useLAasBad.value);
-    } else if (rctLabel.value == "none") {
+    }
+    else if (rctLabel.value == "none"){
       useRCTflags = false;
       myRCTChecker.init("CBT_muon");
-    } else if (rctLabel.value == "muon") {
-      std::initializer_list<RCTSelectionFlags> flags = {kFV0Bad, kMCHBad, kMIDBad};
-      if (checkZDC.value && useLAasBad.value) {
-        flags = {kFV0Bad, kMCHBad, kMIDBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr};
-      } else if (checkZDC.value) {
-        flags = {kFV0Bad, kMCHBad, kMIDBad, kZDCBad};
-      } else if (useLAasBad.value) {
-        flags = {kFV0Bad, kMCHBad, kMIDBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr};
-      }
-      myRCTChecker.init(flags);
-    } else if (rctLabel.value == "muon_glo") {
-      std::initializer_list<RCTSelectionFlags> flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad};
-      if (checkZDC.value && useLAasBad.value) {
-        flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr};
-      } else if (checkZDC.value) {
-        flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad};
-      } else if (useLAasBad.value) {
-        flags = {kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr};
-      }
-      myRCTChecker.init(flags);
     }
+    else if (rctLabel.value == "muon") {
+      if (checkZDC.value && useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr});
+      } else if (checkZDC.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kZDCBad});
+      } else if (useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr});
+      } else {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad});
+      }
+    }
+    else if (rctLabel.value == "muon_glo") {
+      if (checkZDC.value && useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr});
+      } else if (checkZDC.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad});
+      } else if (useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr});
+      } else {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad});
+      }
+    } 
 
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
