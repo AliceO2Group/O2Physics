@@ -1731,6 +1731,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
       tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType);
 
       // populate extra tables if required to do so
@@ -1955,6 +1956,12 @@ struct OnTheFlyTracker {
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
       const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
+
+      o2::upgrade::OTFParticle otfParticle(mcParticle);
+      if (otfParticle.hasNaN()) {
+        continue;
+      }
+
       if (!pdgsToBeHandled) {
         continue;
       }
