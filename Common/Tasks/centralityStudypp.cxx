@@ -329,40 +329,46 @@ struct centralityStudypp {
     float multNTracksGlobal = collision.multNTracksGlobal();
     float mftNtracks = collision.mftNtracks();
     float multNTracksPV = collision.multNTracksPV();
+
     if (applyVertexZEqualization) {
       float epsilon = 1e-2; // average value after which this collision will be disregarded
-      multFV0A = -1.0f;
-      multFT0A = -1.0f;
-      multFT0C = -1.0f;
-      multFDDA = -1.0f;
-      multFDDC = -1.0f;
-      multNTracksGlobal = -1.0f;
-      mftNtracks = -1.0f;
-      multNTracksPV = -1.0f;
+      float maxVertexZ = 15.0f; // max value for any equalization attempt
 
-      if (hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon) {
-        multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon) {
-        multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
-        multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFDDA->Interpolate(collision.multPVz()) > epsilon) {
-        multFDDA = hVtxZFDDA->Interpolate(0.0) * collision.multFDDA() / hVtxZFDDA->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFDDC->Interpolate(collision.multPVz()) > epsilon) {
-        multFDDC = hVtxZFDDC->Interpolate(0.0) * collision.multFDDC() / hVtxZFDDC->Interpolate(collision.multPVz());
-      }
-      if (hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
-        multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
-      }
-      if (hVtxZMFT->Interpolate(collision.multPVz()) > epsilon) {
-        mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
-      }
-      if (hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon) {
-        multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+      // same defaults as multCentTable in case of unhealthy signals
+      multFV0A = 0.0f;
+      multFT0A = 0.0f;
+      multFT0C = 0.0f;
+      multFDDA = 0.0f;
+      multFDDC = 0.0f;
+      multNTracksGlobal = 0.0f;
+      mftNtracks = 0.0f;
+      multNTracksPV = 0.0f;
+
+      if (std::abs(collision.multPVz()) < maxVertexZ) { // operate consistently vs multCentTable
+        if (hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon && collision.multFV0A() > -1.0f) {
+          multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon && collision.multFT0A() > -1.0f) {
+          multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon && collision.multFT0C() > -1.0f) {
+          multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFDDA->Interpolate(collision.multPVz()) > epsilon && collision.multFDDA() > -1.0f) {
+          multFDDA = hVtxZFDDA->Interpolate(0.0) * collision.multFDDA() / hVtxZFDDA->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFDDC->Interpolate(collision.multPVz()) > epsilon && collision.multFDDC() > -1.0f) {
+          multFDDC = hVtxZFDDC->Interpolate(0.0) * collision.multFDDC() / hVtxZFDDC->Interpolate(collision.multPVz());
+        }
+        if (hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon && collision.multNTracksGlobal() > -1.0f) {
+          multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
+        }
+        if (hVtxZMFT->Interpolate(collision.multPVz()) > epsilon && collision.mftNtracks() > -1.0f) {
+          mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
+        }
+        if (hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon && collision.multNTracksPV() > -1.0f) {
+          multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+        }
       }
     }
 
