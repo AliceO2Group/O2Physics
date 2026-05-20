@@ -63,7 +63,7 @@ struct candidate {
   float tofNSigmaEl{0};
   float meanClusterSizeITSobCosTgl{0};
 };
-} // namespace pwgem::dilepton
+} // namespace pwgem::dilepton::mlpid
 
 template <typename TypeOutputScore = float>
 class MlResponsePID : public MlResponse<TypeOutputScore>
