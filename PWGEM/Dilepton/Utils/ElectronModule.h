@@ -2106,7 +2106,7 @@ class ElectronModule
   }
 
   template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TMCCollisions, typename TMCParticles, typename TProducts, typename THistoregistry>
-  void processWithoutTTCA(TBCs const&, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCCollisions const&, TMCParticles const&, TProducts&, THistoregistry&)
+  void processWithoutTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCCollisions const&, TMCParticles const&, TProducts&, THistoregistry&)
   {
     LOGF(info, "processWithoutTTCA is not supported. Bye.");
     return;
