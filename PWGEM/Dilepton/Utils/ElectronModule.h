@@ -1344,7 +1344,7 @@ class ElectronModule
   }
 
   template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TTrackAssoc, typename TMCCollisions, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc, typename TPresliceV0, typename TPresliceCascade>
-  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TTrackAssoc const& trackIndices, TMCCollisions const& mcCollisions, TMCParticles const& mcParticles, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc)
+  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TTrackAssoc const& trackIndices, TMCCollisions const&, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc)
   {
     initCCDB(bcs.begin());
 
@@ -2106,7 +2106,7 @@ class ElectronModule
   }
 
   template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TMCCollisions, typename TMCParticles, typename TProducts, typename THistoregistry>
-  void processWithoutTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TMCCollisions const& mcCollisions, TMCParticles const& mcParticles, TProducts& products, THistoregistry& registry)
+  void processWithoutTTCA(TBCs const&, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCCollisions const&, TMCParticles const&, TProducts&, THistoregistry&)
   {
     LOGF(info, "processWithoutTTCA is not supported. Bye.");
     return;
