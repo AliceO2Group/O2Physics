@@ -2653,7 +2653,6 @@ struct Lambdastarproxy {
           const float pyTot = pr.py + k.py;
           const float pzTot = pr.pz + k.pz;
           const float ptPair = ptFromPxPy(pxTot, pyTot);
-          const float phiPair = phiFromPxPy(pxTot, pyTot);
 
           const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
 
@@ -2689,9 +2688,6 @@ struct Lambdastarproxy {
           const float pyTot = pr.py + k.py;
           const float pzTot = pr.pz + k.pz;
           const float ptPair = ptFromPxPy(pxTot, pyTot);
-          const float phiPair = phiFromPxPy(pxTot, pyTot);
-
-          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
 
           // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
           histos.fill(HIST("hDeuteronProxyMass"), mass);
