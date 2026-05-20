@@ -329,11 +329,11 @@ struct centralityStudypp {
     float multNTracksGlobal = collision.multNTracksGlobal();
     float mftNtracks = collision.mftNtracks();
     float multNTracksPV = collision.multNTracksPV();
-    
+
     if (applyVertexZEqualization) {
       float epsilon = 1e-2; // average value after which this collision will be disregarded
       float maxVertexZ = 15.0f; // max value for any equalization attempt
-      
+
       // same defaults as multCentTable in case of unhealthy signals
       multFV0A = 0.0f;
       multFT0A = 0.0f;
@@ -344,7 +344,7 @@ struct centralityStudypp {
       mftNtracks = 0.0f;
       multNTracksPV = 0.0f;
 
-      if(std::abs(collision.multPVz()) < maxVertexZ){ // operate consistently vs multCentTable
+      if (std::abs(collision.multPVz()) < maxVertexZ) { // operate consistently vs multCentTable
         if (hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon && collision.multFV0A() > -1.0f) {
           multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
         }
