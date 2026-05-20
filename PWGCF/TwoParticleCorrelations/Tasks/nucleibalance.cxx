@@ -2686,7 +2686,6 @@ struct Lambdastarproxy {
 
           const float pxTot = pr.px + k.px;
           const float pyTot = pr.py + k.py;
-          const float pzTot = pr.pz + k.pz;
           const float ptPair = ptFromPxPy(pxTot, pyTot);
 
           // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
