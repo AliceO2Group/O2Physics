@@ -251,9 +251,9 @@ struct Pi0EtaToGammaGammaMC {
     DefinePHOSCut();
 
     f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
-  
+
     fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", o2::framework::HistType::kTH1F, {{21, -0.5f, 20.5f}}, false);
-    if(cfgGGContaCheck){
+    if (cfgGGContaCheck) {
       fRegistry.add("Event/hNGGContamEta", "Number of Eta from etaToGammaGamma; p_{T, #eta} (GeV/#it{c}); N", o2::framework::HistType::kTH1F, {{40, -0.5f, 20.5f}}, false);
       fRegistry.add("Event/hNGGContamPion", "Number of Pion from etaToGammaGamma; p_{T, #pi} (GeV/#it{c}); N", o2::framework::HistType::kTH1F, {{40, -0.5f, 20.5f}}, false);
     }
@@ -799,19 +799,19 @@ struct Pi0EtaToGammaGammaMC {
 
             auto pos2mc = mcparticles.iteratorAt(pos2.emmcparticleId());
             auto ele2mc = mcparticles.iteratorAt(ele2.emmcparticleId());
-            if(cfgGGContaCheck){
-              photonid2 = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);   //check possible contamination
-              if(photonid2 > 0){
+            if (cfgGGContaCheck) {
+              photonid2 = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // check possible contamination
+              if (photonid2 > 0) {
                 auto photon2 = mcparticles.iteratorAt(photonid2);
                 int photon2pdg = photon2.pdgCode();
                 int photon2mothid = photon2.mothersIds()[0];
                 auto photon2moth = mcparticles.iteratorAt(photon2mothid);
-                if(photon2pdg == 22 && (o2::aod::pwgem::photonmeson::utils::mcutil::isGammaGammaDecay(photon2moth, mcparticles))){
-                  int mothID =  o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(photon2, mcparticles);
-                  if(mothID == 221) {
+                if (photon2pdg == 22 && (o2::aod::pwgem::photonmeson::utils::mcutil::isGammaGammaDecay(photon2moth, mcparticles))) {
+                  int mothID = o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(photon2, mcparticles);
+                  if (mothID == 221) {
                     fRegistry.fill(HIST("Event/hNGGContamEta"), photon2moth.pt());
-                  } 
-                  if(mothID == 111) {
+                  }
+                  if (mothID == 111) {
                     fRegistry.fill(HIST("Event/hNGGContamPion"), photon2moth.pt());
                   }
                 }
@@ -844,8 +844,8 @@ struct Pi0EtaToGammaGammaMC {
               }
               o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
             }
-          } // end of dielectron loop
-        } // end of pcm loop
+          }    // end of dielectron loop
+        }      // end of pcm loop
       } else { // PCM-EMC, PCM-PHOS.
         // TODO: implement proper functionality if we ever want to run this in Pb-Pb
         auto photons1_per_collision = photons1.sliceByCached(TDetectorTag1::perCollision(), collision.globalIndex(), cache);
@@ -892,8 +892,8 @@ struct Pi0EtaToGammaGammaMC {
           //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
           // }
         } // end of pairing loop
-      } // end of pairing in same event
-    } // end of collision loop
+      }   // end of pairing in same event
+    }     // end of collision loop
   }
 
   template <int par_id, typename TBinnedData>
