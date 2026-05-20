@@ -137,9 +137,9 @@ struct flowQC {
     return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.triggereventep() && collision.selection_bit(aod::evsel::kNoSameBunchPileup);
   }
 
-  float computeEventPlane(float y, float x)
+  float computeEventPlane(float y, float x, float harmonic)
   {
-    return 0.5 * TMath::ATan2(y, x);
+    return (1.f / harmonic) * TMath::ATan2(y, x);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -267,6 +267,8 @@ struct flowQC {
     auto maybeSquare = [quadraticResponse](float value) {
       return quadraticResponse ? value * value : value;
     };
+    const float qvecHarmonic = quadraticResponse ? (cfgHarmonic.value / 2.f) : cfgHarmonic.value;
+    const int qvecHarmonicIndex = static_cast<int>(qvecHarmonic) - 2;
 
     // EP method
     float QmodFT0A_EP = maybeSquare(collision.qFT0A());
@@ -285,37 +287,37 @@ struct flowQC {
     float psiTPC_EP = collision.psiTPC();
 
     // Qvec method
-    float QxFT0A_Qvec_raw = collision.qvecFT0AReVec()[cfgHarmonic.value - 2];
-    float QyFT0A_Qvec_raw = collision.qvecFT0AImVec()[cfgHarmonic.value - 2];
-    float psiFT0A_Qvec = computeEventPlane(QyFT0A_Qvec_raw, QxFT0A_Qvec_raw);
+    float QxFT0A_Qvec_raw = collision.qvecFT0AReVec()[qvecHarmonicIndex];
+    float QyFT0A_Qvec_raw = collision.qvecFT0AImVec()[qvecHarmonicIndex];
+    float psiFT0A_Qvec = computeEventPlane(QyFT0A_Qvec_raw, QxFT0A_Qvec_raw, qvecHarmonic);
     float QxFT0A_Qvec = maybeSquare(QxFT0A_Qvec_raw);
     float QyFT0A_Qvec = maybeSquare(QyFT0A_Qvec_raw);
     float QmodFT0A_Qvec = std::hypot(QxFT0A_Qvec, QyFT0A_Qvec);
 
-    float QxFT0C_Qvec_raw = collision.qvecFT0CReVec()[cfgHarmonic.value - 2];
-    float QyFT0C_Qvec_raw = collision.qvecFT0CImVec()[cfgHarmonic.value - 2];
-    float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec_raw, QxFT0C_Qvec_raw);
+    float QxFT0C_Qvec_raw = collision.qvecFT0CReVec()[qvecHarmonicIndex];
+    float QyFT0C_Qvec_raw = collision.qvecFT0CImVec()[qvecHarmonicIndex];
+    float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec_raw, QxFT0C_Qvec_raw, qvecHarmonic);
     float QxFT0C_Qvec = maybeSquare(QxFT0C_Qvec_raw);
     float QyFT0C_Qvec = maybeSquare(QyFT0C_Qvec_raw);
     float QmodFT0C_Qvec = std::hypot(QxFT0C_Qvec, QyFT0C_Qvec);
 
-    float QxTPCl_Qvec_raw = collision.qvecTPCnegReVec()[cfgHarmonic.value - 2];
-    float QyTPCl_Qvec_raw = collision.qvecTPCnegImVec()[cfgHarmonic.value - 2];
-    float psiTPCl_Qvec = computeEventPlane(QyTPCl_Qvec_raw, QxTPCl_Qvec_raw);
+    float QxTPCl_Qvec_raw = collision.qvecTPCnegReVec()[qvecHarmonicIndex];
+    float QyTPCl_Qvec_raw = collision.qvecTPCnegImVec()[qvecHarmonicIndex];
+    float psiTPCl_Qvec = computeEventPlane(QyTPCl_Qvec_raw, QxTPCl_Qvec_raw, qvecHarmonic);
     float QxTPCl_Qvec = maybeSquare(QxTPCl_Qvec_raw);
     float QyTPCl_Qvec = maybeSquare(QyTPCl_Qvec_raw);
     float QmodTPCl_Qvec = std::hypot(QxTPCl_Qvec, QyTPCl_Qvec);
 
-    float QxTPCr_Qvec_raw = collision.qvecTPCposReVec()[cfgHarmonic.value - 2];
-    float QyTPCr_Qvec_raw = collision.qvecTPCposImVec()[cfgHarmonic.value - 2];
-    float psiTPCr_Qvec = computeEventPlane(QyTPCr_Qvec_raw, QxTPCr_Qvec_raw);
+    float QxTPCr_Qvec_raw = collision.qvecTPCposReVec()[qvecHarmonicIndex];
+    float QyTPCr_Qvec_raw = collision.qvecTPCposImVec()[qvecHarmonicIndex];
+    float psiTPCr_Qvec = computeEventPlane(QyTPCr_Qvec_raw, QxTPCr_Qvec_raw, qvecHarmonic);
     float QxTPCr_Qvec = maybeSquare(QxTPCr_Qvec_raw);
     float QyTPCr_Qvec = maybeSquare(QyTPCr_Qvec_raw);
     float QmodTPCr_Qvec = std::hypot(QxTPCr_Qvec, QyTPCr_Qvec);
 
-    float QxTPC_Qvec_raw = collision.qvecTPCallReVec()[cfgHarmonic.value - 2];
-    float QyTPC_Qvec_raw = collision.qvecTPCallImVec()[cfgHarmonic.value - 2];
-    float psiTPC_Qvec = computeEventPlane(QyTPC_Qvec_raw, QxTPC_Qvec_raw);
+    float QxTPC_Qvec_raw = collision.qvecTPCallReVec()[qvecHarmonicIndex];
+    float QyTPC_Qvec_raw = collision.qvecTPCallImVec()[qvecHarmonicIndex];
+    float psiTPC_Qvec = computeEventPlane(QyTPC_Qvec_raw, QxTPC_Qvec_raw, qvecHarmonic);
     float QxTPC_Qvec = maybeSquare(QxTPC_Qvec_raw);
     float QyTPC_Qvec = maybeSquare(QyTPC_Qvec_raw);
     float QmodTPC_Qvec = std::hypot(QxTPC_Qvec, QyTPC_Qvec);
