@@ -122,6 +122,7 @@ struct flowQC {
   float mBz = 0.f;
 
   Configurable<float> cfgHarmonic{"cfgHarmonic", 2.f, "Harmonics for flow analysis"};
+  Configurable<bool> cfgQuadraticResponse{"cfgQuadraticResponse", false, "Use quadratic response for Q-vector quantities"};
 
   // Flow analysis
   using CollWithEPandQvec = soa::Join<aod::Collisions,
@@ -183,11 +184,13 @@ struct flowQC {
 
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)centDetectorNames[cfgCentralityEstimator])};
 
-    const AxisSpec QxAxis{cfgQvecBins, Form("Q_{%.0f,x}", cfgHarmonic.value)};
-    const AxisSpec QyAxis{cfgQvecBins, Form("Q_{%.0f,y}", cfgHarmonic.value)};
+    const char* qLabel = cfgQuadraticResponse ? "Q^{2}" : "Q";
 
-    const AxisSpec NormQxAxis{cfgQvecBins, Form("#frac{Q_{%.0f,x}}{||#vec{Q_{%.0f}}||}", cfgHarmonic.value, cfgHarmonic.value)};
-    const AxisSpec NormQyAxis{cfgQvecBins, Form("#frac{Q_{%.0f,y}}{||#vec{Q_{%.0f}}||}", cfgHarmonic.value, cfgHarmonic.value)};
+    const AxisSpec QxAxis{cfgQvecBins, Form("%s_{%.0f,x}", qLabel, cfgHarmonic.value)};
+    const AxisSpec QyAxis{cfgQvecBins, Form("%s_{%.0f,y}", qLabel, cfgHarmonic.value)};
+
+    const AxisSpec NormQxAxis{cfgQvecBins, Form("#frac{%s_{%.0f,x}}{||#vec{%s}_{%.0f}||}", qLabel, cfgHarmonic.value, qLabel, cfgHarmonic.value)};
+    const AxisSpec NormQyAxis{cfgQvecBins, Form("#frac{%s_{%.0f,y}}{||#vec{%s}_{%.0f}||}", qLabel, cfgHarmonic.value, qLabel, cfgHarmonic.value)};
 
     const AxisSpec psiAxis{cfgPhiBins, Form("#psi_{%.0f}", cfgHarmonic.value)};
     const AxisSpec psiCompAxis{cfgPhiBins, Form("#psi_{%.0f}^{EP} - #psi_{%.0f}^{Qvec}", cfgHarmonic.value, cfgHarmonic.value)};
@@ -215,12 +218,12 @@ struct flowQC {
           hDeltaPsi[iMethod][iQvecDet][jQvecDet] = registry->add<TH2>(Form("hDeltaPsi_%s_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str(), suffixes[iMethod].c_str()), "", HistType::kTH2F, {centAxis, {cfgDeltaPhiBins, Form("#psi_{%s} - #psi_{%s}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str())}});
 
           // Scalar-product histograms
-          auto spLabel = Form("#vec{Q}_{%.0f}^{%s} #upoint #vec{Q}_{%.0f}^{%s}", cfgHarmonic.value, qVecDetectorNames[iQvecDet].c_str(), cfgHarmonic.value, qVecDetectorNames[jQvecDet].c_str());
+          auto spLabel = Form("#vec{%s}_{%.0f}^{%s} #upoint #vec{%s}_{%.0f}^{%s}", qLabel, cfgHarmonic.value, qVecDetectorNames[iQvecDet].c_str(), qLabel, cfgHarmonic.value, qVecDetectorNames[jQvecDet].c_str());
 
           hScalarProduct[iMethod][iQvecDet][jQvecDet] = registry->add<TH2>(Form("hScalarProduct_%s_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str(), suffixes[iMethod].c_str()), "", HistType::kTH2F, {centAxis, {cfgQvecBins, spLabel}});
 
           // Normalised scalar-product histograms
-          auto normSpLabel = Form("#frac{#vec{Q}_{%.0f}^{%s} #upoint #vec{Q}_{%.0f}^{%s}}{||#vec{Q}_{%.0f}^{%s}|| ||#vec{Q}_{%.0f}^{%s}||}", cfgHarmonic.value, qVecDetectorNames[iQvecDet].c_str(), cfgHarmonic.value, qVecDetectorNames[jQvecDet].c_str(), cfgHarmonic.value, qVecDetectorNames[iQvecDet].c_str(), cfgHarmonic.value, qVecDetectorNames[jQvecDet].c_str());
+          auto normSpLabel = Form("#frac{#vec{%s}_{%.0f}^{%s} #upoint #vec{%s}_{%.0f}^{%s}}{||#vec{%s}_{%.0f}^{%s}|| ||#vec{%s}_{%.0f}^{%s}||}", qLabel, cfgHarmonic.value, qVecDetectorNames[iQvecDet].c_str(), qLabel, cfgHarmonic.value, qVecDetectorNames[jQvecDet].c_str(), qLabel, cfgHarmonic.value, qVecDetectorNames[iQvecDet].c_str(), qLabel, cfgHarmonic.value, qVecDetectorNames[jQvecDet].c_str());
 
           hNormalisedScalarProduct[iMethod][iQvecDet][jQvecDet] = registry->add<TH2>(Form("hNormalisedScalarProduct_%s_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str(), suffixes[iMethod].c_str()), "", HistType::kTH2F, {centAxis, {cfgQvecBins, normSpLabel}});
         }
@@ -270,55 +273,60 @@ struct flowQC {
 
     float centrality = getCentrality(collision);
 
+    const bool quadraticResponse = cfgQuadraticResponse;
+    auto maybeSquare = [quadraticResponse](float value) {
+      return quadraticResponse ? value * value : value;
+    };
+
     // EP method
-    float QmodFT0A_EP = collision.qFT0A();
+    float QmodFT0A_EP = maybeSquare(collision.qFT0A());
     float psiFT0A_EP = collision.psiFT0A();
     float QxFT0A_EP = QmodFT0A_EP * std::cos(cfgHarmonic.value * psiFT0A_EP);
     float QyFT0A_EP = QmodFT0A_EP * std::sin(cfgHarmonic.value * psiFT0A_EP);
 
-    float QmodFT0C_EP = collision.qFT0C();
+    float QmodFT0C_EP = maybeSquare(collision.qFT0C());
     float psiFT0C_EP = collision.psiFT0C();
     float QxFT0C_EP = QmodFT0C_EP * std::cos(cfgHarmonic.value * psiFT0C_EP);
     float QyFT0C_EP = QmodFT0C_EP * std::sin(cfgHarmonic.value * psiFT0C_EP);
 
-    float QmodTPCl_EP = collision.qTPCL();
+    float QmodTPCl_EP = maybeSquare(collision.qTPCL());
     float psiTPCl_EP = collision.psiTPCL();
     float QxTPCl_EP = QmodTPCl_EP * std::cos(cfgHarmonic.value * psiTPCl_EP);
     float QyTPCl_EP = QmodTPCl_EP * std::sin(cfgHarmonic.value * psiTPCl_EP);
 
-    float QmodTPCr_EP = collision.qTPCR();
+    float QmodTPCr_EP = maybeSquare(collision.qTPCR());
     float psiTPCr_EP = collision.psiTPCR();
     float QxTPCr_EP = QmodTPCr_EP * std::cos(cfgHarmonic.value * psiTPCr_EP);
     float QyTPCr_EP = QmodTPCr_EP * std::sin(cfgHarmonic.value * psiTPCr_EP);
 
-    float QmodTPC_EP = collision.qTPC();
+    float QmodTPC_EP = maybeSquare(collision.qTPC());
     float psiTPC_EP = collision.psiTPC();
     float QxTPC_EP = QmodTPC_EP * std::cos(cfgHarmonic.value * psiTPC_EP);
     float QyTPC_EP = QmodTPC_EP * std::sin(cfgHarmonic.value * psiTPC_EP);
 
     // Qvec method
-    float QxFT0A_Qvec = collision.qvecFT0AReVec()[cfgHarmonic.value - 2];
-    float QyFT0A_Qvec = collision.qvecFT0AImVec()[cfgHarmonic.value - 2];
+    float QxFT0A_Qvec = maybeSquare(collision.qvecFT0AReVec()[cfgHarmonic.value - 2]);
+    float QyFT0A_Qvec = maybeSquare(collision.qvecFT0AImVec()[cfgHarmonic.value - 2]);
     float QmodFT0A_Qvec = std::hypot(QxFT0A_Qvec, QyFT0A_Qvec);
     float psiFT0A_Qvec = computeEventPlane(QyFT0A_Qvec, QxFT0A_Qvec);
 
-    float QxFT0C_Qvec = collision.qvecFT0CReVec()[cfgHarmonic.value - 2];
-    float QyFT0C_Qvec = collision.qvecFT0CImVec()[cfgHarmonic.value - 2];
+    float QxFT0C_Qvec = maybeSquare(collision.qvecFT0CReVec()[cfgHarmonic.value - 2]);
+    float QyFT0C_Qvec = maybeSquare(collision.qvecFT0CImVec()[cfgHarmonic.value - 2]);
     float QmodFT0C_Qvec = std::hypot(QxFT0C_Qvec, QyFT0C_Qvec);
     float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec, QxFT0C_Qvec);
 
-    float QxTPCl_Qvec = collision.qvecTPCnegReVec()[cfgHarmonic.value - 2];
-    float QyTPCl_Qvec = collision.qvecTPCnegImVec()[cfgHarmonic.value - 2];
+    float QxTPCl_Qvec = maybeSquare(collision.qvecTPCnegReVec()[cfgHarmonic.value - 2]);
+    float QyTPCl_Qvec = maybeSquare(collision.qvecTPCnegImVec()[cfgHarmonic.value - 2]);
     float QmodTPCl_Qvec = std::hypot(QxTPCl_Qvec, QyTPCl_Qvec);
     float psiTPCl_Qvec = computeEventPlane(QyTPCl_Qvec, QxTPCl_Qvec);
 
-    float QxTPCr_Qvec = collision.qvecTPCposReVec()[cfgHarmonic.value - 2];
-    float QyTPCr_Qvec = collision.qvecTPCposImVec()[cfgHarmonic.value - 2];
+    float QxTPCr_Qvec = maybeSquare(collision.qvecTPCposReVec()[cfgHarmonic.value - 2]);
+    float QyTPCr_Qvec = maybeSquare(collision.qvecTPCposImVec()[cfgHarmonic.value - 2]);
     float QmodTPCr_Qvec = std::hypot(QxTPCr_Qvec, QyTPCr_Qvec);
     float psiTPCr_Qvec = computeEventPlane(QyTPCr_Qvec, QxTPCr_Qvec);
 
-    float QxTPC_Qvec = collision.qvecTPCallReVec()[cfgHarmonic.value - 2];
-    float QyTPC_Qvec = collision.qvecTPCallImVec()[cfgHarmonic.value - 2];
+    float QxTPC_Qvec = maybeSquare(collision.qvecTPCallReVec()[cfgHarmonic.value - 2]);
+    float QyTPC_Qvec = maybeSquare(collision.qvecTPCallImVec()[cfgHarmonic.value - 2]);
     float QmodTPC_Qvec = std::hypot(QxTPC_Qvec, QyTPC_Qvec);
     float psiTPC_Qvec = computeEventPlane(QyTPC_Qvec, QxTPC_Qvec);
 
