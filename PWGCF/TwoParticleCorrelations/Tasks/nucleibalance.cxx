@@ -2641,71 +2641,71 @@ struct Lambdastarproxy {
 
     // --- SAME-EVENT: genuine pK #Lambda^{*} candidates ---
     if (hasProtonCandidates) {
-    for (auto const& pr : protonCands) {
-      for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid) {
-          continue;
-        }
-        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
-                                          k.px, k.py, k.pz, MassKaonCharged);
-
-        const float pxTot = pr.px + k.px;
-        const float pyTot = pr.py + k.py;
-        const float pzTot = pr.pz + k.pz;
-        const float ptPair = ptFromPxPy(pxTot, pyTot);
-        const float phiPair = phiFromPxPy(pxTot, pyTot);
-
-        const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
-
-        if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
-          continue;
-        }
-
-        const bool unlikeSignPK = (pr.charge * k.charge) < 0;
-        if (unlikeSignPK) {
-          histos.fill(HIST("hInvMassPKUnlike"), mass);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, eventMult);
+      for (auto const& pr : protonCands) {
+        for (auto const& k : kaonCands) {
+          if (pr.tid == k.tid) {
+            continue;
           }
-        } else {
-          histos.fill(HIST("hInvMassPKLike"), mass);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, eventMult);
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                            k.px, k.py, k.pz, MassKaonCharged);
+
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float pzTot = pr.pz + k.pz;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
+          const float phiPair = phiFromPxPy(pxTot, pyTot);
+
+          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+
+          if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+            continue;
+          }
+
+          const bool unlikeSignPK = (pr.charge * k.charge) < 0;
+          if (unlikeSignPK) {
+            histos.fill(HIST("hInvMassPKUnlike"), mass);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, eventMult);
+            }
+          } else {
+            histos.fill(HIST("hInvMassPKLike"), mass);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, eventMult);
+            }
           }
         }
       }
-    }
     }
 
     // --- SAME-EVENT: proxy (d/2) + K ---
     if (hasProxyCandidates) {
-    for (auto const& pr : proxyCands) {
-      for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid)
-          continue; // sanity check: should never match, but just in case of bug in candidate-building logic
-        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
+      for (auto const& pr : proxyCands) {
+        for (auto const& k : kaonCands) {
+          if (pr.tid == k.tid)
+            continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
-        const float pxTot = pr.px + k.px;
-        const float pyTot = pr.py + k.py;
-        const float pzTot = pr.pz + k.pz;
-        const float ptPair = ptFromPxPy(pxTot, pyTot);
-        const float phiPair = phiFromPxPy(pxTot, pyTot);
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float pzTot = pr.pz + k.pz;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
+          const float phiPair = phiFromPxPy(pxTot, pyTot);
 
-        const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
 
-        // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
-        histos.fill(HIST("hDeuteronProxyMass"), mass);
-        if (lstarEnableSparse.value != 0) {
-          histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, eventMult);
+          // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
+          histos.fill(HIST("hDeuteronProxyMass"), mass);
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, eventMult);
 
-          // Like-sign proxy background: proxy and kaon have the same charge sign.
-          // Here the proxy charge follows the original deuteron-candidate charge.
-          if ((pr.charge * k.charge) > 0) {
-            histos.fill(HIST("hLambdaStarProxyLikeSparse"), mass, ptPair, eventMult);
+            // Like-sign proxy background: proxy and kaon have the same charge sign.
+            // Here the proxy charge follows the original deuteron-candidate charge.
+            if ((pr.charge * k.charge) > 0) {
+              histos.fill(HIST("hLambdaStarProxyLikeSparse"), mass, ptPair, eventMult);
+            }
           }
         }
       }
-    }
     }
 
     // --- MIXED-EVENT: current kaons + previous-event real protons ---
