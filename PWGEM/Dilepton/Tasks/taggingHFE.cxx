@@ -55,6 +55,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <map>
 #include <random>
 #include <string>
 #include <string_view>
@@ -440,7 +441,7 @@ struct taggingHFE {
     fRegistry.add("Generated/D0/hsAcc", "pT-#eta acc.;p_{T,l} (GeV/c);p_{T,K} (GeV/c);#eta_{l};#eta_{K};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, +5}}, false);
     fRegistry.add("Generated/Lc/hsAcc", "pT-#eta acc.;p_{T,l} (GeV/c);p_{T,#Lambda} (GeV/c);#eta_{l};#eta_{#Lambda};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, +5}}, false);
 
-    fRegistry.add("Electron/hs", "hs;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0, 10}, {40, -1, 1}, {36, 0, 2 * M_PI}}, false);
+    fRegistry.add("Electron/hs", "hs;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0, 10}, {80, -2, 2}, {36, 0, 2 * M_PI}}, false);
     fRegistry.add("Electron/hDCA", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1, 1}, {200, -1, 1}}, false);
     fRegistry.add("Electron/hTPCdEdx", "TPC dE/dx vs. pin;p_{in} (GeV/c);TPC dE/dx", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     fRegistry.add("Electron/hTOFbeta", "TOF #beta vs. p;p_{pv} (GeV/c);TOF #beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
