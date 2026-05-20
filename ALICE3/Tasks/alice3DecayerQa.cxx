@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file alice3DecayerQA.cxx
+/// \file alice3DecayerQa.cxx
 ///
 /// \brief QA task for otf decayer
 ///
@@ -36,7 +36,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct Alice3DecayerQA {
+struct Alice3DecayerQa {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   SliceCache cache;
 
@@ -67,6 +67,9 @@ struct Alice3DecayerQA {
   Partition<aod::McPartWithDaus> trueK0Short = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kK0Short);
   Partition<aod::McPartWithDaus> trueLambdas = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kLambda0);
   Partition<aod::McPartWithDaus> trueXiMinus = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiMinus);
+
+  static constexpr size_t NCascadeDaughters = 2;
+  static constexpr size_t NV0Daughters = 2;
 
   template <typename TParticle>
   float radius(const TParticle& particle) const
@@ -106,20 +109,27 @@ struct Alice3DecayerQA {
     histos.add("MCWithDau/hE", "hE", kTH1D, {axes.axisPt});
 
     // QA with daughters from Decayer
-    histos.add("K0S/hGeneratedPt", "hGeneratedPt", kTH1D, {axes.axisPt});
-    histos.add("K0S/hHasDecayed", "hHasDecayed", kTH1D, {{2, -0.5, 1.5}});
-    histos.add("K0S/hPosDauDecayRadius", "hPosDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("K0S/hNegDauDecayRadius", "hNegDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("Lambda/hGeneratedPt", "hGeneratedPt", kTH1D, {axes.axisPt});
-    histos.add("Lambda/hHasDecayed", "hHasDecayed", kTH1D, {{2, -0.5, 1.5}});
-    histos.add("Lambda/hPosDauDecayRadius", "hPosDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("Lambda/hNegDauDecayRadius", "hNegDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("XiMinus/hGeneratedPt", "hGeneratedPt", kTH1D, {axes.axisPt});
-    histos.add("XiMinus/hHasDecayed", "hHasDecayed", kTH1D, {{2, -0.5, 1.5}});
-    histos.add("XiMinus/hBachDauDecayRadius", "hBachDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("XiMinus/hV0DauDecayRadius", "hV0DauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("XiMinus/hPosDauDecayRadius", "hPosDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
-    histos.add("XiMinus/hNegDauDecayRadius", "hNegDauDecayRadius", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("K0S/hGeneratedPt", "hGeneratedPt;#it{p}_{T} (GeV/#it{c})", kTH1D, {axes.axisPt});
+    histos.add("K0S/hPosDauDecayRadius", "hPosDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("K0S/hNegDauDecayRadius", "hNegDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("Lambda/hGeneratedPt", "hGeneratedPt;#it{p}_{T} (GeV/#it{c})", kTH1D, {axes.axisPt});
+    histos.add("Lambda/hPosDauDecayRadius", "hPosDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("Lambda/hNegDauDecayRadius", "hNegDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("XiMinus/hGeneratedPt", "hGeneratedPt;#it{p}_{T} (GeV/#it{c})", kTH1D, {axes.axisPt});
+    histos.add("XiMinus/hBachDauDecayRadius", "hBachDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("XiMinus/hV0DauDecayRadius", "hV0DauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("XiMinus/hPosDauDecayRadius", "hPosDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+    histos.add("XiMinus/hNegDauDecayRadius", "hNegDauDecayRadius;Decay radius 2D;#it{p}_{T} (GeV/#it{c})", kTH2D, {axes.axisRadiusLog, axes.axisPtLog});
+
+    auto hCheckHasK0SDecayed = histos.add<TH1>("K0S/hHasDecayed", "hHasDecayed", kTH1D, {{2, -0.5, 1.5}});
+    hCheckHasK0SDecayed->GetXaxis()->SetBinLabel(1, "No");
+    hCheckHasK0SDecayed->GetXaxis()->SetBinLabel(2, "Yes");
+    auto hCheckHasLambdaDecayed = histos.add<TH1>("Lambda/hHasDecayed", "hHasDecayed", kTH1D, {{2, -0.5, 1.5}});
+    hCheckHasLambdaDecayed->GetXaxis()->SetBinLabel(1, "No");
+    hCheckHasLambdaDecayed->GetXaxis()->SetBinLabel(2, "Yes");
+    auto hCheckHasXiMinusDecayed = histos.add<TH1>("XiMinus/hHasDecayed", "hHasDecayed", kTH1D, {{2, -0.5, 1.5}});
+    hCheckHasXiMinusDecayed->GetXaxis()->SetBinLabel(1, "No");
+    hCheckHasXiMinusDecayed->GetXaxis()->SetBinLabel(2, "Yes");
   }
 
   void process(const aod::McCollision& collision, const aod::McPartWithDaus& particles)
@@ -152,9 +162,9 @@ struct Alice3DecayerQA {
     for (const auto& particle : trueK0ShortGrouped) {
       histos.fill(HIST("K0S/hGeneratedPt"), particle.pt());
       if (particle.has_daughters()) {
-        histos.fill(HIST("K0S/hHasDecayed"), 0);
+        histos.fill(HIST("K0S/hHasDecayed"), 1);
         auto daughters = particle.daughtersIds();
-        if (daughters.size() == 2) {
+        if (daughters.size() == NV0Daughters) {
           auto dau0 = particles.rawIteratorAt(daughters.front());
           auto dau1 = particles.rawIteratorAt(daughters.back());
 
@@ -169,15 +179,15 @@ struct Alice3DecayerQA {
           }
         }
       } else {
-        histos.fill(HIST("K0S/hHasDecayed"), 1);
+        histos.fill(HIST("K0S/hHasDecayed"), 0);
       }
     }
     for (const auto& particle : trueLambdasGrouped) {
       histos.fill(HIST("Lambda/hGeneratedPt"), particle.pt());
       if (particle.has_daughters()) {
-        histos.fill(HIST("Lambda/hHasDecayed"), 0);
+        histos.fill(HIST("Lambda/hHasDecayed"), 1);
         auto daughters = particle.daughtersIds();
-        if (daughters.size() == 2) {
+        if (daughters.size() == NV0Daughters) {
           auto dau0 = particles.rawIteratorAt(daughters[0]);
           auto dau1 = particles.rawIteratorAt(daughters[1]);
 
@@ -192,15 +202,15 @@ struct Alice3DecayerQA {
           }
         }
       } else {
-        histos.fill(HIST("Lambda/hHasDecayed"), 1);
+        histos.fill(HIST("Lambda/hHasDecayed"), 0);
       }
     }
     for (const auto& particle : trueXiMinusGrouped) {
       histos.fill(HIST("XiMinus/hGeneratedPt"), particle.pt());
       if (particle.has_daughters()) {
-        histos.fill(HIST("XiMinus/hHasDecayed"), 0);
+        histos.fill(HIST("XiMinus/hHasDecayed"), 1);
         auto daughters = particle.daughtersIds();
-        if (daughters.size() == 2) {
+        if (daughters.size() == NCascadeDaughters) {
           auto dau0 = particles.rawIteratorAt(daughters.front());
           auto dau1 = particles.rawIteratorAt(daughters.back());
 
@@ -216,7 +226,7 @@ struct Alice3DecayerQA {
             // Lambda -> p pi-
             if (v0.has_daughters()) {
               auto v0daughters = v0.daughtersIds();
-              if (v0daughters.size() == 2) {
+              if (v0daughters.size() == NV0Daughters) {
                 auto v0dau0 = particles.rawIteratorAt(v0daughters.front());
                 auto v0dau1 = particles.rawIteratorAt(v0daughters.back());
                 const bool lambdaDecay = (v0dau0.pdgCode() == PDG_t::kProton && v0dau1.pdgCode() == PDG_t::kPiMinus) ||
@@ -232,7 +242,7 @@ struct Alice3DecayerQA {
           }
         }
       } else {
-        histos.fill(HIST("XiMinus/hHasDecayed"), 1);
+        histos.fill(HIST("XiMinus/hHasDecayed"), 0);
       }
     }
 
@@ -266,10 +276,10 @@ struct Alice3DecayerQA {
     }
   }
 
-  PROCESS_SWITCH(Alice3DecayerQA, process, "fill MC-with-dau histograms", true);
+  PROCESS_SWITCH(Alice3DecayerQa, process, "fill MC-with-dau histograms", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& ctx)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3DecayerQA>(ctx)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3DecayerQa>(ctx)};
 }

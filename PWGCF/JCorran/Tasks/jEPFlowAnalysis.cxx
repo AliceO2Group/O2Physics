@@ -112,8 +112,9 @@ struct JEPFlowAnalysis {
   Configurable<float> cfgVertexZ{"cfgVertexZ", 10.0, "Maximum vertex Z selection"};
 
   Configurable<bool> cfgq2analysis{"cfgq2analysis", false, "ese analysis flag"};
-  Configurable<float> cfgq2high{"cfgq2high", 10.0, "high q2 selection"};
-  Configurable<float> cfgq2low{"cfgq2low", 0.0, "low q2 selection"};
+  Configurable<std::vector<float>> cfgMultq2SelBin{"cfgMultq2SelBin", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
+  Configurable<std::vector<float>> cfgMultq2high{"cfgMultq2high", {}, ""};
+  Configurable<std::vector<float>> cfgMultq2low{"cfgMultq2low", {}, ""};
 
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
@@ -152,6 +153,29 @@ struct JEPFlowAnalysis {
   std::string fullCCDBShiftCorrPath;
 
   THn* effMap = nullptr;
+
+  bool q2sel(float q2, bool isHigh)
+  {
+    auto it = std::upper_bound(cfgMultq2SelBin->begin(), cfgMultq2SelBin->end(), cent);
+    int idx = std::distance(cfgMultq2SelBin->begin(), it) - 1;
+
+    if (idx < 0) {
+      idx = 0;
+    }
+    if (isHigh) {
+      if (idx >= static_cast<int>(cfgMultq2high->size())) {
+        idx = cfgMultq2high->size() - 1;
+      }
+      float sel = cfgMultq2high->at(idx);
+      return q2 > sel;
+    } else {
+      if (idx >= static_cast<int>(cfgMultq2low->size())) {
+        idx = cfgMultq2low->size() - 1;
+      }
+      float sel = cfgMultq2low->at(idx);
+      return q2 < sel;
+    }
+  }
 
   template <typename T>
   int getdetId(const T& name)
@@ -310,6 +334,18 @@ struct JEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxx"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, qx_shifted[2] * qy_shifted[1] - qx_shifted[1] * qy_shifted[2]);
 
+      if (cfgq2analysis) {
+        if (q2sel(q2Mag, true)) {
+          epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
+          epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
+          epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2high"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
+        } else if (q2sel(q2Mag, false)) {
+          epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
+          epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
+          epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2low"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
+        }
+      }
+
       for (const auto& track : tracks) {
         if (cfgTrkSelFlag && trackSel(track))
           continue;
@@ -328,9 +364,9 @@ struct JEPFlowAnalysis {
         epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), track.eta(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
 
         if (cfgq2analysis) {
-          if (q2Mag > cfgq2high) {
+          if (q2sel(q2Mag, true)) {
             epFlowHistograms.fill(HIST("SPvnxx_q2high"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
-          } else if (q2Mag < cfgq2low) {
+          } else if (q2sel(q2Mag, false)) {
             epFlowHistograms.fill(HIST("SPvnxx_q2low"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
           }
         }
@@ -397,6 +433,14 @@ struct JEPFlowAnalysis {
     epFlowHistograms.add("EpResQvecDetRefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
     epFlowHistograms.add("EpResQvecRefARefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
     epFlowHistograms.add("EpResQvecRefARefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    if (cfgq2analysis) {
+      epFlowHistograms.add("EpResQvecDetRefAxx_q2high", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+      epFlowHistograms.add("EpResQvecDetRefBxx_q2high", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+      epFlowHistograms.add("EpResQvecRefARefBxx_q2high", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+      epFlowHistograms.add("EpResQvecDetRefAxx_q2low", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+      epFlowHistograms.add("EpResQvecDetRefBxx_q2low", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+      epFlowHistograms.add("EpResQvecRefARefBxx_q2low", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    }
 
     epFlowHistograms.add("SPvnxx", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
     epFlowHistograms.add("SPvnxy", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
