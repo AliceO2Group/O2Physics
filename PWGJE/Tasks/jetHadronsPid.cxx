@@ -479,11 +479,11 @@ struct jetHadronsPid {
           continue;
 
         double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
-        double deltaPhiUe1 = std::abs(RecoDecay::constrainAngle(track.phi() - ueAxis1.Phi()));
+        double deltaPhiUe1 = RecoDecay::constrainAngle(track.phi() - ueAxis1.Phi(), -PI);
         double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
 
         double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
-        double deltaPhiUe2 = std::abs(RecoDecay::constrainAngle(track.phi() - ueAxis2.Phi()));
+        double deltaPhiUe2 = RecoDecay::constrainAngle(track.phi() - ueAxis2.Phi(), -PI);
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
         if (deltaRUe1 > rJet && deltaRUe2 > rJet)
