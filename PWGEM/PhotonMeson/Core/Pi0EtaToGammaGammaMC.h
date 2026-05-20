@@ -75,18 +75,18 @@ enum AlphaMesonCutOption {
 
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, o2::soa::is_table... Types>
 struct Pi0EtaToGammaGammaMC {
-  o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  o2::framework::Configurable<float> dBzInput{"dBzInput", -999, "bz field in kG, -999 is automatic"};
 
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   o2::framework::Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
   o2::framework::Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
-  o2::framework::Configurable<float> maxY_rec{"maxY_rec", 0.9, "maximum rapidity for reconstructed particles"};
-  o2::framework::Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
+  o2::framework::Configurable<float> maxYRec{"maxYRec", 0.9, "maximum rapidity for reconstructed particles"};
+  o2::framework::Configurable<std::string> fdK0sToPi0{"fdK0sPi0", "1.0", "feed down correction to pi0"};
   o2::framework::Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
 
   o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
@@ -226,7 +226,7 @@ struct Pi0EtaToGammaGammaMC {
     o2::framework::Configurable<float> cfg_min_Ecluster{"cfg_min_Ecluster", 0.3, "Minimum cluster energy for PHOS in GeV"};
   } phoscuts;
 
-  TF1* f1fd_k0s_to_pi0;
+  TF1* f1fdK0sToPi0;
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   // static constexpr std::string_view event_types[2] = {"before/", "after/"};
   // static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
@@ -251,7 +251,7 @@ struct Pi0EtaToGammaGammaMC {
     DefineEMCCut();
     DefinePHOSCut();
 
-    f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
+    f1fdK0sToPi0 = new TF1("f1fdK0sToPi0", TString(fdK0sToPi0), 0.f, 100.f);
 
     fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", o2::framework::HistType::kTH1F, {{21, -0.5f, 20.5f}}, false);
     if (cfgGGContaCheck) {
@@ -264,7 +264,7 @@ struct Pi0EtaToGammaGammaMC {
     mRunNumber = 0;
     d_bz = 0;
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -279,10 +279,11 @@ struct Pi0EtaToGammaGammaMC {
 
     // In case override, don't proceed, please - no CCDB access required
     constexpr float bzInput = -990.0f;
-    if (d_bz_input > bzInput) {
-      d_bz = d_bz_input;
+    if (dBzInput > bzInput) {
+      d_bz = dBzInput;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
+      float bzThreshold = 1e-5;
+      if (std::fabs(d_bz) > bzThreshold) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
@@ -313,8 +314,8 @@ struct Pi0EtaToGammaGammaMC {
 
   ~Pi0EtaToGammaGammaMC()
   {
-    delete f1fd_k0s_to_pi0;
-    f1fd_k0s_to_pi0 = 0x0;
+    delete f1fdK0sToPi0;
+    f1fdK0sToPi0 = 0x0;
   }
 
   void DefineEMEventCut()
@@ -368,7 +369,7 @@ struct Pi0EtaToGammaGammaMC {
     fV0PhotonCut.SetLoadMlModelsFromCCDB(pcmcuts.cfg_load_ml_models_from_ccdb);
     fV0PhotonCut.SetNClassesMl(pcmcuts.cfg_nclasses_ml);
     fV0PhotonCut.SetMlTimestampCCDB(pcmcuts.cfg_timestamp_ccdb);
-    fV0PhotonCut.SetCcdbUrl(ccdburl);
+    fV0PhotonCut.SetCcdbUrl(ccdbUrl);
     CentType mCentralityTypeMlEnum;
     mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
     fV0PhotonCut.SetCentralityTypeMl(mCentralityTypeMlEnum);
@@ -690,7 +691,7 @@ struct Pi0EtaToGammaGammaMC {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::fabs(v12.Rapidity()) > maxY_rec) {
+          if (std::fabs(v12.Rapidity()) > maxYRec) {
             continue;
           }
 
@@ -742,13 +743,13 @@ struct Pi0EtaToGammaGammaMC {
             if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
               continue;
             }
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, wpair);
+            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fdK0sToPi0, wpair);
           } else if (etaid > 0) {
             auto etamc = mcparticles.iteratorAt(etaid);
             if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
               continue;
             }
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, wpair);
+            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fdK0sToPi0, wpair);
           }
         } // end of pairing loop
       } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
@@ -829,7 +830,7 @@ struct Pi0EtaToGammaGammaMC {
             ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            if (std::fabs(veeg.Rapidity()) > maxY_rec) {
+            if (std::fabs(veeg.Rapidity()) > maxYRec) {
               continue;
             }
             if (pi0id > 0) {
@@ -838,17 +839,17 @@ struct Pi0EtaToGammaGammaMC {
               if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
                 continue;
               }
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
+              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fdK0sToPi0, weight);
             } else if (etaid > 0) {
               auto etamc = mcparticles.iteratorAt(etaid);
               fRegistry.fill(HIST("Event/hNDalitzEtaPt"), etamc.pt());
               if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
                 continue;
               }
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
+              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fdK0sToPi0, weight);
             }
-          }    // end of dielectron loop
-        }      // end of pcm loop
+          } // end of dielectron loop
+        } // end of pcm loop
       } else { // PCM-EMC, PCM-PHOS.
         // TODO: implement proper functionality if we ever want to run this in Pb-Pb
         auto photons1_per_collision = photons1.sliceByCached(TDetectorTag1::perCollision(), collision.globalIndex(), cache);
@@ -884,19 +885,19 @@ struct Pi0EtaToGammaGammaMC {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::fabs(v12.Rapidity()) > maxY_rec) {
+          if (std::fabs(v12.Rapidity()) > maxYRec) {
             continue;
           }
           // if (pi0id > 0) {
           //   auto pi0mc = mcparticles.iteratorAt(pi0id);
-          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
+          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fdK0sToPi0, weight);
           // } else if (etaid > 0) {
           //   auto etamc = mcparticles.iteratorAt(etaid);
-          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
+          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fdK0sToPi0, weight);
           // }
         } // end of pairing loop
-      }   // end of pairing in same event
-    }     // end of collision loop
+      } // end of pairing in same event
+    } // end of collision loop
   }
 
   template <int par_id, typename TBinnedData>
