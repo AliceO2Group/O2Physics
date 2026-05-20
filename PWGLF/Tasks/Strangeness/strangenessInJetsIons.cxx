@@ -93,6 +93,7 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
+using DaughterTracksMB = soa::Join<DaughterTracks, aod::TrackSelection>;
 
 struct StrangenessInJetsIons {
 
@@ -135,6 +136,7 @@ struct StrangenessInJetsIons {
   Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
   Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
+  Configurable<bool> saveChargedParticleMB{"saveChargedParticleMB", false, "Store charged particle information to build inclusive spectra."};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -587,6 +589,9 @@ struct StrangenessInJetsIons {
       }
       if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
         registryDataMB.add("Proton_in_MB", "Proton_in_MB", HistType::kTHnSparseF, {multAxis, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
+      }
+      if (saveChargedParticleMB) {
+        registryDataMB.add("ChargedTrack_in_MB", "ChargedTrack_in_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
     }
   }
@@ -1969,12 +1974,12 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 5.5);
 
     // Event multiplicity
-    float centrality;
-    if (centrEstimator == 0) {
-      centrality = collision.centFT0C();
-    } else {
-      centrality = collision.centFT0M();
-    }
+    // float centrality;
+    // if (centrEstimator == 0) {
+    //   centrality = collision.centFT0C();
+    // } else {
+    //   centrality = collision.centFT0M();
+    // }
     // registryData.fill(HIST("number_of_events_vsmultiplicity_MB"), centrality);
 
     // Loop over reconstructed tracks
@@ -2389,7 +2394,7 @@ struct StrangenessInJetsIons {
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        double coneRadius = std::sqrt(jet.area() / PI);
+        double coneRadius = std::sqrt(jet.area() / PI); // TODO: replace with rJet (similar results)
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
@@ -3283,7 +3288,7 @@ struct StrangenessInJetsIons {
   // --- Process Minimum Bias events ---
   // Process data MB
   void processDataMB(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                     aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
+                     aod::CascDataExt const& Cascades, DaughterTracksMB const& tracks,
                      aod::BCsWithTimestamps const&)
   {
     // Vertex position vector
@@ -3343,12 +3348,21 @@ struct StrangenessInJetsIons {
     }
     registryDataMB.fill(HIST("number_of_events_vsmultiplicity_MB"), centrality);
 
+    if (saveChargedParticleMB) {
+      for (const auto& trk : tracks) {
+        if (!passedTrackSelectionForJetReconstruction(trk) || !trk.isGlobalTrack()) {
+          continue;
+        }
+        registryDataMB.fill(HIST("ChargedTrack_in_MB"), centrality, trk.pt());
+      }
+    }
+
     if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) { // V0s
       for (const auto& v0 : fullV0s) {
 
         // Get V0 daughters
-        const auto& pos = v0.posTrack_as<DaughterTracks>();
-        const auto& neg = v0.negTrack_as<DaughterTracks>();
+        const auto& pos = v0.posTrack_as<DaughterTracksMB>();
+        const auto& neg = v0.negTrack_as<DaughterTracksMB>();
         TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
         // K0s
