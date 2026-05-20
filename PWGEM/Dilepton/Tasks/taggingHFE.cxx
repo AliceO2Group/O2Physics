@@ -238,7 +238,7 @@ struct taggingHFE {
     Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.1, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
-    Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.05, "min dca XY for V0 in cm"};
+    Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.0, "min dca XY for V0 in cm"};
   } cascadeCut;
 
   struct : ConfigurableGroup {
@@ -311,7 +311,7 @@ struct taggingHFE {
     dist01 = std::uniform_real_distribution<float>(0.0f, 1.0f);
 
     fitter_eK.setPropagateToPCA(true);
-    fitter_eK.setMaxR(20.f);
+    fitter_eK.setMaxR(200.f);
     fitter_eK.setMinParamChange(1e-3);
     fitter_eK.setMinRelChi2Change(0.9);
     fitter_eK.setMaxDZIni(1e9);
@@ -321,7 +321,7 @@ struct taggingHFE {
     fitter_eK.setMatCorrType(matCorr);
 
     fitter_eV0.setPropagateToPCA(true);
-    fitter_eV0.setMaxR(20.f);
+    fitter_eV0.setMaxR(200.f);
     fitter_eV0.setMinParamChange(1e-3);
     fitter_eV0.setMinRelChi2Change(0.9);
     fitter_eV0.setMaxDZIni(1e9);
@@ -331,7 +331,7 @@ struct taggingHFE {
     fitter_eV0.setMatCorrType(matCorr);
 
     fitter_eCascade.setPropagateToPCA(true);
-    fitter_eCascade.setMaxR(20.f);
+    fitter_eCascade.setMaxR(200.f);
     fitter_eCascade.setMinParamChange(1e-3);
     fitter_eCascade.setMinRelChi2Change(0.9);
     fitter_eCascade.setMaxDZIni(1e9);
@@ -441,6 +441,7 @@ struct taggingHFE {
     fRegistry.add("Generated/Lc/hsAcc", "pT-#eta acc.;p_{T,l} (GeV/c);p_{T,#Lambda} (GeV/c);#eta_{l};#eta_{#Lambda};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, +5}}, false);
 
     fRegistry.add("Electron/hs", "hs;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0, 10}, {40, -1, 1}, {36, 0, 2 * M_PI}}, false);
+    fRegistry.add("Electron/hDCA", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1, 1}, {200, -1, 1}}, false);
     fRegistry.add("Electron/hTPCdEdx", "TPC dE/dx vs. pin;p_{in} (GeV/c);TPC dE/dx", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     fRegistry.add("Electron/hTOFbeta", "TOF #beta vs. p;p_{pv} (GeV/c);TOF #beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
     fRegistry.addClone("Electron/", "Hadron/");
@@ -1419,6 +1420,7 @@ struct taggingHFE {
         continue;
       }
 
+      auto mcCollision_from_collision = collision.template mcCollision_as<aod::McCollisions>();
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0);
 
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -1471,8 +1473,8 @@ struct taggingHFE {
           if (mcCollision_ele.getSubGeneratorId() == eventCut.cfgRejectEventGenerator) {
             continue;
           }
-
           fRegistry.fill(HIST("Electron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
+          fRegistry.fill(HIST("Electron/hDCA"), dcaXY, dcaZ);
           fRegistry.fill(HIST("Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Electron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
 
@@ -1491,6 +1493,7 @@ struct taggingHFE {
 
         if (isSelectedHadron(collision, track, trackParCov, dcaXY, dcaZ)) { // electrons can be included in hadron sample.
           fRegistry.fill(HIST("Hadron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
+          fRegistry.fill(HIST("Hadron/hDCA"), dcaXY, dcaZ);
           fRegistry.fill(HIST("Hadron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Hadron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
           if (track.sign() > 0) { // K+
@@ -1594,9 +1597,9 @@ struct taggingHFE {
           continue;
         }
 
-        // if (cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_dcaxy_v0) {
-        //   continue;
-        // }
+        if (std::fabs(cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < cascadeCut.cfg_min_dcaxy_v0) {
+          continue;
+        }
 
         fillCascadeHistograms(collision, cascade);
 
@@ -1629,7 +1632,8 @@ struct taggingHFE {
         auto mcpos = pos.template mcParticle_as<aod::McParticles>();
         auto mcMother = mcpos.template mothers_as<aod::McParticles>()[0];
         bool isMotherFromB = IsFromBeauty(mcMother, mcParticles) > -1;
-        auto mcCollision = mcpos.template mcCollision_as<aod::McCollisions>();
+        auto mcCollision_mcpos = mcpos.template mcCollision_as<aod::McCollisions>();
+        bool isCorrectCollision = mcCollision_mcpos.globalIndex() == mcCollision_from_collision.globalIndex();
 
         bool is_e_from_dy = std::abs(mcMother.pdgCode()) == 23;    // virtual photon is Z in simulation.
         bool is_e_from_jpsi = std::abs(mcMother.pdgCode()) == 443; // e from prompt J/psi is treated as the same as Z. // e from nonprompt J/psi is treated as the same as B.
@@ -1639,9 +1643,13 @@ struct taggingHFE {
           continue;
         }
 
-        leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision.getSubGeneratorId(),
+        if ((is_e_from_dy || is_e_from_jpsi) && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+          continue;
+        }
+
+        leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision_mcpos.getSubGeneratorId(),
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
-                    isMotherFromB, mcMother.pdgCode());
+                    isMotherFromB, mcMother.pdgCode(), isCorrectCollision);
 
         // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonMinusIds) {
@@ -1685,10 +1693,6 @@ struct taggingHFE {
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
             // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
-            continue;
-          }
-
-          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
             continue;
           }
 
@@ -1748,10 +1752,6 @@ struct taggingHFE {
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
             // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
-            continue;
-          }
-
-          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
             continue;
           }
 
@@ -2055,7 +2055,8 @@ struct taggingHFE {
         auto mcele = ele.template mcParticle_as<aod::McParticles>();
         auto mcMother = mcele.template mothers_as<aod::McParticles>()[0];
         bool isMotherFromB = IsFromBeauty(mcMother, mcParticles) > -1;
-        auto mcCollision = mcele.template mcCollision_as<aod::McCollisions>();
+        auto mcCollision_mcele = mcele.template mcCollision_as<aod::McCollisions>();
+        bool isCorrectCollision = mcCollision_mcele.globalIndex() == mcCollision_from_collision.globalIndex();
 
         bool is_e_from_dy = std::abs(mcMother.pdgCode()) == 23;    // virtual photon is Z in simulation.
         bool is_e_from_jpsi = std::abs(mcMother.pdgCode()) == 443; // e from prompt J/psi is treated as the same as Z. // e from nonprompt J/psi is treated as the same as B. // B+ -> J/psi K+ -> e+ e- K+
@@ -2065,9 +2066,13 @@ struct taggingHFE {
           continue;
         }
 
-        leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision.getSubGeneratorId(),
+        if ((is_e_from_dy || is_e_from_jpsi) && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+          continue;
+        }
+
+        leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision_mcele.getSubGeneratorId(),
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
-                    isMotherFromB, mcMother.pdgCode());
+                    isMotherFromB, mcMother.pdgCode(), isCorrectCollision);
 
         for (const auto& kaonId : kaonMinusIds) {
           auto kaon = tracks.rawIteratorAt(kaonId);
@@ -2110,10 +2115,6 @@ struct taggingHFE {
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
             // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
-            continue;
-          }
-
-          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
             continue;
           }
 
@@ -2174,10 +2175,6 @@ struct taggingHFE {
             // 1. truely found HF->eh (SV should found by eh, and truely found.) For signal sample in ML.
             // 2. mistakenly found DY->eh (SV should not be found by eh, but found.) For bkg sample in ML.
             // 3. truely found DY->ee with misidentified ee. (SV may be found at the same position of PV.) For bkg sample in ML.
-            continue;
-          }
-
-          if (!foundCommonMother && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
             continue;
           }
 

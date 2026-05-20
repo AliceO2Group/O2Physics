@@ -106,6 +106,7 @@ struct LfCascpostprocessing {
     AxisSpec ptAxisTopoVar = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis etaAxis{"etaAxis", {40, -2.0f, 2.0f}, "#eta"};
+    AxisSpec pdgCodeAxis = {10001, -5000.5f, 5000.5f, "MC PDG code (0 = no MC assoc.)"};
 
     ConfigurableAxis centFT0MAxis{"centFT0MAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
@@ -238,6 +239,9 @@ struct LfCascpostprocessing {
       registry.add("hCascPlusMassvsPtBG", "hCascPlusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
       registry.add("hCascMinusMassvsPtBG_FT0M", "hCascMinusMassvsPtBG_FT0M", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
       registry.add("hCascPlusMassvsPtBG_FT0M", "hCascPlusMassvsPtBG_FT0M", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
+      registry.add("hMisidentifiedCascPdgCode", "hMisidentifiedCascPdgCode", {HistType::kTH1F, {pdgCodeAxis}});
+      registry.add("hMisidentifiedCascMinusPdgCode", "hMisidentifiedCascMinusPdgCode", {HistType::kTH1F, {pdgCodeAxis}});
+      registry.add("hMisidentifiedCascPlusPdgCode", "hMisidentifiedCascPlusPdgCode", {HistType::kTH1F, {pdgCodeAxis}});
       registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
       registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
       registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
@@ -513,6 +517,15 @@ struct LfCascpostprocessing {
       // registry.fill(HIST("hPosITSHits"), candidate.positshits());
       // registry.fill(HIST("hNegITSHits"), candidate.negitshits());
       // registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
+
+      if (isMC && !isCorrectlyRec) {
+        registry.fill(HIST("hMisidentifiedCascPdgCode"), candidate.mcPdgCode());
+        if (candidate.sign() < 0) {
+          registry.fill(HIST("hMisidentifiedCascMinusPdgCode"), candidate.mcPdgCode());
+        } else if (candidate.sign() > 0) {
+          registry.fill(HIST("hMisidentifiedCascPlusPdgCode"), candidate.mcPdgCode());
+        }
+      }
 
       if (candidate.sign() < 0) {
         if (isMC) {

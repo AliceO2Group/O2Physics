@@ -660,6 +660,13 @@ struct FemtoUniverseEfficiencyBase {
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 4);
 
+      // TOF Matching efficiency
+      if (part.mLambda() == 1) {
+        registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPID"), part.pt());
+      } else {
+        registryTOFMatch.fill(HIST("part1/hTpcPt"), part.pt());
+      }
+
       // Get the coresponding MC particle
       const auto mcParticle = part.fdMCParticle();
 
@@ -696,12 +703,6 @@ struct FemtoUniverseEfficiencyBase {
       registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
       registryMCOrigin.fill(HIST("part1/hRecoPt"), part.pt());
       registryMCOrigin.fill(HIST("part1/hTruthPt"), mcParticle.pt());
-      // TOF Matching efficiency
-      if (part.mLambda() == 1) {
-        registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPID"), part.pt());
-      } else {
-        registryTOFMatch.fill(HIST("part1/hTpcPt"), part.pt());
-      }
     }
 
     if (!confIsSame) {
@@ -737,6 +738,13 @@ struct FemtoUniverseEfficiencyBase {
           }
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 4);
+
+        // TOF Matching efficiency
+        if (part.mLambda() == 1) {
+          registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPID"), part.pt());
+        } else {
+          registryTOFMatch.fill(HIST("part2/hTpcPt"), part.pt());
+        }
 
         // Get the coresponding MC particle
         const auto mcParticle = part.fdMCParticle();
@@ -774,12 +782,6 @@ struct FemtoUniverseEfficiencyBase {
         registryPDG.fill(HIST("part2/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
         registryMCOrigin.fill(HIST("part2/hRecoPt"), part.pt());
         registryMCOrigin.fill(HIST("part2/hTruthPt"), mcParticle.pt());
-        // TOF Matching efficiency
-        if (part.mLambda() == 1) {
-          registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPID"), part.pt());
-        } else {
-          registryTOFMatch.fill(HIST("part2/hTpcPt"), mcParticle.pt());
-        }
       }
     }
   }

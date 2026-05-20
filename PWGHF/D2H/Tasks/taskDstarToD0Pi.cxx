@@ -555,6 +555,11 @@ struct HfTaskDstarToD0Pi {
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, prong0.template mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
         auto ptMother = particleMother.pt();
+        int const pdgBhadMother = candDstarMcRec.pdgBhadMotherPart();
+        // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
+        if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
+          continue;
+        }
         if (qaEnabled) {
           registry.fill(HIST("QA/hPtSkimDstarGenSig"), ptMother); // generator level pt
           registry.fill(HIST("QA/hPtVsCentSkimDstarGenSig"), ptMother, centrality);
@@ -745,6 +750,12 @@ struct HfTaskDstarToD0Pi {
         auto idxBhadMotherPart = mcParticle.idxBhadMotherPart();
         auto bMother = rowsMcPartilces.rawIteratorAt(idxBhadMotherPart);
         auto ptBMother = bMother.pt();
+        int const pdgBhadMother = std::abs(bMother.pdgCode());
+
+        // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
+        if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
+          continue;
+        }
 
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {

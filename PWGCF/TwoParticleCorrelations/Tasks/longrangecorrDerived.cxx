@@ -54,39 +54,64 @@ struct LongrangecorrDerived {
   SliceCache cache;
   SGSelector sgSelector;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
-  Configurable<int> cfgPidMask{"cfgPidMask", 0, "Selection bitmask for the TPC particle"};
-  Configurable<int> cfgV0Mask{"cfgV0Mask", 0, "Selection bitmask for the V0 particle"};
-  Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
-  Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
-  Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
-  Configurable<bool> useGainCorr{"useGainCorr", true, "use gain calibration"};
+
+  struct : ConfigurableGroup {
+    Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
+    Configurable<int> cfgPidMask{"cfgPidMask", 0, "Selection bitmask for the TPC particle"};
+    Configurable<int> cfgV0Mask{"cfgV0Mask", 0, "Selection bitmask for the V0 particle"};
+    Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
+    Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
+    Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
+
+    Configurable<float> cfgTpcMinNclsFound{"cfgTpcMinNclsFound", 50.0f, ""};
+    Configurable<float> cfgTpcMinNCrossedRows{"cfgTpcMinNCrossedRows", 70.0f, ""};
+    Configurable<float> cfgTpcMaxChi2PerCluster{"cfgTpcMaxChi2PerCluster", 4.0f, ""};
+    Configurable<float> cfgTpcMaxDcaZ{"cfgTpcMaxDcaZ", 1.0f, ""};
+
+    Configurable<int> cfgMftCluster{"cfgMftCluster", 5, "cut on MFT Cluster"};
+    Configurable<float> cfgMftDcaxy{"cfgMftDcaxy", 2.0f, "cut on DCA xy for MFT tracks"};
+    Configurable<float> cfgMftDcaz{"cfgMftDcaz", 2.0f, "cut on DCA z for MFT tracks"};
+    Configurable<bool> cfgRejectAmbTrk{"cfgRejectAmbTrk", false, "Condition to reject Ambiguous tracks"};
+    Configurable<bool> cfgRejectNonAmbTrk{"cfgRejectNonAmbTrk", false, "Condition to reject Non-Ambiguous tracks"};
+  } cfgSel;
+
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity axis"};
+    ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
+    ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
+    ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
+    ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt assoc axis for histograms"};
+    ConfigurableAxis axisVtxZ{"axisVtxZ", {40, -20, 20}, "vertex axis"};
+    ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {96, 3.5, 4.9}, "#eta assoc axis"};
+    ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
+    ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
+    ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0}, "invariant mass axis"};
+    ConfigurableAxis axisInvMassQA{"axisInvMassQA", {20, 0.45, 0.55}, "invariant mass axis for QA"};
+    ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
+    ConfigurableAxis axisChannel{"axisChannel", {208, 0, 208}, "FT0 channel"};
+    ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
+    ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
+
+    ConfigurableAxis axisTPCNClsFound{"axisTPCNClsFound", {200, -0.5, 199.5}, "TPC Cluster axis"};
+    ConfigurableAxis axisTPCNClsCrossedRows{"axisTPCNClsCrossedRows", {200, -0.5, 199.5}, "TPC NCrossedRow axis"};
+    ConfigurableAxis axisTPCChi2NCl{"axisTPCChi2NCl", {20, 0.0, 20.0}, "TPC Chi2/NCl axis"};
+    ConfigurableAxis axisTPCdcaZ{"axisTPCdcaZ", {200, -10.0, 10.0}, "TPC dcaZ axis"};
+
+    ConfigurableAxis axisMFTAmbDegree{"axisMFTAmbDegree", {50, -0.5, 49.5}, "Track Ambiguity axis"};
+    ConfigurableAxis axisMFTNClusters{"axisMFTNClusters", {200, -0.5, 199.5}, "MFT Cluster axis"};
+    ConfigurableAxis axisMFTbestDCAXY{"axisMFTbestDCAXY", {200, -10.0, 10.0}, "MFT dcaXY axis"};
+    ConfigurableAxis axisMFTbestDCAZ{"axisMFTbestDCAZ", {200, -10.0, 10.0}, "MFT dcaZ axis"};
+
+    ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
+    ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
+    ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {1, 0.5, 8.0}, "pt axis for efficiency histograms"};
+  } cfgAxis;
 
   Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
   Configurable<float> cfgFt0aCut{"cfgFt0aCut", 100.0f, "FT0A threshold"};
   Configurable<float> cfgFt0cCut{"cfgFt0cCut", 50.0f, "FT0C threshold"};
   Configurable<float> cfgZdcCut{"cfgZdcCut", 0.1f, "ZDC threshold"};
   Configurable<int> cfgGapSideCut{"cfgGapSideCut", 0, "Gap-side A=0, C=1, AC = 2, No Gap = -1, All events = 3"};
-
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity axis"};
-  ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
-  ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt assoc axis for histograms"};
-  ConfigurableAxis axisVtxZ{"axisVtxZ", {40, -20, 20}, "vertex axis"};
-  ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {96, 3.5, 4.9}, "#eta assoc axis"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
-  ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0}, "invariant mass axis"};
-  ConfigurableAxis axisInvMassQA{"axisInvMassQA", {20, 0.45, 0.55}, "invariant mass axis for QA"};
-  ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
-  ConfigurableAxis axisChannel{"axisChannel", {208, 0, 208}, "FT0 channel"};
-  ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
-  ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
-
-  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
-  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
-  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
@@ -96,7 +121,6 @@ struct LongrangecorrDerived {
   using MftTrksTable = aod::LRMftTracks;
   using Ft0aTrksTable = aod::LRFt0aTracks;
   using Ft0cTrksTable = aod::LRFt0cTracks;
-  using MftbestTrksTable = aod::LRMftBestTracks;
   using V0TrksTable = aod::LRV0Tracks;
 
   using McCollsTable = aod::LRMcCollisions;
@@ -110,19 +134,16 @@ struct LongrangecorrDerived {
   using MftTrksUpcTable = aod::UpcLRMftTracks;
   using Ft0aTrksUpcTable = aod::UpcLRFt0aTracks;
   using Ft0cTrksUpcTable = aod::UpcLRFt0cTracks;
-  using MftbestTrksUpcTable = aod::UpcLRMftBestTracks;
   using V0TrksUpcTable = aod::UpcLRV0Tracks;
 
   Preslice<TrksTable> perColTpc = aod::lrcorrtrktable::lrCollisionId;
   Preslice<MftTrksTable> perColMft = aod::lrcorrtrktable::lrCollisionId;
-  Preslice<MftbestTrksTable> perColMftbest = aod::lrcorrtrktable::lrCollisionId;
   Preslice<Ft0aTrksTable> perColFt0a = aod::lrcorrtrktable::lrCollisionId;
   Preslice<Ft0cTrksTable> perColFt0c = aod::lrcorrtrktable::lrCollisionId;
   Preslice<V0TrksTable> perColV0 = aod::lrcorrtrktable::lrCollisionId;
 
   Preslice<TrksUpcTable> perUpcColTpc = aod::lrcorrtrktable::upcLRCollisionId;
   Preslice<MftTrksUpcTable> perUpcColMft = aod::lrcorrtrktable::upcLRCollisionId;
-  Preslice<MftbestTrksUpcTable> perUpcColMftbest = aod::lrcorrtrktable::upcLRCollisionId;
   Preslice<Ft0aTrksUpcTable> perUpcColFt0a = aod::lrcorrtrktable::upcLRCollisionId;
   Preslice<Ft0cTrksUpcTable> perUpcColFt0c = aod::lrcorrtrktable::upcLRCollisionId;
   Preslice<V0TrksUpcTable> perUpcColV0 = aod::lrcorrtrktable::upcLRCollisionId;
@@ -134,50 +155,86 @@ struct LongrangecorrDerived {
 
   void init(InitContext const&)
   {
-    std::vector<AxisSpec> corrAxis = {{axisVtxZ, "z-vtx (cm)"},
-                                      {axisMultiplicity, "multiplicity"},
-                                      {axisPtTrigger, "p_{T} (GeV/c)"},
-                                      {axisPtAssoc, "p_{T} (GeV/c)"},
-                                      {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                      {axisDeltaEta, "#Delta#eta"}};
-    std::vector<AxisSpec> effAxis = {{axisVertexEfficiency, "z-vtx (cm)"},
-                                     {axisPtEfficiency, "p_{T} (GeV/c)"},
-                                     {axisEtaEfficiency, "#eta"}};
-    std::vector<AxisSpec> userAxis = {{axisInvMass, "m (GeV/c^2)"}};
+    std::vector<AxisSpec> corrAxis = {{cfgAxis.axisVtxZ, "z-vtx (cm)"},
+                                      {cfgAxis.axisMultiplicity, "multiplicity"},
+                                      {cfgAxis.axisPtTrigger, "p_{T} (GeV/c)"},
+                                      {cfgAxis.axisPtAssoc, "p_{T} (GeV/c)"},
+                                      {cfgAxis.axisDeltaPhi, "#Delta#varphi (rad)"},
+                                      {cfgAxis.axisDeltaEta, "#Delta#eta"}};
+    std::vector<AxisSpec> effAxis = {{cfgAxis.axisVertexEfficiency, "z-vtx (cm)"},
+                                     {cfgAxis.axisPtEfficiency, "p_{T} (GeV/c)"},
+                                     {cfgAxis.axisEtaEfficiency, "#eta"}};
+    std::vector<AxisSpec> userAxis = {{cfgAxis.axisInvMass, "m (GeV/c^2)"}};
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
-    histos.add("hMultiplicity", "hMultiplicity", kTH1D, {axisMultiplicity});
-    histos.add("hCentrality", "hCentrality", kTH1D, {axisMultiplicity});
-    histos.add("hVertexZ", "hVertexZ", kTH1D, {axisVtxZ});
+    histos.add("hMultiplicity", "hMultiplicity", kTH1D, {cfgAxis.axisMultiplicity});
+    histos.add("hCentrality", "hCentrality", kTH1D, {cfgAxis.axisMultiplicity});
+    histos.add("hVertexZ", "hVertexZ", kTH1D, {cfgAxis.axisVtxZ});
 
     histos.add("hGapSide", "hGapSide", kTH1I, {{5, -0.5, 4.5}});
     histos.add("hTrueGapSide", "hTrueGapSide", kTH1I, {{6, -1.5, 4.5}});
     histos.add("hTrueGapSide_AfterSel", "hTrueGapSide_AfterSel", kTH1I, {{6, -1.5, 4.5}});
 
-    histos.add("Trig_eta", "Trig_eta", kTH1D, {axisEtaTrig});
-    histos.add("Trig_phi", "Trig_phi", kTH1D, {axisPhi});
-    histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {axisPhi, axisEtaTrig});
-    histos.add("Trig_pt", "Trig_pt", kTH1D, {axisPtTrigger});
-    histos.add("Trig_invMass", "Trig_invMass", kTH1D, {axisInvMassQA});
-    histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {axisVtxZ, axisMultiplicity, axisPtTrigger, axisInvMass});
-    histos.add("Trig_amp", "Trig_amp", kTH1D, {axisAmplitude});
-    histos.add("Trig_amp_gaincorrected", "Trig_amp_gaincorrected", kTH1D, {axisAmplitude});
-    histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {axisChannel, axisAmplitude});
-    histos.add("Channel_vs_Trig_amp_gaincorrected", "Channel_vs_Trig_amp_gaincorrected", kTH2D, {axisChannel, axisAmplitude});
+    histos.add("Trig_eta", "Trig_eta", kTH1D, {cfgAxis.axisEtaTrig});
+    histos.add("Trig_phi", "Trig_phi", kTH1D, {cfgAxis.axisPhi});
+    histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaTrig});
+    histos.add("Trig_pt", "Trig_pt", kTH1D, {cfgAxis.axisPtTrigger});
+    histos.add("Trig_invMass", "Trig_invMass", kTH1D, {cfgAxis.axisInvMassQA});
+    histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
+    histos.add("Trig_amp", "Trig_amp", kTH1D, {cfgAxis.axisAmplitude});
+    histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
-    histos.add("Assoc_eta", "Assoc_eta", kTH1D, {axisEtaAssoc});
-    histos.add("Assoc_phi", "Assoc_phi", kTH1D, {axisPhi});
-    histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {axisPhi, axisEtaAssoc});
-    histos.add("Assoc_pt", "Assoc_pt", kTH1D, {axisPtAssoc});
-    histos.add("Assoc_amp", "Assoc_amp", kTH1D, {axisAmplitude});
-    histos.add("Assoc_amp_gaincorrected", "Assoc_amp_gaincorrected", kTH1D, {axisAmplitude});
-    histos.add("Channel_vs_Assoc_amp", "Channel_vs_Assoc_amp", kTH2D, {axisChannel, axisAmplitude});
-    histos.add("Channel_vs_Assoc_amp_gaincorrected", "Channel_vs_Assoc_amp_gaincorrected", kTH2D, {axisChannel, axisAmplitude});
+    histos.add("Assoc_eta", "Assoc_eta", kTH1D, {cfgAxis.axisEtaAssoc});
+    histos.add("Assoc_phi", "Assoc_phi", kTH1D, {cfgAxis.axisPhi});
+    histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaAssoc});
+    histos.add("Assoc_pt", "Assoc_pt", kTH1D, {cfgAxis.axisPtAssoc});
+    histos.add("Assoc_amp", "Assoc_amp", kTH1D, {cfgAxis.axisAmplitude});
+    histos.add("Channel_vs_Assoc_amp", "Channel_vs_Assoc_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
-    histos.add("deltaEta_deltaPhi_same", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
-    histos.add("deltaEta_deltaPhi_mixed", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
+    histos.add("deltaEta_deltaPhi_same", "deltaEta_deltaPhi_same", kTH2D, {cfgAxis.axisDeltaPhi, cfgAxis.axisDeltaEta});
+    histos.add("deltaEta_deltaPhi_mixed", "deltaEta_deltaPhi_mixed", kTH2D, {cfgAxis.axisDeltaPhi, cfgAxis.axisDeltaEta});
+
+    histos.add("TPCNClsFound", "TPCNClsFound", kTH1D, {cfgAxis.axisTPCNClsFound});
+    histos.add("TPCNClsCrossedRows", "TPCNClsCrossedRows", kTH1D, {cfgAxis.axisTPCNClsCrossedRows});
+    histos.add("TPCChi2NCl", "TPCChi2NCl", kTH1D, {cfgAxis.axisTPCChi2NCl});
+    histos.add("TPCdcaZ", "TPCdcaZ", kTH1D, {cfgAxis.axisTPCdcaZ});
+
+    histos.add("MFTAmbDegree", "MFTAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
+    histos.add("MFTNClusters", "MFTNClusters", kTH1D, {cfgAxis.axisMFTNClusters});
+    histos.add("MFTbestDCAXY", "MFTbestDCAXY", kTH1D, {cfgAxis.axisMFTbestDCAXY});
+    histos.add("MFTbestDCAZ", "MFTbestDCAZ", kTH1D, {cfgAxis.axisMFTbestDCAZ});
+  }
+
+  template <typename TTrack>
+  bool isTrackSelected(TTrack const& track)
+  {
+    if constexpr (requires { track.tpcNClsFound(); }) {
+      if (track.tpcNClsFound() < cfgSel.cfgTpcMinNclsFound)
+        return false;
+      if (track.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows)
+        return false;
+      if (track.tpcChi2NCl() > cfgSel.cfgTpcMaxChi2PerCluster)
+        return false;
+      if (std::abs(track.dcaZ()) > cfgSel.cfgTpcMaxDcaZ)
+        return false;
+      return true;
+    } else if constexpr (requires { track.nClusters(); }) {
+      if (track.nClusters() < cfgSel.cfgMftCluster)
+        return false;
+      if (std::abs(track.bestDCAXY()) >= cfgSel.cfgMftDcaxy)
+        return false;
+      if (std::abs(track.bestDCAZ()) >= cfgSel.cfgMftDcaz)
+        return false;
+      if (cfgSel.cfgRejectAmbTrk && track.ambDegree() > 1)
+        return false;
+      if (cfgSel.cfgRejectNonAmbTrk && track.ambDegree() == 1)
+        return false;
+      return true;
+    } else {
+      return true;
+    }
   }
 
   template <typename TCollision>
@@ -199,13 +256,23 @@ struct LongrangecorrDerived {
     if constexpr (requires { track.channelID(); }) {
       histos.fill(HIST("Trig_amp"), track.amplitude());
       histos.fill(HIST("Channel_vs_Trig_amp"), track.channelID(), track.amplitude());
-      histos.fill(HIST("Trig_amp_gaincorrected"), track.gainAmplitude());
-      histos.fill(HIST("Channel_vs_Trig_amp_gaincorrected"), track.channelID(), track.gainAmplitude());
     } else {
       histos.fill(HIST("Trig_pt"), track.pt());
     }
     if constexpr (requires { track.invMass(); }) {
       histos.fill(HIST("Trig_invMass"), track.invMass());
+    }
+    if constexpr (requires { track.tpcNClsFound(); }) {
+      histos.fill(HIST("TPCNClsFound"), track.tpcNClsFound());
+      histos.fill(HIST("TPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("TPCChi2NCl"), track.tpcChi2NCl());
+      histos.fill(HIST("TPCdcaZ"), track.dcaZ());
+    }
+    if constexpr (requires { track.nClusters(); }) {
+      histos.fill(HIST("MFTNClusters"), track.nClusters());
+      histos.fill(HIST("MFTbestDCAXY"), track.bestDCAXY());
+      histos.fill(HIST("MFTbestDCAZ"), track.bestDCAZ());
+      histos.fill(HIST("MFTAmbDegree"), track.ambDegree());
     }
   }
 
@@ -218,10 +285,14 @@ struct LongrangecorrDerived {
     if constexpr (requires { track.channelID(); }) {
       histos.fill(HIST("Assoc_amp"), track.amplitude());
       histos.fill(HIST("Channel_vs_Assoc_amp"), track.channelID(), track.amplitude());
-      histos.fill(HIST("Assoc_amp_gaincorrected"), track.gainAmplitude());
-      histos.fill(HIST("Channel_vs_Assoc_amp_gaincorrected"), track.channelID(), track.gainAmplitude());
     } else {
       histos.fill(HIST("Assoc_pt"), track.pt());
+    }
+    if constexpr (requires { track.nClusters(); }) {
+      histos.fill(HIST("MFTNClusters"), track.nClusters());
+      histos.fill(HIST("MFTbestDCAXY"), track.bestDCAXY());
+      histos.fill(HIST("MFTbestDCAZ"), track.bestDCAZ());
+      histos.fill(HIST("MFTAmbDegree"), track.ambDegree());
     }
   }
 
@@ -249,25 +320,26 @@ struct LongrangecorrDerived {
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       if constexpr (requires { triggerTrack.channelID(); }) {
-        if (useGainCorr)
-          trigAmpl = triggerTrack.gainAmplitude();
-        else
-          trigAmpl = triggerTrack.amplitude();
+        trigAmpl = triggerTrack.amplitude();
       } else {
         trigAmpl = 1.0;
       }
+
+      if (!isTrackSelected(triggerTrack))
+        continue;
+
       if constexpr (requires { triggerTrack.trackType(); }) {
-        if (cfgPidMask != 0 && (cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
+        if (cfgSel.cfgPidMask != 0 && (cfgSel.cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
           continue;
       } else if constexpr (requires { triggerTrack.v0Type(); }) {
-        if (cfgV0Mask != 0 && (cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
+        if (cfgSel.cfgV0Mask != 0 && (cfgSel.cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
           continue;
       }
       if (!mixing) {
         fillTrigTrackQA(triggerTrack);
         if constexpr (requires { triggerTrack.channelID(); }) {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl);
-        } else if constexpr (requires { triggerTrack.v0Type(); }) {
+        } else if constexpr (requires { triggerTrack.invMass(); }) {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl);
         } else {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
@@ -275,14 +347,15 @@ struct LongrangecorrDerived {
       }
       for (auto const& assoTrack : assocs) {
         auto assoAmpl = 1.0f;
-        if constexpr (requires { assoTrack.v0Type(); }) {
-          if (useGainCorr)
-            assoAmpl = assoTrack.gainAmplitude();
-          else
-            assoAmpl = assoTrack.amplitude();
+        if constexpr (requires { assoTrack.channelID(); }) {
+          assoAmpl = assoTrack.amplitude();
         } else {
           assoAmpl = 1.0f;
         }
+
+        if (!isTrackSelected(assoTrack))
+          continue;
+
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (!mixing) {
@@ -305,13 +378,13 @@ struct LongrangecorrDerived {
   template <typename TCollision, typename TTriggers, typename TAssocs>
   void processSame(TCollision const& col, TTriggers const& triggers, TAssocs const& assocs)
   {
-    if (std::abs(col.posZ()) >= cfgVtxCut) {
+    if (std::abs(col.posZ()) >= cfgSel.cfgVtxCut) {
       return;
     }
     fillCollQA(col);
     auto multiplicity = 1.0f;
     if constexpr (requires { col.centrality(); }) {
-      if (isUseCentEst)
+      if (cfgSel.isUseCentEst)
         multiplicity = col.centrality();
       else
         multiplicity = col.multiplicity();
@@ -334,7 +407,7 @@ struct LongrangecorrDerived {
       }
       auto multiplicity = 1.0f;
       if constexpr (requires { col.centrality(); }) {
-        if (isUseCentEst)
+        if (cfgSel.isUseCentEst)
           multiplicity = col.centrality();
         else
           multiplicity = col.multiplicity();
@@ -344,11 +417,11 @@ struct LongrangecorrDerived {
       return multiplicity;
     };
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}, true};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
-    Pair<TCollision, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, cols, tracksTuple, &cache};
+    Pair<TCollision, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgSel.cfgNmixedevent, -1, cols, tracksTuple, &cache};
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [col1, tracks1, col2, tracks2] = *it;
       if constexpr (requires { col1.gapSide(); } || requires { col2.gapSide(); }) {
@@ -365,14 +438,14 @@ struct LongrangecorrDerived {
   template <typename TTriggers, typename TAssocs>
   void processMcSame(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, TTriggers const& triggers, TAssocs const& assocs)
   {
-    if (std::abs(mccollision.posZ()) >= cfgVtxCut) {
+    if (std::abs(mccollision.posZ()) >= cfgSel.cfgVtxCut) {
       return;
     }
     fillCollQA(mccollision);
     auto multiplicity = mccollision.multiplicity();
-    if (isUseDataLikeMult > 0) {
+    if (cfgSel.isUseDataLikeMult > 0) {
       for (const auto& collision : collisions) {
-        if (isUseCentEst)
+        if (cfgSel.isUseCentEst)
           multiplicity = collision.centrality();
         else
           multiplicity = collision.multiplicity();
@@ -384,7 +457,7 @@ struct LongrangecorrDerived {
   template <typename... TrackTypes>
   void processMcMixed(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, TrackTypes&&... tracks)
   {
-    bool useMCMultiplicity = (isUseDataLikeMult == 0);
+    bool useMCMultiplicity = (cfgSel.isUseDataLikeMult == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
         if (useMCMultiplicity)
@@ -392,18 +465,18 @@ struct LongrangecorrDerived {
         auto groupedCollisions = collisions.sliceByCached(aod::lrcorrcolltable::lrMcCollisionId, col.globalIndex(), this->cache);
         if (groupedCollisions.size() == 0)
           return -1.0f;
-        if (isUseCentEst)
+        if (cfgSel.isUseCentEst)
           return groupedCollisions.begin().centrality();
         else
           return groupedCollisions.begin().multiplicity();
       };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}, true};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
-    Pair<McCollsTable, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, mccollisions, tracksTuple, &cache};
+    Pair<McCollsTable, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgSel.cfgNmixedevent, -1, mccollisions, tracksTuple, &cache};
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [col1, tracks1, col2, tracks2] = *it;
       float eventweight = 1.0f / it.currentWindowNeighbours();
@@ -442,21 +515,6 @@ struct LongrangecorrDerived {
     processSame(col, tracks, mfts);
   }
 
-  void processTpcmftbestSE(CollsTable::iterator const& col, TrksTable const& tracks, MftbestTrksTable const& mfts)
-  {
-    processSame(col, tracks, mfts);
-  }
-
-  void processMftbestft0aSE(CollsTable::iterator const& col, MftbestTrksTable const& mfts, Ft0aTrksTable const& ft0as)
-  {
-    processSame(col, mfts, ft0as);
-  }
-
-  void processV0mftbestSE(CollsTable::iterator const& col, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
-  {
-    processSame(col, tracks, mfts);
-  }
-
   void processFt0aft0cSE(CollsTable::iterator const& col, Ft0aTrksTable const& ft0as, Ft0cTrksTable const& ft0cs)
   {
     processSame(col, ft0as, ft0cs);
@@ -488,21 +546,6 @@ struct LongrangecorrDerived {
   }
 
   void processV0mftME(CollsTable const& cols, V0TrksTable const& tracks, MftTrksTable const& mfts)
-  {
-    processMixed(cols, tracks, mfts);
-  }
-
-  void processTpcmftbestME(CollsTable const& cols, TrksTable const& tracks, MftbestTrksTable const& mfts)
-  {
-    processMixed(cols, tracks, mfts);
-  }
-
-  void processMftbestft0aME(CollsTable const& cols, MftbestTrksTable const& mfts, Ft0aTrksTable const& ft0as)
-  {
-    processMixed(cols, mfts, ft0as);
-  }
-
-  void processV0mftbestME(CollsTable const& cols, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
   {
     processMixed(cols, tracks, mfts);
   }
@@ -560,30 +603,6 @@ struct LongrangecorrDerived {
     processSame(col, tracks, mfts);
   }
 
-  void processUpcTpcmftbestSE(UpcCollsTable::iterator const& col, TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
-  {
-    if (!isUpcEventSelected<true>(col)) {
-      return;
-    }
-    processSame(col, tracks, mfts);
-  }
-
-  void processUpcMftbestft0aSE(UpcCollsTable::iterator const& col, MftbestTrksUpcTable const& mfts, Ft0aTrksUpcTable const& ft0as)
-  {
-    if (!isUpcEventSelected<true>(col)) {
-      return;
-    }
-    processSame(col, mfts, ft0as);
-  }
-
-  void processUpcV0mftbestSE(UpcCollsTable::iterator const& col, V0TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
-  {
-    if (!isUpcEventSelected<true>(col)) {
-      return;
-    }
-    processSame(col, tracks, mfts);
-  }
-
   void processUpcTpcft0aME(UpcCollsTable const& cols, TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
   {
     processMixed(cols, tracks, ft0as);
@@ -610,21 +629,6 @@ struct LongrangecorrDerived {
   }
 
   void processUpcV0mftME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
-  {
-    processMixed(cols, tracks, mfts);
-  }
-
-  void processUpcTpcmftbestME(UpcCollsTable const& cols, TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
-  {
-    processMixed(cols, tracks, mfts);
-  }
-
-  void processUpcMftbestft0aME(UpcCollsTable const& cols, MftbestTrksUpcTable const& mfts, Ft0aTrksUpcTable const& ft0as)
-  {
-    processMixed(cols, mfts, ft0as);
-  }
-
-  void processUpcV0mftbestME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
   {
     processMixed(cols, tracks, mfts);
   }
@@ -691,12 +695,6 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processV0ft0aME, "mixed event V0 vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftSE, "same event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftME, "mixed event V0 vs MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftbestSE, "same event TPC vs best MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftbestME, "mixed event TPC vs best MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aSE, "same event best MFT vs FT0A", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aME, "mixed event best MFT vs FT0A", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestSE, "same event V0 vs best MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestME, "mixed event V0 vs best MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processFt0aft0cSE, "same event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processFt0aft0cME, "mixed event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0aSE, "same UPC event TPC vs FT0A", false);
@@ -711,12 +709,6 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0aME, "mixed UPC event V0 vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftSE, "same UPC event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftME, "mixed UPC event V0 vs MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcmftbestSE, "same UPC event TPC vs best MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcmftbestME, "mixed UPC event TPC vs best MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processUpcMftbestft0aSE, "same UPC event best MFT vs FT0A", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processUpcMftbestft0aME, "mixed UPC event best MFT vs FT0A", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftbestSE, "same UPC event V0 vs best MFT", false);
-  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftbestME, "mixed UPC event V0 vs best MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0aSE, "same MC event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0aME, "mixed MC event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0cSE, "same MC event TPC vs FT0C", false);
