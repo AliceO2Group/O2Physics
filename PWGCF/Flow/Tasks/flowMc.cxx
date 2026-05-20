@@ -101,6 +101,7 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgIsGlobalTrack, bool, false, "Use global tracks instead of hasTPC&&hasITS")
   O2_DEFINE_CONFIGURABLE(cfgK0Lambda0Enabled, bool, false, "Add K0 and Lambda0, for bulk particle efficiency please keep off")
   O2_DEFINE_CONFIGURABLE(cfgAcceptSecondaries, bool, false, "Accept secondary particles produced from decays")
+  O2_DEFINE_CONFIGURABLE(cfgRequireTOF, bool, false, "Require that reconstructed tracks have TOF for resonance decays")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
@@ -749,20 +750,22 @@ struct FlowMc {
             histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
           if (pdgCode == PDG_t::kLambda0)
             histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
-          if (mcParticle.has_mothers()) {
-            for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
-              if (!m.isPhysicalPrimary())
-                continue;
-              if (pdgCode == PDG_t::kPiPlus) {
-                if (m.pdgCode() == PDG_t::kK0Short) {
-                  histos.fill(HIST("hPtNchGlobalK0Pions"), mcParticle.pt(), nChGlobal);
+          if (!cfgRequireTOF || (cfgRequireTOF && validTOFTrack)) {
+            if (mcParticle.has_mothers()) {
+              for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
+                if (!m.isPhysicalPrimary())
+                  continue;
+                if (pdgCode == PDG_t::kPiPlus) {
+                  if (m.pdgCode() == PDG_t::kK0Short) {
+                    histos.fill(HIST("hPtNchGlobalK0Pions"), mcParticle.pt(), nChGlobal);
+                  }
+                  if (m.pdgCode() == PDG_t::kLambda0) {
+                    histos.fill(HIST("hPtNchGlobalLambdaPions"), mcParticle.pt(), nChGlobal);
+                  }
                 }
-                if (m.pdgCode() == PDG_t::kLambda0) {
-                  histos.fill(HIST("hPtNchGlobalLambdaPions"), mcParticle.pt(), nChGlobal);
-                }
+                if (pdgCode == PDG_t::kProton && m.pdgCode() == PDG_t::kLambda0)
+                  histos.fill(HIST("hPtNchGlobalLambdaProtons"), mcParticle.pt(), nChGlobal);
               }
-              if (pdgCode == PDG_t::kProton && m.pdgCode() == PDG_t::kLambda0)
-                histos.fill(HIST("hPtNchGlobalLambdaProtons"), mcParticle.pt(), nChGlobal);
             }
           }
         }
