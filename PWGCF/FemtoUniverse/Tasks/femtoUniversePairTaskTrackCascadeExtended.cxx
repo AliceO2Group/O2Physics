@@ -1222,33 +1222,32 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       int pdgCode = static_cast<int>(part.pidCut());
       if ((confCascType1 == 0 && pdgCode != kOmegaMinus) || (confCascType1 == 2 && pdgCode != kOmegaPlusBar) || (confCascType1 == 1 && pdgCode != kXiMinus) || (confCascType1 == 3 && pdgCode != kXiPlusBar))
         continue;
-
       cascQAHistos.fillQA<false, false>(part);
+    }
 
-      for (const auto& part : groupPartsOne) {
-        int pdgCode = static_cast<int>(part.pidCut());
-        if (pdgCode != trackparticleconfigs.confTrkPDGCodePartOne)
-          continue;
-        const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
-        if (!pdgTrackParticle) {
-          continue;
-        }
-
-        if (pdgTrackParticle->Charge() > 0) {
-          trackHistoPartOnePos.fillQA<false, false>(part);
-        } else if (pdgTrackParticle->Charge() < 0) {
-          trackHistoPartOneNeg.fillQA<false, false>(part);
-        }
+    for (const auto& part : groupPartsOne) {
+      int pdgCode = static_cast<int>(part.pidCut());
+      if (pdgCode != trackparticleconfigs.confTrkPDGCodePartOne)
+        continue;
+      const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgTrackParticle) {
+        continue;
       }
 
-      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (static_cast<int>(p1.pidCut()) != trackparticleconfigs.confTrkPDGCodePartOne)
-          continue;
-        int pdgCodeCasc = static_cast<int>(p2.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
-          continue;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      if (pdgTrackParticle->Charge() > 0) {
+        trackHistoPartOnePos.fillQA<false, false>(part);
+      } else if (pdgTrackParticle->Charge() < 0) {
+        trackHistoPartOneNeg.fillQA<false, false>(part);
       }
+    }
+
+    for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (static_cast<int>(p1.pidCut()) != trackparticleconfigs.confTrkPDGCodePartOne)
+        continue;
+      int pdgCodeCasc = static_cast<int>(p2.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
+        continue;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCgen, "Enable processing same event MC truth for track - cascade", false);
