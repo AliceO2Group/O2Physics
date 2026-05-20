@@ -263,11 +263,10 @@ struct flowQC {
 
     float centrality = getCentrality(collision);
 
-    const bool quadraticResponse = cfgQuadraticResponse;
-    auto maybeSquare = [quadraticResponse](float value) {
-      return quadraticResponse ? value * value : value;
+    auto maybeSquare = [this](float value) {
+      return cfgQuadraticResponse ? value * value : value;
     };
-    const float qvecHarmonic = quadraticResponse ? (cfgHarmonic.value / 2.f) : cfgHarmonic.value;
+    const float qvecHarmonic = cfgQuadraticResponse ? (cfgHarmonic.value / 2.f) : cfgHarmonic.value;
     const int qvecHarmonicIndex = static_cast<int>(qvecHarmonic) - 2;
 
     // EP method
