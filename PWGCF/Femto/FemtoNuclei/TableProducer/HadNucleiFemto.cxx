@@ -185,14 +185,16 @@ struct HadNucleiFemto {
   Configurable<float> settingCutNsigmaTOFTPCHad{"settingCutNsigmaTOFTPCHad", 3.0f, "Value of the hsdron TOF TPC combNsigma cut"};
   Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut for rejection"};
   Configurable<float> settingCutNsigTPCPiMin{"settingCutNsigTPCPiMin", 3.0f, "Minimum TPC Pi Nsigma cut for rejection"};
+  Configurable<float> settingCutNsigTPCKaMin{"settingCutNsigTPCKaMin", 3.0f, "Minimum TPC Ka Nsigma cut for rejection"};
   Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut for rejection"};
   Configurable<float> settingCutNsigTOFPiMin{"settingCutNsigTOFPiMin", 3.0f, "Minimum TOF Pi Nsigma cut for rejection"};
+  Configurable<float> settingCutNsigTOFKaMin{"settingCutNsigTOFKaMin", 3.0f, "Minimum TOF Ka Nsigma cut for rejection"};
+  Configurable<bool> settingUsePionReferencePIDCuts{"settingUsePionReferencePIDCuts", false, "If true, use the reference pion track/PID cuts from the pi-p study"};
   // Deuteron purity and PID cuts
   Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
   Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
   Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
   Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
-  Configurable<float> settingCutDeDCAzMin{"settingCutDeDCAzMin", 0.2f, "DCAxy Min for De"};
   Configurable<float> settingCutPinMinTOFITSDe{"settingCutPinMinTOFITSDe", 1.2f, "Minimum p to apply the TOF ITS cut on De"};
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
   Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
@@ -255,11 +257,11 @@ struct HadNucleiFemto {
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
 
      // Candidate topology and kinematics
-     {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
+     {"hTrackSel", "Accepted hadron tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
+     {"hTrackSelDe", "Accepted deuteron tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
 
      {"hdcaxyNu", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-     {"hdcazNu_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsNuITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
@@ -298,18 +300,23 @@ struct HadNucleiFemto {
      {"h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"h2NsigmaHadTOF", "NsigmaHad TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 5.0f}}}},
      {"h2NsigmaHadPrTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPiTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadKaTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPrTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPiTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadKaTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
 
      // Purity
      {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
      {"purity/h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaNuComb_preselection", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 5.0f}}}},
      {"purity/h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 5.0f}}}},
 
      // Hypertriton
      {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
@@ -409,6 +416,7 @@ struct HadNucleiFemto {
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
       mQaRegistry.get<TH1>(HIST("hTrackSel"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i].c_str());
+      mQaRegistry.get<TH1>(HIST("hTrackSelDe"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i].c_str());
     }
 
     std::vector<std::string> eventsLabels = {"All", "Selected", "Zorro De events"};
@@ -498,7 +506,7 @@ struct HadNucleiFemto {
       return false;
     }
     const int minTPCNClsFound = 90;
-    const int minTPCNClsCrossedRows = 100;
+    const int minTPCNClsCrossedRows = 70;
     const float crossedRowsToFindableRatio = 0.83f;
     if (candidate.itsNCls() < settingCutNCls ||
         candidate.tpcNClsFound() < minTPCNClsFound ||
@@ -507,6 +515,87 @@ struct HadNucleiFemto {
         candidate.tpcChi2NCl() > settingCutChi2tpcHigh ||
         candidate.tpcChi2NCl() < settingCutChi2tpcLow ||
         candidate.itsChi2NCl() > settingCutChi2NClITS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool useReferencePionCuts() const
+  {
+    return settingUsePionReferencePIDCuts.value && settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus);
+  }
+
+  template <typename Ttrack>
+  bool selectTrackPionReference(const Ttrack& candidate)
+  {
+    constexpr float pionRefPtMin = 0.14f;
+    constexpr float pionRefPtMax = 2.5f;
+    constexpr int pionRefITSInnerBarrelMin = 3;
+    constexpr int pionRefITSNClsMin = 7;
+    constexpr int pionRefTPCNClsFoundMin = 80;
+    constexpr int pionRefTPCCrossedRowsMin = 90;
+
+    if (std::abs(candidate.eta()) > settingCutEta) {
+      return false;
+    }
+
+    const float absPt = std::abs(candidate.pt());
+    if (absPt < pionRefPtMin || absPt > pionRefPtMax) {
+      return false;
+    }
+
+    if (candidate.itsNClsInnerBarrel() < pionRefITSInnerBarrelMin ||
+        candidate.itsNCls() < pionRefITSNClsMin ||
+        candidate.tpcNClsFound() < pionRefTPCNClsFoundMin ||
+        candidate.tpcNClsCrossedRows() < pionRefTPCCrossedRowsMin) {
+      return false;
+    }
+
+    if (absPt <= 0.f) {
+      return false;
+    }
+
+    const float pionDCAxyMax = 0.004f + 0.013f / absPt;
+    const float pionDCAzMax = 0.004f + 0.013f / absPt;
+    if (std::abs(candidate.dcaXY()) > pionDCAxyMax || std::abs(candidate.dcaZ()) > pionDCAzMax) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename Ttrack>
+  bool selectTrackHadron(const Ttrack& candidate)
+  {
+    if (useReferencePionCuts()) {
+      return selectTrackPionReference(candidate);
+    }
+    return selectTrack(candidate);
+  }
+
+  template <typename Ttrack>
+  bool selectTrackDe(const Ttrack& candidate)
+  {
+    if (std::abs(candidate.eta()) > settingCutEta) {
+      return false;
+    }
+
+    constexpr int minTPCNClsFound = 110;
+    constexpr int minTPCNClsCrossedRows = 100;
+    constexpr float minTPCCrossedRowsOverFound = 0.f;
+    constexpr int maxTPCNClsShared = 160;
+    constexpr float maxSharedTPCFraction = 1.f;
+    constexpr int minITSNClsInnerBarrel = 1;
+    const float tpcCrossedRowsOverFound = candidate.tpcNClsFound() > 0 ? static_cast<float>(candidate.tpcNClsCrossedRows()) / candidate.tpcNClsFound() : 0.f;
+
+    if (candidate.tpcNClsFound() < minTPCNClsFound ||
+        candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
+        tpcCrossedRowsOverFound < minTPCCrossedRowsOverFound ||
+        candidate.tpcNClsShared() > maxTPCNClsShared ||
+        candidate.tpcFractionSharedCls() > maxSharedTPCFraction ||
+        candidate.itsNCls() < settingCutNCls ||
+        candidate.itsNClsInnerBarrel() < minITSNClsInnerBarrel) {
       return false;
     }
 
@@ -567,6 +656,42 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDPion(const Ttrack& candidate)
   {
+    if (useReferencePionCuts()) {
+      constexpr float pionRefPCombMin = 0.5f;
+      constexpr float pionRefTPCNsigmaMax = 3.0f;
+      constexpr float pionRefCombNsigmaMax = 3.0f;
+
+      const float tpcNSigmaPi = candidate.tpcNSigmaPi();
+      const float absP = std::abs(candidate.p());
+      mQaRegistry.fill(HIST("h2NsigmaHadTPC_preselection"), candidate.sign() * candidate.tpcInnerParam(), tpcNSigmaPi);
+
+      if (absP <= pionRefPCombMin) {
+        if (std::abs(tpcNSigmaPi) > pionRefTPCNsigmaMax) {
+          return false;
+        }
+        mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
+        mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
+        return true;
+      }
+
+      if (!candidate.hasTOF()) {
+        return false;
+      }
+
+      const float tofNSigmaPi = candidate.tofNSigmaPi();
+      const float combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaHadTOF_preselection"), candidate.sign() * candidate.pt(), tofNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaHadComb_preselection"), candidate.sign() * candidate.pt(), combNsigma);
+      if (combNsigma > pionRefCombNsigmaMax) {
+        return false;
+      }
+      mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaHadComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
+      return true;
+    }
+
     if (std::abs(candidate.dcaXY()) > settingCutHadDCAxyMin || std::abs(candidate.dcaZ()) > settingCutHadDCAzMin)
       return false;
 
@@ -574,15 +699,23 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("h2NsigmaHadTPC_preselection"), candidate.sign() * candidate.tpcInnerParam(), tpcNSigmaPi);
     if (std::abs(candidate.pt()) < settingCutHadptMin || std::abs(candidate.pt()) > settingCutHadptMax)
       return false;
-    // reject protons
+    // reject protons and kaons
     if (std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin)
       return false;
+    if (std::abs(candidate.tpcNSigmaKa()) < settingCutNsigTPCKaMin)
+      return false;
     mQaRegistry.fill(HIST("h2NsigmaHadPrTPC"), candidate.tpcNSigmaPr());
+    mQaRegistry.fill(HIST("h2NsigmaHadKaTPC"), candidate.tpcNSigmaKa());
     if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < settingCutNsigTOFPrMin)
       return false;
+    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < settingCutNsigTOFKaMin)
+      return false;
     mQaRegistry.fill(HIST("h2NsigmaHadPrTOF"), candidate.tofNSigmaPr());
+    if (candidate.hasTOF()) {
+      mQaRegistry.fill(HIST("h2NsigmaHadKaTOF"), candidate.tofNSigmaKa());
+    }
 
-    if (candidate.hasTOF() && candidate.tpcInnerParam() >= settingCutPinMinTOFHad) {
+    if (candidate.hasTOF() && std::abs(candidate.pt()) > settingCutPinMinTOFHad) {
       auto tofNSigmaPi = candidate.tofNSigmaPi();
       auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
 
@@ -598,7 +731,7 @@ struct HadNucleiFemto {
       mQaRegistry.fill(HIST("h2NsigmaHadComb"), candidate.sign() * candidate.pt(), combNsigma);
       mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
-    } else if (candidate.tpcInnerParam() < settingCutPinMinTOFHad) {
+    } else if (std::abs(candidate.pt()) <= settingCutPinMinTOFHad) {
       if (std::abs(tpcNSigmaPi) > settingCutNsigmaTPCHad) {
         return false;
       }
@@ -639,10 +772,6 @@ struct HadNucleiFemto {
     float tpcInnerParam = candidate.tpcInnerParam();
     mQaRegistry.fill(HIST("h2dEdx"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
 
-    float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(candidate.pt(), 1.1);
-    if (std::abs(candidate.dcaXY()) > DeDCAxyMin || std::abs(candidate.dcaZ()) > settingCutDeDCAzMin)
-      return false;
-
     if (std::abs(tpcInnerParam) < settingCutPinMinDe) {
       return false;
     }
@@ -657,6 +786,15 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("h2NsigmaNuTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
     if (std::abs(candidate.pt()) < settingCutDeptMin || std::abs(candidate.pt()) > settingCutDeptMax)
       return false;
+    const float absPt = std::abs(candidate.pt());
+    if (absPt <= 0.f) {
+      return false;
+    }
+    const float deDCAxyMax = 0.004f + 0.013f / absPt;
+    const float deDCAzMax = 0.004f + 0.013f / absPt;
+    if (std::abs(candidate.dcaXY()) > deDCAxyMax || std::abs(candidate.dcaZ()) > deDCAzMax)
+      return false;
+
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFITSDe) {
       auto tofNSigmaDe = candidate.tofNSigmaDe();
       auto combNsigma = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
@@ -908,7 +1046,7 @@ struct HadNucleiFemto {
 
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
 
-      if (!selectTrack(track0)) {
+      if (!selectTrackDe(track0)) {
         continue;
       }
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
@@ -934,7 +1072,7 @@ struct HadNucleiFemto {
           }
         }
 
-        if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
+        if (!selectTrackHadron(track1) || !selectionPIDHadron(track1)) {
           continue;
         }
 
@@ -960,7 +1098,7 @@ struct HadNucleiFemto {
 
         mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
 
-        if (!selectTrack(hadTrack)) {
+        if (!selectTrackHadron(hadTrack)) {
           continue;
         }
         mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
@@ -985,11 +1123,11 @@ struct HadNucleiFemto {
   void pairTracksEventMixing(T& DeCands, T& hadCands)
   {
     for (const auto& DeCand : DeCands) {
-      if (!selectTrack(DeCand) || !selectionPIDDe(DeCand)) {
+      if (!selectTrackDe(DeCand) || !selectionPIDDe(DeCand)) {
         continue;
       }
       for (const auto& hadCand : hadCands) {
-        if (!selectTrack(hadCand) || !selectionPIDHadron(hadCand)) {
+        if (!selectTrackHadron(hadCand) || !selectionPIDHadron(hadCand)) {
           continue;
         }
 
@@ -1012,7 +1150,7 @@ struct HadNucleiFemto {
         continue;
       }
       for (const auto& hadCand : hadCands) {
-        if (!selectTrack(hadCand) || !selectionPIDHadron(hadCand)) {
+        if (!selectTrackHadron(hadCand) || !selectionPIDHadron(hadCand)) {
           continue;
         }
 
@@ -1101,7 +1239,6 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hdcazNu"), hadNucand.dcazNu);
     mQaRegistry.fill(HIST("hdcaxyHad"), hadNucand.dcaxyHad);
     mQaRegistry.fill(HIST("hdcazHad"), hadNucand.dcazHad);
-    mQaRegistry.fill(HIST("hdcazNu_min"), (std::abs(hadNucand.dcazNu) - settingCutDeDCAzMin));
     mQaRegistry.fill(HIST("hNClsNuITS"), hadNucand.nClsItsNu);
     mQaRegistry.fill(HIST("hNClsHadITS"), hadNucand.nClsItsHad);
     mQaRegistry.fill(HIST("hisBkgEM"), hadNucand.isBkgEM);
@@ -1364,52 +1501,68 @@ PROCESS_SWITCH(HadNucleiFemto, processMixedEventHyper, "Process Mixed event", fa
       trackTableThisCollision.bindExternalIndices(&tracks);
 
       for (const auto& track : trackTableThisCollision) {
+        constexpr float pionRefPCombMin = 0.5f;
+        const bool passTrackHad = selectTrackHadron(track);
+        const bool passTrackDe = selectTrackDe(track);
+
         mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
-
-        if (!selectTrack(track)) {
-          continue;
+        if (passTrackHad) {
+          mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
         }
-        mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
 
-        if (settingHadPDGCode == PDG_t::kPiPlus) {
+        mQaRegistry.fill(HIST("hTrackSelDe"), Selections::kNoCuts);
+        if (passTrackDe) {
+          mQaRegistry.fill(HIST("hTrackSelDe"), Selections::kTrackCuts);
+        }
+
+        if (passTrackHad && settingHadPDGCode == PDG_t::kPiPlus) {
           const float tpcNSigmaHad = track.tpcNSigmaPi();
           mQaRegistry.fill(HIST("purity/h2NsigmaHadTPC_preselection"), track.sign() * track.pt(), tpcNSigmaHad);
-          if (track.hasTOF() && track.tpcInnerParam() >= settingCutPinMinTOFHad) {
+          if (useReferencePionCuts() ? (track.hasTOF() && std::abs(track.p()) > pionRefPCombMin) : (track.hasTOF() && std::abs(track.pt()) > settingCutPinMinTOFHad)) {
             const float tofNSigmaHad = track.tofNSigmaPi();
+            const float combNsigmaHad = std::sqrt(tofNSigmaHad * tofNSigmaHad + tpcNSigmaHad * tpcNSigmaHad);
             mQaRegistry.fill(HIST("purity/h2NsigmaHadTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
+            mQaRegistry.fill(HIST("purity/h2NsigmaHadComb_preselection"), track.sign() * track.pt(), combNsigmaHad);
           }
-        } else if (settingHadPDGCode == PDG_t::kKPlus) {
+        } else if (passTrackHad && settingHadPDGCode == PDG_t::kKPlus) {
           const float tpcNSigmaHad = track.tpcNSigmaKa();
           mQaRegistry.fill(HIST("purity/h2NsigmaHadTPC_preselection"), track.sign() * track.pt(), tpcNSigmaHad);
           if (track.hasTOF() && track.tpcInnerParam() >= settingCutPinMinTOFHad) {
             const float tofNSigmaHad = track.tofNSigmaKa();
+            const float combNsigmaHad = std::sqrt(tofNSigmaHad * tofNSigmaHad + tpcNSigmaHad * tpcNSigmaHad);
             mQaRegistry.fill(HIST("purity/h2NsigmaHadTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
+            mQaRegistry.fill(HIST("purity/h2NsigmaHadComb_preselection"), track.sign() * track.pt(), combNsigmaHad);
           }
         }
 
-        const float tpcNSigmaDe = settingUseBBcomputeDeNsigma ? computeNSigmaDe(track) : track.tpcNSigmaDe();
-        mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
-        mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
-        if (track.hasTOF() && track.tpcInnerParam() > settingCutPinMinTOFITSDe) {
-          const float tofNSigmaDe = track.tofNSigmaDe();
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
-        } else if (track.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
-          const float itsNSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
-          mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaDe);
+        if (passTrackDe) {
+          const float tpcNSigmaDe = settingUseBBcomputeDeNsigma ? computeNSigmaDe(track) : track.tpcNSigmaDe();
+          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
+          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
+          if (track.hasTOF() && track.tpcInnerParam() > settingCutPinMinTOFITSDe) {
+            const float tofNSigmaDe = track.tofNSigmaDe();
+            const float combNsigmaDe = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuComb_preselection"), track.sign() * track.pt(), combNsigmaDe);
+          } else if (track.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
+            const float itsNSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
+            mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaDe);
+          }
         }
 
-        const bool isHadronSelected = selectionPIDHadron(track);
-        const bool isDeuteronSelected = selectionPIDDe(track);
+        const bool isHadronSelected = passTrackHad && selectionPIDHadron(track);
+        const bool isDeuteronSelected = passTrackDe && selectionPIDDe(track);
         if (!isHadronSelected && !isDeuteronSelected) {
           continue;
         }
-        mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
 
         if (isHadronSelected) {
+          mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
           mQaRegistry.fill(HIST("hSingleHadPt"), track.pt() * track.sign());
         }
 
         if (isDeuteronSelected) {
+          mQaRegistry.fill(HIST("hTrackSelDe"), Selections::kPID);
           mQaRegistry.fill(HIST("hSingleNuPt"), track.pt() * track.sign());
           mQaRegistry.fill(HIST("hSingleNuPin"), track.tpcInnerParam() * track.sign());
         }

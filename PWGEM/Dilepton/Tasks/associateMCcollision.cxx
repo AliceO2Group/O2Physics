@@ -59,7 +59,7 @@ struct associateMCcollision {
   void runMC(TMCCollisions const& mcCollisions, TCollisions const& collisions, TPreslice const& perMCCollision)
   {
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       auto rec_colls_per_mccoll = collisions.sliceBy(perMCCollision, mcCollision.globalIndex());
       fRegistry.fill(HIST("hReccollsPerMCcoll"), rec_colls_per_mccoll.size());
       uint32_t maxNumContrib = 0;

@@ -460,8 +460,6 @@ struct mftMchMatcher {
                           TMFT const& mftTracks,
                           std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
-    static constexpr int muonPdgCode = 13;
-
     // outer loop on muon tracks
     for (const auto& muonTrack : muonTracks) {
       // only consider MCH standalone or MCH-MID matches
@@ -473,7 +471,6 @@ struct mftMchMatcher {
       if (!muonTrack.has_collision()) {
         continue;
       }
-      auto muonCollisionId = muonTrack.collisionId();
 
       // skip tracks that do not have an associated MC particle
       if (!muonTrack.has_mcParticle()) {
@@ -481,23 +478,11 @@ struct mftMchMatcher {
       }
       // get the index associated to the MC particle
       auto muonMcParticle = muonTrack.mcParticle();
-      if (std::abs(muonMcParticle.pdgCode()) != muonPdgCode) {
-        continue;
-      }
 
       int64_t muonMcTrackIndex = muonMcParticle.globalIndex();
 
       // inner loop on MFT tracks
       for (const auto& mftTrack : mftTracks) {
-        // only consider MFT tracks associated to the same collision as the muon track
-        if (!mftTrack.has_collision()) {
-          continue;
-        }
-        auto mftCollisionId = mftTrack.collisionId();
-        if (mftCollisionId != muonCollisionId) {
-          continue;
-        }
-
         // skip tracks that do not have an associated MC particle
         if (!mftTrack.has_mcParticle()) {
           continue;
@@ -564,7 +549,7 @@ struct mftMchMatcher {
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
 
-    if (!muonTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
+    if (!mchTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
       // if either the MCH or the MFT tracks are fakes (not associated to any MC particles)
       // we consider the match as fake
       return (isBestMatch ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading);

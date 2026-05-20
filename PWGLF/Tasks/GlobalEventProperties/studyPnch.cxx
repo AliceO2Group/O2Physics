@@ -15,6 +15,8 @@
 /// \author Abhi Modak (abhi.modak@cern.ch), Lucas José (lucas.jose.franco.da.silva@cern.ch)
 /// \since September 10, 2025
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -74,6 +76,7 @@ AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCollSel{5, 0.5, 5.5, "#Event", "CollSelAxis"};
 auto static constexpr kMinCharge = 3.f;
+auto static constexpr pTminCut = 0.1f;
 
 struct StudyPnch {
 
@@ -105,6 +108,12 @@ struct StudyPnch {
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> isApplyCheckID{"isApplyCheckID", true, "Select Tracks evaluating Collision ID"};
   Configurable<bool> isApplyDuplicatedTrack{"isApplyDuplicatedTrack", true, "Select tracks that are not duplicated"};
+  Configurable<bool> isApplyPhiSelection{"isApplyPhiSelection", false, "Select tracks in specific phi range"};
+  Configurable<float> minPhi{"minPhi", 0.f, "Minimum phi value for track selection"};
+  Configurable<float> maxPhi{"maxPhi", 6.283185f, "Maximum phi value for track selection"};
+  Configurable<bool> isPtincrease{"isPtincrease", false, "Varies low pT particles by a conservative amount of +100%"};
+  Configurable<bool> isPtdecrease{"isPtdecrease", false, "Varies low pT particles by a conservative amount of -50%"};
+  Configurable<bool> isApplyStrangenessSysUncert{"isApplyStrangenessSysUncert", false, "Enable the evaluation of systematics due to strange particle contribution"};
 
   void init(InitContext const&)
   {
@@ -114,7 +123,6 @@ struct StudyPnch {
     AxisSpec axisFt0aMult = {ft0aMultHistBin, "ft0a", "FT0AMultAxis"};
     AxisSpec axisFt0cMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
-    AxisSpec axisCountNumberTracks = {countNumberTracks, "Count", "CountAxis"};
     AxisSpec dcaAxis = {binsDCA, "DCA vs PV"};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
@@ -129,13 +137,6 @@ struct StudyPnch {
     x->SetBinLabel(5, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
     x->SetBinLabel(6, "INEL > 0");
     x->SetBinLabel(7, "|vz| < 10");
-
-    histos.add("SelCollsHist", "SelCollsHist", kTH1D, {axisCollSel}, false);
-    auto hstat_colls = histos.get<TH1>(HIST("SelCollsHist"));
-    auto* xColls = hstat_colls->GetXaxis();
-    xColls->SetBinLabel(1, "All collisions");
-    xColls->SetBinLabel(2, "Best Collision Selection");
-    xColls->SetBinLabel(3, "Has MC Collision Selection");
 
     if (doprocessData || doprocessCorrelation || doprocessMonteCarlo) {
       histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2F, {axisPhi, axisEta}, false);
@@ -161,7 +162,12 @@ struct StudyPnch {
       histos.add("hMultiplicityMCrec", "hMultiplicityMCrec", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgen", "hMultiplicityMCgen", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrix", "hResponseMatrix", kTH2F, {axisMult, axisMult}, true);
-      histos.add("hCountNTracks", "hCountNTracks", kTH1F, {axisCountNumberTracks}, true);
+      histos.add("hMultiplicityMCgenPtCut", "hMultiplicityMCgenPtCut", kTH1F, {axisMult}, true);
+      histos.add("hResponseMatrixPtCut", "hResponseMatrixPtCut", kTH2F, {axisMult, axisMult}, true);
+    }
+    if (isApplyStrangenessSysUncert) {
+      histos.add("hMultiplicityMCSubStrDecay", "hMultiplicityMCSubStrDecay", kTH1F, {axisMult}, true);
+      histos.add("hResponseMatrixSubStrDecay", "hResponseMatrixSubStrDecay", kTH2F, {axisMult, axisMult}, true);
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
@@ -251,6 +257,9 @@ struct StudyPnch {
       if (!isTrackSelected(track)) {
         continue;
       }
+      if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+        continue;
+      }
       histos.fill(HIST("hdcaxy"), track.dcaXY());
       histos.fill(HIST("hdcaz"), track.dcaZ());
       histos.fill(HIST("EtaHist"), track.eta());
@@ -270,6 +279,9 @@ struct StudyPnch {
         continue;
       }
       if (track.mcCollisionId() != McCol.mcCollisionId()) {
+        continue;
+      }
+      if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
         continue;
       }
       histos.fill(HIST("EtaGenHist"), track.eta());
@@ -298,6 +310,9 @@ struct StudyPnch {
           continue;
         }
         mcRecIDs.push_back(particle.globalIndex());
+        if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+          continue;
+        }
         nTrk++;
       }
       histos.fill(HIST("hdcaxy"), track.dcaXY());
@@ -305,6 +320,59 @@ struct StudyPnch {
       histos.fill(HIST("EtaHist"), track.eta());
       histos.fill(HIST("PhiHist"), track.phi());
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
+    }
+    return nTrk;
+  }
+
+  template <typename countTrk, typename McColType>
+  int countStrangeTracksMcCol(countTrk const& tracks, McColType const& McCol)
+  {
+    auto nTrkStrange = 0;
+    auto nTrk = 0;
+    std::vector<int> mcRecIDs;
+    for (const auto& track : tracks) {
+      if (!isTrackSelected(track)) {
+        continue;
+      }
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (isApplyCheckID && particle.mcCollisionId() != McCol.mcCollisionId()) {
+          continue;
+        }
+        if (isApplyDuplicatedTrack && find(mcRecIDs.begin(), mcRecIDs.end(), particle.globalIndex()) != mcRecIDs.end()) {
+          continue;
+        }
+        mcRecIDs.push_back(particle.globalIndex());
+        if (particle.has_mothers()) {
+          auto mcMother = particle.template mothers_as<aod::McParticles>().front();
+          if (mcMother.pdgCode() == PDG_t::kK0Short || std::abs(mcMother.pdgCode()) == PDG_t::kLambda0) {
+            nTrkStrange++;
+          }
+        }
+        nTrk++;
+      }
+    }
+    return nTrk - nTrkStrange;
+  }
+
+  template <typename countTrk, typename McColType>
+  float countTracksPtCut(countTrk const& tracks, McColType const& McCol)
+  {
+    float nTrk = 0.0;
+    for (const auto& track : tracks) {
+      if (!isGenTrackSelected(track)) {
+        continue;
+      }
+      if (track.mcCollisionId() != McCol.mcCollisionId()) {
+        continue;
+      }
+      if (track.pt() > pTminCut)
+        continue;
+      if (isPtincrease) {
+        nTrk += 2 - 10 * track.pt();
+      } else {
+        nTrk += 0.5 + 5 * track.pt();
+      }
     }
     return nTrk;
   }
@@ -340,31 +408,37 @@ struct StudyPnch {
     histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), mult);
   }
 
-  void processMonteCarlo(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMonteCarlo(soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
+    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      histos.fill(HIST("SelCollsHist"), 1);
       // Evaluation of reconstructed collisions with more than 1 contributor
       if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
-      histos.fill(HIST("SelCollsHist"), 2);
       if (!RecCol.has_mcCollision()) {
         continue;
       }
-      histos.fill(HIST("SelCollsHist"), 3);
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      if (multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCrec"), multrec);
-      }
-      auto multgen = countGenTracks(GenParticles, RecCol);
-      if (multgen > 0 && multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCgen"), multgen);
-        histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      histos.fill(HIST("hMultiplicityMCrec"), multrec);
+      float multgen = countGenTracks(GenParticles, RecCol);
+      histos.fill(HIST("hMultiplicityMCgen"), multgen);
+      histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
+      nTrkPtCut = multgen + nTrkPtCut;
+      histos.fill(HIST("hMultiplicityMCgenPtCut"), nTrkPtCut);
+      histos.fill(HIST("hResponseMatrixPtCut"), multrec, nTrkPtCut);
+      if (isApplyStrangenessSysUncert) {
+        auto nSubtractStrange = countStrangeTracksMcCol(recTracksPart, RecCol);
+        histos.fill(HIST("hMultiplicityMCSubStrDecay"), nSubtractStrange);
+        histos.fill(HIST("hResponseMatrixSubStrDecay"), nSubtractStrange, multgen);
       }
     }
   }

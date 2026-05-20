@@ -28,6 +28,26 @@ target_precompile_headers(JetSubstructureHFPCH PRIVATE
 )
 endif()
 
+add_library(JetSubstructureHFOutputPCH OBJECT jetSubstructureHFOutputPCH.cxx)
+target_link_libraries(JetSubstructureHFOutputPCH
+  PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
+if(NOT DEFINED ENV{USE_RECC})
+target_precompile_headers(JetSubstructureHFOutputPCH PRIVATE
+  [["PWGHF/DataModel/DerivedTables.h"]]
+  [["PWGJE/DataModel/Jet.h"]]
+  [["PWGJE/DataModel/JetSubstructure.h"]]
+  [["PWGJE/DataModel/JetSubtraction.h"]]
+  [["PWGJE/Tasks/jetSubstructureHFOutput.h"]]
+  <Framework/ASoA.h>
+  <Framework/AnalysisTask.h>
+  <Framework/ConfigContext.h>
+  <Framework/DataProcessorSpec.h>
+  <Framework/runDataProcessing.h>
+
+  <vector>
+)
+endif()
+
 o2physics_add_dpl_workflow(emc-cellmonitor
                     SOURCES emcCellMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
@@ -143,38 +163,47 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-substructure-d0-output
                         SOURCES jetSubstructureD0Output.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-dplus-output
                         SOURCES jetSubstructureDplusOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-ds-output
                         SOURCES jetSubstructureDsOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-dstar-output
                         SOURCES jetSubstructureDstarOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-lc-output
                         SOURCES jetSubstructureLcOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-b0-output
                         SOURCES jetSubstructureB0Output.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-bplus-output
                         SOURCES jetSubstructureBplusOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-xictoxipipi-output
                         SOURCES jetSubstructureXicToXiPiPiOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-dielectron-output
                         SOURCES jetSubstructureDielectronOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        REUSE_FROM JetSubstructureHFOutputPCH
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-fragmentation
                         SOURCES jetFragmentation.cxx

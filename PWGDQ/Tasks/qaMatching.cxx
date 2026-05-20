@@ -17,12 +17,17 @@
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
@@ -57,9 +62,7 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TMath.h>
-
-#include <RtypesCore.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
@@ -67,7 +70,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <format>
 #include <functional>
 #include <map>
 #include <memory>
@@ -121,12 +123,13 @@ DECLARE_SOA_TABLE(QaMatchingEvents, "AOD", "QAMEVT",
 
 namespace qamatching
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(ReducedEvent, reducedEvent, int32_t, o2::aod::QaMatchingEvents, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(ReducedEvent, reducedEvent, int32_t, o2::aod::QaMatchingEvents, "QAMEVTs", "");
 } // namespace qamatching
 
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
+                  o2::soa::Index<>,
                   qamatching::ReducedEventId,
                   qamatching::TrackId,
                   qamatching::TrackType,
@@ -142,6 +145,7 @@ DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
                   qamatching::PyAtVtx,
                   qamatching::PzAtVtx);
 DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
+                  o2::soa::Index<>,
                   qamatching::ReducedEventId,
                   qamatching::MatchLabel,
                   qamatching::TrackId,
@@ -155,9 +159,9 @@ DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
                   qamatching::PzAtVtx);
 } // namespace o2::aod
 
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
-using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
+using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyMFTs = aod::MFTTracks;
 using MyMFTCovariances = aod::MFTTracksCov;
 using MyMFTsMC = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
@@ -362,12 +366,12 @@ struct QaMatching {
     std::array<Configurable<std::string>*, MlModelsNum> modelNames{
       &cfgMlModelName1, &cfgMlModelName2, &cfgMlModelName3, &cfgMlModelName4, &cfgMlModelName5};
 
-    Configurable<std::string> cfgMlInputFeatures1{"cfgMlInputFeatures1", "chi2MCHMFT", "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures2{"cfgMlInputFeatures2", std::string{""}, "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures3{"cfgMlInputFeatures3", std::string{""}, "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures4{"cfgMlInputFeatures4", std::string{""}, "Names of ML model input features"};
-    Configurable<std::string> cfgMlInputFeatures5{"cfgMlInputFeatures5", std::string{""}, "Names of ML model input features"};
-    std::array<Configurable<std::string>*, MlModelsNum> inputFeatures{
+    Configurable<std::vector<std::string>> cfgMlInputFeatures1{"cfgMlInputFeatures1", std::vector<std::string>{"chi2MCHMFT"}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures2{"cfgMlInputFeatures2", std::vector<std::string>{}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures3{"cfgMlInputFeatures3", std::vector<std::string>{}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures4{"cfgMlInputFeatures4", std::vector<std::string>{}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> cfgMlInputFeatures5{"cfgMlInputFeatures5", std::vector<std::string>{}, "Names of ML model input features"};
+    std::array<Configurable<std::vector<std::string>>*, MlModelsNum> inputFeatures{
       &cfgMlInputFeatures1, &cfgMlInputFeatures2, &cfgMlInputFeatures3, &cfgMlInputFeatures4, &cfgMlInputFeatures5};
 
     Configurable<float> cfgMlModelMatchingScoreCut1{"cfgMlModelMatchingScoreCut1", 0.f, "Minimum score value for selecting good matches"};
@@ -773,7 +777,7 @@ struct QaMatching {
       //-
       AxisSpec chi2Axis = {100, 0, 100, "matching #chi^{2}/NDF"};
       AxisSpec scoreAxis = {100, 0, 1, "matching score"};
-      int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
+      int matchTypeMax = static_cast<int>(kMatchTypeUndefined) + 1;
       AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), "match type"};
       histName = path + "matchType";
       histTitle = "Match type";
@@ -786,6 +790,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchTypeVsP";
       histTitle = "Match type vs. p";
       fMatchTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, matchTypeAxis}});
@@ -797,6 +802,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchTypeVsPt";
       histTitle = "Match type vs. p_{T}";
       fMatchTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {ptAxis, matchTypeAxis}});
@@ -808,6 +814,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
 
       histName = path + "matchChi2VsType";
       histTitle = "Match #chi^{2} vs. match type";
@@ -820,6 +827,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchChi2VsTypeVsP";
       histTitle = "Match #chi^{2} vs. match type vs. p";
       fMatchChi2VsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, chi2Axis}});
@@ -831,6 +839,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchChi2VsTypeVsPt";
       histTitle = "Match #chi^{2} vs. match type vs. p_{T}";
       fMatchChi2VsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, chi2Axis}});
@@ -842,6 +851,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
       //-
       histName = path + "matchScoreVsType";
       histTitle = "Match score vs. match type";
@@ -854,6 +864,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchScoreVsTypeVsP";
       histTitle = "Match score vs. match type vs. p";
       fMatchScoreVsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, scoreAxis}});
@@ -865,6 +876,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchScoreVsTypeVsPt";
       histTitle = "Match score vs. match type vs. p_{T}";
       fMatchScoreVsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, scoreAxis}});
@@ -876,6 +888,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
 
       AxisSpec prodScoreAxis = {100, 0, 1, "matching score (prod)"};
       histName = path + "matchScoreVsProd";
@@ -1149,12 +1162,12 @@ struct QaMatching {
       auto matchingPlaneZ = configMlOptions.matchingPlaneZs[modelId]->value;
       auto extrapMethod = configMlOptions.matchingExtrapMethods[modelId]->value;
 
-      if (label == "" || modelPath == "" || inputFeatures == "" || modelName == "")
+      if (label == "" || modelPath == "" || inputFeatures.empty() || modelName == "")
         break;
 
       matchingMlResponses[label].configure(binsPtMl, mycutsMl, cutDirMl, 1);
       matchingMlResponses[label].setModelPathsCCDB(std::vector<std::string>{modelName}, fCCDBApi, std::vector<std::string>{modelPath}, configCcdb.cfgCcdbNoLaterThan.value);
-      matchingMlResponses[label].cacheInputFeaturesIndices(std::vector<std::string>{inputFeatures});
+      matchingMlResponses[label].cacheInputFeaturesIndices(inputFeatures);
       matchingMlResponses[label].init();
 
       matchingScoreCuts[label] = scoreMin;
@@ -1673,8 +1686,6 @@ struct QaMatching {
         continue;
       // get the index associated to the MC particle
       auto muonMcParticle = muonTrack.mcParticle();
-      if (std::abs(muonMcParticle.pdgCode()) != kMuonMinus)
-        continue;
 
       int64_t muonMcTrackIndex = muonMcParticle.globalIndex();
 
@@ -1741,8 +1752,7 @@ struct QaMatching {
               TMUONS const& /*muonTracks*/,
               TMFTS const& /*mftTracks*/)
   {
-    static constexpr int maxGlobalFwdTrackType = 2;
-    if (static_cast<int>(muonTrack.trackType()) >= maxGlobalFwdTrackType)
+    if (static_cast<int>(muonTrack.trackType()) >= GlobalTrackTypeMax)
       return false;
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
@@ -1995,7 +2005,7 @@ struct QaMatching {
     if (collisionIds.empty())
       return;
 
-    for (size_t cid = 1; cid < collisionIds.size() - 1; cid++) {
+    for (size_t cid = 0; cid < collisionIds.size(); cid++) {
       const auto& collision = collisions.rawIteratorAt(collisionIds[cid]);
       int64_t collisionIndex = collision.globalIndex();
       auto bc = bcs.rawIteratorAt(collision.bcId());
@@ -2088,9 +2098,9 @@ struct QaMatching {
       }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
+    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
+    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchChi2 < track2.matchChi2);
     };
 
     for (auto collisionInfoIt = collisionInfos.begin(); collisionInfoIt != collisionInfos.end(); ++collisionInfoIt) {
@@ -2098,7 +2108,7 @@ struct QaMatching {
       for (auto matchingCandidatesIt = collisionInfo.matchingCandidates.begin(); matchingCandidatesIt != collisionInfo.matchingCandidates.end(); ++matchingCandidatesIt) {
         auto& mchIndex = matchingCandidatesIt->first;
         auto& globalTracksVector = matchingCandidatesIt->second;
-        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
 
         const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
         auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
@@ -2620,15 +2630,15 @@ struct QaMatching {
       }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
+    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
+    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchChi2 < track2.matchChi2);
     };
 
     for (auto matchingCandidatesIt = newMatchingCandidates.begin(); matchingCandidatesIt != newMatchingCandidates.end(); ++matchingCandidatesIt) {
       auto& mchIndex = matchingCandidatesIt->first;
       auto& globalTracksVector = matchingCandidatesIt->second;
-      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
 
       const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
       auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
@@ -2728,7 +2738,7 @@ struct QaMatching {
 
         // run the ML model
         std::vector<float> output;
-        std::vector<float> inputML = mlResponse.getInputFeaturesGlob(muonTrack, mchTrackProp, mftTrackProp, collision);
+        std::vector<float> inputML = mlResponse.getInputFeatures(muonTrack, mftTrack, mchTrack, mftTrackProp, mchTrackProp, collision);
         mlResponse.isSelectedMl(inputML, 0, output);
         float matchScore = output[0];
         float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;

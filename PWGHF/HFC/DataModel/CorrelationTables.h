@@ -51,6 +51,57 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
                   aod::hf_correlation_d_dbar::MDbar,
                   aod::hf_correlation_d_dbar::SignalStatus);
 
+// Table to store event by event D meson selection information for event mixing in D-hadron correlation analysis
+namespace hf_d0_meson
+{
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(PtD, ptD, float);
+DECLARE_SOA_COLUMN(MD, mD, float);
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+} // namespace hf_d0_meson
+
+DECLARE_SOA_TABLE(D0, "AOD", "D0",
+                  aod::hf_d0_meson::Phi,
+                  aod::hf_d0_meson::Eta,
+                  aod::hf_d0_meson::PtD,
+                  aod::hf_d0_meson::MD,
+                  aod::hf_d0_meson::PoolBin,
+                  aod::hf_d0_meson::GIndexCol,
+                  aod::hf_d0_meson::TimeStamp,
+                  aod::hf_d0_meson::SignalStatus);
+
+// Table to store event-by-event associated tracks for offline D0-hadron event mixing
+namespace hf_d0_assoc_tracks
+{
+DECLARE_SOA_COLUMN(Phi, phi, float);                 //! Phi of hadron
+DECLARE_SOA_COLUMN(Eta, eta, float);                 //! Eta of hadron
+DECLARE_SOA_COLUMN(PtH, ptH, float);                 //! Transverse momentum of hadron
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);       //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);   //! Timestamp for the collision
+DECLARE_SOA_COLUMN(SoftPiStatus, softPiStatus, int); //! Soft-pion status for D0 offline mixing
+
+enum SoftPionStatus {
+  NotSoftPi = 0,
+  SoftPiD0 = 1,
+  SoftPiD0bar = 2,
+  SoftPiD0D0bar = 3
+};
+} // namespace hf_d0_assoc_tracks
+
+DECLARE_SOA_TABLE(D0Hadron, "AOD", "D0HADRON",
+                  aod::hf_d0_assoc_tracks::Phi,
+                  aod::hf_d0_assoc_tracks::Eta,
+                  aod::hf_d0_assoc_tracks::PtH,
+                  aod::hf_d0_assoc_tracks::PoolBin,
+                  aod::hf_d0_assoc_tracks::GIndexCol,
+                  aod::hf_d0_assoc_tracks::TimeStamp,
+                  aod::hf_d0_assoc_tracks::SoftPiStatus);
+
 // definition of columns and tables for D0-Hadron correlation pairs
 namespace hf_correlation_d0_hadron
 {

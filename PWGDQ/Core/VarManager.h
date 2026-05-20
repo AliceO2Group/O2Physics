@@ -338,6 +338,7 @@ class VarManager : public TObject
     kMCEventWeight,
     kMCEventImpParam,
     kMCEventCentrFT0C,
+    kMCEventPlaneAngle,
     kMultMCNParticlesEta10,
     kMultMCNParticlesEta08,
     kMultMCNParticlesEta05,
@@ -531,12 +532,20 @@ class VarManager : public TObject
     kEta1,
     kPhi1,
     kCharge1,
+    kDCAxy1,
+    kDCAz1,
+    kITSclusterMap1,
+    kTPCnSigmaEl1,
     kPin_leg1,
     kTPCnSigmaKa_leg1,
     kPt2,
     kEta2,
     kPhi2,
     kCharge2,
+    kDCAxy2,
+    kDCAz2,
+    kITSclusterMap2,
+    kTPCnSigmaEl2,
 
     // Barrel track variables
     kPin,
@@ -714,8 +723,10 @@ class VarManager : public TObject
     // MC pair variables
     kMCPt1,
     kMCEta1,
+    kMCP1,
     kMCPt2,
     kMCEta2,
+    kMCP2,
     kMCCosThetaHE,
     kMCPhiHE,
     kMCPhiTildeHE,
@@ -726,6 +737,7 @@ class VarManager : public TObject
     kMCPhiPP,
     kMCPhiTildePP,
     kMCCosThetaRM,
+    kMCCosThetaStar,
 
     // Pair variables
     kCandidateId,
@@ -924,6 +936,8 @@ class VarManager : public TObject
     kS12,
     kS13,
     kS23,
+    kPairEfficiency,
+    kPairWeight,
     kNPairVariables,
 
     // Candidate-track correlation variables
@@ -1107,6 +1121,13 @@ class VarManager : public TObject
     kTPCProtonSigma,
     kTPCProtonStatus,
     kNCalibObjects
+  };
+
+  enum EfficiencyType {
+    kNone = 0,
+    kPairPtCentFT0cCosThetaStarFT0c,
+    // Add more efficiency types as needed
+    kNEfficiencyTypes
   };
 
   enum DileptonCharmHadronTypes {
@@ -1460,6 +1481,8 @@ class VarManager : public TObject
   }
   static double ComputePIDcalibration(int species, double nSigmaValue);
 
+  static void SetEfficiencyObject(int type, TObject* obj);
+  static void FillEfficiency(float* values = nullptr);
   static TObject* GetCalibrationObject(CalibObjects calib)
   {
     auto obj = fgCalibs.find(calib);
@@ -1542,6 +1565,9 @@ class VarManager : public TObject
   static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
   static int fgCalibrationType;                     // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
   static bool fgUseInterpolatedCalibration;         // use interpolated calibration histograms (default: true)
+
+  static int fgEfficiencyType;      // type of efficiency correction to apply
+  static TObject* fgEfficiencyHist; // histogram for efficiency correction
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -1904,6 +1930,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCollisionRandom] = gRandom->Rndm();
   }
 
+  if (fgUsedVars[kRandomPsi2]) {
+    values[kRandomPsi2] = gRandom->Uniform(-o2::constants::math::PIHalf, o2::constants::math::PIHalf);
+  }
+
   if constexpr ((fillMap & Collision) > 0) {
     // TODO: trigger info from the event selection requires a separate flag
     //       so that it can be switched off independently of the rest of Collision variables (e.g. if event selection is not available)
@@ -2210,7 +2240,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[VarManager::kPsi2A] = Psi2A;
     values[VarManager::kPsi2B] = Psi2B;
     values[VarManager::kPsi2C] = Psi2C;
-    values[VarManager::kRandomPsi2] = gRandom->Uniform(-o2::constants::math::PIHalf, o2::constants::math::PIHalf);
 
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
       values[kQ42XA] = event.q42xa();
@@ -2332,7 +2361,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
-    if constexpr ((fillMap & CollisionCent) > 0) {
+    values[kMCEventPlaneAngle] = event.eventPlaneAngle();
+    if constexpr (requires { event.bestCollisionCentFT0C(); }) {
       // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
       values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
       values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
@@ -3661,37 +3691,76 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
-  if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
+  if (fgUsedVars[kCosThetaStarRandom]) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
-      // Quantities based on the barrel tables
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
+
+    // Randomize the event plane angle to check the unpolarized contribution
+    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
+    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
+
+    // if the truth event plane angle is available, calculate the cos(theta*) with respect to the true event plane angle for comparison
+    if (fgUsedVars[kMCCosThetaStar] && fgUsedVars[kMCEventPlaneAngle]) {
+      // truth event plane angle
+      ROOT::Math::XYZVector zaxisTrue = ROOT::Math::XYZVector(TMath::Cos(values[kMCEventPlaneAngle]), TMath::Sin(values[kMCEventPlaneAngle]), 0).Unit();
+      values[kMCCosThetaStar] = v_CM.Dot(zaxisTrue);
+    }
+  }
+
+  if constexpr ((pairType == kDecayToEE)) {
+    if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
+      values[kITSclusterMap1] = t1.itsClusterMap();
+      values[kITSclusterMap2] = t2.itsClusterMap();
+    }
+
+    if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTPCnSigmaEl1] = t1.tpcNSigmaEl();
+      values[kTPCnSigmaEl2] = t2.tpcNSigmaEl();
+    }
+
+    if constexpr (((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
       double dca1XY = t1.dcaXY();
       double dca2XY = t2.dcaXY();
       double dca1Z = t1.dcaZ();
       double dca2Z = t2.dcaZ();
-      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
-      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
-      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
-      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
 
-      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
-      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
-      values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
-      values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
-      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kDCAxy1] = dca1XY;
+      values[kDCAz1] = dca1Z;
+      values[kDCAxy2] = dca2XY;
+      values[kDCAz2] = dca2Z;
 
-      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
-      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
-      if ((det1 < 0) || (det2 < 0)) {
-        values[kQuadDCAsigXYZ] = -999;
-      } else {
-        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
-        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+      if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
+        // Quantities based on the barrel tables
 
-        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
-        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+        double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+        double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
+        double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
+        double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
 
-        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+        values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
+        values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+        values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
+        values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
+        values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+
+        double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+        double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
+        if ((det1 < 0) || (det2 < 0)) {
+          values[kQuadDCAsigXYZ] = -999;
+        } else {
+          double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+          double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+          double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+          double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+
+          values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+        }
       }
     }
   }
@@ -3928,6 +3997,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // values[kPhi] = v12.Phi();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+
+  // Per-track quantities so ME histograms can use kPt1/kPt2/kEta1/kEta2/kPhi1/kPhi2 just like SE FillPair does.
+  values[kPt1] = t1.pt();
+  values[kEta1] = t1.eta();
+  values[kPhi1] = t1.phi();
+  values[kPt2] = t2.pt();
+  values[kEta2] = t2.eta();
+  values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2ME = v1.Phi() - v2.Phi();
@@ -4174,6 +4251,8 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kMCPt2] = t2.pt();
   values[kMCEta1] = t1.eta();
   values[kMCEta2] = t2.eta();
+  values[kMCP1] = t1.p();
+  values[kMCP2] = t2.p();
 
   // polarization parameters
   bool useHE = fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]; // helicity frame
@@ -4292,6 +4371,24 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       if (fgUsedVars[kMCCosThetaRM])
         values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
     }
+  }
+
+  if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kMCCosThetaStar]) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.pdgCode() > 0 ? v1_CM : v2_CM);
+
+    // Randomize the event plane angle to check the unpolarized contribution
+    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
+    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
+
+    // truth event plane angle
+    ROOT::Math::XYZVector zaxisTrue = ROOT::Math::XYZVector(TMath::Cos(values[kMCEventPlaneAngle]), TMath::Sin(values[kMCEventPlaneAngle]), 0).Unit();
+    values[kMCCosThetaStar] = v_CM.Dot(zaxisTrue);
   }
 }
 
@@ -4528,9 +4625,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v12.Px() +
-                                   (collision.posY() - secondaryVertex[1]) * v12.Py() +
-                                   (collision.posZ() - secondaryVertex[2]) * v12.Pz()) /
+      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v12.Px() +
+                                   (secondaryVertex[1] - collision.posY()) * v12.Py() +
+                                   (secondaryVertex[2] - collision.posZ()) * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
       // Decay length defined as in Run 2
       values[kVertexingLzProjected] = ((secondaryVertex[2] - collision.posZ()) * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
@@ -4946,9 +5043,9 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                   (collision.posY() - secondaryVertex[1]) * v123.Py() +
-                                   (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v123.Px() +
+                                   (secondaryVertex[1] - collision.posY()) * v123.Py() +
+                                   (secondaryVertex[2] - collision.posZ()) * v123.Pz()) /
                                   (v123.P() * values[VarManager::kVertexingLxyz]);
       // run 2 definitions: Decay length projected onto the momentum vector of the candidate
       values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
@@ -5207,9 +5304,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
       if (fgUsedVars[kCosPointingAngle] && fgUsedVars[kVertexingLxyz]) {
-        values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                                 (collision.posY() - secondaryVertex[1]) * v123.Py() +
-                                                 (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+        values[VarManager::kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v123.Px() +
+                                                 (secondaryVertex[1] - collision.posY()) * v123.Py() +
+                                                 (secondaryVertex[2] - collision.posZ()) * v123.Pz()) /
                                                 (v123.P() * values[VarManager::kVertexingLxyz]);
       }
       // run 2 definitions: Lxy projected onto the momentum vector of the candidate
@@ -5721,11 +5818,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kCosThetaStarFT0C] = v_CM.Dot(zaxisFT0C);
     values[kAbsCosThetaStarFT0C] = std::abs(values[kCosThetaStarFT0C]);
     values[kCos2ThetaStarFT0C] = values[kCosThetaStarFT0C] * values[kCosThetaStarFT0C];
-
-    // Randomize the event plane angle to check the unpolarized contribution
-    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
-    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
-    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
   }
 
   //  kV4, kC4POI, kC4REF etc.
@@ -6239,9 +6331,9 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v1234.Px() +
-                                   (collision.posY() - secondaryVertex[1]) * v1234.Py() +
-                                   (collision.posZ() - secondaryVertex[2]) * v1234.Pz()) /
+      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v1234.Px() +
+                                   (secondaryVertex[1] - collision.posY()) * v1234.Py() +
+                                   (secondaryVertex[2] - collision.posZ()) * v1234.Pz()) /
                                   (v1234.P() * values[VarManager::kVertexingLxyz]);
       // // run 2 definitions: Decay length projected onto the momentum vector of the candidate
       values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v1234.Pz();
