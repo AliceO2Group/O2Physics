@@ -278,7 +278,8 @@ struct Pi0EtaToGammaGammaMC {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    constexpr float bzInput = -990.0f;
+    if (d_bz_input > bzInput) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
       if (std::fabs(d_bz) > 1e-5) {
@@ -580,18 +581,19 @@ struct Pi0EtaToGammaGammaMC {
                       TMCCollisions const& mccollisions, TMCParticles const& mcparticles,
                       TLegs const& /*legs*/ = nullptr, TMatchedTracks const& matchedTracks = nullptr, TMatchedSecondaries const& matchedSecondaries = nullptr)
   {
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       initCCDB(collision);
       if ((pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
 
       float weight = 1.f;
+      float weightThreshold = 1e-10;
       if constexpr (std::is_same_v<std::decay_t<TCollisions>, o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>>) {
         weight = collision.weight();
       }
 
-      if (eventcuts.onlyKeepWeightedEvents && std::fabs(weight - 1.0) < 1e-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(weight - 1.0) < weightThreshold) {
         continue;
       }
 
@@ -728,9 +730,9 @@ struct Pi0EtaToGammaGammaMC {
           }
 
           if (g1mc.globalIndex() == g2mc.globalIndex()) {
-            if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == 111)
+            if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == PDG_t::kPi0)
               fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
-            else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == 221)
+            else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == o2::constants::physics::Pdg::kEta)
               fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
             continue;
           }
@@ -807,7 +809,7 @@ struct Pi0EtaToGammaGammaMC {
                 int photon2pdg = photon2.pdgCode();
                 int photon2mothid = photon2.mothersIds()[0];
                 auto photon2moth = mcparticles.iteratorAt(photon2mothid);
-                if (photon2pdg == 22 && (o2::aod::pwgem::photonmeson::utils::mcutil::isGammaGammaDecay(photon2moth, mcparticles))) {
+                if (photon2pdg == PDG_t::kGamma && (o2::aod::pwgem::photonmeson::utils::mcutil::isGammaGammaDecay(photon2moth, mcparticles))) {
                   int mothID = o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(photon2, mcparticles);
                   if (mothID == o2::constants::physics::Pdg::kEta) {
                     fRegistry.fill(HIST("Event/hNGGContamEta"), photon2moth.pt());
@@ -929,23 +931,24 @@ struct Pi0EtaToGammaGammaMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
-    for (auto& mccollision : mccollisions) {
+    for (auto const& mccollision : mccollisions) {
       auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
       int nrec_per_mc = collision_per_mccoll.size();
       fRegistry.fill(HIST("Event/hNrecPerMCCollision"), nrec_per_mc);
     }
 
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       if ((pairtype == o2::aod::pwgem::photonmeson::photonpair::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue; // I don't know why this is necessary in simulation.
       }
 
       float weight = 1.f;
+      float weightTreshhold = 1e-10;
       if constexpr (std::is_same_v<std::decay_t<TCollisions>, o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>>) {
         weight = collision.weight();
       }
 
-      if (eventcuts.onlyKeepWeightedEvents && std::fabs(weight - 1.0) < 1e-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(weight - 1.0) < weightTreshhold) {
         continue;
       }
 
