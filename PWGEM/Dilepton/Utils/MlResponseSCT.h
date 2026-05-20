@@ -124,7 +124,7 @@ struct candidate {
   float decayLengthZinSigma{0};
   float decayLength3DinSigma{0};
 };
-} // namespace pwgem::dilepton
+} // namespace pwgem::dilepton::sct
 
 template <typename TypeOutputScore = float>
 class MlResponseSCT : public MlResponse<TypeOutputScore>
