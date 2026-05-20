@@ -56,6 +56,7 @@
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <TH2.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <cmath>
@@ -808,10 +809,10 @@ struct Pi0EtaToGammaGammaMC {
                 auto photon2moth = mcparticles.iteratorAt(photon2mothid);
                 if (photon2pdg == 22 && (o2::aod::pwgem::photonmeson::utils::mcutil::isGammaGammaDecay(photon2moth, mcparticles))) {
                   int mothID = o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(photon2, mcparticles);
-                  if (mothID == 221) {
+                  if (mothID == o2::constants::physics::Pdg::kEta) {
                     fRegistry.fill(HIST("Event/hNGGContamEta"), photon2moth.pt());
                   }
-                  if (mothID == 111) {
+                  if (mothID == PDG_t::kPi0) {
                     fRegistry.fill(HIST("Event/hNGGContamPion"), photon2moth.pt());
                   }
                 }
