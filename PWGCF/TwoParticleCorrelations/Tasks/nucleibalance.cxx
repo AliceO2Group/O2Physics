@@ -1739,17 +1739,18 @@ struct Lambdastarproxy {
   // Helpers for invariant-mass kinematics
   static float phiFromPxPy(float px, float py)
   {
-    return std::atan2(py, px);
+    return RecoDecay::constrainAngle(std::atan2(py, px), -o2::constants::math::PI);
   }
 
-  static float rapidityFromEPz(double e, double pz)
+  static float ptFromPxPy(float px, float py)
   {
-    const double num = e + pz;
-    const double den = e - pz;
-    if (num <= 0.0 || den <= 0.0) {
-      return 0.f;
-    }
-    return static_cast<float>(Half * std::log(num / den));
+    return RecoDecay::pt(std::array{px, py});
+  }
+
+  static float rapidityFromMomentumAndMass(float px, float py, float pz, double mass)
+
+  {
+    return RecoDecay::y(std::array{px, py, pz}, mass);
   }
 
   // Mixed-event pool entry for pK / proxy background (AO2D only)
@@ -1757,6 +1758,7 @@ struct Lambdastarproxy {
     float mult = 0.f;
     float zvtx = 0.f;
     std::vector<KaonCand> kaons;
+    std::vector<ProtonCand> protons;
     std::vector<ProxyCand> proxies;
   };
 
@@ -1966,56 +1968,44 @@ struct Lambdastarproxy {
                "pK invariant mass (like-sign);M_{pK} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
-    // Invariant-mass vs pair pT (use p_{T} of pK system)
-    histos.add("hInvMassPKUnlikeVsPt",
-               "pK invariant mass vs p_{T} (unlike-sign);M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);Counts",
-               HistType::kTH2F, {massAxis, ptAxis});
-    histos.add("hInvMassPKLikeVsPt",
-               "pK invariant mass vs p_{T} (like-sign);M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);Counts",
-               HistType::kTH2F, {massAxis, ptAxis});
-
-    // THnSparse for invariant-mass analysis (mass, pT, y, phi)
+    // THnSparse for invariant-mass analysis (mass, pT, multiplicity/centrality)
     if (lstarEnableSparse.value != 0) {
       histos.add("hLambdaStarPKUnlikeSparse",
-                 "#Lambda^{*}(1520) pK unlike-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
+                 "#Lambda^{*}(1520) pK unlike-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
       histos.add("hLambdaStarPKLikeSparse",
-                 "#Lambda^{*}(1520) pK like-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
+                 "#Lambda^{*}(1520) pK like-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
       histos.add("hLambdaStarPKMixedSparse",
-                 "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
+                 "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
-      // THnSparse for deuteron-proxy invariant-mass analysis (mass, pT, y, phi)
+      // THnSparse for deuteron-proxy invariant-mass analysis (mass, pT, multiplicity/centrality)
       histos.add("hLambdaStarProxySparse",
-                 "#Lambda^{*}(1520) deuteron-proxy candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);y_{p_{proxy}K};#varphi_{p_{proxy}K}",
+                 "#Lambda^{*}(1520) deuteron-proxy candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{p_{proxy}K} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{p_{proxy}K}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
+
+      histos.add("hLambdaStarProxyLikeSparse",
+                 "#Lambda^{*}(1520) deuteron-proxy like-sign candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
+                 HistType::kTHnSparseF,
+                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
 
       histos.add("hLambdaStarProxyMixedSparse",
-                 "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);y_{p_{proxy}K};#varphi_{p_{proxy}K}",
+                 "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{p_{proxy}K} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{p_{proxy}K}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
     }
 
     // Deuteron-proxy invariant mass (p_{proxy} from d/2 combined with K)
@@ -2317,15 +2307,9 @@ struct Lambdastarproxy {
   static double invariantMass(float px1, float py1, float pz1, double m1,
                               float px2, float py2, float pz2, double m2)
   {
-    const double e1 = std::sqrt(m1 * m1 + px1 * px1 + py1 * py1 + pz1 * pz1);
-    const double e2 = std::sqrt(m2 * m2 + px2 * px2 + py2 * py2 + pz2 * pz2);
-    const double ex = px1 + px2;
-    const double ey = py1 + py2;
-    const double ez = pz1 + pz2;
-    const double eTot = e1 + e2;
-    const double p2Tot = ex * ex + ey * ey + ez * ez;
-    const double m2Tot = eTot * eTot - p2Tot;
-    return m2Tot > 0. ? std::sqrt(m2Tot) : 0.;
+    return RecoDecay::m(std::array{std::array{px1, py1, pz1},
+                                   std::array{px2, py2, pz2}},
+                        std::array{m1, m2});
   }
 
   void process(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
@@ -2635,12 +2619,15 @@ struct Lambdastarproxy {
       kaonCands.push_back(KaonCand{pxK, pyK, pzK, static_cast<int>(trkK.sign()), static_cast<int>(trkK.globalIndex())});
     }
 
-    if (proxyCands.empty() || kaonCands.empty()) {
-      // still update mixing buffer so that later events can mix with this one
+    if (kaonCands.empty()) {
+      // Still update mixing buffer so that later events can mix with this one.
+      // The pK mixed-event background needs stored protons, while the proxy background
+      // needs stored proxy candidates. Therefore, do not require proxy candidates here.
       LStarMixEventEntry entry;
       entry.mult = eventMult;
       entry.zvtx = collision.posZ();
       entry.kaons = std::move(kaonCands);
+      entry.protons = std::move(protonCands);
       entry.proxies = std::move(proxyCands);
       mLStarMixEvents.push_front(std::move(entry));
       if (mLStarMixEvents.size() > static_cast<size_t>(lstarNoMixedEvents.value)) {
@@ -2649,103 +2636,148 @@ struct Lambdastarproxy {
       return;
     }
 
+    const bool hasProtonCandidates = !protonCands.empty();
+    const bool hasProxyCandidates = !proxyCands.empty();
+
     // --- SAME-EVENT: genuine pK #Lambda^{*} candidates ---
-    for (auto const& pr : protonCands) {
-      for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid) {
-          continue;
-        }
-        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
-                                          k.px, k.py, k.pz, MassKaonCharged);
-
-        const float pxTot = pr.px + k.px;
-        const float pyTot = pr.py + k.py;
-        const float pzTot = pr.pz + k.pz;
-        const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
-        const float phiPair = phiFromPxPy(pxTot, pyTot);
-
-        const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot +
-                                      static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
-        const float yPair = rapidityFromEPz(eTot, pzTot);
-
-        if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
-          continue;
-        }
-
-        const bool unlikeSignPK = (pr.charge * k.charge) < 0;
-        if (unlikeSignPK) {
-          histos.fill(HIST("hInvMassPKUnlike"), mass);
-          histos.fill(HIST("hInvMassPKUnlikeVsPt"), mass, ptPair);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
+    if (hasProtonCandidates) {
+      for (auto const& pr : protonCands) {
+        for (auto const& k : kaonCands) {
+          if (pr.tid == k.tid) {
+            continue;
           }
-        } else {
-          histos.fill(HIST("hInvMassPKLike"), mass);
-          histos.fill(HIST("hInvMassPKLikeVsPt"), mass, ptPair);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                            k.px, k.py, k.pz, MassKaonCharged);
+
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float pzTot = pr.pz + k.pz;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
+
+          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+
+          if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+            continue;
+          }
+
+          const bool unlikeSignPK = (pr.charge * k.charge) < 0;
+          if (unlikeSignPK) {
+            histos.fill(HIST("hInvMassPKUnlike"), mass);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, eventMult);
+            }
+          } else {
+            histos.fill(HIST("hInvMassPKLike"), mass);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, eventMult);
+            }
           }
         }
       }
     }
 
     // --- SAME-EVENT: proxy (d/2) + K ---
-    for (auto const& pr : proxyCands) {
-      for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid)
-          continue; // sanity check: should never match, but just in case of bug in candidate-building logic
-        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
+    if (hasProxyCandidates) {
+      for (auto const& pr : proxyCands) {
+        for (auto const& k : kaonCands) {
+          if (pr.tid == k.tid)
+            continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
-        const float pxTot = pr.px + k.px;
-        const float pyTot = pr.py + k.py;
-        const float pzTot = pr.pz + k.pz;
-        const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
-        const float phiPair = phiFromPxPy(pxTot, pyTot);
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
 
-        const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot + static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
-        const float yPair = rapidityFromEPz(eTot, pzTot);
+          // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
+          histos.fill(HIST("hDeuteronProxyMass"), mass);
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, eventMult);
 
-        // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
-        histos.fill(HIST("hDeuteronProxyMass"), mass);
-        if (lstarEnableSparse.value != 0) {
-          histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, yPair, phiPair, eventMult);
+            // Like-sign proxy background: proxy and kaon have the same charge sign.
+            // Here the proxy charge follows the original deuteron-candidate charge.
+            if ((pr.charge * k.charge) > 0) {
+              histos.fill(HIST("hLambdaStarProxyLikeSparse"), mass, ptPair, eventMult);
+            }
+          }
+        }
+      }
+    }
+
+    // --- MIXED-EVENT: current kaons + previous-event real protons ---
+    // This fills the standard pK mixed-event background.
+    for (auto const& prev : mLStarMixEvents) {
+      if (std::abs(prev.zvtx - collision.posZ()) > lstarMixZvtxMax.value) {
+        continue;
+      }
+      if (std::abs(prev.mult - eventMult) > lstarMixMultMax.value) {
+        continue;
+      }
+      if (prev.protons.empty()) {
+        continue;
+      }
+
+      for (auto const& pr : prev.protons) {
+        for (auto const& k : kaonCands) {
+          // Unlike-sign pK mixed-event background.
+          if ((pr.charge * k.charge) >= 0) {
+            continue;
+          }
+
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                            k.px, k.py, k.pz, MassKaonCharged);
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float pzTot = pr.pz + k.pz;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
+
+          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+          if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+            continue;
+          }
+
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarPKMixedSparse"), mass, ptPair, eventMult);
+          }
         }
       }
     }
 
     // --- MIXED-EVENT: current proxies + previous-event kaons ---
-    for (auto const& prev : mLStarMixEvents) {
-      if (std::abs(prev.zvtx - collision.posZ()) > lstarMixZvtxMax.value)
-        continue;
-      if (std::abs(prev.mult - eventMult) > lstarMixMultMax.value)
-        continue;
-      if (prev.kaons.empty()) {
-        continue;
-      }
+    // This fills the deuteron-proxy mixed-event background.
+    if (hasProxyCandidates) {
+      for (auto const& prev : mLStarMixEvents) {
+        if (std::abs(prev.zvtx - collision.posZ()) > lstarMixZvtxMax.value) {
+          continue;
+        }
+        if (std::abs(prev.mult - eventMult) > lstarMixMultMax.value) {
+          continue;
+        }
+        if (prev.kaons.empty()) {
+          continue;
+        }
 
-      for (auto const& pr : proxyCands) {
-        for (auto const& k : prev.kaons) {
-          // convention: mix for unlike-sign only (resonance background)
-          if ((pr.charge * k.charge) >= 0) {
-            continue;
-          }
-          if (pr.tid == k.tid)
-            continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+        for (auto const& pr : proxyCands) {
+          for (auto const& k : prev.kaons) {
+            // Unlike-sign proxy-K mixed-event background.
+            if ((pr.charge * k.charge) >= 0) {
+              continue;
+            }
 
-          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
+            const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                              k.px, k.py, k.pz, MassKaonCharged);
+            const float pxTot = pr.px + k.px;
+            const float pyTot = pr.py + k.py;
+            const float pzTot = pr.pz + k.pz;
+            const float ptPair = ptFromPxPy(pxTot, pyTot);
 
-          const float pxTot = pr.px + k.px;
-          const float pyTot = pr.py + k.py;
-          const float pzTot = pr.pz + k.pz;
-          const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
-          const float phiPair = phiFromPxPy(pxTot, pyTot);
+            const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+            if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+              continue;
+            }
 
-          const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot + static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
-          const float yPair = rapidityFromEPz(eTot, pzTot);
-
-          // Fill mixed-event THnSparse (proxy only)
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarProxyMixedSparse"), mass, ptPair, yPair, phiPair, eventMult);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarProxyMixedSparse"), mass, ptPair, eventMult);
+            }
           }
         }
       }
@@ -2756,6 +2788,7 @@ struct Lambdastarproxy {
     entry.mult = eventMult;
     entry.zvtx = collision.posZ();
     entry.kaons = std::move(kaonCands);
+    entry.protons = std::move(protonCands);
     entry.proxies = std::move(proxyCands);
 
     mLStarMixEvents.push_front(std::move(entry));
