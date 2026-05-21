@@ -23,8 +23,9 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
-#include "TLorentzVector.h"
 #include "TRandom3.h"
+#include <Math/Vector4D.h>
+#include <Math/VectorUtil.h>
 
 #include <unordered_map>
 #include <vector>
@@ -349,9 +350,9 @@ struct FwdMuonsUPC {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    TLorentzVector p;
     auto mMu = particleMass(kMuonPDG);
-    p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
+    ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu};
+
     float eta = p.Eta();
     float pt = p.Pt();
     float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
@@ -368,9 +369,9 @@ struct FwdMuonsUPC {
   }
 
   // function to compute phi for azimuth anisotropy
-  void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float& phiAverage, float& phiCharge)
+  void computePhiAnis(ROOT::Math::PxPyPzMVector p1, ROOT::Math::PxPyPzMVector p2, int sign1, float& phiAverage, float& phiCharge)
   {
-    TLorentzVector tSum, tDiffAv, tDiffCh;
+    ROOT::Math::PxPyPzMVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;
     float halfUnity = 0.5;
     if (sign1 > 0) {
@@ -388,9 +389,9 @@ struct FwdMuonsUPC {
     }
 
     // average
-    phiAverage = tSum.DeltaPhi(tDiffAv);
+    phiAverage = ROOT::Math::VectorUtil::DeltaPhi(tSum, tDiffAv);
     // charge
-    phiCharge = tSum.DeltaPhi(tDiffCh);
+    phiCharge = ROOT::Math::VectorUtil::DeltaPhi(tSum, tDiffCh);
   }
 
   // function that processes the candidates:
@@ -453,11 +454,10 @@ struct FwdMuonsUPC {
       return;
 
     // form Lorentz vectors
-    TLorentzVector p1, p2;
     auto mMu = particleMass(kMuonPDG);
-    p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
-    p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
-    TLorentzVector p = p1 + p2;
+    ROOT::Math::PxPyPzMVector p1{tr1.px(), tr1.py(), tr1.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p2{tr2.px(), tr2.py(), tr2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p = p1 + p2;
 
     // cut on pair kinematics
     // select mass
@@ -520,15 +520,15 @@ struct FwdMuonsUPC {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(myTrackType),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(myTrackType),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     } else {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(myTrackType),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(myTrackType),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     }
   }
@@ -549,11 +549,10 @@ struct FwdMuonsUPC {
     }
 
     // create Lorentz vectors
-    TLorentzVector p1, p2;
     auto mMu = particleMass(kMuonPDG);
-    p1.SetXYZM(McPart1.px(), McPart1.py(), McPart1.pz(), mMu);
-    p2.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
-    TLorentzVector p = p1 + p2;
+    ROOT::Math::PxPyPzMVector p1{McPart1.px(), McPart1.py(), McPart1.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p2{McPart2.px(), McPart2.py(), McPart2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p = p1 + p2;
 
     // cut on pair kinematics
     // select mass
@@ -587,13 +586,13 @@ struct FwdMuonsUPC {
     if (McPart1.pdgCode() < 0) {
       dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-              p2.Pt(), p2.PseudoRapidity(), p2.Phi());
+              p1.Pt(), p1.Eta(), p1.Phi(),
+              p2.Pt(), p2.Eta(), p2.Phi());
     } else {
       dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-              p1.Pt(), p1.PseudoRapidity(), p1.Phi());
+              p2.Pt(), p2.Eta(), p2.Phi(),
+              p1.Pt(), p1.Eta(), p1.Phi());
     }
   }
 
@@ -655,11 +654,10 @@ struct FwdMuonsUPC {
       return;
 
     // form Lorentz vectors
-    TLorentzVector p1, p2;
     auto mMu = particleMass(kMuonPDG);
-    p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
-    p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
-    TLorentzVector p = p1 + p2;
+    ROOT::Math::PxPyPzMVector p1{tr1.px(), tr1.py(), tr1.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p2{tr2.px(), tr2.py(), tr2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p = p1 + p2;
 
     // cut on pair kinematics (reco candidates)
     // select mass
@@ -683,11 +681,9 @@ struct FwdMuonsUPC {
     float phiCharge = 0;
     computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
-    // gen particle
-    TLorentzVector p1Mc, p2Mc;
-    p1Mc.SetXYZM(McPart1.px(), McPart1.py(), McPart1.pz(), mMu);
-    p2Mc.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
-    TLorentzVector pMc = p1Mc + p2Mc;
+    ROOT::Math::PxPyPzMVector p1Mc{McPart1.px(), McPart1.py(), McPart1.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p2Mc{McPart2.px(), McPart2.py(), McPart2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector pMc = p2Mc + p2Mc;
 
     // compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
@@ -713,22 +709,22 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
+               p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(myTrackType),
+               p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(myTrackType),
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
-               p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
-               p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi());
+               p1Mc.Pt(), p1Mc.Eta(), p1Mc.Phi(),
+               p2Mc.Pt(), p2Mc.Eta(), p2Mc.Phi());
     } else {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
+               p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(myTrackType),
+               p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(myTrackType),
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
-               p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi(),
-               p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi());
+               p2Mc.Pt(), p2Mc.Eta(), p2Mc.Phi(),
+               p1Mc.Pt(), p1Mc.Eta(), p1Mc.Phi());
     }
   }
 
