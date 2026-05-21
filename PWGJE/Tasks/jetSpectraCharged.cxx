@@ -743,9 +743,9 @@ struct JetSpectraCharged {
           angularityMcd /= (corrBasejetpt * (jetMCD.r() / 100.f));
           if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
-              if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-                registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcpmcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
-              }
+            if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcpmcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            }
             registry.fill(HIST("h2_jet_pt_mcd_rhoareasubtracted_jet_pt_mcp_matchedgeo_mcdetaconstraint"), corrBasejetpt, jetMCP.pt(), weight);
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
             registry.fill(HIST("h3_jet_pt_mcd_jet_pt_mcp_jet_mcd_angularity_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, angularityMcd, weight);
