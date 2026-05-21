@@ -84,7 +84,7 @@ struct JetSpectraCharged {
   Configurable<bool> isMCGenOnly{"isMCGenOnly", false, "analysis is run over mcGen only"};
   Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
   Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
-  Configurable<bool> useFT0Cvariant{"useFT0CVariant", false, "IF checkCentFT0M is false: false -> use standard FT0C centrality selection; true -> use FT0CVariant1"};
+  Configurable<bool> useFT0CVariant{"useFT0CVariant", false, "IF checkCentFT0M is false: false -> use standard FT0C centrality selection; true -> use FT0CVariant1"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -401,7 +401,7 @@ struct JetSpectraCharged {
         }
 
         float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C());
+        checkCentFT0M ? centrality = collision.centFT0M() : centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C());
         if ((centralityMin < centrality) && (centrality < centralityMax)) {
           centralityIsGood = true;
         }
@@ -445,7 +445,7 @@ struct JetSpectraCharged {
   bool applyCollisionCuts(TColl const& collision, bool fillHistograms = false, bool isWeighted = false, float eventWeight = 1.0)
   {
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     if (fillHistograms) {
       registry.fill(HIST("h_collisions"), 0.5);
@@ -835,7 +835,7 @@ struct JetSpectraCharged {
     }
 
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -858,7 +858,7 @@ struct JetSpectraCharged {
     }
 
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -881,7 +881,7 @@ struct JetSpectraCharged {
     }
 
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -904,7 +904,7 @@ struct JetSpectraCharged {
     }
 
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -931,7 +931,7 @@ struct JetSpectraCharged {
     }
     float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -958,7 +958,7 @@ struct JetSpectraCharged {
     }
     float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -1029,7 +1029,7 @@ struct JetSpectraCharged {
           occupancyIsGood = true;
         }
         float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+        checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
         if ((centralityMin < centrality) && (centrality < centralityMax)) {
           centralityIsGood = true;
         }
@@ -1112,7 +1112,7 @@ struct JetSpectraCharged {
           occupancyIsGood = true;
         }
         float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+        checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
         if ((centralityMin < centrality) && (centrality < centralityMax)) {
           centralityIsGood = true;
         }
@@ -1255,7 +1255,7 @@ struct JetSpectraCharged {
     }
 
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -1278,7 +1278,7 @@ struct JetSpectraCharged {
     }
 
     float centrality = -1.0;
-    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+    checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
