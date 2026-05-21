@@ -176,6 +176,8 @@ const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
+const int k2Tracks = 2;
+const int k4Tracks = 4;
 
 struct FwdMuonsUPC {
 
@@ -403,7 +405,7 @@ struct FwdMuonsUPC {
     }
 
     // select events with exactly 2 forward tracks
-    if (cand.numContrib() != 2) {
+    if (cand.numContrib() != k2Tracks) {
       return;
     }
 
@@ -731,7 +733,7 @@ struct FwdMuonsUPC {
 
     // loop over the candidates
     for (const auto& item : tracksPerCand) {
-      if (item.second.size() != 2) {
+      if (item.second.size() != k2Tracks) {
         LOGF(debug, "number track = %d", item.second.size());
         continue;
       }
@@ -768,7 +770,7 @@ struct FwdMuonsUPC {
 
     // loop over the candidates
     for (const auto& item : tracksPerCand) {
-      if (item.second.size() != 2) {
+      if (item.second.size() != k2Tracks) {
         LOGF(debug, "mc parts = %d", item.second.size());
         for (const auto id : item.second) {
           auto p = McParts.iteratorAt(id);
@@ -802,7 +804,7 @@ struct FwdMuonsUPC {
 
     // loop over the candidates
     for (const auto& item : tracksPerCandAll) {
-      if (item.second.size() != 4) {
+      if (item.second.size() != k4Tracks) {
         LOGF(debug, "number track (reco + gen) = %d", item.second.size());
         continue;
       }
