@@ -263,7 +263,7 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::MlScoreFirstClass,
                   full::MlScoreSecondClass,
                   full::MlScoreThirdClass,
-                  full::CentFT0C); 
+                  full::CentFT0C);
 
 DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
                   full::CollisionId);
@@ -635,7 +635,7 @@ struct HfTreeCreatorLcToPKPi {
     if (applyMl) {
       assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass, candFlag);
     }
-    
+
     float centFT0C = -1.f;
     if constexpr (UseCentrality) {
       centFT0C = collision.centFT0C();
@@ -728,7 +728,7 @@ struct HfTreeCreatorLcToPKPi {
     if (applyMl) {
       assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass, candFlag);
     }
-    
+
     float centFT0C = -1.f;
     if constexpr (UseCentrality) {
       centFT0C = collision.centFT0C();
