@@ -16,6 +16,7 @@
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Framework/AnalysisDataModel.h"
@@ -26,6 +27,7 @@
 #include "TRandom3.h"
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
+#include <TPDGCode.h>
 
 #include <unordered_map>
 #include <vector>
@@ -174,12 +176,8 @@ const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
-const int kMuonPDG = 13;
 
 struct FwdMuonsUPC {
-
-  // a pdg object
-  Service<o2::framework::O2DatabasePDG> pdg;
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
@@ -244,13 +242,6 @@ struct FwdMuonsUPC {
 
   // FUNCTIONS
 
-  // retrieve particle mass (GeV/c^2) from TDatabasePDG
-  float particleMass(int pid)
-  {
-    auto mass = pdg->Mass(pid);
-    return mass;
-  }
-
   // template function that fills a map with the collision id of each udcollision as key
   // and a vector with the tracks
   // map == (key, element) == (udCollisionId, vector of trks)
@@ -277,7 +268,7 @@ struct FwdMuonsUPC {
       if (candId < 0) {
         continue;
       }
-      if (std::abs(tr.pdgCode()) != kMuonPDG) {
+      if (std::abs(tr.pdgCode()) != PDG_t::kMuonMinus) {
         continue;
       }
       tracksPerCand[candId].push_back(tr.globalIndex());
@@ -350,8 +341,7 @@ struct FwdMuonsUPC {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    auto mMu = particleMass(kMuonPDG);
-    ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), o2::constants::physics::MassMuon};
 
     float eta = p.Eta();
     float pt = p.Pt();
@@ -454,9 +444,8 @@ struct FwdMuonsUPC {
       return;
 
     // form Lorentz vectors
-    auto mMu = particleMass(kMuonPDG);
-    ROOT::Math::PxPyPzMVector p1{tr1.px(), tr1.py(), tr1.pz(), mMu};
-    ROOT::Math::PxPyPzMVector p2{tr2.px(), tr2.py(), tr2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p1{tr1.px(), tr1.py(), tr1.pz(), o2::constants::physics::MassMuon};
+    ROOT::Math::PxPyPzMVector p2{tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassMuon};
     ROOT::Math::PxPyPzMVector p = p1 + p2;
 
     // cut on pair kinematics
@@ -540,7 +529,7 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != kMuonPDG || std::abs(McPart2.pdgCode()) != kMuonPDG) {
+    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus) {
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
       return;
     }
@@ -549,9 +538,8 @@ struct FwdMuonsUPC {
     }
 
     // create Lorentz vectors
-    auto mMu = particleMass(kMuonPDG);
-    ROOT::Math::PxPyPzMVector p1{McPart1.px(), McPart1.py(), McPart1.pz(), mMu};
-    ROOT::Math::PxPyPzMVector p2{McPart2.px(), McPart2.py(), McPart2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p1{McPart1.px(), McPart1.py(), McPart1.pz(), o2::constants::physics::MassMuon};
+    ROOT::Math::PxPyPzMVector p2{McPart2.px(), McPart2.py(), McPart2.pz(), o2::constants::physics::MassMuon};
     ROOT::Math::PxPyPzMVector p = p1 + p2;
 
     // cut on pair kinematics
@@ -604,7 +592,7 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != kMuonPDG || std::abs(McPart2.pdgCode()) != kMuonPDG)
+    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
@@ -654,9 +642,8 @@ struct FwdMuonsUPC {
       return;
 
     // form Lorentz vectors
-    auto mMu = particleMass(kMuonPDG);
-    ROOT::Math::PxPyPzMVector p1{tr1.px(), tr1.py(), tr1.pz(), mMu};
-    ROOT::Math::PxPyPzMVector p2{tr2.px(), tr2.py(), tr2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p1{tr1.px(), tr1.py(), tr1.pz(), o2::constants::physics::MassMuon};
+    ROOT::Math::PxPyPzMVector p2{tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassMuon};
     ROOT::Math::PxPyPzMVector p = p1 + p2;
 
     // cut on pair kinematics (reco candidates)
@@ -681,8 +668,8 @@ struct FwdMuonsUPC {
     float phiCharge = 0;
     computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
-    ROOT::Math::PxPyPzMVector p1Mc{McPart1.px(), McPart1.py(), McPart1.pz(), mMu};
-    ROOT::Math::PxPyPzMVector p2Mc{McPart2.px(), McPart2.py(), McPart2.pz(), mMu};
+    ROOT::Math::PxPyPzMVector p1Mc{McPart1.px(), McPart1.py(), McPart1.pz(), o2::constants::physics::MassMuon};
+    ROOT::Math::PxPyPzMVector p2Mc{McPart2.px(), McPart2.py(), McPart2.pz(), o2::constants::physics::MassMuon};
     ROOT::Math::PxPyPzMVector pMc = p2Mc + p2Mc;
 
     // compute gen phi for azimuth anisotropy
