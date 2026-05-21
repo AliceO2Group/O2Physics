@@ -16,15 +16,15 @@
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
-#include "PWGUD/DataModel/UDTables.h"
+#include <PWGUD/DataModel/UDTables.h>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TRandom3.h"
+#include <TRandom3.h>
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
 #include <TPDGCode.h>
