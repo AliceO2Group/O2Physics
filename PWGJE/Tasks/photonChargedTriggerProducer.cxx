@@ -55,23 +55,23 @@ template <typename T>
 concept HasTrueCollision = IsJetMcCollision<T> || IsJetCollisionMCD<T>;
 
 struct PhotonChargedTriggerProducer {
-  // reco
-  Produces<aod::CollisionsExtraCorr> collisionExtraCorrTable;
-  Produces<aod::Triggers> triggerTable;
-  Produces<aod::Hadrons> hadronTable;
-  Produces<aod::Pipms> pipmTable;
-  Produces<aod::PhotonPCMs> photonPCMTable;
-  Produces<aod::PhotonPCMPairs> photonPCMPairTable;
-  // mc
-  Produces<aod::McCollisionsExtraCorr> mcCollisionExtraCorrTable;
-  Produces<aod::TriggerParticles> triggerParticleTable;
-
-  // Configurable<bool> isMc{"isMc", false, "running over MC dataset"};
+  struct : ProducesGroup {
+    // reco
+    Produces<aod::CollisionsExtraCorr> collisionExtraCorr;
+    Produces<aod::Triggers> trigger;
+    Produces<aod::Hadrons> hadron;
+    Produces<aod::Pipms> pipm;
+    Produces<aod::PhotonPCMs> photonPCM;
+    Produces<aod::PhotonPCMPairs> photonPCMPair;
+    // mc
+    Produces<aod::McCollisionsExtraCorr> mcCollisionExtraCorr;
+    Produces<aod::TriggerParticles> triggerParticle;
+  } tableProduction;
 
   Configurable<double> zPvMax{"zPvMax", 7, "maximum absZ primary-vertex cut"};
   Configurable<int> occupancyMin{"occupancyMin", 0, "minimum occupancy cut"};
   Configurable<int> occupancyMax{"occupancyMax", 2000, "maximum occupancy cut"};
-  Configurable<double> etaMax{"etaMax", 0.8, "maximum absEta cut"};
+  Configurable<double> absEtaMax{"absEtaMax", 0.8, "maximum absEta cut"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "JE framework - event selection"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "skip MB gap events"};
@@ -97,6 +97,8 @@ struct PhotonChargedTriggerProducer {
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
   std::vector<int> triggerMaskBits;
+
+  HistogramRegistry histos{"histogramRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   // for mc
   Service<framework::O2DatabasePDG> pdg;
@@ -149,7 +151,7 @@ struct PhotonChargedTriggerProducer {
   {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection))
       return false;
-    if (!jetderiveddatautilities::applyTrackKinematics(track, 0.1, 1000, -1 * etaMax, etaMax))
+    if (!jetderiveddatautilities::applyTrackKinematics(track, 0.1, 1000, -1 * absEtaMax, absEtaMax))
       return false;
     return true;
   }
@@ -202,6 +204,25 @@ struct PhotonChargedTriggerProducer {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
+
+    // histograms
+    AxisSpec const axisZPv{28, -7, 7, "#it{z}_{pv}"};
+    AxisSpec const axisMult{65, -0.5, 64.5, "multiplicity"};
+    AxisSpec const axisHadronicRate{1001, -0.5, 1000.5, "hadronicRate"};
+    AxisSpec const axisPt{50, 0, 25, "#it{p}_{T}"};
+    AxisSpec const axisPhi{72, 0, constants::math::TwoPI, "#varphi"};
+    AxisSpec const axisEta{32, -absEtaMax, absEtaMax, "#eta"};
+    // reco
+    histos.add("reco/h2_zPvMult", "h2_zPvMult", kTHnSparseD, {axisZPv, axisMult}, true);
+    histos.add("reco/h1_hadronicRate", "h1_hadronicRate", kTH1D, {axisHadronicRate}, true);
+    histos.add("reco/h3_ptPhiEta_trigger", "h3_ptPhiEta_trigger", kTHnSparseD, {axisPt, axisPhi, axisEta}, true);
+    histos.add("reco/h3_ptPhiEta_hadron", "h3_ptPhiEta_hadron", kTHnSparseD, {axisPt, axisPhi, axisEta}, true);
+    histos.add("reco/h3_ptPhiEta_pipm", "h3_ptPhiEta_pipm", kTHnSparseD, {axisPt, axisPhi, axisEta}, true);
+    histos.add("reco/h3_ptPhiEta_photonPCM", "h3_ptPhiEta_photonPCM", kTHnSparseD, {axisPt, axisPhi, axisEta}, true);
+    histos.add("reco/h3_ptPhiEta_photonPCMPair", "h3_ptPhiEta_photonPCMPair", kTHnSparseD, {axisPt, axisPhi, axisEta}, true);
+    // true
+    histos.add("true/h2_zPvMult", "h2_zPvMult", kTHnSparseD, {axisZPv, axisMult}, true);
+    histos.add("true/h3_ptPhiEta_trigger", "h3_ptPhiEta_trigger", kTHnSparseD, {axisPt, axisPhi, axisEta}, true);
   }
 
   template <typename T_collision, typename T_tracks>
@@ -247,15 +268,19 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       // trigger info
-      triggerTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
+      histos.fill(HIST("reco/h3_ptPhiEta_trigger"), track.pt(), track.phi(), track.eta());
+      tableProduction.trigger(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
     }
     bool const isTriggerEvent = maxTrackPt > ptTrigMin;
     if (oneTriggerPerEvent && isSelectedEvent && isTriggerEvent) {
-      triggerTable(maxTriggerCollisionId, maxTriggerGlobalIndex, maxTrackPt, maxTriggerPhi, maxTriggerEta);
+      histos.fill(HIST("reco/h3_ptPhiEta_trigger"), maxTrackPt, maxTriggerPhi, maxTriggerEta);
+      tableProduction.trigger(maxTriggerCollisionId, maxTriggerGlobalIndex, maxTrackPt, maxTriggerPhi, maxTriggerEta);
     }
 
     // collision info
-    collisionExtraCorrTable(isSelectedEvent, thirdDecimalTruePosZ, isTriggerEvent, maxTrackPt, nGlobalTracks);
+    histos.fill(HIST("reco/h2_zPvMult"), collision.posZ(), nGlobalTracks);
+    histos.fill(HIST("reco/h1_hadronicRate"), collision.hadronicRate());
+    tableProduction.collisionExtraCorr(isSelectedEvent, thirdDecimalTruePosZ, isTriggerEvent, maxTrackPt, nGlobalTracks);
   }
 
   void processRecoCollisionTrigger(aod::JetCollision const& collision, aod::JetTracks const& tracks)
@@ -284,7 +309,8 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       // hadron
-      hadronTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
+      histos.fill(HIST("reco/h3_ptPhiEta_hadron"), track.pt(), track.phi(), track.eta());
+      tableProduction.hadron(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
 
       // pipm selection
       auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi>>();
@@ -292,7 +318,8 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       // pipm
-      pipmTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
+      histos.fill(HIST("reco/h3_ptPhiEta_pipm"), track.pt(), track.phi(), track.eta());
+      tableProduction.pipm(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processRecoPipmTPCTOF, "process pipm (TPC-TOF) table (reconstructed)", false);
@@ -311,7 +338,8 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       // hadron
-      hadronTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
+      histos.fill(HIST("reco/h3_ptPhiEta_hadron"), track.pt(), track.phi(), track.eta());
+      tableProduction.hadron(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
 
       // pipm selection
       auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::pidTPCPi>>();
@@ -319,7 +347,8 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       // pipm
-      pipmTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
+      histos.fill(HIST("reco/h3_ptPhiEta_pipm"), track.pt(), track.phi(), track.eta());
+      tableProduction.pipm(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processRecoPipmTPC, "process pipm (TPC) table (reconstructed)", false);
@@ -337,15 +366,16 @@ struct PhotonChargedTriggerProducer {
     // photonPCM
     for (auto const& v0Photon : v0PhotonsThisEvent) {
       // photon selection
-      if (std::abs(v0Photon.eta()) > etaMax)
+      if (std::abs(v0Photon.eta()) > absEtaMax)
         continue;
       if (std::abs(v0Photon.dcaZtopv()) < pcmAbsDcaZLim.value[0] || std::abs(v0Photon.dcaZtopv()) > pcmAbsDcaZLim.value[1]) {
         continue;
       }
 
       // photon PCM
-      photonPCMTable(v0Photon.collisionId(), v0Photon.globalIndex(),
-                     v0Photon.posTrack().trackId(), v0Photon.negTrack().trackId(), v0Photon.pt(), v0Photon.phi(), v0Photon.eta());
+      histos.fill(HIST("reco/h3_ptPhiEta_photonPCM"), v0Photon.pt(), v0Photon.phi(), v0Photon.eta());
+      tableProduction.photonPCM(v0Photon.collisionId(), v0Photon.globalIndex(),
+                                v0Photon.posTrack().trackId(), v0Photon.negTrack().trackId(), v0Photon.pt(), v0Photon.phi(), v0Photon.eta());
     }
 
     // photonPCm pairs
@@ -356,13 +386,14 @@ struct PhotonChargedTriggerProducer {
       ROOT::Math::PtEtaPhiMVector const p4V0PCMPair = p4V0PCM1 + p4V0PCM2;
 
       // pi0 selection
-      if (std::abs(p4V0PCMPair.Eta()) > etaMax)
+      if (std::abs(p4V0PCMPair.Eta()) > absEtaMax)
         continue;
 
       // save info
-      photonPCMPairTable(v0Photon1.collisionId(), v0Photon1.globalIndex(), v0Photon2.globalIndex(),
-                         v0Photon1.posTrack().trackId(), v0Photon1.negTrack().trackId(), v0Photon2.posTrack().trackId(), v0Photon2.negTrack().trackId(),
-                         p4V0PCMPair.Pt(), RecoDecay::constrainAngle(p4V0PCMPair.Phi(), 0), p4V0PCMPair.Eta(), p4V0PCMPair.M());
+      histos.fill(HIST("reco/h3_ptPhiEta_photonPCMPair"), p4V0PCMPair.Pt(), RecoDecay::constrainAngle(p4V0PCMPair.Phi(), 0), p4V0PCMPair.Eta());
+      tableProduction.photonPCMPair(v0Photon1.collisionId(), v0Photon1.globalIndex(), v0Photon2.globalIndex(),
+                                    v0Photon1.posTrack().trackId(), v0Photon1.negTrack().trackId(), v0Photon2.posTrack().trackId(), v0Photon2.negTrack().trackId(),
+                                    p4V0PCMPair.Pt(), RecoDecay::constrainAngle(p4V0PCMPair.Phi(), 0), p4V0PCMPair.Eta(), p4V0PCMPair.M());
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processRecoPhotonPCM, "process photonPCM table (reconstructed)", false);
@@ -388,7 +419,7 @@ struct PhotonChargedTriggerProducer {
         continue;
       if (!mcParticle.isPhysicalPrimary())
         continue;
-      if (std::abs(mcParticle.eta()) > etaMax)
+      if (std::abs(mcParticle.eta()) > absEtaMax)
         continue;
 
       nCharged++;
@@ -407,15 +438,18 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       // trigger info
-      triggerParticleTable(mcParticle.mcCollisionId(), mcParticle.globalIndex(), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+      histos.fill(HIST("true/h3_ptPhiEta_trigger"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+      tableProduction.triggerParticle(mcParticle.mcCollisionId(), mcParticle.globalIndex(), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
     }
     bool const isTriggerEvent = maxChargedPt > ptTrigMin;
     if (oneTriggerPerEvent && isTriggerEvent) {
-      triggerParticleTable(maxTriggerCollisionId, maxTriggerGlobalIndex, maxChargedPt, maxTriggerPhi, maxTriggerEta);
+      histos.fill(HIST("true/h3_ptPhiEta_trigger"), maxChargedPt, maxTriggerPhi, maxTriggerEta);
+      tableProduction.triggerParticle(maxTriggerCollisionId, maxTriggerGlobalIndex, maxChargedPt, maxTriggerPhi, maxTriggerEta);
     }
 
     // collision info
-    mcCollisionExtraCorrTable(thirdDecimalTruePosZ, isTriggerEvent, maxChargedPt, nCharged);
+    histos.fill(HIST("true/h2_zPvMult"), mcCollision.posZ(), nCharged);
+    tableProduction.mcCollisionExtraCorr(thirdDecimalTruePosZ, isTriggerEvent, maxChargedPt, nCharged);
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processMcCorrTables, "process table production (mc)", false);
 };
