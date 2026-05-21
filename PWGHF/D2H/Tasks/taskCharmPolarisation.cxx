@@ -2344,7 +2344,6 @@ struct HfTaskCharmPolarisation {
           float const xQvec = (*qVecs).at(0);
           float const yQvec = (*qVecs).at(1);
           ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
-          ROOT::Math::XYZVector const qVec = ROOT::Math::XYZVector(xQvec, yQvec, 0.);
           float const phiStarBeam = std::atan2(threeVecDauCM.Y(), threeVecDauCM.X());
           float const psiAngle = epHelper.GetEventPlane(xQvec, yQvec, 2);
           float const deltaPhiStarEP = RecoDecay::constrainAngle(phiStarBeam - psiAngle, 0., 2);
