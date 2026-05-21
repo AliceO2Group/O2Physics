@@ -271,7 +271,7 @@ struct cfgDFeT : o2::framework::ConfigurableGroup {
   std::string prefix = "cfgDFeT";
   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-
+  o2::framework::Configurable<float> maxDCA2legs{"maxDCA2legs", 1.0, "max distance between 2 legs in cm"};
   // configuration for PID ML
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -288,6 +288,7 @@ struct cfgDFeV0 : o2::framework::ConfigurableGroup {
   std::string prefix = "cfgDFeV0";
   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  o2::framework::Configurable<float> maxDCA2legs{"maxDCA2legs", 1.0, "max distance between 2 legs in cm"};
   // configuration for PID ML
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -304,6 +305,7 @@ struct cfgDFeC : o2::framework::ConfigurableGroup {
   std::string prefix = "cfgDFeC";
   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  o2::framework::Configurable<float> maxDCA2legs{"maxDCA2legs", 1.0, "max distance between 2 legs in cm"};
   // configuration for PID ML
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -1343,8 +1345,8 @@ class ElectronModule
     }
   }
 
-  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TTrackAssoc, typename TMCCollisions, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc, typename TPresliceV0, typename TPresliceCascade>
-  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TTrackAssoc const& trackIndices, TMCCollisions const&, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc)
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TTrackAssoc, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc, typename TPresliceV0, typename TPresliceCascade>
+  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TTrackAssoc const& trackIndices, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc)
   {
     initCCDB(bcs.begin());
 
@@ -2105,8 +2107,8 @@ class ElectronModule
     clear();
   }
 
-  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TMCCollisions, typename TMCParticles, typename TProducts, typename THistoregistry>
-  void processWithoutTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCCollisions const&, TMCParticles const&, TProducts&, THistoregistry&)
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TMCParticles, typename TProducts, typename THistoregistry>
+  void processWithoutTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCParticles const&, TProducts&, THistoregistry&)
   {
     LOGF(info, "processWithoutTTCA is not supported. Bye.");
     return;

@@ -208,44 +208,44 @@ struct skimmerPrimaryElectronSCT {
   void processRec_SA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
     initCCDB(bcs.begin());
-    electronModule.processWithoutTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, nullptr, nullptr, products, mRegistry);
+    electronModule.processWithoutTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, nullptr, products, mRegistry);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_SA, "process reconstructed info only", true); // standalone
 
   void processRec_TTCA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
     initCCDB(bcs.begin());
-    electronModule.processWithTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
+    electronModule.processWithTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_TTCA, "process reconstructed info only", false); // with TTCA
 
   void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
     initCCDB(bcs.begin());
-    electronModule.processWithoutTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, nullptr, nullptr, products, mRegistry);
+    electronModule.processWithoutTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, nullptr, products, mRegistry);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
 
   void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
     initCCDB(bcs.begin());
-    electronModule.processWithTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
+    electronModule.processWithTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
 
   // ---------- for MC ----------
 
-  void processMC_SA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles)
+  void processMC_SA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McParticles const& mcParticles)
   {
     initCCDB(bcs.begin());
-    electronModule.processWithoutTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, mcCollisions, mcParticles, products, mRegistry);
+    electronModule.processWithoutTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, mcParticles, products, mRegistry);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSCT, processMC_SA, "process reconstructed and MC info ", false); // without TTCA in MC
 
-  void processMC_TTCA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles)
+  void processMC_TTCA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McParticles const& mcParticles)
   {
     initCCDB(bcs.begin());
-    electronModule.processWithTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, mcCollisions, mcParticles, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
+    electronModule.processWithTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, mcParticles, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSCT, processMC_TTCA, "process reconstructed info only", false); // with TTCA in MC
 };
