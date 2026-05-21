@@ -772,7 +772,7 @@ struct FwdMuonsUPC {
     for (const auto& item : tracksPerCand) {
       if (item.second.size() != k2Tracks) {
         LOGF(debug, "mc parts = %d", item.second.size());
-        for (const auto id : item.second) {
+        for (const auto& id : item.second) {
           auto p = McParts.iteratorAt(id);
           LOGF(debug,
                "  part %d: pdg=%d status=%d has_mothers=%d has_daughters=%d",
