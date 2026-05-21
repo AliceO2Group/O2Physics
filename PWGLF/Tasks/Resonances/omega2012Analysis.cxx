@@ -698,6 +698,7 @@ struct Omega2012Analysis {
   PROCESS_SWITCH(Omega2012Analysis, processDummy, "Process Dummy", true);
 
   void processData(const aod::ResoCollision& collision,
+                   aod::ResoTracks const& /*resotracks*/,
                    aod::ResoCascades const& resocasc,
                    aod::ResoV0s const& resov0s)
   {
