@@ -189,17 +189,17 @@ struct hadronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
   o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3, "min n sigma pi in TPC"};
   o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3, "max n sigma pi in TPC"};
-  o2::framework::Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -3, "min n sigma pi in TOF"};
-  o2::framework::Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +3, "max n sigma pi in TOF"};
+  // o2::framework::Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -3, "min n sigma pi in TOF"};
+  // o2::framework::Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +3, "max n sigma pi in TOF"};
   o2::framework::Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3, "min n sigma ka in TPC"};
   o2::framework::Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
-  o2::framework::Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
-  o2::framework::Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
-  o2::framework::Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
-  o2::framework::Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
-  o2::framework::Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
-  o2::framework::Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
-  o2::framework::Configurable<bool> requirePiKaPr{"requirePiKaPr", true, "require hadron to be pion or kaon or proton"};
+  // o2::framework::Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
+  // o2::framework::Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
+  // o2::framework::Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
+  // o2::framework::Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
+  // // o2::framework::Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
+  // // o2::framework::Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
+  o2::framework::Configurable<bool> requirePiKa{"requirePiKa", true, "require hadron to be pion or kaon"}; // protons are not involved in semileptonic decays of HF hadrons.
 };
 
 struct v0Cut : o2::framework::ConfigurableGroup {
@@ -1031,7 +1031,7 @@ class ElectronModule
       return false;
     }
 
-    if (fHadronCut.requirePiKaPr && !isPiKaPr(track)) {
+    if (fHadronCut.requirePiKa && !isPiKa(track)) {
       return false;
     }
 
@@ -1154,12 +1154,12 @@ class ElectronModule
   }
 
   template <typename TTrack>
-  bool isPiKaPr(TTrack const& track)
+  bool isPiKa(TTrack const& track)
   {
     bool is_pi_included_TPC = fHadronCut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < fHadronCut.cfg_max_TPCNsigmaPi;
     bool is_ka_included_TPC = fHadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < fHadronCut.cfg_max_TPCNsigmaKa;
-    bool is_pr_included_TPC = fHadronCut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < fHadronCut.cfg_max_TPCNsigmaPr;
-    return is_pi_included_TPC || is_ka_included_TPC || is_pr_included_TPC;
+    // bool is_pr_included_TPC = fHadronCut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < fHadronCut.cfg_max_TPCNsigmaPr;
+    return is_pi_included_TPC || is_ka_included_TPC;
   }
 
   template <bool isMC, typename TTrack>
