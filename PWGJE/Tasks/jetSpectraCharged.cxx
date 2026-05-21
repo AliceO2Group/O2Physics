@@ -93,6 +93,9 @@ struct JetSpectraCharged {
 
   float configSwitchLow = -98.0;
   float configSwitchHigh = 9998.0;
+
+  float ptHardCalcMethodSwitch = 999.0;
+
   enum AcceptSplitCollisionsOptions {
     NonSplitOnly = 0,
     SplitOkCheckAnyAssocColl,      // 1
@@ -615,7 +618,7 @@ struct JetSpectraCharged {
           if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
             double dpt = jetMCD.pt() - jetMCP.pt();
             float angularityMcd = 0.;
-            for (auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
+            for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
               angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
             }
             angularityMcd /= (jetMCD.pt() * (jetMCD.r() / 100.f));
@@ -654,7 +657,7 @@ struct JetSpectraCharged {
           if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
             double dpt = jetMCD.pt() - jetMCP.pt();
             float angularityMcd = 0.;
-            for (auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
+            for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
               angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
             }
             angularityMcd /= (jetMCD.pt() * (jetMCD.r() / 100.f));
@@ -693,7 +696,7 @@ struct JetSpectraCharged {
           if (jetMCD.template matchedJetGeo_first_as<std::decay_t<TTag>>().globalIndex() == jetMCD.template matchedJetPt_first_as<std::decay_t<TTag>>().globalIndex()) { // not a good way to do this
             double dpt = jetMCD.pt() - jetMCP.pt();
             float angularityMcd = 0.;
-            for (auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
+            for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
               angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
             }
             angularityMcd /= (jetMCD.pt() * (jetMCD.r() / 100.f));
@@ -737,7 +740,7 @@ struct JetSpectraCharged {
           double corrBasejetpt = jetMCD.pt() - (rho * jetMCD.area());
           double dcorrpt = corrBasejetpt - corrTagjetpt;
           float angularityMcd = 0.;
-          for (auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
+          for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
             angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
           }
           angularityMcd /= (corrBasejetpt * (jetMCD.r() / 100.f));
@@ -926,7 +929,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
@@ -953,7 +956,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0Cvariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
@@ -1196,7 +1199,7 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mccollision.ptHard() < ptHardCalcMethodSwitch ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1228,7 +1231,7 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mccollision.ptHard() < ptHardCalcMethodSwitch ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_mccollisions_rho"), mccollision.rho(), eventWeight);
 
     for (auto const& jet : jets) {
@@ -1319,7 +1322,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (const auto& mcdjet : mcdjets) {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
@@ -1362,7 +1365,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
 
     double mcrho = collision.has_mcCollision() ? collision.mcCollision_as<JetBkgRhoMcCollisions>().rho() : -1;
 
