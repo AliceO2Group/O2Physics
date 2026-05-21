@@ -24,10 +24,10 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TRandom3.h>
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
 #include <TPDGCode.h>
+#include <TRandom3.h>
 
 #include <unordered_map>
 #include <vector>
