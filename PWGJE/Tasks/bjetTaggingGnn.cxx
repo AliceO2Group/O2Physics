@@ -936,7 +936,7 @@ struct BjetTaggingGnn {
     const auto& mcpjetspermcpcollision = MCPjets.sliceBy(mcpjetsPerMCPCollision, collision.mcCollisionId());
     for (const auto& mcpjet : mcpjetspermcpcollision) {
       registry.fill(HIST("h_jetpT_particle"), mcpjet.pt(), weightEvt);
-      
+
       // Fill h3_pthat_jetpT only for unmatched particle jets (reco pT = -1)
       if (matchedMcpJetIndices.find(mcpjet.globalIndex()) == matchedMcpJetIndices.end()) {
         registry.fill(HIST("h3_pthat_jetpT"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), -1.f, mcpjet.pt(), weightEvt); // Missing jets, overflow-pTreco jets
