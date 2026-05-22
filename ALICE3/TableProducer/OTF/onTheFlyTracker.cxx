@@ -246,6 +246,14 @@ struct OnTheFlyTracker {
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   } cfgFitter;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgBR"; // configuration for bremsstrahlung
+    Configurable<bool> radiateBR{"radiateBR", false, "simulate bremsstrahlung"};
+    Configurable<float> minBREnergyFraction{"minEnergyFraction", 0.001f, "Minimum energy fraction a bremsstrahlung photon can carry"};
+    Configurable<float> maxBREnergyFraction{"maxEnergyFraction", 0.95f, "Maximum energy fraction a bremsstrahlung photon can carry"};
+    Configurable<float> radiationStrength{"radiationStrength", 1e-6f, "Strenght of the bremsstrahlung radiation"};
+  } brSettings;
+
   using PVertex = o2::dataformats::PrimaryVertex;
 
   // for secondary vertex finding
@@ -1749,6 +1757,53 @@ struct OnTheFlyTracker {
     }
   }
 
+  /// Function to compute the bremsstrahlung loss of charged-particles for each layer of the current configuration
+  /// \param icfg index of the current configuration
+  /// \param mcParticle true MC particle to identify particle and get the energy
+  /// \param trackParCov track of the particle to compute bremsstrahlung for
+  void computeBremsstrahlungLoss(const int icfg, const auto& mcParticle, o2::track::TrackParCov& trackParCov)
+  {
+    if (brSettings.radiateBR) {
+      const o2::fastsim::GeometryEntry geoEntry = mGeoContainer.getEntry(icfg);
+
+      for (auto const& layerName : geoEntry.getLayerNames()) {
+        if (layerName.find("global") != std::string::npos) { // Layers with global tag are skipped
+          continue;
+        }
+
+        float mass = o2::constants::physics::MassElectron;
+
+        switch (std::abs(mcParticle.pdgCode())) {
+          case kElectron:
+            mass = o2::constants::physics::MassElectron;
+            break;
+          case kMuonMinus:
+            mass = o2::constants::physics::MassMuon;
+            break;
+          case kPiPlus:
+            mass = o2::constants::physics::MassPionCharged;
+            break;
+          case kKPlus:
+            mass = o2::constants::physics::MassKaonCharged;
+            break;
+          case kProton:
+            mass = o2::constants::physics::MassProton;
+            break;
+          default:
+            break;
+        }
+
+        float lambda = brSettings.radiationStrength * mcParticle.e() * geoEntry.getFloatValue(layerName, "x0") / (mass * mass);
+        ULong64_t nPhotons = gRandom->Poisson(lambda);
+
+        for (ULong64_t photon = 0; photon < nPhotons; ++photon) {
+          float radiativeLoss = 1.0f - brSettings.minBREnergyFraction * std::pow(brSettings.maxBREnergyFraction / brSettings.minBREnergyFraction, gRandom->Rndm());
+          trackParCov.setQ2Pt(trackParCov.getQ2Pt() / radiativeLoss);
+        }
+      }
+    }
+  }
+
   void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const int icfg)
   {
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
@@ -1811,12 +1866,14 @@ struct OnTheFlyTracker {
           o2::track::TrackParCov perfectTrackParCov;
           o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
           perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
+          computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
           nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
         } else {
           o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
+          computeBremsstrahlungLoss(icfg, mcParticle, trackParCov);
           reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
           nTrkHits = fastTrackerSettings.minSiliconHits;
         }
@@ -2002,11 +2059,13 @@ struct OnTheFlyTracker {
       int nTrkHits = 0;
       if (enablePrimarySmearing && mcParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
+        computeBremsstrahlungLoss(icfg, mcParticle, trackParCov);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
         nTrkHits = fastTrackerSettings.minSiliconHits;
       } else if (enableSecondarySmearing) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
         if (nTrkHits < fastTrackerSettings.minSiliconHits) {
