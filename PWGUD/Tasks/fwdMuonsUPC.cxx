@@ -16,9 +16,10 @@
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
-#include <PWGUD/DataModel/UDTables.h>
+#include "PWGUD/DataModel/UDTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <PWGUD/DataModel/UDTables.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/O2DatabasePDGPlugin.h>
@@ -26,7 +27,6 @@
 
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
-#include <TPDGCode.h>
 #include <TRandom3.h>
 
 #include <unordered_map>
@@ -181,6 +181,9 @@ const int k4Tracks = 4;
 
 struct fwdMuonsUPC {
 
+  // a PDG object
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
   using CompleteFwdTracks = soa::Join<ForwardTracks, o2::aod::UDMcFwdTrackLabels>;
@@ -270,7 +273,7 @@ struct fwdMuonsUPC {
       if (candId < 0) {
         continue;
       }
-      if (std::abs(tr.pdgCode()) != PDG_t::kMuonMinus) {
+      if (std::abs(tr.pdgCode()) != pdg->GetParticle("mu-")->PdgCode()) {
         continue;
       }
       tracksPerCand[candId].push_back(tr.globalIndex());
@@ -531,7 +534,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus) {
+    if (std::abs(McPart1.pdgCode()) != pdg->GetParticle("mu-")->PdgCode() || std::abs(McPart2.pdgCode()) != pdg->GetParticle("mu-")->PdgCode()) {
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
       return;
     }
@@ -594,7 +597,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus)
+    if (std::abs(McPart1.pdgCode()) != pdg->GetParticle("mu-")->PdgCode() || std::abs(McPart2.pdgCode()) != pdg->GetParticle("mu-")->PdgCode())
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
