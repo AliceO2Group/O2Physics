@@ -95,6 +95,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(MatchLabel, matchLabel, int8_t);
 DECLARE_SOA_COLUMN(TrackId, trackId, int64_t);
 DECLARE_SOA_COLUMN(MatchType, matchType, int8_t);
+DECLARE_SOA_COLUMN(MatchChi2, matchChi2, float);
 DECLARE_SOA_COLUMN(MatchScore, matchScore, float);
 DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);
 DECLARE_SOA_COLUMN(MftMultiplicity, mftMultiplicity, int32_t);
@@ -152,7 +153,7 @@ DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
                   qamatching::MatchLabel,
                   qamatching::TrackId,
                   qamatching::P, qamatching::Pt, qamatching::Eta, qamatching::Phi,
-                  qamatching::MatchType, qamatching::MatchScore, qamatching::MatchRanking,
+                  qamatching::MatchType, qamatching::MatchChi2, qamatching::MatchScore, qamatching::MatchRanking,
                   qamatching::XAtVtx,
                   qamatching::YAtVtx,
                   qamatching::ZAtVtx,
@@ -2004,7 +2005,7 @@ struct QaMatching {
         collisionInfo.bc = bc.globalBC();
         collisionInfo.zVertex = collision.posZ();
 
-        if constexpr ( isMC ) {
+        if constexpr (isMC) {
           if (collisionInfo.matchablePairs.empty()) {
             fillMatchablePairs(collisionInfo, muonTracks, mftTracks);
           }
@@ -2117,7 +2118,7 @@ struct QaMatching {
 
           candidate.matchRanking = ranking;
           candidate.matchRankingProd = ranking;
-          if constexpr ( isMC ) {
+          if constexpr (isMC) {
             candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
           } else {
             candidate.matchType = kMatchTypeUndefined;
@@ -2733,7 +2734,7 @@ struct QaMatching {
         const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
 
         candidate.matchRanking = ranking;
-        if constexpr ( isMC ) {
+        if constexpr (isMC) {
           candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
         } else {
           candidate.matchType = kMatchTypeUndefined;
@@ -2882,7 +2883,7 @@ struct QaMatching {
         const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
 
         candidate.matchRanking = ranking;
-        if constexpr ( isMC ) {
+        if constexpr (isMC) {
           candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
         } else {
           candidate.matchType = kMatchTypeUndefined;
@@ -3031,6 +3032,7 @@ struct QaMatching {
           static_cast<float>(candidateTrack.eta()),
           static_cast<float>(candidateTrack.phi()),
           static_cast<int8_t>(candidate.matchType),
+          static_cast<float>(candidate.matchChi2),
           static_cast<float>(candidate.matchScore),
           static_cast<int32_t>(candidate.matchRanking),
           static_cast<float>(candidateTrackAtVertex.getX()),
