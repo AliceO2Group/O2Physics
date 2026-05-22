@@ -38,6 +38,7 @@ void o2::pid::tof::TOFResponseImpl::inheritFromBaseTask(o2::framework::InitConte
   if (mIsInit) {
     LOG(fatal) << "TOFResponseImpl already initialized, cannot re-initialize";
   }
+  LOG(info) << "couccou";
   getCfg(initContext, "ccdb-url", mUrl, task);
   getCfg(initContext, "ccdb-path-grplhcif", mPathGrpLhcIf, task);
   getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
@@ -53,10 +54,12 @@ void o2::pid::tof::TOFResponseImpl::inheritFromBaseTask(o2::framework::InitConte
   getCfg(initContext, "enableTimeDependentResponse", mEnableTimeDependentResponse, task);
   getCfg(initContext, "collisionSystem", mCollisionSystem, task);
   getCfg(initContext, "autoSetProcessFunctions", mAutoSetProcessFunctions, task);
+  LOG(info) << "couccou1";
 }
 
 void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,
-                                              o2::framework::InitContext& initContext)
+                                              o2::framework::InitContext& initContext,
+                                              const std::string task)
 {
   if (mIsInit) {
     LOG(fatal) << "TOFResponseImpl already initialized, cannot re-initialize";
@@ -65,7 +68,7 @@ void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,
   if (!ccdb) {
     LOG(fatal) << "CCDB manager is not set, cannot initialize TOFResponseImpl";
   }
-  inheritFromBaseTask(initContext); // Gets the configuration parameters from the base task (tof-signal)
+  inheritFromBaseTask(initContext, task); // Gets the configuration parameters from the base task (tof-signal)
   mCcdb = ccdb;                     // Set the CCDB manager
   mCcdb->setURL(mUrl);
   mCcdb->setTimestamp(mTimestamp);

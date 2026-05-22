@@ -78,21 +78,21 @@ struct strangederivedbuilder {
   struct : ProducesGroup {
     //__________________________________________________
     // fundamental building blocks of derived data
-    Produces<aod::StraCollision> strangeColl;          // characterises collisions
-    Produces<aod::StraCollLabels> strangeCollLabels;   // characterises collisions
-    Produces<aod::StraMCCollisions> strangeMCColl;     // characterises collisions / MC
-    Produces<aod::StraMCCollMults> strangeMCMults;     // characterises collisions / MC mults
-    Produces<aod::StraCents> strangeCents;             // characterises collisions / centrality in Run 3
-    Produces<aod::StraCentsRun2> strangeCentsRun2;     // characterises collisions / centrality in Run 2
-    Produces<aod::StraEvSels> strangeEvSels;           // characterises collisions / centrality / sel8 selection in Run 3
-    Produces<aod::StraEvSelExtras> strangeEvSelExtras; // extra event selection variables in Run 3
-    Produces<aod::StraEvSelsRun2> strangeEvSelsRun2;   // characterises collisions / centrality / sel8 selection in Run 2
-    Produces<aod::StraStamps> strangeStamps;           // provides timestamps, run numbers
-    Produces<aod::StraEvTimes> straEvTimes;            // provides event times (FT0, TOF)
-    Produces<aod::V0CollRefs> v0collref;               // references collisions from V0s
-    Produces<aod::CascCollRefs> casccollref;           // references collisions from cascades
-    Produces<aod::KFCascCollRefs> kfcasccollref;       // references collisions from KF cascades
-    Produces<aod::TraCascCollRefs> tracasccollref;     // references collisions from tracked cascades
+    Produces<aod::StraCollision> strangeColl;           // characterises collisions
+    Produces<aod::StraCollLabels> strangeCollLabels;    // characterises collisions
+    Produces<aod::StraMCCollisions> strangeMCColl;      // characterises collisions / MC
+    Produces<aod::StraMCCollMults> strangeMCMults;      // characterises collisions / MC mults
+    Produces<aod::StraCents> strangeCents;              // characterises collisions / centrality in Run 3
+    Produces<aod::StraCentsRun2> strangeCentsRun2;      // characterises collisions / centrality in Run 2
+    Produces<aod::StraEvSels> strangeEvSels;            // characterises collisions / centrality / sel8 selection in Run 3
+    Produces<aod::StraEvSelExtras> strangeEvSelExtras;  // extra event selection variables in Run 3
+    Produces<aod::StraEvSelsRun2> strangeEvSelsRun2;    // characterises collisions / centrality / sel8 selection in Run 2
+    Produces<aod::StraStamps> strangeStamps;            // provides timestamps, run numbers
+    Produces<aod::StraEvTimes> straEvTimes;             // provides event times (FT0, TOF)
+    Produces<aod::V0CollRefs> v0collref;                // references collisions from V0s
+    Produces<aod::CascCollRefs> casccollref;            // references collisions from cascades
+    Produces<aod::KFCascCollRefs> kfcasccollref;        // references collisions from KF cascades
+    Produces<aod::TraCascCollRefs> tracasccollref;      // references collisions from tracked cascades
 
     //__________________________________________________
     // track extra references
@@ -586,9 +586,9 @@ struct strangederivedbuilder {
                                  collision.flags(),
                                  collision.alias_raw(),
                                  collision.rct_raw());
-          products.strangeEvSelExtras(timeZNA, timeZNC,                    // ZDC info
-                                      timeFDDA, timeFDDC,                  // FDD info
-                                      timeFV0A,                            // FV0A info
+          products.strangeEvSelExtras(timeZNA, timeZNC, // ZDC info
+                                      timeFDDA, timeFDDC, // FDD info
+                                      timeFV0A, // FV0A info
                                       timeFT0A, timeFT0C, ft0TriggerMask); // FT0 info
         } else { // We are in Run 2
           products.strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
@@ -655,7 +655,7 @@ struct strangederivedbuilder {
       if (track.hasTOF() && track.collisionId() >= 0) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
         // Take the average of the error instead of propagating the error as all event time error from tracks are fully correlated
-        collisionEventTimeErr[track.collisionId()] += track.tofEvTimeErr();
+        collisionEventTimeErr[track.collisionId()] += track.tofEvTimeErr(); 
         collisionNtracks[track.collisionId()]++;
       }
     }
@@ -665,7 +665,7 @@ struct strangederivedbuilder {
         collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
-        collisionEventTimeErr[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTimeErr[collision.globalIndex()] = -1e-6; // undefined
       }
       histos.fill(HIST("h2dCollisionTimesVsNTracks"), collisionNtracks[collision.globalIndex()], collisionEventTime[collision.globalIndex()]);
       products.straEvTimes(collisionEventTime[collision.globalIndex()], collisionEventTimeErr[collision.globalIndex()]);
@@ -712,23 +712,23 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsRun3(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&)
+  void processCollisionsRun3(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps,aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&)
   {
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades, bcs);
   }
 
-  void processCollisionsRun3WithUD(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&, UDCollisionsFull const& udCollisions)
+  void processCollisionsRun3WithUD(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps,aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&, UDCollisionsFull const& udCollisions)
   {
     populateCollisionTables(collisions, udCollisions, V0s, Cascades, KFCascades, TraCascades, bcs);
   }
 
-  void processCollisionsRun3WithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processCollisionsRun3WithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps,aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
     populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades, bcs);
   }
 
-  void processCollisionsRun3WithUDWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processCollisionsRun3WithUDWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentNGlobals, aod::CentMFTs, aod::CentNTPVs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCsWithTimestamps,aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
     populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, udCollisions, V0s, Cascades, KFCascades, TraCascades, bcs);

@@ -180,7 +180,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_002, "AOD", "DAUTRACKTOFPID", 2, // 
                             dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
-                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
+                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);                            
 
 using DauTrackTOFPIDs = DauTrackTOFPIDs_002; // second gen: with collision Id, with TOFExpMom
 
@@ -198,8 +198,8 @@ DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float);         //! positive trac
 DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float);         //! negative track signal
 DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
 DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
-DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);         //! positive track length, recalculated
-DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);         //! negative track length, recalculated
+DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length, recalculated
+DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length, recalculated
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation
@@ -221,7 +221,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaALaPr, tofNSigmaALaPr, float);         //! negative 
 DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive track NSigma from pion <- antilambda expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
-
+								   
 // for wrong hypothesis
 DECLARE_SOA_COLUMN(TOFNSigmaElPosFromPhoton, tofNSigmaElPosFromPhoton, float); //! n sigma of positive track from photon conversion under electron hypothesis
 DECLARE_SOA_COLUMN(TOFNSigmaElNegFromPhoton, tofNSigmaElNegFromPhoton, float); //! n sigma of negative track from photon conversion under electron hypothesis
@@ -369,7 +369,7 @@ DECLARE_SOA_TABLE(V0TOFNSigmasAll, "AOD", "V0TOFNSIGMAALL", // processed NSigma 
 namespace cascdata
 {
 // define constants for NSigma operation
-const float kNoTOFValue = -1e+6;
+constexpr float kNoTOFValue = -1e+6;
 const float kEpsilon = 1e-4;
 
 // lengths as stored in the AO2D for TOF calculations
@@ -499,7 +499,6 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
                   cascdata::PosTOFDeltaTOmPi, cascdata::PosTOFDeltaTOmPr,
                   cascdata::NegTOFDeltaTOmPi, cascdata::NegTOFDeltaTOmPr,
                   cascdata::BachTOFDeltaTOmKa);
-
 DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
                   cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa,
@@ -508,13 +507,11 @@ DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascad
                   cascdata::BachelorHasTOF<cascdata::BachTOFDeltaTXiPi>,
                   cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
                   cascdata::TofOmegaCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
-
 DECLARE_SOA_TABLE(CascTOFNSigmasAll, "AOD", "CascTOFNSigmasAll", // Nsigmas for cascades including wrong hypothesis
                   cascdata::TOFNSigmaElFromLambdaFromXi, cascdata::TOFNSigmaElFromXi, cascdata::TOFNSigmaElFromLambdaFromOmega, cascdata::TOFNSigmaElFromOmega,
                   cascdata::TOFNSigmaPiFromLambdaFromXi, cascdata::TOFNSigmaPiFromXi, cascdata::TOFNSigmaPiFromLambdaFromOmega, cascdata::TOFNSigmaPiFromOmega,
                   cascdata::TOFNSigmaKaFromLambdaFromXi, cascdata::TOFNSigmaKaFromXi, cascdata::TOFNSigmaKaFromLambdaFromOmega, cascdata::TOFNSigmaKaFromOmega,
                   cascdata::TOFNSigmaPrFromLambdaFromXi, cascdata::TOFNSigmaPrFromXi, cascdata::TOFNSigmaPrFromLambdaFromOmega, cascdata::TOFNSigmaPrFromOmega);
-
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
