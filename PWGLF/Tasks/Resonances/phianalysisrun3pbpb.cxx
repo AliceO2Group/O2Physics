@@ -232,7 +232,7 @@ struct Phianalysisrun3pbpb {
       histos.add("h3PhifinalRec", "Phi meson Rec", kTH3F, {ptAxisphi, centAxisphi, massAxisphi});
       histos.add("h1PhifinalGen", "Phi meson Gen", kTH1F, {ptAxisphi});
       histos.add("h2PhifinalGen", "Phi meson Gen", kTH2F, {ptAxisphi, centAxisphi});
-      histos.add("hMC1", "MC Event statistics", kTH1F, {{15, 0.0f, 15.0f}});
+      histos.add("hMC1", "MC Event statistics", kTH1F, {{20, 0.0f, 20.0f}});
       histos.add("Centrec1", "MC Centrality", kTH1F, {centAxisphi});
       histos.add("Centsame", "MC Centrality", kTH1F, {centAxisphi});
       histos.add("Centmc", "MC Centrality", kTH1F, {centAxisphi});
@@ -1719,7 +1719,7 @@ struct Phianalysisrun3pbpb {
       }
       histos.fill(HIST("hMC1"), 5.5);
       if (selectionConfig.cutvz &&
-          std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
+          std::abs(collision.posZ()) > selectionConfig.cfgCutVertex) {
         continue;
       }
 
@@ -1817,7 +1817,7 @@ struct Phianalysisrun3pbpb {
   }
 
   PROCESS_SWITCH(Phianalysisrun3pbpb, processGen1, "Process Generated", false);
-  void processRec1(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  void processRec1(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, McCollisionMults const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
       return;
@@ -1826,7 +1826,7 @@ struct Phianalysisrun3pbpb {
       return;
     }
     if (selectionConfig.cutvz &&
-        std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
+        std::abs(collision.posZ()) > selectionConfig.cfgCutVertex) {
       return;
     }
     if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
