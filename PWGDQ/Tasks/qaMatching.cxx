@@ -184,6 +184,19 @@ static float chi2ToScore(float chi2, int ndf, float chi2max)
   return static_cast<float>(result);
 }
 
+static void SetMatchTypeAxisLabels(TAxis* axis)
+{
+  axis->SetBinLabel(1, "true (leading)");
+  axis->SetBinLabel(2, "wrong (leading)");
+  axis->SetBinLabel(3, "decay (leading)");
+  axis->SetBinLabel(4, "fake (leading)");
+  axis->SetBinLabel(5, "true (non leading)");
+  axis->SetBinLabel(6, "wrong (non leading)");
+  axis->SetBinLabel(7, "decay (non leading)");
+  axis->SetBinLabel(8, "fake (non leading)");
+  axis->SetBinLabel(9, "unknown");
+}
+
 struct QaMatching {
 
   template <class T, int nr, int nc>
@@ -232,6 +245,8 @@ struct QaMatching {
     int mftMchMatchAttempts{0};
     MuonMatchType matchType{kMatchTypeUndefined};
   };
+
+  Configurable<bool> cfgIsMc{"cfgIsMc", true, "Wheter the processed data is from MC simulations"};
 
   ////   Variables for selecting muon tracks
   Configurable<float> cfgPMchLow{"cfgPMchLow", 0.0f, ""};
@@ -717,10 +732,10 @@ struct QaMatching {
     o2::framework::HistPtr fTrueMatchChi2VsProd;
 
     //-
-    EfficiencyPlotter fMatchingPurityPlotter;
-    EfficiencyPlotter fPairingEfficiencyPlotter;
-    EfficiencyPlotter fMatchingEfficiencyPlotter;
-    EfficiencyPlotter fFakeMatchingEfficiencyPlotter;
+    std::unique_ptr<EfficiencyPlotter> fMatchingPurityPlotter;
+    std::unique_ptr<EfficiencyPlotter> fPairingEfficiencyPlotter;
+    std::unique_ptr<EfficiencyPlotter> fMatchingEfficiencyPlotter;
+    std::unique_ptr<EfficiencyPlotter> fFakeMatchingEfficiencyPlotter;
 
     HistogramRegistry* registry;
 
@@ -728,191 +743,127 @@ struct QaMatching {
                     HistogramRegistry* reg,
                     bool createPdgMomHistograms,
                     int mftMultMax,
-                    int numCandidates)
-      : fMatchingPurityPlotter(path + "matching-purity/", "Matching purity", *reg, createPdgMomHistograms),
-        fPairingEfficiencyPlotter(path + "pairing-efficiency/", "Pairing efficiency", *reg, createPdgMomHistograms),
-        fMatchingEfficiencyPlotter(path + "matching-efficiency/", "Matching efficiency", *reg, createPdgMomHistograms),
-        fFakeMatchingEfficiencyPlotter(path + "fake-matching-efficiency/", "Fake matching efficiency", *reg, createPdgMomHistograms)
+                    int numCandidates,
+                    bool isMc)
     {
       registry = reg;
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
       AxisSpec ptAxis = {100, 0, 10, "p_{T} (GeV/c)"};
       AxisSpec dzAxis = {100, 0, 50, "#Deltaz (cm)"};
       AxisSpec indexAxis = {6, 0, 6, "ranking index"};
-
-      std::string histName = path + "matchRanking";
-      std::string histTitle = "True match ranking";
-
-      fMatchRanking = std::make_unique<MatchRankingHistos>(path + "matchRanking", "True match ranking", registry, mftMultMax, numCandidates);
-      fMatchRankingGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingGoodMCH", "True match ranking (good MCH tracks)", registry, mftMultMax, numCandidates);
-      fMatchRankingPaired = std::make_unique<MatchRankingHistos>(path + "matchRankingPaired", "True match ranking (paired MCH tracks)", registry, mftMultMax, numCandidates);
-      fMatchRankingPairedGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingPairedGoodMCH", "True match ranking (good paired MCH tracks)", registry, mftMultMax, numCandidates);
-
-      //-
-      AxisSpec missedMatchAxis = {5, 0, 5, ""};
-      histName = path + "missedMatches";
-      histTitle = "Missed matches";
-      fMissedMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {missedMatchAxis}});
-      std::get<std::shared_ptr<TH1>>(fMissedMatches)->GetXaxis()->SetBinLabel(1, "not paired");
-      std::get<std::shared_ptr<TH1>>(fMissedMatches)->GetXaxis()->SetBinLabel(2, "fake MCH");
-      std::get<std::shared_ptr<TH1>>(fMissedMatches)->GetXaxis()->SetBinLabel(3, "not stored");
-      histName = path + "missedMatchesGoodMCH";
-      histTitle = "Missed matches - good MCH tracks";
-      fMissedMatchesGoodMCH = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {missedMatchAxis}});
-      std::get<std::shared_ptr<TH1>>(fMissedMatchesGoodMCH)->GetXaxis()->SetBinLabel(1, "not paired");
-      std::get<std::shared_ptr<TH1>>(fMissedMatchesGoodMCH)->GetXaxis()->SetBinLabel(2, "fake MCH");
-      std::get<std::shared_ptr<TH1>>(fMissedMatchesGoodMCH)->GetXaxis()->SetBinLabel(3, "not stored");
-
-      AxisSpec decayRankingAxis = {5, 0, 5, "decay ranking"};
-      histName = path + "decayRankingGoodMatches";
-      histTitle = "Decay ranking - good matches";
-      fDecayRankingGoodMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {decayRankingAxis}});
-      histName = path + "decayRankingNonLeadingMatches";
-      histTitle = "Decay ranking - non-leading matches";
-      fDecayRankingNonLeadingMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {decayRankingAxis}});
-      histName = path + "decayRankingMissedMatches";
-      histTitle = "Decay ranking - missed matches";
-      fDecayRankingMissedMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {decayRankingAxis}});
-
-      AxisSpec scoreGapAxis = {100, 0, 1, "match score difference"};
-      histName = path + "scoreGapLeadingTrueMatches";
-      histTitle = "Score gap between leading and subleading matches - good matches";
-      fScoreGapLeadingTrueMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {scoreGapAxis}});
-      histName = path + "scoreGapNonLeadingTrueMatches";
-      histTitle = "Score gap between leading and subleading matches - non-leading matches";
-      fScoreGapNonLeadingTrueMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {scoreGapAxis}});
-
-      //-
       AxisSpec chi2Axis = {100, 0, 100, "matching #chi^{2}/NDF"};
       AxisSpec scoreAxis = {100, 0, 1, "matching score"};
-      int matchTypeMax = static_cast<int>(kMatchTypeUndefined) + 1;
-      AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), ""};
-      histName = path + "matchType";
-      histTitle = "Match type";
-      fMatchType = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {matchTypeAxis}});
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(9, "undefined");
-      histName = path + "matchTypeVsP";
-      histTitle = "Match type vs. p";
-      fMatchTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, matchTypeAxis}});
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
-      histName = path + "matchTypeVsPt";
-      histTitle = "Match type vs. p_{T}";
-      fMatchTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {ptAxis, matchTypeAxis}});
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
 
-      histName = path + "matchChi2VsType";
-      histTitle = "Match #chi^{2} vs. match type";
-      fMatchChi2VsType = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {matchTypeAxis, chi2Axis}});
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(9, "undefined");
-      histName = path + "matchChi2VsTypeVsP";
-      histTitle = "Match #chi^{2} vs. match type vs. p";
-      fMatchChi2VsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, chi2Axis}});
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
-      histName = path + "matchChi2VsTypeVsPt";
-      histTitle = "Match #chi^{2} vs. match type vs. p_{T}";
-      fMatchChi2VsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, chi2Axis}});
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
-      //-
-      histName = path + "matchScoreVsType";
-      histTitle = "Match score vs. match type";
-      fMatchScoreVsType = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {matchTypeAxis, scoreAxis}});
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(9, "undefined");
-      histName = path + "matchScoreVsTypeVsP";
-      histTitle = "Match score vs. match type vs. p";
-      fMatchScoreVsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, scoreAxis}});
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
-      histName = path + "matchScoreVsTypeVsPt";
-      histTitle = "Match score vs. match type vs. p_{T}";
-      fMatchScoreVsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, scoreAxis}});
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(1, "true (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(2, "wrong (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(3, "decay (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(4, "fake (leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(5, "true (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
-      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
+      std::string histName;
+      std::string histTitle;
+
+      if (isMc) {
+        fMatchRanking = std::make_unique<MatchRankingHistos>(path + "matchRanking", "True match ranking", registry, mftMultMax, numCandidates);
+        fMatchRankingGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingGoodMCH", "True match ranking (good MCH tracks)", registry, mftMultMax, numCandidates);
+        fMatchRankingPaired = std::make_unique<MatchRankingHistos>(path + "matchRankingPaired", "True match ranking (paired MCH tracks)", registry, mftMultMax, numCandidates);
+        fMatchRankingPairedGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingPairedGoodMCH", "True match ranking (good paired MCH tracks)", registry, mftMultMax, numCandidates);
+
+        fMatchingPurityPlotter = std::make_unique<EfficiencyPlotter>(path + "matching-purity/", "Matching purity", *reg, createPdgMomHistograms);
+        fPairingEfficiencyPlotter = std::make_unique<EfficiencyPlotter>(path + "pairing-efficiency/", "Pairing efficiency", *reg, createPdgMomHistograms);
+        fMatchingEfficiencyPlotter = std::make_unique<EfficiencyPlotter>(path + "matching-efficiency/", "Matching efficiency", *reg, createPdgMomHistograms);
+        fFakeMatchingEfficiencyPlotter = std::make_unique<EfficiencyPlotter>(path + "fake-matching-efficiency/", "Fake matching efficiency", *reg, createPdgMomHistograms);
+
+        //-
+        AxisSpec missedMatchAxis = {5, 0, 5, ""};
+        histName = path + "missedMatches";
+        histTitle = "Missed matches";
+        fMissedMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {missedMatchAxis}});
+        std::get<std::shared_ptr<TH1>>(fMissedMatches)->GetXaxis()->SetBinLabel(1, "not paired");
+        std::get<std::shared_ptr<TH1>>(fMissedMatches)->GetXaxis()->SetBinLabel(2, "fake MCH");
+        std::get<std::shared_ptr<TH1>>(fMissedMatches)->GetXaxis()->SetBinLabel(3, "not stored");
+        histName = path + "missedMatchesGoodMCH";
+        histTitle = "Missed matches - good MCH tracks";
+        fMissedMatchesGoodMCH = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {missedMatchAxis}});
+        std::get<std::shared_ptr<TH1>>(fMissedMatchesGoodMCH)->GetXaxis()->SetBinLabel(1, "not paired");
+        std::get<std::shared_ptr<TH1>>(fMissedMatchesGoodMCH)->GetXaxis()->SetBinLabel(2, "fake MCH");
+        std::get<std::shared_ptr<TH1>>(fMissedMatchesGoodMCH)->GetXaxis()->SetBinLabel(3, "not stored");
+
+        AxisSpec decayRankingAxis = {5, 0, 5, "decay ranking"};
+        histName = path + "decayRankingGoodMatches";
+        histTitle = "Decay ranking - good matches";
+        fDecayRankingGoodMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {decayRankingAxis}});
+        histName = path + "decayRankingNonLeadingMatches";
+        histTitle = "Decay ranking - non-leading matches";
+        fDecayRankingNonLeadingMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {decayRankingAxis}});
+        histName = path + "decayRankingMissedMatches";
+        histTitle = "Decay ranking - missed matches";
+        fDecayRankingMissedMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {decayRankingAxis}});
+
+        AxisSpec scoreGapAxis = {100, 0, 1, "match score difference"};
+        histName = path + "scoreGapLeadingTrueMatches";
+        histTitle = "Score gap between leading and subleading matches - good matches";
+        fScoreGapLeadingTrueMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {scoreGapAxis}});
+        histName = path + "scoreGapNonLeadingTrueMatches";
+        histTitle = "Score gap between leading and subleading matches - non-leading matches";
+        fScoreGapNonLeadingTrueMatches = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {scoreGapAxis}});
+
+        //-
+        int matchTypeMax = static_cast<int>(kMatchTypeUndefined) + 1;
+        AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), ""};
+        histName = path + "matchType";
+        histTitle = "Match type";
+        fMatchType = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {matchTypeAxis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis());
+        histName = path + "matchTypeVsP";
+        histTitle = "Match type vs. p";
+        fMatchTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, matchTypeAxis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis());
+        histName = path + "matchTypeVsPt";
+        histTitle = "Match type vs. p_{T}";
+        fMatchTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {ptAxis, matchTypeAxis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis());
+
+        histName = path + "matchChi2VsType";
+        histTitle = "Match #chi^{2} vs. match type";
+        fMatchChi2VsType = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {matchTypeAxis, chi2Axis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis());
+        histName = path + "matchChi2VsTypeVsP";
+        histTitle = "Match #chi^{2} vs. match type vs. p";
+        fMatchChi2VsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, chi2Axis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis());
+        histName = path + "matchChi2VsTypeVsPt";
+        histTitle = "Match #chi^{2} vs. match type vs. p_{T}";
+        fMatchChi2VsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, chi2Axis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis());
+        //-
+        histName = path + "matchScoreVsType";
+        histTitle = "Match score vs. match type";
+        fMatchScoreVsType = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {matchTypeAxis, scoreAxis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis());
+        histName = path + "matchScoreVsTypeVsP";
+        histTitle = "Match score vs. match type vs. p";
+        fMatchScoreVsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, scoreAxis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis());
+        histName = path + "matchScoreVsTypeVsPt";
+        histTitle = "Match score vs. match type vs. p_{T}";
+        fMatchScoreVsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, scoreAxis}});
+        SetMatchTypeAxisLabels(std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis());
+      }
 
       AxisSpec prodScoreAxis = {100, 0, 1, "matching score (prod)"};
       histName = path + "matchScoreVsProd";
       histTitle = "Match score vs. production";
       fMatchScoreVsProd = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {prodScoreAxis, scoreAxis}});
-      histName = path + "trueMatchScoreVsProd";
-      histTitle = "Match score vs. production - true match";
-      fTrueMatchScoreVsProd = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {prodScoreAxis, scoreAxis}});
+      if (isMc) {
+        histName = path + "trueMatchScoreVsProd";
+        histTitle = "Match score vs. production - true match";
+        fTrueMatchScoreVsProd = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {prodScoreAxis, scoreAxis}});
+      }
 
       AxisSpec prodChi2Axis = {100, 0, 100, "matching #chi^{2}/NDF (prod)"};
       histName = path + "matchChi2VsProd";
       histTitle = "Match #chi^{2} vs. production";
       fMatchChi2VsProd = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {prodChi2Axis, chi2Axis}});
-      histName = path + "trueMatchChi2VsProd";
-      histTitle = "Match #chi^{2} vs. production - true match";
-      fTrueMatchChi2VsProd = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {{100, 0, 10, "matching #chi^{2} (prod)"}, {100, 0, 10, "matching #chi^{2}"}}});
+      if (isMc) {
+        histName = path + "trueMatchChi2VsProd";
+        histTitle = "Match #chi^{2} vs. production - true match";
+        fTrueMatchChi2VsProd = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {{100, 0, 10, "matching #chi^{2} (prod)"}, {100, 0, 10, "matching #chi^{2}"}}});
+      }
     }
   };
   std::unique_ptr<MatchingPlotter> fChi2MatchingPlotter;
@@ -948,7 +899,7 @@ struct QaMatching {
     }
   }
 
-  void createMatchingHistosMc()
+  void createMatchingHistos()
   {
     AxisSpec chi2Axis = {1000, 0, 1000, "chi^{2}"};
     AxisSpec chi2AxisSmall = {200, 0, 100, "chi^{2}"};
@@ -956,7 +907,9 @@ struct QaMatching {
     AxisSpec pTAxis = {100, 0, 10, "p_{T} (GeV/c)"};
     AxisSpec etaAxis = {100, -4, -2, "#eta"};
     AxisSpec phiAxis = {90, -180, 180, "#phi (degrees)"};
-    std::string histPath = "matching/MC/";
+    std::string histPath = cfgIsMc.value ? "matching/MC/" : "matching/";
+
+    std::cout << std::format("TOTO cfgIsMc: {}", cfgIsMc.value) << std::endl;
 
     AxisSpec trackPositionXAtMftAxis = {100, -15, 15, "MFT x (cm)"};
     AxisSpec trackPositionYAtMftAxis = {100, -15, 15, "MFT y (cm)"};
@@ -966,18 +919,18 @@ struct QaMatching {
     registry.add((histPath + "selectedMCHTracksAtMFTTrue").c_str(), "Selected MCH tracks position at MFT end - true", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
     registry.add((histPath + "selectedMCHTracksAtMFTFake").c_str(), "Selected MCH tracks position at MFT end - fake", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
 
-    fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching, configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax);
+    fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching, configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax, cfgIsMc.value);
     int registryIndex = 0;
     for (const auto& [label, func] : matchingChi2Functions) {
-      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", registryMatchingVec[registryIndex], configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax);
+      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", registryMatchingVec[registryIndex], configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax, cfgIsMc.value);
       registryIndex += 1;
     }
     for (const auto& [label, response] : matchingMlResponses) {
-      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", (registryMatchingVec[registryIndex]), configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax);
+      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", (registryMatchingVec[registryIndex]), configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax, cfgIsMc.value);
       registryIndex += 1;
     }
 
-    fTaggedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Tagged/", &registryMatching, configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax);
+    fTaggedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Tagged/", &registryMatching, configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax, cfgIsMc.value);
   }
 
   void createDimuonHistos()
@@ -1203,7 +1156,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH1>>(matchMethodsHist)->GetXaxis()->SetBinLabel(iLabel + 1, matchMethodLabels[iLabel].c_str());
     }
 
-    createMatchingHistosMc();
+    createMatchingHistos();
     createDimuonHistos();
   }
 
@@ -1973,7 +1926,7 @@ struct QaMatching {
     return attempts;
   }
 
-  template <class EVT, class BC, class TMUON, class TMFT>
+  template <bool isMC, class EVT, class BC, class TMUON, class TMFT>
   void fillCollisions(EVT const& collisions,
                       BC const& bcs,
                       TMUON const& muonTracks,
@@ -2009,8 +1962,10 @@ struct QaMatching {
         collisionInfo.bc = bc.globalBC();
         collisionInfo.zVertex = collision.posZ();
 
-        if (collisionInfo.matchablePairs.empty()) {
-          fillMatchablePairs(collisionInfo, muonTracks, mftTracks);
+        if constexpr ( isMC ) {
+          if (collisionInfo.matchablePairs.empty()) {
+            fillMatchablePairs(collisionInfo, muonTracks, mftTracks);
+          }
         }
 
         if (static_cast<int>(muonTrack.trackType()) > GlobalTrackTypeMax) {
@@ -2104,10 +2059,45 @@ struct QaMatching {
 
           candidate.matchRanking = ranking;
           candidate.matchRankingProd = ranking;
-          candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
+          if constexpr ( isMC ) {
+            candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
+          } else {
+            candidate.matchType = kMatchTypeUndefined;
+          }
           candidate.mftMchMatchAttempts = mftMchMatchAttempts;
           ranking += 1;
         }
+      }
+    }
+  }
+
+  template <class C, class TMUON>
+  void fillMatchingPlots(C const& collision,
+                         TMUON const& muonTracks,
+                         const MatchingCandidates& matchingCandidates,
+                         MatchingPlotter* plotter)
+  {
+    // ====================================
+    // Matching chi2 and score vs. production values
+    for (const auto& [mchIndex, globalTracksVector] : matchingCandidates) {
+      if (globalTracksVector.size() < 1)
+        continue;
+
+      // loop over candidates
+      int candidateIndex = 1;
+      for (const auto& candidate : globalTracksVector) {
+        auto const& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+
+        float matchScore = candidate.matchScore;
+        float matchChi2 = candidate.matchChi2;
+
+        float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / 5.f;
+        float matchScoreProd = chi2ToScore(muonTrack.chi2MatchMCHMFT(), 5, 50.f);
+
+        std::get<std::shared_ptr<TH2>>(plotter->fMatchScoreVsProd)->Fill(matchScoreProd, matchScore);
+        std::get<std::shared_ptr<TH2>>(plotter->fMatchChi2VsProd)->Fill(matchChi2Prod, matchChi2);
+
+        candidateIndex += 1;
       }
     }
   }
@@ -2341,12 +2331,9 @@ struct QaMatching {
 
       // get the standalone MCH and MFT tracks
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
-      auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
 
       // skip global muon tracks that do not pass the MCH and MFT quality cuts
       if (!isGoodGlobalMuon(mchTrack, collision))
-        continue;
-      if (!isGoodMft(mftTrack))
         continue;
 
       // skip  candidates that do not pass the matching quality cuts
@@ -2363,9 +2350,9 @@ struct QaMatching {
         motherPDG = motherParticles[1].first;
       }
       // fill matching purity plots
-      plotter->fMatchingPurityPlotter.fill(mchTrack, isTrueMatch);
+      plotter->fMatchingPurityPlotter->fill(mchTrack, isTrueMatch);
       if (configQas.cfgCreatePdgMomHistograms) {
-        plotter->fMatchingPurityPlotter.fill(mchTrack, motherPDG, isTrueMatch);
+        plotter->fMatchingPurityPlotter->fill(mchTrack, motherPDG, isTrueMatch);
       }
     }
 
@@ -2421,17 +2408,17 @@ struct QaMatching {
       }
 
       // fill matching efficiency plots
-      plotter->fPairingEfficiencyPlotter.fill(mchTrack, goodMatchFound);
+      plotter->fPairingEfficiencyPlotter->fill(mchTrack, goodMatchFound);
       if (configQas.cfgCreatePdgMomHistograms) {
-        plotter->fPairingEfficiencyPlotter.fill(mchTrack, motherPDG, goodMatchFound);
+        plotter->fPairingEfficiencyPlotter->fill(mchTrack, motherPDG, goodMatchFound);
       }
-      plotter->fMatchingEfficiencyPlotter.fill(mchTrack, (goodMatchFound && isTrueMatch));
+      plotter->fMatchingEfficiencyPlotter->fill(mchTrack, (goodMatchFound && isTrueMatch));
       if (configQas.cfgCreatePdgMomHistograms) {
-        plotter->fMatchingEfficiencyPlotter.fill(mchTrack, motherPDG, (goodMatchFound && isTrueMatch));
+        plotter->fMatchingEfficiencyPlotter->fill(mchTrack, motherPDG, (goodMatchFound && isTrueMatch));
       }
-      plotter->fFakeMatchingEfficiencyPlotter.fill(mchTrack, (goodMatchFound && !isTrueMatch));
+      plotter->fFakeMatchingEfficiencyPlotter->fill(mchTrack, (goodMatchFound && !isTrueMatch));
       if (configQas.cfgCreatePdgMomHistograms) {
-        plotter->fFakeMatchingEfficiencyPlotter.fill(mchTrack, motherPDG, (goodMatchFound && !isTrueMatch));
+        plotter->fFakeMatchingEfficiencyPlotter->fill(mchTrack, motherPDG, (goodMatchFound && !isTrueMatch));
       }
     }
   }
@@ -2523,7 +2510,7 @@ struct QaMatching {
     }
   }
 
-  template <class C, class BC, class TMUON, class TMFT, class CMFT>
+  template <bool isMC, class C, class BC, class TMUON, class TMFT, class CMFT>
   void runChi2Matching(C const& collisions,
                        BC const& bcs,
                        TMUON const& muonTracks,
@@ -2548,6 +2535,7 @@ struct QaMatching {
     auto matchingFunc = mMatchingFunctionMap.at(funcName);
 
     for (const auto& [mchIndex, globalTracksVector] : matchingCandidates) {
+      // get the MCH standalone track
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
 
       for (const auto& candidate : globalTracksVector) {
@@ -2557,11 +2545,9 @@ struct QaMatching {
 
         auto collision = collisions.rawIteratorAt(muonTrack.collisionId());
 
-        // get MCH and MFT standalone tracks
-        // auto mchTrack = muonTrack.template matchMCHTrack_as<TMUON>();
+        // get the MFT standalone track
         auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
         if (mftTrackCovs.count(mftTrack.globalIndex()) < 1) {
-          // std::cout << std::format("Covariance matrix for MFT track #{} not found", mftTrack.globalIndex()) << std::endl;
           continue;
         }
         auto const& mftTrackCov = mftCovs.rawIteratorAt(mftTrackCovs[mftTrack.globalIndex()]);
@@ -2630,14 +2616,18 @@ struct QaMatching {
         const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
 
         candidate.matchRanking = ranking;
-        candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        if constexpr ( isMC ) {
+          candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        } else {
+          candidate.matchType = kMatchTypeUndefined;
+        }
         candidate.mftMchMatchAttempts = mftMchMatchAttempts;
         ranking += 1;
       }
     }
   }
 
-  template <class C, class BC, class TMUON, class TMFT, class CMFT>
+  template <bool isMC, class C, class BC, class TMUON, class TMFT, class CMFT>
   void runChi2Matching(C const& collisions,
                        BC const& bcs,
                        TMUON const& muonTracks,
@@ -2668,10 +2658,10 @@ struct QaMatching {
     auto matchingPlaneZ = matchingPlanesZ[label];
     auto extrapMethod = matchingExtrapMethod[label];
 
-    runChi2Matching(collisions, bcs, muonTracks, mftTracks, mftCovs, funcName, matchingPlaneZ, extrapMethod, matchablePairs, matchingCandidates, newMatchingCandidates);
+    runChi2Matching<isMC>(collisions, bcs, muonTracks, mftTracks, mftCovs, funcName, matchingPlaneZ, extrapMethod, matchablePairs, matchingCandidates, newMatchingCandidates);
   }
 
-  template <class C, class BC, class TMUON, class TMFT, class CMFT>
+  template <bool isMC, class C, class BC, class TMUON, class TMFT, class CMFT>
   void runMlMatching(C const& collisions,
                      BC const& bcs,
                      TMUON const& muonTracks,
@@ -2700,12 +2690,9 @@ struct QaMatching {
         // get MFT standalone track
         auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
         if (mftTrackCovs.count(mftTrack.globalIndex()) < 1) {
-          // std::cout << std::format("Covariance matrix for MFT track #{} not found", mftTrack.globalIndex()) << std::endl;
           continue;
         }
-        // std::cout << fmt::format("Getting covariance matrix for MFT track #{} -> {}", mftTrack.globalIndex(), mftTrackCovs[mftTrack.globalIndex()]) << std::endl;
         auto const& mftTrackCov = mftCovs.rawIteratorAt(mftTrackCovs[mftTrack.globalIndex()]);
-        // std::cout << fmt::format("Covariance matrix for MFT track #{} retrieved", mftTrack.globalIndex()) << std::endl;
 
         // get tracks parameters in O2 format
         auto mftTrackProp = fwdToTrackPar(mftTrack, mftTrackCov);
@@ -2725,7 +2712,6 @@ struct QaMatching {
         float matchScore = output[0];
         float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
         float matchScoreProd = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
-        // std::cout << std::format("Matching score: {}, Chi2: {}", matchingScore, muonTrack.chi2MatchMCHMFT()) << std::endl;
 
         // check if a vector of global muon candidates is already available for the current MCH index
         // if not, initialize a new one and add the current global muon track
@@ -2775,20 +2761,24 @@ struct QaMatching {
         const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
 
         candidate.matchRanking = ranking;
-        candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        if constexpr ( isMC ) {
+          candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        } else {
+          candidate.matchType = kMatchTypeUndefined;
+        }
         candidate.mftMchMatchAttempts = mftMchMatchAttempts;
         ranking += 1;
       }
     }
   }
 
-  template <class C, class BC, class TMUON, class TMFT, class CMFT>
-  void processCollisionMc(const CollisionInfo& collisionInfo,
-                          C const& collisions,
-                          BC const& bcs,
-                          TMUON const& muonTracks,
-                          TMFT const& mftTracks,
-                          CMFT const& mftCovs)
+  template <bool isMC, class C, class BC, class TMUON, class TMFT, class CMFT>
+  void processCollision(const CollisionInfo& collisionInfo,
+                        C const& collisions,
+                        BC const& bcs,
+                        TMUON const& muonTracks,
+                        TMFT const& mftTracks,
+                        CMFT const& mftCovs)
   {
     auto collision = collisions.rawIteratorAt(collisionInfo.index);
 
@@ -2807,7 +2797,11 @@ struct QaMatching {
     //-------------------------------
     // Chi2-based matching from production
     fillQaMatchingAodTablesForCollision(collision, muonTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId);
-    fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
+    if constexpr (isMC) {
+      fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
+    } else {
+      fillMatchingPlots(collision, muonTracks, collisionInfo.matchingCandidates, fChi2MatchingPlotter.get());
+    }
 
     //-------------------------------
     // Tagged muons
@@ -2840,35 +2834,46 @@ struct QaMatching {
         taggedMatchingCandidates[mchIndex] = globalTracksVector;
       }
     }
-    matchingMethodCounter += 1;
-    fillQaMatchingAodTablesForCollision(collision, muonTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId);
-    fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMatchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fTaggedMuonsMatchingPlotter.get());
+    if constexpr (isMC) {
+      fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMatchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fTaggedMuonsMatchingPlotter.get());
+    } else {
+      fillMatchingPlots(collision, muonTracks, taggedMatchingCandidates, fTaggedMuonsMatchingPlotter.get());
+    }
 
     //-------------------------------
     // Custom chi2-based matching methods
     for (const auto& [label, func] : matchingChi2Functions) {
       MatchingCandidates matchingCandidates;
-      runChi2Matching(collisions, bcs, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
+      runChi2Matching<isMC>(collisions, bcs, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
 
       auto* plotter = fMatchingPlotters.at(label).get();
       double matchingScoreCut = matchingScoreCuts.at(label);
 
       matchingMethodCounter += 1;
       fillQaMatchingAodTablesForCollision(collision, muonTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId);
-      fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter, false);
+      if constexpr (isMC) {
+        fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter, false);
+      } else {
+        fillMatchingPlots(collision, muonTracks, matchingCandidates, plotter);
+      }
     }
 
-    // ML-based matching analysis
+    //-------------------------------
+    // Custom ML-based matching methods
     for (const auto& [label, mlResponse] : matchingMlResponses) {
       MatchingCandidates matchingCandidates;
-      runMlMatching(collisions, bcs, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
+      runMlMatching<isMC>(collisions, bcs, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
 
       auto* plotter = fMatchingPlotters.at(label).get();
       double matchingScoreCut = matchingScoreCuts.at(label);
 
       matchingMethodCounter += 1;
       fillQaMatchingAodTablesForCollision(collision, muonTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId);
-      fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter);
+      if constexpr (isMC) {
+        fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter);
+      } else {
+        fillMatchingPlots(collision, muonTracks, matchingCandidates, plotter);
+      }
     }
 
     //-------------------------------
@@ -3005,14 +3010,41 @@ struct QaMatching {
       mftTrackCovs[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
     }
 
-    fillCollisions(collisions, bcs, muonTracks, mftTracks, fCollisionInfos);
+    fillCollisions<true>(collisions, bcs, muonTracks, mftTracks, fCollisionInfos);
 
     for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
-      processCollisionMc(collisionInfo, collisions, bcs, muonTracks, mftTracks, mftCovs);
+      processCollision<true>(collisionInfo, collisions, bcs, muonTracks, mftTracks, mftCovs);
     }
   }
 
   PROCESS_SWITCH(QaMatching, processQAMC, "processQAMC", true);
+
+  void processQA(MyEvents const& collisions,
+                 aod::BCsWithTimestamps const& bcs,
+                 MyMuons const& muonTracks,
+                 MyMFTs const& mftTracks,
+                 MyMFTCovariances const& mftCovs)
+  {
+    auto bc = bcs.begin();
+    initCcdb(bc);
+
+    for (const auto& muon : muonTracks) {
+      registry.get<TH1>(HIST("nTracksPerType"))->Fill(static_cast<int>(muon.trackType()));
+    }
+
+    mftTrackCovs.clear();
+    for (const auto& mftTrackCov : mftCovs) {
+      mftTrackCovs[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
+    }
+
+    fillCollisions<false>(collisions, bcs, muonTracks, mftTracks, fCollisionInfos);
+
+    for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
+      processCollision<false>(collisionInfo, collisions, bcs, muonTracks, mftTracks, mftCovs);
+    }
+  }
+
+  PROCESS_SWITCH(QaMatching, processQA, "processQA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
