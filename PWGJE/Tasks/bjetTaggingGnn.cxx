@@ -53,7 +53,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace BjetTaggingGnnEvtSel
+namespace bjet_tagging_gnn_evtsel
 {
 enum class EvtSelFlag : uint8_t {
   kNone = 0,
@@ -116,8 +116,8 @@ enum class EvtSel {
   INELgt0,
   INELgt0rec
 };
-}; // namespace BjetTaggingGnnEvtSel
-using namespace BjetTaggingGnnEvtSel;
+}; // namespace bjet_tagging_gnn_evtsel
+using namespace bjet_tagging_gnn_evtsel;
 
 struct BjetTaggingGnn {
 
@@ -518,14 +518,14 @@ struct BjetTaggingGnn {
   template <typename AnyTracks, typename AnalysisJet>
   bool isAcceptedJet(AnalysisJet const& jet)
   {
-    if (jetAreaFractionMin > -98.0) {
+    if (jetAreaFractionMin > -98.0) { // o2-linter: disable=magic-number
       if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0); // o2-linter: disable=magic-number
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0); // o2-linter: disable=magic-number
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -700,7 +700,7 @@ struct BjetTaggingGnn {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= 3) {
+        if (std::abs(p->Charge()) >= 3) { // o2-linter: disable=magic-number
           if (std::abs(mcparticle.eta()) < 1)
             return true;
         }
