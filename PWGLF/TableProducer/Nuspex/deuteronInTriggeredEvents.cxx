@@ -58,12 +58,12 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h> // for PDG codes
 #include <TRandom3.h>
@@ -259,7 +259,8 @@ struct DeuteronInTriggeredEvents {
   Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension; // For MC analysis
   Produces<o2::aod::GenEventMCSel> GenEventMCSel;                   // For MC reco events
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Zorro zorro; // Definition of Zorro: helpful for skimmed data
+  Service<o2::framework::O2DatabasePDG> pdgDB; // For INELgt0 gen MC selection
+  Zorro zorro;                                 // Definition of Zorro: helpful for skimmed data
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
@@ -943,8 +944,6 @@ struct DeuteronInTriggeredEvents {
 
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     std::vector<uint8_t> eventMask(mcCollisions.size(), 0);
-
-    auto* pdgDB = TDatabasePDG::Instance();
 
     // Jet trigger condition
     auto trigger = static_cast<nuclei::triggerListName>(cfgTriggerList.value);
