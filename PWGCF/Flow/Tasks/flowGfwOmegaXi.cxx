@@ -112,6 +112,7 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgv0_radius, float, 5.0f, "minimum decay radius")
     O2_DEFINE_CONFIGURABLE(cfgv0_radiusmax, float, 100.0f, "maximum decay radius")
     O2_DEFINE_CONFIGURABLE(cfgv0_v0cospa, float, 0.995f, "minimum cosine of pointing angle")
+    O2_DEFINE_CONFIGURABLE(cfgv0_dcak0daupitopv, float, 0.01f, "minimum daughter pion DCA to PV")
     O2_DEFINE_CONFIGURABLE(cfgv0_dcadaupitopv, float, 0.01f, "minimum daughter pion DCA to PV")
     O2_DEFINE_CONFIGURABLE(cfgv0_dcadauprtopv, float, 0.1f, "minimum daughter proton DCA to PV")
     O2_DEFINE_CONFIGURABLE(cfgv0_dcav0dau, float, 0.5f, "maximum DCA among V0 daughters")
@@ -1267,9 +1268,9 @@ struct FlowGfwOmegaXi {
           ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
           if (ctau > v0BuilderOpts.cfgv0_ctauK0s.value)
             isK0s = false;
-          if (std::fabs(v0.dcapostopv()) < v0BuilderOpts.cfgv0_dcadaupitopv.value)
+          if (std::fabs(v0.dcapostopv()) < v0BuilderOpts.cfgv0_dcak0daupitopv.value)
             continue;
-          if (std::fabs(v0.dcanegtopv()) < v0BuilderOpts.cfgv0_dcadaupitopv.value)
+          if (std::fabs(v0.dcanegtopv()) < v0BuilderOpts.cfgv0_dcak0daupitopv.value)
             continue;
         }
         if (isLambda || isALambda) {
@@ -2194,9 +2195,9 @@ struct FlowGfwOmegaXi {
       if (v0.dcaV0daughters() > v0BuilderOpts.cfgv0_dcav0dau.value)
         continue;
       if (pdgCode == kK0Short) {
-        if (std::fabs(v0.dcapostopv()) < v0BuilderOpts.cfgv0_dcadaupitopv.value)
+        if (std::fabs(v0.dcapostopv()) < v0BuilderOpts.cfgv0_dcak0daupitopv.value)
           continue;
-        if (std::fabs(v0.dcanegtopv()) < v0BuilderOpts.cfgv0_dcadaupitopv.value)
+        if (std::fabs(v0.dcanegtopv()) < v0BuilderOpts.cfgv0_dcak0daupitopv.value)
           continue;
       }
       if (pdgCode == kLambda0 || pdgCode == kLambda0Bar) {
