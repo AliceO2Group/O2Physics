@@ -180,6 +180,7 @@ struct SpectatorPlaneTableProducer {
   // CCDB
   Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
   Configurable<std::string> cCcdbPath{"cCcdbPath", "Users/y/ypatley/DFOO", "Path for ccdb-object"};
+  Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
@@ -238,6 +239,8 @@ struct SpectatorPlaneTableProducer {
     // Set CCDB url
     ccdbService->setURL(cCcdbUrl.value);
     ccdbService->setCaching(true);
+    ccdbService->setLocalObjectValidityChecking();
+    ccdbService->setCreatedNotAfter(nolaterthan.value);
 
     // Define axes
     const AxisSpec axisZDCEnergy{500, 0, 500, "ZD[AC] Signal"};
@@ -379,7 +382,7 @@ struct SpectatorPlaneTableProducer {
     // Load ZDC gain calibration
     if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, 1);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
       CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
       CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
     }
@@ -407,7 +410,7 @@ struct SpectatorPlaneTableProducer {
         std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
 
         // Get object from CCDB
-        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, 1);
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
 
         // Check CCDB Object
         if (!ccdbObject) {
@@ -823,7 +826,6 @@ struct FlowEventPlane {
     const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
     const AxisSpec axisTrackNSigma{161, -4.025, 4.025, {"n#sigma"}};
 
-    const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
     const AxisSpec axisPhiInvMass{cPhiInvMassBins, 0.99, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
     const AxisSpec axisKStarInvMass{cKStarInvMassBins, 0.8, 1.2, "M_{#piK} (GeV/#it{c}^{2}"};
     const AxisSpec axisMomPID(80, 0, 4, "p_{T} (GeV/#it{c})");
@@ -903,13 +905,13 @@ struct FlowEventPlane {
       histos.add("V0/Lambda/QA/hNegNsigPiVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.addClone("V0/Lambda/", "V0/K0Short/");
       histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisLambdaInvMass, axisTrackEta});
-      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
-      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
       histos.addClone("V0/Lambda/", "V0/AntiLambda/");
       histos.addClone("V0/Lambda/", "V0/LambdaAntiLambda/");
       histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisK0ShortInvMass, axisTrackEta});
-      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
-      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
     }
   }
 

@@ -48,6 +48,7 @@ enum CascadeHist {
   kPhi,
   kMass,
   kSign,
+  kPtVsMass, // nice to have during analysis
   // qa variables
   kMassXi,
   kMassOmega,
@@ -109,6 +110,8 @@ template <const char* Prefix>
 struct ConfCascadeQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d Qa histograms"};
+  o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "MC ONLY: Plot pt vs cosPa for different particle origins"};
+  o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3312, 3334}, "MC ONLY: PDG codes of mothers of secondaries (Max 3 will be considered)"};
   o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.9, 1}}, "Cosine of poiting angle"};
   o2::framework::ConfigurableAxis dauDcaAtDecay{"dauDcaAtDecay", {{150, 0, 1.5}}, "Daughter DCA at decay vertex"};
   o2::framework::ConfigurableAxis transRadius{"transRadius", {{100, 0, 100}}, "Transverse radius"};
@@ -123,8 +126,8 @@ struct ConfCascadeQaBinning : o2::framework::ConfigurableGroup {
 constexpr const char PrefixXiQaBinning[] = "XiQaBinning";
 using ConfXiQaBinning = ConfCascadeQaBinning<PrefixXiQaBinning>;
 
-constexpr const char PrefixOmegatQaBinning[] = "OmegaQaBinning";
-using ConfOmegaQaBinning = ConfCascadeQaBinning<PrefixOmegatQaBinning>;
+constexpr const char PrefixOmegaQaBinning[] = "OmegaQaBinning";
+using ConfOmegaQaBinning = ConfCascadeQaBinning<PrefixOmegaQaBinning>;
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -134,6 +137,7 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kPhi, o2::framework::HistType::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
    {kMass, o2::framework::HistType::kTH1F, "hMass", "Invariant Mass; m_{Inv} (GeV/#it{c}^{2}); Entries"},
    {kSign, o2::framework::HistType::kTH1F, "hSign", "Sign (-1 -> antiparticle, 0 -> self conjugate, +1 -> particle); sign; Entries"},
+   {kPtVsMass, o2::framework::HistType::kTH2F, "hPtVsMass", "Transverse momentum vs invariant mass; p_{T} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
    {kMassXi, o2::framework::HistType::kTH1F, "hMassXi", "Mass #Xi; m_{#Lambda#pi} (GeV/#it{c}^{2}); Entries"},
    {kMassOmega, o2::framework::HistType::kTH1F, "hMassOmega", "mass #Omega; m_{#LambdaK} (GeV/#it{c}^{2}); Entries"},
    {kCosPa, o2::framework::HistType::kTH1F, "hCosPa", "Cosine of pointing angle; cos(#alpha); Entries"},
@@ -163,9 +167,9 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kFromMaterial, o2::framework::HistType::kTH2F, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); cos(#alpha)"},
    {kMissidentified, o2::framework::HistType::kTH2F, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); cos(#alpha)"},
    {kSecondary1, o2::framework::HistType::kTH2F, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
-   {kSecondary2, o2::framework::HistType::kTH2F, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
-   {kSecondary3, o2::framework::HistType::kTH2F, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
-   {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}},
+   {kSecondary2, o2::framework::HistType::kTH2F, "hFromSecondary2", "Particles from secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kSecondary3, o2::framework::HistType::kTH2F, "hFromSecondary3", "Particles from secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}},
 };
 
 #define CASCADE_HIST_ANALYSIS_MAP(conf) \
@@ -173,7 +177,8 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
     {kEta, {conf.eta}},                 \
     {kPhi, {conf.phi}},                 \
     {kMass, {conf.mass}},               \
-    {kSign, {conf.sign}},
+    {kSign, {conf.sign}},               \
+    {kPtVsMass, {conf.pt, conf.mass}},
 
 #define CASCADE_HIST_MC_MAP(conf)          \
   {kTruePtVsPt, {conf.pt, conf.pt}},       \
@@ -184,12 +189,7 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
     {kPdgPartonicMother, {conf.pdgCodes}},
 
 #define CASCADE_HIST_QA_MAP(confAnalysis, confQa)          \
-  {kPt, {confAnalysis.pt}},                                \
-    {kEta, {confAnalysis.eta}},                            \
-    {kPhi, {confAnalysis.phi}},                            \
-    {kMass, {confAnalysis.mass}},                          \
-    {kSign, {confAnalysis.sign}},                          \
-    {kCosPa, {confQa.cosPa}},                              \
+  {kCosPa, {confQa.cosPa}},                                \
     {kDecayDauDca, {confQa.dauDcaAtDecay}},                \
     {kTransRadius, {confQa.transRadius}},                  \
     {kLambdaCosPa, {confQa.lambdaCosPa}},                  \
@@ -349,9 +349,9 @@ class CascadeHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& BachelorSpecs,
             T3 const& ConfBachelorQaBinning,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
-            T4& ConfPosDauQaBinning,
+            T4 const& ConfPosDauQaBinning,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
-            T5& ConfNegDauQaBinning)
+            T5 const& ConfNegDauQaBinning)
   {
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCascadeSelection.pdgCodeAbs.value);
@@ -454,6 +454,15 @@ class CascadeHistManager
   void enableOptionalHistograms(T const& CascadeConfBinningQa)
   {
     mPlot2d = CascadeConfBinningQa.plot2d.value;
+    mPlotOrigins = CascadeConfBinningQa.plotOrigins.value;
+    mPlotNSecondaries = CascadeConfBinningQa.pdgCodesForMothersOfSecondary.value.size();
+    for (std::size_t i = 0; i < MaxSecondary; i++) {
+      if (i < CascadeConfBinningQa.pdgCodesForMothersOfSecondary.value.size()) {
+        mPdgCodesSecondaryMother.at(i) = std::abs(CascadeConfBinningQa.pdgCodesForMothersOfSecondary.value.at(i));
+      } else {
+        mPdgCodesSecondaryMother.at(i) = 0;
+      }
+    }
   }
 
   void initAnalysis(std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs)
@@ -464,6 +473,7 @@ class CascadeHistManager
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {cascadeSpecs.at(kPhi)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {cascadeSpecs.at(kMass)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {cascadeSpecs.at(kSign)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPtVsMass, HistTable), getHistDesc(kPtVsMass, HistTable), getHistType(kPtVsMass, HistTable), {cascadeSpecs.at(kPtVsMass)});
   }
 
   void initQa(std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs)
@@ -540,6 +550,7 @@ class CascadeHistManager
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), cascadeCandidate.phi());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), cascadeCandidate.mass());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), cascadeCandidate.sign());
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(AnalysisDir) + HIST(getHistName(kPtVsMass, HistTable)), cascadeCandidate.pt(), cascadeCandidate.mass());
   }
 
   template <typename T>

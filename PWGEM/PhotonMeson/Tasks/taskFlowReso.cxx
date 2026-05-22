@@ -174,6 +174,12 @@ struct TaskFlowReso {
       registry.add("spReso/hSpResoFV0aTPCpos", "hSpResoFV0aTPCpos; centrality; Q_{FV0a} #bullet Q_{TPCpos}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFV0aTPCneg", "hSpResoFV0aTPCneg; centrality; Q_{FV0a} #bullet Q_{TPCneg}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFV0aTPCtot", "hSpResoFV0aTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}", HistType::kTProfile, {thnAxisCent});
+
+      // auto correlations
+      registry.add("spReso/hSpResoFT0cFT0c", "hSpResoFT0cFT0c; centrality; Q_{FT0c} #bullet Q_{FT0c}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFT0aFT0a", "hSpResoFT0aFT0a; centrality; Q_{FT0a} #bullet Q_{FT0a}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFT0mFT0m", "hSpResoFT0mFT0m; centrality; Q_{FT0m} #bullet Q_{FT0m}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFV0aFV0a", "hSpResoFV0aFV0a; centrality; Q_{FV0a} #bullet Q_{FV0a}", HistType::kTProfile, {thnAxisCent});
     }
 
     if (saveEpResoHisto.value) {
@@ -456,6 +462,11 @@ struct TaskFlowReso {
       registry.fill(HIST("spReso/hSpResoFV0aTPCpos"), centrality, xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
       registry.fill(HIST("spReso/hSpResoFV0aTPCneg"), centrality, xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
       registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot);
+      // auto-correlations for forward detectors, this is needed for combining subevents!
+      registry.fill(HIST("spReso/hSpResoFT0cFT0c"), centrality, xQVecFT0c * xQVecFT0c + yQVecFT0c * yQVecFT0c);
+      registry.fill(HIST("spReso/hSpResoFT0aFT0a"), centrality, xQVecFT0a * xQVecFT0a + yQVecFT0a * yQVecFT0a);
+      registry.fill(HIST("spReso/hSpResoFT0mFT0m"), centrality, xQVecFT0m * xQVecFT0m + yQVecFT0m * yQVecFT0m);
+      registry.fill(HIST("spReso/hSpResoFV0aFV0a"), centrality, xQVecFV0a * xQVecFV0a + yQVecFV0a * yQVecFV0a);
     }
 
     if (saveEpResoHisto) {

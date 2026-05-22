@@ -99,12 +99,12 @@ struct JetShapeTask {
   Configurable<std::vector<float>> distanceCategory{"distanceCategory", {0.00f, 0.05f, 0.10f, 0.15f, 0.20f, 0.25f, 0.30f, 0.35f, 0.40f, 0.45f, 0.50f, 0.55f, 0.60f, 0.65f, 0.70f}, "distance of category"};
 
   // for ppi production
-  Configurable<float> etaTrUp{"etaTrUp", 0.7f, "maximum track eta"};
+  Configurable<float> etaTrUp{"etaTrUp", 0.9f, "maximum track eta"};
   Configurable<float> dcaxyCutMax{"dcaxyCutMax", 2.0f, "maximum DCA xy"};
   Configurable<float> chi2ItsMax{"chi2ItsMax", 15.0f, "its chi2 cut"};
   Configurable<float> chi2TpcMax{"chi2TpcMax", 4.0f, "tpc chi2 cut"};
   Configurable<float> nclItsMin{"nclItsMin", 2.0f, "its # of cluster cut"};
-  Configurable<float> nclTpcMin{"nclTpcMin", 100.0f, "tpc # if cluster cut"};
+  Configurable<float> nclTpcMin{"nclTpcMin", 70.0f, "tpc # if cluster cut"};
   Configurable<float> nclcrossTpcMin{"nclcrossTpcMin", 70.0f, "tpc # of crossedRows cut"};
   Configurable<float> mcRapidityMax{"mcRapidityMax", 0.5f, "maximum mctrack y"};
   Configurable<double> epsilon{"epsilon", 1e-6, "standard for aboid division of zero"};
@@ -113,85 +113,7 @@ struct JetShapeTask {
 
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
 
-  HistogramRegistry registry{
-    "registry",
-    {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tpcPi", "tpcPi", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"tofPi", "tofPi", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"tpcPr", "tpcPr", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"tofPr", "tofPr", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"tpcDedx", "tpcDedx", {HistType::kTHnSparseD, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tofBeta", "tofBeta", {HistType::kTHnSparseD, {{nBinsPForBeta, 0, pMax}, {nBinsTofBeta, 0.4, 1.1}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"pVsPtForPr", "pVsPtForPr", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"pVsPtForPi", "pVsPtPi", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"trackPhi", "trackPhi", {HistType::kTH1F, {{80, -1, 7}}}},
-     {"trackEta", "trackEta", {HistType::kTH1F, {{100, -1, 1}}}},
-     {"trackTpcNClsCrossedRows", "trackTpcNClsCrossedRows", {HistType::kTH1F, {{50, 0, 200}}}},
-     {"trackDcaXY", "trackDcaXY", {HistType::kTH1F, {{40, -10, 10}}}},
-     {"trackItsChi2NCl", "trackItsChi2NCl", {HistType::kTH1F, {{60, 0, 30}}}},
-     {"trackTpcChi2NCl", "trackTpcChi2NCl", {HistType::kTH1F, {{100, 0, 50}}}},
-     {"trackTpcNClsFound", "trackTpcNClsFound", {HistType::kTH1F, {{100, 0, 200}}}},
-     {"trackItsNCls", "trackItsNCls", {HistType::kTH1F, {{10, 0, 10}}}},
-     {"jetTpcTofPi", "jetTpcTofPi", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"jetTpcTofPr", "jetTpcTofPr", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tpcTofPiPerpJet", "tpcTofPiPerpJet", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tpcTofPrPerpJet", "tpcTofPrPerpJet", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"jetTpcPi", "jetTpcPi", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"jetTofPi", "jetTofPi", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"jetTpcPr", "jetTpcPr", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"jetTofPr", "jetTofPr", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-     {"jetTpcDedx", "jetTpcDedx", {HistType::kTHnSparseD, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}, {nBinsDistance, 0, distanceMax}}}},
-     {"tpcDedxPerpJet", "tpcDedxPerpJet", {HistType::kTH2F, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}}}},
-     {"jetTofBeta", "jetTofBeta", {HistType::kTH2F, {{nBinsPForBeta, 0, pMax}, {nBinsTofBeta, 0.4, 1.1}}}},
-     {"jetpVsPtForPr", "jetpVsPtForPr", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"jetpVsPtForPi", "jetpVsPtPi", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"pVsPtForPrPerpJet", "pVsPtForPrPerpJet", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"pVsPtForPiPerpJet", "pVsPtPionPerpJet", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"jetDcaPr", "jetDcaPr", {HistType::kTHnSparseD, {{nBinsPtForDca, 0, ptMax}, {nBinsDcaxyForData, dcaxyMin, dcaxyMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"jetDcaPi", "jetDcaPi", {HistType::kTHnSparseD, {{nBinsPtForDca, 0, ptMax}, {nBinsDcaxyForData, dcaxyMin, dcaxyMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaPrPerpJet", "dcaPrPerpJet", {HistType::kTHnSparseD, {{nBinsPtForDca, 0, ptMax}, {nBinsDcaxyForData, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaPiPerpJet", "dcaPiPerpJet", {HistType::kTHnSparseD, {{nBinsPtForDca, 0, ptMax}, {nBinsDcaxyForData, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tpcTofPiRandCone", "tpcTofPiRandCone", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"tpcTofPrRandCone", "tpcTofPrRandCone", {HistType::kTHnSparseD, {{nBinsPForCut, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"pVsPtForPrRandCone", "pVsPtForPrRandCone", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"pVsPtForPiRandCone", "pVsPtPionRandCone", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaPrRandCone", "dcaPrRandCone", {HistType::kTHnSparseD, {{nBinsPtForDca, 0, ptMax}, {nBinsDcaxyForData, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaPiRandCone", "dcaPiRandCone", {HistType::kTHnSparseD, {{nBinsPtForDca, 0, ptMax}, {nBinsDcaxyForData, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"jetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-     {"jetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-     {"jetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-     {"area", "area", {HistType::kTH2F, {{nBinsCentrality, centralityMinForCut, centralityMaxForCut}, {100, 0, 2}}}},
-     {"rho", "rho", {HistType::kTH1F, {{120, 0, 300}}}},
-     {"ptCorr", "Corrected jet pT; p_{T}^{corr} (GeV/c); Counts", {HistType::kTH1F, {{200, 0, 200}}}},
-     {"ptCorrVsDistance", "ptcorr_vs_distance", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
-     {"jetDistanceVsTrackpt", "trackpt_vs_distance_injet", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
-     {"ptSum", "ptSum", {HistType::kTHnSparseD, {{14, 0, 0.7}, {nBinsJetShapeFunc, 0, jetShapeFuncMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptSumBg1", "ptSumBg1", {HistType::kTHnSparseD, {{14, 0, 0.7}, {nBinsJetShapeFunc, 0, jetShapeFuncMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptSumBg2", "ptSumBg2", {HistType::kTHnSparseD, {{14, 0, 0.7}, {nBinsJetShapeFunc, 0, jetShapeFuncMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"event/vertexz", ";Vtx_{z} (cm);Entries", {HistType::kTH1F, {{100, -20, 20}}}},
-     {"eventCounterJetShape", "eventCounterJetShape", {HistType::kTH1F, {{nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"eventCounterJet", "eventCounterJet", {HistType::kTH1F, {{nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"eventCounterInc", "eventCounterInc", {HistType::kTH1F, {{nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"eventCounterRandCone", "Number of Random Cones;Centrality (%);Count", {HistType::kTH1F, {{nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"eventCounterMc", "eventCounterMc", {HistType::kTH1F, {{nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptVsCentrality", "ptvscentrality", {HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}}}},
-     {"ptResolution", "ptResolution", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {100, -1.0, +1.0}}}},
-     {"mcCentralityReco", "mcCentralityReco", {HistType::kTH1F, {{100, 0, 100}}}},
-     {"mcCentralitySim", "mcCentralitySim", {HistType::kTH1F, {{100, 0, 100}}}},
-     {"ptHistogramPion", "ptHistogramPion", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptHistogramProton", "ptHistogramProton", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptHistogramProtonTof", "ptHistogramProtonTof", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaDecayPion", "dcaDecayPion", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaDecayProton", "dcaDecayProton", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaMaterialPion", "dcaMaterialPion", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"dcaMaterialProton", "dcaMaterialProton", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsDcaxyForMc, dcaxyMin, dcaxyMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
-     {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}}}};
+  HistogramRegistry registry{"registry"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -202,6 +124,145 @@ struct JetShapeTask {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
+
+    // Histograms definition
+    registry.add("tpcTofPi", "tpcTofPi", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("tpcTofPr", "tpcTofPr", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("tpcPi", "tpcPi", HistType::kTH2F, {{nBinsP.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("tofPi", "tofPi", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("tpcPr", "tpcPr", HistType::kTH2F, {{nBinsP.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("tofPr", "tofPr", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("tpcDedx", "tpcDedx", HistType::kTHnSparseD, {{nBinsPForDedx.value, 0, pMax.value}, {nBinsTpcDedx.value, 0, 1000}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("tofBeta", "tofBeta", HistType::kTHnSparseD, {{nBinsPForBeta.value, 0, pMax.value}, {nBinsTofBeta.value, 0.4, 1.1}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("pVsPtForPr", "pVsPtForPr", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("pVsPtForPi", "pVsPtPi", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("trackPhi", "trackPhi", HistType::kTH1F, {{80, -1, 7}});
+    registry.add("trackEta", "trackEta", HistType::kTH1F, {{100, -1, 1}});
+    registry.add("trackTpcNClsCrossedRows", "trackTpcNClsCrossedRows", HistType::kTH1F, {{50, 0, 200}});
+    registry.add("trackDcaXY", "trackDcaXY", HistType::kTH1F, {{40, -10, 10}});
+    registry.add("trackItsChi2NCl", "trackItsChi2NCl", HistType::kTH1F, {{60, 0, 30}});
+    registry.add("trackTpcChi2NCl", "trackTpcChi2NCl", HistType::kTH1F, {{100, 0, 50}});
+    registry.add("trackTpcNClsFound", "trackTpcNClsFound", HistType::kTH1F, {{100, 0, 200}});
+    registry.add("trackItsNCls", "trackItsNCls", HistType::kTH1F, {{10, 0, 10}});
+
+    registry.add("jetTpcTofPi", "jetTpcTofPi", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("jetTpcTofPr", "jetTpcTofPr", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("tpcTofPiPerpJet", "tpcTofPiPerpJet", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("tpcTofPrPerpJet", "tpcTofPrPerpJet", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    registry.add("jetTpcPi", "jetTpcPi", HistType::kTH2F, {{nBinsP.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("jetTofPi", "jetTofPi", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("jetTpcPr", "jetTpcPr", HistType::kTH2F, {{nBinsP.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+    registry.add("jetTofPr", "jetTofPr", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
+
+    registry.add("jetTpcDedx", "jetTpcDedx", HistType::kTHnSparseD, {{nBinsPForDedx.value, 0, pMax.value}, {nBinsTpcDedx.value, 0, 1000}, {nBinsDistance.value, 0, distanceMax.value}});
+    registry.add("tpcDedxPerpJet", "tpcDedxPerpJet", HistType::kTH2F, {{nBinsPForDedx.value, 0, pMax.value}, {nBinsTpcDedx.value, 0, 1000}});
+    registry.add("jetTofBeta", "jetTofBeta", HistType::kTH2F, {{nBinsPForBeta.value, 0, pMax.value}, {nBinsTofBeta.value, 0.4, 1.1}});
+
+    registry.add("jetpVsPtForPr", "jetpVsPtForPr", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("jetpVsPtForPi", "jetpVsPtPi", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("pVsPtForPrPerpJet", "pVsPtForPrPerpJet", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("pVsPtForPiPerpJet", "pVsPtPionPerpJet", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    registry.add("jetDcaPr", "jetDcaPr", HistType::kTHnSparseD, {{nBinsPtForDca.value, 0, ptMax.value}, {nBinsDcaxyForData.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("jetDcaPi", "jetDcaPi", HistType::kTHnSparseD, {{nBinsPtForDca.value, 0, ptMax.value}, {nBinsDcaxyForData.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPrPerpJet", "dcaPrPerpJet", HistType::kTHnSparseD, {{nBinsPtForDca.value, 0, ptMax.value}, {nBinsDcaxyForData.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPiPerpJet", "dcaPiPerpJet", HistType::kTHnSparseD, {{nBinsPtForDca.value, 0, ptMax.value}, {nBinsDcaxyForData.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    registry.add("tpcTofPiRandCone", "tpcTofPiRandCone", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("tpcTofPrRandCone", "tpcTofPrRandCone", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("pVsPtForPrRandCone", "pVsPtForPrRandCone", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("pVsPtForPiRandCone", "pVsPtPionRandCone", HistType::kTHnSparseD, {{nBinsP.value, 0, pMax.value}, {nBinsPt.value, 0, ptMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPrRandCone", "dcaPrRandCone", HistType::kTHnSparseD, {{nBinsPtForDca.value, 0, ptMax.value}, {nBinsDcaxyForData.value, dcaxyMin.value, dcaxyMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPiRandCone", "dcaPiRandCone", HistType::kTHnSparseD, {{nBinsPtForDca.value, 0, ptMax.value}, {nBinsDcaxyForData.value, dcaxyMin.value, dcaxyMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    registry.add("jetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", HistType::kTH2F, {{200, 0., 200.}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("jetPtMc", "MC jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", HistType::kTH2F, {{200, 0., 200.}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("jetEta", "jet #eta;#eta_{jet};entries", HistType::kTH1F, {{100, -1.0, 1.0}});
+    registry.add("jetPhi", "jet #phi;#phi_{jet};entries", HistType::kTH1F, {{80, -1.0, 7.}});
+    registry.add("area", "area", HistType::kTH2F, {{100, 0, 2}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("rho", "rho", HistType::kTH2F, {{120, 0, 300}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptCorr", "Corrected jet pT; p_{T}^{corr} (GeV/c); Counts", HistType::kTH1F, {{200, 0, 200}});
+    registry.add("ptCorrVsDistance", "ptcorr_vs_distance", HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}});
+    registry.add("jetDistanceVsTrackpt", "trackpt_vs_distance_injet", HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}});
+    registry.add("ptSum", "ptSum", HistType::kTHnSparseD, {{14, 0, 0.7}, {nBinsJetShapeFunc.value, 0, jetShapeFuncMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptSumBg1", "ptSumBg1", HistType::kTHnSparseD, {{14, 0, 0.7}, {nBinsJetShapeFunc.value, 0, jetShapeFuncMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptSumBg2", "ptSumBg2", HistType::kTHnSparseD, {{14, 0, 0.7}, {nBinsJetShapeFunc.value, 0, jetShapeFuncMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    registry.add("event/vertexz", ";Vtx_{z} (cm);Entries", HistType::kTH1F, {{100, -20, 20}});
+    registry.add("eventCounterJetShape", "eventCounterJetShape", HistType::kTH1F, {{nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("eventCounterJet", "eventCounterJet", HistType::kTH1F, {{nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("eventCounterInc", "eventCounterInc", HistType::kTH1F, {{nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("eventCounterRandCone", "Number of Random Cones;Centrality (%);Count", HistType::kTH1F, {{nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("eventCounterMc", "eventCounterMc", HistType::kTH1F, {{nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    registry.add("ptVsCentrality", "ptvscentrality", HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}});
+    registry.add("ptResolution", "ptResolution", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {100, -1.0, +1.0}});
+    registry.add("mcCentralityReco", "mcCentralityReco", HistType::kTH1F, {{100, 0, 100}});
+
+    // MC Efficiency Denominators
+    // Jet (In-cone)
+    registry.add("ptGenPi", "ptGenPi", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptGenKa", "ptGenKa", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptGenPr", "ptGenPr", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    // Perp Cone
+    registry.add("ptGenPiPerp", "ptGenPiPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptGenKaPerp", "ptGenKaPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptGenPrPerp", "ptGenPrPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    // Inclusive (No JetPt axis)
+    registry.add("ptGenPiInc", "ptGenPiInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptGenKaInc", "ptGenKaInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("ptGenPrInc", "ptGenPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // MC Efficiency Numerators
+    // Inclusive
+    registry.add("effNumTpcPiInc", "effNumTpcPiInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcKaInc", "effNumTpcKaInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcPrInc", "effNumTpcPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofPiInc", "effNumTofPiInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofKaInc", "effNumTofKaInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofPrInc", "effNumTofPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // Jet (In-cone)
+    registry.add("effNumTpcPiJet", "effNumTpcPiJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcKaJet", "effNumTpcKaJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcPrJet", "effNumTpcPrJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofPiJet", "effNumTofPiJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofKaJet", "effNumTofKaJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofPrJet", "effNumTofPrJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // Perp Cone
+    registry.add("effNumTpcPiPerp", "effNumTpcPiPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcKaPerp", "effNumTpcKaPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcPrPerp", "effNumTpcPrPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofPiPerp", "effNumTofPiPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofKaPerp", "effNumTofKaPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofPrPerp", "effNumTofPrPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // DCA Templates for Primary Fraction
+    // Jet (In-cone)
+    registry.add("dcaPrimPi", "dcaPrimPi", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaDecayPi", "dcaDecayPi", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaMatPi", "dcaMatPi", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPrimPr", "dcaPrimPr", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaDecayPr", "dcaDecayPr", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaMatPr", "dcaMatPr", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // Perp Cone
+    registry.add("dcaPrimPiPerp", "dcaPrimPiPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaDecayPiPerp", "dcaDecayPiPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaMatPiPerp", "dcaMatPiPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPrimPrPerp", "dcaPrimPrPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaDecayPrPerp", "dcaDecayPrPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaMatPrPerp", "dcaMatPrPerp", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // Inclusive
+    registry.add("dcaPrimPiInc", "dcaPrimPiInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaDecayPiInc", "dcaDecayPiInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaMatPiInc", "dcaMatPiInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaPrimPrInc", "dcaPrimPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaDecayPrInc", "dcaDecayPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("dcaMatPrInc", "dcaMatPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDcaxyForMc.value, dcaxyMin.value, dcaxyMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
   }
 
   template <typename T, typename U>
@@ -249,13 +310,13 @@ struct JetShapeTask {
     return true;
   }
 
-  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r ==
-                   nround(jetR.node() * 100.0f);
+  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   Filter jetCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
   using FullTrackInfo = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta>;
+  using FullTrackInfoMC = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFbeta>;
 
   void processJetShape(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, aod::JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
@@ -373,8 +434,6 @@ struct JetShapeTask {
     for (size_t i = 0; i < cachedJets.size(); ++i) {
       const auto& jet = cachedJets[i];
 
-      registry.fill(HIST("rho"), rho);
-      registry.fill(HIST("jetPt"), jet.pt);
       registry.fill(HIST("ptCorr"), jet.ptCorr);
 
       for (size_t k = 0; k < nBins; k++) {
@@ -434,7 +493,9 @@ struct JetShapeTask {
 
       registry.fill(HIST("jetEta"), jet.eta());
       registry.fill(HIST("jetPhi"), jet.phi());
-      registry.fill(HIST("area"), centrality, jet.area());
+      registry.fill(HIST("area"), jet.area(), centrality);
+      registry.fill(HIST("rho"), rho, centrality);
+      registry.fill(HIST("jetPt"), jet.pt(), centrality);
 
       cachedJets.push_back(
         {jet.pt(), jet.eta(), jet.phi(), ptCorr, phiBg1, phiBg2});
@@ -533,9 +594,6 @@ struct JetShapeTask {
       bool isTpcPiRange = (tpcPi > tpcNSigmaPiMin && tpcPi < tpcNSigmaPiMax);
       bool isTpcPrRange = (tpcPr > tpcNSigmaPrMin && tpcPr < tpcNSigmaPrMax);
 
-      float nSigmaSqPr = tpcPr * tpcPr + tofPr * tofPr;
-      float nSigmaSqPi = tpcPi * tpcPi + tofPi * tofPi;
-
       for (const auto& jet : cachedJets) {
 
         float dEta = trkEta - jet.eta;
@@ -551,31 +609,38 @@ struct JetShapeTask {
         float distBg1 = std::sqrt(dEta * dEta + deltaPhiBg1 * deltaPhiBg1);
         float distBg2 = std::sqrt(dEta * dEta + deltaPhiBg2 * deltaPhiBg2);
 
+        float distBg = -1.0f;
+        if (distBg1 < distanceMax) {
+          distBg = distBg1;
+        } else if (distBg2 < distanceMax) {
+          distBg = distBg2;
+        }
+
         // --- Background Fill ---
-        if (distBg1 < distanceMax || distBg2 < distanceMax) {
+        if (distBg >= 0.0f) {
           registry.fill(HIST("tpcDedxPerpJet"), trkP, tpcSig);
 
           // dcaXY
           if (track.hasTOF()) {
-            if (nSigmaSqPr < nSigmaMaxForDcaxy) {
-              registry.fill(HIST("dcaPrPerpJet"), trkPt, track.dcaXY(), jet.ptCorr, centrality);
+            if (hasTofPr && isTpcPrRange) {
+              registry.fill(HIST("dcaPrPerpJet"), trkPt, track.dcaXY(), distBg, jet.ptCorr, centrality);
             }
 
-            if (nSigmaSqPi < nSigmaMaxForDcaxy) {
-              registry.fill(HIST("dcaPiPerpJet"), trkPt, track.dcaXY(), jet.ptCorr, centrality);
+            if (hasTofPi && isTpcPiRange) {
+              registry.fill(HIST("dcaPiPerpJet"), trkPt, track.dcaXY(), distBg, jet.ptCorr, centrality);
             }
           }
 
           if (hasTofPi) {
-            registry.fill(HIST("tpcTofPiPerpJet"), trkP, tpcPi, jet.ptCorr, centrality);
+            registry.fill(HIST("tpcTofPiPerpJet"), trkP, tpcPi, distBg, jet.ptCorr, centrality);
             if (isTpcPiRange) {
-              registry.fill(HIST("pVsPtForPiPerpJet"), trkP, trkPt, jet.ptCorr, centrality);
+              registry.fill(HIST("pVsPtForPiPerpJet"), trkP, trkPt, distBg, jet.ptCorr, centrality);
             }
           }
           if (hasTofPr) {
-            registry.fill(HIST("tpcTofPrPerpJet"), trkP, tpcPr, jet.ptCorr, centrality);
+            registry.fill(HIST("tpcTofPrPerpJet"), trkP, tpcPr, distBg, jet.ptCorr, centrality);
             if (isTpcPrRange) {
-              registry.fill(HIST("pVsPtForPrPerpJet"), trkP, trkPt, jet.ptCorr, centrality);
+              registry.fill(HIST("pVsPtForPrPerpJet"), trkP, trkPt, distBg, jet.ptCorr, centrality);
             }
           }
         }
@@ -593,10 +658,10 @@ struct JetShapeTask {
 
             // dcaXY
             if (track.hasTOF()) {
-              if (nSigmaSqPr < nSigmaMaxForDcaxy) {
+              if (hasTofPr && isTpcPrRange) {
                 registry.fill(HIST("dcaPrRandCone"), trkPt, track.dcaXY(), leadJet.ptCorr, centrality);
               }
-              if (nSigmaSqPi < nSigmaMaxForDcaxy) {
+              if (hasTofPi && isTpcPiRange) {
                 registry.fill(HIST("dcaPiRandCone"), trkPt, track.dcaXY(), leadJet.ptCorr, centrality);
               }
             }
@@ -623,11 +688,11 @@ struct JetShapeTask {
 
         // dcaXY
         if (track.hasTOF()) {
-          if (nSigmaSqPr < nSigmaMaxForDcaxy) {
+          if (hasTofPr && isTpcPrRange) {
             registry.fill(HIST("jetDcaPr"), trkPt, track.dcaXY(), distance, jet.ptCorr, centrality);
           }
 
-          if (nSigmaSqPi < nSigmaMaxForDcaxy) {
+          if (hasTofPi && isTpcPiRange) {
             registry.fill(HIST("jetDcaPi"), trkPt, track.dcaXY(), distance, jet.ptCorr, centrality);
           }
         }
@@ -715,44 +780,127 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processInclusiveProductionRatio, "inclusive Production ratio", false);
 
-  void processReco(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::JetTracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::ChargedMCDetectorLevelJets const& jets, aod::McParticles const& mcParticles)
+  void processEfficiencyAndPurity(
+    soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
+    soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks,
+    FullTrackInfoMC const&,
+    soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdJets,
+    aod::ChargedMCParticleLevelJets const& mcpJets,
+    aod::McParticles const& mcParticles)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
-    }
 
-    (void)mcParticles;
+    (void)mcpJets;
 
     float centrality = collision.centFT0M();
     float rho = collision.rho();
+    float distMax = distanceMax;
+    float maxR2 = distMax * distMax;
 
-    registry.fill(HIST("eventCounterMc"), 0.5);
-    registry.fill(HIST("mcCentralityReco"), centrality);
+    registry.fill(HIST("eventCounterMc"), centrality);
 
-    struct CachedJet {
-      float pt;
-      float eta;
-      float phi;
-      float ptCorr;
+    // jet matching
+    struct MatchedJet {
+      float detPtCorr, partEta, partPhi, partPhiBg1, partPhiBg2;
     };
-    std::vector<CachedJet> cachedJets;
-    cachedJets.reserve(jets.size());
+    std::vector<MatchedJet> validJets;
+    validJets.reserve(mcdJets.size());
 
-    for (const auto& jet : jets) {
-      float mcdPtCorr = jet.pt() - rho * jet.area();
-      cachedJets.push_back({jet.pt(), jet.eta(), jet.phi(), mcdPtCorr});
-      registry.fill(HIST("jetPt"), jet.pt());
+    for (auto const& detJet : mcdJets) {
+      auto matchedIndices = detJet.matchedJetGeo();
+
+      if (matchedIndices.size() > 0) {
+        auto const& partJet = matchedIndices[0];
+
+        float detPtCorr = detJet.pt() - rho * detJet.area();
+        float partPhi = partJet.phi();
+        float phiBg1 = RecoDecay::constrainAngle(partPhi + o2::constants::math::PIHalf);
+        float phiBg2 = RecoDecay::constrainAngle(partPhi - o2::constants::math::PIHalf);
+
+        validJets.push_back({detPtCorr, partJet.eta(), partPhi, phiBg1, phiBg2});
+        registry.fill(HIST("jetPtMc"), detJet.pt(), centrality);
+      }
     }
 
-    // reco track loop
-    for (const auto& track : tracks) {
+    // Denominator: True Primary Particles
+    for (const auto& mcParticle : mcParticles) {
 
-      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+      if (mcParticle.mcCollisionId() != collision.globalIndex())
         continue;
+
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.y()) > mcRapidityMax)
+        continue;
+
+      int absPdg = std::abs(mcParticle.pdgCode());
+      bool isPi = (absPdg == PDG_t::kPiPlus);
+      bool isKa = (absPdg == PDG_t::kKPlus);
+      bool isPr = (absPdg == PDG_t::kProton);
+      if (!isPi && !isKa && !isPr)
+        continue;
+
+      float mcPt = mcParticle.pt();
+
+      if (isPi)
+        registry.fill(HIST("ptGenPiInc"), mcPt, centrality);
+      else if (isKa)
+        registry.fill(HIST("ptGenKaInc"), mcPt, centrality);
+      else if (isPr)
+        registry.fill(HIST("ptGenPrInc"), mcPt, centrality);
+
+      for (const auto& jet : validJets) {
+        float dEta = mcParticle.eta() - jet.partEta;
+
+        // Jet In-cone
+        float dPhiJet = std::abs(mcParticle.phi() - jet.partPhi);
+        if (dPhiJet > o2::constants::math::PI)
+          dPhiJet = o2::constants::math::TwoPI - dPhiJet;
+
+        float distJetGen = std::sqrt(dEta * dEta + dPhiJet * dPhiJet);
+
+        if ((dEta * dEta + dPhiJet * dPhiJet) < maxR2) {
+          if (isPi)
+            registry.fill(HIST("ptGenPi"), mcPt, distJetGen, jet.detPtCorr, centrality);
+          else if (isKa)
+            registry.fill(HIST("ptGenKa"), mcPt, distJetGen, jet.detPtCorr, centrality);
+          else if (isPr)
+            registry.fill(HIST("ptGenPr"), mcPt, distJetGen, jet.detPtCorr, centrality);
+        }
+
+        // Perp Cone
+        float dPhiBg1 = std::abs(mcParticle.phi() - jet.partPhiBg1);
+        if (dPhiBg1 > o2::constants::math::PI)
+          dPhiBg1 = o2::constants::math::TwoPI - dPhiBg1;
+        float dPhiBg2 = std::abs(mcParticle.phi() - jet.partPhiBg2);
+        if (dPhiBg2 > o2::constants::math::PI)
+          dPhiBg2 = o2::constants::math::TwoPI - dPhiBg2;
+
+        float distBg1Sq = dEta * dEta + dPhiBg1 * dPhiBg1;
+        float distBg2Sq = dEta * dEta + dPhiBg2 * dPhiBg2;
+
+        float distBgGen = -1.0f;
+        if (distBg1Sq < maxR2)
+          distBgGen = std::sqrt(distBg1Sq);
+        else if (distBg2Sq < maxR2)
+          distBgGen = std::sqrt(distBg2Sq);
+
+        if (distBgGen >= 0.0f) {
+          if (isPi)
+            registry.fill(HIST("ptGenPiPerp"), mcPt, distBgGen, jet.detPtCorr, centrality);
+          else if (isKa)
+            registry.fill(HIST("ptGenKaPerp"), mcPt, distBgGen, jet.detPtCorr, centrality);
+          else if (isPr)
+            registry.fill(HIST("ptGenPrPerp"), mcPt, distBgGen, jet.detPtCorr, centrality);
+        }
       }
+    }
 
-      if (!track.has_mcParticle())
+    // Numerator
+    for (const auto& jetTrack : jetTracks) {
+      if (!jetderiveddatautilities::selectTrack(jetTrack, trackSelection))
         continue;
+
+      auto track = jetTrack.track_as<FullTrackInfoMC>();
 
       if (std::abs(track.eta()) > etaTrUp)
         continue;
@@ -769,157 +917,186 @@ struct JetShapeTask {
       if (track.itsNCls() < nclItsMin)
         continue;
 
+      if (!track.has_mcParticle())
+        continue;
       auto mcParticle = track.mcParticle();
+
+      if (mcParticle.mcCollisionId() != collision.globalIndex())
+        continue;
+
       registry.fill(HIST("ptResolution"), track.pt(), track.pt() - mcParticle.pt());
 
-      if (std::fabs(mcParticle.y()) >= mcRapidityMax)
+      if (std::abs(mcParticle.y()) >= mcRapidityMax)
+        continue;
+
+      int absPdg = std::abs(mcParticle.pdgCode());
+      bool isTruePi = (absPdg == PDG_t::kPiPlus);
+      bool isTrueKa = (absPdg == PDG_t::kKPlus);
+      bool isTruePr = (absPdg == PDG_t::kProton);
+      if (!isTruePi && !isTrueKa && !isTruePr)
         continue;
 
       const int producedByDecay = 4;
-
       bool isPrimary = mcParticle.isPhysicalPrimary();
-      bool isSecondDecay = !isPrimary && (mcParticle.getProcess() == producedByDecay);
-      bool isSecondMaterial = !isPrimary && !isSecondDecay;
+      bool isDecay = !isPrimary && (mcParticle.getProcess() == producedByDecay);
+      bool isMaterial = !isPrimary && !isDecay;
 
-      int pdg = std::abs(mcParticle.pdgCode());
-      bool isPion = (pdg == PDG_t::kPiPlus);
-      bool isKaon = (pdg == PDG_t::kKPlus);
-      bool isProton = (pdg == PDG_t::kProton);
-
-      if (!isPion && !isKaon && !isProton)
-        continue;
-
+      float mcPt = mcParticle.pt();
+      float recoPt = track.pt();
+      float dcaXy = track.dcaXY();
       bool hasTof = track.hasTOF();
 
-      for (const auto& jet : cachedJets) {
+      // PID flag
+      // TPC nsigma
+      bool passTpcPiOnly = (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax);
+      bool passTpcPrOnly = (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax);
 
-        float dEta = std::abs(track.eta() - jet.eta);
-        if (dEta > distanceMax)
-          continue;
+      // TPC + TOF
+      bool isRecoPi = passTpcPiOnly && hasTof && (std::abs(track.tofNSigmaPi()) < nSigmaTofCut);
+      bool isRecoPr = passTpcPrOnly && hasTof && (std::abs(track.tofNSigmaPr()) < nSigmaTofCut);
 
-        float dPhi = std::abs(track.phi() - jet.phi);
-        if (dPhi > o2::constants::math::PI) {
-          dPhi = o2::constants::math::TwoPI - dPhi;
+      if (isPrimary) {
+        // Inclusive
+        // TPC Efficiency
+        if (isTruePi)
+          registry.fill(HIST("effNumTpcPiInc"), mcPt, centrality);
+        if (isTrueKa)
+          registry.fill(HIST("effNumTpcKaInc"), mcPt, centrality);
+        if (isTruePr)
+          registry.fill(HIST("effNumTpcPrInc"), mcPt, centrality);
+
+        // TOF Matching Efficiency
+        if (isTruePi && hasTof)
+          registry.fill(HIST("effNumTofPiInc"), mcPt, centrality);
+        if (isTrueKa && hasTof)
+          registry.fill(HIST("effNumTofKaInc"), mcPt, centrality);
+        if (isTruePr && hasTof)
+          registry.fill(HIST("effNumTofPrInc"), mcPt, centrality);
+
+        // Purity DCA
+        if (isRecoPi && isTruePi)
+          registry.fill(HIST("dcaPrimPiInc"), recoPt, dcaXy, centrality);
+        if (isRecoPr && isTruePr)
+          registry.fill(HIST("dcaPrimPrInc"), recoPt, dcaXy, centrality);
+      } else if (isDecay) {
+        if (isRecoPi && isTruePi)
+          registry.fill(HIST("dcaDecayPiInc"), recoPt, dcaXy, centrality);
+        if (isRecoPr && isTruePr)
+          registry.fill(HIST("dcaDecayPrInc"), recoPt, dcaXy, centrality);
+      } else if (isMaterial) {
+        if (isRecoPi && isTruePi)
+          registry.fill(HIST("dcaMatPiInc"), recoPt, dcaXy, centrality);
+        if (isRecoPr && isTruePr)
+          registry.fill(HIST("dcaMatPrInc"), recoPt, dcaXy, centrality);
+      }
+
+      for (const auto& jet : validJets) {
+        float dEta = mcParticle.eta() - jet.partEta;
+
+        // --- Jet In-cone distance check ---
+        float dPhiJet = std::abs(mcParticle.phi() - jet.partPhi);
+        if (dPhiJet > o2::constants::math::PI)
+          dPhiJet = o2::constants::math::TwoPI - dPhiJet;
+
+        float distJetReco = std::sqrt(dEta * dEta + dPhiJet * dPhiJet);
+        bool inJet = (distJetReco < distanceMax);
+
+        // --- Perp Cone distance check ---
+        float dPhiBg1 = std::abs(mcParticle.phi() - jet.partPhiBg1);
+        if (dPhiBg1 > o2::constants::math::PI)
+          dPhiBg1 = o2::constants::math::TwoPI - dPhiBg1;
+        float dPhiBg2 = std::abs(mcParticle.phi() - jet.partPhiBg2);
+        if (dPhiBg2 > o2::constants::math::PI)
+          dPhiBg2 = o2::constants::math::TwoPI - dPhiBg2;
+
+        float distBg1Sq = dEta * dEta + dPhiBg1 * dPhiBg1;
+        float distBg2Sq = dEta * dEta + dPhiBg2 * dPhiBg2;
+
+        float distBgReco = -1.0f;
+        if (distBg1Sq < maxR2)
+          distBgReco = std::sqrt(distBg1Sq);
+        else if (distBg2Sq < maxR2)
+          distBgReco = std::sqrt(distBg2Sq);
+
+        bool inPerp = (distBgReco >= 0.0f);
+
+        if (inJet) {
+          if (isPrimary) {
+            // --- Jet In-cone 分子 ---
+            // TPC Efficiency
+            if (isTruePi)
+              registry.fill(HIST("effNumTpcPiJet"), mcPt, distJetReco, jet.detPtCorr, centrality);
+            if (isTrueKa)
+              registry.fill(HIST("effNumTpcKaJet"), mcPt, distJetReco, jet.detPtCorr, centrality);
+            if (isTruePr)
+              registry.fill(HIST("effNumTpcPrJet"), mcPt, distJetReco, jet.detPtCorr, centrality);
+
+            // TOF Matching Efficiency
+            if (isTruePi && hasTof)
+              registry.fill(HIST("effNumTofPiJet"), mcPt, distJetReco, jet.detPtCorr, centrality);
+            if (isTrueKa && hasTof)
+              registry.fill(HIST("effNumTofKaJet"), mcPt, distJetReco, jet.detPtCorr, centrality);
+            if (isTruePr && hasTof)
+              registry.fill(HIST("effNumTofPrJet"), mcPt, distJetReco, jet.detPtCorr, centrality);
+
+            // Purity DCA
+            if (isRecoPi && isTruePi)
+              registry.fill(HIST("dcaPrimPi"), recoPt, dcaXy, distJetReco, jet.detPtCorr, centrality);
+            if (isRecoPr && isTruePr)
+              registry.fill(HIST("dcaPrimPr"), recoPt, dcaXy, distJetReco, jet.detPtCorr, centrality);
+          } else if (isDecay) {
+            if (isRecoPi && isTruePi)
+              registry.fill(HIST("dcaDecayPi"), recoPt, dcaXy, distJetReco, jet.detPtCorr, centrality);
+            if (isRecoPr && isTruePr)
+              registry.fill(HIST("dcaDecayPr"), recoPt, dcaXy, distJetReco, jet.detPtCorr, centrality);
+          } else if (isMaterial) {
+            if (isRecoPi && isTruePi)
+              registry.fill(HIST("dcaMatPi"), recoPt, dcaXy, distJetReco, jet.detPtCorr, centrality);
+            if (isRecoPr && isTruePr)
+              registry.fill(HIST("dcaMatPr"), recoPt, dcaXy, distJetReco, jet.detPtCorr, centrality);
+          }
         }
 
-        if (dPhi > distanceMax)
-          continue;
+        if (inPerp) {
+          if (isPrimary) {
+            // Perp Cone
+            // TPC Efficiency
+            if (isTruePi)
+              registry.fill(HIST("effNumTpcPiPerp"), mcPt, distBgReco, jet.detPtCorr, centrality);
+            if (isTrueKa)
+              registry.fill(HIST("effNumTpcKaPerp"), mcPt, distBgReco, jet.detPtCorr, centrality);
+            if (isTruePr)
+              registry.fill(HIST("effNumTpcPrPerp"), mcPt, distBgReco, jet.detPtCorr, centrality);
 
-        float deltaR = std::sqrt(dEta * dEta + dPhi * dPhi);
-        if (deltaR > distanceMax)
-          continue;
+            // TOF Matching Efficiency
+            if (isTruePi && hasTof)
+              registry.fill(HIST("effNumTofPiPerp"), mcPt, distBgReco, jet.detPtCorr, centrality);
+            if (isTrueKa && hasTof)
+              registry.fill(HIST("effNumTofKaPerp"), mcPt, distBgReco, jet.detPtCorr, centrality);
+            if (isTruePr && hasTof)
+              registry.fill(HIST("effNumTofPrPerp"), mcPt, distBgReco, jet.detPtCorr, centrality);
 
-        if (isPrimary) {
-          // Tracking
-          if (isPion)
-            registry.fill(HIST("ptHistogramPion"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
-          else if (isKaon)
-            registry.fill(HIST("ptHistogramKaon"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
-          else if (isProton)
-            registry.fill(HIST("ptHistogramProton"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
-
-          // TOF matched
-          if (hasTof) {
-            if (isPion)
-              registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt(), jet.ptCorr, centrality);
-            else if (isKaon)
-              registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt(), jet.ptCorr, centrality);
-            else if (isProton)
-              registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt(), jet.ptCorr, centrality);
-          }
-        } else { // Secondary
-          if (isSecondDecay) {
-            // from Decay
-            if (isPion)
-              registry.fill(HIST("dcaDecayPion"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
-            else if (isProton)
-              registry.fill(HIST("dcaDecayProton"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
-          } else if (isSecondMaterial) {
-            // from Material
-            if (isPion)
-              registry.fill(HIST("dcaMaterialPion"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
-            else if (isProton)
-              registry.fill(HIST("dcaMaterialProton"), mcParticle.pt(), track.dcaXY(), jet.ptCorr, centrality);
+            // Purity DCA
+            if (isRecoPi && isTruePi)
+              registry.fill(HIST("dcaPrimPiPerp"), recoPt, dcaXy, distBgReco, jet.detPtCorr, centrality);
+            if (isRecoPr && isTruePr)
+              registry.fill(HIST("dcaPrimPrPerp"), recoPt, dcaXy, distBgReco, jet.detPtCorr, centrality);
+          } else if (isDecay) {
+            if (isRecoPi && isTruePi)
+              registry.fill(HIST("dcaDecayPiPerp"), recoPt, dcaXy, distBgReco, jet.detPtCorr, centrality);
+            if (isRecoPr && isTruePr)
+              registry.fill(HIST("dcaDecayPrPerp"), recoPt, dcaXy, distBgReco, jet.detPtCorr, centrality);
+          } else if (isMaterial) {
+            if (isRecoPi && isTruePi)
+              registry.fill(HIST("dcaMatPiPerp"), recoPt, dcaXy, distBgReco, jet.detPtCorr, centrality);
+            if (isRecoPr && isTruePr)
+              registry.fill(HIST("dcaMatPrPerp"), recoPt, dcaXy, distBgReco, jet.detPtCorr, centrality);
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(JetShapeTask, processReco, "process reconstructed simulation information", true);
-
-  void processSim(aod::JetMcCollisions::iterator const& mcCollision, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, aod::ChargedMCParticleLevelJets const& mcpjets, aod::JetParticles const& mcParticles)
-  {
-    if (std::abs(mcCollision.posZ()) > vertexZCut) {
-      return;
-    }
-
-    if (collisions.size() == 0) {
-      return;
-    }
-
-    // --- centrality ---
-    float centrality = collisions.begin().centFT0M();
-    registry.fill(HIST("mcCentralitySim"), centrality);
-    const float maxR2 = distanceMax * distanceMax;
-
-    // --- loop over MC particles only once ---
-    for (const auto& mcParticle : mcParticles) {
-
-      // --- early cuts on particle ---
-      if (!mcParticle.isPhysicalPrimary()) {
-        continue;
-      }
-
-      if (std::abs(mcParticle.y()) > mcRapidityMax) {
-        continue;
-      }
-
-      int absPdg = std::abs(mcParticle.pdgCode());
-      if (absPdg != PDG_t::kPiPlus &&
-          absPdg != PDG_t::kKPlus &&
-          absPdg != PDG_t::kProton) {
-        continue;
-      }
-
-      const float partPt = mcParticle.pt();
-      const float partEta = mcParticle.eta();
-      const float partPhi = mcParticle.phi();
-
-      // --- loop over jets ---
-      for (const auto& mcpjet : mcpjets) {
-
-        // --- delta eta cut first ---
-        float dEta = partEta - mcpjet.eta();
-        if (std::abs(dEta) > distanceMax) {
-          continue;
-        }
-
-        // --- delta phi ---
-        float dPhi = std::abs(partPhi - mcpjet.phi());
-        if (dPhi > o2::constants::math::PI) {
-          dPhi = o2::constants::math::TwoPI - dPhi;
-        }
-
-        // --- delta R^2 ---
-        float dR2 = dEta * dEta + dPhi * dPhi;
-        if (dR2 > maxR2) {
-          continue;
-        }
-
-        const float jetPt = mcpjet.pt();
-
-        // --- histogram fill ---
-        if (absPdg == PDG_t::kPiPlus) {
-          registry.fill(HIST("ptGeneratedPion"), partPt, jetPt, centrality);
-        } else if (absPdg == PDG_t::kKPlus) {
-          registry.fill(HIST("ptGeneratedKaon"), partPt, jetPt, centrality);
-        } else if (absPdg == PDG_t::kProton) {
-          registry.fill(HIST("ptGeneratedProton"), partPt, jetPt, centrality);
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(JetShapeTask, processSim, "process pure simulation information", true);
+  PROCESS_SWITCH(JetShapeTask, processEfficiencyAndPurity, "process MC information for Efficiency and Purity", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetShapeTask>(cfgc)}; }
