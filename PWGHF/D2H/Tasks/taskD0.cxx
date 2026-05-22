@@ -349,7 +349,7 @@ struct HfTaskD0 {
     }
     if (storeCentrality) {
       axes.push_back(thnAxisCent);
-      axes.push_back(thnAxisNumPvContr);///
+      axes.push_back(thnAxisNumPvContr);
     }
     if (storeOccupancyAndIR) {
       axes.push_back(thnAxisOccupancy);
