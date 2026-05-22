@@ -1009,8 +1009,6 @@ struct BjetTaggingGnn {
         }
       }
 
-      bool isMatchedToAnalysisSelection = false;
-
       if (matchedCollisions.size() >= 1) {
         zvtxMatched = std::fabs(matchedCollisions.begin().posZ()) < vertexZCut;
         evtselCode |= EvtSelFlag::kColl;
@@ -1046,7 +1044,6 @@ struct BjetTaggingGnn {
           }
         }
         if (jetderiveddatautilities::selectCollision(matchedCollisions.begin(), eventSelectionBits) && zvtxMatched) {
-          isMatchedToAnalysisSelection = true;
           registry.fill(HIST("h_event_counter_mcp"), 0.0, weightEvt);
         }
       }
