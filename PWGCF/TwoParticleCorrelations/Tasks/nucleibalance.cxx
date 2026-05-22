@@ -1959,6 +1959,8 @@ struct Lambdastarproxy {
 
     AxisSpec dEdxAxis{400, 0., 200., "TPC dE/dx (arb. units)"};
     AxisSpec betaAxis{160, 0., 1.6, "#beta_{TOF}"};
+    AxisSpec dcaXYAxis{200, -0.2, 0.2, "DCA_{xy} (cm)"};
+    AxisSpec dcaZAxis{200, -0.2, 0.2, "DCA_{z} (cm)"};
 
     // Invariant-mass spectra
     histos.add("hInvMassPKUnlike",
@@ -2112,6 +2114,78 @@ struct Lambdastarproxy {
     histos.add("hNsigmaTOFKaonVsP",
                "TOF n#sigma_{K} vs p; p (GeV/c); n#sigma^{TOF}_{K};Counts",
                HistType::kTH2F, {pAxis, nsAxis});
+
+    // --- Additional pT-based PID QA for the final selected K/p/d candidates ---
+    // These histograms are needed for PID studies in the same pT intervals used by the analysis.
+    histos.add("hTOFBetaVsPt_K",
+               "TOF #beta vs p_{T} for selected K;p_{T} (GeV/c);#beta_{TOF};Counts",
+               HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add("hTOFBetaVsPt_P",
+               "TOF #beta vs p_{T} for selected p;p_{T} (GeV/c);#beta_{TOF};Counts",
+               HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add("hTOFBetaVsPt_D",
+               "TOF #beta vs p_{T} for selected d;p_{T} (GeV/c);#beta_{TOF};Counts",
+               HistType::kTH2F, {ptAxis, betaAxis});
+
+    histos.add("hNsigmaTPCKaonVsPt",
+               "TPC n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{K};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+    histos.add("hNsigmaTOFKaonVsPt",
+               "TOF n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+
+    histos.add("hNsigmaTPCProtonVsP",
+               "TPC n#sigma_{p} vs p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonVsP",
+               "TOF n#sigma_{p} vs p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTPCProtonVsPt",
+               "TPC n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonVsPt",
+               "TOF n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+
+    histos.add("hNsigmaTPCDeuteronVsPt",
+               "TPC n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{d};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+    histos.add("hNsigmaTOFDeuteronVsPt",
+               "TOF n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+
+    histos.add("hTPCvsTOFNsigma_K",
+               "TPC vs TOF n#sigma for selected K;n#sigma^{TPC}_{K};n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {nsAxis, nsAxis});
+    histos.add("hTPCvsTOFNsigma_P",
+               "TPC vs TOF n#sigma for selected p;n#sigma^{TPC}_{p};n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {nsAxis, nsAxis});
+    histos.add("hTPCvsTOFNsigma_D",
+               "TPC vs TOF n#sigma for selected d;n#sigma^{TPC}_{d};n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {nsAxis, nsAxis});
+
+    // --- DCA QA for final selected K/p/d candidates ---
+    // Filled only when lstarEnablePidQA = 1.
+    histos.add("hDCAxyVsPt_K",
+               "DCA_{xy} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaXYAxis});
+    histos.add("hDCAzVsPt_K",
+               "DCA_{z} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaZAxis});
+
+    histos.add("hDCAxyVsPt_P",
+               "DCA_{xy} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaXYAxis});
+    histos.add("hDCAzVsPt_P",
+               "DCA_{z} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaZAxis});
+
+    histos.add("hDCAxyVsPt_D",
+               "DCA_{xy} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaXYAxis});
+    histos.add("hDCAzVsPt_D",
+               "DCA_{z} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaZAxis});
   }
 
   // AO2D-MC QA: truth primaries + reco-to-MC matching sanity plots
@@ -2531,6 +2605,21 @@ struct Lambdastarproxy {
         histos.fill(HIST("hNsigmaTOFDeuteron"), nsTOFDe);
         histos.fill(HIST("hNsigmaTPCDeuteronVsP"), pD, nsTPCDe);
         histos.fill(HIST("hNsigmaTOFDeuteronVsP"), pD, nsTOFDe);
+        histos.fill(HIST("hNsigmaTPCDeuteronVsPt"), ptD, nsTPCDe);
+        histos.fill(HIST("hNsigmaTOFDeuteronVsPt"), ptD, nsTOFDe);
+        if (hasTofDe) {
+          histos.fill(HIST("hTPCvsTOFNsigma_D"), nsTPCDe, nsTOFDe);
+        }
+        if constexpr (requires { trkD.beta(); }) {
+          const float beta = trkD.beta();
+          if (hasTofDe && beta > TofBetaMin && beta < TofBetaMax) {
+            histos.fill(HIST("hTOFBetaVsPt_D"), ptD, beta);
+          }
+        }
+        if constexpr (requires { trkD.dcaXY(); trkD.dcaZ(); }) {
+          histos.fill(HIST("hDCAxyVsPt_D"), ptD, trkD.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_D"), ptD, trkD.dcaZ());
+        }
       }
 
       // build proton-proxy momentum from deuteron: p_p ≈ p_d / 2
@@ -2565,6 +2654,27 @@ struct Lambdastarproxy {
       const float ptP = trkP.pt();
       const float etaP = trkP.eta();
       const float phiP = trkP.phi();
+      const double pP = static_cast<double>(ptP) * std::cosh(static_cast<double>(etaP));
+
+      if (lstarEnablePidQA.value != 0) {
+        histos.fill(HIST("hNsigmaTPCProtonVsP"), pP, nsTPCPr);
+        histos.fill(HIST("hNsigmaTOFProtonVsP"), pP, nsTOFPr);
+        histos.fill(HIST("hNsigmaTPCProtonVsPt"), ptP, nsTPCPr);
+        histos.fill(HIST("hNsigmaTOFProtonVsPt"), ptP, nsTOFPr);
+        if (hasTofPr) {
+          histos.fill(HIST("hTPCvsTOFNsigma_P"), nsTPCPr, nsTOFPr);
+        }
+        if constexpr (requires { trkP.beta(); }) {
+          const float beta = trkP.beta();
+          if (hasTofPr && beta > TofBetaMin && beta < TofBetaMax) {
+            histos.fill(HIST("hTOFBetaVsPt_P"), ptP, beta);
+          }
+        }
+        if constexpr (requires { trkP.dcaXY(); trkP.dcaZ(); }) {
+          histos.fill(HIST("hDCAxyVsPt_P"), ptP, trkP.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_P"), ptP, trkP.dcaZ());
+        }
+      }
 
       const float pxP = ptP * std::cos(phiP);
       const float pyP = ptP * std::sin(phiP);
@@ -2610,6 +2720,21 @@ struct Lambdastarproxy {
         histos.fill(HIST("hNsigmaTOFKaon"), nsTOFK);
         histos.fill(HIST("hNsigmaTPCKaonVsP"), pK, nsTPCK);
         histos.fill(HIST("hNsigmaTOFKaonVsP"), pK, nsTOFK);
+        histos.fill(HIST("hNsigmaTPCKaonVsPt"), ptK, nsTPCK);
+        histos.fill(HIST("hNsigmaTOFKaonVsPt"), ptK, nsTOFK);
+        if (hasTofK) {
+          histos.fill(HIST("hTPCvsTOFNsigma_K"), nsTPCK, nsTOFK);
+        }
+        if constexpr (requires { trkK.beta(); }) {
+          const float beta = trkK.beta();
+          if (hasTofK && beta > TofBetaMin && beta < TofBetaMax) {
+            histos.fill(HIST("hTOFBetaVsPt_K"), ptK, beta);
+          }
+        }
+        if constexpr (requires { trkK.dcaXY(); trkK.dcaZ(); }) {
+          histos.fill(HIST("hDCAxyVsPt_K"), ptK, trkK.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_K"), ptK, trkK.dcaZ());
+        }
       }
 
       const float pxK = ptK * std::cos(phiK);
