@@ -45,6 +45,7 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <math.h>
@@ -202,7 +203,7 @@ struct BjetTaggingGnn {
     registry.add("h_event_counter_mcp", ";analysis collision matched MC collision counter", {HistType::kTH1F, {{1, 0.0, 1.0}}}, callSumw2);
     registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{100, -20.0, 20.0}}}, callSumw2);
     registry.add("hCollCounter", ";collision counter", {HistType::kTH1F, {{12, 1.0, 13.0}}}, callSumw2);
-    auto& hCollCounter = registry.get<TH1>(HIST("hCollCounter"));
+    auto hCollCounter = registry.get<TH1>(HIST("hCollCounter"));
     hCollCounter->GetXaxis()->SetBinLabel(1, "_1");
     hCollCounter->GetXaxis()->SetBinLabel(2, "_2");
     hCollCounter->GetXaxis()->SetBinLabel(3, "Coll");
@@ -216,7 +217,7 @@ struct BjetTaggingGnn {
     hCollCounter->GetXaxis()->SetBinLabel(11, "_11");
     hCollCounter->GetXaxis()->SetBinLabel(12, "INELgt0+Zvtx(rec)"); // sel8
     registry.add("hMcCollCounter", ";MC collision counter", {HistType::kTH1F, {{12, 1.0, 13.0}}}, callSumw2);
-    auto& hMcCollCounter = registry.get<TH1>(HIST("hMcCollCounter"));
+    auto hMcCollCounter = registry.get<TH1>(HIST("hMcCollCounter"));
     hMcCollCounter->GetXaxis()->SetBinLabel(1, "McColl(INEL)");
     hMcCollCounter->GetXaxis()->SetBinLabel(2, "McColl+Zvtx");
     hMcCollCounter->GetXaxis()->SetBinLabel(3, "McColl(-> Coll)");
@@ -518,17 +519,20 @@ struct BjetTaggingGnn {
     return nTracks;
   }
 
+  const float largeNegativeNumber = -98.0f;
+  const float largePositiveNumber = 9999.0f;
+
   template <typename AnyTracks, typename AnalysisJet>
   bool isAcceptedJet(AnalysisJet const& jet)
   {
-    if (jetAreaFractionMin > -98.0) { // o2-linter: disable=magic-number (arbitrary large negative number)
+    if (jetAreaFractionMin > largeNegativeNumber) {
       if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);  // o2-linter: disable=magic-number (arbitrary large negative number)
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0); // o2-linter: disable=magic-number (arbitrary large number)
+    bool checkConstituentMinPt = (leadingConstituentPtMin > largeNegativeNumber);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < largePositiveNumber);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -695,6 +699,7 @@ struct BjetTaggingGnn {
   }
 
   // Check if the collision is INEL>0
+  const int nPartInel0 = 3;
   template <typename MCColl, typename MCPart>
   bool isTrueINEL0(MCColl const& /*mccoll*/, MCPart const& mcparts)
   {
@@ -703,7 +708,7 @@ struct BjetTaggingGnn {
         continue;
       const auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= 3) { // o2-linter: disable=magic-number (constant number of particles)
+        if (std::abs(p->Charge()) >= nPartInel0) {
           if (std::abs(mcparticle.eta()) < 1)
             return true;
         }
@@ -936,7 +941,7 @@ struct BjetTaggingGnn {
     const auto& mcpjetspermcpcollision = MCPjets.sliceBy(mcpjetsPerMCPCollision, collision.mcCollisionId());
     for (const auto& mcpjet : mcpjetspermcpcollision) {
       registry.fill(HIST("h_jetpT_particle"), mcpjet.pt(), weightEvt);
-
+      
       // Fill h3_pthat_jetpT only for unmatched particle jets (reco pT = -1)
       if (matchedMcpJetIndices.find(mcpjet.globalIndex()) == matchedMcpJetIndices.end()) {
         registry.fill(HIST("h3_pthat_jetpT"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), -1.f, mcpjet.pt(), weightEvt); // Missing jets, overflow-pTreco jets
