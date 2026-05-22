@@ -518,14 +518,14 @@ struct BjetTaggingGnn {
   template <typename AnyTracks, typename AnalysisJet>
   bool isAcceptedJet(AnalysisJet const& jet)
   {
-    if (jetAreaFractionMin > -98.0) { // o2-linter: disable=magic-number
+    if (jetAreaFractionMin > -98.0) { // o2-linter: disable=magic-number (arbitrary large negative number)
       if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0); // o2-linter: disable=magic-number
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0); // o2-linter: disable=magic-number
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);  // o2-linter: disable=magic-number (arbitrary large negative number)
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0); // o2-linter: disable=magic-number (arbitrary large number)
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -700,7 +700,7 @@ struct BjetTaggingGnn {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= 3) { // o2-linter: disable=magic-number
+        if (std::abs(p->Charge()) >= 3) { // o2-linter: disable=magic-number (constant number of particles)
           if (std::abs(mcparticle.eta()) < 1)
             return true;
         }
