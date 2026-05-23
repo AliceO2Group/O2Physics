@@ -130,6 +130,11 @@ bool isCharmBaryon(T const& track)
     return false;
   }
 
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 4101 || std::abs(track.pdgCode()) == 4103 || std::abs(track.pdgCode()) == 4201 || std::abs(track.pdgCode()) == 4203 || std::abs(track.pdgCode()) == 4301 || std::abs(track.pdgCode()) == 4303 || std::abs(track.pdgCode()) == 4403) {
+    return false;
+  }
+
   if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
     return true;
   } else {
@@ -190,6 +195,11 @@ bool isBeautyBaryon(T const& track)
     return false;
   }
   if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 5101 || std::abs(track.pdgCode()) == 5103 || std::abs(track.pdgCode()) == 5201 || std::abs(track.pdgCode()) == 5203 || std::abs(track.pdgCode()) == 5301 || std::abs(track.pdgCode()) == 5303 || std::abs(track.pdgCode()) == 5401 || std::abs(track.pdgCode()) == 5403 || std::abs(track.pdgCode()) == 5503) {
     return false;
   }
 
