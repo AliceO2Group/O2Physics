@@ -87,8 +87,9 @@ struct taggingHFE {
   using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs>;
 
+  Produces<aod::EMMLEvents> eventTable;
   Produces<aod::EMMLLeptons> leptonTable;
-  Produces<aod::EMMLLHPairs> emmllhpair;
+  Produces<aod::EMMLLTPairs> emmlltpair;
   Produces<aod::EMMLLV0Pairs> emmllv0pair;
   Produces<aod::EMMLLCascPairs> emmllcascpair;
 
@@ -1621,6 +1622,7 @@ struct taggingHFE {
         }
       } // end of cascade loop
 
+      int npos = 0;
       for (const auto& positronId : positronIds) {
         auto pos = tracks.rawIteratorAt(positronId);
         mDcaInfoCov.set(999, 999, 999, 999, 999);
@@ -1648,8 +1650,9 @@ struct taggingHFE {
           continue;
         }
 
-        leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision_mcpos.getSubGeneratorId(),
-                    leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
+        npos++;
+        leptonTable(eventTable.lastIndex() + 1, mcCollision_mcpos.getSubGeneratorId(),
+                    leptonParCov.getQ2Pt(), leptonParCov.getEta(), RecoDecay::constrainAngle(leptonParCov.getPhi(), 0, 1U), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
                     isMotherFromB, mcMother.pdgCode(), isCorrectCollision);
 
         // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
@@ -1701,7 +1704,7 @@ struct taggingHFE {
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
-          emmllhpair(leptonTable.lastIndex(),
+          emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
@@ -1760,7 +1763,7 @@ struct taggingHFE {
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
-          emmllhpair(leptonTable.lastIndex(),
+          emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
@@ -2044,6 +2047,7 @@ struct taggingHFE {
 
       } // end of main positron sample
 
+      int nele = 0;
       for (const auto& electronId : electronIds) {
         auto ele = tracks.rawIteratorAt(electronId);
         mDcaInfoCov.set(999, 999, 999, 999, 999);
@@ -2071,8 +2075,9 @@ struct taggingHFE {
           continue;
         }
 
-        leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision_mcele.getSubGeneratorId(),
-                    leptonParCov.getQ2Pt(), leptonParCov.getEta(), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
+        nele++;
+        leptonTable(eventTable.lastIndex() + 1, mcCollision_mcele.getSubGeneratorId(),
+                    leptonParCov.getQ2Pt(), leptonParCov.getEta(), RecoDecay::constrainAngle(leptonParCov.getPhi(), 0, 1U), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
                     isMotherFromB, mcMother.pdgCode(), isCorrectCollision);
 
         for (const auto& kaonId : kaonMinusIds) {
@@ -2123,7 +2128,7 @@ struct taggingHFE {
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
-          emmllhpair(leptonTable.lastIndex(),
+          emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
@@ -2183,7 +2188,7 @@ struct taggingHFE {
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
-          emmllhpair(leptonTable.lastIndex(),
+          emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
@@ -2465,6 +2470,10 @@ struct taggingHFE {
         } // end of Omega+ loop
 
       } // end of main electron sample
+
+      if (npos + nele > 0) { // fill eventTable only if at least 1 electron or positron exists.
+        eventTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      }
 
       electronIds.clear();
       electronIds.shrink_to_fit();
