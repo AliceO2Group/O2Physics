@@ -12,7 +12,7 @@
 /// \file lambda1520Analysispo.cxx
 /// \brief Task for Lambda(1520) resonance reconstruction via proton-kaon invariant mass analysis for pO system
 ///
-/// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
+/// \author Yash Patley <yash.patley@cern.ch>, Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
@@ -56,12 +56,11 @@ static constexpr int PdgOmegaMinus{3334};
 } // namespace lambda_analysis
 
 // FIX name/struct: use UpperCamelCase for struct names
-struct lambda1520analysispo {
+struct Lambda1520Analysispo {
   SliceCache sliceCache;
 
   // Preslice helpers
-  Preslice<aod::ResoTracks> tracksPerResonanceCollision =
-    aod::resodaughter::resoCollisionId;
+  Preslice<aod::ResoTracks> tracksPerResonanceCollision = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> tracksPerStandardCollision = aod::track::collisionId;
 
   // Pointer to MC parent particle table (used only in MC processing)
@@ -838,7 +837,7 @@ struct lambda1520analysispo {
     allHistograms.fill(HIST("Event/primaryVertexZ"), collision.posZ());
     fillInvariantMassHistograms<false, false>(tracks, tracks, collision.cent());
   }
-  PROCESS_SWITCH(lambda1520analysispo, processData,
+  PROCESS_SWITCH(Lambda1520Analysispo, processData,
                  "Process real collision data (same-event analysis)", true);
 
   // ============================================================
@@ -943,7 +942,7 @@ struct lambda1520analysispo {
                            parentMass, parentParticle.pt(), centralityPercent);
     }
   }
-  PROCESS_SWITCH(lambda1520analysispo, processMC,
+  PROCESS_SWITCH(Lambda1520Analysispo, processMC,
                  "Process Monte Carlo simulated events", false);
 
   // ============================================================
@@ -1050,7 +1049,7 @@ struct lambda1520analysispo {
       }
     }
   }
-  PROCESS_SWITCH(lambda1520analysispo, processMCGen,
+  PROCESS_SWITCH(Lambda1520Analysispo, processMCGen,
                  "Generator-level MC signal loss study (mT scaling)", false);
 
   // ── Event-mixing binning types ───────────────────────────────────────────
@@ -1083,7 +1082,7 @@ struct lambda1520analysispo {
       fillInvariantMassHistograms<true, false>(tracks1, tracks2, col1.cent());
     }
   }
-  PROCESS_SWITCH(lambda1520analysispo, processMix,
+  PROCESS_SWITCH(Lambda1520Analysispo, processMix,
                  "Event mixing for background estimation (standard format)",
                  true);
 
@@ -1113,7 +1112,7 @@ struct lambda1520analysispo {
     fillInvariantMassHistograms<false, false>(tracks, tracks, collision.cent(),
                                               occupancyValue);
   }
-  PROCESS_SWITCH(lambda1520analysispo, processDatadf,
+  PROCESS_SWITCH(Lambda1520Analysispo, processDatadf,
                  "Process real data in merged derived-data (DF) format", false);
 
   // ============================================================
@@ -1151,7 +1150,7 @@ struct lambda1520analysispo {
                                                occupancyValue);
     }
   }
-  PROCESS_SWITCH(lambda1520analysispo, processMixDF,
+  PROCESS_SWITCH(Lambda1520Analysispo, processMixDF,
                  "Event mixing for DF-format data", false);
 
   // ============================================================
@@ -1185,12 +1184,12 @@ struct lambda1520analysispo {
       fillInvariantMassHistograms<true, false>(tracks1, tracks2, col1.cent());
     }
   }
-  PROCESS_SWITCH(lambda1520analysispo, processMixepDF,
+  PROCESS_SWITCH(Lambda1520Analysispo, processMixepDF,
                  "Event-plane dependent event mixing for DF-format data",
                  false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<lambda1520analysispo>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Lambda1520Analysispo>(cfgc)};
 }
