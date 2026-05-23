@@ -169,11 +169,11 @@ struct taggingHFE {
     Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
-    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
-    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
-    Configurable<bool> requirePiKaPr{"requirePiKaPr", true, "require hadron to be pion or kaon or proton"};
+    // Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
+    // Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
+    // Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
+    // Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
+    Configurable<bool> requirePiKa{"requirePiKa", true, "require hadron to be pion or kaon or proton"};
     Configurable<bool> applyTOFif{"applyTOFif", false, "apply TOFif for hadron identification"};
   } hadronCut;
 
@@ -477,23 +477,23 @@ struct taggingHFE {
   }
 
   template <typename TCollision, typename TTrack>
-  bool isPiKaPr(TCollision const& collision, TTrack const& track)
+  bool isPiKa(TCollision const& collision, TTrack const& track)
   {
     float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     bool is_pi_included_TPC = hadronCut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < hadronCut.cfg_max_TPCNsigmaPi;
     bool is_pi_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPi < tofNSigmaPi && tofNSigmaPi < hadronCut.cfg_max_TOFNsigmaPi) : true;
     bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
     bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < tofNSigmaKa && tofNSigmaKa < hadronCut.cfg_max_TOFNsigmaKa) : true;
-    bool is_pr_included_TPC = hadronCut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < hadronCut.cfg_max_TPCNsigmaPr;
-    bool is_pr_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPr < tofNSigmaPr && tofNSigmaPr < hadronCut.cfg_max_TOFNsigmaPr) : true;
+    // bool is_pr_included_TPC = hadronCut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < hadronCut.cfg_max_TPCNsigmaPr;
+    // bool is_pr_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPr < tofNSigmaPr && tofNSigmaPr < hadronCut.cfg_max_TOFNsigmaPr) : true;
     if (!hadronCut.applyTOFif) {
       is_pi_included_TOF = true;
       is_ka_included_TOF = true;
-      is_pr_included_TOF = true;
+      // is_pr_included_TOF = true;
     }
-    return (is_pi_included_TPC && is_pi_included_TOF) || (is_ka_included_TPC && is_ka_included_TOF) || (is_pr_included_TPC && is_pr_included_TOF);
+    return (is_pi_included_TPC && is_pi_included_TOF) || (is_ka_included_TPC && is_ka_included_TOF) /* || (is_pr_included_TPC && is_pr_included_TOF)*/;
   }
 
   template <typename TCollision, typename TTrack>
@@ -730,7 +730,7 @@ struct taggingHFE {
       return false;
     }
 
-    if (hadronCut.requirePiKaPr && !isPiKaPr(collision, track)) {
+    if (hadronCut.requirePiKa && !isPiKa(collision, track)) {
       return false;
     }
 
