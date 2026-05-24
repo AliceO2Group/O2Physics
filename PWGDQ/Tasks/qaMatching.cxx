@@ -1594,30 +1594,30 @@ struct QaMatching {
   }
 
   template <typename TMCH, typename TMFT, class C>
-  o2::dataformats::GlobalFwdTrack propagateToVertexMft(const TMFT& muon,
+  o2::dataformats::GlobalFwdTrack propagateToVertexMft(const TMFT& mftTrack,
                                                        const TMCH& mchTrack,
                                                        const C& collision)
   {
     // extrapolation with MCH tools
     auto mchTrackAtMFT = mExtrap.FwdtoMCH(fwdToTrackPar(mchTrack));
-    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrackAtMFT, muon.z());
+    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrackAtMFT, mftTrack.z());
 
-    auto muonTrackProp = mExtrap.FwdtoMCH(fwdToTrackPar(muon));
+    auto mftTrackProp = mExtrap.FwdtoMCH(fwdToTrackPar(mftTrack));
 
     // update global track momentum from the MCH track
-    double pRatio = muonTrackProp.p() / mchTrackAtMFT.p();
-    double newInvBendMom = muonTrackProp.getInverseBendingMomentum() * pRatio;
-    muonTrackProp.setInverseBendingMomentum(newInvBendMom);
-    muonTrackProp.setCharge(mchTrackAtMFT.getCharge());
+    double pRatio = mftTrackProp.p() / mchTrackAtMFT.p();
+    double newInvBendMom = mftTrackProp.getInverseBendingMomentum() * pRatio;
+    mftTrackProp.setInverseBendingMomentum(newInvBendMom);
+    mftTrackProp.setCharge(mchTrackAtMFT.getCharge());
 
-    o2::mch::TrackExtrap::extrapToVertex(muonTrackProp,
+    o2::mch::TrackExtrap::extrapToVertex(mftTrackProp,
                                          collision.posX(),
                                          collision.posY(),
                                          collision.posZ(),
                                          collision.covXX(),
                                          collision.covYY());
 
-    return mExtrap.MCHtoFwd(muonTrackProp);
+    return mExtrap.MCHtoFwd(mftTrackProp);
   }
 
   template <class MCP>
@@ -2537,7 +2537,7 @@ struct QaMatching {
   void fillDimuonPlotsMc(const CollisionInfo& collisionInfo,
                          C const& collisions,
                          TMUON const& muonTracks,
-                         TMFT const& /*mftTracks*/)
+                         TMFT const& mftTracks)
   {
     std::vector<MuonPair> muonPairs;
     std::vector<GlobalMuonPair> globalMuonPairs;
@@ -2577,8 +2577,10 @@ struct QaMatching {
       auto const& muonTrack2 = muonTracks.rawIteratorAt(candidates2[0].globalTrackId);
       auto matchScore1 = candidates1[0].matchScore;
       auto matchScore2 = candidates2[0].matchScore;
-      auto const& mchTrack1 = muonTrack1.template matchMCHTrack_as<TMUON>();
-      auto const& mchTrack2 = muonTrack2.template matchMCHTrack_as<TMUON>();
+      auto const& mchTrack1 = muonTracks.rawIteratorAt(candidates1[0].muonTrackId);
+      auto const& mchTrack2 = muonTracks.rawIteratorAt(candidates2[0].muonTrackId);
+      auto const& mftTrack1 = mftTracks.rawIteratorAt(candidates1[0].mftTrackId);
+      auto const& mftTrack2 = mftTracks.rawIteratorAt(candidates2[0].mftTrackId);
       int sign1 = mchTrack1.sign();
       int sign2 = mchTrack2.sign();
 
@@ -2604,8 +2606,8 @@ struct QaMatching {
 
       double massMCH = getMuMuInvariantMass(propagateToVertexMch(mchTrack1, collision),
                                             propagateToVertexMch(mchTrack2, collision));
-      double mass = getMuMuInvariantMass(propagateToVertexMch(muonTrack1, collision),
-                                         propagateToVertexMch(muonTrack2, collision));
+      double mass = getMuMuInvariantMass(propagateToVertexMft(mftTrack1, mchTrack1, collision),
+                                         propagateToVertexMft(mftTrack2, mchTrack2, collision));
       registryDimuon.get<TH1>(HIST("dimuon/invariantMass_MuonKine_GlobalMuonCuts"))->Fill(massMCH);
       registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts"))->Fill(mass);
       registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_MuonKine_GlobalMuonCuts_vs_match_type"))->Fill(massMCH, matchType);
