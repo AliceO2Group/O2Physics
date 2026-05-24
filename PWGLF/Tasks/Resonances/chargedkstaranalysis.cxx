@@ -19,6 +19,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
@@ -79,8 +80,19 @@ struct Chargedkstaranalysis {
     FT0C = 1,
     FT0M = 2
   };
+  enum EvtStep {
+    kAll = 0,
+    kZvtx,
+    kINELgt0,
+    kAssocReco,
+    kNSteps
+  };
+
+  const int nSteps = static_cast<int>(EvtStep::kNSteps);
+
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   bool currentIsGen = false;
   struct : ConfigurableGroup {
     ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -115,6 +127,9 @@ struct Chargedkstaranalysis {
     double beamMomentum = std::sqrt(beamEnergy * beamEnergy / 4 - o2::constants::physics::MassProton * o2::constants::physics::MassProton); // GeV
     int noOfDaughters = 2;
   } helicityCfgs;
+
+  Configurable<bool> cfgTruthUseInelGt0{"cfgTruthUseInelGt0", true, "Truth denominator: require INEL>0"};
+  Configurable<bool> cfgTruthIncludeZvtx{"cfgTruthIncludeZvtx", true, "Truth denominator: also require |vtxz|<cfgEvtZvtx"};
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   //  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
@@ -295,7 +310,7 @@ struct Chargedkstaranalysis {
   // Variable declaration
   ROOT::Math::PxPyPzEVector beam1{0., 0., -helicityCfgs.beamMomentum, 13600. / 2.};
   ROOT::Math::PxPyPzEVector beam2{0., 0., helicityCfgs.beamMomentum, 13600. / 2.};
-
+  double fMaxPosPV = 1e-2;
   void init(o2::framework::InitContext&)
   {
     centrality = -999;
@@ -344,7 +359,6 @@ struct Chargedkstaranalysis {
     AxisSpec thnAxisPhi = {axisCfgs.configThnAxisPhi, "Configurabel phi axis"}; // 0 to 2pi
     // THnSparse
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
-
     if (!doprocessMC) {
       histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
       auto hCutFlow = histos.get<TH1>(HIST("hEvtSelInfo"));
@@ -403,7 +417,6 @@ struct Chargedkstaranalysis {
 
         histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
         histos.add("QA/before/CentDist1", "Centrality distribution", HistType::kTH1F, {{110, 0, 110}});
-
         histos.add("QA/trkbpionTPCPIDME", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
 
         // Bachelor pion
@@ -560,6 +573,18 @@ struct Chargedkstaranalysis {
 
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("MCReco/hInvmass_Kstar_true", "MC-reco truth-tagged chK(892)", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso});
+      histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num", "Gen Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
+      histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
+      histos.add("Correction/hNEventsMCTruth", "hNEventsMCTruth", HistType::kTH1F, {AxisSpec{nSteps, 0.5, nSteps + 0.5, ""}});
+      auto hstep = histos.get<TH1>(HIST("Correction/hNEventsMCTruth"));
+      hstep->GetXaxis()->SetBinLabel(1, "All");
+      hstep->GetXaxis()->SetBinLabel(2, "zvtx");
+      hstep->GetXaxis()->SetBinLabel(3, "INEL>0");
+      hstep->GetXaxis()->SetBinLabel(4, "Assoc with reco coll");
     }
 
     ccdb->setURL(cfgURL);
@@ -575,7 +600,8 @@ struct Chargedkstaranalysis {
 
   std::unordered_set<int64_t> allowedMcIds;
   std::unordered_map<int64_t, float> centTruthByAllowed;
-
+  std::unordered_set<int64_t> refClassIds;
+  std::unordered_map<int64_t, float> refCentByMcId;
   float lMultiplicity;
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
@@ -744,88 +770,7 @@ struct Chargedkstaranalysis {
 
     return returnFlag;
   }
-  template <typename TrackTemplate, typename V0Template>
-  bool isTrueKstar(const TrackTemplate& bTrack, const V0Template& K0scand)
-  {
-    if (std::abs(bTrack.PDGCode()) != kPiPlus) // Are you pion?
-      return false;
-    if (std::abs(K0scand.PDGCode()) != kPDGK0s) // Are you K0s?
-      return false;
-
-    auto motherbTrack = bTrack.template mothers_as<aod::McParticles>();
-    auto motherkV0 = K0scand.template mothers_as<aod::McParticles>();
-
-    // Check bTrack first
-    if (std::abs(motherbTrack.pdgCode()) != kKstarPlus) // Are you charged Kstar's daughter?
-      return false;                                     // Apply first since it's more restrictive
-
-    if (std::abs(motherkV0.pdgCode()) != kPDGK0) // Is it K0s?
-      return false;
-    // Check if K0s's mother is K0 (311)
-    auto motherK0 = motherkV0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherK0.pdgCode()) != kPDGK0)
-      return false;
-
-    // Check if K0's mother is Kstar (323)
-    auto motherKstar = motherK0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherKstar.pdgCode()) != kKstarPlus)
-      return false;
-
-    // Check if bTrack and K0 have the same mother (global index)
-    if (motherbTrack.globalIndex() != motherK0.globalIndex())
-      return false;
-
-    return true;
-  }
-
   int count = 0;
-  template <typename V0T, typename TrkT>
-  bool matchRecoToTruthKstar(V0T const& v0, TrkT const& trk)
-  {
-    if (!v0.has_mcParticle() || !trk.has_mcParticle())
-      return false;
-
-    auto mcK0s = v0.template mcParticle_as<MCTrueTrackCandidates>();
-    auto mcPi = trk.template mcParticle_as<MCTrueTrackCandidates>();
-
-    if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
-      return false;
-    if (std::abs(mcPi.pdgCode()) != kPiPlus)
-      return false;
-
-    MCTrueTrackCandidates::iterator kstarFromPi;
-    bool havePiKstar = false;
-    for (const auto& m1 : mcPi.template mothers_as<MCTrueTrackCandidates>()) {
-      if (std::abs(m1.pdgCode()) == kKstarPlus) {
-        kstarFromPi = m1;
-        havePiKstar = true;
-        break;
-      }
-    }
-    if (!havePiKstar) {
-      return false;
-    }
-
-    bool shareSameKstar = false;
-    for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
-      if (std::abs(m1.pdgCode()) == kPDGK0) {
-        for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
-          if (m2.globalIndex() == kstarFromPi.globalIndex()) {
-            shareSameKstar = true;
-            break;
-          }
-        }
-        if (shareSameKstar)
-          break;
-      }
-    }
-    if (!shareSameKstar) {
-      return false;
-    }
-
-    return true;
-  } // matchRecoToTruthKstar
-
   template <typename T>
   void fillKstarHist(bool isRot, float multiplicity, const T& mother, double cosTheta)
   {
@@ -1293,12 +1238,13 @@ struct Chargedkstaranalysis {
   }
   PROCESS_SWITCH(Chargedkstaranalysis, processDataME, "Process Event for data without Partitioning", true);
 
-  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
+  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mccolls, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
     allowedMcIds.clear();
     centTruthByAllowed.clear();
-
-    // To apply event selection and store the collision IDs of reconstructed tracks that pass the selection criteria
+    refClassIds.clear();
+    refCentByMcId.clear();
+    // To apply event selection and store the collision IDs of reconstructed events that pass the selection criteria
     for (const auto& coll : events) {
 
       if (!coll.has_mcCollision())
@@ -1313,7 +1259,6 @@ struct Chargedkstaranalysis {
         histos.fill(HIST("QA/MC/QACent_woCut"), lCentrality);
         histos.fill(HIST("QA/MC/QAvtxz_woCut"), coll.posZ());
       }
-
       if (!colCuts.isSelected(coll))
         continue;
       if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(coll))
@@ -1336,6 +1281,30 @@ struct Chargedkstaranalysis {
       allowedMcIds.insert(mcid);
       centTruthByAllowed.emplace(mcid, lCentrality);
     }
+
+    // To builds a list of accepted MC collisions ID's for the truth candidates: i.e. the total number of generated events
+    for (const auto& coll : mccolls) {
+      bool pass = true;
+
+      if (cfgTruthIncludeZvtx && std::abs(coll.posZ()) >= eventCutCfgs.confEvtZvtx)
+        pass = false;
+
+      if (pass && cfgTruthUseInelGt0) {
+        auto partsThisMc = mcParticles.sliceBy(perMCCollision, coll.globalIndex()); // This is to slice all MC particles belonging to the current MC collision.
+        // To check the INEL > 0
+        if (!pwglf::isINELgtNmc(partsThisMc, 0, pdg))
+          pass = false;
+      }
+
+      if (!pass)
+        continue;
+
+      const auto mcid = coll.globalIndex();
+      refClassIds.insert(mcid);
+      const float lCentrality = coll.centFT0M();
+      refCentByMcId.emplace(mcid, lCentrality);
+    }
+
     // Calculating the generated Kstar
     for (const auto& part : mcParticles) {
       currentIsGen = true;
@@ -1408,9 +1377,7 @@ struct Chargedkstaranalysis {
 
       if (!coll.has_mcCollision())
         continue;
-
       const auto mcid = coll.mcCollisionId();
-
       if (allowedMcIds.count(mcid) == 0)
         continue; // To check the event is allowed or not
 
@@ -1427,7 +1394,6 @@ struct Chargedkstaranalysis {
       }
       if (!selectionK0s(coll, v0))
         continue;
-
       auto trks = tracks.sliceBy(perCollision, v0.collisionId()); // Grouping the tracks with the v0s, means only those tracks that belong to the same collision as v0
       for (const auto& bTrack : trks) {
         if (bTrack.collisionId() != v0.collisionId())
@@ -1436,7 +1402,6 @@ struct Chargedkstaranalysis {
           continue;
         if (!selectionPIDPion(bTrack))
           continue;
-
         LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
 
         lResoSecondary = LorentzVectorSetXYZM(v0.px(), v0.py(), v0.pz(), MassK0Short);
@@ -1447,7 +1412,6 @@ struct Chargedkstaranalysis {
         const double yreco = lResoKstar.Rapidity();
         if (std::abs(yreco) > kstarCutCfgs.cKstarMaxRap)
           continue;
-
         // Since we are doing the MC study and we know about the PDG code of each particle let's try to check the things which we have
         if (!v0.has_mcParticle() || !bTrack.has_mcParticle())
           continue;
@@ -1470,6 +1434,24 @@ struct Chargedkstaranalysis {
         if (!havePiKstar) {
           continue;
         }
+        // Loops over all the mother's of K0s and check if this K0s comming from a kstar and also share the smae mother as of the pion
+        bool shareSameKstar = false;
+        for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
+          if (std::abs(m1.pdgCode()) == kPDGK0) {
+            for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
+              if (m2.globalIndex() == kstarFromPi.globalIndex()) {
+                shareSameKstar = true;
+                break;
+              }
+            }
+            if (shareSameKstar)
+              break;
+          }
+        }
+        if (!shareSameKstar) {
+          continue;
+        }
+
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
         if (helicityCfgs.cBoostKShot) {
           fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
@@ -1477,6 +1459,88 @@ struct Chargedkstaranalysis {
           fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
         }
         histos.fill(HIST("MCReco/hInvmass_Kstar_true"), lCentrality, ptreco, lResoKstar.M());
+      }
+    }
+    // To calculate the event losses to store the generated KstartPlus --> To check the number of events remains after passing all the event selection criteria for chk892
+    for (auto const& part : mcParticles) {
+      if (!part.has_mcCollision())
+        continue;
+      if (std::abs(part.pdgCode()) != kKstarPlus)
+        continue;
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap)
+        continue;
+
+      const auto mcid = part.mcCollisionId();
+      if (allowedMcIds.count(mcid) == 0)
+        continue;
+
+      auto iter = centTruthByAllowed.find(mcid);
+      if (iter == centTruthByAllowed.end())
+        continue;
+
+      const float lCentrality = iter->second;
+
+      histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
+      }
+    }
+    // To calculate the denominator -> To check the all the events have chk892
+    for (auto const& part : mcParticles) {
+      if (!part.has_mcCollision())
+        continue;
+      if (std::abs(part.pdgCode()) != kKstarPlus)
+        continue;
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap)
+        continue;
+
+      const auto mcid = part.mcCollisionId();
+      if (refClassIds.count(mcid) == 0)
+        continue;
+
+      auto iter = refCentByMcId.find(mcid);
+      if (iter == refCentByMcId.end())
+        continue;
+
+      const float lCentrality = iter->second;
+
+      histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
+    }
+    // To calculate the event fraction correction
+    for (const auto& mcid : refClassIds) {
+      histos.fill(HIST("Correction/EF_den"), refCentByMcId[mcid]);
+    }
+    for (const auto& mcid : allowedMcIds) {
+      auto iter = centTruthByAllowed.find(mcid);
+      if (iter == centTruthByAllowed.end())
+        continue;
+
+      const float lCentrality = iter->second;
+      histos.fill(HIST("Correction/EF_num"), lCentrality);
+    }
+
+    for (auto const& mcc : mccolls) {
+      const auto mcid = mcc.globalIndex();
+
+      histos.fill(HIST("Correction/hNEventsMCTruth"), 1.0);
+
+      bool passZvtx = true;
+      if (cfgTruthIncludeZvtx && std::abs(mcc.posZ()) > eventCutCfgs.confEvtZvtx) {
+        passZvtx = false;
+      }
+      if (passZvtx) {
+        histos.fill(HIST("Correction/hNEventsMCTruth"), 2.0);
+
+        auto partsThisMc = mcParticles.sliceBy(perMCCollision, mcid);
+        if (pwglf::isINELgtNmc(partsThisMc, 0, pdg)) {
+          histos.fill(HIST("Correction/hNEventsMCTruth"), 3.0);
+        }
+      }
+      if (allowedMcIds.count(mcid)) {
+        histos.fill(HIST("Correction/hNEventsMCTruth"), 4.0);
       }
     }
   }

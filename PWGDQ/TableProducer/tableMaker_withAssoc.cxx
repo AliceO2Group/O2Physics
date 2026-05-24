@@ -1494,7 +1494,7 @@ struct TableMaker {
           muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
         }
         std::vector<float> output;
-        std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, collision);
+        std::vector<float> inputML = matchingMlResponse.getInputFeatures(muon, mfttrack, muontrack, mftprop, muonprop, collision);
         matchingMlResponse.isSelectedMl(inputML, 0, output);
         float score = output[0];
         if (mCandidates.find(muonID) == mCandidates.end()) {

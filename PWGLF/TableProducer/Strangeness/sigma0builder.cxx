@@ -2546,7 +2546,7 @@ struct sigma0builder {
 
     auto kstarTopoInfo = propagateV0PairToDCA(gamma, kshort);
 
-    kstarcores(kstarTopoInfo.X, kstarTopoInfo.Y, kstarTopoInfo.Z, kstarTopoInfo.DCADau,
+    kstarcores(gamma.globalIndex(), kshort.globalIndex(), kstarTopoInfo.X, kstarTopoInfo.Y, kstarTopoInfo.Z, kstarTopoInfo.DCADau,
                gamma.px(), gamma.py(), gamma.pz(), gamma.mGamma(), kshort.px(), kshort.py(), kshort.pz(), kshort.mK0Short());
 
     // MC properties

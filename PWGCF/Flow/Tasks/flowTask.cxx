@@ -323,7 +323,7 @@ struct FlowTask {
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
-  RCTFlagsChecker rctChecker{"CentralBarrelTracking"};
+  RCTFlagsChecker rctChecker{"CBT"};
 
   // phi-EP correction
   std::vector<TF1*> funcEff;
@@ -759,7 +759,7 @@ struct FlowTask {
       LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch], cfgFuncParas.cfgDCAzFunc->c_str()));
     }
     if (!cfgEvSelRCTflags.value.empty()) {
-      rctChecker.init(cfgEvSelRCTflags.value.c_str(), true); // override initialzation
+      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
     }
   }
 

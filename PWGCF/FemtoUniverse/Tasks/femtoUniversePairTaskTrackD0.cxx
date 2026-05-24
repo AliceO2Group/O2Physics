@@ -531,9 +531,15 @@ struct FemtoUniversePairTaskTrackD0 {
     registry.add("DebugBdt/hBdtScore2", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
     registry.add("DebugBdt/hBdtScore3", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
     if (fillBDTvsPt) {
-      registry.add("DebugBdtMcReco/hBdtScore1", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
-      registry.add("DebugBdtMcReco/hBdtScore2", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
-      registry.add("DebugBdtMcReco/hBdtScore3", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
+      registry.add("DebugBdtMcReco/hBdtScore1VsPt", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore2VsPt", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPt", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore1VsPtD0", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore2VsPtD0", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPtD0", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore1VsPtD0bar", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore2VsPtD0bar", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPtD0bar", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
     }
     if (applyMLOpt) {
       registry.add("D0D0bar_MLSel/hMassVsPt1", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -1466,14 +1472,19 @@ struct FemtoUniversePairTaskTrackD0 {
         }
       } else if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco)) {
         if (fillBDTvsPt && std::abs(mcpart.pdgMCTruth()) == o2::constants::physics::Pdg::kD0) {
-          registry.fill(HIST("DebugBdtMcReco/hBdtScore1"), part.decayVtxX());
-          registry.fill(HIST("DebugBdtMcReco/hBdtScore2"), part.decayVtxY());
-          registry.fill(HIST("DebugBdtMcReco/hBdtScore3"), part.decayVtxZ());
+          registry.fill(HIST("DebugBdtMcReco/hBdtScore1VsPt"), part.decayVtxX(), part.pt());
+          registry.fill(HIST("DebugBdtMcReco/hBdtScore2VsPt"), part.decayVtxY(), part.pt());
+          registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPt"), part.decayVtxZ(), part.pt());
         }
         if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0) {
           mcRecoRegistry.fill(HIST("hMcRecD0"), part.pt(), part.eta());
           mcRecoRegistry.fill(HIST("hMcRecD0Pt"), part.pt());
           mcRecoRegistry.fill(HIST("hMcRecD0Phi"), part.phi());
+          if (fillBDTvsPt) {
+            registry.fill(HIST("DebugBdtMcReco/hBdtScore1VsPtD0"), part.decayVtxX(), part.pt());
+            registry.fill(HIST("DebugBdtMcReco/hBdtScore2VsPtD0"), part.decayVtxY(), part.pt());
+            registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPtD0"), part.decayVtxZ(), part.pt());
+          }
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0Prompt"), part.pt(), part.eta());
             mcRecoRegistry.fill(HIST("hMcRecD0PromptPt"), part.pt());
@@ -1487,6 +1498,11 @@ struct FemtoUniversePairTaskTrackD0 {
           mcRecoRegistry.fill(HIST("hMcRecD0bar"), part.pt(), part.eta());
           mcRecoRegistry.fill(HIST("hMcRecD0barPt"), part.pt());
           mcRecoRegistry.fill(HIST("hMcRecD0barPhi"), part.phi());
+          if (fillBDTvsPt) {
+            registry.fill(HIST("DebugBdtMcReco/hBdtScore1VsPtD0bar"), part.decayVtxX(), part.pt());
+            registry.fill(HIST("DebugBdtMcReco/hBdtScore2VsPtD0bar"), part.decayVtxY(), part.pt());
+            registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPtD0bar"), part.decayVtxZ(), part.pt());
+          }
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barPrompt"), part.pt(), part.eta());
             mcRecoRegistry.fill(HIST("hMcRecD0barPromptPt"), part.pt());

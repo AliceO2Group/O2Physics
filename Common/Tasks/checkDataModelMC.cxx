@@ -38,12 +38,12 @@ using namespace o2::framework::expressions;
 /// \param particle     MC particle
 /// \param debugMode    flag for debug mode
 /// \param debugHisto   histo to fill for debug
-template <typename T, typename H>
+template <soa::is_table T>
 void checkDaughters(const T& particlesMC,
                     const typename T::iterator& particle,
-                    long unsigned int offset,
-                    bool& debugMode,
-                    H debugHisto)
+                    uint64_t offset,
+                    bool debugMode,
+                    std::shared_ptr<TH1>& debugHisto)
 {
   auto firstDauIdx = particle.daughtersIds().front();
   auto lastDauIdx = particle.daughtersIds().back();
@@ -55,7 +55,7 @@ void checkDaughters(const T& particlesMC,
     }
   }
   for (const auto& idxDau : particle.daughtersIds()) {
-    if (idxDau >= 0 && ((unsigned long int)idxDau > offset + particlesMC.size() || (unsigned long int)idxDau < offset)) {
+    if (idxDau >= 0 && ((uint64_t)idxDau > offset + particlesMC.size() || (uint64_t)idxDau < offset)) {
       if (debugMode) {
         debugHisto->Fill(1);
       } else {
@@ -71,7 +71,49 @@ void checkDaughters(const T& particlesMC,
   }
 }
 
-template <typename Table>
+/// Check for cycles in the decay chain
+/// \param particlesMC  table with MC particles
+template <soa::is_table T>
+bool checkCycles(T const& particlesMC)
+{
+  auto slow = particlesMC.begin();
+  auto fast = particlesMC.begin();
+  auto probe = particlesMC.begin();
+  bool hasCycle = false;
+  for (auto start = 0U; start < particlesMC.size(); ++start) {
+    probe.setCursor(start);
+    if (!probe.has_mothers() || probe.mothersIds()[0] == -1) {
+      continue;
+    }
+    slow.setCursor(start);
+    fast.setCursor(start);
+
+    while (true) {
+      if (!slow.has_mothers() || slow.mothersIds()[0] < 0) {
+        break;
+      }
+      slow.setCursor(slow.mothersIds()[0]);
+
+      if (!fast.has_mothers() || fast.mothersIds()[0] < 0) {
+        break;
+      }
+      fast.setCursor(fast.mothersIds()[0]);
+      if (!fast.has_mothers() || fast.mothersIds()[0] < 0) {
+        break;
+      }
+      fast.setCursor(fast.mothersIds()[0]);
+
+      if (slow.globalIndex() == fast.globalIndex()) {
+        LOGP(error, "Cycle found: particle: {} | cycle starts at: {}", start, slow.globalIndex());
+        hasCycle = true;
+        break;
+      }
+    }
+  }
+  return hasCycle;
+}
+
+template <soa::is_table Table>
 struct LoadTable {
   OutputObj<TH1F> counter{TH1F("counter", "counter", 2, 0., 2)};
   void process(Table const& table)
@@ -82,6 +124,16 @@ struct LoadTable {
   }
 };
 
+std::shared_ptr<TH1> defineHistogram(HistogramRegistry& registry)
+{
+  std::shared_ptr<TH1> hDebug;
+  hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{3, -0.5, 2.5}});
+  hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
+  hDebug->GetXaxis()->SetBinLabel(2, "out of range");
+  hDebug->GetXaxis()->SetBinLabel(3, "#minus max integer");
+  return hDebug;
+}
+
 struct CheckMcParticlesIndices {
 
   Configurable<bool> debugMode{"debugMode", false, "flag to enable debug mode"};
@@ -91,15 +143,15 @@ struct CheckMcParticlesIndices {
 
   void init(o2::framework::InitContext&)
   {
-    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{3, -0.5, 2.5}});
-    hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
-    hDebug->GetXaxis()->SetBinLabel(2, "out of range");
-    hDebug->GetXaxis()->SetBinLabel(3, "#minus max integer");
+    hDebug = defineHistogram(registry);
   }
 
   void process(aod::McParticles const& particlesMC)
   {
-    long unsigned int offset = 0;
+    if (checkCycles(particlesMC)) {
+      LOG(fatal) << "Cycles found, aborting.";
+    }
+    uint64_t offset = 0;
     for (const auto& particle : particlesMC) {
       checkDaughters(particlesMC, particle, offset, debugMode.value, hDebug);
     }
@@ -115,10 +167,7 @@ struct CheckMcParticlesIndicesGrouped {
 
   void init(o2::framework::InitContext&)
   {
-    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{3, -0.5, 2.5}});
-    hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
-    hDebug->GetXaxis()->SetBinLabel(2, "out of range");
-    hDebug->GetXaxis()->SetBinLabel(3, "#minus max integer");
+    hDebug = defineHistogram(registry);
   }
 
   void process(aod::McCollision const&,

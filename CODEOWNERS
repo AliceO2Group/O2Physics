@@ -14,7 +14,7 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk @dsekihat
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
-/ALICE3 @alibuild @njacazio @hscheid
+/ALICE3 @alibuild @njacazio @hscheid @jesgum
 /DPG @alibuild @chiarazampolli @alcaliva @catalinristea
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl @f3sch

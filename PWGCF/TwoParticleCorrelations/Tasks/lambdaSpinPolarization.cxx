@@ -802,7 +802,7 @@ struct LambdaTableProducer {
       return 1.;
 
     // Get  from CCDB
-    auto ccdbObj = ccdb->getForTimeStamp<TList>(cPathCCDB.value, -1);
+    auto ccdbObj = ccdb->getForTimeStamp<TList>(cPathCCDB.value, 1);
     if (!ccdbObj) {
       LOGF(warning, "CCDB OBJECT NOT FOUND");
       return 1.;

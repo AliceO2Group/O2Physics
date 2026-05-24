@@ -90,9 +90,9 @@ struct HfTaskPtFlucCharmHadrons {
   Configurable<float> etaTrkMax{"etaTrkMax", 0.8f, "Track eta max"};
 
   Configurable<float> ptTrkMin{"ptTrkMin", 0.2f, "Track pT min for <pT> (charged hadrons)"};
-  Configurable<float> ptTrkMax{"ptTrkMax", 2.0f, "Track pT max for <pT> (charged hadrons)"};
-  Configurable<float> ptTrkMinD{"ptTrkMinD", 0.2f, "Track pT min for D"};
-  Configurable<float> ptTrkMaxD{"ptTrkMaxD", 2.0f, "Track pT max for D"};
+  Configurable<float> ptTrkMax{"ptTrkMax", 5.0f, "Track pT max for <pT> (charged hadrons)"};
+  Configurable<float> ptCandMin{"ptCandMin", 0.2f, "Min pT for D candidates"};
+  Configurable<float> ptCandMax{"ptCandMax", 12.0f, "Max pT for D candidates"};
   Configurable<int> minNTrk{"minNTrk", 5, "Min charged tracks in each subevent to compute <pT>"};
 
   // Use ML in denominator AND numerator consistently
@@ -128,16 +128,16 @@ struct HfTaskPtFlucCharmHadrons {
   ConfigurableAxis axisInvMass{"axisInvMass", {100, 1.78, 2.05}, "Inv mass axis"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, "Candidate pT axis"};
   ConfigurableAxis axisCent{"axisCent", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Centrality axis"};
-  ConfigurableAxis axisSign{"axisSign", {VARIABLE_WIDTH, -1.0, 1.0}, "Sign axis"};
-  ConfigurableAxis axisMlOne{"axisMlOne", {1000, 0., 1.}, ""};
-  ConfigurableAxis axisMlTwo{"axisMlTwo", {100, 0., 1.}, ""};
-  ConfigurableAxis axisCandEta{"axisCandEta", {20, -1., 1.}, ""};
-  ConfigurableAxis axisMPtTrkA{"axisMPtTrkA", {50, 0., 5.}, ""};
-  ConfigurableAxis axisMPtTrkB{"axisMPtTrkB", {50, 0., 5.}, ""};
-  ConfigurableAxis axisPtCandProduct{"axisPtCandProduct", {50, 0., 50.}, ""};
-  ConfigurableAxis axisPtTrkProduct{"axisPtTrkProduct", {50, 0., 25.}, ""};
-  ConfigurableAxis axisNTrkA{"axisNTrkA", {2000, 0., 2000.}, ""};
-  ConfigurableAxis axisNTrkB{"axisNTrkB", {2000, 0., 2000.}, ""};
+  ConfigurableAxis axisSign{"axisSign", {VARIABLE_WIDTH, -1.0, 4.0}, "Sign axis"};
+  ConfigurableAxis axisMlOne{"axisMlOne", {1000, 0., 1.}, "ML score 1 axis"};
+  ConfigurableAxis axisMlTwo{"axisMlTwo", {100, 0., 1.}, "ML score 2 axis"};
+  ConfigurableAxis axisCandEta{"axisCandEta", {16, -0.8, 0.8}, "Candidate eta axis"};
+  ConfigurableAxis axisMPtTrkA{"axisMPtTrkA", {150, 0., 1.5}, "Mean pT of tracks in subevent A"};
+  ConfigurableAxis axisMPtTrkB{"axisMPtTrkB", {150, 0., 1.5}, "Mean pT of tracks in subevent B"};
+  ConfigurableAxis axisPtCandProduct{"axisPtCandProduct", {150, 0., 15}, "Candidate pT * mean pT of tracks (A and B) product"};
+  ConfigurableAxis axisPtTrkProduct{"axisPtTrkProduct", {200, 0., 2.}, "Mean pT of tracks in A * Mean pT of tracks in B"};
+  ConfigurableAxis axisNTrkA{"axisNTrkA", {2000, 0., 2000.}, "N_{tracks} in subevent A"};
+  ConfigurableAxis axisNTrkB{"axisNTrkB", {2000, 0., 2000.}, "N_{tracks} in subevent B"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -222,13 +222,13 @@ struct HfTaskPtFlucCharmHadrons {
   }
 
   /// Get candidate mass
-  template <typename CandT, typename Trk>
-  std::pair<float, float> getCandMassAndSign(const CandT& cand, DecayChannel channel, Trk const& /*tracks*/)
+  template <DecayChannel channel, typename CandT, typename TCands, typename Trk>
+  std::pair<float, float> getCandMassAndSign(const CandT& cand)
   {
-    if constexpr (std::is_same_v<CandT, CandDplusDataWMl>) {
+    if constexpr (std::is_same_v<TCands, CandDplusDataWMl>) {
       return {HfHelper::invMassDplusToPiKPi(cand), cand.template prong0_as<Trk>().sign()};
     }
-    if constexpr (std::is_same_v<CandT, CandD0DataWMl>) {
+    if constexpr (std::is_same_v<TCands, CandD0DataWMl>) {
       if (channel == DecayChannel::D0ToPiK) {
         return {HfHelper::invMassD0ToPiK(cand), cand.isSelD0bar() ? CandD0Type::ReflectedD0bar : CandD0Type::PureD0};
       }
@@ -431,7 +431,7 @@ struct HfTaskPtFlucCharmHadrons {
         }
 
         // get candidate mass and sign
-        auto [invMass, sign] = getCandMassAndSign(cand, Channel, tracks);
+        auto [invMass, sign] = getCandMassAndSign<Channel, decltype(cand), T1, Trk>(cand);
 
         // fill charm-bulk correlation thnsparse
         registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct);
@@ -451,7 +451,7 @@ struct HfTaskPtFlucCharmHadrons {
           continue;
         }
         float pt = cand.pt();
-        if (pt < ptTrkMinD.value || pt >= ptTrkMaxD.value) {
+        if (pt < ptCandMin.value || pt >= ptCandMax.value) {
           continue;
         }
 
@@ -477,10 +477,10 @@ struct HfTaskPtFlucCharmHadrons {
         }
 
         // compute mass
-        auto [massCand, signCand] = getCandMassAndSign(candidate, Channel, tracks);
+        auto [massCand, signCand] = getCandMassAndSign<Channel, decltype(candidate), T1, Trk>(candidate);
 
         const double ptCand = candidate.pt();
-        if (ptCand < ptTrkMinD.value || ptCand >= ptTrkMaxD.value) {
+        if (ptCand < ptCandMin.value || ptCand >= ptCandMax.value) {
           continue;
         }
 

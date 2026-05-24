@@ -288,6 +288,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     return cut;
   }
+  if (!nameStr.compare("jpsiKineDcaQualitynoPID2")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    return cut;
+  }
   if (!nameStr.compare("electronSelection1_ionut_withTOFPID")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));

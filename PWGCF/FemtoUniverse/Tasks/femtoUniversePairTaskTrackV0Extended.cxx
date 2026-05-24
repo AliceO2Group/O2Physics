@@ -48,6 +48,7 @@
 #include <TPDGCode.h>
 #include <TRandom2.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -202,7 +203,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
   } ConfCPR;
 
   // Efficiency
-  Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
+    Configurable<int64_t> confCCDBNoLaterThanTrack{"confCCDBNoLaterThanTrack", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> confCCDBNoLaterThanV0{"confCCDBNoLaterThanV0", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  } ccdbEffLoader;
 
   EffCorConfigurableGroup effCorConfGroup;
   EfficiencyCorrection effCorrection{&effCorConfGroup};
@@ -402,6 +407,21 @@ struct FemtoUniversePairTaskTrackV0Extended {
       registryMCreco.add("mothersReco/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {confMotherPDGBins, confMotherPDGBins}});
       registryMCreco.add("mothersReco/motherParticlePDGCheck", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {confMotherPDGBins, confMotherPDGBins}});
     }
+
+    if (doprocessFractionsSingleReco) {
+      registryMCreco.add("mothersReco/motherParticleTrack", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticleTrackPDGCheck", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticleV0", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticleV0PDGCheck", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+    }
+
+    if (doprocessFractionsSingleTruth) {
+      registryMCtruth.add("mothersTruth/motherParticleTrack", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCtruth.add("mothersTruth/mcProcessTrack", " ; VMC physics code", {HistType::kTH1F, {{50, 0, 50}}});
+      registryMCtruth.add("mothersTruth/motherParticleV0", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCtruth.add("mothersTruth/mcProcessV0", " ; VMC physics code", {HistType::kTH1F, {{50, 0, 50}}});
+    }
+
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     sameEventCont.setPDGCodes(ConfTrkSelection.confTrkPDGCodePartOne, ConfV0Selection.confV0PDGCodePartTwo);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
@@ -414,12 +434,12 @@ struct FemtoUniversePairTaskTrackV0Extended {
       pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
     }
 
-    if (!confLocalEfficiency.value.empty()) {
-      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(confLocalEfficiency.value.c_str(), "read"));
+    if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {
+      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ccdbEffLoader.confLocalEfficiency.value.c_str(), "read"));
       if (!plocalEffFile || plocalEffFile.get()->IsZombie())
-        LOGF(fatal, "Could not load efficiency histogram from %s", confLocalEfficiency.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram from %s", ccdbEffLoader.confLocalEfficiency.value.c_str());
       if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
-        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons
         pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for track-V0.");
       } else if (doprocessSameEventV0 || doprocessSameEventV0Bitmask || doprocessMixedEventV0 || doprocessMixedEventV0Bitmask) {
@@ -432,15 +452,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
 
-      auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-      ccdb->setCreatedNotAfter(now);
+      ccdb->setCreatedNotAfter(std::max(ccdbEffLoader.confCCDBNoLaterThanTrack.value, ccdbEffLoader.confCCDBNoLaterThanV0.value));
       if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
-        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrPlus", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrMinus", now)); // note: works only for protons for now
-        pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); // note: works only for protons
+        pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", ccdbEffLoader.confCCDBNoLaterThanV0.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", ccdbEffLoader.confCCDBNoLaterThanV0.value));
         LOGF(info, "Loaded efficiency histograms for track-V0 from CCDB.");
       } else if (doprocessSameEventV0 || doprocessSameEventV0Bitmask || doprocessMixedEventV0 || doprocessMixedEventV0Bitmask) {
-        pEffHistp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
-        pEffHistp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        pEffHistp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", ccdbEffLoader.confCCDBNoLaterThanV0.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", ccdbEffLoader.confCCDBNoLaterThanV0.value));
+        pEffHistp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", ccdbEffLoader.confCCDBNoLaterThanV0.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", ccdbEffLoader.confCCDBNoLaterThanV0.value));
         LOGF(info, "Loaded efficiency histograms for V0-V0 from CCDB.");
       }
     }
@@ -1622,6 +1641,80 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMCTruthV0, "Process MC data to obtain pair fractions for V0V0 MC truth pairs", false);
+
+  void processFractionsSingleReco(FilteredFDCollision const& col, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
+  {
+    auto groupPartsOne = partsOneMCRecoFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCRecoFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    float v0DaughPtLowTable[3][2] = {{ConfV0Selection.confLPtChildProton, ConfV0Selection.confLPtChildPion}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildProton}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildPion}};
+    float v0DaughPtHighTable[3][2] = {{ConfV0Selection.confHPtChildProton, ConfV0Selection.confHPtChildPion}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildProton}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildPion}};
+
+    for (const auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type1))
+        continue;
+      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
+
+      if (posChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][0] || negChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][1] || posChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][0] || negChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][1]) {
+        continue;
+      }
+
+      if (!isParticleTPC(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
+        continue;
+
+      if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
+        continue;
+
+      registryMCreco.fill(HIST("mothersReco/motherParticleV0"), part.motherPDG());
+      auto mcPartId1 = part.fdMCParticleId();
+      if (mcPartId1 == -1)
+        continue;
+      const auto& mcParticle1 = mcparts.iteratorAt(mcPartId1);
+      if ((ConfV0Selection.confV0Type1 == 0 && mcParticle1.pdgMCTruth() != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && mcParticle1.pdgMCTruth() != kLambda0Bar))
+        continue;
+      registryMCreco.fill(HIST("mothersReco/motherParticleV0PDGCheck"), part.motherPDG());
+    }
+
+    for (const auto& part : groupPartsOne) {
+      const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+      const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+
+      if (!isNSigmaCombined(part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne], tofNSigmas[ConfTrkSelection.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
+        continue;
+      registryMCreco.fill(HIST("mothersReco/motherParticleTrack"), part.motherPDG());
+      auto mcPartId1 = part.fdMCParticleId();
+      if (mcPartId1 == -1)
+        continue;
+      const auto& mcParticle1 = mcparts.iteratorAt(mcPartId1);
+      if (mcParticle1.pdgMCTruth() != ConfTrkSelection.confTrkPDGCodePartOne)
+        continue;
+      registryMCreco.fill(HIST("mothersReco/motherParticleTrackPDGCheck"), part.motherPDG());
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processFractionsSingleReco, "Process MC data to obtain fractions for V0 and protons particles", false);
+
+  void processFractionsSingleTruth(FilteredFDCollision const& col, FemtoFullParticles const&)
+  {
+    auto groupPartsOne = partsOneMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    // MC truth
+    for (const auto& part : groupPartsOne) {
+      int pdgCode1 = static_cast<int>(part.pidCut());
+      if (pdgCode1 != ConfTrkSelection.confTrkPDGCodePartOne)
+        continue;
+      registryMCtruth.fill(HIST("mothersTruth/motherParticleTrack"), part.tempFitVar());
+      registryMCtruth.fill(HIST("mothersTruth/mcProcessTrack"), part.cut());
+    }
+    for (const auto& part : groupPartsTwo) {
+      int pdgCode2 = static_cast<int>(part.pidCut());
+      if (pdgCode2 != ConfV0Selection.confV0PDGCodePartTwo)
+        continue;
+      registryMCtruth.fill(HIST("mothersTruth/motherParticleV0"), part.tempFitVar());
+      registryMCtruth.fill(HIST("mothersTruth/mcProcessV0"), part.cut());
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processFractionsSingleTruth, "Process MC data to obtain fractions for V0 and protons particles", false);
 
   template <class PartType>
   void doMCReco(PartType const& parts, aod::FdMCParticles const& mcparts)
