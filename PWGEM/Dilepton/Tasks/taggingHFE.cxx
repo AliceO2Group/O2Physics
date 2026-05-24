@@ -199,8 +199,8 @@ struct taggingHFE {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
+    Configurable<int> cfg_itsib_type{"cfg_itsib_type", 0, "0:free, 1:OR, 2:AND between 2 legs, else:free"};
     Configurable<float> cfg_min_dcaxy{"cfg_min_dcaxy", 0.1, "min dca XY for v0 legs in cm"};
-
     Configurable<float> cfg_max_alpha_veto{"cfg_max_alpha_veto", 0.95, "max alpha for photon conversion rejection"};
     Configurable<float> cfg_max_qt_veto{"cfg_max_qt_veto", 0.01, "max qT for photon conversion rejection"};
 
@@ -241,6 +241,12 @@ struct taggingHFE {
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
     Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.0, "min dca XY for V0 in cm"};
+
+    Configurable<int> cfg_itsib_type{"cfg_itsib_type", 0, "0:free, 1:OR, 2:AND between 2 legs, else:free"};
+    Configurable<int> cfg_min_ncluster_its_v0leg{"cfg_min_ncluster_its_v0leg", 2, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib_v0leg{"cfg_min_ncluster_itsib_v0leg", 0, "min ncluster itsib"};
+    Configurable<int> cfg_min_ncluster_its_bachelor{"cfg_min_ncluster_its_bachelor", 2, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib_bachelor{"cfg_min_ncluster_itsib_bachelor", 0, "min ncluster itsib"};
   } cascadeCut;
 
   struct : ConfigurableGroup {
@@ -467,9 +473,11 @@ struct taggingHFE {
     fRegistry.add("Cascade/hPt", "pT of cascade;p_{T} (GeV/c)", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Cascade/hYPhi", "rapidity vs. #varphi of cascade;#varphi (rad.);rapidity_{#Lambda}", kTH2F, {{90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     fRegistry.add("Cascade/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{100, 0.9, 1}}, false);
+    fRegistry.add("Cascade/hLxy", "decay length from PV;L_{xy} (cm)", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Cascade/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("Cascade/hV0CosPA", "cosPA of V0 in cascade;cosine of pointing angle", kTH1F, {{100, 0.9, 1}}, false);
     fRegistry.add("Cascade/hV0DCA2Legs", "distance between 2 legs at PCA of V0 in cascade;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
+    fRegistry.add("Cascade/hV0Lxy", "decay length from PV of V0;L_{xy} (cm)", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Cascade/hMassLambda", "Lambda mass;m_{p#pi^{-}} (GeV/c^{2})", kTH1F, {{100, 1.08, 1.18}}, false);
     fRegistry.add("Cascade/hMassXi", "#Xi mass;m_{#Lambda#pi} (GeV/c^{2})", kTH1F, {{100, 1.27, 1.37}}, false);
     fRegistry.add("Cascade/hMassOmega", "#Omega mass;m_{#LambdaK} (GeV/c^{2})", kTH1F, {{100, 1.62, 1.72}}, false);
@@ -768,9 +776,10 @@ struct taggingHFE {
     return (cascadeCut.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadeCut.cfg_max_mass_Omega) && (cascade.mXi() < cascadeCut.cfg_min_mass_Xi_veto || cascadeCut.cfg_max_mass_Xi_veto < cascade.mXi());
   }
 
-  template <bool isMC = true, typename TTrack>
+  template <int trackType = 0, bool isMC = true, typename TTrack>
   bool isSelectedV0Leg(TTrack const& track)
   {
+    // trackType = 0:v0leg, 1:v0leg in cascade, 2:bachelor of cascade only for ITS requirements
     if constexpr (isMC) {
       if (!track.has_mcParticle()) {
         return false;
@@ -781,15 +790,21 @@ struct taggingHFE {
       return false;
     }
 
+    if constexpr (trackType == 0) {
+      if (track.itsNCls() < v0Cut.cfg_min_ncluster_its) { // must be 2
+        return false;
+      }
+    } else if constexpr (trackType == 1) {
+      if (track.itsNCls() < cascadeCut.cfg_min_ncluster_its_v0leg) { // must be 2
+        return false;
+      }
+    } else if constexpr (trackType == 2) {
+      if (track.itsNCls() < cascadeCut.cfg_min_ncluster_its_bachelor) { // must be 2
+        return false;
+      }
+    }
+
     if (track.itsChi2NCl() > v0Cut.cfg_max_chi2its) {
-      return false;
-    }
-
-    if (track.itsNCls() < v0Cut.cfg_min_ncluster_its) {
-      return false;
-    }
-
-    if (track.itsNClsInnerBarrel() < v0Cut.cfg_min_ncluster_itsib) {
       return false;
     }
 
@@ -814,6 +829,35 @@ struct taggingHFE {
     }
 
     return true;
+  }
+
+  template <int typeSV, typename TTrack>
+  bool checkITSibForV0Legs(TTrack const& t1, TTrack const& t2)
+  {
+    // typeSV = 0:v0, 1:cascade
+    if constexpr (typeSV == 0) {       // V0 legs
+      if (v0Cut.cfg_itsib_type == 0) { // free
+        return true;
+      } else if (v0Cut.cfg_itsib_type == 1) { // OR
+        return t1.itsNClsInnerBarrel() >= v0Cut.cfg_min_ncluster_itsib || t2.itsNClsInnerBarrel() >= v0Cut.cfg_min_ncluster_itsib;
+      } else if (v0Cut.cfg_itsib_type == 2) { // AND
+        return t1.itsNClsInnerBarrel() >= v0Cut.cfg_min_ncluster_itsib && t2.itsNClsInnerBarrel() >= v0Cut.cfg_min_ncluster_itsib;
+      } else {
+        return true;
+      }
+    } else if constexpr (typeSV == 1) {     // V0 legs in cascade
+      if (cascadeCut.cfg_itsib_type == 0) { // free
+        return true;
+      } else if (cascadeCut.cfg_itsib_type == 1) { // OR
+        return t1.itsNClsInnerBarrel() >= cascadeCut.cfg_min_ncluster_itsib_v0leg || t2.itsNClsInnerBarrel() >= cascadeCut.cfg_min_ncluster_itsib_v0leg;
+      } else if (cascadeCut.cfg_itsib_type == 2) { // AND
+        return t1.itsNClsInnerBarrel() >= cascadeCut.cfg_min_ncluster_itsib_v0leg && t2.itsNClsInnerBarrel() >= cascadeCut.cfg_min_ncluster_itsib_v0leg;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
   }
 
   template <typename TCollision>
@@ -879,8 +923,10 @@ struct taggingHFE {
     fRegistry.fill(HIST("Cascade/hMassLambda"), cascade.mLambda());
     fRegistry.fill(HIST("Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
     fRegistry.fill(HIST("Cascade/hDCA2Legs"), cascade.dcacascdaughters());
+    fRegistry.fill(HIST("Cascade/hLxy"), cascade.cascradius());
     fRegistry.fill(HIST("Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
     fRegistry.fill(HIST("Cascade/hV0DCA2Legs"), cascade.dcaV0daughters());
+    fRegistry.fill(HIST("Cascade/hV0Lxy"), cascade.v0radius());
 
     if (cascade.sign() < 0) { // Xi- or Omega-
       if (isPionFromXi(collision, bachelor) && isProtonFromLambdaFromXi(collision, pos) && isPionFromLambdaFromXi(collision, neg)) {
@@ -1180,7 +1226,7 @@ struct taggingHFE {
         if (pos.sign() * neg.sign() > 0) {
           continue;
         }
-        if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg)) {
+        if (!isSelectedV0Leg<0, true>(pos) || !isSelectedV0Leg<0, true>(neg)) {
           continue;
         }
 
@@ -1257,7 +1303,7 @@ struct taggingHFE {
           continue;
         }
 
-        if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg) || !isSelectedV0Leg(bachelor)) {
+        if (!isSelectedV0Leg<1, true>(pos) || !isSelectedV0Leg<1, true>(neg) || !isSelectedV0Leg<2, true>(bachelor)) {
           continue;
         }
 
@@ -1517,7 +1563,11 @@ struct taggingHFE {
       for (const auto& v0 : v0s_per_coll) {
         auto pos = v0.template posTrack_as<TTracks>();
         auto neg = v0.template negTrack_as<TTracks>();
-        if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg)) {
+        if (!isSelectedV0Leg<0, isMC>(pos) || !isSelectedV0Leg<0, isMC>(neg)) {
+          continue;
+        }
+
+        if (!checkITSibForV0Legs<0>(pos, neg)) {
           continue;
         }
 
@@ -1570,7 +1620,10 @@ struct taggingHFE {
           continue;
         }
 
-        if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg) || !isSelectedV0Leg<isMC>(bachelor)) {
+        if (!isSelectedV0Leg<1, isMC>(pos) || !isSelectedV0Leg<1, isMC>(neg) || !isSelectedV0Leg<2, isMC>(bachelor)) {
+          continue;
+        }
+        if (!checkITSibForV0Legs<1>(pos, neg)) {
           continue;
         }
 
