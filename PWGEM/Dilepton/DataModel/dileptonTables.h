@@ -691,6 +691,15 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
 DECLARE_SOA_COLUMN(ProbElBDT, probElBDT, float);                //!
 
+DECLARE_SOA_COLUMN(BDTScorePrompt, bdtScorePrompt, std::vector<float>);           //!
+DECLARE_SOA_COLUMN(BDTScorePromptHc, bdtScorePromptHc, std::vector<float>);       //!
+DECLARE_SOA_COLUMN(BDTScoreNonpromptHc, bdtScoreNonpromptHc, std::vector<float>); //!
+DECLARE_SOA_COLUMN(BDTScoreHb, bdtScoreHb, std::vector<float>);                   //!
+DECLARE_SOA_COLUMN(HadronType, hadronType, std::vector<uint8_t>);                 //! 0:track, 1:K0S, 2:Lambda, 3:AntiLambda, 4:XiMinus, 5:XiPlus, 6:OmegaMinus, 7:OmegaPlus
+
+DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](std::vector<float> p0, std::vector<float> p1, std::vector<float> p2, std::vector<float> p3, std::vector<uint8_t> type, int index) -> std::array<float, 5> { return std::array<float, 5>{p0[index], p1[index], p2[index], p3[index], static_cast<float>(type[index])}; });
+DECLARE_SOA_DYNAMIC_COLUMN(NSV, nSV, [](std::vector<uint8_t> type) -> size_t { return type.size(); });
+
 DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //!
@@ -1006,6 +1015,13 @@ using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBDERIVED", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryElectronsBDTSCT, "AOD", "ELBDTSCT", // To be joined with EMPrimaryElectrons table at analysis level.
+                  emprimaryelectron::BDTScorePrompt, emprimaryelectron::BDTScorePromptHc, emprimaryelectron::BDTScoreNonpromptHc, emprimaryelectron::BDTScoreHb, emprimaryelectron::HadronType,
+                  emprimaryelectron::NSV<emprimaryelectron::HadronType>,
+                  emprimaryelectron::ProbaSCT<emprimaryelectron::BDTScorePrompt, emprimaryelectron::BDTScorePromptHc, emprimaryelectron::BDTScoreNonpromptHc, emprimaryelectron::BDTScoreHb, emprimaryelectron::HadronType>);
+// iterators
+using EMPrimaryElectronBDTSCT = EMPrimaryElectronsBDTSCT::iterator;
 
 namespace emprimarymuon
 {

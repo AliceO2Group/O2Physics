@@ -157,7 +157,10 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
-  O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFractionWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for the spectral fraction");
+  } cfgEventWeight;
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUsePIDEfficiencies, bool, false, "Use species dependent efficiencies")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
@@ -172,6 +175,7 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0105 + 0.0350/(x^1.1))", "Functional form of pt-dependent 7 sigma DCAxy cut");
     O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
     O2_DEFINE_CONFIGURABLE(cfgNTPCCls, float, 50, "Cut on number of TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cfgNTPCXrows, float, 70, "Cut on number of TPC crossed rows");
@@ -446,6 +450,9 @@ struct FlowGenericFramework {
   // Track selection - pt-phi cuts
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
+
+  // Track selection - DCA xy function
+  TF1* fPtDepDCAxy = nullptr;
 
   void init(InitContext const&)
   {
@@ -772,6 +779,10 @@ struct FlowGenericFramework {
     fFCpt->setUseGapMethod(cfgUseGapMethod);
     fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
     fFCpt->initialiseSubevent(multAxis, cfgMpar, o2::analysis::gfw::etagapsPtPt.size(), cfgNbootstrap);
+
+    fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()), 0.001, 100);
+    fPtDepDCAxy->SetParameter(0, cfgTrackCuts.cfgDCAxyNSigma / 7.);
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()));
 
     // Multiplicity correlation cuts
     if (cfgMultCut) {
@@ -1198,7 +1209,7 @@ struct FlowGenericFramework {
       if (cfgFill.cfgFillQA)
         registryQA.fill(HIST("trackQA/after/pt_phi"), track.pt(), phimodn);
     }
-    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgTrackCuts.cfgDCAxyNSigma / 7. * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1))))
+    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
       return false;
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
   }
@@ -1206,7 +1217,9 @@ struct FlowGenericFramework {
   template <typename TTrack>
   bool nchSelected(TTrack track)
   {
-    if (std::fabs(track.dcaXY()) > (0.0105f + 0.035f / std::pow(track.pt(), 1.1)))
+    // Renormalise to default cut
+    const float defaultNsigma = 7;
+    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > defaultNsigma / cfgTrackCuts.cfgDCAxyNSigma * fPtDepDCAxy->Eval(track.pt())))
       return false;
     int tpcNClsCrossedRowsDefault = 70;
     int tpcNClsFoundDefault = 50;
@@ -1333,7 +1346,9 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == Gen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+          if (corrconfigs.at(l_ind).Head.find("3pcW") != std::string::npos && cfgEventWeight.cfgUseMultiplicityFractionWeights)
+            dnx *= histosNpt[ChargedID]->Integral();
+          (dt == Gen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           if (cfgUseGapMethod) {
             fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
           }
@@ -1346,16 +1361,17 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1)
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
       }
     }
 
-    if (histosNpt[ChargedID]->Integral() <= 0)
+    double dnCh = histosNpt[ChargedID]->Integral();
+    if (dnCh <= 0)
       return;
 
-    double dnPi = histosNpt[ChargedID]->Integral();
-    double dnKa = histosNpt[ChargedID]->Integral();
-    double dnPr = histosNpt[ChargedID]->Integral();
+    double dnPi = dnCh;
+    double dnKa = dnCh;
+    double dnPr = dnCh;
 
     if (cfgUsePIDTotal) {
       dnPi = histosNpt[PionID]->Integral();
@@ -1364,20 +1380,20 @@ struct FlowGenericFramework {
     }
 
     for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
-      registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i), centmult, histosNpt[ChargedID]->GetBinContent(i) / histosNpt[ChargedID]->Integral());
+      registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i), centmult, histosNpt[ChargedID]->GetBinContent(i) / dnCh, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnCh : 1.0);
       if (dnPi > 0)
-        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PionID]->GetBinContent(i) / dnPi);
+        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PionID]->GetBinContent(i) / dnPi, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnPi : 1.0);
       if (dnKa > 0)
-        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i), centmult, histosNpt[KaonID]->GetBinContent(i) / dnKa);
+        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i), centmult, histosNpt[KaonID]->GetBinContent(i) / dnKa, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnKa : 1.0);
       if (dnPr > 0)
-        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i), centmult, histosNpt[ProtonID]->GetBinContent(i) / dnPr);
+        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i), centmult, histosNpt[ProtonID]->GetBinContent(i) / dnPr, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnPr : 1.0);
     }
 
     if (corrconfigsV02.size() < SpeciesCount)
       return;
 
     // For alternative normalisation with integrated pid spectra
-    std::vector<double> dns = {histosNpt[ChargedID]->Integral(), dnPi, dnKa, dnPr};
+    std::vector<double> dns = {dnCh, dnPi, dnKa, dnPr};
 
     for (uint l_ind = 0; l_ind < SpeciesCount; ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
@@ -1385,8 +1401,11 @@ struct FlowGenericFramework {
         if (dnx == 0)
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
-        if (std::abs(val) < 1 && dns[l_ind] > 0)
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+        if (std::abs(val) < 1 && dns[l_ind] > 0) {
+          if (cfgEventWeight.cfgUseMultiplicityFractionWeights)
+            dnx *= dns[l_ind];
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+        }
       }
     }
 
@@ -1394,15 +1413,18 @@ struct FlowGenericFramework {
       return;
 
     double mpt = 0;
+    double dnx = 0;
     if (cfgEtaPtPt->first * cfgEtaPtPt->second >= 0) {
       if (fFCpt->corrDen[1] == 0.)
         return;
-      mpt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
+      dnx = fFCpt->corrDen[1];
+      mpt = fFCpt->corrNum[1] / dnx;
     } else {
       if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.)
         return;
       double mptSub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
       double mptSub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
+      dnx = 0.5 * (fFCpt->corrDenSub[0][1] + fFCpt->corrDenSub[1][1]);
       mpt = 0.5 * (mptSub1 + mptSub2);
     }
     if (std::isnan(mpt))
@@ -1410,8 +1432,11 @@ struct FlowGenericFramework {
 
     for (uint l_ind = 0; l_ind < SpeciesCount; ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        if (dns[l_ind] > 0)
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], 1., rndm);
+        if (dns[l_ind] > 0) {
+          if (cfgEventWeight.cfgUseMultiplicityFractionWeights)
+            dnx *= dns[l_ind];
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], (cfgEventWeight.cfgUseMultiplicityFlowWeights) ?: 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], (cfgEventWeight.cfgUseMultiplicityFlowWeights) ?: 1., rndm);
+        }
       }
     }
     return;
@@ -1589,17 +1614,17 @@ struct FlowGenericFramework {
 
     for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
       if (dnK0SB1 > 0)
-        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0Sideband1]->GetBinContent(i) / dnK0SB1);
+        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0Sideband1]->GetBinContent(i) / dnK0SB1, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnK0SB1 : 1.);
       if (dnK0Sig > 0)
-        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0Signal]->GetBinContent(i) / dnK0Sig);
+        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0Signal]->GetBinContent(i) / dnK0Sig, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnK0Sig : 1.);
       if (dnK0SB2 > 0)
-        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0Sideband2]->GetBinContent(i) / dnK0SB2);
+        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0Sideband2]->GetBinContent(i) / dnK0SB2, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnK0SB2 : 1.);
       if (dnLambdaSB1 > 0)
-        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LambdaSideband1]->GetBinContent(i) / dnLambdaSB1);
+        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LambdaSideband1]->GetBinContent(i) / dnLambdaSB1, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnLambdaSB1 : 1.);
       if (dnLambdaSig > 0)
-        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LambdaSignal]->GetBinContent(i) / dnLambdaSig);
+        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LambdaSignal]->GetBinContent(i) / dnLambdaSig, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnLambdaSig : 1.);
       if (dnLambdaSB2 > 0)
-        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LambdaSideband2]->GetBinContent(i) / dnLambdaSB2);
+        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LambdaSideband2]->GetBinContent(i) / dnLambdaSB2, cfgEventWeight.cfgUseMultiplicityFractionWeights ? dnLambdaSB2 : 1.);
     }
 
     std::vector<double> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
@@ -1610,8 +1635,11 @@ struct FlowGenericFramework {
         if (dnx == 0)
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
-        if (std::abs(val) < 1 && dns[l_ind - 4] > 0)
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgUseMultiplicityFlowWeights ? dnx : 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgUseMultiplicityFlowWeights ? dnx : 1.0, lRandom);
+        if (std::abs(val) < 1 && dns[l_ind - 4] > 0) {
+          if (cfgEventWeight.cfgUseMultiplicityFractionWeights)
+            dnx *= dns[l_ind - 4];
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, lRandom);
+        }
       }
     }
 
@@ -1619,15 +1647,18 @@ struct FlowGenericFramework {
       return;
 
     double mpt = 0;
+    double dnx = 0;
     if (cfgEtaPtPt->first * cfgEtaPtPt->second >= 0) {
       if (fFCpt->corrDen[1] == 0.)
         return;
-      mpt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
+      dnx = fFCpt->corrDen[1];
+      mpt = fFCpt->corrNum[1] / dnx;
     } else {
       if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.)
         return;
       double mptSub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
       double mptSub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
+      dnx = 0.5 * (fFCpt->corrDenSub[0][1] + fFCpt->corrDenSub[1][1]);
       mpt = 0.5 * (mptSub1 + mptSub2);
     }
 
@@ -1637,7 +1668,9 @@ struct FlowGenericFramework {
     for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         if (dns[l_ind] > 0)
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, lRandom);
+          if (cfgEventWeight.cfgUseMultiplicityFractionWeights)
+            dnx *= dns[l_ind - 4];
+        (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, lRandom);
       }
     }
   }

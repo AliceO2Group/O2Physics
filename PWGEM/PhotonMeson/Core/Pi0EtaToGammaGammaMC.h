@@ -56,6 +56,7 @@
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <TH2.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <cmath>
@@ -92,6 +93,7 @@ struct Pi0EtaToGammaGammaMC {
   o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
   o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut (A * tanh(B*pT))"};
   o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut (A * tanh(B*pT))"};
+  o2::framework::Configurable<bool> cfgGGContaCheck{"cfgGGContaCheck", false, "check gamma gamma contamination of dalitz"};
 
   EMPhotonEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -252,6 +254,12 @@ struct Pi0EtaToGammaGammaMC {
     f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
 
     fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", o2::framework::HistType::kTH1F, {{21, -0.5f, 20.5f}}, false);
+    if (cfgGGContaCheck) {
+      fRegistry.add("Event/hNGGContamEta", "Number of Eta from etaToGammaGamma; p_{T, #eta} (GeV/#it{c}); N", o2::framework::HistType::kTH1F, {{40, -0.5f, 20.5f}}, false);
+      fRegistry.add("Event/hNGGContamPion", "Number of Pion from etaToGammaGamma; p_{T, #pi} (GeV/#it{c}); N", o2::framework::HistType::kTH1F, {{40, -0.5f, 20.5f}}, false);
+    }
+    fRegistry.add("Event/hNDalitzEtaPt", "Number of DalitzEta; p_{T, #eta} (GeV/#it{c}); N", o2::framework::HistType::kTH1F, {{40, -0.5f, 20.5f}}, false);
+    fRegistry.add("Event/hNDalitzPionPt", "Number of DalitzPion; p_{T, #pi} (GeV/#it{c}) ; N", o2::framework::HistType::kTH1F, {{40, -0.5f, 20.5f}}, false);
 
     mRunNumber = 0;
     d_bz = 0;
@@ -720,9 +728,9 @@ struct Pi0EtaToGammaGammaMC {
           }
 
           if (g1mc.globalIndex() == g2mc.globalIndex()) {
-            if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == 111)
+            if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == PDG_t::kPi0)
               fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
-            else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == 221)
+            else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == o2::constants::physics::Pdg::kEta)
               fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
             continue;
           }
@@ -792,6 +800,25 @@ struct Pi0EtaToGammaGammaMC {
 
             auto pos2mc = mcparticles.iteratorAt(pos2.emmcparticleId());
             auto ele2mc = mcparticles.iteratorAt(ele2.emmcparticleId());
+            if (cfgGGContaCheck) {
+              photonid2 = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // check possible contamination
+              if (photonid2 > 0) {
+                auto photon2 = mcparticles.iteratorAt(photonid2);
+                int photon2pdg = photon2.pdgCode();
+                int photon2mothid = photon2.mothersIds()[0];
+                auto photon2moth = mcparticles.iteratorAt(photon2mothid);
+                if (photon2pdg == PDG_t::kGamma && (o2::aod::pwgem::photonmeson::utils::mcutil::isGammaGammaDecay(photon2moth, mcparticles))) {
+                  int mothID = o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(photon2, mcparticles);
+                  if (mothID == o2::constants::physics::Pdg::kEta) {
+                    fRegistry.fill(HIST("Event/hNGGContamEta"), photon2moth.pt());
+                  }
+                  if (mothID == PDG_t::kPi0) {
+                    fRegistry.fill(HIST("Event/hNGGContamPion"), photon2moth.pt());
+                  }
+                }
+              }
+            }
+
             pi0id = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
             etaid = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
             if (pi0id < 0 && etaid < 0) {
@@ -805,12 +832,14 @@ struct Pi0EtaToGammaGammaMC {
             }
             if (pi0id > 0) {
               auto pi0mc = mcparticles.iteratorAt(pi0id);
+              fRegistry.fill(HIST("Event/hNDalitzPionPt"), pi0mc.pt());
               if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
                 continue;
               }
               o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
             } else if (etaid > 0) {
               auto etamc = mcparticles.iteratorAt(etaid);
+              fRegistry.fill(HIST("Event/hNDalitzEtaPt"), etamc.pt());
               if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
                 continue;
               }

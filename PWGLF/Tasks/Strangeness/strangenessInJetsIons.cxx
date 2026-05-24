@@ -93,6 +93,7 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
+using DaughterTracksMB = soa::Join<DaughterTracks, aod::TrackSelection>;
 
 struct StrangenessInJetsIons {
 
@@ -135,6 +136,7 @@ struct StrangenessInJetsIons {
   Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
   Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
+  Configurable<bool> saveChargedParticleMB{"saveChargedParticleMB", false, "Store charged particle information to build inclusive spectra."};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -287,7 +289,7 @@ struct StrangenessInJetsIons {
       registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // For MB
-      registryData.add("number_of_events_vsmultiplicity_MB", "number of events in data vs multiplicity (MB)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      // registryData.add("number_of_events_vsmultiplicity_MB", "number of events in data vs multiplicity (MB)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(1, "All collisions");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(2, "Zorro selection");
@@ -555,17 +557,17 @@ struct StrangenessInJetsIons {
     if (doprocessDataMB) {
 
       // Event counters
-      registryDataMB.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
-      registryDataMB.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryDataMB.add("number_of_events_data_MB", "number of events in data (MB)", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+      registryDataMB.add("number_of_events_vsmultiplicity_MB", "number of events in data vs multiplicity (MB)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(1, "All collisions");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(2, "Zorro selection");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(3, "sel8");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(4, "posZ cut");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(5, "kNoSameBunchPileup");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(7, "No empty events");
-      registryDataMB.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(8, "At least one jet");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(2, "Zorro selection");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(3, "sel8");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(4, "posZ cut");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(5, "kNoSameBunchPileup");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(7, "No empty events");
+      registryDataMB.get<TH1>(HIST("number_of_events_data_MB"))->GetXaxis()->SetBinLabel(8, "At least one jet");
 
       // Histograms for analysis of strange hadrons
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -587,6 +589,9 @@ struct StrangenessInJetsIons {
       }
       if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
         registryDataMB.add("Proton_in_MB", "Proton_in_MB", HistType::kTHnSparseF, {multAxis, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
+      }
+      if (saveChargedParticleMB) {
+        registryDataMB.add("ChargedTrack_in_MB", "ChargedTrack_in_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
     }
   }
@@ -1188,6 +1193,64 @@ struct StrangenessInJetsIons {
       return false;
     return true;
   }
+
+  // --- MB Selections ------------------------------------
+  // The rapidty cut is added, which is not required in jet and UE
+  // K0s selections (MB)
+  template <typename K0short, typename TrackPos, typename TrackNeg>
+  bool passedK0ShortSelectionMB(const K0short& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TVector3& vtxPos)
+  {
+    bool passedSel = passedK0ShortSelection(v0, ptrack, ntrack, vtxPos);
+
+    if (!passedRapidityCut(v0.yK0Short(), configV0.rapidityMax))
+      return false;
+    return passedSel;
+  }
+
+  // Lambda selections (MB)
+  template <typename Lambda, typename TrackPos, typename TrackNeg>
+  bool passedLambdaSelectionMB(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TVector3& vtxPos)
+  {
+    bool passedSel = passedLambdaSelection(v0, ptrack, ntrack, vtxPos);
+
+    if (!passedRapidityCut(v0.yLambda(), configV0.rapidityMax))
+      return false;
+    return passedSel;
+  }
+
+  // AntiLambda selections (MB)
+  template <typename AntiLambda, typename TrackPos, typename TrackNeg>
+  bool passedAntiLambdaSelectionMB(const AntiLambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TVector3& vtxPos)
+  {
+    bool passedSel = passedAntiLambdaSelection(v0, ptrack, ntrack, vtxPos);
+
+    if (!passedRapidityCut(v0.yLambda(), configV0.rapidityMax))
+      return false;
+    return passedSel;
+  }
+
+  // Xi Selections (MB)
+  template <typename Xi, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
+  bool passedXiSelectionMB(const Xi& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
+  {
+    bool passedSel = passedXiSelection(casc, ptrack, ntrack, btrack, coll);
+
+    if (!passedRapidityCut(casc.yXi(), configV0.rapidityMax))
+      return false;
+    return passedSel;
+  }
+
+  // Omega selections (MB)
+  template <typename Omega, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
+  bool passedOmegaSelectionMB(const Omega& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
+  {
+    bool passedSel = passedOmegaSelection(casc, ptrack, ntrack, btrack, coll);
+
+    if (!passedRapidityCut(casc.yOmega(), configV0.rapidityMax))
+      return false;
+    return passedSel;
+  }
+  // ------------------------------------------------------
 
   // Event selection for MC Reco collision
   template <typename coll>
@@ -1911,13 +1974,13 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 5.5);
 
     // Event multiplicity
-    float centrality;
-    if (centrEstimator == 0) {
-      centrality = collision.centFT0C();
-    } else {
-      centrality = collision.centFT0M();
-    }
-    registryData.fill(HIST("number_of_events_vsmultiplicity_MB"), centrality);
+    // float centrality;
+    // if (centrEstimator == 0) {
+    //   centrality = collision.centFT0C();
+    // } else {
+    //   centrality = collision.centFT0M();
+    // }
+    // registryData.fill(HIST("number_of_events_vsmultiplicity_MB"), centrality);
 
     // Loop over reconstructed tracks
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -2331,7 +2394,7 @@ struct StrangenessInJetsIons {
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        double coneRadius = std::sqrt(jet.area() / PI);
+        double coneRadius = std::sqrt(jet.area() / PI); // TODO: replace with rJet (similar results)
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
@@ -3225,14 +3288,14 @@ struct StrangenessInJetsIons {
   // --- Process Minimum Bias events ---
   // Process data MB
   void processDataMB(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                     aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
+                     aod::CascDataExt const& Cascades, DaughterTracksMB const& tracks,
                      aod::BCsWithTimestamps const&)
   {
     // Vertex position vector
     TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
     // Fill event counter before event selection
-    registryDataMB.fill(HIST("number_of_events_data"), 0.5);
+    registryDataMB.fill(HIST("number_of_events_data_MB"), 0.5);
 
     // Get the bunch crossing (BC) information associated with the collision
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -3246,35 +3309,35 @@ struct StrangenessInJetsIons {
     }
 
     // Fill event counter after zorro selection
-    registryDataMB.fill(HIST("number_of_events_data"), 1.5);
+    registryDataMB.fill(HIST("number_of_events_data_MB"), 1.5);
 
     // Event selection
     if (!collision.sel8())
       return;
 
     // Fill event counter after sel8 selection
-    registryDataMB.fill(HIST("number_of_events_data"), 2.5);
+    registryDataMB.fill(HIST("number_of_events_data_MB"), 2.5);
 
     // Require vertex position within the allowed z range
     if (std::fabs(collision.posZ()) > zVtx)
       return;
 
     // Fill event counter after z vertex selection
-    registryDataMB.fill(HIST("number_of_events_data"), 3.5);
+    registryDataMB.fill(HIST("number_of_events_data_MB"), 3.5);
 
     // Reject collisions associated to the same found BC
     if (requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       return;
 
     // Fill event counter after selection kNoSameBunchPileup
-    registryDataMB.fill(HIST("number_of_events_data"), 4.5);
+    registryDataMB.fill(HIST("number_of_events_data_MB"), 4.5);
 
     // Compatible z_vtx from FT0 and from PV
     if (requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return;
 
     // Fill event counter after selection kIsGoodZvtxFT0vsPV
-    registryDataMB.fill(HIST("number_of_events_data"), 5.5);
+    registryDataMB.fill(HIST("number_of_events_data_MB"), 5.5);
 
     // Event multiplicity
     float centrality;
@@ -3283,26 +3346,35 @@ struct StrangenessInJetsIons {
     } else {
       centrality = collision.centFT0M();
     }
-    registryDataMB.fill(HIST("number_of_events_vsmultiplicity"), centrality);
+    registryDataMB.fill(HIST("number_of_events_vsmultiplicity_MB"), centrality);
+
+    if (saveChargedParticleMB) {
+      for (const auto& trk : tracks) {
+        if (!passedTrackSelectionForJetReconstruction(trk) || !trk.isGlobalTrack()) {
+          continue;
+        }
+        registryDataMB.fill(HIST("ChargedTrack_in_MB"), centrality, trk.pt());
+      }
+    }
 
     if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) { // V0s
       for (const auto& v0 : fullV0s) {
 
         // Get V0 daughters
-        const auto& pos = v0.posTrack_as<DaughterTracks>();
-        const auto& neg = v0.negTrack_as<DaughterTracks>();
+        const auto& pos = v0.posTrack_as<DaughterTracksMB>();
+        const auto& neg = v0.negTrack_as<DaughterTracksMB>();
         TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
         // K0s
-        if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
+        if (passedK0ShortSelectionMB(v0, pos, neg, vtxPos)) {
           registryDataMB.fill(HIST("K0s_in_MB"), centrality, v0.pt(), v0.mK0Short());
         }
         // Lambda
-        if (passedLambdaSelection(v0, pos, neg, vtxPos)) {
+        if (passedLambdaSelectionMB(v0, pos, neg, vtxPos)) {
           registryDataMB.fill(HIST("Lambda_in_MB"), centrality, v0.pt(), v0.mLambda());
         }
         // AntiLambda
-        if (passedAntiLambdaSelection(v0, pos, neg, vtxPos)) {
+        if (passedAntiLambdaSelectionMB(v0, pos, neg, vtxPos)) {
           registryDataMB.fill(HIST("AntiLambda_in_MB"), centrality, v0.pt(), v0.mAntiLambda());
         }
       }
@@ -3317,19 +3389,19 @@ struct StrangenessInJetsIons {
         TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
 
         // Xi+
-        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+        if (passedXiSelectionMB(casc, pos, neg, bach, collision) && bach.sign() > 0) {
           registryDataMB.fill(HIST("XiPos_in_MB"), centrality, casc.pt(), casc.mXi());
         }
         // Xi-
-        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+        if (passedXiSelectionMB(casc, pos, neg, bach, collision) && bach.sign() < 0) {
           registryDataMB.fill(HIST("XiNeg_in_MB"), centrality, casc.pt(), casc.mXi());
         }
         // Omega+
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+        if (passedOmegaSelectionMB(casc, pos, neg, bach, collision) && bach.sign() > 0) {
           registryDataMB.fill(HIST("OmegaPos_in_MB"), centrality, casc.pt(), casc.mOmega());
         }
         // Omega-
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+        if (passedOmegaSelectionMB(casc, pos, neg, bach, collision) && bach.sign() < 0) {
           registryDataMB.fill(HIST("OmegaNeg_in_MB"), centrality, casc.pt(), casc.mOmega());
         }
       }

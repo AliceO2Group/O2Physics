@@ -100,6 +100,8 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgCentVsIPTruth, std::string, "", "CCDB path to centrality vs IP truth")
   O2_DEFINE_CONFIGURABLE(cfgIsGlobalTrack, bool, false, "Use global tracks instead of hasTPC&&hasITS")
   O2_DEFINE_CONFIGURABLE(cfgK0Lambda0Enabled, bool, false, "Add K0 and Lambda0, for bulk particle efficiency please keep off")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptSecondaries, bool, false, "Accept secondary particles produced from decays")
+  O2_DEFINE_CONFIGURABLE(cfgRequireTOF, bool, false, "Require that reconstructed tracks have TOF for resonance decays")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
@@ -238,6 +240,12 @@ struct FlowMc {
     histos.add<TH2>("hPtNchGlobalK0", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH2>("hPtNchGeneratedLambda", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH2>("hPtNchGlobalLambda", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedK0Pions", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalK0Pions", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedLambdaPions", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalLambdaPions", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedLambdaProtons", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalLambdaProtons", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH3>("hEtaPtVtxzMCGen", "Monte Carlo Truth; #eta; p_{T} (GeV/c); V_{z} (cm);", {HistType::kTH3D, {axisEta, axisPt, axisVertex}});
     histos.add<TH1>("hPtMCGlobal", "Monte Carlo Global; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
@@ -599,8 +607,13 @@ struct FlowMc {
         if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
           continue;
 
-        if (!mcParticle.isPhysicalPrimary())
+        bool isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+        const int producedByDecay = 4;
+        bool isSecondary = (mcParticle.has_mothers() && mcParticle.getProcess() == producedByDecay);
+        bool isAcceptedSecondary = (cfgAcceptSecondaries) ? isSecondary : false;
+        if (!isPhysicalPrimary && !isAcceptedSecondary)
           continue;
+
         if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
           continue;
 
@@ -621,11 +634,23 @@ struct FlowMc {
           histos.fill(HIST("hPtNchGeneratedK0"), mcParticle.pt(), nChGlobal);
         if (pdgCode == PDG_t::kLambda0)
           histos.fill(HIST("hPtNchGeneratedLambda"), mcParticle.pt(), nChGlobal);
-
+        if (mcParticle.has_daughters()) {
+          for (const auto& d : mcParticle.template daughters_as<FilteredMcParticles>()) {
+            if (std::abs(d.pdgCode()) == PDG_t::kPiPlus) {
+              if (pdgCode == PDG_t::kK0Short)
+                histos.fill(HIST("hPtNchGeneratedK0Pions"), d.pt(), nChGlobal);
+              if (pdgCode == PDG_t::kLambda0)
+                histos.fill(HIST("hPtNchGeneratedLambdaPions"), d.pt(), nChGlobal);
+            }
+            if (pdgCode == PDG_t::kLambda0 && std::abs(d.pdgCode()) == PDG_t::kProton)
+              histos.fill(HIST("hPtNchGeneratedLambdaProtons"), d.pt(), nChGlobal);
+          }
+        }
         nCh++;
 
         bool validGlobal = false;
         bool validTrack = false;
+        bool validTOFTrack = false;
         bool validTPCTrack = false;
         bool validITSTrack = false;
         bool validITSABTrack = false;
@@ -643,6 +668,9 @@ struct FlowMc {
             if (!cfgIsGlobalTrack && track.hasTPC() && track.hasITS()) {
               validGlobal = true;
             }
+            if (track.hasTOF() && validGlobal) {
+              validTOFTrack = true;
+            }
             if (track.hasTPC() || track.hasITS()) {
               validTrack = true;
             }
@@ -657,7 +685,6 @@ struct FlowMc {
             }
           }
         }
-
         bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
         bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
         if (cfgOutputNUAWeights && withinPtRef)
@@ -723,6 +750,24 @@ struct FlowMc {
             histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
           if (pdgCode == PDG_t::kLambda0)
             histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
+          if (!cfgRequireTOF || (cfgRequireTOF && validTOFTrack)) {
+            if (mcParticle.has_mothers()) {
+              for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
+                if (!m.isPhysicalPrimary())
+                  continue;
+                if (pdgCode == PDG_t::kPiPlus) {
+                  if (m.pdgCode() == PDG_t::kK0Short) {
+                    histos.fill(HIST("hPtNchGlobalK0Pions"), mcParticle.pt(), nChGlobal);
+                  }
+                  if (m.pdgCode() == PDG_t::kLambda0) {
+                    histos.fill(HIST("hPtNchGlobalLambdaPions"), mcParticle.pt(), nChGlobal);
+                  }
+                }
+                if (pdgCode == PDG_t::kProton && m.pdgCode() == PDG_t::kLambda0)
+                  histos.fill(HIST("hPtNchGlobalLambdaProtons"), mcParticle.pt(), nChGlobal);
+              }
+            }
+          }
         }
         // if any track present, fill
         if (validTrack)

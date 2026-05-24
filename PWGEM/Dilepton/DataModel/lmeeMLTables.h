@@ -199,8 +199,15 @@ namespace emmlevent
 {
 DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of mc collision
 } // namespace emmlevent
+
+DECLARE_SOA_TABLE(EMMLEvents, "AOD", "EMMLEVENT", //!
+                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
+// iterators
+using EMMLEvent = EMMLEvents::iterator;
+
 namespace emmltrack
 {
+DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);                   //! index to event table
 DECLARE_SOA_COLUMN(IsMotherFromBeauty, isMotherFromBeauty, bool); //! is b quark included in decay history
 DECLARE_SOA_COLUMN(Signed1PtL, signedPtL, float);                 //! sign/pT of lepton
 DECLARE_SOA_COLUMN(EtaL, etaL, float);                            //! eta of lepton
@@ -215,8 +222,8 @@ DECLARE_SOA_COLUMN(IsCorrectCollision, isCorrectCollision, bool); //! LH pair is
 } // namespace emmltrack
 
 DECLARE_SOA_TABLE(EMMLLeptons, "AOD", "EMMLLEPTON", //!
-                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::SubGeneratorId,
-                  emmltrack::Signed1PtL, emmltrack::EtaL,
+                  o2::soa::Index<>, emmltrack::EMMLEventId, emmlevent::SubGeneratorId,
+                  emmltrack::Signed1PtL, emmltrack::EtaL, emmltrack::PhiL,
                   emmltrack::ImpParXYL, emmltrack::ImpParZL, emmltrack::ImpParCYYL, emmltrack::ImpParCZYL, emmltrack::ImpParCZZL,
                   emmltrack::IsMotherFromBeauty, emmltrack::PdgCodeMother, emmltrack::IsCorrectCollision);
 // iterators
@@ -224,7 +231,7 @@ using EMMLLepton = EMMLLeptons::iterator;
 
 namespace emmllhpair
 {
-DECLARE_SOA_INDEX_COLUMN(EMMLLepton, emmllepton); //! most propable emeventId
+DECLARE_SOA_INDEX_COLUMN(EMMLLepton, emmllepton); //! index to lepton table
 
 DECLARE_SOA_COLUMN(Signed1PtH, signedPtH, float);  //! sign/pT of associated hadron
 DECLARE_SOA_COLUMN(PtH, ptH, float);               //! pT of associated hadron
@@ -276,7 +283,7 @@ DECLARE_SOA_COLUMN(PdgCodeIM, pdgCodeIM, int);                  //! pdg code of 
 DECLARE_SOA_COLUMN(FoundCommonMother, foundCommonMother, bool); //! decay length resolution of LH pair
 } // namespace emmllhpair
 
-DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
+DECLARE_SOA_TABLE(EMMLLTPairs, "AOD", "EMMLLTPAIR", //!
                   emmllhpair::EMMLLeptonId,
                   emmllhpair::Signed1PtH, emmllhpair::EtaH,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
@@ -288,7 +295,7 @@ DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
                   emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
                   emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
-using EMMLLHPair = EMMLLHPairs::iterator;
+using EMMLLTPair = EMMLLTPairs::iterator;
 
 DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
                   emmllhpair::EMMLLeptonId, emmllhpair::V0Type,
@@ -302,7 +309,7 @@ DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
 // iterators
 using EMMLLV0Pair = EMMLLV0Pairs::iterator;
 
-DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCAPAIR", //!
+DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCPAIR", //!
                   emmllhpair::EMMLLeptonId, emmllhpair::CascadeType,
                   emmllhpair::Signed1PtH, emmllhpair::RapidityC,
                   emmllhpair::CascCPA, emmllhpair::CascCPAXY, emmllhpair::CascCPARZ,
