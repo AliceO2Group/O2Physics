@@ -954,8 +954,6 @@ class PairHistManager
     return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
   }
 
-  // have to check for prf k* = 1/2 q and
-
   void computeBertschPrattLCMS()
   {
     const ROOT::Math::PxPyPzEVector p1(mParticle1);
