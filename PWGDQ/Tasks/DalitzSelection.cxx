@@ -61,7 +61,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::soa;
 
-
 // using MyEvents = soa::Join<aod::Collisions, aod::EvSels>
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms>;
 
@@ -72,8 +71,8 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
 using MyBarrelTracksNoTOF = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                 aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullMu,
-                                 aod::pidTPCFullKa, aod::pidTPCFullPr>;
+                                      aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullMu,
+                                      aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
 // constexpr static uint32_t EventFillMap = VarManager::ObjTypes::Collision;
 constexpr static uint32_t EventFillMapWithCent = VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
@@ -312,7 +311,7 @@ struct DalitzSelection {
 
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-    
+
     // autodetect whether the dalitz bits are requested
     fIsOutputRequested = false;
     auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
@@ -329,7 +328,7 @@ struct DalitzSelection {
           }
         }
       }
-    }  
+    }
   }
 
   template <bool isReassoc, uint32_t TTrackFillMap, typename TFullTracks, typename TTracks, typename TEvent>
@@ -406,16 +405,15 @@ struct DalitzSelection {
         auto const& fullTrack1 = track1.template track_as<TFullTracks>();
         trackIdx1 = fullTrack1.globalIndex();
         isTrack1P = fullTrack1.sign() > 0;
-      }
-      else {
+      } else {
         trackIdx1 = track1.globalIndex();
         isTrack1P = track1.sign() > 0;
       }
-      
+
       if (!fTrackmap[trackIdx1]) {
         continue;
       }
-    
+
       for (const auto& track2 : tracks2) {
         int trackIdx2;
         bool isLikeSign;
@@ -427,7 +425,7 @@ struct DalitzSelection {
           trackIdx2 = track2.globalIndex();
           isLikeSign = (isTrack1P && (track2.sign() > 0)) || (!isTrack1P && (track2.sign() < 0));
         }
-                      
+
         if (trackIdx1 == trackIdx2) {
           continue;
         }
@@ -442,7 +440,7 @@ struct DalitzSelection {
         if (!twoTracksFilterMap) {
           continue;
         }
-        
+
         // pairing
         if constexpr (isReassoc) {
           auto const& fullTrack1 = track1.template track_as<TFullTracks>();
@@ -479,25 +477,22 @@ struct DalitzSelection {
               if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
                 // if we want to remove double-counting, we fill separately the map for this event and for previous ones, in order to check if it was previously selected
                 fDalitzmapAmbiguity[trackIdx1] |= (uint8_t(1) << icut);
-              }
-              else {
+              } else {
                 fDalitzmap[trackIdx1] |= (uint8_t(1) << icut);
               }
               if (fIsTagAndProbe) {
                 if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
                   fDalitzmapProbeAmbiguity[trackIdx1] |= (uint8_t(1) << icut);
-                }
-                else {
+                } else {
                   fDalitzmapProbe[trackIdx2] |= (uint8_t(1) << icut);
                 }
                 if (fConfigOptions.fQA && !isPairAlreadySelected) {
                   fHistMan->FillHistClass(Form("Pair_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
                 }
-              } else { 
+              } else {
                 if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
                   fDalitzmapAmbiguity[trackIdx1] |= (uint8_t(1) << icut);
-                }
-                else {
+                } else {
                   fDalitzmap[trackIdx2] |= (uint8_t(1) << icut);
                 }
                 if (fConfigOptions.fQA && !isPairAlreadySelected) {
@@ -510,8 +505,8 @@ struct DalitzSelection {
               }
             } // end if like-sign
           } // end if isSelected
-        } // end cut loop  
-      } 
+        } // end cut loop
+      }
     } // end of tracksP,N loop
 
     // Fill Hists
@@ -682,7 +677,7 @@ struct DalitzSelection {
       }
     }
   }
-  
+
   void processFullTracksWithAssocNoTOF(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const&, MyBarrelTracksNoTOF const& tracks, TrackAssoc const& trackAssocs)
   {
 
