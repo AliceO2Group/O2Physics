@@ -112,6 +112,48 @@ struct NchCumulantsId {
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
 
+  struct : ConfigurableGroup {
+    Configurable<int> cfgNchBins{"cfgNchBins", 1200, "Bins for Net charge"};
+    Configurable<float> cfgNchMin{"cfgNchMin", -60.0, "Min for Net charge"};
+    Configurable<float> cfgNchMax{"cfgNchMax", 60.0, "Max for Net charge"};
+
+    Configurable<int> cfgPosBins{"cfgPosBins", 3010, "Bins for Pos charge"};
+    Configurable<float> cfgPosMin{"cfgPosMin", -0.5, "Min for Pos charge"};
+    Configurable<float> cfgPosMax{"cfgPosMax", 300.5, "Max for Pos charge"};
+
+    Configurable<int> cfgNegBins{"cfgNegBins", 3010, "Bins for Neg charge"};
+    Configurable<float> cfgNegMin{"cfgNegMin", -0.5, "Min for Neg charge"};
+    Configurable<float> cfgNegMax{"cfgNegMax", 300.5, "Max for Neg charge"};
+
+    Configurable<int> cfgNtBins{"cfgNtBins", 8010, "Bins for Total mult"};
+    Configurable<float> cfgNtMin{"cfgNtMin", -0.5, "Min for Total mult"};
+    Configurable<float> cfgNtMax{"cfgNtMax", 800.5, "Max for Total mult"};
+
+    Configurable<int> cfgPrBins{"cfgPrBins", 3010, "Bins for Proton"};
+    Configurable<float> cfgPrMin{"cfgPrMin", -0.5, "Min for Proton"};
+    Configurable<float> cfgPrMax{"cfgPrMax", 300.5, "Max for Proton"};
+
+    Configurable<int> cfgAPrBins{"cfgAPrBins", 3010, "Bins for AProton"};
+    Configurable<float> cfgAPrMin{"cfgAPrMin", -0.5, "Min for AProton"};
+    Configurable<float> cfgAPrMax{"cfgAPrMax", 300.5, "Max for AProton"};
+
+    Configurable<int> cfgKaBins{"cfgKaBins", 3010, "Bins for Kaon"};
+    Configurable<float> cfgKaMin{"cfgKaMin", -0.5, "Min for Kaon"};
+    Configurable<float> cfgKaMax{"cfgKaMax", 300.5, "Max for Kaon"};
+
+    Configurable<int> cfgAKaBins{"cfgAKaBins", 3010, "Bins for AKaon"};
+    Configurable<float> cfgAKaMin{"cfgAKaMin", -0.5, "Min for AKaon"};
+    Configurable<float> cfgAKaMax{"cfgAKaMax", 300.5, "Max for AKaon"};
+
+    Configurable<int> cfgPiBins{"cfgPiBins", 3010, "Bins for Pion+"};
+    Configurable<float> cfgPiMin{"cfgPiMin", -0.5, "Min for Pion+"};
+    Configurable<float> cfgPiMax{"cfgPiMax", 300.5, "Max for Pion+"};
+
+    Configurable<int> cfgAPiBins{"cfgAPiBins", 3010, "Bins for Pion-"};
+    Configurable<float> cfgAPiMin{"cfgAPiMin", -0.5, "Min for Pion-"};
+    Configurable<float> cfgAPiMax{"cfgAPiMax", 300.5, "Max for Pion-"};
+  } axisCfg;
+
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
   Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
@@ -121,7 +163,7 @@ struct NchCumulantsId {
   Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
 
   // Configurables for particle Identification
-  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
+  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
   Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
   Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
   Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
@@ -246,16 +288,16 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNch(100, -50, 50, "Net_charge_dN");
-    const AxisSpec axisPosCh(101, -1, 100, "Pos_charge");
-    const AxisSpec axisNegCh(101, -1, 100, "Neg_charge");
-    const AxisSpec axisNt(201, -1, 200, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(101, -1, 100, "Pr_charge");
-    const AxisSpec axisAPrCh(101, -1, 100, "APr_charge");
-    const AxisSpec axisKaCh(101, -1, 100, "Ka_charge");
-    const AxisSpec axisAKaCh(101, -1, 100, "AKa_charge");
-    const AxisSpec axisPiCh(101, -1, 100, "Pion_Positive");
-    const AxisSpec axisAPiCh(101, -1, 100, "Pion_Negative");
+    const AxisSpec axisNch(axisCfg.cfgNchBins, axisCfg.cfgNchMin, axisCfg.cfgNchMax, "Net_charge_dN");
+    const AxisSpec axisPosCh(axisCfg.cfgPosBins, axisCfg.cfgPosMin, axisCfg.cfgPosMax, "Pos_charge");
+    const AxisSpec axisNegCh(axisCfg.cfgNegBins, axisCfg.cfgNegMin, axisCfg.cfgNegMax, "Neg_charge");
+    const AxisSpec axisNt(axisCfg.cfgNtBins, axisCfg.cfgNtMin, axisCfg.cfgNtMax, "Mult_midRap_Nch");
+    const AxisSpec axisPrCh(axisCfg.cfgPrBins, axisCfg.cfgPrMin, axisCfg.cfgPrMax, "Pr_charge");
+    const AxisSpec axisAPrCh(axisCfg.cfgAPrBins, axisCfg.cfgAPrMin, axisCfg.cfgAPrMax, "APr_charge");
+    const AxisSpec axisKaCh(axisCfg.cfgKaBins, axisCfg.cfgKaMin, axisCfg.cfgKaMax, "Ka_charge");
+    const AxisSpec axisAKaCh(axisCfg.cfgAKaBins, axisCfg.cfgAKaMin, axisCfg.cfgAKaMax, "AKa_charge");
+    const AxisSpec axisPiCh(axisCfg.cfgPiBins, axisCfg.cfgPiMin, axisCfg.cfgPiMax, "Pion_Positive");
+    const AxisSpec axisAPiCh(axisCfg.cfgAPiBins, axisCfg.cfgAPiMin, axisCfg.cfgAPiMax, "Pion_Negative");
 
     const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
     const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
