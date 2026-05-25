@@ -320,7 +320,6 @@ struct DalitzSelection {
       // Check if this device subscribed to the dalitz table
       for (auto const& input : device.inputs) {
         if (o2::framework::DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
-          auto&& [origin, description, version] = o2::framework::DataSpecUtils::asConcreteDataMatcher(input.matcher);
           std::string tableName = "DalitzBits";
           if (input.matcher.binding == tableName) {
             LOGF(info, "Device %s has subscribed to %s", device.name, "DalitzBits");
@@ -345,7 +344,7 @@ struct DalitzSelection {
         if (fullTrack.pt() < fConfigCuts.fConfigPtLow) {
           continue;
         }
-        if (abs(fullTrack.eta()) > fConfigCuts.fConfigEtaCut) {
+        if (std::fabs(fullTrack.eta()) > fConfigCuts.fConfigEtaCut) {
           continue;
         }
         if (fullTrack.hasTPC() && (fullTrack.tpcNSigmaEl() < fConfigCuts.fConfigTPCNSigLow || fullTrack.tpcNSigmaEl() > fConfigCuts.fConfigTPCNSigHigh)) {
