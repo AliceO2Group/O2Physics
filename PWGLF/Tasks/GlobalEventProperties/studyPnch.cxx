@@ -441,13 +441,17 @@ struct StudyPnch {
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
       histos.fill(HIST("hMultiplicityMCrec"), multrec);
       float multgen = countGenTracks(GenParticles, RecCol);
-      LOG(info) << "Generated Particles with standard pT:" << multgen;
+      if (cPrint) {
+        LOG(info) << "Generated Particles with standard pT:" << multgen;
+      }
       histos.fill(HIST("hMultiplicityMCgen"), multgen);
       histos.fill(HIST("hResponseMatrix"), multrec, multgen);
       float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
       nTrkPtCut = multgen + nTrkPtCut;
-      LOG(info) << "After Counting low pT: " << nTrkPtCut;
-      LOG(info) << "########################";
+      if (cPrint) {
+        LOG(info) << "After Counting low pT: " << nTrkPtCut;
+        LOG(info) << "########################";
+      }
       histos.fill(HIST("hMultiplicityMCgenPtCut"), nTrkPtCut);
       histos.fill(HIST("hResponseMatrixPtCut"), multrec, nTrkPtCut);
       if (isApplyStrangenessSysUncert) {
