@@ -41,9 +41,9 @@
 #include <TH1.h>
 
 #include <array>
-#include <string>
 #include <chrono>
 #include <cmath>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
