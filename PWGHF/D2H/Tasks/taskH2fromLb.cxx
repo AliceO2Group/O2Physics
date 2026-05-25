@@ -327,5 +327,5 @@ struct H2fromLb {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<H2fromLb>(cfgc, TaskName{"task-h2-from-lb"})};
+    adaptAnalysisTask<H2fromLb>(cfgc, TaskName{"task-h2-from-Lb"})};
 }
