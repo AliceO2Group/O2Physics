@@ -51,7 +51,6 @@
 #include <TProfile2D.h>
 #include <TRandom3.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -59,6 +58,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -146,7 +146,6 @@ struct flowDirectedFlowTask {
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::SPCalibrationTables, aod::Mults>>;
   using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
   using ResoV0s = aod::V0Datas;
-  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
   void init(InitContext&)
   {
@@ -235,7 +234,7 @@ struct flowDirectedFlowTask {
 
   template <typename TCollision>
   bool eventSelected(TCollision collision)
-  {
+  {   
     if (!collision.sel8()) {
       return 0;
     }
@@ -244,7 +243,7 @@ struct flowDirectedFlowTask {
     }
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
-    }
+    } 
     if (cfgPVSel && std::abs(collision.posZ()) > cfgCutVertex) {
       return 0;
     }
@@ -418,8 +417,8 @@ struct flowDirectedFlowTask {
     ROOT::Math::PxPyPzMVector daughter;
     ROOT::Math::PxPyPzMVector pion;
     float mass = 0.0;
-
-    if (isLambda) {
+  
+    if (isLambda) { 
       daughter = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
       pion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
       mass = v0.mLambda();
@@ -428,7 +427,7 @@ struct flowDirectedFlowTask {
       pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
       mass = v0.mAntiLambda();
     }
-
+  
     const auto hyperon = daughter + pion;
     ROOT::Math::Boost boostToRest(hyperon.BoostToCM());
     const auto daughterStar = boostToRest(daughter);
@@ -502,7 +501,7 @@ struct flowDirectedFlowTask {
     }
   }
 
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& v0s, BCsRun3 const&)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& v0s, aod::BCsWithTimestamps const&)
   {
     if (!eventSelected(collision)) {
       return;
