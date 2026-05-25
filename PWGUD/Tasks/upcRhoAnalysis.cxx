@@ -257,7 +257,7 @@ struct UpcRhoAnalysis {
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processSGdata") || context.mOptions.get<bool>("processDGdata")) {
-      // QA //
+      // QA
       // collisions
       rQC.add("QC/collisions/all/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
       rQC.add("QC/collisions/all/hPosZ", ";vertex #it{z} (cm);counts", kTH1D, {{400, -20.0, 20.0}});
@@ -292,13 +292,13 @@ struct UpcRhoAnalysis {
         rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
       // tracks
       rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);#it{p}_{T} (GeV/#it{c});counts", kTH2D, {nSigmaAxis, ptAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsTpcNSigmaEl", ";TPC #it{n#sigma}(e);#it{p}_{T} (GeV/#it{c});counts", kTH2D, {nSigmaAxis, ptAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaEl", ";TPC #it{n#sigma}(e);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaKa", ";TPC #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsTpcNSigmaKa", ";TPC #it{n#sigma}(K);#it{p}_{T} (GeV/#it{c});counts", kTH2D, {nSigmaAxis, ptAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaKa", ";TPC #it{n#sigma}(K);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsTpcNSigmaPr", ";TPC #it{n#sigma}(p);#it{p}_{T} (GeV/#it{c});counts", kTH2D, {nSigmaAxis, ptAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPr", ";TPC #it{n#sigma}(p);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
       rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{9, -0.5, 8.5}});
       rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{150, 0.0, 15.0}});
@@ -476,13 +476,13 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hEta"), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPhi"), phi(track.px(), track.py()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPi"), track.tpcNSigmaPi());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsTpcNSigmaPi"), track.tpcNSigmaPi(), track.pt());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPi"), track.tpcNSigmaPi(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaEl"), track.tpcNSigmaEl());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsTpcNSigmaEl"), track.tpcNSigmaEl(), track.pt());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaEl"), track.tpcNSigmaEl(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaKa"), track.tpcNSigmaKa());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsTpcNSigmaKa"), track.tpcNSigmaKa(), track.pt());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaKa"), track.tpcNSigmaKa(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPr"), track.tpcNSigmaPr());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsTpcNSigmaPr"), track.tpcNSigmaPr(), track.pt());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPr"), track.tpcNSigmaPr(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hDcaXYZ"), track.dcaZ(), track.dcaXY());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsNCls"), track.itsNCls());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsChi2NCl"), track.itsChi2NCl());
