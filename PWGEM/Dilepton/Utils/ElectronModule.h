@@ -427,7 +427,7 @@ class ElectronModule
 
     if (fConfigDFeT.useML) {
       static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
       const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
       const uint32_t nBinsMl = fConfigDFeT.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
@@ -453,7 +453,7 @@ class ElectronModule
 
     if (fConfigDFeV0.useML) {
       static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
       const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
       const uint32_t nBinsMl = fConfigDFeV0.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
@@ -479,7 +479,7 @@ class ElectronModule
 
     if (fConfigDFeC.useML) {
       static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
       const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
       const uint32_t nBinsMl = fConfigDFeC.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
