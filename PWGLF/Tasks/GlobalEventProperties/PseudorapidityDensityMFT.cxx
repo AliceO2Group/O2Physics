@@ -2190,14 +2190,14 @@ struct PseudorapidityDensityMFT {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::HasMcCollision);
-      
+
       if (useRctMFT && !myChecker(collision)) {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::RctMFT);
-      
+
       if (useGoodItsLayersAll &&
-      !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+          !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::UseGoodItsLayersAll);
@@ -2494,9 +2494,9 @@ struct PseudorapidityDensityMFT {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::RctMFT);
-      
+
       if (useGoodItsLayersAll &&
-        !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+          !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::UseGoodItsLayersAll);
