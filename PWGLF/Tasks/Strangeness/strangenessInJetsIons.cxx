@@ -111,7 +111,7 @@ struct StrangenessInJetsIons {
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryDataMB{"registryDataMB", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Global analysis parameters
   // List of Particles
@@ -305,10 +305,6 @@ struct StrangenessInJetsIons {
 
     // Histograms for checks
     // registryQC.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
-    if (doThermalToyModel) {
-      registryQC.add("thermalToy_generated_pT", "thermalToy_generated_pT", HistType::kTH2F, {multAxis, ptAxis});
-      registryQC.add("thermalToy_generated_nBkg", "thermalToy_generated_nBkg", HistType::kTH2F, {multAxis, numBkgParticles});
-    }
 
     // Histograms for real data
     if (doprocessData) {
@@ -402,6 +398,11 @@ struct StrangenessInJetsIons {
       // Delta pT distribution
       registryMC.add("delta_pT_gen", "delta_pT_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
       // registryMC.add("delta_pT_RC_gen", "delta_pT_RC_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
+
+      if (doThermalToyModel) {
+        registryMC.add("thermalToy_pT_gen", "thermalToy_pT_gen", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("thermalToy_nBkg_gen", "thermalToy_nBkg_gen", HistType::kTH2F, {multAxis, numBkgParticles});
+      }
 
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -502,6 +503,14 @@ struct StrangenessInJetsIons {
       // Delta pT distribution
       registryMC.add("delta_pT_rec", "delta_pT_rec", HistType::kTH2F, {multAxis, deltaPtAxis});
 
+      if (doThermalToyModel) {
+        registryMC.add("thermalToy_pT_rec", "thermalToy_pT_rec", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("thermalToy_nBkg_rec", "thermalToy_nBkg_rec", HistType::kTH2F, {multAxis, numBkgParticles});
+        registryMC.add("chargedBkg_toy_rec_jet", "chargedBkg_toy_rec_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("chargedBkg_toy_rec_ue", "chargedBkg_toy_rec_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("charged_embedJets_rec_jet", "charged_embedJets_rec_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("charged_embedJets_rec_ue", "charged_embedJets_rec_ue", HistType::kTH2F, {multAxis, ptAxis});
+      }
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
@@ -1986,7 +1995,7 @@ struct StrangenessInJetsIons {
    * @param[in]     centrality
    * @param[in]     isReco   if true (RECO MC), do not store id -999 with set_user_index()
    */
-  void InjectThermalBackground(std::vector<fastjet::PseudoJet>& fjInput, float centrality, bool isReco = false)
+  void InjectThermalBackground(std::vector<fastjet::PseudoJet>& fjInput, std::vector<fastjet::PseudoJet>& toyTracks, float centrality, bool isReco = false)
   {
     // Fit results of charged-particle spectra in MB OO data using Levy-Tsallis
     static const std::vector<BkgFitParams> bkgTable = {
@@ -2014,9 +2023,11 @@ struct StrangenessInJetsIons {
     double etaWindow = std::fabs(configTracks.etaMax - configTracks.etaMin);
     double meanMultiplicity = currentParams.dNch_deta * etaWindow;
     int nBkgParticles = fRng.Poisson(meanMultiplicity);
-    if (!isReco)
-      registryQC.fill(HIST("thermalToy_generated_nBkg"), centrality, nBkgParticles);
-
+    if (isReco) {
+      registryMC.fill(HIST("thermalToy_nBkg_rec"), centrality, nBkgParticles);
+    } else {
+      registryMC.fill(HIST("thermalToy_nBkg_gen"), centrality, nBkgParticles);
+    }
     // Generation and embedding of background particles
     for (int i = 0; i < nBkgParticles; ++i) {
       // Compute pT using Levy-Tsallis + isotropic background
@@ -2031,12 +2042,15 @@ struct StrangenessInJetsIons {
       fastjet::PseudoJet bkgParticle(px, py, pz, energy);
 
       // ID = -999, to identify these background particles
-      if (!isReco) {
+      if (isReco) {
+        registryMC.fill(HIST("thermalToy_pT_rec"), centrality, pt);
+      } else {
         bkgParticle.set_user_index(-999);
-        registryQC.fill(HIST("thermalToy_generated_pT"), centrality, pt);
+        registryMC.fill(HIST("thermalToy_pT_gen"), centrality, pt);
       }
 
       fjInput.push_back(bkgParticle);
+      toyTracks.emplace_back(bkgParticle);
     }
   }
 
@@ -2376,6 +2390,7 @@ struct StrangenessInJetsIons {
   {
     // Define per-event particle containers
     std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<fastjet::PseudoJet> toyTracks;
     std::vector<TVector3> strHadronMomentum;
     std::vector<int> pdg;
 
@@ -2417,6 +2432,7 @@ struct StrangenessInJetsIons {
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
+      toyTracks.clear();
       strHadronMomentum.clear();
       pdg.clear();
 
@@ -2481,7 +2497,7 @@ struct StrangenessInJetsIons {
       }
 
       if (doThermalToyModel)
-        InjectThermalBackground(fjParticles, genMultiplicity);
+        InjectThermalBackground(fjParticles, toyTracks, genMultiplicity);
 
       // Skip events with no particles
       if (fjParticles.size() < 1)
@@ -2710,6 +2726,7 @@ struct StrangenessInJetsIons {
   {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<fastjet::PseudoJet> toyTracks;
     std::vector<TVector3> selectedJet;
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
@@ -2731,6 +2748,7 @@ struct StrangenessInJetsIons {
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
+      toyTracks.clear();
       selectedJet.clear();
       ue1.clear();
       ue2.clear();
@@ -2799,7 +2817,7 @@ struct StrangenessInJetsIons {
       fjTracks.clear();
 
       if (doThermalToyModel)
-        InjectThermalBackground(fjParticles, multiplicity, true);
+        InjectThermalBackground(fjParticles, toyTracks, multiplicity, true);
 
       // Reject empty events
       if (fjParticles.size() < 1)
@@ -3129,6 +3147,65 @@ struct StrangenessInJetsIons {
             }
           }
         }
+
+        // ------------------------------------------------------------------
+        // Background toy particles
+        if (doThermalToyModel) {
+          // Store charged particles reconstructed in embeded jets
+          for (auto const& track : tracksPerColl) {
+            if (!passedTrackSelectionForJetReconstruction(track))
+              continue;
+
+            const double deltaEtaJet = track.eta() - selectedJet[i].Eta();
+            const double deltaPhiJet = getDeltaPhi(track.phi(), selectedJet[i].Phi());
+            const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+
+            const double deltaEtaUe1 = track.eta() - ue1[i].Eta();
+            const double deltaPhiUe1 = getDeltaPhi(track.phi(), ue1[i].Phi());
+            const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+
+            const double deltaEtaUe2 = track.eta() - ue2[i].Eta();
+            const double deltaPhiUe2 = getDeltaPhi(track.phi(), ue2[i].Phi());
+            const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+            // Charged track in jet
+            if (deltaRJet < rJet) {
+              registryMC.fill(HIST("charged_embedJets_rec_jet"), multiplicity, track.pt());
+            }
+
+            // Charged track in UE
+            if (deltaRUe1 < rJet || deltaRUe2 < rJet) {
+              registryMC.fill(HIST("charged_embedJets_rec_ue"), multiplicity, track.pt());
+            }
+          }
+
+          // Store toy charged particles (background particles)
+          for (const auto& toyPart : toyTracks) {
+            TVector3 toyMom(toyPart.px(), toyPart.py(), toyPart.pz());
+
+            const double deltaEtaJet = toyMom.Eta() - selectedJet[i].Eta();
+            const double deltaPhiJet = getDeltaPhi(toyMom.Phi(), selectedJet[i].Phi());
+            const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+
+            const double deltaEtaUe1 = toyMom.Eta() - ue1[i].Eta();
+            const double deltaPhiUe1 = getDeltaPhi(toyMom.Phi(), ue1[i].Phi());
+            const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+
+            const double deltaEtaUe2 = toyMom.Eta() - ue2[i].Eta();
+            const double deltaPhiUe2 = getDeltaPhi(toyMom.Phi(), ue2[i].Phi());
+            const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+            // Background particles in jet
+            if (deltaRJet < rJet) {
+              registryMC.fill(HIST("chargedBkg_toy_rec_jet"), multiplicity, toyMom.Pt());
+            }
+            // Background particles in UE
+            if (deltaRUe1 < rJet || deltaRUe2 < rJet) {
+              registryMC.fill(HIST("chargedBkg_toy_rec_ue"), multiplicity, toyMom.Pt());
+            }
+          }
+        }
+        // ------------------------------------------------------------------
       }
       jetPt.clear();
     }
