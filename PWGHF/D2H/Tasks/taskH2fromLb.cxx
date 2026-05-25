@@ -41,6 +41,7 @@
 #include <TH1.h>
 
 #include <array>
+#include <string>
 #include <chrono>
 #include <cmath>
 
