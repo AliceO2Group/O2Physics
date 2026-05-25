@@ -80,6 +80,11 @@ struct HfTaskH2fromLb {
 
   framework::Service<ccdb::BasicCCDBManager> ccdb;
 
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using MCTrackCandidates = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels>;
+  using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
+
   Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
 
   HistogramRegistry QAHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -104,7 +109,6 @@ struct HfTaskH2fromLb {
     ConfigurableAxis dcaXyAxis{"dcaXyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
     ConfigurableAxis dcaZAxis{"dcaZAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
 
-    // general QA histograms
     QAHistos.add("hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
     QAHistos.add("ptGeneratedLb", "ptGeneratedLb", HistType::kTH1F, {ptAxis});
     QAHistos.add("ptAntiDeuteronPrimary", "ptAntiDeuteronPrimaryReco", HistType::kTH1F, {ptAxis});
@@ -118,7 +122,6 @@ struct HfTaskH2fromLb {
     QAHistos.add("ptAntiDeuteron", "ptAntiDeuteron", {HistType::kTH1F, {ptAxis}});
     QAHistos.add("etaAntideuteron", "etaAntideuteron", {HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
 
-    // processed events
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "ZORRO");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "sel8");
@@ -137,11 +140,6 @@ struct HfTaskH2fromLb {
       zorro.populateHistRegistry(registry, bc.runNumber());
     }
   }
-
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
-  using MCTrackCandidates = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels>;
-  using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>;
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
 
   template <typename T1>
   bool passedSingleTrackSelection(const T1& track)
