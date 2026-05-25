@@ -254,13 +254,13 @@ struct FemtoTripletTrackTrackCascade {
     hRegistry.print();
   };
 
-  void processXiSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoXis const& xis)
+  void processXiSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoXis const& /*xis*/)
   {
     tripletTrackTrackXiBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, xiPartition, cache);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiSameEvent, "Enable processing same event processing for tracks and xis", true);
 
-  void processXiSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& xis, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processXiSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     tripletTrackTrackXiBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
@@ -272,19 +272,19 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiMixedEvent, "Enable processing mixed event processing for tracks and xis", true);
 
-  void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
   {
     tripletTrackTrackXiBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, xiWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiMixedEventMc, "Enable processing mixed event processing for tracks and xis with mc information", false);
 
-  void processOmegaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoOmegas const& omegas)
+  void processOmegaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoOmegas const& /*omegas*/)
   {
     tripletTrackTrackOmegaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, omegaPartition, cache);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processOmegaSameEvent, "Enable processing same event processing for tracks and omegas", false);
 
-  void processOmegaSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& omegas, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processOmegaSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     tripletTrackTrackOmegaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
