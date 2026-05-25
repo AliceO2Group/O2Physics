@@ -173,7 +173,7 @@ template <const char* prefixTrack1Track2,
           const char* prefixTrack2V0Daughter>
 class CloseTripletRejectionTrackTrackCascade
 {
-  public:
+ public:
   CloseTripletRejectionTrackTrackCascade() = default;
   ~CloseTripletRejectionTrackTrackCascade() = default;
 
@@ -189,7 +189,7 @@ class CloseTripletRejectionTrackTrackCascade
             int absChargeTrack2)
   {
     mCtrTrack12.init(registry, specs, confCpr, absChargeTrack1, absChargeTrack2);
-    mCtrTrack1Cascade.init(registry, specsBachelor,specsV0Daughter, confCprBachelor,  confCprV0Daughter,absChargeTrack1);
+    mCtrTrack1Cascade.init(registry, specsBachelor, specsV0Daughter, confCprBachelor, confCprV0Daughter, absChargeTrack1);
     mCtrTrack2Cascade.init(registry, specsBachelor, specsV0Daughter, confCprBachelor, confCprV0Daughter, absChargeTrack2);
   }
 
