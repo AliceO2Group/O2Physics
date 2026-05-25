@@ -52,8 +52,10 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TF1.h>
 #include <TH1.h>
 #include <TPDGCode.h>
+#include <TRandom3.h>
 #include <TVector2.h>
 #include <TVector3.h>
 
@@ -126,6 +128,19 @@ struct StrangenessInJetsIons {
     ParticleOfInterest::kProtons};
   std::map<ParticleOfInterest, int> particleOfInterestDict;
 
+  // --- Variables for the thermal toy-model
+  struct BkgFitParams {
+    float centMin;    // Lower edge centrality bin
+    float centMax;    // Upper edge centrality bin
+    double mass;      // Levy-Tsallis: mass [GeV/c^2]
+    double n;         // Levy-Tsallis: n
+    double C;         // Levy-Tsallis: T (temperature)
+    double dNch_deta; // for FT0M
+  };
+  TRandom3 fRng{0};
+  TF1* fTsallisToy = nullptr;
+  // ---
+
   Configurable<std::vector<int>> particleOfInterest{"particleOfInterest", {0, 0, 0, 0, 0}, "Particles to study: [K0 and Lambda, Xi and Omega, Pion, Kaon, Proton]"};
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum reconstructed pt of the jet (GeV/c)"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter (R)"};
@@ -136,6 +151,7 @@ struct StrangenessInJetsIons {
   Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
   Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
+  Configurable<bool> doThermalToyModel{"doThermalToyModel", false, "Use the thermal toy model to embed background particles to the jet finder input list"};
   Configurable<bool> saveChargedParticleMB{"saveChargedParticleMB", false, "Store charged particle information to build inclusive spectra."};
 
   // Event selection
@@ -250,6 +266,7 @@ struct StrangenessInJetsIons {
 
     const AxisSpec ptAxis{500, 0.0, 50.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptJetAxis{100, 0.0, 100.0, "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec ptChargedAxis{10000, 0.0, 100.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec numJets{21, -0.5, 20.5, "Number of jets per collision"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
@@ -261,6 +278,8 @@ struct StrangenessInJetsIons {
     const AxisSpec dcaAxis{longLivedOptions.longLivedBinsDca, "DCA_{xy} (cm)"};
     const AxisSpec alphaArmAxis{1000, -1.0f, 1.0f, "#alpha^{arm}"};
     const AxisSpec qtarmAxis{1000, 0.0f, 0.30f, "q_{T}^{arm}"};
+    const AxisSpec numBkgParticles{500, 0.0, 500.0, "Number of particles"};
+    const AxisSpec deltaPtAxis{2400, -60.0, 60.0, "#delta #it{p}_{T} (GeV/#it{c})"};
 
     // Join enum ParticleOfInterest and the configurable vector particlesOfInterest in a map particleOfInterestDict
     const std::vector<int>& particleOnOff = particleOfInterest;
@@ -278,8 +297,18 @@ struct StrangenessInJetsIons {
       LOG(fatal) << "No particles selected. Select at least one particle." << endl;
     }
 
+    // --- Distribution for the thermal toy model
+    fTsallisToy = new TF1("fTsallisToy", LevyTsallis_Func, 0.0, 50.0, 4);
+    fTsallisToy->SetParNames("mass", "n", "C", "norm");
+    fTsallisToy->SetNpx(1000);
+    // ---
+
     // Histograms for checks
     // registryQC.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
+    if (doThermalToyModel) {
+      registryQC.add("thermalToy_generated_pT", "thermalToy_generated_pT", HistType::kTH2F, {multAxis, ptAxis});
+      registryQC.add("thermalToy_generated_nBkg", "thermalToy_generated_nBkg", HistType::kTH2F, {multAxis, numBkgParticles});
+    }
 
     // Histograms for real data
     if (doprocessData) {
@@ -303,6 +332,10 @@ struct StrangenessInJetsIons {
       // Jet counters
       registryData.add("n_jets_vs_mult_pT", "n_jets_vs_mult_pT", HistType::kTH2F, {multAxis, ptJetAxis});
       registryData.add("n_jets_vs_mult", "n_jets_vs_mult", HistType::kTH2F, {multAxis, numJets});
+
+      // Delta pT distribution
+      registryData.add("delta_pT_data", "delta_pT_data", HistType::kTH2F, {multAxis, deltaPtAxis});
+      registryData.add("delta_pT_RC_data", "delta_pT_RC_data", HistType::kTH2F, {multAxis, deltaPtAxis});
 
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
@@ -365,6 +398,10 @@ struct StrangenessInJetsIons {
       // Jet counters
       registryMC.add("n_jets_vs_mult_pT_mc_gen", "n_jets_vs_mult_pT_mc_gen", HistType::kTH2F, {multAxis, ptJetAxis});
       registryMC.add("n_jets_vs_mult_mc_gen", "n_jets_vs_mult_mc_gen", HistType::kTH2F, {multAxis, numJets});
+
+      // Delta pT distribution
+      registryMC.add("delta_pT_gen", "delta_pT_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
+      // registryMC.add("delta_pT_RC_gen", "delta_pT_RC_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
 
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -461,6 +498,9 @@ struct StrangenessInJetsIons {
       // Jet counters
       registryMC.add("n_jets_vs_mult_pT_mc_rec", "n_jets_vs_mult_pT_mc_rec", HistType::kTH2F, {multAxis, ptJetAxis});
       registryMC.add("n_jets_vs_mult_mc_rec", "n_jets_vs_mult_mc_rec", HistType::kTH2F, {multAxis, numJets});
+
+      // Delta pT distribution
+      registryMC.add("delta_pT_rec", "delta_pT_rec", HistType::kTH2F, {multAxis, deltaPtAxis});
 
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
@@ -591,7 +631,7 @@ struct StrangenessInJetsIons {
         registryDataMB.add("Proton_in_MB", "Proton_in_MB", HistType::kTHnSparseF, {multAxis, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
       }
       if (saveChargedParticleMB) {
-        registryDataMB.add("ChargedTrack_in_MB", "ChargedTrack_in_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryDataMB.add("ChargedTrack_in_MB", "ChargedTrack_in_MB", HistType::kTH2F, {multAxis, ptChargedAxis});
       }
     }
   }
@@ -1920,6 +1960,86 @@ struct StrangenessInJetsIons {
     // LOG(info) << "[AddV0sForJetReconstructionMCP] Size fjInput dopo move: " << fjInput.size();
   }
 
+  // --- LEVY-TSALLIS ---
+  // Implementation adapted from: https://github.com/alisw/AliPhysics/blob/master/PWGLF/SPECTRA/UTILS/SpectraUtils.C
+  static double LevyTsallis_Func(const double* x, const double* p)
+  {
+    double pt = x[0];
+    double mass = p[0];
+    double mt = std::sqrt(pt * pt + mass * mass);
+    double n = p[1];
+    double C = p[2];
+    double norm = p[3];
+
+    double part1 = (n - 1.) * (n - 2.);
+    double part2 = n * C * (n * C + mass * (n - 2.));
+    double part3 = part1 / part2;
+    double part4 = 1. + (mt - mass) / n / C;
+    double part5 = TMath::Power(part4, -n);
+    return pt * norm * part3 * part5;
+  }
+  // --------------------
+
+  /**
+   * @brief Inject particles of the thermal toy model into the input list for the jet finder
+   * @param[in,out] fjInput  Vector of FastJet PseudoJets where thermal background will be appended.
+   * @param[in]     centrality
+   * @param[in]     isReco   if true (RECO MC), do not store id -999 with set_user_index()
+   */
+  void InjectThermalBackground(std::vector<fastjet::PseudoJet>& fjInput, float centrality, bool isReco = false)
+  {
+    // Fit results of charged-particle spectra in MB OO data using Levy-Tsallis
+    static const std::vector<BkgFitParams> bkgTable = {
+      // centMin, centMax, mass, n, C, dNch_deta
+      {0.0, 5.0, 0.50369, 6.496, 0.1778, 126.764},
+      {5.0, 10.0, 0.51298, 6.346, 0.1724, 105.196},
+      {10.0, 20.0, 0.51757, 6.221, 0.1685, 86.0196},
+      {20.0, 30.0, 0.52036, 6.089, 0.1646, 66.2334},
+      {30.0, 50.0, 0.52361, 5.927, 0.1594, 44.3346},
+      {50.0, 100.0, 0.56123, 5.570, 0.1432, 24.30225}};
+    // {0.0, 100.0, 0.52145, 6.072, 0.1635, 37.8073}
+
+    // Extract parameters for this centrality value
+    BkgFitParams currentParams = bkgTable.back(); // fallback to last element
+    for (const auto& params : bkgTable) {
+      if (centrality >= params.centMin && centrality < params.centMax) {
+        currentParams = params;
+        break;
+      }
+    }
+
+    fTsallisToy->SetParameters(currentParams.mass, currentParams.n, currentParams.C, 1.0);
+
+    // Compute number of background particles in the event using poissonian fluctuations
+    double etaWindow = std::fabs(configTracks.etaMax - configTracks.etaMin);
+    double meanMultiplicity = currentParams.dNch_deta * etaWindow;
+    int nBkgParticles = fRng.Poisson(meanMultiplicity);
+    if (!isReco)
+      registryQC.fill(HIST("thermalToy_generated_nBkg"), centrality, nBkgParticles);
+
+    // Generation and embedding of background particles
+    for (int i = 0; i < nBkgParticles; ++i) {
+      // Compute pT using Levy-Tsallis + isotropic background
+      double pt = fTsallisToy->GetRandom(&fRng);
+      double phi = fRng.Uniform(0.0, TMath::TwoPi());
+      double eta = fRng.Uniform(configTracks.etaMin, configTracks.etaMax);
+
+      double px = pt * std::cos(phi);
+      double py = pt * std::sin(phi);
+      double pz = pt * std::sinh(eta);
+      double energy = GetEnergy(px, py, pz, currentParams.mass);
+      fastjet::PseudoJet bkgParticle(px, py, pz, energy);
+
+      // ID = -999, to identify these background particles
+      if (!isReco) {
+        bkgParticle.set_user_index(-999);
+        registryQC.fill(HIST("thermalToy_generated_pT"), centrality, pt);
+      }
+
+      fjInput.push_back(bkgParticle);
+    }
+  }
+
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
                    aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
@@ -2022,6 +2142,14 @@ struct StrangenessInJetsIons {
     std::vector<TVector3> ue2;
     std::vector<double> jetPt;
 
+    // Event multiplicity
+    float multiplicity;
+    if (centrEstimator == 0) {
+      multiplicity = collision.centFT0C();
+    } else {
+      multiplicity = collision.centFT0M();
+    }
+
     // Loop over reconstructed jets
     for (const auto& jet : jets) {
 
@@ -2035,6 +2163,10 @@ struct StrangenessInJetsIons {
       if (jetMinusBkg.pt() < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
+
+      // delta pT distribution after jet selection by pT
+      double deltaPt = jet.pt() - jetMinusBkg.pt();
+      registryData.fill(HIST("delta_pT_data"), multiplicity, deltaPt);
 
       // Calculation of perpendicular cones
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -2055,14 +2187,6 @@ struct StrangenessInJetsIons {
 
     // Fill event counter with events with at least one jet
     registryData.fill(HIST("number_of_events_data"), 7.5);
-
-    // Event multiplicity
-    float multiplicity;
-    if (centrEstimator == 0) {
-      multiplicity = collision.centFT0C();
-    } else {
-      multiplicity = collision.centFT0M();
-    }
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
@@ -2356,6 +2480,9 @@ struct StrangenessInJetsIons {
         AddV0sForJetReconstructionMCP(fjParticles, fjParticleObj, mcParticlesPerColl, mcParticles);
       }
 
+      if (doThermalToyModel)
+        InjectThermalBackground(fjParticles, genMultiplicity);
+
       // Skip events with no particles
       if (fjParticles.size() < 1)
         continue;
@@ -2391,6 +2518,10 @@ struct StrangenessInJetsIons {
 
         // Fill jet counter
         registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
+
+        // delta pT distribution after jet selection by pT
+        double deltaPt = jet.pt() - jetMinusBkg.pt();
+        registryMC.fill(HIST("delta_pT_gen"), genMultiplicity, deltaPt);
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -2667,6 +2798,9 @@ struct StrangenessInJetsIons {
       }
       fjTracks.clear();
 
+      if (doThermalToyModel)
+        InjectThermalBackground(fjParticles, multiplicity, true);
+
       // Reject empty events
       if (fjParticles.size() < 1)
         continue;
@@ -2694,6 +2828,10 @@ struct StrangenessInJetsIons {
         if (jetMinusBkg.pt() < minJetPt)
           continue;
         isAtLeastOneJetSelected = true;
+
+        // delta pT distribution after jet selection by pT
+        double deltaPt = jet.pt() - jetMinusBkg.pt();
+        registryMC.fill(HIST("delta_pT_rec"), multiplicity, deltaPt);
 
         // Perpendicular cones
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
