@@ -221,17 +221,6 @@ struct flowDirectedFlowTask {
     histos.add("hSparseAntiLambdaAvgUyQ1", "AntiLambda <u_{y}> vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
   }
 
-  float getPhiInRange(float phi)
-  {
-    while (phi <= -o2::constants::math::PI) {
-      phi += o2::constants::math::TwoPI;
-    }
-    while (phi > o2::constants::math::PI) {
-      phi -= o2::constants::math::TwoPI;
-    }
-    return phi;
-  }
-
   template <typename TCollision>
   bool eventSelected(TCollision collision)
   {   
@@ -387,9 +376,6 @@ struct flowDirectedFlowTask {
     if (std::abs(v0.yLambda()) > cfgV0Rap) {
       return false;
     }
-    if (std::abs(v0.eta()) > 0.8) {
-      return false;
-    }
     return true;
   }
 
@@ -438,12 +424,12 @@ struct flowDirectedFlowTask {
 
     const float cosThetaStar = daughterStar.Pz() / daughterStar.P();
     const float sinThetaStar = std::sqrt(std::max(0.0, 1.0 - cosThetaStar * cosThetaStar));
-    const float sinPhiStar = std::sin(getPhiInRange(phiStar));
-    const float cosPhiStar = std::cos(getPhiInRange(phiStar));
+    const float sinPhiStar = std::sin(phiStar);
+    const float cosPhiStar = std::cos(phiStar);
 
-    float polEP_A = std::sin(getPhiInRange(phiStar - psiA));
-    float polEP_C = std::sin(getPhiInRange(phiStar - psiC));
-    float polEP = std::sin(getPhiInRange(phiStar - psiFull));
+    float polEP_A = std::sin(phiStar - psiA);
+    float polEP_C = std::sin(phiStar - psiC);
+    float polEP = std::sin(phiStar - psiFull);
 
     const float qxFull = qxC - qxA;
     const float qyFull = qyC - qyA;
@@ -463,8 +449,8 @@ struct flowDirectedFlowTask {
     polEP_A /= accDen;
     polEP_C /= accDen;
 
-    const float cosPsi = std::cos(getPhiInRange(psiFull));
-    const float sinPsi = std::sin(getPhiInRange(psiFull));
+    const float cosPsi = std::cos(psiFull);
+    const float sinPsi = std::sin(psiFull);
 
     if (isLambda) {
       histos.fill(HIST("hSparseLambdaPolSPQ1"), mass, v0.pt(), polSP, centrality, q1, wgt);
@@ -538,7 +524,7 @@ struct flowDirectedFlowTask {
     float dotAC = qxA * qxC + qyA * qyC;
     float resDot = dotAC / (magA * magC);
 
-    histos.fill(HIST("hpResCosAC"), centrality, std::cos(getPhiInRange(psiA - psiC)));
+    histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC));
     histos.fill(HIST("hpResDotAC"), centrality, resDot);
     histos.fill(HIST("hpQxAQxC"), centrality, qxA * qxC);
     histos.fill(HIST("hpQyAQyC"), centrality, qyA * qyC);
@@ -562,9 +548,9 @@ struct flowDirectedFlowTask {
       histos.fill(HIST("hV1SPAQ1"), centrality, track.pt(), track.eta(), q1, v1SPA);
       histos.fill(HIST("hV1SPCQ1"), centrality, track.pt(), track.eta(), q1, v1SPC);
 
-      histos.fill(HIST("hV1EPFullQ1"), centrality, track.pt(), track.eta(), q1, std::cos(getPhiInRange(phi - psiFull)));
-      histos.fill(HIST("hV1EPAQ1"), centrality, track.pt(), track.eta(), q1, std::cos(getPhiInRange(phi - psiA)));
-      histos.fill(HIST("hV1EPCQ1"), centrality, track.pt(), track.eta(), q1, std::cos(getPhiInRange(phi - psiC)));
+      histos.fill(HIST("hV1EPFullQ1"), centrality, track.pt(), track.eta(), q1, std::cos(phi - psiFull));
+      histos.fill(HIST("hV1EPAQ1"), centrality, track.pt(), track.eta(), q1, std::cos(phi - psiA));
+      histos.fill(HIST("hV1EPCQ1"), centrality, track.pt(), track.eta(), q1, std::cos(phi - psiC));
     }
 
     for (const auto& v0 : v0s) {
