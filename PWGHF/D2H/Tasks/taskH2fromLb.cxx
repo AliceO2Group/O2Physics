@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \brief A filter task for non prompt deuterons
+/// \brief A filter task for non prompt deuterons from beauty-hadron decays
 /// \author Marta Razza marta.razza@cern.ch
 /// \author Francesca Ercolessi francesca.ercolessi@cern.ch
-/// \since Dec 17, 2025
+/// \since May 25, 2026
 
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
@@ -48,16 +48,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct H2fromLb {
+struct HfTaskH2fromLb {
 
   Zorro zorro;
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-
-  // Define a histograms and registries
-  HistogramRegistry QAHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Event filtered;; Number of events", 4, 0., 4.)};
 
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
@@ -72,8 +66,8 @@ struct H2fromLb {
   Configurable<float> cfgMaxPt{"cfgMaxPt", 5.0f, "Maximum pT cut"};
   Configurable<float> cfgMinPt{"cfgMinPt", 0.5f, "Minimum pT cut"};
   Configurable<float> cfgTPCNsigma{"cfgTPCNsigma", 4.0f, "TPC n sigma for deuteron PID"};
-  Configurable<float> cfgTOFNsigma_min{"cfgTOFNsigma_min", 3.0f, "TOF n sigma min for deuteron PID"};
-  Configurable<float> cfgTOFNsigma_max{"cfgTOFNsigma_max", 4.0f, "TOF n sigma max for deuteron PID"};
+  Configurable<float> cfgTofNsigmaMin{"cfgTofNsigmaMin", 3.0f, "TOF n sigma min for deuteron PID"};
+  Configurable<float> cfgTofNsigmaMax{"cfgTofNsigmaMax", 4.0f, "TOF n sigma max for deuteron PID"};
   Configurable<float> ptThresholdPid{"ptThresholdPid", 1.0f, "pT threshold to switch between 4 and 3 sigmas for TOF PID"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5f, "Rapidity cut"};
   // PDG codes
@@ -82,13 +76,21 @@ struct H2fromLb {
 
   int mRunNumber = 0;
   float d_bz = 0.f;
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  int mCurrentRun = -1;
 
   framework::Service<ccdb::BasicCCDBManager> ccdb;
+
+  Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
+
+  HistogramRegistry QAHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Event filtered;; Number of events", 4, 0., 4.)};
+
   void init(framework::InitContext&)
   {
-
-    ccdb->setURL("http://alice-ccdb.cern.ch"); // Set CCDB URL to get magnetic field
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -99,8 +101,8 @@ struct H2fromLb {
 
     ConfigurableAxis ptAxis{"ptAxis", {100, 0., 10.f}, "p_{T} GeV/c"};
     ConfigurableAxis nSigmaAxis{"nSigmaAxis", {200, -10.f, 10.f}, "nSigma"};
-    ConfigurableAxis DCAxyAxis{"DCAxyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
-    ConfigurableAxis DCAzAxis{"DCAzAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
+    ConfigurableAxis dcaXyAxis{"dcaXyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
+    ConfigurableAxis dcaZAxis{"dcaZAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
 
     // general QA histograms
     QAHistos.add("hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
@@ -109,8 +111,8 @@ struct H2fromLb {
     QAHistos.add("ptAntiDeuteronFromLb", "ptAntiDeuteronFromLbReco", HistType::kTH1F, {ptAxis});
     QAHistos.add("hDCAxy-Primary", "DCAxy-Primary", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
     QAHistos.add("hDCAxy-FromLb", "DCAxy-FromLb", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
-    QAHistos.add("hDCAxyVsPt", "DCAxy #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, DCAxyAxis}});
-    QAHistos.add("hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, DCAzAxis}});
+    QAHistos.add("hDCAxyVsPt", "DCAxy #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
+    QAHistos.add("hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaZAxis}});
     QAHistos.add("hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     QAHistos.add("hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     QAHistos.add("ptAntiDeuteron", "ptAntiDeuteron", {HistType::kTH1F, {ptAxis}});
@@ -122,7 +124,8 @@ struct H2fromLb {
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "sel8");
     hProcessedEvents->GetXaxis()->SetBinLabel(4, "z-vertex");
   }
-  void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc) // inspired by PWGLF/TableProducer/lambdakzerobuilder.cxx
+
+  void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
@@ -134,18 +137,15 @@ struct H2fromLb {
       zorro.populateHistRegistry(registry, bc.runNumber());
     }
   }
+
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
-  // Tables for MC processing
   using MCTrackCandidates = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels>;
   using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>;
-  // Tables for Data processing
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
 
-  // Single-Track Selection
   template <typename T1>
   bool passedSingleTrackSelection(const T1& track)
   {
-    // Single-Track Selections
     if (std::abs(track.eta()) > cfgEta)
       return false;
     if (!track.hasITS())
@@ -171,16 +171,14 @@ struct H2fromLb {
 
     return true;
   }
-  Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
-  int mCurrentRun = -1;
+
   void processData(CollisionCandidates const& collisions,
                    o2::aod::TrackAssoc const& trackIndices,
                    TrackCandidates const& tracks,
                    o2::aod::BCsWithTimestamps const&)
   {
-    for (const auto& collision : collisions) // start loop over collisions
-    {
-      if (mCurrentRun != collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber()) { // If the run is new then we need to initialize the propagator field
+    for (const auto& collision : collisions) {
+      if (mCurrentRun != collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
         mCurrentRun = collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber();
@@ -207,10 +205,8 @@ struct H2fromLb {
 
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
-      for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
-
+      for (const auto& trackId : trackIdsThisCollision) {
         const auto& track = tracks.rawIteratorAt(trackId.trackId());
-
         std::array<float, 2> dca{track.dcaXY(), track.dcaZ()};
 
         if (track.collisionId() != collision.globalIndex()) {
@@ -223,8 +219,8 @@ struct H2fromLb {
         }
 
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
-        const bool isTOFDe_min = std::abs(track.tofNSigmaDe()) > cfgTOFNsigma_min;
-        const bool isTOFDe_max = std::abs(track.tofNSigmaDe()) < cfgTOFNsigma_max;
+        const bool isTOFDe_min = std::abs(track.tofNSigmaDe()) > cfgTofNsigmaMin;
+        const bool isTOFDe_max = std::abs(track.tofNSigmaDe()) < cfgTofNsigmaMax;
 
         if (track.pt() < ptThresholdPid) {
           if (isTPCDe && isTOFDe_max) {
@@ -248,7 +244,7 @@ struct H2fromLb {
       }
     }
   }
-  PROCESS_SWITCH(H2fromLb, processData, "processData", false);
+  PROCESS_SWITCH(HfTaskH2fromLb, processData, "processData", false);
 
   void processMC(MCCollisionCandidates::iterator const&, MCTrackCandidates const& tracks, o2::aod::McParticles const&)
   {
@@ -270,9 +266,8 @@ struct H2fromLb {
           bool isFromLb = false;
           if (separateAntideuterons) {
             for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
-              if (mom.pdgCode() == pdgCodeMother) { // Lambda_b
+              if (mom.pdgCode() == pdgCodeMother) {
                 isFromLb = true;
-
                 break;
               }
             }
@@ -288,7 +283,7 @@ struct H2fromLb {
       }
     }
   }
-  PROCESS_SWITCH(H2fromLb, processMC, "processMC", true);
+  PROCESS_SWITCH(HfTaskH2fromLb, processMC, "processMC", true);
 
   void processGen(o2::aod::McCollision const&, o2::aod::McParticles const& mcParticles)
   {
@@ -296,7 +291,7 @@ struct H2fromLb {
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() == pdgCodeMother) {
         if (std::abs(mcParticle.y()) <= rapidityCut) {
-          QAHistos.fill(HIST("ptGeneratedLb"), mcParticle.pt()); // rinominato
+          QAHistos.fill(HIST("ptGeneratedLb"), mcParticle.pt());
         }
       }
 
@@ -322,11 +317,11 @@ struct H2fromLb {
       }
     }
   }
-  PROCESS_SWITCH(H2fromLb, processGen, "processGen", false);
+  PROCESS_SWITCH(HfTaskH2fromLb, processGen, "processGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<H2fromLb>(cfgc)};
+    adaptAnalysisTask<HfTaskH2fromLb>(cfgc)};
 }
