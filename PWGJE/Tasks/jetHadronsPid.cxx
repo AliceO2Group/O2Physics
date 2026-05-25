@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file jetHadronsPID.cxx
+/// \file jetHadronsPid.cxx
 /// \brief Analysis of hadrons in jets
 /// \author Leonard Lorenc, WUT Warsaw, leonard.lorenc@cern.ch
 /// \author Aleksandra Mulewicz, WUT Warsaw, aleksandra.mulewicz@cern.ch
@@ -221,7 +221,8 @@ struct jetHadronsPid {
 
   void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
   {
-    if (p.Mag2() < 1e-9) {
+    double const treshold = 1e-9;
+    if (p.Mag2() < treshold) {
       u1.SetXYZ(0, 0, 0);
       u2.SetXYZ(0, 0, 0);
       return;
