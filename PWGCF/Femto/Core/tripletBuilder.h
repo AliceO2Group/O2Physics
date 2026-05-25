@@ -16,17 +16,17 @@
 #ifndef PWGCF_FEMTO_CORE_TRIPLETBUILDER_H_
 #define PWGCF_FEMTO_CORE_TRIPLETBUILDER_H_
 
+#include "PWGCF/Femto/Core/cascadeHistManager.h"
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletCleaner.h"
-#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
 #include "PWGCF/Femto/Core/tripletProcessHelpers.h"
 #include "PWGCF/Femto/Core/v0HistManager.h"
-#include "PWGCF/Femto/Core/cascadeHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/HistogramRegistry.h>
@@ -644,8 +644,9 @@ template <modes::Cascade cascadeType,
           const char* prefixCprBachelorTrack2Me,
           const char* prefixCprV0DaughterTrack1Me,
           const char* prefixCprV0DaughterTrack2Me>
-class TripletTrackTrackCascadeBuilder{
-  public:
+class TripletTrackTrackCascadeBuilder
+{
+ public:
   TripletTrackTrackCascadeBuilder() = default;
   ~TripletTrackTrackCascadeBuilder() = default;
 
@@ -674,7 +675,7 @@ class TripletTrackTrackCascadeBuilder{
             typename T22,
             typename T23>
 
-            void init(o2::framework::HistogramRegistry* registry,
+  void init(o2::framework::HistogramRegistry* registry,
             T1 const& confCollisionBinning,
             T2 const& confTrackSelection1,
             T3 const& confTrackSelection2,
@@ -711,31 +712,31 @@ class TripletTrackTrackCascadeBuilder{
     if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
       mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mCascadeHistManager.template init<mode>(registry,  cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+      mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
 
       mTrackCleaner.init(confTrackCleaner);
       mCascadeCleaner.init(confCascadeCleaner);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
-      mCtrSe.init(registry, ctrHistSpec,cprHistSpecBachelor, cprHistSpecV0Daughter,confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
+      mCtrSe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
 
       mTripletHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
-      mCtrMe.init(registry, ctrHistSpec,cprHistSpecBachelor, cprHistSpecV0Daughter,confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
+      mCtrMe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else {
       // all three tracks are different
       mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
       mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mCascadeHistManager.template init<mode>(registry,  cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+      mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);
-      mCtrSe.init(registry, ctrHistSpec,cprHistSpecBachelor, cprHistSpecV0Daughter,confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
+      mCtrSe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
 
       mTripletHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);
-      mCtrMe.init(registry, ctrHistSpec,cprHistSpecBachelor, cprHistSpecV0Daughter,confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
+      mCtrMe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
     }
 
     // setup mixing
@@ -802,7 +803,7 @@ class TripletTrackTrackCascadeBuilder{
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe,mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTc, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -884,6 +885,7 @@ class TripletTrackTrackCascadeBuilder{
       }
     }
   }
+
  private:
   colhistmanager::CollisionHistManager mColHistManager;
   trackhistmanager::TrackHistManager<prefixTrack1> mTrackHistManager1;
