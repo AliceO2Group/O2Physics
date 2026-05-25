@@ -96,25 +96,25 @@ enum McMatchFlag : uint8_t {
   V0Unmatched
 };
 
-// Convert the KFParticle PDG code to the O2 track PID enum needed by getTrackParCovFromKFP()
+// Convert the absolute KFParticle PDG code to the O2 track PID enum needed by getTrackParCovFromKFP()
 o2::track::PID::ID getTrackPIDFromPDG(const int pdg)
 {
   switch (std::abs(pdg)) {
-    case 211:
+    case kPiPlus:
       return o2::track::PID::Pion;
-    case 321:
+    case kKPlus:
       return o2::track::PID::Kaon;
-    case 2212:
+    case kProton:
       return o2::track::PID::Proton;
-    case 3122:
+    case kLambda0:
       return o2::track::PID::Lambda;
-    case 3312:
+    case kXiMinus:
       return o2::track::PID::XiMinus;
-    case 3334:
+    case kOmegaMinus:
       return o2::track::PID::OmegaMinus;
     default:
       LOGF(fatal, "Unsupported PDG code %d in getTrackPIDFromPDG()", pdg);
-      return o2::track::PID::Pion; 
+      return o2::track::PID::Pion;
   }
 }
 
