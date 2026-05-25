@@ -75,6 +75,7 @@ struct H2fromLb {
   Configurable<float> cfgTOFNsigma_min{"cfgTOFNsigma_min", 3.0f, "TOF n sigma min for deuteron PID"};
   Configurable<float> cfgTOFNsigma_max{"cfgTOFNsigma_max", 4.0f, "TOF n sigma max for deuteron PID"};
   Configurable<float> ptThresholdPid{"ptThresholdPid", 1.0f, "pT threshold to switch between 4 and 3 sigmas for TOF PID"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5f, "Rapidity cut"};
   // PDG codes
   Configurable<int> pdgCodeMother{"pdgCodeMother", -5122, "PDG code of the mother particle (default: anti-Lambda_b)"};
   Configurable<int> pdgCodeDaughter{"pdgCodeDaughter", -1000010020, "PDG code of the daughter particle (default: anti-deuteron)"};
@@ -262,13 +263,13 @@ struct H2fromLb {
 
       auto mcParticle = track.mcParticle();
       if (mcParticle.pdgCode() == pdgCodeDaughter) {
-        if (std::abs(mcParticle.y()) > 0.5) {
+        if (std::abs(mcParticle.y()) > rapidityCut) {
           continue;
         }
         if (mcParticle.isPhysicalPrimary()) {
           bool isFromLb = false;
           if (separateAntideuterons) {
-            for (auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
+            for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
               if (mom.pdgCode() == pdgCodeMother) { // Lambda_b
                 isFromLb = true;
 
@@ -294,18 +295,18 @@ struct H2fromLb {
     hProcessedEvents->Fill(0.5);
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() == pdgCodeMother) {
-        if (std::abs(mcParticle.y()) <= 0.5) {
+        if (std::abs(mcParticle.y()) <= rapidityCut) {
           QAHistos.fill(HIST("ptGeneratedLb"), mcParticle.pt()); // rinominato
         }
       }
 
       if (mcParticle.pdgCode() == pdgCodeDaughter) {
-        if (std::abs(mcParticle.y()) > 0.5)
+        if (std::abs(mcParticle.y()) > rapidityCut)
           continue;
 
         bool isFromLb = false;
         if (mcParticle.has_mothers()) {
-          for (auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
+          for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
             if (mom.pdgCode() == pdgCodeMother) {
               isFromLb = true;
               break;
@@ -327,5 +328,5 @@ struct H2fromLb {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<H2fromLb>(cfgc, TaskName{"task-h2-from-Lb"})};
+    adaptAnalysisTask<H2fromLb>(cfgc)};
 }
