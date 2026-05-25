@@ -168,3 +168,11 @@ o2physics_add_dpl_workflow(task-hidden-charm
                     SOURCES taskHiddenCharm.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-h2-from-lb
+                    SOURCES taskH2fromLb.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+                    
+                    
+
