@@ -968,7 +968,8 @@ class PairHistManager
     const double tPt = std::sqrt(tPx * tPx + tPy * tPy);
     const double tMt = std::sqrt(tE * tE - tPz * tPz);
 
-    if (tPt < 1e-9 || tMt < 1e-9) {
+    static constexpr double kMinTransverseMomentum = 1e-9;
+    if (tPt < kMinTransverseMomentum || tMt < kMinTransverseMomentum) {
       mQout = mQside = mQlong = 0.f;
       return;
     }
