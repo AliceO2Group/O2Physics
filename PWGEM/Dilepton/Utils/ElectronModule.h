@@ -276,9 +276,9 @@ struct cfgDFeT : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "tpcNSigmaKa", "signedMassLH", "cpa", "cpaXY", "dcaLH", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "tpcNSigmaKa", "signedMassLH", "dcaLH", "cpa", "cpaXY", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -293,9 +293,9 @@ struct cfgDFeV0 : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "cpa", "cpaXY", "dcaLH", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "dcaLH", "cpa", "cpaXY", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -310,9 +310,9 @@ struct cfgDFeC : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "cpa", "cpaXY", "dcaLH", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "dcaLH", "cpa", "cpaXY", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -330,11 +330,11 @@ class ElectronModule
     // destructor
   }
 
-  struct looseElectron {
-    float pt{1e+10};
-    float eta{1e+10};
-    float phi{1e+10};
-  };
+  // struct looseElectron {
+  //   float pt{1e+10};
+  //   float eta{1e+10};
+  //   float phi{1e+10};
+  // };
 
   template <typename TElectronCut, typename TElectronPFCut, typename THadronCut, typename TV0Cut, typename TCascadeCut, typename TDFConfigET, typename TDFConfigEV0, typename TDFConfigEC, typename TInitContext, typename TCCDB, typename TTOFResponse>
   void init(TElectronCut const& eCut, TElectronPFCut const& ePFCut, THadronCut const& hCut, TV0Cut const& v0Cut, TCascadeCut const& cascadeCut, TDFConfigET const& cfgET, TDFConfigEV0 const& cfgEV0, TDFConfigEC const& cfgEC, TInitContext& initContext, TCCDB& ccdb, TTOFResponse const& tofResponse, std::string const& ccdburl)
@@ -402,6 +402,7 @@ class ElectronModule
 
     // initialize MLResponse
     if (fElectronCut.usePIDML) {
+      LOGF(info, "loading ONNX for ML PID");
       static constexpr int nClassesMl = 2;
       const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
       const std::vector<std::string> labelsClasses = {"Background", "Signal"};
@@ -426,9 +427,10 @@ class ElectronModule
     } // end of ML PID
 
     if (fConfigDFeT.useML) {
+      LOGF(info, "loading ONNX for SCT eT");
       static constexpr int nClassesMl = 4;
       const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
-      const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
+      const std::vector<std::string> labelsClasses = {"background", "prompthc", "nonprompthc", "hb"};
       const uint32_t nBinsMl = fConfigDFeT.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
       double cutsMlArr[nBinsMl][nClassesMl];
@@ -452,9 +454,10 @@ class ElectronModule
     } // end of ML SCTeT
 
     if (fConfigDFeV0.useML) {
+      LOGF(info, "loading ONNX for SCT eV0");
       static constexpr int nClassesMl = 4;
       const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
-      const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
+      const std::vector<std::string> labelsClasses = {"background", "prompthc", "nonprompthc", "hb"};
       const uint32_t nBinsMl = fConfigDFeV0.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
       double cutsMlArr[nBinsMl][nClassesMl];
@@ -478,9 +481,10 @@ class ElectronModule
     } // end of ML SCTeV0
 
     if (fConfigDFeC.useML) {
-      static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
-      const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
+      LOGF(info, "loading ONNX for SCT eC");
+      static constexpr int nClassesMl = 3;
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
+      const std::vector<std::string> labelsClasses = {"background", "prompthc", "nonprompthc"};
       const uint32_t nBinsMl = fConfigDFeC.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
       double cutsMlArr[nBinsMl][nClassesMl];
@@ -488,7 +492,6 @@ class ElectronModule
         cutsMlArr[i][0] = 0.0;
         cutsMlArr[i][1] = 0.0;
         cutsMlArr[i][2] = 0.0;
-        cutsMlArr[i][3] = 0.0;
       }
       o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
 
@@ -1348,7 +1351,11 @@ class ElectronModule
   template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TTrackAssoc, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc, typename TPresliceV0, typename TPresliceCascade>
   void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TTrackAssoc const& trackIndices, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc)
   {
-    initCCDB(bcs.begin());
+    if (bcs.size() == 0) {
+      return;
+    }
+    auto bc = bcs.begin();
+    initCCDB(bc);
 
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices, cache, perColTrack, trackIndicesPerCollision);
 
@@ -1625,10 +1632,10 @@ class ElectronModule
         products.electronPFTable(pfb);
 
         // perform SCT from here
-        std::vector<float> bdtScorePrompt;
-        std::vector<float> bdtScorePromptHc;
-        std::vector<float> bdtScoreNonpromptHc;
-        std::vector<float> bdtScoreHb;
+        std::vector<uint8_t> bdtScorePrompt;
+        std::vector<uint8_t> bdtScorePromptHc;
+        std::vector<uint8_t> bdtScoreNonpromptHc;
+        std::vector<uint8_t> bdtScoreHb;
         std::vector<uint8_t> hadronType;
 
         bdtScorePrompt.reserve(hadronIds.size() + k0sIds.size() + lambdaIds.size() + antilambdaIds.size());
@@ -1674,15 +1681,11 @@ class ElectronModule
               pbin = static_cast<int>(fConfigDFeT.binsMl.value.size()) - 2;
             }
 
-            float probaPrompt = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[0];
-            float probaPromptHc = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[1];
-            float probaNonpromptHc = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[2];
-            float probaHb = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[3];
-
-            bdtScorePrompt.emplace_back(probaPrompt);
-            bdtScorePromptHc.emplace_back(probaPromptHc);
-            bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-            bdtScoreHb.emplace_back(probaHb);
+            auto vecProb = mlResponseSCTeT.getModelOutput(inputFeatures, pbin);
+            bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+            bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+            bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+            bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
             hadronType.emplace_back(0);
           }
         } // end of charged track loop
@@ -1717,6 +1720,7 @@ class ElectronModule
             o2::analysis::pwgem::dilepton::sct::candidate candidate;
             fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
             candidate.ptL = trackParCov.getPt();
+            candidate.massH = o2::constants::physics::MassK0Short;
 
             std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
             float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
@@ -1728,14 +1732,11 @@ class ElectronModule
               pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
             }
 
-            float probaPrompt = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[0];
-            float probaPromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[1];
-            float probaNonpromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[2];
-            float probaHb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[3];
-            bdtScorePrompt.emplace_back(probaPrompt);
-            bdtScorePromptHc.emplace_back(probaPromptHc);
-            bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-            bdtScoreHb.emplace_back(probaHb);
+            auto vecProb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin);
+            bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+            bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+            bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+            bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
             hadronType.emplace_back(1);
           }
         } // end of k0s loop
@@ -1771,6 +1772,7 @@ class ElectronModule
               o2::analysis::pwgem::dilepton::sct::candidate candidate;
               fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
               candidate.ptL = trackParCov.getPt();
+              candidate.massH = o2::constants::physics::MassLambda;
 
               std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
@@ -1782,14 +1784,11 @@ class ElectronModule
                 pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
               }
 
-              float probaPrompt = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
+              auto vecProb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin);
+              bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+              bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+              bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+              bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
               hadronType.emplace_back(2);
             }
           } // end of lambda loop
@@ -1825,6 +1824,7 @@ class ElectronModule
               o2::analysis::pwgem::dilepton::sct::candidate candidate;
               fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
               candidate.ptL = trackParCov.getPt();
+              candidate.massH = o2::constants::physics::MassXiMinus;
 
               std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
@@ -1836,14 +1836,11 @@ class ElectronModule
                 pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
               }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
+              auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+              bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+              bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+              bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+              bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
               hadronType.emplace_back(4);
             }
           } // end of Xi- loop
@@ -1879,6 +1876,7 @@ class ElectronModule
               o2::analysis::pwgem::dilepton::sct::candidate candidate;
               fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
               candidate.ptL = trackParCov.getPt();
+              candidate.massH = o2::constants::physics::MassOmegaMinus;
 
               std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
@@ -1890,14 +1888,11 @@ class ElectronModule
                 pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
               }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
+              auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+              bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+              bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+              bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+              bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
               hadronType.emplace_back(6);
             }
           } // end of Omega- loop
@@ -1933,6 +1928,7 @@ class ElectronModule
               o2::analysis::pwgem::dilepton::sct::candidate candidate;
               fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
               candidate.ptL = trackParCov.getPt();
+              candidate.massH = o2::constants::physics::MassLambda;
 
               std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
@@ -1944,14 +1940,11 @@ class ElectronModule
                 pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
               }
 
-              float probaPrompt = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
+              auto vecProb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin);
+              bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+              bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+              bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+              bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
               hadronType.emplace_back(3);
             }
           } // end of antilambda loop
@@ -1987,6 +1980,7 @@ class ElectronModule
               o2::analysis::pwgem::dilepton::sct::candidate candidate;
               fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
               candidate.ptL = trackParCov.getPt();
+              candidate.massH = o2::constants::physics::MassXiMinus;
 
               std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
@@ -1998,14 +1992,11 @@ class ElectronModule
                 pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
               }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
+              auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+              bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+              bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+              bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+              bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
               hadronType.emplace_back(5);
             }
           } // end of Xi- loop
@@ -2041,6 +2032,7 @@ class ElectronModule
               o2::analysis::pwgem::dilepton::sct::candidate candidate;
               fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
               candidate.ptL = trackParCov.getPt();
+              candidate.massH = o2::constants::physics::MassOmegaMinus;
 
               std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
@@ -2052,14 +2044,11 @@ class ElectronModule
                 pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
               }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
+              auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+              bdtScorePrompt.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+              bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+              bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+              bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
               hadronType.emplace_back(7);
             }
           } // end of Omega- loop
@@ -2108,37 +2097,36 @@ class ElectronModule
   }
 
   template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TMCParticles, typename TProducts, typename THistoregistry>
-  void processWithoutTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCParticles const&, TProducts&, THistoregistry&)
+  void processWithoutTTCA(TBCs const&, TCollisions const&, TTracks const&, TV0s const&, TCascades const&, TMCParticles const&, TProducts&, THistoregistry&)
   {
     LOGF(info, "processWithoutTTCA is not supported. Bye.");
-    return;
 
-    initCCDB(bcs.begin());
-    // calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
+    // initCCDB(bcs.begin());
+    // // calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
-    for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<TBCs>();
-      initCCDB(bc);
+    // for (const auto& collision : collisions) {
+    //   auto bc = collision.template bc_as<TBCs>();
+    //   initCCDB(bc);
 
-      if constexpr (isMC) {
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-      }
+    //   if constexpr (isMC) {
+    //     if (!collision.has_mcCollision()) {
+    //       continue;
+    //     }
+    //   }
 
-      if (!collision.isSelected()) {
-        continue;
-      }
+    //   if (!collision.isSelected()) {
+    //     continue;
+    //   }
 
-      if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
-          continue;
-        }
-      }
+    //   if constexpr (isTriggerAnalysis) {
+    //     if (collision.swtaliastmp_raw() == 0) {
+    //       continue;
+    //     }
+    //   }
 
-    } // end of collision loop
+    // } // end of collision loop
 
-    clear();
+    // clear();
   }
 
   void clear()
@@ -2180,7 +2168,6 @@ class ElectronModule
     candidate.signLH = 0;
     candidate.dcaLH = pair.dca2legs;
     candidate.massLH = pair.mass;
-    candidate.ptLH = pair.pt;
     candidate.signedMassLH = pair.mass;
     candidate.cpa = pair.cospa;
     candidate.cpaXY = pair.cospaXY;
