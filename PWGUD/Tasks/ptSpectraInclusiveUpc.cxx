@@ -64,10 +64,6 @@ struct PtSpectraInclusiveUpc {
   using TC = TCs::iterator;
   using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
-  const int codePion = 211;
-  const int codeKaon = 321;
-  const int codeProton = 2212;
-
   const double etaMax = 0.9;
   const double yMax = 0.9;
   const double ptMin = 0.1;
@@ -442,11 +438,11 @@ struct PtSpectraInclusiveUpc {
     }
   }
 
-  PROCESS_SWITCH(PtSpectraInclusiveUpc, processSim, "processSim", true);
+  PROCESS_SWITCH(PtSpectraInclusiveUpc, processSim, "processSim", false);
 
   PROCESS_SWITCH(PtSpectraInclusiveUpc, processReco, "processReco", true);
 
-  PROCESS_SWITCH(PtSpectraInclusiveUpc, processData, "processData", true);
+  PROCESS_SWITCH(PtSpectraInclusiveUpc, processData, "processData", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
