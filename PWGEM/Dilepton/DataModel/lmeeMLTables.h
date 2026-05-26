@@ -201,7 +201,7 @@ DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of
 } // namespace emmlevent
 
 DECLARE_SOA_TABLE(EMMLEvents, "AOD", "EMMLEVENT", //!
-                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
+                  o2::soa::Index<>, collision::Chi2, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
 // iterators
 using EMMLEvent = EMMLEvents::iterator;
 
