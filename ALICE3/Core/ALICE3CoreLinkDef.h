@@ -13,6 +13,5 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class o2::pid::tof::TOFResoALICE3 + ;
 #pragma link C++ class std::vector < std::vector < unsigned int>> + ;
 #pragma link C++ class std::vector < std::vector < std::uint32_t>> + ;

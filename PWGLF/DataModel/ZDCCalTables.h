@@ -85,5 +85,21 @@ DECLARE_SOA_TABLE(ZDCEnergyTables, "AOD", "ZDCENERGY",
 
 using ZDCEnergyTable = ZDCEnergyTables::iterator;
 
+// Extra optional linked table for time information.
+// It only stores timestamp and relative time, linked back to ZDCCalTables.
+namespace zdctimetable
+{
+DECLARE_SOA_INDEX_COLUMN(ZDCCalTable, zdcCalTable);
+
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t); // bc.timestamp(), in ms
+DECLARE_SOA_COLUMN(TimeMin, timeMin, float);        // time from first event seen in this run, in minutes
+} // namespace zdctimetable
+
+DECLARE_SOA_TABLE(ZDCTimeTables, "AOD", "ZDCTIME",
+                  zdctimetable::ZDCCalTableId,
+                  zdctimetable::Timestamp,
+                  zdctimetable::TimeMin);
+
+using ZDCTimeTable = ZDCTimeTables::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_ZDCCALTABLES_H_

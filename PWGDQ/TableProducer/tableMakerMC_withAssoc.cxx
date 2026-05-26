@@ -1041,12 +1041,6 @@ struct TableMakerMC {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
-        if (fConfigVariousOptions.fUseML.value) {
-          std::vector<float> output;
-          std::vector<float> inputML = matchingMlResponse.getInputFeaturesTest(muon);
-          matchingMlResponse.isSelectedMl(inputML, 0, output);
-          chi2 = output[0];
-        }
         if (mCandidates.find(muonID) == mCandidates.end()) {
           mCandidates[muonID] = {chi2, muon.globalIndex()};
         } else {
@@ -1078,7 +1072,7 @@ struct TableMakerMC {
           muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
         }
         std::vector<float> output;
-        std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, collision);
+        std::vector<float> inputML = matchingMlResponse.getInputFeatures(muon, mfttrack, muontrack, mftprop, muonprop, collision);
         matchingMlResponse.isSelectedMl(inputML, 0, output);
         float score = output[0];
         if (mCandidates.find(muonID) == mCandidates.end()) {

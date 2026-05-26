@@ -454,6 +454,7 @@ struct checkMCPairTemplate {
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2l_diffb/"); // LS
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2c2l/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2cc2l/");
+    fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2ll/");
 
     // for charmed hadrons // create 28 combinations
     static constexpr std::string_view charmed_mesons[] = {"Dplus", "D0", "Dsplus"}; // 411, 421, 431
@@ -2517,6 +2518,9 @@ struct checkMCPairTemplate {
           break;
         case static_cast<int>(EM_HFeeType::kBCCe_BCCe):
           fillGenHistograms<21>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2l_b2cc2l
+          break;
+        case static_cast<int>(EM_HFeeType::kBCCee):
+          fillGenHistograms<22>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2ll
           break;
         default:
           break;

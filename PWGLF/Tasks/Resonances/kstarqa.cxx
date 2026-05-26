@@ -101,6 +101,7 @@ struct Kstarqa {
     Configurable<bool> isapplypTdepPIDTOF{"isapplypTdepPIDTOF", false, "Apply pT dependent PID for TOF"};
     Configurable<bool> isApplyParticleMID{"isApplyParticleMID", false, "Apply particle misidentification"};
     Configurable<bool> isApplyParticleMIDPtDep{"isApplyParticleMIDPtDep", false, "Apply pT dependent MID selection"};
+    Configurable<bool> isApplyParticleMIDPtDep2{"isApplyParticleMIDPtDep2", false, "Apply pT dependent MID selection (nSigma less of contamination lt nSigma of signal)"};
     Configurable<bool> allGenEvents{"allGenEvents", false, "Fill all generated events in MC for signal loss calculations"};
 
     Configurable<bool> isApplyDeepAngle{"isApplyDeepAngle", false, "Deep Angle cut"};
@@ -670,7 +671,7 @@ struct Kstarqa {
             return true;
           }
         } else {
-          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutCombinedPi && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutCombinedPi) {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutTOFPi && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi) {
             return true;
           }
         }
@@ -693,7 +694,7 @@ struct Kstarqa {
             return true;
           }
         } else {
-          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutCombinedKa && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutCombinedKa) {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutTOFKa && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa) {
             return true;
           }
         }
@@ -821,6 +822,25 @@ struct Kstarqa {
       }
     } else if (PID == PIDParticle::kKaon) {
       if (candidate.pt() >= ptCut07 && candidate.pt() < ptCut2p5 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCMID) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionMIDPtDep2(const T& candidate, int PID)
+  {
+    const float ptCut1 = 1.0f;
+    const float ptCut2p5 = 2.5f;
+    const float ptCut07 = 0.7f;
+
+    if (PID == PIDParticle::kPion) {
+      if (candidate.pt() >= ptCut1 && candidate.pt() < ptCut2p5 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
+        return true;
+      }
+    } else if (PID == PIDParticle::kKaon) {
+      if (candidate.pt() >= ptCut07 && candidate.pt() < ptCut2p5 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
         return true;
       }
     }
@@ -1184,6 +1204,13 @@ struct Kstarqa {
           continue;
       }
 
+      if (configGp.isApplyParticleMIDPtDep2) {
+        if (selectionMIDPtDep2(track1, 0)) // Kaon misidentified as pion
+          continue;
+        if (selectionMIDPtDep2(track2, 1)) // Pion misidentified as kaon
+          continue;
+      }
+
       rEventSelection.fill(HIST("tracksCheckData"), 5.5);
 
       if (cQAplots) {
@@ -1327,6 +1354,13 @@ struct Kstarqa {
               continue;
           }
 
+          if (configGp.isApplyParticleMIDPtDep2) {
+            if (selectionMIDPtDep2(t1, 0)) // Kaon misidentified as pion
+              continue;
+            if (selectionMIDPtDep2(t2, 1)) // Pion misidentified as kaon
+              continue;
+          }
+
           if (!selectionPair(t1, t2)) {
             continue;
           }
@@ -1403,6 +1437,13 @@ struct Kstarqa {
             if (selectionMIDPtDep(t1, 0)) // Kaon misidentified as pion
               continue;
             if (selectionMIDPtDep(t2, 1)) // Pion misidentified as kaon
+              continue;
+          }
+
+          if (configGp.isApplyParticleMIDPtDep2) {
+            if (selectionMIDPtDep2(t1, 0)) // Kaon misidentified as pion
+              continue;
+            if (selectionMIDPtDep2(t2, 1)) // Pion misidentified as kaon
               continue;
           }
 
@@ -1553,6 +1594,13 @@ struct Kstarqa {
         if (selectionMIDPtDep(track1, 0)) // Kaon misidentified as pion
           continue;
         if (selectionMIDPtDep(track2, 1)) // Pion misidentified as kaon
+          continue;
+      }
+
+      if (configGp.isApplyParticleMIDPtDep2) {
+        if (selectionMIDPtDep2(track1, 0)) // Kaon misidentified as pion
+          continue;
+        if (selectionMIDPtDep2(track2, 1)) // Pion misidentified as kaon
           continue;
       }
 
@@ -2124,6 +2172,13 @@ struct Kstarqa {
                 if (selectionMIDPtDep(track2, 0)) // Pion misidentified as kaon
                   continue;
               }
+
+              if (configGp.isApplyParticleMIDPtDep2) {
+                if (selectionMIDPtDep2(track1, 1)) // Kaon misidentified as pion
+                  continue;
+                if (selectionMIDPtDep2(track2, 0)) // Pion misidentified as kaon
+                  continue;
+              }
               rEventSelection.fill(HIST("recMCparticles"), 13.5);
 
               // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > configGp.ctrackRapidity)
@@ -2167,6 +2222,13 @@ struct Kstarqa {
                 if (selectionMIDPtDep(track1, 0)) // Kaon misidentified as pion
                   continue;
                 if (selectionMIDPtDep(track2, 1)) // Pion misidentified as kaon
+                  continue;
+              }
+
+              if (configGp.isApplyParticleMIDPtDep2) {
+                if (selectionMIDPtDep2(track1, 0)) // Kaon misidentified as pion
+                  continue;
+                if (selectionMIDPtDep2(track2, 1)) // Pion misidentified as kaon
                   continue;
               }
 
@@ -2398,6 +2460,13 @@ struct Kstarqa {
               if (selectionMIDPtDep(track1, 1)) // Pion misidentified as kaon
                 continue;
               if (selectionMIDPtDep(track2, 0)) // Kaon misidentified as pion
+                continue;
+            }
+
+            if (configGp.isApplyParticleMIDPtDep2) {
+              if (selectionMIDPtDep2(track1, 1)) // Pion misidentified as kaon
+                continue;
+              if (selectionMIDPtDep2(track2, 0)) // Kaon misidentified as pion
                 continue;
             }
 

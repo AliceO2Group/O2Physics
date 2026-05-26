@@ -173,8 +173,8 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandGenInfo> entryDsCandGenInfo;
   Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
   Produces<aod::HfcRedCollisions> collReduced;
-  Produces<aod::DsCandReduceds> candReduced;
-  Produces<aod::DsCandSelInfos> candSelInfo;
+  Produces<aod::HcCandReduceds> candReduced;
+  Produces<aod::HcCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
   Produces<aod::AssocTrackSels> assocTrackSelInfo;
   Produces<aod::AssocTrackPids> assocTrackPidInfo;
