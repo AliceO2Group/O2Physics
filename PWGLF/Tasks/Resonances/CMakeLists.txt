@@ -318,3 +318,8 @@ o2physics_add_dpl_workflow(lambda1520-analysis-po
     SOURCES lambda1520analysispo.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(delta-analysis-1232
+    SOURCES deltaanalysis1232.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
