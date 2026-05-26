@@ -96,6 +96,28 @@ enum McMatchFlag : uint8_t {
   V0Unmatched
 };
 
+// Convert the absolute KFParticle PDG code to the O2 track PID enum needed by getTrackParCovFromKFP()
+o2::track::PID::ID getTrackPIDFromPDG(const int pdg)
+{
+  switch (std::abs(pdg)) {
+    case kPiPlus:
+      return o2::track::PID::Pion;
+    case kKPlus:
+      return o2::track::PID::Kaon;
+    case kProton:
+      return o2::track::PID::Proton;
+    case kLambda0:
+      return o2::track::PID::Lambda;
+    case kXiMinus:
+      return o2::track::PID::XiMinus;
+    case kOmegaMinus:
+      return o2::track::PID::OmegaMinus;
+    default:
+      LOGF(fatal, "Unsupported PDG code %d in getTrackPIDFromPDG()", pdg);
+      return o2::track::PID::Pion;
+  }
+}
+
 // Reconstruction of omegac0 and xic0 candidates
 struct HfCandidateCreatorXic0Omegac0 {
   Produces<aod::HfCandToXiPi> rowCandToXiPi;
@@ -959,12 +981,16 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfBachKaonToOmega, o2::track::PID::Kaon, bachCharge); // Cascade bach kaon
       omegaDauChargedTrackParCov.setAbsCharge(1);
-      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, kfOmegaToOmegaC.GetPDG(), bachCharge);
+      o2::track::PID::ID pidCasc = getTrackPIDFromPDG(kfOmegaToOmegaC.GetPDG());
+      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, pidCasc, bachCharge);
       trackCasc.setAbsCharge(1);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1); // V0 postive daughter
+      o2::track::PID::ID pidV0Dau0 = getTrackPIDFromPDG(kfPos.GetPDG());
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, pidV0Dau0, +1); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1); // V0 negtive daughter
+
+      o2::track::PID::ID pidV0Dau1 = getTrackPIDFromPDG(kfNeg.GetPDG());
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, pidV0Dau1, -1); // V0 negative daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
@@ -1452,12 +1478,17 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       xiDauChargedTrackParCov = getTrackParCovFromKFP(kfBachPionToXi, o2::track::PID::Pion, bachCharge); // Cascade bach pion
       xiDauChargedTrackParCov.setAbsCharge(1);
-      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfXiToXiC, kfXiToXiC.GetPDG(), bachCharge);
+
+      o2::track::PID::ID pidCasc = getTrackPIDFromPDG(kfXiToXiC.GetPDG());
+      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfXiToXiC, pidCasc, bachCharge);
       trackCasc.setAbsCharge(1);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1); // V0 postive daughter
+      o2::track::PID::ID pidV0Dau0 = getTrackPIDFromPDG(kfPos.GetPDG());
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, pidV0Dau0, +1); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1); // V0 negtive daughter
+
+      o2::track::PID::ID pidV0Dau1 = getTrackPIDFromPDG(kfNeg.GetPDG());
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, pidV0Dau1, -1); // V0 negative daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
