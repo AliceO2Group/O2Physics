@@ -34,6 +34,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import subprocess as sp  # nosec B404
 import sys
 
@@ -81,11 +82,11 @@ def load_workflows_from_json():
     return db_wf
 
 
-def format_table_name(description: str, subspec: int):
-    """Format table description name, including potential versions."""
-    if not subspec:
-        return description
-    return f"{description}_{subspec:03d}"
+def format_table_name(description: str, subspec: int, origin: str):
+    """Format table description name, including origin and potential versions."""
+    if subspec > 0:
+        description += f"_{subspec:03d}"
+    return f"{origin}/{description}"
 
 
 def get_devices(specs_wf: dict):
@@ -101,7 +102,9 @@ def get_inputs(specs_wf: dict, device=""):
         if device and dev["name"] != device:
             continue
         list_inputs += [
-            format_table_name(i["description"], i["subspec"]) for i in dev["inputs"] if i["origin"] == "AOD"
+            format_table_name(i["description"], i["subspec"], i["origin"])
+            for i in dev["inputs"]
+            if i["origin"].startswith(("AOD", "EMB"))
         ]
     return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
@@ -115,7 +118,9 @@ def get_outputs(specs_wf: dict, device=""):
         if device and dev["name"] != device:
             continue
         list_outputs += [
-            format_table_name(i["description"], i["subspec"]) for i in dev["outputs"] if i["origin"] == "AOD"
+            format_table_name(i["description"], i["subspec"], i["origin"])
+            for i in dev["outputs"]
+            if i["origin"].startswith(("AOD", "EMB"))
         ]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
@@ -229,7 +234,7 @@ def get_tree_for_table(tab: str, dic_wf_all: dict, dic_wf_tree=None, case_sensit
             for p in producers:
                 get_tree_for_workflow(p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max, reverse)
     else:
-        print(f'No {"consumers" if reverse else "producers"} found')
+        print(f"No {'consumers' if reverse else 'producers'} found")
     return dic_wf_tree
 
 
@@ -272,7 +277,7 @@ def main():
         dest="exclude",
         type=str,
         nargs="+",
-        help="tables and workflows to exclude",
+        help="name patterns of tables and workflows to exclude",
     )
     parser.add_argument(
         "-l",
@@ -299,7 +304,7 @@ def main():
     dic_wf_all_simple = {}
     for wf, dic_wf in dic_wf_all_full.items():
         # Skip excluded workflows
-        if list_exclude and wf in list_exclude:
+        if list_exclude and any(re.search(pattern, wf) for pattern in list_exclude):
             continue
         dic_wf_all_simple[wf] = {}
         list_dev = get_devices(dic_wf)
@@ -309,8 +314,8 @@ def main():
             list_outputs = get_outputs(dic_wf, dev)
             # Skip excluded tables
             if list_exclude:
-                list_inputs = [i for i in list_inputs if i not in list_exclude]
-                list_outputs = [o for o in list_outputs if o not in list_exclude]
+                list_inputs = [i for i in list_inputs if not any(re.search(pattern, i) for pattern in list_exclude)]
+                list_outputs = [o for o in list_outputs if not any(re.search(pattern, o) for pattern in list_exclude)]
             dic_wf_all_simple[wf][dev]["inputs"] = list_inputs
             dic_wf_all_simple[wf][dev]["outputs"] = list_outputs
     # print_workflows(dic_wf_all_simple)
@@ -323,9 +328,11 @@ def main():
     for t, reverse in zip((tables, tables_rev), (False, True)):
         if t:
             for table in t:
-                print(f"\nTable: {table}\n")
                 if not table:
                     msg_fatal("Bad table")
+                if "/" not in table:
+                    table = "AOD/" + table
+                print(f"\nTable: {table}\n")
                 # producers = get_table_producers(table, dic_wf_all_simple, case_sensitive)
                 # if not producers:
                 #     print("No producers found")
@@ -389,12 +396,12 @@ def main():
             inputs = get_workflow_inputs(wf, dic_deps)
             outputs = get_workflow_outputs(wf, dic_deps)
             list_tables += inputs + outputs
-            nodes_in = " ".join(inputs)
-            nodes_out = " ".join(outputs)
+            nodes_in = " ".join(inputs).replace("/", "_")
+            nodes_out = " ".join(outputs).replace("/", "_")
             dot_deps += f"  {{{nodes_in}}} -> {node_wf} -> {{{nodes_out}}}\n"
         list_tables = list(dict.fromkeys(list_tables))  # Remove duplicities
         for table in list_tables:
-            dot_tables += f"    {table}\n"
+            dot_tables += f'    {table.replace("/", "_")} [label="{table}"]\n'
         dot_tables += "  }\n"
         dot_workflows += "  }\n"
         dot += dot_workflows + dot_tables + dot_deps

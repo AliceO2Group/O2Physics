@@ -16,14 +16,12 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
-#include "GFW.h"
+#include <Framework/Logger.h>
 
-#include "Framework/Logger.h"
-
-#include <TMath.h>
-#include <TObject.h>
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>

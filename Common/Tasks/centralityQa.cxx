@@ -28,6 +28,7 @@ using namespace o2::framework;
 struct CentralityQa {
   Configurable<int> nBins{"nBins", 1050, "number of bins"};
   Configurable<bool> INELgtZERO{"INELgtZERO", 1, "0 - no, 1 - yes"};
+  Configurable<float> vertexZcut{"vertexZcut", 10, "vertex-Z position cut (absolute value in cm)"};
   OutputObj<TH1F> hCentRun2V0M{TH1F("hCentRun2V0M", "V0M", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2V0A{TH1F("hCentRun2V0A", "V0A", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2SPDTks{TH1F("hCentRun2SPDTks", "SPD Tracklets", nBins, 0, 105.)};
@@ -115,8 +116,12 @@ struct CentralityQa {
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
+    }
+    if (std::abs(col.posZ()) > vertexZcut) {
+      return;
+    }
     LOGF(debug, "centFV0A=%.0f", col.centFV0A());
     hCentFV0A->Fill(col.centFV0A());
     hCentProfileFV0A->Fill(col.centFV0A(), col.multNTracksPVetaHalf());
@@ -128,8 +133,12 @@ struct CentralityQa {
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
+    }
+    if (std::abs(col.posZ()) > vertexZcut) {
+      return;
+    }
     LOGF(debug, "centFT0M=%.0f", col.centFT0M());
     hCentFT0M->Fill(col.centFT0M());
     hCentProfileFT0M->Fill(col.centFT0M(), col.multNTracksPVetaHalf());
@@ -141,8 +150,12 @@ struct CentralityQa {
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
+    }
+    if (std::abs(col.posZ()) > vertexZcut) {
+      return;
+    }
     hCentFT0A->Fill(col.centFT0A());
     hCentProfileFT0A->Fill(col.centFT0A(), col.multNTracksPVetaHalf());
   }
@@ -153,8 +166,12 @@ struct CentralityQa {
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
+    }
+    if (std::abs(col.posZ()) > vertexZcut) {
+      return;
+    }
     hCentFT0C->Fill(col.centFT0C());
     hCentProfileFT0C->Fill(col.centFT0C(), col.multNTracksPVetaHalf());
   }
@@ -165,8 +182,12 @@ struct CentralityQa {
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
+    }
+    if (std::abs(col.posZ()) > vertexZcut) {
+      return;
+    }
     hCentFDDM->Fill(col.centFDDM());
     hCentProfileFDDM->Fill(col.centFDDM(), col.multNTracksPVetaHalf());
   }
@@ -177,8 +198,12 @@ struct CentralityQa {
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
+    }
+    if (std::abs(col.posZ()) > vertexZcut) {
+      return;
+    }
     hCentNTPV->Fill(col.centNTPV());
     hCentProfileNTPV->Fill(col.centNTPV(), col.multNTracksPVetaHalf());
   }

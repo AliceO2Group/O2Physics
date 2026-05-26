@@ -18,6 +18,7 @@
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_
 
 #include <cmath>
+#include <cstddef>
 
 namespace o2::analysis::femto_universe
 {

@@ -14,28 +14,29 @@
 /// \since  Apr/2/2026
 /// \brief  flow efficiency analysis on UPC MC
 
-#include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
+#include <TH3.h>
 #include <TPDGCode.h>
 
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -65,7 +66,7 @@ struct FlowMcUpc {
 
   double epsilon = 1e-6;
 
-  using McParts = soa::Join<aod::UDMcParticles, aod::UDMcTrackLabels>;
+  // using McParts = soa::Join<aod::UDMcParticles, aod::UDMcTrackLabels>;
 
   void init(InitContext&)
   {
@@ -81,6 +82,8 @@ struct FlowMcUpc {
     histos.add<TH1>("mcEventCounter", "Monte Carlo Truth EventCounter", HistType::kTH1F, {{5, 0, 5}});
     histos.add<TH1>("RecoProcessEventCounter", "Reconstruction EventCounter", HistType::kTH1F, {{5, 0, 5}});
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
+    histos.add<TH1>("RecoProcessTrackCounter", "Reconstruction TrackCounter", HistType::kTH1F, {{5, 0, 5}});
+    histos.add<TH1>("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{100, -0.5f, 99.5f}});
 
     histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH3>("hEtaPtVtxzMCGen", "Monte Carlo Truth; #eta; p_{T} (GeV/c); V_{z} (cm);", {HistType::kTH3D, {axisEta, axisPt, axisVertex}});
@@ -97,6 +100,10 @@ struct FlowMcUpc {
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
+    if (!track.hasTPC())
+      return false;
+    if (!track.isPVContributor())
+      return false;
     // auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
     auto pt = track.pt();
     if (pt < cfgPtCutMin || pt > cfgPtCutMax) {
@@ -109,81 +116,114 @@ struct FlowMcUpc {
     return true;
   }
 
-  void processMCTrue(aod::UDMcCollisions::iterator const& mcCollision, McParts const& mcParts, aod::BCs const& bcs)
+  PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+
+  void processMCTrue(aod::UDMcCollisions const& mcCollisions, aod::UDMcParticles const& mcParts, aod::BCs const& bcs)
   {
     if (bcs.size() == 0) {
       return;
     }
-    histos.fill(HIST("mcEventCounter"), 0.5);
-    float imp = mcCollision.impactParameter();
-    float vtxz = mcCollision.posZ();
+    for (const auto& mcCollision : mcCollisions) {
+      histos.fill(HIST("mcEventCounter"), 0.5);
+      float imp = mcCollision.impactParameter();
+      float vtxz = mcCollision.posZ();
 
-    if (imp >= minB && imp <= maxB) {
-      // event within range
-      histos.fill(HIST("hImpactParameter"), imp);
+      if (imp >= minB && imp <= maxB) {
+        // event within range
+        histos.fill(HIST("hImpactParameter"), imp);
 
-      for (auto const& mcParticle : mcParts) {
-        auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
-        int pdgCode = std::abs(mcParticle.pdgCode());
+        auto const& tempParts = mcParts.sliceBy(partPerMcCollision, static_cast<int64_t>(mcCollision.globalIndex()));
 
-        double pt = RecoDecay::pt(momentum);
-        double eta = RecoDecay::eta(momentum);
+        for (auto const& mcParticle : tempParts) {
+          auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+          int pdgCode = std::abs(mcParticle.pdgCode());
 
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
-          continue;
+          double pt = RecoDecay::pt(momentum);
+          double eta = RecoDecay::eta(momentum);
 
-        if (!mcParticle.isPhysicalPrimary())
-          continue;
-        if (std::fabs(eta) > cfgCutEta) // main acceptance
-          continue;
+          if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
+            continue;
 
-        histos.fill(HIST("hPtMCGen"), pt);
-        histos.fill(HIST("hEtaPtVtxzMCGen"), eta, pt, vtxz);
+          if (!mcParticle.isPhysicalPrimary())
+            continue;
+          if (std::fabs(eta) > cfgCutEta) // main acceptance
+            continue;
+
+          histos.fill(HIST("hPtMCGen"), pt);
+          histos.fill(HIST("hEtaPtVtxzMCGen"), eta, pt, vtxz);
+        }
       }
     }
   }
   PROCESS_SWITCH(FlowMcUpc, processMCTrue, "process pure simulation information", true);
 
   using MCRecoTracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
-  using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
+  using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>;
 
-  void processReco(MCRecoCollisions::iterator const& collision, MCRecoTracks const& tracks)
+  // PresliceUnsorted<MCRecoTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+  Preslice<MCRecoTracks> trackPerCollision = aod::udtrack::udCollisionId; // sorted preslice used because the pair track-collision is already sorted in processDataSG function
+
+  void processReco(MCRecoCollisions const& collisions, MCRecoTracks const& tracks, aod::UDMcParticles const& mcParticles)
   {
-    histos.fill(HIST("RecoProcessEventCounter"), 0.5);
-    // if (!eventSelected(collision))
-    //   return;
-    histos.fill(HIST("RecoProcessEventCounter"), 1.5);
-    if (!collision.has_udMcCollision())
-      return;
-    histos.fill(HIST("RecoProcessEventCounter"), 2.5);
-    if (tracks.size() < 1)
-      return;
-    histos.fill(HIST("RecoProcessEventCounter"), 3.5);
+    histos.fill(HIST("numberOfRecoCollisions"), mcParticles.size()); // number of times coll was reco-ed
+    // std::cout << "process reco" << std::endl;
+    for (const auto& collision : collisions) {
+      Partition<MCRecoTracks> pvContributors = aod::udtrack::isPVContributor == true;
+      pvContributors.bindTable(tracks);
+      // std::cout << "collision loop" << std::endl;
+      histos.fill(HIST("RecoProcessEventCounter"), 0.5);
+      // if (!eventSelected(collision))
+      //   return;
+      histos.fill(HIST("RecoProcessEventCounter"), 1.5);
+      // if (!collision.has_udMcCollision())
+      //   return;
+      histos.fill(HIST("RecoProcessEventCounter"), 2.5);
+      histos.fill(HIST("RecoProcessEventCounter"), 3.5);
 
-    float vtxz = collision.posZ();
+      float vtxz = collision.posZ();
 
-    for (const auto& track : tracks) {
-      // focus on bulk: e, mu, pi, k, p
-      auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
-      double pt = RecoDecay::pt(momentum);
-      double eta = RecoDecay::eta(momentum);
-      // double phi = RecoDecay::phi(momentum);
-      if (!trackSelected(track) || (!track.has_udMcParticle()))
-        continue;
-      auto mcParticle = track.udMcParticle();
-      int pdgCode = std::abs(mcParticle.pdgCode());
+      // auto const& tempTracks = tracks.sliceBy(trackPerCollision, static_cast<int64_t>(collision.globalIndex()));
+      // std::cout << "sliced" << std::endl;
 
-      // double pt = recoMC.Pt();
-      // double eta = recoMC.Eta();
-      if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
-        continue;
-      if (std::fabs(eta) > cfgCutEta) // main acceptance
-        continue;
-      if (!mcParticle.isPhysicalPrimary())
-        continue;
+      for (const auto& track : tracks) {
+        histos.fill(HIST("RecoProcessTrackCounter"), 0.5);
+        // std::cout << "track loop" << std::endl;
+        // focus on bulk: e, mu, pi, k, p
+        auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+        double pt = RecoDecay::pt(momentum);
+        double eta = RecoDecay::eta(momentum);
+        // double phi = RecoDecay::phi(momentum);
+        if (!trackSelected(track) || (!track.has_udMcParticle()))
+          continue;
+        histos.fill(HIST("RecoProcessTrackCounter"), 1.5);
+        // std::cout << "track selected" << std::endl;
+        auto mcParticle = track.udMcParticle();
+        // std::cout << "mc particle" << std::endl;
+        int pdgCode = std::abs(mcParticle.pdgCode());
+        // std::cout <<  "pdg code" << std::endl;
 
-      histos.fill(HIST("hPtReco"), pt);
-      histos.fill(HIST("hEtaPtVtxzMCReco"), eta, pt, vtxz);
+        // double pt = recoMC.Pt();
+        // double eta = recoMC.Eta();
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton) {
+          // std::cout << "pdg code not in list" << std::endl;
+          continue;
+        }
+        histos.fill(HIST("RecoProcessTrackCounter"), 2.5);
+        if (std::fabs(eta) > cfgCutEta) {
+          // std::cout << "cfgcuteta" << std::endl;
+          continue;
+        } // main acceptance
+        histos.fill(HIST("RecoProcessTrackCounter"), 3.5);
+        if (!mcParticle.isPhysicalPrimary()) {
+          // std::cout << "not physical primary" << std::endl;
+          continue;
+        }
+        histos.fill(HIST("RecoProcessTrackCounter"), 4.5);
+
+        histos.fill(HIST("hPtReco"), pt);
+        histos.fill(HIST("hEtaPtVtxzMCReco"), eta, pt, vtxz);
+        // std::cout << "first loop end" << std::endl;
+      }
     }
   }
   PROCESS_SWITCH(FlowMcUpc, processReco, "process reconstructed information", true);

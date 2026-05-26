@@ -12,18 +12,11 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSSKIMMED_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSSKIMMED_H_
 
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 #include <vector>
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
-#include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
-#include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
-#include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
-#include "Framework/runDataProcessing.h"
 
 namespace o2
 {
@@ -60,15 +53,15 @@ DECLARE_SOA_TABLE(CFMCCollMasks, "AOD", "CFMCCOLLMASK", //! Generated collision/
 using CFMCCollMask = CFMCCollMasks::iterator;
 namespace cfskim
 {
-DECLARE_SOA_INDEX_COLUMN(CFCollision, cfcollision);     //! Reconstructed collision/event
-DECLARE_SOA_INDEX_COLUMN(CFMCCollision, cfmccollision); //! Generated collision/event
-DECLARE_SOA_COLUMN(CFTrackFlags, trackflags, uint64_t); //! The skimming flags for track selection, B0 track/particle positive charge, B1 track/particle negative charge
+DECLARE_SOA_INDEX_COLUMN(CFCollision, cfcollision);         //! Reconstructed collision/event
+DECLARE_SOA_INDEX_COLUMN(CFMCCollision, cfmccollision);     //! Generated collision/event
+DECLARE_SOA_COLUMN(CFTrackFlags, trackflags, uint64_t);     //! The skimming flags for track selection, B0 track/particle positive charge, B1 track/particle negative charge
 DECLARE_SOA_COLUMN(CFMCTrackFlags, mctrackflags, uint64_t); //! The skimming flags for particle selection, B0 track/particle positive charge, B1 track/particle negative charge
 DECLARE_SOA_COLUMN(CFPidFlags, pidflags, uint64_t);         //! The PID skimming flags for track selection
-DECLARE_SOA_COLUMN(Pt, pt, float);                      //! The track transverse momentum
-DECLARE_SOA_COLUMN(Eta, eta, float);                    //! The track pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);                    //! The track azimuthal angle
-DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,                  //! Charge: positive: 1, negative: -1
+DECLARE_SOA_COLUMN(Pt, pt, float);                          //! The track transverse momentum
+DECLARE_SOA_COLUMN(Eta, eta, float);                        //! The track pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                        //! The track azimuthal angle
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,                      //! Charge: positive: 1, negative: -1
                            [](uint64_t mask) -> int8_t { return ((mask & 0x1L) == 0x1L) ? 1 : ((mask & 0x2L) == 0x2L) ? -1
                                                                                                                       : 0; });
 

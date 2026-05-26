@@ -16,22 +16,22 @@
 #ifndef PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 #define PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 
-#define THETA(eta) 2.0 * std::atan(std::exp(-eta))
-// #include "Framework/ASoA.h"
-// #include "Framework/DataTypes.h"
-// #include "Framework/AnalysisDataModel.h"
-// #include "Framework/Logger.h"
-// #include "Common/DataModel/Multiplicity.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include <TDatabasePDG.h>
+#include <TLorentzVector.h>
+#include <TVector3.h>
 
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "TVector3.h"
-
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <memory>
+#include <string>
 #include <vector>
+
+#define THETA(eta) 2.0 * std::atan(std::exp(-eta))
 
 double particle_mass(const int PDGcode)
 {

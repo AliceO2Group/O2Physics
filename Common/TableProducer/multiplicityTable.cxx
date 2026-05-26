@@ -194,7 +194,7 @@ struct MultiplicityTable {
     bool tEnabled[Ntables] = {false};
     for (int i = 0; i < Ntables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(context, tableNames[i], f);
+      o2::common::core::enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
         tEnabled[i] = true;
         mEnabledTables.push_back(i);

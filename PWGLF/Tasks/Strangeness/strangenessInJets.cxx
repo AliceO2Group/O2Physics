@@ -20,51 +20,50 @@
 /// \since May 22, 2024
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFInJets.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "Common/Core/RecoDecay.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <Framework/ASoAHelpers.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
-#include <TMath.h>
-#include <TObjArray.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 #include <TVector2.h>
 #include <TVector3.h>
 
 #include <fastjet/AreaDefinition.hh>
-#include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/tools/JetMedianBackgroundEstimator.hh>
-#include <fastjet/tools/Subtractor.hh>
 
+#include <array>
 #include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -1456,7 +1455,7 @@ struct StrangenessInJets {
 
         // Set up two perpendicular cone axes for underlying event estimation
         const TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        const double coneRadius = std::sqrt(jet.area() / PI);
+        const double coneRadius = rJet;
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
@@ -1665,7 +1664,8 @@ struct StrangenessInJets {
           if (!motherPos.isPhysicalPrimary())
             continue;
 
-          if (std::abs(motherPos.eta()) > 0.8)
+          const double maxPseudorap = 0.8;
+          if (std::abs(motherPos.eta()) > maxPseudorap)
             continue;
 
           // K0s
@@ -1745,8 +1745,8 @@ struct StrangenessInJets {
           if (!mcParticle.isPhysicalPrimary()) {
             continue;
           }
-
-          if (std::abs(mcParticle.eta()) > 0.8) {
+          const double maxPseudorap = 0.8;
+          if (std::abs(mcParticle.eta()) > maxPseudorap) {
             continue;
           }
 
@@ -1787,9 +1787,10 @@ struct StrangenessInJets {
         }
       }
 
-      for (auto& particle : mcParticlesPerColl) {
+      const double maxPseudorap = 0.8;
+      for (auto const& particle : mcParticlesPerColl) {
 
-        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= 0.8) {
+        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= maxPseudorap) {
           switch (particle.pdgCode()) {
             case kK0Short:
               if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -1890,8 +1891,8 @@ struct StrangenessInJets {
             continue;
           if (!motherPos.isPhysicalPrimary())
             continue;
-
-          if (std::abs(motherPos.eta()) > 0.8)
+          double maxPseudorap = 0.8;
+          if (std::abs(motherPos.eta()) > maxPseudorap)
             continue;
 
           // K0s
@@ -1909,9 +1910,9 @@ struct StrangenessInJets {
         }
       }
 
-      for (auto& particle : mcParticlesPerColl) {
-
-        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= 0.8) {
+      for (auto const& particle : mcParticlesPerColl) {
+        double maxPseudorap = 0.8;
+        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= maxPseudorap) {
           switch (particle.pdgCode()) {
             case kK0Short:
               if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -1937,7 +1938,7 @@ struct StrangenessInJets {
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
 
-        for (auto& particle : mcParticlesPerColl) {
+        for (auto const& particle : mcParticlesPerColl) {
 
           const ParticlePositionWithRespectToJet positionMC{particle.px(), particle.py(), particle.pz(), selectedJet[i], ue1[i], ue2[i]};
 

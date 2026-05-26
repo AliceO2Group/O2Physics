@@ -12,23 +12,40 @@
 #ifndef PWGLF_UTILS_NUCLEIUTILS_H_
 #define PWGLF_UTILS_NUCLEIUTILS_H_
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "MathUtils/BetheBlochAleph.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TMCProcess.h"
+#include <TH1.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+
+#include <fmt/format.h>
+#include <sys/types.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct NucleusCandidate {
@@ -129,6 +146,21 @@ enum Flags {
   kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
   kIsSecondaryFromMaterial = BIT(10),
   kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
+};
+
+enum QcFlags {
+  kQcHasReconstructedCollision = BIT(0),
+  kQcPlaceholder0 = BIT(1), /// placeholdedrs
+  kQcPlaceholder1 = BIT(2), /// placeholdedrs
+  kQcPlaceholder2 = BIT(3), /// placeholdedrs
+  kQcPlaceholder3 = BIT(4), /// placeholdedrs
+  kQcHasTOF = BIT(5),
+  kQcHasTRD = BIT(6),
+  kQcIsAmbiguous = BIT(7), /// just a placeholder now
+  kQcITSrof = BIT(8),
+  kQcIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
+  kQcIsSecondaryFromMaterial = BIT(10),
+  kQcIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
 };
 
 constexpr int getSpeciesFromPdg(int pdg)
@@ -402,15 +434,15 @@ void createHistogramRegistryNucleus(o2::framework::HistogramRegistry& registry)
 
   constexpr int index = iSpecies;
   if (!checkSpeciesValidity(index)) {
-    std::runtime_error("species contains invalid nucleus index");
+    throw std::runtime_error("species contains invalid nucleus index");
   }
 
   registry.add(fmt::format("{}/hTrackSelections", cNames[index]).c_str(), (fmt::format("{} track selections;", cNames[index]) + std::string("Selection step; Counts")).c_str(), o2::framework::HistType::kTH1D, {{trackSelection::kNtrackSelections, -0.5f, static_cast<float>(trackSelection::kNtrackSelections) - 0.5f}});
   registry.add(fmt::format("{}/hPtReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), o2::framework::HistType::kTH1F, {{400, -10.0f, 10.0f}});
   registry.add(fmt::format("{}/h2PtVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH2F, {{400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{40, 0, o2::constants::math::TwoPI}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {400, -0.1f, 0.1f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {400, -0.1f, 0.1f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPC_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); CentralityFT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPCVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); Centrality FT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaITS_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});
@@ -440,7 +472,7 @@ class PidManager
     : mSpecies(species)
   {
     if (!checkSpeciesValidity(species)) {
-      std::runtime_error("species contains invalid nucleus index");
+      throw std::runtime_error("species contains invalid nucleus index");
     }
 
     if (!tpcBetheBlochParams) {

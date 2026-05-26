@@ -27,8 +27,6 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <string>
-#include <unordered_map>
 #include <vector>
 
 #ifndef PWGEM_DILEPTON_DATAMODEL_DILEPTONTABLES_H_
@@ -37,33 +35,33 @@
 namespace o2::aod
 {
 
-namespace pwgem::dilepton::swt
-{
-enum class swtAliases : int { // software trigger aliases for EM
-  kHighTrackMult = 0,
-  kHighFt0cFv0Mult,
-  kSingleE,
-  kLMeeIMR,
-  kLMeeHMR,
-  kDiElectron,
-  kSingleMuLow,
-  kSingleMuHigh,
-  kDiMuon,
-  kNaliases
-};
-
-const std::unordered_map<std::string, int> aliasLabels = {
-  {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
-  {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
-  {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
-  {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
-  {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
-  {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
-  {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
-  {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
-  {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
-};
-} // namespace pwgem::dilepton::swt
+// namespace pwgem::dilepton::swt
+// {
+// enum class swtAliases : int { // software trigger aliases for EM
+//   kHighTrackMult = 0,
+//   kHighFt0cFv0Mult,
+//   kSingleE,
+//   kLMeeIMR,
+//   kLMeeHMR,
+//   kDiElectron,
+//   kSingleMuLow,
+//   kSingleMuHigh,
+//   kDiMuon,
+//   kNaliases
+// };
+//
+// const std::unordered_map<std::string, int> aliasLabels = {
+//   {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
+//   {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
+//   {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
+//   {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+//   {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+//   {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+//   {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
+//   {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
+//   {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+// };
+// } // namespace pwgem::dilepton::swt
 
 namespace emevsel
 {
@@ -693,6 +691,22 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
 DECLARE_SOA_COLUMN(ProbElBDT, probElBDT, float);                //!
 
+DECLARE_SOA_COLUMN(BDTScorePromptUINT8, bdtScorePromptUINT8, std::vector<uint8_t>);           //! scaling factor is 255.
+DECLARE_SOA_COLUMN(BDTScorePromptHcUINT8, bdtScorePromptHcUINT8, std::vector<uint8_t>);       //! scaling factor is 255.
+DECLARE_SOA_COLUMN(BDTScoreNonpromptHcUINT8, bdtScoreNonpromptHcUINT8, std::vector<uint8_t>); //! scaling factor is 255.
+DECLARE_SOA_COLUMN(BDTScoreHbUINT8, bdtScoreHbUINT8, std::vector<uint8_t>);                   //! scaling factor is 255.
+DECLARE_SOA_COLUMN(HadronType, hadronType, std::vector<uint8_t>);                             //! 0:track, 1:K0S, 2:Lambda, 3:AntiLambda, 4:XiMinus, 5:XiPlus, 6:OmegaMinus, 7:OmegaPlus
+
+DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](std::vector<uint8_t> p0, std::vector<uint8_t> p1, std::vector<uint8_t> p2, std::vector<uint8_t> p3, std::vector<uint8_t> type, int index) -> std::array<float, 5> {
+  return std::array<float, 5>{
+    std::nextafter(p0[index] / 255.f, std::numeric_limits<float>::infinity()),
+    std::nextafter(p1[index] / 255.f, std::numeric_limits<float>::infinity()),
+    std::nextafter(p2[index] / 255.f, std::numeric_limits<float>::infinity()),
+    std::nextafter(p3[index] / 255.f, std::numeric_limits<float>::infinity()),
+    static_cast<float>(type[index])};
+});
+DECLARE_SOA_DYNAMIC_COLUMN(NSV, nSV, [](std::vector<uint8_t> type) -> size_t { return type.size(); });
+
 DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //!
@@ -1009,6 +1023,13 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBDERIVED
 // iterators
 using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
 
+DECLARE_SOA_TABLE(EMPrimaryElectronsBDTSCT, "AOD", "ELBDTSCT", // To be joined with EMPrimaryElectrons table at analysis level.
+                  emprimaryelectron::BDTScorePromptUINT8, emprimaryelectron::BDTScorePromptHcUINT8, emprimaryelectron::BDTScoreNonpromptHcUINT8, emprimaryelectron::BDTScoreHbUINT8, emprimaryelectron::HadronType,
+                  emprimaryelectron::NSV<emprimaryelectron::HadronType>,
+                  emprimaryelectron::ProbaSCT<emprimaryelectron::BDTScorePromptUINT8, emprimaryelectron::BDTScorePromptHcUINT8, emprimaryelectron::BDTScoreNonpromptHcUINT8, emprimaryelectron::BDTScoreHbUINT8, emprimaryelectron::HadronType>);
+// iterators
+using EMPrimaryElectronBDTSCT = EMPrimaryElectronsBDTSCT::iterator;
+
 namespace emprimarymuon
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                //!
@@ -1221,7 +1242,7 @@ using EMPrimaryTrackEMEventIdTMP = EMPrimaryTrackEMEventIdsTMP::iterator;
 
 namespace emthinevent
 {
-DECLARE_SOA_COLUMN(EP2, ep2, float); //!
+DECLARE_SOA_COLUMN(EP2, ep2, float);               //!
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace emthinevent
 DECLARE_SOA_TABLE_VERSIONED(EMThinEvents_000, "AOD", "EMTHINEVENT", 0, //! Thin event information table
