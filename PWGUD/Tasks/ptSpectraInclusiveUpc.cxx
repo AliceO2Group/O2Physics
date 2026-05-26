@@ -36,6 +36,7 @@
 #include <Math/GenVector/LorentzVector.h>
 #include <Math/GenVector/PxPyPzM4D.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -63,9 +64,6 @@ struct PtSpectraInclusiveUpc {
   using TC = TCs::iterator;
   using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
-  double massPion = 0.;
-  double massKaon = 0.;
-  double massProton = 0.;
   const int codePion = 211;
   const int codeKaon = 321;
   const int codeProton = 2212;
@@ -79,11 +77,6 @@ struct PtSpectraInclusiveUpc {
 
   void init(InitContext const&)
   {
-
-    massPion = o2::constants::physics::MassPionCharged;
-    massKaon = o2::constants::physics::MassKaonCharged;
-    massProton = o2::constants::physics::MassProton;
-
     // axes
     const AxisSpec axisPt{nBinsPt, 0, 5, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec axisEventCounter{2, 0.5, 2.5, "Event type"};
@@ -130,7 +123,7 @@ struct PtSpectraInclusiveUpc {
       if (!mcParticle.isPhysicalPrimary())
         continue;
 
-      LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
+      LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), o2::constants::physics::MassPionCharged);
 
       if (applyKineCutsInGen) {
         if (std::fabs(pMC.Eta()) > etaMax)
@@ -143,17 +136,17 @@ struct PtSpectraInclusiveUpc {
           continue;
       }
 
-      if (std::abs(mcParticle.pdgCode()) == codePion) {
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
         histos.fill(HIST("ptGeneratedPion"), pMC.Pt());
       }
 
-      if (std::abs(mcParticle.pdgCode()) == codeKaon) {
-        pMC.SetM(massKaon);
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus) {
+        pMC.SetM(o2::constants::physics::MassKaonCharged);
         histos.fill(HIST("ptGeneratedKaon"), pMC.Pt());
       }
 
-      if (std::abs(mcParticle.pdgCode()) == codeProton) {
-        pMC.SetM(massProton);
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton) {
+        pMC.SetM(o2::constants::physics::MassProton);
         histos.fill(HIST("ptGeneratedProton"), pMC.Pt());
       }
 
@@ -202,17 +195,17 @@ struct PtSpectraInclusiveUpc {
       pion->SetPx(track.px());
       pion->SetPy(track.py());
       pion->SetPz(track.pz());
-      pion->SetM(massPion);
+      pion->SetM(o2::constants::physics::MassPionCharged);
 
       kaon->SetPx(track.px());
       kaon->SetPy(track.py());
       kaon->SetPz(track.pz());
-      kaon->SetM(massKaon);
+      kaon->SetM(o2::constants::physics::MassKaonCharged);
 
       proton->SetPx(track.px());
       proton->SetPy(track.py());
       proton->SetPz(track.pz());
-      proton->SetM(massProton);
+      proton->SetM(o2::constants::physics::MassProton);
 
       if (!track.has_udMcParticle()) {
         continue;
@@ -369,17 +362,17 @@ struct PtSpectraInclusiveUpc {
       pion->SetPx(track.px());
       pion->SetPy(track.py());
       pion->SetPz(track.pz());
-      pion->SetM(massPion);
+      pion->SetM(o2::constants::physics::MassPionCharged);
 
       kaon->SetPx(track.px());
       kaon->SetPy(track.py());
       kaon->SetPz(track.pz());
-      kaon->SetM(massKaon);
+      kaon->SetM(o2::constants::physics::MassKaonCharged);
 
       proton->SetPx(track.px());
       proton->SetPy(track.py());
       proton->SetPz(track.pz());
-      proton->SetM(massProton);
+      proton->SetM(o2::constants::physics::MassProton);
 
       bool hasTpc = false;
       // TPC tracks
