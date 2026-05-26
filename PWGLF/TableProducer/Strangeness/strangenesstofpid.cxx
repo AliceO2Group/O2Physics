@@ -13,6 +13,7 @@
 //    Strangeness TOF PID
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
+/// \file strangenesstofpid.cxx
 /// \author Nicolò Jacazio
 /// \author David Dobrigkeit Chinellato
 /// \since  11/05/2023
@@ -58,6 +59,7 @@
 #include <cstdlib>
 #include <iterator>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -307,7 +309,7 @@ struct strangenesstofpid {
     cosAngle1 /= modulus1;
     sinAngle1 /= modulus1;
     length1 = trcCircle.rC * TMath::ACos(cosAngle1);
-    length1 *= sqrt(1.0f + track.getTgl() * track.getTgl());
+    length1 *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
 
     modulus2 = std::hypot(interceptX2 - trcCircle.xC, interceptY2 - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
     cosAngle2 = (interceptX2 - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (interceptY2 - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
@@ -315,7 +317,7 @@ struct strangenesstofpid {
     cosAngle2 /= modulus2;
     sinAngle2 /= modulus2;
     length2 = trcCircle.rC * TMath::ACos(cosAngle2);
-    length2 *= sqrt(1.0f + track.getTgl() * track.getTgl());
+    length2 *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
 
     // rotate transverse momentum vector such that it is at intercepts
     float angle1 = TMath::ACos(cosAngle1);
@@ -598,7 +600,7 @@ struct strangenesstofpid {
     if (propagationConfiguration.d_bz_input > -990) {
       d_bz = propagationConfiguration.d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -1210,7 +1212,7 @@ struct strangenesstofpid {
       // d3d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1], cascade.z() - cascCloseToPVPosition[2]); // cross-check variable
       float sinThetaOverTwo = d / (2.0f * trcCircleCascade.rC);
       lengthCascade = 2.0f * trcCircleCascade.rC * TMath::ASin(sinThetaOverTwo);
-      lengthCascade *= sqrt(1.0f + cascTrack.getTgl() * cascTrack.getTgl());
+      lengthCascade *= std::sqrt(1.0f + cascTrack.getTgl() * cascTrack.getTgl());
     }
 
     if (!successPropag) {
