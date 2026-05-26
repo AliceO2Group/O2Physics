@@ -180,7 +180,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_002, "AOD", "DAUTRACKTOFPID", 2, // 
                             dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
-                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);                            
+                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
 
 using DauTrackTOFPIDs = DauTrackTOFPIDs_002; // second gen: with collision Id, with TOFExpMom
 
@@ -198,8 +198,8 @@ DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float);         //! positive trac
 DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float);         //! negative track signal
 DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
 DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
-DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); 	       //! positive track length, recalculated
-DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); 	       //! negative track length, recalculated
+DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);         //! positive track length, recalculated
+DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);         //! negative track length, recalculated
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation
@@ -221,7 +221,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaALaPr, tofNSigmaALaPr, float);         //! negative 
 DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive track NSigma from pion <- antilambda expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
-								   
+
 // for wrong hypothesis
 DECLARE_SOA_COLUMN(TOFNSigmaElPosFromPhoton, tofNSigmaElPosFromPhoton, float); //! n sigma of positive track from photon conversion under electron hypothesis
 DECLARE_SOA_COLUMN(TOFNSigmaElNegFromPhoton, tofNSigmaElNegFromPhoton, float); //! n sigma of negative track from photon conversion under electron hypothesis

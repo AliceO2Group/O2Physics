@@ -28,12 +28,12 @@ struct stradautrackstofpidconverter3 {
     // create new TOFPIDs
     for (const auto& dauTrack : dauTracks) {
       dautracktofpids(
-        -1, 
-        -1, 
-        dauTrack.tofSignal(), 
-        dauTrack.tofEvTime(), 
+        -1,
+        -1,
+        dauTrack.tofSignal(),
+        dauTrack.tofEvTime(),
         999.0f, /*dummy event time error for TOF*/
-        dauTrack.length(), 
+        dauTrack.length(),
         0.0f);
     }
     for (const auto& value : straEvTimes_000) {
