@@ -38,7 +38,6 @@ void o2::pid::tof::TOFResponseImpl::inheritFromBaseTask(o2::framework::InitConte
   if (mIsInit) {
     LOG(fatal) << "TOFResponseImpl already initialized, cannot re-initialize";
   }
-  LOG(info) << "couccou";
   getCfg(initContext, "ccdb-url", mUrl, task);
   getCfg(initContext, "ccdb-path-grplhcif", mPathGrpLhcIf, task);
   getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
@@ -54,7 +53,6 @@ void o2::pid::tof::TOFResponseImpl::inheritFromBaseTask(o2::framework::InitConte
   getCfg(initContext, "enableTimeDependentResponse", mEnableTimeDependentResponse, task);
   getCfg(initContext, "collisionSystem", mCollisionSystem, task);
   getCfg(initContext, "autoSetProcessFunctions", mAutoSetProcessFunctions, task);
-  LOG(info) << "couccou1";
 }
 
 void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,

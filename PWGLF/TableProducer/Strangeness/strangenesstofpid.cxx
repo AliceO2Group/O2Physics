@@ -189,7 +189,7 @@ struct strangenesstofpid {
     // very broad time axis
     ConfigurableAxis axisTimeLong{"axisTimeLong", {3000, -1500000.0f, 1500000.0f}, "time (ps)"};
   } axes; // aggregate axes fo simplicity of navigation in HY
-  
+
   // for n-sigma calibration
   bool nSigmaCalibLoaded;
   TList* nSigmaCalibObjects = nullptr;
@@ -416,6 +416,23 @@ struct strangenesstofpid {
         LOGF(info, "Strangeness TOF PID: all Cascade TOF PID calculations enabled automatically");
       }
     }
+
+    nSigmaCalibLoaded = false;
+    nSigmaCalibObjects = nullptr;
+
+    // for n-sigma calibration
+    hMeanPosLaPi = nullptr;
+    hSigmaPosLaPi = nullptr;
+    hMeanPosLaPr = nullptr;
+    hSigmaPosLaPr = nullptr;
+    hMeanNegLaPi = nullptr;
+    hSigmaNegLaPi = nullptr;
+    hMeanNegLaPr = nullptr;
+    hSigmaNegLaPr = nullptr;
+    hMeanPosK0Pi = nullptr;
+    hSigmaNegK0Pi = nullptr;
+    hMeanNegK0Pi = nullptr;
+    hSigmaNegK0Pi = nullptr;
 
     mRunNumber = 0;
     d_bz = 0;
@@ -867,7 +884,7 @@ struct strangenesstofpid {
     float velocityPositiveEl, velocityPositivePr, velocityPositivePi, lengthPositive;
     velocityPositiveEl = velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
 
-    if (pTof.hasTOF && mapCollisionTime.find(collisionId) != mapCollisionTime.end() && pValidTOF) {
+    if (pTof.hasTOF && pTof.tofEvTime > -1e+5 && pValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
 	velocityPositiveEl = velocity(posTrack.getP(), o2::constants::physics::MassElectron);
@@ -983,7 +1000,7 @@ struct strangenesstofpid {
     }
     float velocityNegativeEl, velocityNegativePr, velocityNegativePi, lengthNegative;
     velocityNegativeEl = velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
-    if (nTof.hasTOF && mapCollisionTime.find(collisionId) != mapCollisionTime.end() && nValidTOF) {
+    if (nTof.hasTOF && nTof.tofEvTime > -1e+5 && nValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
 	velocityNegativeEl = velocity(negTrack.getP(), o2::constants::physics::MassElectron);
@@ -1115,7 +1132,7 @@ struct strangenesstofpid {
       // }
 
       // calculation of delta-decay-time (no reliance on event time)
-      if (nTof.hasTOF && pTof.hasTOF > 0) { // does not depend on event time
+      if (nTof.hasTOF && pTof.hasTOF) { // does not depend on event time
 	v0tof.deltaDecayTimePhoton = (pTof.tofSignal - v0tof.timePositiveEl) - (nTof.tofSignal - v0tof.timeNegativeEl);
         v0tof.deltaDecayTimeLambda = (pTof.tofSignal - v0tof.timePositivePr) - (nTof.tofSignal - v0tof.timeNegativePi);
         v0tof.deltaDecayTimeAntiLambda = (pTof.tofSignal - v0tof.timePositivePi) - (nTof.tofSignal - v0tof.timeNegativePr);
@@ -1218,7 +1235,7 @@ struct strangenesstofpid {
 
     //_____________________________________________________________________________________________
     // Actual calculation
-    if (pTof.hasTOF && mapCollisionTime.find(collisionId) != mapCollisionTime.end() && pValidTOF) {
+    if (pTof.hasTOF && pTof.tofEvTime > -1e+5 && pValidTOF) {
       float velocityPositivePr, velocityPositivePi, lengthPositive;
       velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
       if (calculationMethod.value == 0) {
@@ -1354,7 +1371,7 @@ struct strangenesstofpid {
       }
     } // end positive
 
-    if (nTof.hasTOF && mapCollisionTime.find(collisionId) != mapCollisionTime.end() && nValidTOF) {
+    if (nTof.hasTOF && nTof.tofEvTime > -1e+5 && nValidTOF) {
       float velocityNegativePr, velocityNegativePi, lengthNegative;
       velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1491,7 +1508,7 @@ struct strangenesstofpid {
       }
     } // end negative
 
-    if (bTof.hasTOF && mapCollisionTime.find(collisionId) != mapCollisionTime.end() && bValidTOF) {
+    if (bTof.hasTOF && bTof.tofEvTime > -1e+5 && bValidTOF) {
       float velocityBachelorKa, velocityBachelorPi, lengthBachelor;
       velocityBachelorKa = velocityBachelorPi = lengthBachelor = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1801,8 +1818,8 @@ struct strangenesstofpid {
         pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
         pTof.tofExpMom = pTra.tofExpMom();
-        pTof.tofEvTime = reassociateTracks ? mapCollisionTime[cascade.collisionId()] : pTra.tofEvTime();
-        pTof.tofEvTimeErr = reassociateTracks ? mapCollisionTimeError[cascade.collisionId()] : pTra.tofEvTimeErr();
+        pTof.tofEvTime = reassociateTracks ? collisionEventTime[cascade.collisionId()] : pTra.tofEvTime();
+        pTof.tofEvTimeErr = reassociateTracks ? collisionEventTimeErr[cascade.collisionId()] : pTra.tofEvTimeErr();
         // pTof.tofSignal = pTra.tofSignal() + (doBCshift ? deltaTimePos : 0.0f);
         pTof.tofSignal = doBCshift && pTra.has_collision() ? pTra.tofSignalInAnotherBC(pTra.collision().bc_as<aod::BCsWithTimestamps>().globalBC(), cascade.collision().bc_as<aod::BCsWithTimestamps>().globalBC()) : pTra.tofSignal();
         pTof.length = pTra.length();
@@ -1814,8 +1831,8 @@ struct strangenesstofpid {
         nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
         nTof.tofExpMom = nTra.tofExpMom();
-        nTof.tofEvTime = reassociateTracks ? mapCollisionTime[cascade.collisionId()] : nTra.tofEvTime();
-        nTof.tofEvTimeErr = reassociateTracks ? mapCollisionTimeError[cascade.collisionId()] : nTra.tofEvTimeErr();
+        nTof.tofEvTime = reassociateTracks ? collisionEventTime[cascade.collisionId()] : nTra.tofEvTime();
+        nTof.tofEvTimeErr = reassociateTracks ? collisionEventTimeErr[cascade.collisionId()] : nTra.tofEvTimeErr();
         // nTof.tofSignal = nTra.tofSignal() + (doBCshift ? deltaTimeNeg : 0.0f);
         nTof.tofSignal = doBCshift && nTra.has_collision() ? nTra.tofSignalInAnotherBC(nTra.collision().bc_as<aod::BCsWithTimestamps>().globalBC(), cascade.collision().bc_as<aod::BCsWithTimestamps>().globalBC()) : nTra.tofSignal();
         nTof.length = nTra.length();
@@ -1827,8 +1844,8 @@ struct strangenesstofpid {
         bTof.hasTPC = bTra.hasTPC();
         bTof.hasTOF = bTra.hasTOF();
         bTof.tofExpMom = bTra.tofExpMom();
-        bTof.tofEvTime = reassociateTracks ? mapCollisionTime[cascade.collisionId()] : bTra.tofEvTime();
-        bTof.tofEvTimeErr = reassociateTracks ? mapCollisionTimeError[cascade.collisionId()] : bTra.tofEvTimeErr();
+        bTof.tofEvTime = reassociateTracks ? collisionEventTime[cascade.collisionId()] : bTra.tofEvTime();
+        bTof.tofEvTimeErr = reassociateTracks ? collisionEventTimeErr[cascade.collisionId()] : bTra.tofEvTimeErr();
         // bTof.tofSignal = bTra.tofSignal() + (doBCshift ? deltaTimeBach : 0.0f);
         bTof.tofSignal = doBCshift && bTra.has_collision() ? bTra.tofSignalInAnotherBC(bTra.collision().bc_as<aod::BCsWithTimestamps>().globalBC(), cascade.collision().bc_as<aod::BCsWithTimestamps>().globalBC()) : bTra.tofSignal();
         bTof.length = bTra.length();
@@ -1944,8 +1961,8 @@ struct strangenesstofpid {
             pTof.collisionId = pTofExt.straCollisionId();
             pTof.tofExpMom = pTofExt.tofExpMom();
             pTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTime();
-            // pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTimeErr();
-            pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
+            pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : pTofExt.tofEvTimeErr();
+            // pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
             pTof.tofSignal = pTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
             pTof.length = pTofExt.length();
           }
@@ -1971,8 +1988,8 @@ struct strangenesstofpid {
             nTof.collisionId = nTofExt.straCollisionId();
             nTof.tofExpMom = nTofExt.tofExpMom();
             nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
-            // nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
-            nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
+            nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : nTofExt.tofEvTimeErr();
+            // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
             nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
             nTof.length = nTofExt.length();
           }
@@ -2040,8 +2057,8 @@ struct strangenesstofpid {
             pTof.collisionId = pTofExt.straCollisionId();
             pTof.tofExpMom = pTofExt.tofExpMom();
             pTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTime();
-            // pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTimeErr();
-            pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
+            pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : pTofExt.tofEvTimeErr();
+            // pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
             pTof.tofSignal = pTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
             pTof.length = pTofExt.length();
           }
@@ -2066,8 +2083,8 @@ struct strangenesstofpid {
             nTof.collisionId = nTofExt.straCollisionId();
             nTof.tofExpMom = nTofExt.tofExpMom();
             nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
-            // nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
-            nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
+            nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
+            // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
             nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
             nTof.length = nTofExt.length();
           }
@@ -2092,8 +2109,8 @@ struct strangenesstofpid {
             bTof.collisionId = bTofExt.straCollisionId();
             bTof.tofExpMom = bTofExt.tofExpMom();
             bTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : bTofExt.tofEvTime();
-            // bTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : bTofExt.tofEvTimeErr();
-            bTof.tofEvTimeErr = bTofExt.tofEvTimeErr();
+            bTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : bTofExt.tofEvTimeErr();
+            // bTof.tofEvTimeErr = bTofExt.tofEvTimeErr();
             bTof.tofSignal = bTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
             bTof.length = bTofExt.length();
           }
