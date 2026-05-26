@@ -44,7 +44,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct ptSpectraInclusiveUpc {
+struct PtSpectraInclusiveUpc {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -133,10 +133,10 @@ struct ptSpectraInclusiveUpc {
       LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
 
       if (applyKineCutsInGen) {
-        if (fabs(pMC.Eta()) > etaMax)
+        if (std::fabs(pMC.Eta()) > etaMax)
           continue;
 
-        if (fabs(pMC.Rapidity()) > yMax)
+        if (std::fabs(pMC.Rapidity()) > yMax)
           continue;
 
         if (pMC.Pt() < ptMin)
@@ -172,9 +172,6 @@ struct ptSpectraInclusiveUpc {
     auto nSigmaPi = -999.;
     auto nSigmaKa = -999.;
     auto nSigmaPr = -999.;
-    auto nSigmaPiTOF = -999.;
-    auto nSigmaKaTOF = -999.;
-    auto nSigmaPrTOF = -999.;
 
     LorentzVectorM* pion = new LorentzVectorM();
     LorentzVectorM* kaon = new LorentzVectorM();
@@ -222,10 +219,10 @@ struct ptSpectraInclusiveUpc {
       }
       auto mcParticle = track.udMcParticle();
 
-      bool has_tpc = false;
+      bool hasTpc = false;
       // TPC tracks
       if (track.hasTPC()) {
-        has_tpc = true;
+        hasTpc = true;
         nSigmaPi = track.tpcNSigmaPi();
         nSigmaKa = track.tpcNSigmaKa();
         nSigmaPr = track.tpcNSigmaPr();
@@ -286,10 +283,10 @@ struct ptSpectraInclusiveUpc {
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("ptReconstructedTOFPion"), pion->Pt());
-            if (!has_tpc)
+            if (!hasTpc)
               histos.fill(HIST("DCAxy_primary_pions"), track.dcaXY());
           } else {
-            if (!has_tpc)
+            if (!hasTpc)
               histos.fill(HIST("DCAxy_secondary_pions"), track.dcaXY());
           }
         }
@@ -300,10 +297,10 @@ struct ptSpectraInclusiveUpc {
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("ptReconstructedTOFKaon"), kaon->Pt());
-            if (!has_tpc)
+            if (!hasTpc)
               histos.fill(HIST("DCAxy_primary_kaons"), track.dcaXY());
           } else {
-            if (!has_tpc)
+            if (!hasTpc)
               histos.fill(HIST("DCAxy_secondary_kaons"), track.dcaXY());
           }
         }
@@ -315,10 +312,10 @@ struct ptSpectraInclusiveUpc {
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("ptReconstructedTOFProton"), proton->Pt());
-            if (!has_tpc)
+            if (!hasTpc)
               histos.fill(HIST("DCAxy_primary_protons"), track.dcaXY());
           } else {
-            if (!has_tpc) {
+            if (!hasTpc) {
               if (mcParticle.getProcess() == kPDecay) {
                 histos.fill(HIST("DCAxy_secondary_protons"), track.dcaXY());
               } else {
@@ -387,10 +384,10 @@ struct ptSpectraInclusiveUpc {
       proton->SetPz(track.pz());
       proton->SetM(massProton);
 
-      bool has_tpc = false;
+      bool hasTpc = false;
       // TPC tracks
       if (track.hasTPC()) {
-        has_tpc = true;
+        hasTpc = true;
         nSigmaPi = track.tpcNSigmaPi();
         nSigmaKa = track.tpcNSigmaKa();
         nSigmaPr = track.tpcNSigmaPr();
@@ -431,7 +428,7 @@ struct ptSpectraInclusiveUpc {
             continue;
           }
           histos.fill(HIST("ptDataTOFPion"), pion->Pt());
-          if (!has_tpc)
+          if (!hasTpc)
             histos.fill(HIST("DCAxy_data_pions"), track.dcaXY());
         }
         if (std::abs(nSigmaKa) < sigmaMax) {
@@ -439,7 +436,7 @@ struct ptSpectraInclusiveUpc {
             continue;
           }
           histos.fill(HIST("ptDataTOFKaon"), kaon->Pt());
-          if (!has_tpc)
+          if (!hasTpc)
             histos.fill(HIST("DCAxy_data_kaons"), track.dcaXY());
         }
 
@@ -448,22 +445,22 @@ struct ptSpectraInclusiveUpc {
             continue;
           }
           histos.fill(HIST("ptDataTOFProton"), proton->Pt());
-          if (!has_tpc)
+          if (!hasTpc)
             histos.fill(HIST("DCAxy_data_protons"), track.dcaXY());
         }
       }
     }
   }
 
-  PROCESS_SWITCH(ptSpectraInclusiveUpc, processSim, "processSim", true);
+  PROCESS_SWITCH(PtSpectraInclusiveUpc, processSim, "processSim", true);
 
-  PROCESS_SWITCH(ptSpectraInclusiveUpc, processReco, "processReco", true);
+  PROCESS_SWITCH(PtSpectraInclusiveUpc, processReco, "processReco", true);
 
-  PROCESS_SWITCH(ptSpectraInclusiveUpc, processData, "processData", true);
+  PROCESS_SWITCH(PtSpectraInclusiveUpc, processData, "processData", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ptSpectraInclusiveUpc>(cfgc)};
+    adaptAnalysisTask<PtSpectraInclusiveUpc>(cfgc)};
 }
