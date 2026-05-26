@@ -1116,8 +1116,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       trackParCovCharmBach.setAbsCharge(1);
       trackParCovCasc.setAbsCharge(1);
 
-      LOGF(info, "  V0DauPos(%d) V0DauNeg(%d) Bach(%d) CharmBach(%d)", kfPos.GetPDG(), kfNeg.GetPDG(), kfBachToCasc.GetPDG(), kfCharmBachToCharmBaryon.GetPDG());
-
       std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
       std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
 
