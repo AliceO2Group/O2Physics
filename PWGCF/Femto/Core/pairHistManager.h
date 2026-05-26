@@ -39,6 +39,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 #include <vector>
 
@@ -507,7 +508,7 @@ class PairHistManager
     mKstar = getKstar(mParticle1, mParticle2);
 
     if (mPlotBertschPratt) {
-      computeBertschPrattLCMS();
+      std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
     }
 
     if (mPlotDeltaEtaDeltaPhi) {
@@ -954,7 +955,7 @@ class PairHistManager
     return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
   }
 
-  void computeBertschPrattLCMS()
+  std::tuple<float, float, float> computeBertschPrattLCMS(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
     const ROOT::Math::PxPyPzEVector p1(mParticle1);
     const ROOT::Math::PxPyPzEVector p2(mParticle2);
@@ -970,8 +971,7 @@ class PairHistManager
 
     static constexpr double kMinTransverseMomentum = 1e-9;
     if (tPt < kMinTransverseMomentum || tMt < kMinTransverseMomentum) {
-      mQout = mQside = mQlong = 0.f;
-      return;
+      return {0.0, 0.0, 0.0};
     }
 
     const double betaL = tPz / tE;
@@ -985,9 +985,11 @@ class PairHistManager
     const double kside2 = (p2.Py() * tPx - p2.Px() * tPy) / tPt;
     const double klong2 = gammaL * (p2.Pz() - betaL * p2.E());
 
-    mQout = static_cast<float>(kout1 - kout2);
-    mQside = static_cast<float>(kside1 - kside2);
-    mQlong = static_cast<float>(klong1 - klong2);
+    float qOut = static_cast<float>(kout1 - kout2);
+    float qSide = static_cast<float>(kside1 - kside2);
+    float qLong = static_cast<float>(klong1 - klong2);
+
+    return {qOut, qSide, qLong};
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
