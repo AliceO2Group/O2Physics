@@ -28,9 +28,6 @@
 ///
 /// \author Alberto Calivà <alberto.caliva@cern.ch>
 
-#include "Common/DataModel/MCParticles.h"
-#include "Common/DataModel/McCollisionExtra.h"
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
