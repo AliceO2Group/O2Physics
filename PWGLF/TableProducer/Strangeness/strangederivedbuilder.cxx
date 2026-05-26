@@ -10,14 +10,14 @@
 // or submit itself to any jurisdiction.
 //
 /// \file strangederivedbuilder.cxx
-/// \brief this task provides general links between collisions and strange objects reconstructed in various ways. 
+/// \brief this task provides general links between collisions and strange objects reconstructed in various ways.
 /// It is meant to help with providing auxiliary information when dealing with derived data.
 ///
 /// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
 /// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
 //
 //__________________________________________________
-// 
+//
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"

@@ -16,8 +16,6 @@
 /// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
 //
 
-#include <vector>
-
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
