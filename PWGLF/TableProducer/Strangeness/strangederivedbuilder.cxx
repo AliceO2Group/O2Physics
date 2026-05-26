@@ -485,7 +485,7 @@ struct strangederivedbuilder {
       if constexpr (requires { udCollIterator.gapSide(); }) { // check if this table is the expected one
         auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
         if (udCollision.size() == 1) { // check that the slicing provide a unique UD collision
-          for (auto& udColl : udCollision) {
+          for (const auto& udColl : udCollision) {
             gapSide = udColl.gapSide();
             totalFT0AmplitudeA = udColl.totalFT0AmplitudeA();
             totalFT0AmplitudeC = udColl.totalFT0AmplitudeC();
