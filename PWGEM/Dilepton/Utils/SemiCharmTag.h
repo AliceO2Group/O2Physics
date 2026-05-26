@@ -35,6 +35,7 @@ namespace o2::aod::pwgem::dilepton::utils
 
 struct LHPair { // struct to store electron-hadron pair information
   float mass{-999.f};
+  float pt{-999.f};
   float dca2legs{-999.f};
   float cospa{-999.f};
   float cospaXY{-999.f};
@@ -167,6 +168,7 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassKaonCharged);
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
+  pair.pt = v12.Pt();
 
   // float tmp = v12.P() * std::sin(std::acos(pair.cospa));
   // LOGF(info, "pair.ptFD = %f, tmp = %f", pair.ptFD, tmp);
@@ -293,6 +295,7 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
 
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
+  pair.pt = v12.Pt();
   pair.isOK = true;
 
   return pair;
@@ -420,6 +423,7 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
 
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
+  pair.pt = v12.Pt();
   pair.isOK = true;
 
   return pair;
