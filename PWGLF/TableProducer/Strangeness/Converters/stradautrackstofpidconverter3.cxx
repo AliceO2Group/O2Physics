@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file stradautrackstofpidconverter3.cxx.cxx
+/// \file stradautrackstofpidconverter3.cxx
 /// \brief Converts DauTrackTOFPID_001 and StraEvTimes_000 into DauTrackTOFPID_002 and StraEvTimes_001
 ///
 /// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
