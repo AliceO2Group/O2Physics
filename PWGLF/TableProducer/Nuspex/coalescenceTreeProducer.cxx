@@ -40,6 +40,7 @@
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
 #include <TH1.h>
+#include <TPDGCode.h>
 #include <TTree.h>
 
 #include <algorithm>
@@ -574,7 +575,7 @@ struct CoalescenceTreeProducer {
                             std::vector<Particle> const& neutrons,
                             std::vector<Particle> const& antiNeutrons) const
   {
-    int minimumSizeContainer = 2;
+    constexpr std::size_t minimumSizeContainer = 2;
     return (protons.size() >= minimumSizeContainer && !neutrons.empty()) ||
            (antiProtons.size() >= minimumSizeContainer && !antiNeutrons.empty());
   }
@@ -584,7 +585,7 @@ struct CoalescenceTreeProducer {
                            std::vector<Particle> const& neutrons,
                            std::vector<Particle> const& antiNeutrons) const
   {
-    int minimumSizeContainer = 2;
+    constexpr std::size_t minimumSizeContainer = 2;
     return (!protons.empty() && neutrons.size() >= minimumSizeContainer) ||
            (!antiProtons.empty() && antiNeutrons.size() >= minimumSizeContainer);
   }
