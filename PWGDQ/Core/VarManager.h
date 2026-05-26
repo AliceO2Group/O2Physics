@@ -1545,7 +1545,7 @@ class VarManager : public TObject
   static int fgITSROFBorderMarginLow;       // ITS ROF border low margin
   static int fgITSROFBorderMarginHigh;      // ITS ROF border high margin
   static int64_t fgBCSOR;                   // BC for start of run
-  static int64_t fgNBCsPerTF;               // duration of TF in bcs, should be 128*3564 or 32*3564 
+  static int64_t fgNBCsPerTF;               // duration of TF in bcs, should be 128*3564 or 32*3564
   static int fgTFBorderMarginLow;           // TF border low margin
   static int fgTFBorderMarginHigh;          // TF border high margin
   static uint64_t fgSOR;                    // Timestamp for start of run
@@ -2403,14 +2403,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
     values[kMultMCNParticlesEta08] = event.multMCNParticlesEta08();
     values[kMultMCNParticlesEta10] = event.multMCNParticlesEta10();
-    if (fgUsedVars[kMCIsNoITSROFBorderRecomputed]) {
-      uint16_t bcInITSROF = (event.globalBC() + o2::constants::lhc::LHCMaxBunches - fgITSROFbias) % fgITSROFlength;
-      values[kMCIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
-    }
-    if (fgUsedVars[kMCIsNoTFBorderRecomputed]) {
-      int64_t bcInTF = (event.globalBC() - fgBCSOR) % fgNBCsPerTF;
-      values[kMCIsNoTFBorderRecomputed] = bcInTF > fgTFBorderMarginLow && bcInTF < fgNBCsPerTF - fgTFBorderMarginHigh ? 1.0 : 0.0;
-    }
+    uint16_t bcInITSROF = (event.globalBC() + o2::constants::lhc::LHCMaxBunches - fgITSROFbias) % fgITSROFlength;
+    values[kMCIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
+    int64_t bcInTF = (event.globalBC() - fgBCSOR) % fgNBCsPerTF;
+    values[kMCIsNoTFBorderRecomputed] = bcInTF > fgTFBorderMarginLow && bcInTF < fgNBCsPerTF - fgTFBorderMarginHigh ? 1.0 : 0.0;
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
