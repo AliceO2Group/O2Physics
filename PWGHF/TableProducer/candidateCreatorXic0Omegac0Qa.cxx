@@ -377,7 +377,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       massOfCascade = o2::constants::physics::MassOmegaMinus;
     }
     LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-    LOGF(info, "  Chosen reconstruction info: ToXiPi(%d)/ ToOmegaPi(%d)/ ToOmegaKa(%d)", xipiEnabledDca+xipiEnabledKf, omegapiEnabledDca+omegapiEnabledKf, omegakaEnabledDca+omegakaEnabledKf);
+    LOGF(info, "  Chosen reconstruction info: ToXiPi(%d)/ ToOmegaPi(%d)/ ToOmegaKa(%d)", xipiEnabledDca + xipiEnabledKf, omegapiEnabledDca + omegapiEnabledKf, omegakaEnabledDca + omegakaEnabledKf);
     LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
     LOGF(info, "  PDG ID of V0 positive daughter: %d", pdgIdOfV0DauPos);
     LOGF(info, "  PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
@@ -1142,7 +1142,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       std::array<float, 2> impactParameterBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()},trackParCovBach, 2.f, matCorr, &impactParameterBach);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovBach, 2.f, matCorr, &impactParameterBach);
       float dcaxyV0DauPos = impactParameterV0DauPos[0];
       float dcaxyV0DauNeg = impactParameterV0DauNeg[0];
       float dcaxyBach = impactParameterBach[0];
