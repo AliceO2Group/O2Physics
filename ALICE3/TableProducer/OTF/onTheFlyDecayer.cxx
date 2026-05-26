@@ -67,12 +67,15 @@ static const std::vector<int> pdgCodes{PDG_t::kK0Short,
                                        PDG_t::kOmegaMinus,
                                        PDG_t::kOmegaPlusBar};
 
+// Witchcraft
+namespace o2::aod { O2ORIGIN("TMP"); }
+
 struct OnTheFlyDecayer {
-  Produces<aod::McPartWithDaus> tableMcParticlesWithDau;
+  Produces<aod::McCollisions> tableMcCollisions;
+  Produces<aod::StoredMcParticles_001> tableMcParticles;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
-  std::map<int, std::vector<o2::upgrade::OTFParticle>> mDecayDaughters;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
@@ -165,37 +168,46 @@ struct OnTheFlyDecayer {
     decayParticles(stop, stop + ndau);
   }
 
-  void process(aod::McCollision const& collision, aod::McParticles const& mcParticles)
+  void process(aod::McCollisions_001/*From<aod::Hash<"TMP"_h>>*/ const& mcCollisions, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
-    mCollisionId = collision.globalIndex();
-    allParticles.clear();
+    for (const auto& collision : mcCollisions) {
+      allParticles.clear();
+      mCollisionId = collision.globalIndex();
+      tableMcCollisions(collision.bcId(),
+                        collision.generatorsID(),
+                        collision.posX(),
+                        collision.posY(),
+                        collision.posZ(),
+                        collision.t(),
+                        collision.weight(),
+                        collision.impactParameter(),
+                        collision.eventPlaneAngle());
 
-    // First we copy the particles from the table into a vector that is extendable
-    for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
-      const auto& mcParticle = mcParticles.rawIteratorAt(index);
-      allParticles.push_back(o2::upgrade::OTFParticle{mcParticle});
-    }
-
-    // Do all decays
-    decayParticles(0, allParticles.size());
-
-    // Fill output table
-    for (int index{0}; index < static_cast<int>(allParticles.size()); ++index) {
-      const auto& otfParticle = allParticles[index];
-
-      if (otfParticle.hasNaN()) {
-        histos.fill(HIST("hNaNBookkeeping"), 1);
-      } else {
-        histos.fill(HIST("hNaNBookkeeping"), 0);
+      // First we copy the particles from the table into a vector that is extendable
+      for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
+        const auto& mcParticle = mcParticles.rawIteratorAt(index);
+        allParticles.push_back(o2::upgrade::OTFParticle{mcParticle});
       }
 
-      // todo: status codes
-      tableMcParticlesWithDau(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(),
-                              otfParticle.flags(), otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
-                              otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
-                              otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt(),
-                              otfParticle.phi(), otfParticle.eta(), otfParticle.pt(), otfParticle.p(), otfParticle.y(),
-                              otfParticle.isAlive(), otfParticle.isPrimary());
+      // Do all decays
+      decayParticles(0, allParticles.size());
+
+      // Fill output table
+      for (int index{0}; index < static_cast<int>(allParticles.size()); ++index) {
+        const auto& otfParticle = allParticles[index];
+
+        if (otfParticle.hasNaN()) {
+          histos.fill(HIST("hNaNBookkeeping"), 1);
+        } else {
+          histos.fill(HIST("hNaNBookkeeping"), 0);
+        }
+
+        // todo: status codes
+        tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
+                        otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
+                        otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
+                        otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
+      }
     }
   }
 };

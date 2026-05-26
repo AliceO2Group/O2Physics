@@ -27,6 +27,7 @@
 
 namespace o2::upgrade
 {
+static constexpr uint8_t ProducedByDecayer = 0xFF;
 
 class OTFParticle
 {

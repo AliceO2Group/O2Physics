@@ -61,14 +61,14 @@ struct Alice3DecayerQa {
     ConfigurableAxis axisPtLog{"axisPtLog", {VARIABLE_WIDTH, 0.0f, 0.001f, 0.00104713f, 0.00109648f, 0.00114815f, 0.00120226f, 0.00125893f, 0.00131826f, 0.00138038f, 0.00144544f, 0.00151356f, 0.00158489f, 0.00165959f, 0.0017378f, 0.0018197f, 0.00190546f, 0.00199526f, 0.0020893f, 0.00218776f, 0.00229087f, 0.00239883f, 0.00251189f, 0.00263027f, 0.00275423f, 0.00288403f, 0.00301995f, 0.00316228f, 0.00331131f, 0.00346737f, 0.00363078f, 0.00380189f, 0.00398107f, 0.00416869f, 0.00436516f, 0.00457088f, 0.0047863f, 0.00501187f, 0.00524807f, 0.00549541f, 0.0057544f, 0.0060256f, 0.00630957f, 0.00660693f, 0.00691831f, 0.00724436f, 0.00758578f, 0.00794328f, 0.00831764f, 0.00870964f, 0.00912011f, 0.00954993f, 0.01f, 0.0104713f, 0.0109648f, 0.0114815f, 0.0120226f, 0.0125893f, 0.0131826f, 0.0138038f, 0.0144544f, 0.0151356f, 0.0158489f, 0.0165959f, 0.017378f, 0.018197f, 0.0190546f, 0.0199526f, 0.020893f, 0.0218776f, 0.0229087f, 0.0239883f, 0.0251189f, 0.0263027f, 0.0275423f, 0.0288403f, 0.0301995f, 0.0316228f, 0.0331131f, 0.0346737f, 0.0363078f, 0.0380189f, 0.0398107f, 0.0416869f, 0.0436516f, 0.0457088f, 0.047863f, 0.0501187f, 0.0524807f, 0.0549541f, 0.057544f, 0.060256f, 0.0630957f, 0.0660693f, 0.0691831f, 0.0724436f, 0.0758578f, 0.0794328f, 0.0831764f, 0.0870964f, 0.0912011f, 0.0954993f, 0.1f, 0.104713f, 0.109648f, 0.114815f, 0.120226f, 0.125893f, 0.131826f, 0.138038f, 0.144544f, 0.151356f, 0.158489f, 0.165959f, 0.17378f, 0.18197f, 0.190546f, 0.199526f, 0.20893f, 0.218776f, 0.229087f, 0.239883f, 0.251189f, 0.263027f, 0.275423f, 0.288403f, 0.301995f, 0.316228f, 0.331131f, 0.346737f, 0.363078f, 0.380189f, 0.398107f, 0.416869f, 0.436516f, 0.457088f, 0.47863f, 0.501187f, 0.524807f, 0.549541f, 0.57544f, 0.60256f, 0.630957f, 0.660693f, 0.691831f, 0.724436f, 0.758578f, 0.794328f, 0.831764f, 0.870964f, 0.912011f, 0.954993f, 1.0f, 1.04713f, 1.09648f, 1.14815f, 1.20226f, 1.25893f, 1.31826f, 1.38038f, 1.44544f, 1.51356f, 1.58489f, 1.65959f, 1.7378f, 1.8197f, 1.90546f, 1.99526f, 2.0893f, 2.18776f, 2.29087f, 2.39883f, 2.51189f, 2.63027f, 2.75423f, 2.88403f, 3.01995f, 3.16228f, 3.31131f, 3.46737f, 3.63078f, 3.80189f, 3.98107f, 4.16869f, 4.36516f, 4.57088f, 4.7863f, 5.01187f, 5.24807f, 5.49541f, 5.7544f, 6.0256f, 6.30957f, 6.60693f, 6.91831f, 7.24436f, 7.58578f, 7.94328f, 8.31764f, 8.70964f, 9.12011f, 9.54993f, 10.0f}, "pt axis for QA histograms"};
   } axes;
 
-  Partition<aod::McPartWithDaus> trueElectrons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kElectron);
-  Partition<aod::McPartWithDaus> trueMuons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kMuonMinus);
-  Partition<aod::McPartWithDaus> truePions = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kPiPlus);
-  Partition<aod::McPartWithDaus> trueKaons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kKMinus);
-  Partition<aod::McPartWithDaus> trueProtons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kProton);
-  Partition<aod::McPartWithDaus> trueK0Short = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kK0Short);
-  Partition<aod::McPartWithDaus> trueLambdas = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kLambda0);
-  Partition<aod::McPartWithDaus> trueXiMinus = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiMinus);
+  Partition<aod::McParticles> trueElectrons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kElectron);
+  Partition<aod::McParticles> trueMuons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kMuonMinus);
+  Partition<aod::McParticles> truePions = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kPiPlus);
+  Partition<aod::McParticles> trueKaons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kKMinus);
+  Partition<aod::McParticles> trueProtons = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kProton);
+  Partition<aod::McParticles> trueK0Short = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kK0Short);
+  Partition<aod::McParticles> trueLambdas = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kLambda0);
+  Partition<aod::McParticles> trueXiMinus = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiMinus);
 
   static constexpr size_t NCascadeDaughters = 2;
   static constexpr size_t NV0Daughters = 2;
