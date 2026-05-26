@@ -453,10 +453,11 @@ class BcSelectionModule
       return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
-    // map from GlobalBC to BcId needed to find triggerBc
-    std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
+    // sorted vector from GlobalBC to BcId needed to find triggerBc
+    std::vector<std::pair<uint64_t, int32_t>> vecGlobalBCtoBcId;
+    vecGlobalBCtoBcId.reserve(bcs.size());
     for (const auto& bc : bcs) {
-      mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
+      vecGlobalBCtoBcId.emplace_back(bc.globalBC(), bc.globalIndex());
     }
 
     int triggerBcShift = bcselOpts.confTriggerBcShift;
@@ -482,7 +483,10 @@ class BcSelectionModule
 
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
-      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
+      uint64_t triggerBC = bc.globalBC() + triggerBcShift;
+      auto it = std::lower_bound(vecGlobalBCtoBcId.begin(), vecGlobalBCtoBcId.end(), triggerBC,
+                                 [](const std::pair<uint64_t, int32_t>& p, uint64_t val) { return p.first < val; });
+      int32_t triggerBcId = (it != vecGlobalBCtoBcId.end() && it->first == triggerBC) ? it->second : 0;
       if (triggerBcId && aliases) {
         auto triggerBc = bcs.iteratorAt(triggerBcId);
         uint64_t triggerMask = triggerBc.triggerMask();
