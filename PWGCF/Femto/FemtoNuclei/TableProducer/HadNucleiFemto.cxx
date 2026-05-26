@@ -193,6 +193,12 @@ struct HadNucleiFemto {
   Configurable<bool> settingEnablePionProtonRejection{"settingEnablePionProtonRejection", true, "If true, apply proton rejection in the pion PID"};
   Configurable<bool> settingEnablePionKaonRejection{"settingEnablePionKaonRejection", true, "If true, apply kaon rejection in the pion PID"};
   Configurable<bool> settingUsePionReferencePIDCuts{"settingUsePionReferencePIDCuts", false, "If true, use the reference pion track/PID cuts from the pi-p study"};
+  Configurable<float> settingPionRefPtMin{"settingPionRefPtMin", 0.14f, "Minimum pT for the reference pion track cuts"};
+  Configurable<float> settingPionRefPtMax{"settingPionRefPtMax", 2.5f, "Maximum pT for the reference pion track cuts"};
+  Configurable<int> settingPionRefITSInnerBarrelMin{"settingPionRefITSInnerBarrelMin", 3, "Minimum ITS inner barrel clusters for the reference pion track cuts"};
+  Configurable<int> settingPionRefITSNClsMin{"settingPionRefITSNClsMin", 7, "Minimum ITS clusters for the reference pion track cuts"};
+  Configurable<int> settingPionRefTPCNClsFoundMin{"settingPionRefTPCNClsFoundMin", 80, "Minimum found TPC clusters for the reference pion track cuts"};
+  Configurable<int> settingPionRefTPCCrossedRowsMin{"settingPionRefTPCCrossedRowsMin", 90, "Minimum crossed TPC rows for the reference pion track cuts"};
   // Deuteron purity and PID cuts
   Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
   Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
@@ -540,26 +546,19 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectTrackPionReference(const Ttrack& candidate)
   {
-    constexpr float pionRefPtMin = 0.14f;
-    constexpr float pionRefPtMax = 2.5f;
-    constexpr int pionRefITSInnerBarrelMin = 3;
-    constexpr int pionRefITSNClsMin = 7;
-    constexpr int pionRefTPCNClsFoundMin = 80;
-    constexpr int pionRefTPCCrossedRowsMin = 90;
-
     if (std::abs(candidate.eta()) > settingCutEta) {
       return false;
     }
 
     const float absPt = std::abs(candidate.pt());
-    if (absPt < pionRefPtMin || absPt > pionRefPtMax) {
+    if (absPt < settingPionRefPtMin || absPt > settingPionRefPtMax) {
       return false;
     }
 
-    if (candidate.itsNClsInnerBarrel() < pionRefITSInnerBarrelMin ||
-        candidate.itsNCls() < pionRefITSNClsMin ||
-        candidate.tpcNClsFound() < pionRefTPCNClsFoundMin ||
-        candidate.tpcNClsCrossedRows() < pionRefTPCCrossedRowsMin) {
+    if (candidate.itsNClsInnerBarrel() < settingPionRefITSInnerBarrelMin ||
+        candidate.itsNCls() < settingPionRefITSNClsMin ||
+        candidate.tpcNClsFound() < settingPionRefTPCNClsFoundMin ||
+        candidate.tpcNClsCrossedRows() < settingPionRefTPCCrossedRowsMin) {
       return false;
     }
 
