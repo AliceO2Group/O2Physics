@@ -1706,7 +1706,7 @@ struct taggingHFE {
         npos++;
         leptonTable(eventTable.lastIndex() + 1, mcCollision_mcpos.getSubGeneratorId(),
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), RecoDecay::constrainAngle(leptonParCov.getPhi(), 0, 1U), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
-                    isMotherFromB, mcMother.pdgCode(), isCorrectCollision);
+                    isMotherFromB, mcMother.pdgCode(), mcMother.globalIndex(), isCorrectCollision);
 
         // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonMinusIds) {
@@ -1753,16 +1753,18 @@ struct taggingHFE {
             continue;
           }
 
-          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
-          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
           emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
-                     kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     // kaon.tpcNSigmaPr(), tofNSigmaPr,
+                     eKpair.mass, eKpair.ptSVL, eKpair.plSVL, eKpair.ptSVH, eKpair.plSVH,
+                     eKpair.ptFD, eKpair.plFD, eKpair.ptFDL, eKpair.plFDL, eKpair.ptFDH, eKpair.plFDH,
+                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
                      eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
@@ -1812,16 +1814,18 @@ struct taggingHFE {
             continue;
           }
 
-          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
-          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
           emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
-                     kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     // kaon.tpcNSigmaPr(), tofNSigmaPr,
+                     eKpair.mass, eKpair.ptSVL, eKpair.plSVL, eKpair.ptSVH, eKpair.plSVH,
+                     eKpair.ptFD, eKpair.plFD, eKpair.ptFDL, eKpair.plFDL, eKpair.ptFDH, eKpair.plFDH,
+                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
                      eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
@@ -1898,7 +1902,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.ptSVL, eV0pair.plSVL, eV0pair.ptSVH, eV0pair.plSVH,
+                      eV0pair.ptFD, eV0pair.plFD, eV0pair.ptFDL, eV0pair.plFDL, eV0pair.ptFDH, eV0pair.plFDH,
+                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
                       eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
@@ -1959,7 +1965,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.ptSVL, eV0pair.plSVL, eV0pair.ptSVH, eV0pair.plSVH,
+                      eV0pair.ptFD, eV0pair.plFD, eV0pair.ptFDL, eV0pair.plFDL, eV0pair.ptFDH, eV0pair.plFDH,
+                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
                       eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
@@ -2025,7 +2033,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.ptSVL, eCpair.plSVL, eCpair.ptSVH, eCpair.plSVH,
+                        eCpair.ptFD, eCpair.plFD, eCpair.ptFDL, eCpair.plFDL, eCpair.ptFDH, eCpair.plFDH,
+                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
                         eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
@@ -2091,7 +2101,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.ptSVL, eCpair.plSVL, eCpair.ptSVH, eCpair.plSVH,
+                        eCpair.ptFD, eCpair.plFD, eCpair.ptFDL, eCpair.plFDL, eCpair.ptFDH, eCpair.plFDH,
+                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
                         eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
@@ -2131,7 +2143,7 @@ struct taggingHFE {
         nele++;
         leptonTable(eventTable.lastIndex() + 1, mcCollision_mcele.getSubGeneratorId(),
                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), RecoDecay::constrainAngle(leptonParCov.getPhi(), 0, 1U), dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZY(), leptonParCov.getSigmaZ2(),
-                    isMotherFromB, mcMother.pdgCode(), isCorrectCollision);
+                    isMotherFromB, mcMother.pdgCode(), mcMother.globalIndex(), isCorrectCollision);
 
         for (const auto& kaonId : kaonMinusIds) {
           auto kaon = tracks.rawIteratorAt(kaonId);
@@ -2177,16 +2189,18 @@ struct taggingHFE {
             continue;
           }
 
-          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
-          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
           emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
-                     kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     // kaon.tpcNSigmaPr(), tofNSigmaPr,
+                     eKpair.mass, eKpair.ptSVL, eKpair.plSVL, eKpair.ptSVH, eKpair.plSVH,
+                     eKpair.ptFD, eKpair.plFD, eKpair.ptFDL, eKpair.plFDL, eKpair.ptFDH, eKpair.plFDH,
+                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
                      eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
@@ -2237,16 +2251,18 @@ struct taggingHFE {
             continue;
           }
 
-          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
           float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
-          float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          // float tofNSigmaPr = mapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
 
           emmlltpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
-                     kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     // kaon.tpcNSigmaPr(), tofNSigmaPr,
+                     eKpair.mass, eKpair.ptSVL, eKpair.plSVL, eKpair.ptSVH, eKpair.plSVH,
+                     eKpair.ptFD, eKpair.plFD, eKpair.ptFDL, eKpair.plFDL, eKpair.ptFDH, eKpair.plFDH,
+                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
                      eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
@@ -2322,7 +2338,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.ptSVL, eV0pair.plSVL, eV0pair.ptSVH, eV0pair.plSVH,
+                      eV0pair.ptFD, eV0pair.plFD, eV0pair.ptFDL, eV0pair.plFDL, eV0pair.ptFDH, eV0pair.plFDH,
+                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
                       eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
@@ -2383,7 +2401,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.ptSVL, eV0pair.plSVL, eV0pair.ptSVH, eV0pair.plSVH,
+                      eV0pair.ptFD, eV0pair.plFD, eV0pair.ptFDL, eV0pair.plFDL, eV0pair.ptFDH, eV0pair.plFDH,
+                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
                       eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
@@ -2449,7 +2469,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.ptSVL, eCpair.plSVL, eCpair.ptSVH, eCpair.plSVH,
+                        eCpair.ptFD, eCpair.plFD, eCpair.ptFDL, eCpair.plFDL, eCpair.ptFDH, eCpair.plFDH,
+                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
                         eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
@@ -2515,7 +2537,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.ptSVL, eCpair.plSVL, eCpair.ptSVH, eCpair.plSVH,
+                        eCpair.ptFD, eCpair.plFD, eCpair.ptFDL, eCpair.plFDL, eCpair.ptFDH, eCpair.plFDH,
+                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
                         eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
