@@ -85,9 +85,9 @@ struct CoalescenceTreeProducer {
   float xB2, yB2, zB2, tB2, pxB2, pyB2, pzB2;
   float xB3, yB3, zB3, tB3, pxB3, pyB3, pzB3;
 
-  static constexpr double MassP = 0.9382720813;
-  static constexpr double MassN = 0.9395654133;
-  static constexpr double MassL = 1.1156830000;
+  static constexpr double MassP = o2::constants::physics::MassProton;
+  static constexpr double MassN = o2::constants::physics::MassNeutron;
+  static constexpr double MassL = o2::constants::physics::MassLambda0;
 
   struct Particle {
     int64_t id;
@@ -157,23 +157,24 @@ struct CoalescenceTreeProducer {
 
   int chargeFromPdg(int pdg) const
   {
-    if (pdg == 2212) {
-      return 1;
+    int charge(0);
+    if (pdg == PDG_t::kProton) {
+      charge = 1;
     }
-    if (pdg == -2212) {
-      return -1;
+    if (pdg == PDG_t::kProtonBar) {
+      charge = -1;
     }
-    return 0;
+    return charge;
   }
 
   double massFromPdg(int pdg) const
   {
     switch (std::abs(pdg)) {
-      case 2212:
+      case PDG_t::kProton:
         return MassP;
-      case 2112:
+      case PDG_t::kNeutron:
         return MassN;
-      case 3122:
+      case PDG_t::kLambda0:
         return MassL;
       default:
         return -1.;
@@ -495,17 +496,17 @@ struct CoalescenceTreeProducer {
 
       const int pdg = particle.pdgCode();
 
-      if (pdg == 2212) {
+      if (pdg == PDG_t::kProton) {
         protons.push_back(makeParticle(particle));
-      } else if (pdg == -2212) {
+      } else if (pdg == PDG_t::kProtonBar) {
         antiProtons.push_back(makeParticle(particle));
-      } else if (pdg == 2112) {
+      } else if (pdg == PDG_t::kNeutron) {
         neutrons.push_back(makeParticle(particle));
-      } else if (pdg == -2112) {
+      } else if (pdg == PDG_t::kNeutronBar) {
         antiNeutrons.push_back(makeParticle(particle));
-      } else if (pdg == 3122) {
+      } else if (pdg == PDG_t::kLambda0) {
         lambdas.push_back(makeParticle(particle));
-      } else if (pdg == -3122) {
+      } else if (pdg == PDG_t::kLambda0Bar) {
         antiLambdas.push_back(makeParticle(particle));
       }
     }
@@ -575,8 +576,9 @@ struct CoalescenceTreeProducer {
                             std::vector<Particle> const& neutrons,
                             std::vector<Particle> const& antiNeutrons) const
   {
-    return (protons.size() >= 2 && !neutrons.empty()) ||
-           (antiProtons.size() >= 2 && !antiNeutrons.empty());
+    int minimumSizeContainer = 2;
+    return (protons.size() >= minimumSizeContainer && !neutrons.empty()) ||
+           (antiProtons.size() >= minimumSizeContainer && !antiNeutrons.empty());
   }
 
   bool hasTritonCandidates(std::vector<Particle> const& protons,
@@ -584,8 +586,9 @@ struct CoalescenceTreeProducer {
                            std::vector<Particle> const& neutrons,
                            std::vector<Particle> const& antiNeutrons) const
   {
-    return (!protons.empty() && neutrons.size() >= 2) ||
-           (!antiProtons.empty() && antiNeutrons.size() >= 2);
+    int minimumSizeContainer = 2;
+    return (!protons.empty() && neutrons.size() >= minimumSizeContainer) ||
+           (!antiProtons.empty() && antiNeutrons.size() >= minimumSizeContainer);
   }
 
   bool hasHypertritonCandidates(std::vector<Particle> const& protons,
