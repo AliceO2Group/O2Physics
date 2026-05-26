@@ -2176,7 +2176,6 @@ struct QaMatching {
         continue;
 
       // loop over candidates
-      int candidateIndex = 1;
       for (const auto& candidate : globalTracksVector) {
         auto const& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
 
@@ -2188,8 +2187,6 @@ struct QaMatching {
 
         std::get<std::shared_ptr<TH2>>(plotter->fMatchScoreVsProd)->Fill(matchScoreProd, matchScore);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchChi2VsProd)->Fill(matchChi2Prod, matchChi2);
-
-        candidateIndex += 1;
       }
     }
   }
@@ -2315,7 +2312,6 @@ struct QaMatching {
           std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPhi)->Fill(dphi, candidate.matchScore, candidate.matchRanking, matchType);
           std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaTanl)->Fill(dtanl, candidate.matchScore, candidate.matchRanking, matchType);
           std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaEta)->Fill(deta, candidate.matchScore, candidate.matchRanking, matchType);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hRabs)->Fill(deta, candidate.matchScore, candidate.matchRanking, matchType);
           std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hRabs)->Fill(mchTrack.rAtAbsorberEnd(), candidate.matchScore, candidate.matchRanking, matchType);
         }
       }
