@@ -21,11 +21,11 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramSpec.h>
@@ -33,7 +33,7 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TRandom3.h"
+#include <TRandom3.h>
 #include <Math/Vector4D.h>
 #include <TH1.h>
 #include <TMath.h>
@@ -123,7 +123,7 @@ struct TrackJetSpectra {
 
   //------------------------------------------------------------
 
-  TRandom3* rand = new TRandom3(0);
+  TRandom3 rand = TRandom3(0);
   // Declare filter on collision Z vertex
   Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter collisionFilterMC = nabs(aod::jmccollision::posZ) < vertexZCut;
@@ -185,188 +185,188 @@ struct TrackJetSpectra {
 
     // Disitribution of tracks
     if (doprocessJetsMCDet || doprocessJetsMCDetWeighted || doprocessJets) {
-      spectra.add("hPocetTracku", "Pocet", kTH1F, {{1000, 0., 1000., "Pocet Eventu"}});
-      spectra.add("hPocetSignalTriggeru", "Pocet", kTH1F, {{10, 0., 10., "Pocet Eventu"}});
-      spectra.add("hPocetReferenceTriggeru", "Pocet", kTH1F, {{10, 0., 10., "Pocet Eventu"}});
-      spectra.add("hRecoilJetRefPt", "#it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Pocet Eventu"}, centrality});
-      spectra.add("hRecoilJetSigPt", "#it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Pocet Eventu"}, centrality});
-      spectra.add("hRecoilJetRefCorrPt", "Corrected #it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Pocet Eventu"}, centrality});
-      spectra.add("hRecoilJetSigCorrPt", "Corrected #it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Pocet Eventu"}, centrality});
-      spectra.add("hTrackPt", "#it{p}_{T} distribution of tracks", kTH2F, {pT, centrality});
-      spectra.add("hTrackPhi", "#varphi distribution of tracks", kTH1F, {phiAngle});
-      spectra.add("hTrackEta", "#eta distribution of tracks", kTH1F, {etaTracks});
+		      spectra.add("hNumberOfTracks", "Number", kTH1F, {{1000, 0., 1000., "Number of Events"}});
+		      spectra.add("hNumberOfSignalTriggers", "Number", kTH1F, {{10, 0., 10., "Number of Events"}});
+		      spectra.add("hNumberOfReferenceTriggers", "Number", kTH1F, {{10, 0., 10., "Number of Events"}});
+		      spectra.add("hRecoilJetRefPt", "#it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Number of Events"}, centrality});
+		      spectra.add("hRecoilJetSigPt", "#it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Number of Events"}, centrality});
+		      spectra.add("hRecoilJetRefCorrPt", "Corrected #it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Number of Events"}, centrality});
+		      spectra.add("hRecoilJetSigCorrPt", "Corrected #it{p}_{T} distribution of recoil jets", kTH2F, {{200, 0., 200., "Number of Events"}, centrality});
+		      spectra.add("hTrackPt", "#it{p}_{T} distribution of tracks", kTH2F, {pT, centrality});
+		      spectra.add("hTrackPhi", "#varphi distribution of tracks", kTH1F, {phiAngle});
+		      spectra.add("hTrackEta", "#eta distribution of tracks", kTH1F, {etaTracks});
 
-      spectra.add("hTrackPtPhi", "#it{p}_{T} vs. #varphi distribution of tracks", kTH2F, {pT, phiAngle});
-      spectra.add("hTrackPtEta", "#it{p}_{T} vs. #eta distribution of tracks", kTH2F, {pT, etaTracks});
+		      spectra.add("hTrackPtPhi", "#it{p}_{T} vs. #varphi distribution of tracks", kTH2F, {pT, phiAngle});
+		      spectra.add("hTrackPtEta", "#it{p}_{T} vs. #eta distribution of tracks", kTH2F, {pT, etaTracks});
 
-      spectra.add("hTrackPtPhiEta", "#it{p}_{T} vs. #varphi vs. #eta distribution of tracks", kTH3F, {pT, phiAngle, etaTracks});
+		      spectra.add("hTrackPtPhiEta", "#it{p}_{T} vs. #varphi vs. #eta distribution of tracks", kTH3F, {pT, phiAngle, etaTracks});
 
-      // Distribution of jets
-      spectra.add("hJetPt", "#it{p}_{T} distribution of jets", kTH1F, {pT});
-      spectra.add("hJetPhi", "#varphi distribution of jets", kTH1F, {phiAngle});
-      spectra.add("hJetEta", "#eta distribution of jets", kTH1F, {etaJets});
+		      // Distribution of jets
+		      spectra.add("hJetPt", "#it{p}_{T} distribution of jets", kTH1F, {pT});
+		      spectra.add("hJetPhi", "#varphi distribution of jets", kTH1F, {phiAngle});
+		      spectra.add("hJetEta", "#eta distribution of jets", kTH1F, {etaJets});
 
-      spectra.add("hJetPtPhi", "#it{p}_{T} vs. #varphi distribution of jets", kTH2F, {pT, phiAngle});
-      spectra.add("hJetPtEta", "#it{p}_{T} vs. #eta distribution of jets", kTH2F, {pT, etaJets});
+		      spectra.add("hJetPtPhi", "#it{p}_{T} vs. #varphi distribution of jets", kTH2F, {pT, phiAngle});
+		      spectra.add("hJetPtEta", "#it{p}_{T} vs. #eta distribution of jets", kTH2F, {pT, etaJets});
 
-      spectra.add("hJetPtPhiEta", "#it{p}_{T} vs. #varphi vs. #eta distribution of jets", kTH3F, {pT, phiAngle, etaJets});
+		      spectra.add("hJetPtPhiEta", "#it{p}_{T} vs. #varphi vs. #eta distribution of jets", kTH3F, {pT, phiAngle, etaJets});
 
-      spectra.add("hMultFT0A", "Mult. signal from FTOA", kTH2F, {{2000, 0.0, 40000., "FT0A"}, centrality});
-      spectra.add("hMultFT0C", "Mult. signal from FTOC", kTH2F, {{2000, 0.0, 40000., "FT0C"}, centrality});
+		      spectra.add("hMultFT0A", "Mult. signal from FTOA", kTH2F, {{2000, 0.0, 40000., "FT0A"}, centrality});
+		      spectra.add("hMultFT0C", "Mult. signal from FTOC", kTH2F, {{2000, 0.0, 40000., "FT0C"}, centrality});
 
-      spectra.add("hJetPtCorr", "#it{p}_{T} distribution of jets", kTH1F, {pT});
+		      spectra.add("hJetPtCorr", "#it{p}_{T} distribution of jets", kTH1F, {pT});
 
-      spectra.add("hRho", "distribution of rho", kTH1F, {rho});
-      spectra.add("hjetArea", "distribution of jet area", kTH1F, {jetArea});
+		      spectra.add("hRho", "distribution of rho", kTH1F, {rho});
+		      spectra.add("hjetArea", "distribution of jet area", kTH1F, {jetArea});
 
-      spectra.add("JetAreavsPt", "#it{p}_{T} vs. jet area distribution of jets", kTH2F, {pT, jetArea});
-      spectra.add("hRhovsNTracks", "Rho vs number of tracks", kTH2F, {{2000, 0.0, 40000., "NTracks"}, rho});
-      spectra.add("hRhovsCentrality", "Rho vs number of tracks", kTH2F, {centrality, rho});
+		      spectra.add("JetAreavsPt", "#it{p}_{T} vs. jet area distribution of jets", kTH2F, {pT, jetArea});
+		      spectra.add("hRhovsNTracks", "Rho vs number of tracks", kTH2F, {{2000, 0.0, 40000., "NTracks"}, rho});
+		      spectra.add("hRhovsCentrality", "Rho vs number of tracks", kTH2F, {centrality, rho});
 
-      spectra.add("hSigCorrConePt", "distribution of Signal Corrected perpendicular Cone Pt", kTH1F, {pT});
-      spectra.add("hRefCorrConePt", "distribution of Reference Corrected perpendicular Cone Pt", kTH1F, {pT});
+		      spectra.add("hSigCorrConePt", "distribution of Signal Corrected perpendicular Cone Pt", kTH1F, {pT});
+		      spectra.add("hRefCorrConePt", "distribution of Reference Corrected perpendicular Cone Pt", kTH1F, {pT});
 
-      spectra.add("hSigRandCorrConePt", "distribution of Signal Corrected random Cone Pt", kTH2F, {pT, centrality});
-      spectra.add("hRefRandCorrConePt", "distribution of Reference Corrected random Cone Pt", kTH2F, {pT, centrality});
+		      spectra.add("hSigRandCorrConePt", "distribution of Signal Corrected random Cone Pt", kTH2F, {pT, centrality});
+		      spectra.add("hRefRandCorrConePt", "distribution of Reference Corrected random Cone Pt", kTH2F, {pT, centrality});
 
-      spectra.add("hTTCountData", "Pocet", kTH2F, {{2, 0., 2., "Pocet TT Data"}, centrality});
-    }
+		      spectra.add("hTTCountData", "Number", kTH2F, {{2, 0., 2., "Number TT Data"}, centrality});
+		    }
 
-    if (doprocessJetsMatched) {
-      spectra.add("hDetLevelInclusiveJetsPt", "All reconstructed inclusive jets", kTH1F, {{200, 0.0, 200.}}, setSumw2);
-      spectra.add("hFakeInclusiveJetsPt", "Det. level inclusive jets w/o matched pair", kTH1F, {{200, 0.0, 200.}}, setSumw2);
+		    if (doprocessJetsMatched) {
+		      spectra.add("hDetLevelInclusiveJetsPt", "All reconstructed inclusive jets", kTH1F, {{200, 0.0, 200.}}, setSumw2);
+		      spectra.add("hFakeInclusiveJetsPt", "Det. level inclusive jets w/o matched pair", kTH1F, {{200, 0.0, 200.}}, setSumw2);
 
-      spectra.add("hMissedJets_pT", "Part. level jets w/o matched pair", kTH1F, {{200, 0.0, 200.}}, setSumw2);
-      spectra.add("hMissedJets_pT_RecoilJets", "Part. level jets w/o matched pair", kTH1F, {{200, 0.0, 200.}}, setSumw2);
+		      spectra.add("hMissedJets_pT", "Part. level jets w/o matched pair", kTH1F, {{200, 0.0, 200.}}, setSumw2);
+		      spectra.add("hMissedJets_pT_RecoilJets", "Part. level jets w/o matched pair", kTH1F, {{200, 0.0, 200.}}, setSumw2);
 
-      spectra.add("hJetPt_resolution", "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{100, -5., 5.}, pT}, setSumw2);
-      spectra.add("hJetPhi_resolution", "#varphi resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{40, -1., 1.}, pT}, setSumw2);
+		      spectra.add("hJetPt_resolution", "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{100, -5., 5.}, pT}, setSumw2);
+		      spectra.add("hJetPhi_resolution", "#varphi resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{40, -1., 1.}, pT}, setSumw2);
 
-      spectra.add("hJetPt_DetLevel_vs_PartLevel_RecoilJets", "Correlation recoil jet pT at part. vs. det. levels", kTH2F, {{200, 0.0, 200.}, {200, 0.0, 200.}}, setSumw2);
-      spectra.add("hJetPt_resolution_RecoilJets", "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{100, -5., 5.}, pT}, setSumw2);
-      spectra.add("hJetPhi_resolution_RecoilJets", "#varphi resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{40, -1., 1.}, pT}, setSumw2);
-    }
+		      spectra.add("hJetPt_DetLevel_vs_PartLevel_RecoilJets", "Correlation recoil jet pT at part. vs. det. levels", kTH2F, {{200, 0.0, 200.}, {200, 0.0, 200.}}, setSumw2);
+		      spectra.add("hJetPt_resolution_RecoilJets", "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{100, -5., 5.}, pT}, setSumw2);
+		      spectra.add("hJetPhi_resolution_RecoilJets", "#varphi resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{40, -1., 1.}, pT}, setSumw2);
+		    }
 
-    if (doprocessMCPartLevel || doprocessMCPartLevelWeighted) {
-      spectra.add("hRecoilJetRefPtMCP", "#it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
-      spectra.add("hRecoilJetSigPtMCP", "#it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
-      spectra.add("hRecoilJetRefCorrPtMCP", "Corrected #it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
-      spectra.add("hRecoilJetSigCorrPtMCP", "Corrected #it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
+		    if (doprocessMCPartLevel || doprocessMCPartLevelWeighted) {
+		      spectra.add("hRecoilJetRefPtMCP", "#it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
+		      spectra.add("hRecoilJetSigPtMCP", "#it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
+		      spectra.add("hRecoilJetRefCorrPtMCP", "Corrected #it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
+		      spectra.add("hRecoilJetSigCorrPtMCP", "Corrected #it{p}_{T} distribution of recoil jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
 
-      spectra.add("hEventSelectionCountPartLevel", "Pocet", kTH1F, {{10, 0., 10., "Pocet Eventu"}});
-      spectra.add("hMCPTrackPt", "#it{p}_{T} distribution of tracks", kTH1F, {pT});
+		      spectra.add("hEventSelectionCountPartLevel", "Number", kTH1F, {{10, 0., 10., "Number of Events"}});
+		      spectra.add("hMCPTrackPt", "#it{p}_{T} distribution of tracks", kTH1F, {pT});
 
-      spectra.add("hJetPtEtaPhiRhoArea_Part", "Charact. of inclusive part. level jets", kTHnSparseF, {pT, etaJets, phiAngle, rho, jetArea});
-      spectra.add("hJetPtMCP", "#it{p}_{T} distribution of jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
+		      spectra.add("hJetPtEtaPhiRhoArea_Part", "Charact. of inclusive part. level jets", kTHnSparseF, {pT, etaJets, phiAngle, rho, jetArea});
+		      spectra.add("hJetPtMCP", "#it{p}_{T} distribution of jets", kTH1F, {{200, 0., 200., "p_{T,ch jet} (GeV/c)"}});
 
-      spectra.add("hTTCountPartLevel", "Pocet", kTH1F, {{2, 0., 2., "Pocet TT MCP"}});
-    }
+		      spectra.add("hTTCountPartLevel", "Number", kTH1F, {{2, 0., 2., "Number TT MCP"}});
+		    }
 
-    if (doprocessTrackEfficiency || doprocessTrackEfficiencyMB) {
-      spectra.add("hTrackingEfficiencyDenominatorPt", "#it{p}_{T} distribution", kTH2F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}, centrality});
-      spectra.add("hNonprimaryParticlesPt", "#it{p}_{T} distribution", kTH1F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}});
-      spectra.add("hTrackingEfficiencyNumeratorPt", "#it{p}_{T} distribution", kTH2F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}, centrality});
+		    if (doprocessTrackEfficiency || doprocessTrackEfficiencyMB) {
+		      spectra.add("hTrackingEfficiencyDenominatorPt", "#it{p}_{T} distribution", kTH2F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}, centrality});
+		      spectra.add("hNonprimaryParticlesPt", "#it{p}_{T} distribution", kTH1F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}});
+		      spectra.add("hTrackingEfficiencyNumeratorPt", "#it{p}_{T} distribution", kTH2F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}, centrality});
 
-      spectra.add("hTrackingPhiSmearingPt", "#it{p}_{T} distribution", kTH2F, {pT, dphiAngle});
-      spectra.add("hTrackingEtaSmearingPt", "#it{p}_{T} distribution", kTH2F, {pT, detaTracks});
-      spectra.add("hTrackingPtResolutionPt", "#it{p}_{T} distribution", kTH2F, {pTTrack, pTRes});
+		      spectra.add("hTrackingPhiSmearingPt", "#it{p}_{T} distribution", kTH2F, {pT, dphiAngle});
+		      spectra.add("hTrackingEtaSmearingPt", "#it{p}_{T} distribution", kTH2F, {pT, detaTracks});
+		      spectra.add("hTrackingPtResolutionPt", "#it{p}_{T} distribution", kTH2F, {pTTrack, pTRes});
 
-      spectra.add("hNTracksPerCollision", "Pocet", kTH1F, {{1000, 0., 1000., "Pocet Eventu"}});
+		      spectra.add("hNTracksPerCollision", "Number", kTH1F, {{1000, 0., 1000., "Number of Events"}});
 
-      spectra.add("CentralityC", "#it{p}_{T} distribution", kTH1F, {{100, 0., 100., "p_{T,ch} (GeV/c)"}});
-      spectra.add("CentralityM", "#it{p}_{T} distribution", kTH1F, {{100, 0., 100., "p_{T,ch} (GeV/c)"}});
-      spectra.add("AllTracksPtCent", "#it{p}_{T} distribution", kTH2F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}, centrality});
-    }
-  }
+		      spectra.add("CentralityC", "#it{p}_{T} distribution", kTH1F, {{100, 0., 100., "p_{T,ch} (GeV/c)"}});
+		      spectra.add("CentralityM", "#it{p}_{T} distribution", kTH1F, {{100, 0., 100., "p_{T,ch} (GeV/c)"}});
+		      spectra.add("AllTracksPtCent", "#it{p}_{T} distribution", kTH2F, {{200, 0., 200., "p_{T,ch} (GeV/c)"}, centrality});
+		    }
+		  }
 
-  //------------------------------------------------------------------------------
+		  //------------------------------------------------------------------------------
 
-  template <typename Collision, typename Jets, typename Tracks>
-  void fillHistograms(Collision const& collision, Jets const& jets,
-                      Tracks const& tracks, float weight = 1.)
+		  template <typename Collision, typename Jets, typename Tracks>
+		  void fillHistograms(Collision const& collision, Jets const& jets,
+				      Tracks const& tracks, float weight = 1.)
 
-  {
+		  {
 
-    const float randomConeDistanceFactor = 2.;
-    const int maxRandomConeIterations = 1000;
+		    const float randomConeDistanceFactor = 2.;
+		    const int maxRandomConeIterations = 1000;
 
-    std::vector<float> sigTrackPhi;
-    std::vector<float> sigTrackEta;
-    std::vector<float> refTrackPhi;
-    std::vector<float> refTrackEta;
+		    std::vector<float> sigTrackPhi;
+		    std::vector<float> sigTrackEta;
+		    std::vector<float> refTrackPhi;
+		    std::vector<float> refTrackEta;
 
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float centralityM = collision.centFT0M();
+		    float multFT0A = collision.multFT0A();
+		    float multFT0C = collision.multFT0C();
+		    float centralityM = collision.centFT0M();
 
-    spectra.fill(HIST("hMultFT0A"), multFT0A, centralityM, weight);
-    spectra.fill(HIST("hMultFT0C"), multFT0C, centralityM, weight);
+		    spectra.fill(HIST("hMultFT0A"), multFT0A, centralityM, weight);
+		    spectra.fill(HIST("hMultFT0C"), multFT0C, centralityM, weight);
 
-    float jetR2 = jetR * jetR;
-    float rho = collision.rho();
+		    float jetR2 = jetR * jetR;
+		    float rho = collision.rho();
 
-    spectra.fill(HIST("hRho"), rho, weight);
+		    spectra.fill(HIST("hRho"), rho, weight);
 
-    int i = 0;
-    for (const auto& track : tracks) {
-      // check whether track passes the selection flags
-      if (skipTrack(track))
-        continue;
-      i++;
-      auto trackPt = track.pt();
-      auto trackPhi = track.phi();
-      auto trackEta = track.eta();
+		    int i = 0;
+		    for (const auto& track : tracks) {
+		      // check whether track passes the selection flags
+		      if (skipTrack(track))
+			continue;
+		      i++;
+		      auto trackPt = track.pt();
+		      auto trackPhi = track.phi();
+		      auto trackEta = track.eta();
 
-      spectra.fill(HIST("hTrackPt"), trackPt, centralityM, weight);
-      spectra.fill(HIST("hTrackPhi"), trackPhi, weight);
-      spectra.fill(HIST("hTrackEta"), trackEta, weight);
+		      spectra.fill(HIST("hTrackPt"), trackPt, centralityM, weight);
+		      spectra.fill(HIST("hTrackPhi"), trackPhi, weight);
+		      spectra.fill(HIST("hTrackEta"), trackEta, weight);
 
-      spectra.fill(HIST("hTrackPtPhi"), trackPt, trackPhi, weight);
-      spectra.fill(HIST("hTrackPtEta"), trackPt, trackEta, weight);
+		      spectra.fill(HIST("hTrackPtPhi"), trackPt, trackPhi, weight);
+		      spectra.fill(HIST("hTrackPtEta"), trackPt, trackEta, weight);
 
-      spectra.fill(HIST("hTrackPtPhiEta"), trackPt, trackPhi, trackEta, weight);
+		      spectra.fill(HIST("hTrackPtPhiEta"), trackPt, trackPhi, trackEta, weight);
 
-      if ((signalTriggerMin <= trackPt) && (trackPt <= signalTriggerMax)) {
-        sigTrackPhi.push_back(trackPhi);
-        sigTrackEta.push_back(trackEta);
-      }
+		      if ((signalTriggerMin <= trackPt) && (trackPt <= signalTriggerMax)) {
+			sigTrackPhi.push_back(trackPhi);
+			sigTrackEta.push_back(trackEta);
+		      }
 
-      if ((referenceTriggerMin <= trackPt) && (trackPt <= referenceTriggerMax)) {
-        refTrackPhi.push_back(trackPhi);
-        refTrackEta.push_back(trackEta);
-      }
-    }
-    spectra.fill(HIST("hRhovsNTracks"), i, rho, weight);
-    spectra.fill(HIST("hRhovsCentrality"), centralityM, rho, weight);
+		      if ((referenceTriggerMin <= trackPt) && (trackPt <= referenceTriggerMax)) {
+			refTrackPhi.push_back(trackPhi);
+			refTrackEta.push_back(trackEta);
+		      }
+		    }
+		    spectra.fill(HIST("hRhovsNTracks"), i, rho, weight);
+		    spectra.fill(HIST("hRhovsCentrality"), centralityM, rho, weight);
 
-    float perpConePhi = -99;
-    float phiTT = -999; // this will trigger track phi
-    float etaTT = -999; // trigger track eta
-    float rnd = rand->Rndm();
-    bool analyzeSignal = 0; // 0= reference TT  and 1= signal TT
+		    float perpConePhi = -99;
+		    float phiTT = -999; // this will trigger track phi
+		    float etaTT = -999; // trigger track eta
+		    float rnd = rand.Rndm();
+		    bool analyzeSignal = 0; // 0= reference TT  and 1= signal TT
 
-    if (rnd < sigToRefFraction) {
-      analyzeSignal = 1;
-    }
+		    if (rnd < sigToRefFraction) {
+		      analyzeSignal = 1;
+		    }
 
-    if (analyzeSignal == 0 && refTrackPhi.size() > 0) {
+		    if (analyzeSignal == 0 && refTrackPhi.size() > 0) {
 
-      int ii = rand->Integer(refTrackPhi.size());
-      spectra.fill(HIST("hTTCountData"), 0.5, centralityM, weight);
-      spectra.fill(HIST("hPocetReferenceTriggeru"), static_cast<float>(refTrackPhi.size()), weight);
-      phiTT = refTrackPhi[ii];
-      etaTT = refTrackEta[ii];
+		      int ii = rand.Integer(refTrackPhi.size());
+		      spectra.fill(HIST("hTTCountData"), 0.5, centralityM, weight);
+		      spectra.fill(HIST("hNumberOfReferenceTriggers"), static_cast<float>(refTrackPhi.size()), weight);
+		      phiTT = refTrackPhi[ii];
+		      etaTT = refTrackEta[ii];
 
-    } else if (analyzeSignal == 1 && sigTrackPhi.size() > 0) {
+		    } else if (analyzeSignal == 1 && sigTrackPhi.size() > 0) {
 
-      int ii = rand->Integer(sigTrackPhi.size());
-      spectra.fill(HIST("hTTCountData"), 1.5, centralityM, weight);
-      spectra.fill(HIST("hPocetSignalTriggeru"), static_cast<float>(sigTrackPhi.size()), weight);
-      phiTT = sigTrackPhi[ii];
-      etaTT = sigTrackEta[ii];
-    }
+		      int ii = rand.Integer(sigTrackPhi.size());
+		      spectra.fill(HIST("hTTCountData"), 1.5, centralityM, weight);
+	      spectra.fill(HIST("hNumberOfSignalTriggers"), static_cast<float>(sigTrackPhi.size()), weight);
+	      phiTT = sigTrackPhi[ii];
+	      etaTT = sigTrackEta[ii];
+	    }
 
-    spectra.fill(HIST("hPocetTracku"), i, weight);
+    spectra.fill(HIST("hNumberOfTracks"), i, weight);
 
     for (const auto& jet : jets) {
       // jet spectra before TT selection
@@ -464,8 +464,8 @@ struct TrackJetSpectra {
         break;
       }
 
-      randJetPhi = rand->Uniform(-constants::math::PI, constants::math::PI);
-      randJetEta = rand->Uniform(-0.5, 0.5);
+      randJetPhi = rand.Uniform(-constants::math::PI, constants::math::PI);
+      randJetEta = rand.Uniform(-0.5, 0.5);
 
       float vphi1 = TVector2::Phi_mpi_pi(randJetPhi - jet1Phi);
       float vphi2 = TVector2::Phi_mpi_pi(randJetPhi - jet2Phi);
@@ -473,9 +473,9 @@ struct TrackJetSpectra {
       float veta1 = randJetEta - jet1Eta;
       float veta2 = randJetEta - jet2Eta;
       float vetaTT = randJetEta - etaTT;
-      float dist1 = std::sqrt(vphi1 * vphi1 + veta1 * veta1);
-      float dist2 = std::sqrt(vphi2 * vphi2 + veta2 * veta2);
-      float distTT = std::sqrt(vphiTT * vphiTT + vetaTT * vetaTT);
+      float dist1 = std::hypot(vphi1, veta1);
+      float dist2 = std::hypot(vphi2, veta2);
+      float distTT = std::hypot(vphiTT, vetaTT);
 
       if (dist1 > randomConeDistanceFactor * jetR &&
           dist2 > randomConeDistanceFactor * jetR &&
@@ -554,7 +554,7 @@ struct TrackJetSpectra {
     bool bIsThereTTSig = sigTrackPhi.size() > 0;
 
     if (bIsThereTTSig)
-      phiTT = sigTrackPhi[rand->Integer(sigTrackPhi.size())];
+      phiTT = sigTrackPhi[rand.Integer(sigTrackPhi.size())];
 
     for (const auto& jetBase : jetsBase) {
       bool bIsBaseJetRecoil = false; ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -808,7 +808,7 @@ struct TrackJetSpectra {
 
     std::vector<float> vPhiOfTT;
 
-    float rnd = rand->Rndm();
+    float rnd = rand.Rndm();
     bool analyzeSignal = 0;
     float rho = collision.rho();
 
@@ -839,7 +839,7 @@ struct TrackJetSpectra {
 
     int ii = -1; // index of selected particle level trigger track
     if (vPhiOfTT.size() > 0) {
-      ii = rand->Integer(vPhiOfTT.size());
+      ii = rand.Integer(vPhiOfTT.size());
       if (analyzeSignal == 0) {
         spectra.fill(HIST("hTTCountPartLevel"), 0.5, weight);
       } else {
