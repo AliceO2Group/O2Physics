@@ -119,7 +119,6 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 // using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 //  replace your alias with the extension included:
 using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-
 using MFTTracksLabeled =
   soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd3d,
             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
