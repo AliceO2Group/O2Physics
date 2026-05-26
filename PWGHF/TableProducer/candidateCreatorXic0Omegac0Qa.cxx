@@ -1104,11 +1104,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
       //----------Reconstruct information after vertex fit----------
-      //auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1);
-      //auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1);
-      //auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, kfBachToCasc.GetPDG(), (isAnti ? 1 : -1));
-      //auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, kfCharmBachToCharmBaryon.GetPDG(), (isAnti ? -1 : 1));
-      //auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, kfCascToCharmBaryon.GetPDG(), (isAnti ? 1 : -1));
       auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, (isAnti ? trackPidOfV0DauNeg : trackPidOfV0DauPos), 1);
       auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, (isAnti ? trackPidOfV0DauPos : trackPidOfV0DauNeg), -1);
       auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, trackPidOfBach, (isAnti ? 1 : -1));
