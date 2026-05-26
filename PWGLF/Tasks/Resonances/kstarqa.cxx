@@ -101,6 +101,8 @@ struct Kstarqa {
     Configurable<bool> isapplypTdepPIDTOF{"isapplypTdepPIDTOF", false, "Apply pT dependent PID for TOF"};
     Configurable<bool> isApplyParticleMID{"isApplyParticleMID", false, "Apply particle misidentification"};
     Configurable<bool> isApplyParticleMIDPtDep{"isApplyParticleMIDPtDep", false, "Apply pT dependent MID selection"};
+    Configurable<bool> isapplyPID2{"isapplyPID2", false, "Apply second PID selection"};
+    Configurable<bool> isapplyPID1{"isapplyPID1", true, "Apply default PID selection"};
     Configurable<bool> isApplyParticleMIDPtDep2{"isApplyParticleMIDPtDep2", false, "Apply pT dependent MID selection (nSigma less of contamination lt nSigma of signal)"};
     Configurable<bool> allGenEvents{"allGenEvents", false, "Fill all generated events in MC for signal loss calculations"};
 
@@ -125,8 +127,8 @@ struct Kstarqa {
     Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
     // Configurable<float> ctrackRapidity{"ctrackRapidity", 0.3f, "Cut on track rapidity"};
     Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
-    // Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-    Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "TPC NCL Found"};
+    Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
+    Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "TPC NCL Found"};
     // Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
     // Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 36.0, "ITS Chi2/NCl"};
     // Configurable<float> cfgTPCChi2NClMax{"cfgTPCChi2NClMax", 4.0, "TPC Chi2/NCl"};
@@ -136,6 +138,9 @@ struct Kstarqa {
     Configurable<bool> isApplyPtDepDCAxyCut{"isApplyPtDepDCAxyCut", false, "Apply pT dependent DCAxy cut"};
     // Configurable<bool> isGoldenChi2{"isGoldenChi2", false, "Apply golden chi2 cut"};
     // Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+    Configurable<float> cFakeTrackCutKa{"cFakeTrackCutKa", 0.1, "Cut based on momentum difference in global and TPC tracks for Kaons"};
+    Configurable<float> cBetaCutTOFKaon{"cBetaCutTOFKaon", 0.0, "cut TOF beta"};
+    Configurable<bool> cFakeTrack{"cFakeTrack", true, "Fake track selection"};
 
     // cuts on mother
     // Configurable<bool> isApplyCutsOnMother{"isApplyCutsOnMother", false, "Enable additional cuts on Kstar mother"};
@@ -210,10 +215,6 @@ struct Kstarqa {
   // Configurable<bool> applyRecMotherRapidity{"applyRecMotherRapidity", true, "Apply rapidity cut on reconstructed mother track"};
 
   // Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", false, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
-  // Configurable<float> cBetaCutTOF{"cBetaCutTOF", 0.0, "cut TOF beta"};
-  // Configurable<bool> cFakeTrack{"cFakeTrack", true, "Fake track selection"};
-  // Configurable<float> cFakeTrackCutKa{"cFakeTrackCutKa", 0.5, "Cut based on momentum difference in global and TPC tracks for Kaons"};
-  // Configurable<float> cFakeTrackCutPi{"cFakeTrackCutPi", 0.5, "Cut based on momentum difference in global and TPC tracks for Pions"};
 
   // Configurable for histograms
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", true, "avoid split track in MC"};
@@ -554,15 +555,13 @@ struct Kstarqa {
   bool selectionTrack(const T& candidate)
   {
     if (configGp.isGlobalTracks) {
-      if (!candidate.isGlobalTrackWoDCA())
+      if (!candidate.isGlobalTrack())
         return false;
       if (std::abs(candidate.pt()) < configGp.cfgCutPT)
         return false;
-      // if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax || std::abs(candidate.eta()) < configGp.cfgCutEtaMin)
       if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax)
         return false;
       if (!configGp.isApplyPtDepDCAxyCut) {
-        // if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax || std::abs(candidate.dcaXY()) < configGp.cfgCutDCAxyMin)
         if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax)
           return false;
       } else {
@@ -571,16 +570,10 @@ struct Kstarqa {
       }
       if (std::abs(candidate.dcaZ()) > configGp.cfgCutDCAz)
         return false;
-      // if (candidate.tpcCrossedRowsOverFindableCls() < configGp.cfgRCRFC)
-      //   return false;
-      // if (candidate.itsNCls() < configGp.cfgITScluster)
-      //   return false;
+      if (candidate.itsNCls() < configGp.cfgITScluster)
+        return false;
       if (candidate.tpcNClsFound() < configGp.cfgTPCcluster)
         return false;
-      // if (candidate.itsChi2NCl() >= configGp.cfgITSChi2NCl)
-      //   return false;
-      // if (candidate.tpcChi2NCl() >= configGp.cfgTPCChi2NClMax || candidate.tpcChi2NCl() < configGp.cfgTPCChi2NClMin)
-      //   return false;
       if (configGp.hasITS && !candidate.hasITS())
         return false;
       if (configGp.isITSTPCRefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
@@ -600,8 +593,8 @@ struct Kstarqa {
         return false;
       // if (candidate.tpcCrossedRowsOverFindableCls() < configGp.cfgRCRFC)
       return false;
-      // if (candidate.itsNCls() < configGp.cfgITScluster)
-      //   return false;
+      if (candidate.itsNCls() < configGp.cfgITScluster)
+        return false;
       if (candidate.tpcNClsFound() < configGp.cfgTPCcluster)
         return false;
       // if (candidate.itsChi2NCl() >= configGp.cfgITSChi2NCl)
@@ -617,19 +610,16 @@ struct Kstarqa {
     return true;
   }
 
-  // template <typename T>
-  // bool isFakeTrack(const T& track, int PID)
-  // {
-  //   const auto pglobal = track.p();
-  //   const auto ptpc = track.tpcInnerParam();
-  //   if (PID == 0 && std::abs(pglobal - ptpc) > cFakeTrackCutPi) {
-  //     return true;
-  //   }
-  //   if (PID == 1 && std::abs(pglobal - ptpc) > cFakeTrackCutKa) {
-  //     return true;
-  //   }
-  //   return false;
-  // }
+  template <typename T>
+  bool isFakeTrack(const T& track)
+  {
+    const auto pglobal = track.p();
+    const auto ptpc = track.tpcInnerParam();
+    if (std::abs(pglobal - ptpc) > configGp.cFakeTrackCutKa) {
+      return true;
+    }
+    return false;
+  }
 
   // deep angle cut on pair to remove photon conversion
   template <typename T1, typename T2>
@@ -651,6 +641,34 @@ struct Kstarqa {
     //   return false;
     // }
     return true;
+  }
+
+  template <typename T>
+  bool selectionPID2(const T& candidate, int PID)
+  {
+    float ptThreshold = 0.5; // GeV/c
+    if (PID == PIDParticle::kPion) {
+      if (candidate.pt() < ptThreshold && TMath::Abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi) {
+        return true;
+      }
+      if (candidate.pt() >= ptThreshold && TMath::Abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedPi, 2))) {
+        return true;
+      }
+      if (candidate.pt() >= ptThreshold && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi) {
+        return true;
+      }
+    } else if (PID == PIDParticle::kKaon) {
+      if (candidate.pt() < ptThreshold && TMath::Abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa) {
+        return true;
+      }
+      if (candidate.pt() >= ptThreshold && candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2)) && candidate.beta() > configGp.cBetaCutTOFKaon) {
+        return true;
+      }
+      if (candidate.pt() >= ptThreshold && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa) {
+        return true;
+      }
+    }
+    return false;
   }
 
   template <typename T>
@@ -1156,27 +1174,30 @@ struct Kstarqa {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
+      if (configGp.isapplyPID1 && !selectionPID(track1, 1)) // kaon
         continue;
-      if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPID(track2, 0)) // Track 2 is checked with Pion
-        continue;
-
-      if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPIDPtDep(track1, 1)) // Track 1 is checked with Kaon
-        continue;
-      if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPIDPtDep(track2, 0)) // Track 2 is checked with Pion
+      if (configGp.isapplyPID1 && !selectionPID(track2, 0)) // pion
         continue;
 
-      if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(track1, 1)) // Track 1 is checked with Kaon
+      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track1, 1)) // kaon
         continue;
-      if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(track2, 0)) // Track 2 is checked with Pion
+      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track2, 0)) // pion
+        continue;
+
+      if (configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(track1, 1)) // kaon
+        continue;
+      if (configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(track2, 0)) // pion
+        continue;
+
+      if (configGp.isapplyPID2 && !selectionPID2(track1, 1)) // kaon
+        continue;
+      if (configGp.isapplyPID2 && !selectionPID2(track2, 0)) // pion
         continue;
 
       rEventSelection.fill(HIST("tracksCheckData"), 2.5);
 
-      // if (cFakeTrack && isFakeTrack(track1, 1)) // Kaon
-      //   continue;
-      // if (cFakeTrack && isFakeTrack(track2, 0)) // Pion
-      //   continue;
+      if (configGp.cFakeTrack && isFakeTrack(track1)) // Kaon
+        continue;
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
 
       // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
@@ -1308,21 +1329,25 @@ struct Kstarqa {
                o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
           if (!selectionTrack(t1) || !selectionTrack(t2))
             continue;
-          // if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
-          //   continue;
-          if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPID(t1, 1)) // Track 1 is checked with Kaon
+
+          if (configGp.isapplyPID1 && !selectionPID(t1, 1)) // kaon
             continue;
-          if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPID(t2, 0)) // Track 2 is checked with Pion
+          if (configGp.isapplyPID1 && !selectionPID(t2, 0)) // pion
             continue;
 
-          if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPIDPtDep(t1, 1)) // Track 1 is checked with Kaon
+          if (configGp.isapplypTdepPID && !selectionPIDPtDep(t1, 1)) // kaon
             continue;
-          if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !selectionPIDPtDep(t2, 0)) // Track 2 is checked with Pion
+          if (configGp.isapplypTdepPID && !selectionPIDPtDep(t2, 0)) // pion
             continue;
 
-          if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(t1, 1)) // Track 1 is checked with Kaon
+          if (configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(t1, 1)) // kaon
             continue;
-          if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(t2, 0)) // Track 2 is checked with Pion
+          if (configGp.isapplypTdepPIDTOF && !selectionPIDptDepTOF(t2, 0)) // pion
+            continue;
+
+          if (configGp.isapplyPID2 && !selectionPID2(t1, 1)) // kaon
+            continue;
+          if (configGp.isapplyPID2 && !selectionPID2(t2, 0)) // pion
             continue;
 
           // if (std::abs(t1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
@@ -1331,10 +1356,8 @@ struct Kstarqa {
           // if (std::abs(t2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > configGp.ctrackRapidity)
           // continue;
 
-          // if (cFakeTrack && isFakeTrack(t1, 1)) // Kaon
-          //   continue;
-          // if (cFakeTrack && isFakeTrack(t2, 0)) // Pion
-          //   continue;
+          if (configGp.cFakeTrack && isFakeTrack(t1)) // Kaon
+            continue;
 
           if (configGp.isApplyParticleMID) {
             if (selectionMID(t1, 0)) // Kaon misidentified as pion
@@ -1410,27 +1433,22 @@ struct Kstarqa {
         for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
           if (!selectionTrack(t1) || !selectionTrack(t2))
             continue;
-          // if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
-          //   continue;
-          if (!configGp.isapplypTdepPID && !selectionPID(t1, 1)) // Track 1 is checked with Kaon
+
+          if (configGp.isapplyPID1 && !selectionPID(t1, 1)) // kaon
             continue;
-          if (!configGp.isapplypTdepPID && !selectionPID(t2, 0)) // Track 2 is checked with Pion
+          if (configGp.isapplyPID1 && !selectionPID(t2, 0)) // pion
             continue;
 
-          if (configGp.isapplypTdepPID && !selectionPIDPtDep(t1, 1)) // Track 1 is checked with Kaon
+          if (configGp.isapplypTdepPID && !selectionPIDPtDep(t1, 1)) // kaon
             continue;
-          if (configGp.isapplypTdepPID && !selectionPIDPtDep(t2, 0)) // Track 2 is checked with Pion
+          if (configGp.isapplypTdepPID && !selectionPIDPtDep(t2, 0)) // pion
             continue;
 
           if (configGp.isApplyParticleMID) {
             if (selectionMID(t1, 0)) // Kaon misidentified as pion
               continue;
-            // if (selectionMID(t1, 2)) // Kaon misidentified as proton
-            //   continue;
             if (selectionMID(t2, 1)) // Pion misidentified as kaon
               continue;
-            // if (selectionMID(t2, 2)) // Pion misidentified as proton
-            //   continue;
           }
 
           if (configGp.isApplyParticleMIDPtDep) {
@@ -1446,6 +1464,10 @@ struct Kstarqa {
             if (selectionMIDPtDep2(t2, 1)) // Pion misidentified as kaon
               continue;
           }
+          if (configGp.isapplyPID2 && !selectionPID2(t1, 1)) // kaon
+            continue;
+          if (configGp.isapplyPID2 && !selectionPID2(t2, 0)) // pion
+            continue;
 
           if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
             continue; // skip if no MC particle associated
@@ -1567,27 +1589,28 @@ struct Kstarqa {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if (!configGp.isapplypTdepPID && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
+      if (configGp.isapplyPID1 && !selectionPID(track1, 1)) // kaon
         continue;
-      if (!configGp.isapplypTdepPID && !selectionPID(track2, 0)) // Track 2 is checked with Pion
+      if (configGp.isapplyPID1 && !selectionPID(track2, 0)) // pion
         continue;
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
 
-      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track1, 1)) // Track 1 is checked with Kaon
+      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track1, 1)) // kaon
         continue;
-      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track2, 0)) // Track 2 is checked with Pion
+      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track2, 0)) // pion
         continue;
       rEventSelection.fill(HIST("tracksCheckData"), 4.5);
+
+      if (configGp.isapplyPID2 && !selectionPID2(track1, 1)) // kaon
+        continue;
+      if (configGp.isapplyPID2 && !selectionPID2(track2, 0)) // pion
+        continue;
 
       if (configGp.isApplyParticleMID) {
         if (selectionMID(track1, 0)) // Kaon misidentified as pion
           continue;
-        // if (selectionMID(track1, 2)) // Kaon misidentified as proton
-        //   continue;
         if (selectionMID(track2, 1)) // Pion misidentified as kaon
           continue;
-        // if (selectionMID(track2, 2)) // Pion misidentified as proton
-        //   continue;
       }
 
       if (configGp.isApplyParticleMIDPtDep) {
@@ -1611,10 +1634,8 @@ struct Kstarqa {
       // if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > configGp.ctrackRapidity)
       // continue;
 
-      // if (cFakeTrack && isFakeTrack(track1, 1)) // Kaon
-      //   continue;
-      // if (cFakeTrack && isFakeTrack(track2, 0)) // Pion
-      //   continue;
+      if (configGp.cFakeTrack && isFakeTrack(track1)) // Kaon
+        continue;
       rEventSelection.fill(HIST("tracksCheckData"), 6.5);
 
       if (cQAplots) {
@@ -2146,24 +2167,24 @@ struct Kstarqa {
             rEventSelection.fill(HIST("recMCparticles"), 11.5);
 
             if (track1PDG == PDG_t::kPiPlus) {
-              if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
-                continue;
-              } else if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !(selectionPIDPtDep(track1, 0) && selectionPIDPtDep(track2, 1))) { // pion and kaon
-                continue;
-              } else if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 0) && selectionPIDptDepTOF(track2, 1))) { // pion and kaon
+              if (configGp.isapplyPID1 && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
                 continue;
               }
+              if (configGp.isapplypTdepPID && !(selectionPIDPtDep(track1, 0) && selectionPIDPtDep(track2, 1))) { // pion and kaon
+                continue;
+              }
+              if (configGp.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 0) && selectionPIDptDepTOF(track2, 1))) { // pion and kaon
+                continue;
+              }
+              if (configGp.isapplyPID2 && !selectionPID2(track2, 0)) // pion and kaon
+                continue;
 
               rEventSelection.fill(HIST("recMCparticles"), 12.5);
               if (configGp.isApplyParticleMID) {
                 if (selectionMID(track2, 0)) // Kaon misidentified as pion
                   continue;
-                // if (selectionMID(track2, 2)) // Kaon misidentified as proton
-                //   continue;
                 if (selectionMID(track1, 1)) // Pion misidentified as kaon
                   continue;
-                // if (selectionMID(track1, 2)) // Pion misidentified as proton
-                //   continue;
               }
 
               if (configGp.isApplyParticleMIDPtDep) {
@@ -2198,24 +2219,26 @@ struct Kstarqa {
               }
 
             } else if (track1PDG == PDG_t::kKPlus) {
-              if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // pion and kaon
-                continue;
-              } else if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !(selectionPIDPtDep(track1, 1) && selectionPIDPtDep(track2, 0))) { // pion and kaon
-                continue;
-              } else if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 1) && selectionPIDptDepTOF(track2, 0))) { // pion and kaon
+              if (configGp.isapplyPID1 && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // pion and kaon
                 continue;
               }
+              if (configGp.isapplypTdepPID && !(selectionPIDPtDep(track1, 1) && selectionPIDPtDep(track2, 0))) { // pion and kaon
+                continue;
+              }
+              if (configGp.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 1) && selectionPIDptDepTOF(track2, 0))) { // pion and kaon
+                continue;
+              }
+              if (configGp.isapplyPID2 && !selectionPID2(track1, 1)) // kaon
+                continue;
+              if (configGp.isapplyPID2 && !selectionPID2(track2, 0)) // pion
+                continue;
               rEventSelection.fill(HIST("recMCparticles"), 12.5);
 
               if (configGp.isApplyParticleMID) {
                 if (selectionMID(track2, 1)) // Pion misidentified as kaon
                   continue;
-                // if (selectionMID(track2, 2)) // Kaon misidentified as proton
-                //   continue;
                 if (selectionMID(track1, 0)) // Kaon misidentified as pion
                   continue;
-                // if (selectionMID(track1, 2)) // Pion misidentified as proton
-                //   continue;
               }
 
               if (configGp.isApplyParticleMIDPtDep) {
@@ -2248,13 +2271,6 @@ struct Kstarqa {
                 hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track2.pt());
               }
             }
-
-            /* if (configGp.isApplyCutsOnMother) {
-              if (mothertrack1.pt() >= configGp.cMaxPtMotherCut) // excluding candidates in overflow
-                continue;
-              if ((std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p())) >= configGp.cMaxMinvMotherCut) // excluding candidates in overflow
-                continue;
-            } */
 
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
               hInvMass.fill(HIST("h1KSRecsplit"), mothertrack1.pt());
@@ -2435,24 +2451,26 @@ struct Kstarqa {
             }
             rEventSelection.fill(HIST("recMCparticles"), 10.5);
 
-            if (!configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
-              continue;
-            } else if (configGp.isapplypTdepPID && !configGp.isapplypTdepPIDTOF && !(selectionPIDPtDep(track1, 0) && selectionPIDPtDep(track2, 1))) { // pion and kaon
-              continue;
-            } else if (!configGp.isapplypTdepPID && configGp.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 0) && selectionPIDptDepTOF(track2, 1))) { // pion and kaon
+            if (configGp.isapplyPID1 && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
               continue;
             }
+            if (configGp.isapplypTdepPID && !(selectionPIDPtDep(track1, 0) && selectionPIDPtDep(track2, 1))) { // pion and kaon
+              continue;
+            }
+            if (configGp.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 0) && selectionPIDptDepTOF(track2, 1))) { // pion and kaon
+              continue;
+            }
+            if (configGp.isapplyPID2 && !selectionPID2(track1, 0))
+              continue;
+            if (configGp.isapplyPID2 && !selectionPID2(track2, 1))
+              continue;
             rEventSelection.fill(HIST("recMCparticles"), 11.5);
 
             if (configGp.isApplyParticleMID) {
               if (selectionMID(track1, 1)) // Pion misidentified as kaon
                 continue;
-              // if (selectionMID(track1, 2)) // Kaon misidentified as proton
-              //   continue;
               if (selectionMID(track2, 0)) // Kaon misidentified as pion
                 continue;
-              // if (selectionMID(track2, 2)) // Pion misidentified as proton
-              //   continue;
             }
             rEventSelection.fill(HIST("recMCparticles"), 12.5);
 
@@ -2470,20 +2488,7 @@ struct Kstarqa {
                 continue;
             }
 
-            // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-            // continue;
-
-            // if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > configGp.ctrackRapidity)
-            // continue;
-
             rEventSelection.fill(HIST("recMCparticles"), 13.5);
-
-            /* if (configGp.isApplyCutsOnMother) {
-              if (mothertrack1.pt() >= configGp.cMaxPtMotherCut) // excluding candidates in overflow
-                continue;
-              if ((std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p())) >= configGp.cMaxMinvMotherCut) // excluding candidates in overflow
-                continue;
-            } */
 
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
               hInvMass.fill(HIST("h1KSRecsplit"), mothertrack1.pt());
@@ -2601,22 +2606,20 @@ struct Kstarqa {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with kaon
-      if (!configGp.isapplypTdepPID && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
+      if (!configGp.isapplypTdepPID && !selectionPID(track1, 1)) // kaon
         continue;
       if (!configGp.isapplypTdepPID && !selectionPID(track2, 1)) // Track 2 is checked with kaon
         continue;
 
-      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track1, 1)) // Track 1 is checked with Kaon
+      if (configGp.isapplypTdepPID && !selectionPIDPtDep(track1, 1)) // kaon
         continue;
       if (configGp.isapplypTdepPID && !selectionPIDPtDep(track2, 1)) // Track 2 is checked with kaon
         continue;
 
       rEventSelection.fill(HIST("tracksCheckData"), 2.5);
 
-      // if (cFakeTrack && isFakeTrack(track1, 1)) // Kaon
-      //   continue;
-      // if (cFakeTrack && isFakeTrack(track2, 1)) // Pion
-      //   continue;
+      if (configGp.cFakeTrack && isFakeTrack(track1)) // Kaon
+        continue;
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
 
       // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
@@ -2714,9 +2717,9 @@ struct Kstarqa {
           // if (std::abs(t2.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
           // continue;
 
-          // if (cFakeTrack && isFakeTrack(t1, 1)) // Kaon
+          // if (configGp.cFakeTrack && isFakeTrack(t1, 1)) // Kaon
           //   continue;
-          // if (cFakeTrack && isFakeTrack(t2, 1)) // Kaon
+          // if (configGp.cFakeTrack && isFakeTrack(t2, 1)) // Kaon
           //   continue;
 
           /* if (configGp.isApplyParticleMID) {
@@ -3156,9 +3159,6 @@ struct Kstarqa {
             } */
             rEventSelection.fill(HIST("recMCparticles"), 13.5);
 
-            // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-            // continue;
-
             // if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
             // continue;
             rEventSelection.fill(HIST("recMCparticles"), 14.5);
@@ -3168,13 +3168,6 @@ struct Kstarqa {
               hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
               // hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
             }
-
-            /* if (configGp.isApplyCutsOnMother) {
-              if (mothertrack1.pt() >= configGp.cMaxPtMotherCut) // excluding candidates in overflow
-                continue;
-              if ((std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p())) >= configGp.cMaxMinvMotherCut) // excluding candidates in overflow
-                continue;
-            } */
 
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
               hInvMass.fill(HIST("h1KSRecsplit"), mothertrack1.pt());
