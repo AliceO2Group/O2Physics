@@ -526,7 +526,7 @@ struct TableMakerMC {
 
     // Loop over MC collisions
     for (auto& mcCollision : mcCollisions) {
-      auto bc = mcCollision.template bc_as<TBCs>();
+      auto bc = mcCollision.template bc_as<BCsWithTimestamps>();
       // Get MC collision information into the VarManager
       VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
       // Fill histograms
