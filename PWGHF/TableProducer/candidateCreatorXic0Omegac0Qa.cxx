@@ -1104,7 +1104,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
       //----------Reconstruct information after vertex fit----------
-      
       //auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1);
       //auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1);
       //auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, kfBachToCasc.GetPDG(), (isAnti ? 1 : -1));
@@ -1148,7 +1147,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       std::array<float, 2> impactParameterBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz( {collision.posX(), collision.posY(), collision.posZ()},trackParCovBach, 2.f, matCorr, &impactParameterBach);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()},trackParCovBach, 2.f, matCorr, &impactParameterBach);
       float dcaxyV0DauPos = impactParameterV0DauPos[0];
       float dcaxyV0DauNeg = impactParameterV0DauNeg[0];
       float dcaxyBach = impactParameterBach[0];
