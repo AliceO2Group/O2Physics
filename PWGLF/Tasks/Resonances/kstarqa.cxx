@@ -297,6 +297,10 @@ struct Kstarqa {
       hOthers.add("hEta_after", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
       hOthers.add("hCRFC_after", "CRFC after distribution", kTH1F, {{100, 0.0f, 10.0f}});
       hOthers.add("hCRFC_before", "CRFC before distribution", kTH1F, {{100, 0.0f, 10.0f}});
+      hOthers.add("hTOFBetaKa", "Beta distribution from TOF", kTH1F, {{50, 0.0f, 1.0f}});
+      hOthers.add("hTOFBetaPi", "Beta distribution from TOF", kTH1F, {{50, 0.0f, 1.0f}});
+      hOthers.add("hTPCMomDiffKa", "Momentum difference between global and TPC tracks for Kaons", kTH1F, {{100, -1.0f, 1.0f}});
+      hOthers.add("hTPCMomDiffPi", "Momentum difference between global and TPC tracks for Pions", kTH1F, {{100, -1.0f, 1.0f}});
 
       hOthers.add("hKstar_rap_pt", "Pair rapidity distribution; y; p_{T}; Counts", kTH2F, {{400, -2.0f, 2.0f}, ptAxis});
       hOthers.add("hKstar_eta_pt", "Pair eta distribution; #eta; p_{T}; Counts", kTH2F, {{400, -2.0f, 2.0f}, ptAxis});
@@ -1200,22 +1204,13 @@ struct Kstarqa {
         continue;
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
 
-      // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-      // continue;
-
-      // if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > configGp.ctrackRapidity)
-      // continue;
       rEventSelection.fill(HIST("tracksCheckData"), 4.5);
 
       if (configGp.isApplyParticleMID) {
         if (selectionMID(track1, 0)) // Kaon misidentified as pion
           continue;
-        // if (selectionMID(track1, 2)) // Kaon misidentified as proton
-        //   continue;
         if (selectionMID(track2, 1)) // Pion misidentified as kaon
           continue;
-        // if (selectionMID(track2, 2)) // Pion misidentified as proton
-        //   continue;
       }
 
       if (configGp.isApplyParticleMIDPtDep) {
@@ -1244,10 +1239,18 @@ struct Kstarqa {
         hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
         hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
         hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track2.pt());
-        hOthers.fill(HIST("hEta_after"), track1.eta());
-        hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track2.pt());
+        hOthers.fill(HIST("hEta_after"), track1.eta());
+        hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
+        if (track1.hasTOF()) {
+          hOthers.fill(HIST("hTOFBetaKa"), track1.beta());
+        }
+        if (track2.hasTOF()) {
+          hOthers.fill(HIST("hTOFBetaPi"), track2.beta());
+        }
+        hOthers.fill(HIST("hTPCMomDiffKa"), track1.p() - track1.tpcInnerParam());
+        hOthers.fill(HIST("hTPCMomDiffPi"), track2.p() - track2.tpcInnerParam());
       }
 
       if (!selectionPair(track1, track2)) {
@@ -1656,6 +1659,12 @@ struct Kstarqa {
         // hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track2.pt());
+        if (track1.hasTOF()) {
+          hOthers.fill(HIST("hTOFBetaKa"), track1.beta());
+        }
+        if (track2.hasTOF()) {
+          hOthers.fill(HIST("hTOFBetaPi"), track2.beta());
+        }
       }
 
       if (configGp.isCheckMotherClosure) {
@@ -2216,6 +2225,12 @@ struct Kstarqa {
                 hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track2.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track2.pt());
                 hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track2.tpcNSigmaKa(), track2.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track2.pt());
                 hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track1.tpcNSigmaPi(), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track1.pt());
+                if (track1.hasTOF()) {
+                  hOthers.fill(HIST("hTOFBetaKa"), track1.beta());
+                }
+                if (track2.hasTOF()) {
+                  hOthers.fill(HIST("hTOFBetaPi"), track2.beta());
+                }
               }
 
             } else if (track1PDG == PDG_t::kKPlus) {
@@ -2571,33 +2586,15 @@ struct Kstarqa {
         continue;
 
       if (cQAplots) {
-        // hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track1.pt(), track1.tpcNSigmaKa());
-        // hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track1.pt(), track1.tofNSigmaKa());
-        // hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-        // hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
         hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
         hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
 
         hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-        // hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
         hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
         hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
 
         hOthers.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
-        // hOthers.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
         hOthers.fill(HIST("hphi"), track1.phi());
-
-        // if (track1.sign() < 0) {
-        //   hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track1.tpcNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track1.tofNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
-        // } else {
-        //   hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track1.tpcNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track1.tofNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
-        // }
       }
 
       if (cQAevents) {
@@ -2621,43 +2618,18 @@ struct Kstarqa {
       if (configGp.cFakeTrack && isFakeTrack(track1)) // Kaon
         continue;
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
-
-      // if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-      // continue;
-
-      // if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-      // continue;
       rEventSelection.fill(HIST("tracksCheckData"), 4.5);
-
-      /* if (configGp.isApplyParticleMID) {
-        if (selectionMID(track1, 0)) // Kaon misidentified as pion
-          continue;
-        if (selectionMID(track1, 2)) // Kaon misidentified as proton
-          continue;
-        if (selectionMID(track2, 0)) // Pion misidentified as pion
-          continue;
-        if (selectionMID(track2, 2)) // Pion misidentified as proton
-          continue;
-      } */
-
       rEventSelection.fill(HIST("tracksCheckData"), 5.5);
 
       if (cQAplots) {
-        // hPID.fill(HIST("After/hDcaxyPi"), track2.dcaXY());
         hPID.fill(HIST("After/hDcaxyKa"), track1.dcaXY());
-        // hPID.fill(HIST("After/hDcazPi"), track2.dcaZ());
         hPID.fill(HIST("After/hDcazKa"), track1.dcaZ());
 
         hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-        // hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
         hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
         hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         hOthers.fill(HIST("hEta_after"), track1.eta());
         hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
-        // hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-        // hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
-        // hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
-        // hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
       }
@@ -2670,13 +2642,6 @@ struct Kstarqa {
       daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
       daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
       mother = daughter1 + daughter2; // Phi meson
-
-      /* if (configGp.isApplyCutsOnMother) {
-        if (mother.Pt() >= configGp.cMaxPtMotherCut) // excluding candidates in overflow
-          continue;
-        if (mother.M() >= configGp.cMaxMinvMotherCut) // excluding candidates in overflow
-          continue;
-      } */
 
       if (cQAplots) {
         hOthers.fill(HIST("hKstar_rap_pt"), mother.Rapidity(), mother.Pt());
@@ -2710,28 +2675,6 @@ struct Kstarqa {
             continue;
           if (!selectionPID(t1, 1) || !selectionPID(t2, 1))
             continue;
-
-          // if (std::abs(t1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-          // continue;
-
-          // if (std::abs(t2.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-          // continue;
-
-          // if (configGp.cFakeTrack && isFakeTrack(t1, 1)) // Kaon
-          //   continue;
-          // if (configGp.cFakeTrack && isFakeTrack(t2, 1)) // Kaon
-          //   continue;
-
-          /* if (configGp.isApplyParticleMID) {
-            if (selectionMID(t1, 0)) // Kaon misidentified as pion
-              continue;
-            if (selectionMID(t1, 2)) // Kaon misidentified as proton
-              continue;
-            if (selectionMID(t2, 0)) // Pion misidentified as pion
-              continue;
-            if (selectionMID(t2, 2)) // Pion misidentified as proton
-              continue;
-          } */
 
           if (!selectionPair(t1, t2)) {
             continue;
@@ -2848,13 +2791,6 @@ struct Kstarqa {
       if (std::abs(mcParticle.y()) >= configGp.rapidityMotherData) {
         continue;
       }
-
-      /* if (configGp.isApplyCutsOnMother) {
-        if (mcParticle.pt() >= configGp.cMaxPtMotherCut) // excluding candidates in overflow
-          continue;
-        if ((std::sqrt(mcParticle.e() * mcParticle.e() - mcParticle.p() * mcParticle.p())) >= configGp.cMaxMinvMotherCut) // excluding candidates in overflow
-          continue;
-      } */
 
       if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::kPhi) {
         continue;
@@ -3146,27 +3082,11 @@ struct Kstarqa {
               continue;
             }
             rEventSelection.fill(HIST("recMCparticles"), 12.5);
-
-            /* if (configGp.isApplyParticleMID) {
-              if (selectionMID(track1, 0)) // Kaon misidentified as pion
-                continue;
-              if (selectionMID(track1, 2)) // Kaon misidentified as proton
-                continue;
-              if (selectionMID(track2, 0)) // Kaon misidentified as pion
-                continue;
-              if (selectionMID(track2, 2)) // Kaon misidentified as proton
-                continue;
-            } */
             rEventSelection.fill(HIST("recMCparticles"), 13.5);
-
-            // if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > configGp.ctrackRapidity)
-            // continue;
             rEventSelection.fill(HIST("recMCparticles"), 14.5);
             if (cQAplots) {
               hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-              // hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
               hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-              // hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
             }
 
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
