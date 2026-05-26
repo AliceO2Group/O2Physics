@@ -145,7 +145,7 @@ o2physics_add_dpl_workflow(model-converter-mc-reduced-event
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(model-converter-mc-reduced-event-002
-                    SOURCES ModelConverterReducedMCEventsV002.cxx
+                    SOURCES ModelConverterReducedMCEvents002.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
