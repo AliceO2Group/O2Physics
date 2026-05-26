@@ -957,8 +957,8 @@ class PairHistManager
 
   std::tuple<float, float, float> computeBertschPrattLCMS(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    const ROOT::Math::PxPyPzEVector p1(mParticle1);
-    const ROOT::Math::PxPyPzEVector p2(mParticle2);
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
     const ROOT::Math::PxPyPzEVector pSum = p1 + p2;
 
     const double tPx = pSum.Px();
