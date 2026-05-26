@@ -24,15 +24,7 @@ struct stradautrackstofpidconverter {
   void process(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
     // prepare arrays with the relevant information
-    std::vector<float> lLengths, lTOFSignals, lTOFEvTimes;
-    lLengths.reserve(dauTracks.size());
-    lTOFSignals.reserve(dauTracks.size());
-    lTOFEvTimes.reserve(dauTracks.size());
-    for (unsigned int ii = 0; ii < dauTracks.size(); ii++) {
-      lLengths[ii] = 1e+6;
-      lTOFSignals[ii] = -1e+3f;
-      lTOFEvTimes[ii] = -1e+3f;
-    }
+    std::vector<float> lLengths(dauTracks.size(), 1.e+6), lTOFSignals(dauTracks.size(), -1e+3f), lTOFEvTimes(dauTracks.size(), -1e+3f);
     for (const auto& v0 : v0s) {
       lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV();
       lTOFSignals[v0.posTrackExtraId()] = v0.posTOFSignal();

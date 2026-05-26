@@ -106,7 +106,7 @@ struct strangenesstofpid {
   Configurable<int> calculationMethod{"calculationMethod", 0, "algorithm for TOF calculation. 0: fast analytical withouot eloss, 1: O2 Propagator + trackLTIntegral (slow), 2: both methods and do comparison studies (slow)"};
   Configurable<int> calculateV0s{"calculateV0s", -1, "calculate V0-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
-  Configurable<bool> useNsigmaCalibStrTOF{"useNsigmaCalibStrTOF", false, "if true, use manual strangeness TOF PID calibration"};
+  Configurable<bool> useNsigmaCalibStrTOF{"useNsigmaCalibStrTOF", true, "if true, use manual strangeness TOF PID calibration"};
   Configurable<bool> reassociateTracks{"reassociateTracks", true, "if true, reassociate tracks to the collision the V0 or cascade belongs to. Relevant especially at high IR"};
   Configurable<bool> doBCshift{"doBCshift", true, "if true, perform time shift for collisions in different BCs when reassigning"};
   Configurable<bool> rejectUndefinedTof{"rejectUndefinedTof", true, "if true, reject tracks with TOF signal 0.000f for safety"};
