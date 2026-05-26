@@ -8,6 +8,16 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file stradautrackstofpidconverter.cxx
+/// \brief Produces DauTrackTOFPIDs from V0TOFs and CascTOFs table
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
+//
+
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -17,7 +27,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-// Converts V0 version 001 to 002
 struct stradautrackstofpidconverter {
   Produces<aod::DauTrackTOFPIDs> dautracktofpids;
 
