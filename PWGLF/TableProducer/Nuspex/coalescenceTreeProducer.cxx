@@ -28,22 +28,23 @@
 ///
 /// \author Alberto Calivà <alberto.caliva@cern.ch>
 
+#include "Common/DataModel/MCParticles.h"
+#include "Common/DataModel/McCollisionExtra.h"
+
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/InitContext.h"
 #include "Framework/Logger.h"
 #include "Framework/OutputObjHeader.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/MCParticles.h"
+#include "Framework/runDataProcessing.h"
 
 #include <Math/Boost.h>
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
+#include <TH1.h>
 #include <TTree.h>
 
-#include <TH1.h>
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -74,8 +75,8 @@ struct CoalescenceTreeProducer {
 
   OutputObj<TTree> treeBoundState{"treeBoundState"};
 
-  int64_t eventID;// Event ID
-  int64_t idB1, idB2, idB3;// MC particle IDs of the constituent baryons
+  int64_t eventID;          // Event ID
+  int64_t idB1, idB2, idB3; // MC particle IDs of the constituent baryons
 
   int pdgB1, pdgB2, pdgB3;
   int chargeB1, chargeB2, chargeB3;
@@ -670,7 +671,5 @@ struct CoalescenceTreeProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CoalescenceTreeProducer>(cfgc)
-  };
+    adaptAnalysisTask<CoalescenceTreeProducer>(cfgc)};
 }
-
