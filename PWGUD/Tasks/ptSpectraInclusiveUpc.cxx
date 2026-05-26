@@ -8,8 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+///
 /// \file ptSpectraInclusiveUpc.cxx
-
+/// \executable o2-analysis-ud-pt-spectra-inclusive-upc
 /// \brief Task for the of pT spectra of pions, kaons and protons in inclusive UPC events.
 ///        Used to obtain the templates for the DCA_xy fits for the primary fractions
 ///
@@ -236,7 +237,6 @@ struct ptSpectraInclusiveUpc {
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("ptReconstructedTPCPion"), pion->Pt());
-            // selEv = true;
             histos.fill(HIST("DCAxy_primary_pions"), track.dcaXY());
           } else {
             histos.fill(HIST("DCAxy_secondary_pions"), track.dcaXY());
@@ -249,7 +249,6 @@ struct ptSpectraInclusiveUpc {
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("ptReconstructedTPCKaon"), kaon->Pt());
-            // selEv = true;
             histos.fill(HIST("DCAxy_primary_kaons"), track.dcaXY());
           } else {
             histos.fill(HIST("DCAxy_secondary_kaons"), track.dcaXY());
@@ -263,7 +262,6 @@ struct ptSpectraInclusiveUpc {
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("ptReconstructedTPCProton"), proton->Pt());
-            // selEv = true;
             histos.fill(HIST("DCAxy_primary_protons"), track.dcaXY());
           } else {
             if (mcParticle.getProcess() == kPDecay) {
