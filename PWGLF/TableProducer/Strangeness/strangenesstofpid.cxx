@@ -152,13 +152,28 @@ struct strangenesstofpid {
 
   // CCDB options
   struct : ConfigurableGroup {
-    std::string prefix = "ccdb";
+    // std::string prefix = "ccdb";
     Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> nSigmaPath{"nSigmaPath", "Users/d/ddobrigk/stratof", "Path of information for n-sigma calculation"};
     Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+    // necessary for TOFResponse
+    Configurable<std::string> grpLhcIfPath{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+    Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+    Configurable<std::string> timeShiftCCDBPathPos{"timeShiftCCDBPathPos", "Analysis/PID/TOFOffsetPos", "Path of the TOF time shift vs eta for pos. tracks. If empty none is taken"};
+    Configurable<std::string> timeShiftCCDBPathNeg{"timeShiftCCDBPathNeg", "Analysis/PID/TOFOffsetNeg", "Path of the TOF time shift vs eta for neg. tracks. If empty none is taken"};
+    Configurable<std::string> timeShiftCCDBPathPosMC{"timeShiftCCDBPathPosMC", "", "Path of the TOF time shift for MC vs eta for pos. tracks. If empty none is taken"};
+    Configurable<std::string> timeShiftCCDBPathNegMC{"timeShiftCCDBPathNegMC", "", "Path of the TOF time shift for MC vs eta for neg. tracks. If empty none is taken"};
+    Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+    Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+    Configurable<std::string> reconstructionPass{"reconstructionPass", "metadata", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
+    Configurable<std::string> reconstructionPassDefault{"reconstructionPassDefault", "unanchored", {"Default pass to get if the standard one is not found"}};
+    Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", false, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+    Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", true, "Flag to use the collision timestamp to fetch the PID Response"};
+    Configurable<int> collisionSystem{"collisionSystem", -1, "Collision system: -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
+    Configurable<bool> autoSetProcessFunctions{"autoSetProcessFunctions", true, "Flag to autodetect the process functions to use"};
   } ccdbConfigurations;
 
   // manual
@@ -445,7 +460,8 @@ struct strangenesstofpid {
     ccdb->setFatalWhenNull(false);
 
     LOGF(info, "intializing TOFResponse");
-    mTOFResponse->initSetup(ccdb, initContext);
+    std::string taskName = initContext.services().get<o2::framework::DeviceSpec const>().name;
+    mTOFResponse->initSetup(ccdb, initContext, taskName);
 
     // per event
     histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500, -0.5f, 499.5f}});
@@ -467,6 +483,7 @@ struct strangenesstofpid {
     histos.add("h2dTOFSignalCascadeBachelor", "h2dTOFSignalCascadeBachelor", kTH2F, {axes.axisTimeLong, axes.axisBCshift});
 
     histos.add("hCollisionTimes", "hCollisionTimes", kTH1F, {{2000, -1000.0f, 1000.0f}});
+    histos.add("hCollisionTimesError", "hCollisionTimesError", kTH1F, {{2000, -1000.0f, 1000.0f}});
 
     // measured vs expected total time QA
     if (doQA) {
@@ -1897,12 +1914,12 @@ struct strangenesstofpid {
 
     for (const auto& collision : collisions) {
       histos.fill(HIST("hCollisionTimes"), collision.eventTime());
+      histos.fill(HIST("hCollisionTimesError"), collision.eventTimeErr());
     }
 
     // auto-determine if using old format
     if (dauTrackTOFPIDs.size() != 0) {
-      auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
-      isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
+      isNewTOFFormat = dauTrackTable.size() == dauTrackTOFPIDs.size() ? false : true;
     }
 
     if (!isNewTOFFormat && calculationMethod.value > 0) {
