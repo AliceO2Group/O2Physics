@@ -333,6 +333,7 @@ struct DalitzSelection {
   template <bool isReassoc, uint32_t TTrackFillMap, typename TFullTracks, typename TTracks, typename TEvent>
   void runTrackSelection(TTracks const& tracksBarrel, TEvent const& collision)
   {
+
     fSkipEvent = true;
     for (const auto& track1 : tracksBarrel) {
       uint8_t filterMap = uint8_t(0);
