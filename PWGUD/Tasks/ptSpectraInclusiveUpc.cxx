@@ -123,7 +123,7 @@ struct PtSpectraInclusiveUpc {
     histos.add("DCAxy_data_protons", "DCAxy_data_protons", kTH1F, {axisDCAxy});
   }
 
-  void processSim(aod::UDMcCollisions::iterator const& mcCollision, aod::UDMcParticles const& mcParticles)
+  void processSim(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParticles)
   {
 
     for (const auto& mcParticle : mcParticles) {
@@ -161,7 +161,7 @@ struct PtSpectraInclusiveUpc {
     }
   }
 
-  void processReco(CC const& collision, TCs const& tracks, aod::UDMcParticles const& mcParticles)
+  void processReco(CC const&, TCs const& tracks, aod::UDMcParticles const&)
   {
 
     Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
@@ -328,7 +328,7 @@ struct PtSpectraInclusiveUpc {
     }
   }
 
-  void processData(CC const& collision, TCs const& tracks)
+  void processData(CC const&, TCs const& tracks)
   {
 
     Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
@@ -339,9 +339,6 @@ struct PtSpectraInclusiveUpc {
     auto nSigmaPi = -999.;
     auto nSigmaKa = -999.;
     auto nSigmaPr = -999.;
-    auto nSigmaPiTOF = -999.;
-    auto nSigmaKaTOF = -999.;
-    auto nSigmaPrTOF = -999.;
 
     LorentzVectorM* pion = new LorentzVectorM();
     LorentzVectorM* kaon = new LorentzVectorM();
