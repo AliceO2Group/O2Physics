@@ -29,6 +29,7 @@
 // same as Data and o2-analysis-mccollision-converter
 
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
+#include "PWGLF/Utils/inelGt.h"
 //
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -57,6 +58,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -205,14 +207,15 @@ enum evSel {
   kIsGoodZvtxFT0vsPV,
   kIsGoodITSLayersAll,
   kIsEPtriggered,
+  kINELgt0,
   kIsJetTriggered, // Check: evSel for event with at least one jet over pT-threshold
   kNevSels
 };
 
 static const std::vector<std::string> eventSelectionTitle{"Event selections"};
-static const std::vector<std::string> eventSelectionLabels{"TVX", "TF border", "ITS ROF border", "Z vtx", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered", "IsJetTriggered"};
+static const std::vector<std::string> eventSelectionLabels{"TVX", "TF border", "ITS ROF border", "Z vtx", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered", "IsINELgt0", "IsJetTriggered"};
 
-constexpr int EvSelDefault[9][1]{
+constexpr int EvSelDefault[10][1]{
   {1},
   {1},
   {1}, // Default: sel8
@@ -221,11 +224,13 @@ constexpr int EvSelDefault[9][1]{
   {0},
   {0},
   {0},
+  {0},  // INEL > 0
   {1}}; // Triggered on jets
 
 enum evGenSel : uint8_t {
-  kGenIsJetTriggered = 1 << 0,
-  kGenHasRecoEv = 1 << 1
+  kGenIsINELgt0 = 1 << 0,
+  kGenIsJetTriggered = 1 << 1,
+  kGenHasRecoEv = 1 << 2
 };
 
 enum triggerListName {
@@ -254,7 +259,8 @@ struct DeuteronInTriggeredEvents {
   Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension; // For MC analysis
   Produces<o2::aod::GenEventMCSel> GenEventMCSel;                   // For MC reco events
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Zorro zorro; // Definition of Zorro: helpful for skimmed data
+  Service<o2::framework::O2DatabasePDG> pdgDB; // For INELgt0 gen MC selection
+  Zorro zorro;                                 // Definition of Zorro: helpful for skimmed data
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
@@ -280,7 +286,7 @@ struct DeuteronInTriggeredEvents {
   Configurable<float> cfgCutPtMaxTree{"cfgCutPtMaxTree", 15.0f, "Maximum track transverse momentum for tree saving"};
 
   // Event selections
-  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 9, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
+  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 10, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
 
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 5, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
@@ -409,6 +415,11 @@ struct DeuteronInTriggeredEvents {
       spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsEPtriggered + 1);
     }
 
+    if (cfgEventSelections->get(nuclei::evSel::kINELgt0) && !collision.selection_bit(aod::kINELgtZERO)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kINELgt0 + 1);
+
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -494,6 +505,7 @@ struct DeuteronInTriggeredEvents {
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodZvtxFT0vsPV + 2, "isGoodZvtxFT0vsPV");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodITSLayersAll + 2, "IsGoodITSLayersAll");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsEPtriggered + 2, "IsEPtriggered");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kINELgt0 + 2, "IsINELgt0");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsJetTriggered + 2, "IsJetTriggered");
 
     // Distribution of z-vertex of selected events
@@ -943,8 +955,11 @@ struct DeuteronInTriggeredEvents {
       auto mcParticlesPerColl = particlesMC.sliceBy(perMcCollision, c.globalIndex());
       auto& mask = eventMask[c.globalIndex()];
 
+      if (o2::pwglf::isINELgt0mc(mcParticlesPerColl, pdgDB))
+        mask |= nuclei::kGenIsINELgt0;
+
       if (isMCJetTriggered(mcParticlesPerColl, particlesMC, trigger))
-        mask |= nuclei::kIsJetTriggered;
+        mask |= nuclei::kGenIsJetTriggered;
     }
 
     for (const auto& collision : collisions) {
@@ -971,8 +986,11 @@ struct DeuteronInTriggeredEvents {
       auto& mask = eventMask[mcId];
       mask |= nuclei::kGenHasRecoEv;
 
-      GenEventMCSel(mask);
       fillDataInfo(collision, slicedTracks);
+    }
+
+    for (const auto& c : mcCollisions) {
+      GenEventMCSel(eventMask[c.globalIndex()]);
     }
 
     std::vector<bool> isReconstructed(particlesMC.size(), false);

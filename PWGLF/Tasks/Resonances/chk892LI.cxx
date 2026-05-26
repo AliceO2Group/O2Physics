@@ -963,7 +963,7 @@ struct Chk892LI {
         continue;
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
-      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+      if (part.y() < KstarCuts.cfgKstarMinRap || part.y() > KstarCuts.cfgKstarMaxRap)
         continue;
 
       const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
@@ -1079,7 +1079,7 @@ struct Chk892LI {
         const double ptreco = lResoKstar.Pt();
         const double yreco = lResoKstar.Rapidity();
 
-        if (std::abs(yreco) > KstarCuts.cfgKstarMaxRap)
+        if (yreco < KstarCuts.cfgKstarMinRap || yreco > KstarCuts.cfgKstarMaxRap)
           continue;
 
         double ptgen = 0, ygen = 0;
@@ -1102,7 +1102,7 @@ struct Chk892LI {
         continue;
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
-      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+      if (part.y() < KstarCuts.cfgKstarMinRap || part.y() > KstarCuts.cfgKstarMaxRap)
         continue;
 
       const auto mcid = part.mcCollisionId();
@@ -1141,7 +1141,7 @@ struct Chk892LI {
         continue;
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
-      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+      if (part.y() < KstarCuts.cfgKstarMinRap || part.y() > KstarCuts.cfgKstarMaxRap)
         continue;
 
       const auto mcid = part.mcCollisionId();

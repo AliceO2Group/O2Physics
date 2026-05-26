@@ -1677,6 +1677,10 @@ struct Lambdastarproxy {
   static constexpr float TofBetaMin = 0.01f;
   static constexpr float TofBetaMax = 1.2f;
   static constexpr double Half = 0.5;
+  // PID strategy values
+  static constexpr int PidStrategyRectangular = 0;
+  static constexpr int PidStrategyCircularTPCAndTOF = 1;
+  static constexpr int PidStrategyTOFOnly = 2;
   // Basic configuration for event and track selection
   Configurable<float> lstarCutVertex{"lstarCutVertex", float{CutVertexDefault}, "Accepted z-vertex range (cm)"};
   Configurable<float> lstarCutPtMin{"lstarCutPtMin", float{CutPtMinDefault}, "Minimal pT for tracks (GeV/c)"};
@@ -1696,6 +1700,24 @@ struct Lambdastarproxy {
   Configurable<float> lstarCutNsigmaTOFKaon{"lstarCutNsigmaTOFKaon", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{K}| cut"};
   Configurable<float> lstarCutNsigmaTPCDe{"lstarCutNsigmaTPCDe", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{d}| cut"};
   Configurable<float> lstarCutNsigmaTOFDe{"lstarCutNsigmaTOFDe", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{d}| cut"};
+  // PID strategy for final K/p/d candidate selection.
+  // 0 = rectangular cuts: |TPC| < cut and, if TOF exists, |TOF| < cut
+  // 1 = pT-ref dependent circular cut:
+  //     pT < pTref: require |TPC| < TPC cut only
+  //     pT >= pTref and TOF exists: require sqrt(TPC^2 + TOF^2) < circular cut
+  //     pT >= pTref and TOF missing: reject
+  // 2 = TOF-only above pTref:
+  //     pT < pTref: require |TPC| < TPC cut only
+  //     pT >= pTref: require TOF hit and |TOF| < TOF cut
+  Configurable<int> lstarPidStrategy{"lstarPidStrategy", int{PidStrategyRectangular}, "PID strategy: 0=rectangular TPC/TOF, 1=pTref circular TPC+TOF, 2=pTref TOF-only"};
+
+  Configurable<float> lstarPidCircularCutKaon{"lstarPidCircularCutKaon", 2.0f, "Circular PID cut sqrt(nSigmaTPC_K^2+nSigmaTOF_K^2) for kaons"};
+  Configurable<float> lstarPidCircularCutPr{"lstarPidCircularCutPr", 2.0f, "Circular PID cut sqrt(nSigmaTPC_p^2+nSigmaTOF_p^2) for protons"};
+  Configurable<float> lstarPidCircularCutDe{"lstarPidCircularCutDe", 2.0f, "Circular PID cut sqrt(nSigmaTPC_d^2+nSigmaTOF_d^2) for deuterons"};
+
+  Configurable<float> lstarPidPtRefKaon{"lstarPidPtRefKaon", 0.5f, "pT reference for kaon PID strategy"};
+  Configurable<float> lstarPidPtRefPr{"lstarPidPtRefPr", 0.8f, "pT reference for proton PID strategy"};
+  Configurable<float> lstarPidPtRefDe{"lstarPidPtRefDe", 0.8f, "pT reference for deuteron PID strategy"};
 
   // Track quality
   Configurable<bool> lstarRequireGlobalTrack{"lstarRequireGlobalTrack", bool{RequireGlobalTrackDefault}, "Require global tracks (default)"};
@@ -2305,6 +2327,45 @@ struct Lambdastarproxy {
     return true; // fallback: if column not present, assume available
   }
 
+  bool passFinalCandidatePID(float pt,
+                             float nsTPC,
+                             float nsTOF,
+                             bool hasTof,
+                             float tpcCut,
+                             float tofCut,
+                             float circularCut,
+                             float ptRef) const
+  {
+    // Strategy 1: analysis-note style circular TPC+TOF cut
+    if (lstarPidStrategy.value == PidStrategyCircularTPCAndTOF) {
+      if (pt < ptRef) {
+        return std::abs(nsTPC) < tpcCut;
+      }
+
+      if (!hasTof) {
+        return false;
+      }
+
+      return std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF) < circularCut;
+    }
+
+    // Strategy 2: TOF-only above pTref
+    if (lstarPidStrategy.value == PidStrategyTOFOnly) {
+      if (pt < ptRef) {
+        return std::abs(nsTPC) < tpcCut;
+      }
+
+      if (!hasTof) {
+        return false;
+      }
+
+      return std::abs(nsTOF) < tofCut;
+    }
+
+    // Strategy 0: old rectangular logic
+    return (std::abs(nsTPC) < tpcCut) && (!hasTof || (std::abs(nsTOF) < tofCut));
+  }
+
   // Return: 0=#pi, 1=K, 2=p, 3=d, -1=unclassified
   template <typename TTrack>
   int classifyPidSpecies(const TTrack& trk)
@@ -2580,20 +2641,27 @@ struct Lambdastarproxy {
         continue;
       }
 
+      // Deuteron kinematics needed before PID because the PID strategy can depend on pT
+      const float ptD = trkD.pt();
+      const float etaD = trkD.eta();
+      const float phiD = trkD.phi();
+
       // PID for deuteron candidates
       const float nsTPCDe = trkD.tpcNSigmaDe();
       const float nsTOFDe = trkD.tofNSigmaDe();
       const bool hasTofDe = hasTOFMatch(trkD);
-      const bool isDeuteron = (std::abs(nsTPCDe) < lstarCutNsigmaTPCDe.value) &&
-                              (!hasTofDe || (std::abs(nsTOFDe) < lstarCutNsigmaTOFDe.value));
+      const bool isDeuteron = passFinalCandidatePID(ptD,
+                                                    nsTPCDe,
+                                                    nsTOFDe,
+                                                    hasTofDe,
+                                                    lstarCutNsigmaTPCDe.value,
+                                                    lstarCutNsigmaTOFDe.value,
+                                                    lstarPidCircularCutDe.value,
+                                                    lstarPidPtRefDe.value);
       if (!isDeuteron) {
         continue;
       }
 
-      // Deuteron kinematics
-      const float ptD = trkD.pt();
-      const float etaD = trkD.eta();
-      const float phiD = trkD.phi();
       const double pD = static_cast<double>(ptD) * std::cosh(static_cast<double>(etaD));
 
       // QA histos for deuteron PID and kinematics
@@ -2642,18 +2710,25 @@ struct Lambdastarproxy {
         continue;
       }
 
+      const float ptP = trkP.pt();
+      const float etaP = trkP.eta();
+      const float phiP = trkP.phi();
+
       const float nsTPCPr = trkP.tpcNSigmaPr();
       const float nsTOFPr = trkP.tofNSigmaPr();
       const bool hasTofPr = hasTOFMatch(trkP);
-      const bool isProton = (std::abs(nsTPCPr) < lstarCutNsigmaTPCPr.value) &&
-                            (!hasTofPr || (std::abs(nsTOFPr) < lstarCutNsigmaTOFPr.value));
+      const bool isProton = passFinalCandidatePID(ptP,
+                                                  nsTPCPr,
+                                                  nsTOFPr,
+                                                  hasTofPr,
+                                                  lstarCutNsigmaTPCPr.value,
+                                                  lstarCutNsigmaTOFPr.value,
+                                                  lstarPidCircularCutPr.value,
+                                                  lstarPidPtRefPr.value);
       if (!isProton) {
         continue;
       }
 
-      const float ptP = trkP.pt();
-      const float etaP = trkP.eta();
-      const float phiP = trkP.phi();
       const double pP = static_cast<double>(ptP) * std::cosh(static_cast<double>(etaP));
 
       if (lstarEnablePidQA.value != 0) {
@@ -2695,20 +2770,27 @@ struct Lambdastarproxy {
         continue;
       }
 
+      // Kaon kinematics needed before PID because the PID strategy can depend on pT
+      const float ptK = trkK.pt();
+      const float etaK = trkK.eta();
+      const float phiK = trkK.phi();
+
       // PID for kaon candidates
       const float nsTPCK = trkK.tpcNSigmaKa();
       const float nsTOFK = trkK.tofNSigmaKa();
       const bool hasTofK = hasTOFMatch(trkK);
-      const bool isKaon = (std::abs(nsTPCK) < lstarCutNsigmaTPCKaon.value) &&
-                          (!hasTofK || (std::abs(nsTOFK) < lstarCutNsigmaTOFKaon.value));
+      const bool isKaon = passFinalCandidatePID(ptK,
+                                                nsTPCK,
+                                                nsTOFK,
+                                                hasTofK,
+                                                lstarCutNsigmaTPCKaon.value,
+                                                lstarCutNsigmaTOFKaon.value,
+                                                lstarPidCircularCutKaon.value,
+                                                lstarPidPtRefKaon.value);
       if (!isKaon) {
         continue;
       }
 
-      // Kaon kinematics
-      const float ptK = trkK.pt();
-      const float etaK = trkK.eta();
-      const float phiK = trkK.phi();
       const double pK = static_cast<double>(ptK) * std::cosh(static_cast<double>(etaK));
 
       // Kaon QA
