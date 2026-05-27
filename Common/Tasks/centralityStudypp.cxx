@@ -32,7 +32,6 @@
 #include <TList.h>
 #include <TProfile.h>
 
-#include <cstdint>
 #include <format>
 #include <map>
 #include <memory>
@@ -331,7 +330,7 @@ struct centralityStudypp {
     float multNTracksPV = collision.multNTracksPV();
 
     if (applyVertexZEqualization) {
-      float epsilon = 1e-2; // average value after which this collision will be disregarded
+      float epsilon = 1e-2;     // average value after which this collision will be disregarded
       float maxVertexZ = 15.0f; // max value for any equalization attempt
 
       // same defaults as multCentTable in case of unhealthy signals
