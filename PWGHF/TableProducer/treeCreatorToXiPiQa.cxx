@@ -217,7 +217,7 @@ DECLARE_SOA_COLUMN(XicChi2OverNdf, xicChi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 // MC
-DECLARE_SOA_COLUMN(PdgFromMc, pdgFromMc, int);
+DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
@@ -317,7 +317,7 @@ DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
                   full::YCharmBaryon,
                   full::FlagMcMatchRec,
                   full::OriginRec,
-                  full::PdgFromMc)
+                  full::ParticlePdg)
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -331,7 +331,7 @@ struct HfTreeCreatorToXiPiQa {
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
   Configurable<int8_t> genSelection{"genSelection", o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi, "Decay channel to be used to match particle information"};
-  Configurable<bool> fillParticle{"fillParticle", true, "Fill generated MC information if requested"};
+  Configurable<bool> fillGenTable{"fillGenTable", true, "Fill generated MC information if requested"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
@@ -632,6 +632,19 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
+  template <double massCharmBaryon, typename T>
+  void fillParticle(const T& particle)
+  {
+    rowCandidateParticles(RecoDecay::m(particle.pVector(), particle.e()),
+                          particle.pt(),
+                          particle.eta(),
+                          particle.phi(),
+                          RecoDecay::y(particle.pVector(), massCharmBaryon),
+                          particle.flagMcMatchGen(),
+                          particle.originMcGen(),
+                          particle.pdgCode());
+  }
+
   ////////////////////////////////////
   //                                //
   //       Process functions        //
@@ -822,17 +835,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -855,17 +861,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassOmegaC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassOmegaC0>(particle);
       }
     }
   }
@@ -888,17 +887,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -921,17 +913,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -954,17 +939,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -987,17 +965,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -1020,17 +991,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassOmegaC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassOmegaC0>(particle);
       }
     }
   }
@@ -1064,17 +1028,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -1097,17 +1054,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -1130,17 +1080,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
@@ -1163,17 +1106,10 @@ struct HfTreeCreatorToXiPiQa {
     }
 
     // Filling particle properties if requested
-    if (fillParticle) {
+    if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        rowCandidateParticles(RecoDecay::m(std::array{particle.px(), particle.py(), particle.pz()}, particle.e()),
-                              particle.pt(),
-                              particle.eta(),
-                              particle.phi(),
-                              RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0),
-                              particle.flagMcMatchGen(),
-                              particle.originMcGen(),
-                              particle.pdgCode());
+        fillParticle<o2::constants::physics::MassXiC0>(particle);
       }
     }
   }
