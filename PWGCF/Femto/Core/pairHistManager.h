@@ -563,7 +563,7 @@ class PairHistManager
     // compute true kinematics
     mTrueKt = getKt(mTrueParticle1, mTrueParticle2);
     mTrueMt = getMt(mTrueParticle1, mTrueParticle2);
-    mTrueMt = getMinv(mTrueParticle1, mTrueParticle2);
+    mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
     mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
   }
 
