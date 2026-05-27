@@ -204,19 +204,26 @@ struct fwdMuonsUPC {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // CONFIGURABLES
-  //static constexpr double Pi = o2::constants::math::PI;
   // pT of muon pairs
-  Configurable<int> nBinsPt{"nBinsPt", 250, "N bins in pT histo"};
-  Configurable<float> lowPt{"lowPt", 0., "lower limit in pT histo"};
-  Configurable<float> highPt{"highPt", 2, "upper limit in pT histo"};
+  ConfigurableAxis axisPt{"axisPt", {250, 0.0f, 2.0f}, "#it{p}_{T}^{#mu#mu} (GeV/#it{c})"};
+  // pT fit
+  ConfigurableAxis axisPtFit{"axisPtFit", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 
+                                                           0.11, 0.12, 0.13, 0.14, 0.15, 0.175, 0.20, 0.25, 0.30, 0.40, 0.50, 
+                                                           0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.50, 
+                                                           3.00, 3.50 }, "#it{p}_{T} (GeV/c)"};
   // mass of muon pairs
-  Configurable<int> nBinsMass{"nBinsMass", 500, "N bins in mass histo"};
-  Configurable<float> lowMass{"lowMass", 0., "lower limit in mass histo"};
-  Configurable<float> highMass{"highMass", 10., "upper limit in mass histo"};
+  ConfigurableAxis axisMass{"axisMass", {500, 0.0f, 10.0f}, "m_{#mu#mu} (GeV/#it{c}^{2})"};
   // rapidity of muon pairs
-  Configurable<int> nBinsRapidity{"nBinsRapidity", 250, "N bins in rapidity histo"};
-  Configurable<float> lowRapidity{"lowRapidity", -4.5, "lower limit in rapidity histo"};
-  Configurable<float> highRapidity{"highRapidity", -2., "upper limit in rapidity histo"};
+  ConfigurableAxis axisRapidity{"axisRapidity", {250, -4.5f, -2.0f}, "y_{#mu#mu}"};
+
+  // cuts on pair kinematics
+  Configurable<float> lowPt{"lowPt", 0., "Low pT cut"};
+  Configurable<float> highPt{"highPt", 2, "High pT cut"};
+  Configurable<float> lowMass{"lowMass", 0., "Low mass cut"};
+  Configurable<float> highMass{"highMass", 10., "High mass cut"};
+  Configurable<float> lowRapidity{"lowRapidity", -4.5, "Low rapidity cut"};
+  Configurable<float> highRapidity{"highRapidity", -2., "High rapidity cut"};
+
   // my track type
   // 0 = MCH-MID-MFT
   // 1 = MCH-MID
@@ -224,33 +231,17 @@ struct fwdMuonsUPC {
 
   void init(InitContext&)
   {
-    // binning of pT axis fr fit
-    std::vector<double> ptFitBinning = {
-      0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
-      0.11, 0.12, 0.13, 0.14, 0.15, 0.175, 0.20, 0.25, 0.30, 0.40, 0.50,
-      0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.50,
-      3.00, 3.50};
-
-    std::vector<double> ptFitBinningHalfWidth = {
-      0.00, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05,
-      0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.10,
-      0.105, 0.11, 0.115, 0.12, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15,
-      0.1625, 0.175, 0.1875, 0.20, 0.225, 0.25, 0.275, 0.30, 0.35, 0.40,
-      0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00,
-      1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.25,
-      2.50, 2.75, 3.00, 3.25, 3.50};
-
     // axis
-    const AxisSpec axisPt{nBinsPt, lowPt, highPt, "#it{p}_{T} GeV/#it{c}"};
-    const AxisSpec axisPtFit = {ptFitBinning, "#it{p}_{T} (GeV/c)"};
-    const AxisSpec axisMass{nBinsMass, lowMass, highMass, "m_{#mu#mu} GeV/#it{c}^{2}"};
-    const AxisSpec axisRapidity{nBinsRapidity, lowRapidity, highRapidity, "Rapidity"};
+    const AxisSpec ptAxis{axisPt, "#it{p}_{T}^{#mu#mu} (GeV/#it{c})", "ptAxis"};
+    const AxisSpec ptFitAxis{axisPtFit, "#it{p}_{T} (GeV/c)", "ptFitAxis"};
+    const AxisSpec massAxis{axisMass, "m_{#mu#mu} (GeV/#it{c}^{2})", "massAxis"};
+    const AxisSpec rapidityAxis{axisRapidity, "y_{#mu#mu}", "rapidityAxis"};
 
     // histos
-    registry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
-    registry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
-    registry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
-    registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
+    registry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {massAxis});
+    registry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {ptAxis});
+    registry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {ptFitAxis});
+    registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {rapidityAxis});
   }
 
   // FUNCTIONS
