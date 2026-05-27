@@ -229,11 +229,11 @@ struct RadialFlowDecorr {
   const AxisSpec spBinAxis{KNsp + 1, -KBinOffset, static_cast<float>(KNsp) + KBinOffset, "species index Number"};
 
   const AxisSpec gapAxis{{-1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1,
-                           0.1,  0.3,  0.5,  0.7,  0.9,  1.1,  1.3,  1.5},
+                          0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5},
                          "Gap"};
 
   const AxisSpec sumAxis{{-1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1,
-                           0.1,  0.3,  0.5,  0.7,  0.9,  1.1,  1.3,  1.5},
+                          0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5},
                          "Sum"};
 
   Configurable<bool> cfgRunMCGetNSig{"cfgRunMCGetNSig", false, "Run MC pass to get mean of Nsig Plots"};
@@ -2576,11 +2576,11 @@ struct RadialFlowDecorr {
         for (int isp = 0; isp < KNsp; ++isp) {
 
           float c2SubTru = (ietaA == ietaC) ? static_cast<float>(c2Tru[isp][ietaA])
-                                              : p1kBarTru[isp][ietaA] * p1kBarTru[isp][ietaC];
+                                            : p1kBarTru[isp][ietaA] * p1kBarTru[isp][ietaC];
           float c2SubReco = (ietaA == ietaC) ? static_cast<float>(c2Reco[isp][ietaA])
-                                              : p1kBarReco[isp][ietaA] * p1kBarReco[isp][ietaC];
+                                             : p1kBarReco[isp][ietaA] * p1kBarReco[isp][ietaC];
           float c2SubRecoEffCor = (ietaA == ietaC) ? static_cast<float>(c2RecoEffCor[isp][ietaA])
-                                                    : p1kBarRecoEffCor[isp][ietaA] * p1kBarRecoEffCor[isp][ietaC];
+                                                   : p1kBarRecoEffCor[isp][ietaA] * p1kBarRecoEffCor[isp][ietaC];
 
           float covTru = p1kBarTruMult[isp][ietaA] * p1kBarTru[isp][ietaC];
           float covReco = p1kBarRecoMult[isp][ietaA] * p1kBarReco[isp][ietaC];
