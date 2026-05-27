@@ -958,7 +958,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       const KFPTrack kfTrackBach = createKFPTrackFromTrack(bachTrack);
 
       bool isAnti = (bachTrack.signed1Pt() > 0 ? true : false);
-      int bachCharge= (bachTrack.signed1Pt() > 0 ? +1 : -1);
+      int bachCharge = (bachTrack.signed1Pt() > 0 ? +1 : -1);
 
       KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
       KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
