@@ -212,7 +212,12 @@ struct OnTheFlyDecayer {
   }
 };
 
+struct OnTheFlyDecayerExtensionSpawner {
+  Spawns<aod::McParticles_001Extension> spawnMcParticlesExtensions;
+  void init(InitContext const&) {}
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc), adaptAnalysisTask<OnTheFlyDecayerExtensionSpawner>(cfgc)};
 }
