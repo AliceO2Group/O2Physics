@@ -304,11 +304,11 @@ struct fwdMuonsUPC {
 
   // struct used to store the ZDC info in a map
   struct ZDCinfo {
-    float timeA;
-    float timeC;
-    float enA;
-    float enC;
-    int32_t id;
+    float timeA = 0.f;
+    float timeC = 0.f;
+    float enA = 0.f;
+    float enC = 0.f;
+    int32_t id = -1;
   };
 
   // function that fills a map with the collision id of each udcollision as key
