@@ -193,6 +193,9 @@ struct OnTheFlyTracker {
 
     ConfigurableAxis axisRadius{"axisRadius", {2500, 0.0f, +250.0f}, "R (cm)"};
     ConfigurableAxis axisZ{"axisZ", {100, -250.0f, +250.0f}, "Z (cm)"};
+
+    ConfigurableAxis axisNphotons{"axisNphotons", {10, 0.5f, 10.5f}, "N_{#gamma}"};
+    ConfigurableAxis axisBRenergyLoss{"axisBRenergyLoss", {500, 0.0f, 1.0f}, "#Delta p / p"};
   } axes;
 
   // for topo var QA
@@ -249,6 +252,7 @@ struct OnTheFlyTracker {
   struct : ConfigurableGroup {
     std::string prefix = "cfgBR"; // configuration for bremsstrahlung
     Configurable<bool> radiateBR{"radiateBR", false, "simulate bremsstrahlung"};
+    Configurable<bool> doBRQA{"doBRQA", false, "Do QA for bremsstrahlung"};
     Configurable<float> minBREnergyFraction{"minEnergyFraction", 0.001f, "Minimum energy fraction a bremsstrahlung photon can carry"};
     Configurable<float> maxBREnergyFraction{"maxEnergyFraction", 0.95f, "Maximum energy fraction a bremsstrahlung photon can carry"};
     Configurable<float> radiationStrength{"radiationStrength", 1e-6f, "Strenght of the bremsstrahlung radiation"};
@@ -574,6 +578,14 @@ struct OnTheFlyTracker {
         insertHist(histPath + "h2dPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
         insertHist(histPath + "h2dDCAxy", "h2dDCAxy;p_{T};DCA_{xy}", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
         insertHist(histPath + "h2dDCAz", "h2dDCAz;p_{T};DCA_{z}", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
+      }
+
+      if (brSettings.doBRQA) {
+        insertHist(histPath + "h1dNBRPhotons", "h1dNBRPhotons;N_{#gamma};Counts", {kTH1D, {{axes.axisNphotons}}});
+        insertHist(histPath + "h1dBREnergyLoss", "h1dBREnergyLoss;#Delta p / p;Counts", {kTH1D, {{axes.axisBRenergyLoss}}});
+
+        insertHist(histPath + "h2dBRPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dBRPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
       }
 
     } // end config loop
@@ -1796,9 +1808,23 @@ struct OnTheFlyTracker {
         float lambda = brSettings.radiationStrength * mcParticle.e() * geoEntry.getFloatValue(layerName, "x0") / (mass * mass);
         ULong64_t nPhotons = gRandom->Poisson(lambda);
 
+        double initialMomentum = trackParCov.getP();
+
         for (ULong64_t photon = 0; photon < nPhotons; ++photon) {
           float radiativeLoss = 1.0f - brSettings.minBREnergyFraction * std::pow(brSettings.maxBREnergyFraction / brSettings.minBREnergyFraction, gRandom->Rndm());
           trackParCov.setQ2Pt(trackParCov.getQ2Pt() / radiativeLoss);
+        }
+
+        double afterRadiationMomentum = trackParCov.getP();
+
+        if (brSettings.doBRQA) {
+          const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+
+          getHist(TH1, histPath + "h1dNBRPhotons")->Fill(static_cast<double>(nPhotons));
+          getHist(TH1, histPath + "h1dBREnergyLoss")->Fill((initialMomentum - afterRadiationMomentum) / afterRadiationMomentum);
+
+          getHist(TH2, histPath + "h2dBRPtRes")->Fill(trackParCov.getPt(), (trackParCov.getPt() - mcParticle.pt()) / trackParCov.getPt());
+          getHist(TH2, histPath + "h2dBRPtResAbs")->Fill(trackParCov.getPt(), trackParCov.getPt() - mcParticle.pt());
         }
       }
     }
