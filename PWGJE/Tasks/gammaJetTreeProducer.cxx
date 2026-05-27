@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <type_traits>
