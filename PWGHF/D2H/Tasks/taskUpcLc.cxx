@@ -66,18 +66,15 @@ namespace full
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);
-DECLARE_SOA_COLUMN(PromptScore, promptScore, float);
-DECLARE_SOA_COLUMN(FdScore, fdScore, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(Cpa, cpa, float);
-DECLARE_SOA_COLUMN(PvContributors, pvContributors, float);
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+DECLARE_SOA_COLUMN(PvContributors, pvContributors, int);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
 DECLARE_SOA_COLUMN(Vtz, vtz, float);
-DECLARE_SOA_COLUMN(AmpFV0A, ampFV0A, float);
 DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float);
 DECLARE_SOA_COLUMN(AmpFT0C, ampFT0C, float);
 DECLARE_SOA_COLUMN(ZdcTimeZNA, zdcTimeZNA, float);
@@ -87,7 +84,6 @@ DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
                   full::PvContributors,
                   full::Multiplicity,
                   full::Vtz,
-                  full::AmpFV0A,
                   full::AmpFT0A,
                   full::AmpFT0C,
                   full::ZdcTimeZNA,
@@ -97,9 +93,6 @@ DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::M,
                   full::Pt,
                   full::BkgScore,
-                  full::PromptScore,
-                  full::FdScore,
-                  full::AmpFV0A,
                   full::AmpFT0A,
                   full::AmpFT0C,
                   full::ZdcTimeZNA,
@@ -114,7 +107,6 @@ DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::Chi2PCA,
                   full::DecayLength,
                   full::Cpa,
-                  full::AmpFV0A,
                   full::AmpFT0A,
                   full::AmpFT0C,
                   full::ZdcTimeZNA,
@@ -251,9 +243,9 @@ struct HfTaskUpcLc {
       if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
         registry.fill(HIST("Data/hUpcMulti"), collision.multNTracksPV());
         registry.fill(HIST("Data/hUpcVtz"), collision.posZ());
-      }
-      if (fillTreeUpcQa) {
-        rowUpcQa(numPvContributors, collision.multNTracksPV(), collision.posZ(), fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+        if (fillTreeUpcQa) {
+          rowUpcQa(numPvContributors, collision.multNTracksPV(), collision.posZ(), fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+        }
       }
 
       for (const auto& candidate : groupedLcCandidates) {
@@ -271,7 +263,7 @@ struct HfTaskUpcLc {
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
 
-        double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        double outputBkg(-1);
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
@@ -280,25 +272,23 @@ struct HfTaskUpcLc {
             const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
             if (mlProb.size() == NumberOfMlClasses) {
               outputBkg = mlProb[MlClassBackground]; /// bkg score
-              outputPrompt = mlProb[MlClassPrompt];  /// prompt score
-              outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             if (fillTreeOnlySingleGap) {
               if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+                rowCandUpcBdt(massLc, pt, outputBkg, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
               }
             } else {
-              rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+              rowCandUpcBdt(massLc, pt, outputBkg, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
             }
 
           } else {
             if (fillTreeOnlySingleGap) {
               if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
               }
             } else {
-              rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFV0A, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+              rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
             }
           }
         };
