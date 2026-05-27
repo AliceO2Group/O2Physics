@@ -23,10 +23,10 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -123,47 +123,16 @@ struct NchCumulantsId {
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
 
-  struct : ConfigurableGroup {
-    Configurable<int> cfgNchBins{"cfgNchBins", 1200, "Bins for Net charge"};
-    Configurable<float> cfgNchMin{"cfgNchMin", -60.0, "Min for Net charge"};
-    Configurable<float> cfgNchMax{"cfgNchMax", 60.0, "Max for Net charge"};
-
-    Configurable<int> cfgPosBins{"cfgPosBins", 3010, "Bins for Pos charge"};
-    Configurable<float> cfgPosMin{"cfgPosMin", -0.5, "Min for Pos charge"};
-    Configurable<float> cfgPosMax{"cfgPosMax", 300.5, "Max for Pos charge"};
-
-    Configurable<int> cfgNegBins{"cfgNegBins", 3010, "Bins for Neg charge"};
-    Configurable<float> cfgNegMin{"cfgNegMin", -0.5, "Min for Neg charge"};
-    Configurable<float> cfgNegMax{"cfgNegMax", 300.5, "Max for Neg charge"};
-
-    Configurable<int> cfgNtBins{"cfgNtBins", 8010, "Bins for Total mult"};
-    Configurable<float> cfgNtMin{"cfgNtMin", -0.5, "Min for Total mult"};
-    Configurable<float> cfgNtMax{"cfgNtMax", 800.5, "Max for Total mult"};
-
-    Configurable<int> cfgPrBins{"cfgPrBins", 3010, "Bins for Proton"};
-    Configurable<float> cfgPrMin{"cfgPrMin", -0.5, "Min for Proton"};
-    Configurable<float> cfgPrMax{"cfgPrMax", 300.5, "Max for Proton"};
-
-    Configurable<int> cfgAPrBins{"cfgAPrBins", 3010, "Bins for AProton"};
-    Configurable<float> cfgAPrMin{"cfgAPrMin", -0.5, "Min for AProton"};
-    Configurable<float> cfgAPrMax{"cfgAPrMax", 300.5, "Max for AProton"};
-
-    Configurable<int> cfgKaBins{"cfgKaBins", 3010, "Bins for Kaon"};
-    Configurable<float> cfgKaMin{"cfgKaMin", -0.5, "Min for Kaon"};
-    Configurable<float> cfgKaMax{"cfgKaMax", 300.5, "Max for Kaon"};
-
-    Configurable<int> cfgAKaBins{"cfgAKaBins", 3010, "Bins for AKaon"};
-    Configurable<float> cfgAKaMin{"cfgAKaMin", -0.5, "Min for AKaon"};
-    Configurable<float> cfgAKaMax{"cfgAKaMax", 300.5, "Max for AKaon"};
-
-    Configurable<int> cfgPiBins{"cfgPiBins", 3010, "Bins for Pion+"};
-    Configurable<float> cfgPiMin{"cfgPiMin", -0.5, "Min for Pion+"};
-    Configurable<float> cfgPiMax{"cfgPiMax", 300.5, "Max for Pion+"};
-
-    Configurable<int> cfgAPiBins{"cfgAPiBins", 3010, "Bins for Pion-"};
-    Configurable<float> cfgAPiMin{"cfgAPiMin", -0.5, "Min for Pion-"};
-    Configurable<float> cfgAPiMax{"cfgAPiMax", 300.5, "Max for Pion-"};
-  } axisCfg;
+  ConfigurableAxis axisNch{"axisNch", {1200, -60.0, 60.0}, "Net_charge_dN"};
+  ConfigurableAxis axisPosCh{"axisPosCh", {3010, -0.5, 300.5}, "Pos_charge"};
+  ConfigurableAxis axisNegCh{"axisNegCh", {3010, -0.5, 300.5}, "Neg_charge"};
+  ConfigurableAxis axisNt{"axisNt", {8010, -0.5, 800.5}, "Mult_midRap_Nch"};
+  ConfigurableAxis axisPrCh{"axisPrCh", {3010, -0.5, 300.5}, "Pr_charge"};
+  ConfigurableAxis axisAPrCh{"axisAPrCh", {3010, -0.5, 300.5}, "APr_charge"};
+  ConfigurableAxis axisKaCh{"axisKaCh", {3010, -0.5, 300.5}, "Ka_charge"};
+  ConfigurableAxis axisAKaCh{"axisAKaCh", {3010, -0.5, 300.5}, "AKa_charge"};
+  ConfigurableAxis axisPiCh{"axisPiCh", {3010, -0.5, 300.5}, "Pion_Positive"};
+  ConfigurableAxis axisAPiCh{"axisAPiCh", {3010, -0.5, 300.5}, "Pion_Negative"};
 
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
@@ -299,22 +268,22 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNch(axisCfg.cfgNchBins, axisCfg.cfgNchMin, axisCfg.cfgNchMax, "Net_charge_dN");
-    const AxisSpec axisPosCh(axisCfg.cfgPosBins, axisCfg.cfgPosMin, axisCfg.cfgPosMax, "Pos_charge");
-    const AxisSpec axisNegCh(axisCfg.cfgNegBins, axisCfg.cfgNegMin, axisCfg.cfgNegMax, "Neg_charge");
-    const AxisSpec axisNt(axisCfg.cfgNtBins, axisCfg.cfgNtMin, axisCfg.cfgNtMax, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(axisCfg.cfgPrBins, axisCfg.cfgPrMin, axisCfg.cfgPrMax, "Pr_charge");
-    const AxisSpec axisAPrCh(axisCfg.cfgAPrBins, axisCfg.cfgAPrMin, axisCfg.cfgAPrMax, "APr_charge");
-    const AxisSpec axisKaCh(axisCfg.cfgKaBins, axisCfg.cfgKaMin, axisCfg.cfgKaMax, "Ka_charge");
-    const AxisSpec axisAKaCh(axisCfg.cfgAKaBins, axisCfg.cfgAKaMin, axisCfg.cfgAKaMax, "AKa_charge");
-    const AxisSpec axisPiCh(axisCfg.cfgPiBins, axisCfg.cfgPiMin, axisCfg.cfgPiMax, "Pion_Positive");
-    const AxisSpec axisAPiCh(axisCfg.cfgAPiBins, axisCfg.cfgAPiMin, axisCfg.cfgAPiMax, "Pion_Negative");
+    const AxisSpec axisNchSpec{axisNch, "Net_charge_dN"};
+    const AxisSpec axisPosChSpec{axisPosCh, "Pos_charge"};
+    const AxisSpec axisNegChSpec{axisNegCh, "Neg_charge"};
+    const AxisSpec axisNtSpec{axisNt, "Mult_midRap_Nch"};
+    const AxisSpec axisPrChSpec{axisPrCh, "Pr_charge"};
+    const AxisSpec axisAPrChSpec{axisAPrCh, "APr_charge"};
+    const AxisSpec axisKaChSpec{axisKaCh, "Ka_charge"};
+    const AxisSpec axisAKaChSpec{axisAKaCh, "AKa_charge"};
+    const AxisSpec axisPiChSpec{axisPiCh, "Pion_Positive"};
+    const AxisSpec axisAPiChSpec{axisAPiCh, "Pion_Negative"};
 
     const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
     const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
 
-    HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPrCh, axisAPrCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
-    HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPiCh, axisAPiCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
+    HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNchSpec, axisPosChSpec, axisNegChSpec, axisPrChSpec, axisAPrChSpec, axisKaChSpec, axisAKaChSpec, axisNtSpec, axisCent}});
+    HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNchSpec, axisPosChSpec, axisNegChSpec, axisPiChSpec, axisAPiChSpec, axisKaChSpec, axisAKaChSpec, axisNtSpec, axisCent}});
     HistogramConfigSpec histTPCPIDSparse({HistType::kTHnSparseD, {axisP, axisTPCNSigma, axisIdTag, axisMcTag}});
     HistogramConfigSpec histTOFPIDSparse({HistType::kTHnSparseD, {axisP, axisTOFNSigma, axisIdTag, axisMcTag}});
 
@@ -354,8 +323,8 @@ struct NchCumulantsId {
     hist.add("QA/events/preSel/multFT0", "multFT0", kTH1F, {axisMultFT0});
     hist.add("QA/events/preSel/centFT0", "centFT0", kTH1F, {axisCent});
     hist.addClone("QA/events/preSel/", "QA/events/postSel/");
-    hist.add("QA/events/postSel/net_charge", "net_charge", kTH1F, {axisNch});
-    hist.add("QA/events/postSel/Nt_centFT", "Mid_rap_Mult_VS_Cent", kTH2D, {{axisCent}, {axisNt}});
+    hist.add("QA/events/postSel/net_charge", "net_charge", kTH1F, {axisNchSpec});
+    hist.add("QA/events/postSel/Nt_centFT", "Mid_rap_Mult_VS_Cent", kTH2D, {{axisCent}, {axisNtSpec}});
 
     hist.add("QA/tracks/preSel/h_P", "p (Gev/c)", kTH1D, {axisP});
     hist.add("QA/tracks/preSel/h_P_InnerParameter", "p_InnerParameter (Gev/c)", kTH1D, {axisTPCInnerParam});
