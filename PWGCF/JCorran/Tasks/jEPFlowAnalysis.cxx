@@ -40,14 +40,15 @@
 #include <Framework/runDataProcessing.h>
 
 #include <THn.h>
-#include <TPDGCode.h>
 #include <TProfile3D.h>
 
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <iterator>
 #include <string>
 #include <vector>
 

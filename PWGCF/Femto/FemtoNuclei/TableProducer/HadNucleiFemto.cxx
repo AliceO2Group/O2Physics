@@ -56,7 +56,6 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <THn.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
