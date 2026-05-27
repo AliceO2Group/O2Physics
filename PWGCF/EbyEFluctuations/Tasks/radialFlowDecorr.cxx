@@ -76,7 +76,7 @@ struct RadialFlowDecorr {
   static constexpr int KnFt0cCell = 96;
   static constexpr int KIntM = 3;
   static constexpr int KIntK = 3;
-  static constexpr int KNEta = 17;
+  static constexpr int KNEta = 9;
   static constexpr float KFloatEpsilon = 1e-6f;
   static constexpr int KPiPlus = 211;
   static constexpr int KKPlus = 321;
@@ -151,10 +151,10 @@ struct RadialFlowDecorr {
   static constexpr float KinvalidCentrality = -1.0f;
   inline static const std::vector<float> etaLw = {
     -0.8,
-    -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
+    -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6};
   inline static const std::vector<float> etaUp = {
     0.8,
-    -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+    -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
 
   Configurable<float> cfgVtxZCut{"cfgVtxZCut", 10.f, "z-vertex range"};
   Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "min pT"};
@@ -223,21 +223,17 @@ struct RadialFlowDecorr {
   const AxisSpec vzAxis{5, -12.5, 12.5, "Vz"};
   const AxisSpec chgAxis{3, -1.5, 1.5};
   const AxisSpec pTAxis{{0.0, 0.2, 0.4, 0.6, 0.8, 1, 3, 5, 7, 10}, "pT Axis"};
-  const AxisSpec etaAxis{{-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}, "Eta"};
+  const AxisSpec etaAxis{{-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8}, "Eta"};
   const AxisSpec phiAxis{KNbinsPhi, KPhiMin, TwoPI, "#phi"};
   const AxisSpec etaBinAxis{KNEta + 1, -0.5, KNEta + 0.5, "#eta bin Number"};
   const AxisSpec spBinAxis{KNsp + 1, -KBinOffset, static_cast<float>(KNsp) + KBinOffset, "species index Number"};
 
-  const AxisSpec gapAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
-                          -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
-                          0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75,
-                          0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55},
+  const AxisSpec gapAxis{{-1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1,
+                           0.1,  0.3,  0.5,  0.7,  0.9,  1.1,  1.3,  1.5},
                          "Gap"};
 
-  const AxisSpec sumAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
-                          -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
-                          0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75,
-                          0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55},
+  const AxisSpec sumAxis{{-1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1,
+                           0.1,  0.3,  0.5,  0.7,  0.9,  1.1,  1.3,  1.5},
                          "Sum"};
 
   Configurable<bool> cfgRunMCGetNSig{"cfgRunMCGetNSig", false, "Run MC pass to get mean of Nsig Plots"};
@@ -2579,9 +2575,12 @@ struct RadialFlowDecorr {
         float sum = (etaValA + etaValB);
         for (int isp = 0; isp < KNsp; ++isp) {
 
-          float c2SubTru = p1kBarTru[isp][ietaA] * p1kBarTru[isp][ietaC];
-          float c2SubReco = p1kBarReco[isp][ietaA] * p1kBarReco[isp][ietaC];
-          float c2SubRecoEffCor = p1kBarRecoEffCor[isp][ietaA] * p1kBarRecoEffCor[isp][ietaC];
+          float c2SubTru = (ietaA == ietaC) ? static_cast<float>(c2Tru[isp][ietaA])
+                                              : p1kBarTru[isp][ietaA] * p1kBarTru[isp][ietaC];
+          float c2SubReco = (ietaA == ietaC) ? static_cast<float>(c2Reco[isp][ietaA])
+                                              : p1kBarReco[isp][ietaA] * p1kBarReco[isp][ietaC];
+          float c2SubRecoEffCor = (ietaA == ietaC) ? static_cast<float>(c2RecoEffCor[isp][ietaA])
+                                                    : p1kBarRecoEffCor[isp][ietaA] * p1kBarRecoEffCor[isp][ietaC];
 
           float covTru = p1kBarTruMult[isp][ietaA] * p1kBarTru[isp][ietaC];
           float covReco = p1kBarRecoMult[isp][ietaA] * p1kBarReco[isp][ietaC];
@@ -3503,7 +3502,8 @@ struct RadialFlowDecorr {
 
         for (int isp = 0; isp < KNsp; ++isp) {
 
-          float c2Sub = p1kBar[isp][ietaA] * p1kBar[isp][ietaC];
+          float c2Sub = (ietaA == ietaC) ? static_cast<float>(c2[isp][ietaA])
+                                         : p1kBar[isp][ietaA] * p1kBar[isp][ietaC];
           float cov = p1kBarMult[isp][ietaA] * p1kBar[isp][ietaC];
           float covFT0A = p1kBarFt0A * p1kBar[isp][ietaC];
           float covFT0C = p1kBarFt0C * p1kBar[isp][ietaA];
