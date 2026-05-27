@@ -185,6 +185,17 @@ struct strangenesstofpid {
     Configurable<bool> autoSetProcessFunctions{"autoSetProcessFunctions", true, "Flag to autodetect the process functions to use"};
   } ccdbConfigurations;
 
+  // Metadata options
+  struct : ConfigurableGroup {
+    std::string prefix = "metadata";
+    // necessary for TOFResponse when running over derived data (where no metadata can be found)
+    Configurable<bool> overrideMetadata{"overrideMetadata", false, "Override metadataInfo with custom information. Enable when running over derived data"};
+    Configurable<std::string> Run{"Run", "3", "Is it Run 3 ? If yes: 3 ; otherwise: 2"};
+    Configurable<std::string> DataType{"DataType", "Data", "Is it Data? If yes: Data ; otherwise: MC"};
+    Configurable<std::string> AnchorPassName{"AnchorPassName", "apass1", "Anchor pass name (only if needed for DataType = MC)"};
+    Configurable<std::string> RecoPassName{"RecoPassName", "apass1", "Reco pass name (only if needed for DataType = Data)"};
+  } metadataConfigurations;
+
   // manual
   Configurable<int> useCustomRunNumber{"useCustomRunNumber", false, "Use custom timestamp"};
   Configurable<int> manualRunNumber{"manualRunNumber", 544122, "manual run number if no collisions saved"};
@@ -470,6 +481,13 @@ struct strangenesstofpid {
 
     LOGF(info, "intializing TOFResponse");
     std::string taskName = initContext.services().get<o2::framework::DeviceSpec const>().name;
+    if (doprocessDerivedData || metadataConfigurations.overrideMetadata) {
+      LOG(info) << "Overriding metadata info. Run = " << metadataConfigurations.Run.value << " ; DataType = " << metadataConfigurations.DataType.value << " ; AnchorPassName (only if DataType = MC) = " << metadataConfigurations.AnchorPassName.value << " ; RecoPassName (only if DataType = Data) = " << metadataConfigurations.RecoPassName.value;
+      mTOFResponse->metadataInfo.set("Run", metadataConfigurations.Run.value);
+      mTOFResponse->metadataInfo.set("DataType", metadataConfigurations.DataType.value);
+      mTOFResponse->metadataInfo.set("AnchorPassName", metadataConfigurations.AnchorPassName.value);
+      mTOFResponse->metadataInfo.set("RecoPassName", metadataConfigurations.RecoPassName.value);
+    }
     mTOFResponse->initSetup(ccdb, initContext, taskName);
 
     // per event
