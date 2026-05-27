@@ -28,6 +28,14 @@
 ///
 /// \author Alberto Calivà <alberto.caliva@cern.ch>
 
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/Logger.h"
+#include "Framework/OutputObjHeader.h"
+#include "Framework/runDataProcessing.h"
+
 #include <Math/Boost.h>
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
