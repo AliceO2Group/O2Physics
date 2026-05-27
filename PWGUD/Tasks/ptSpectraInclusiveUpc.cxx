@@ -18,11 +18,11 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include "Common/Core/RecoDecay.h"
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -31,16 +31,16 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <array>
 #include <cmath>
 #include <cstdlib>
-#include <array>
 
 using namespace o2;
 using namespace o2::framework;
@@ -73,7 +73,7 @@ struct PtSpectraInclusiveUpc {
 
   void init(InitContext const&)
   {
-    
+
     // axes
     const AxisSpec axisPt{nBinsPt, 0, 5, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec axisEventCounter{2, 0.5, 2.5, "Event type"};
