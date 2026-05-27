@@ -49,7 +49,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct HfTaskH2fromLb {
+struct HfTaskDeuteronFromLb {
 
   Zorro zorro;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -243,7 +243,7 @@ struct HfTaskH2fromLb {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskH2fromLb, processData, "processData", false);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processData, "processData", false);
 
   void processMC(MCCollisionCandidates::iterator const&, MCTrackCandidates const& tracks, o2::aod::McParticles const&)
   {
@@ -282,7 +282,7 @@ struct HfTaskH2fromLb {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskH2fromLb, processMC, "processMC", true);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processMC, "processMC", true);
 
   void processGen(o2::aod::McCollision const&, o2::aod::McParticles const& mcParticles)
   {
@@ -316,11 +316,11 @@ struct HfTaskH2fromLb {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskH2fromLb, processGen, "processGen", false);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processGen, "processGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskH2fromLb>(cfgc)};
+    adaptAnalysisTask<HfTaskDeuteronFromLb>(cfgc)};
 }
