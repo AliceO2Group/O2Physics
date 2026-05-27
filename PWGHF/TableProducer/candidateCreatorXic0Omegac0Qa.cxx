@@ -262,8 +262,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
   // Track PID: PID value of tracks defined under o2::track::PID namespace
-  int trackPidOfV0DauPos{}, trackPidOfV0DauNeg{};
-  int trackPidOfBach{}, trackPidOfCharmBach{};
   int trackPidOfCascade{};
 
   // Mass of daughter tracks & V0s & cascades & charm baryons;
@@ -322,10 +320,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCascade = kXiMinus;
       pdgIdOfCharmBaryon = kXiC0;
 
-      trackPidOfV0DauPos = o2::track::PID::Proton;
-      trackPidOfV0DauNeg = o2::track::PID::Pion;
-      trackPidOfBach = o2::track::PID::Pion;
-      trackPidOfCharmBach = o2::track::PID::Pion;
       trackPidOfCascade = o2::track::PID::XiMinus;
 
       massOfCharmBach = o2::constants::physics::MassPiPlus;
@@ -343,10 +337,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
 
-      trackPidOfV0DauPos = o2::track::PID::Proton;
-      trackPidOfV0DauNeg = o2::track::PID::Pion;
-      trackPidOfBach = o2::track::PID::Kaon;
-      trackPidOfCharmBach = o2::track::PID::Pion;
       trackPidOfCascade = o2::track::PID::OmegaMinus;
 
       massOfCharmBach = o2::constants::physics::MassPiPlus;
@@ -364,10 +354,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
 
-      trackPidOfV0DauPos = o2::track::PID::Proton;
-      trackPidOfV0DauNeg = o2::track::PID::Pion;
-      trackPidOfBach = o2::track::PID::Kaon;
-      trackPidOfCharmBach = o2::track::PID::Kaon;
       trackPidOfCascade = o2::track::PID::OmegaMinus;
 
       massOfCharmBach = o2::constants::physics::MassKPlus;
@@ -381,17 +367,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
     LOGF(info, "  PDG ID of V0 positive daughter: %d", pdgIdOfV0DauPos);
     LOGF(info, "  PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
-    LOGF(info, "  PDG ID of Bachelor: %d", pdgIdOfBach);
-    LOGF(info, "  PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
-    LOGF(info, "-----------------------------------------------------------------------");
-    LOGF(info, "  Track PID of V0 Dau Pos: %d", trackPidOfV0DauPos);
-    LOGF(info, "  Track PID of V0 Dau Neg: %d", trackPidOfV0DauNeg);
-    LOGF(info, "  Track PID of Bach: %d", trackPidOfBach);
-    LOGF(info, "  Track PID of Charm Bach: %d", trackPidOfCharmBach);
-    LOGF(info, "  Track PID of Cascade: %d", trackPidOfCascade);
-    LOGF(info, "-----------------------------------------------------------------------");
     LOGF(info, "  PDG ID of V0: %d", pdgIdOfV0);
+    LOGF(info, "  PDG ID of Bachelor: %d", pdgIdOfBach);
     LOGF(info, "  PDG ID of Cascade: %d", pdgIdOfCascade);
+    LOGF(info, "  PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
     LOGF(info, "  PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
     LOGF(info, "-----------------------------------------------------------------------");
     LOGF(info, "  Mass of V0 set as: %f", massOfV0);
@@ -512,6 +491,29 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     registry.add("hCascPt", "Pt of reconstructed cascade;pT;Entries", {HistType::kTH1F, {{configs.nBinPtCasc, configs.minPtCasc, configs.maxPtCasc}}});
 
   } // end of initialization
+
+  // helper function to convert PDG of KFParticle object into appropriate track PID.
+  // exclusively used to make input of getTrackParCovFromKFP()
+  // \brief kfPdg is Pdg value of KFParticle object
+  o2::track::PID::ID convertPDGIntoPID(const int kfPdg)
+  {
+    switch (std::abs(kfPdg)) {
+      case kPiPlus:
+        return o2::track::PID::Pion;
+      case kKPlus:
+        return o2::track::PID::Kaon;
+      case kProton:
+        return o2::track::PID::Proton;
+      case kLambda0:
+        return o2::track::PID::Lambda;
+      case kXiMinus:
+        return o2::track::PID::XiMinus;
+      case kOmegaMinus:
+        return o2::track::PID::OmegaMinus;
+      default:
+        LOGF(fatal, "Undefined PDG value from KFParticle given for conversion: %d", kfPdg);
+    }
+  }
 
   // template function for running charm baryon reconstruction with DCAFitter
   /// \brief centEstimator is for different centrality estimators
@@ -956,6 +958,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       const KFPTrack kfTrackBach = createKFPTrackFromTrack(bachTrack);
 
       bool isAnti = (bachTrack.signed1Pt() > 0 ? true : false);
+      int bachCharge= (bachTrack.signed1Pt() > 0 ? +1 : -1);
 
       KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
       KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
@@ -1104,11 +1107,11 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
       //----------Reconstruct information after vertex fit----------
-      auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, (isAnti ? trackPidOfV0DauNeg : trackPidOfV0DauPos), 1);
-      auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, (isAnti ? trackPidOfV0DauPos : trackPidOfV0DauNeg), -1);
-      auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, trackPidOfBach, (isAnti ? 1 : -1));
-      auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, trackPidOfCharmBach, (isAnti ? -1 : 1));
-      auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, trackPidOfCascade, (isAnti ? 1 : -1));
+      auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, convertPDGIntoPID(kfPos.GetPDG()), 1);
+      auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, convertPDGIntoPID(kfNeg.GetPDG()), -1);
+      auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, convertPDGIntoPID(kfBachToCasc.GetPDG()), bachCharge);
+      auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, convertPDGIntoPID(kfCharmBachToCharmBaryon.GetPDG()), -bachCharge);
+      auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, convertPDGIntoPID(kfCascToCharmBaryon.GetPDG()), bachCharge);
 
       trackParCovV0DauPos.setAbsCharge(1);
       trackParCovV0DauNeg.setAbsCharge(1);
