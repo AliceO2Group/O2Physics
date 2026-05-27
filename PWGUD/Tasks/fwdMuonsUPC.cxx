@@ -196,7 +196,7 @@ struct fwdMuonsUPC {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // CONFIGURABLES
-  static constexpr double Pi = o2::constants::math::PI;
+  //static constexpr double Pi = o2::constants::math::PI;
   // pT of muon pairs
   Configurable<int> nBinsPt{"nBinsPt", 250, "N bins in pT histo"};
   Configurable<float> lowPt{"lowPt", 0., "lower limit in pT histo"};
