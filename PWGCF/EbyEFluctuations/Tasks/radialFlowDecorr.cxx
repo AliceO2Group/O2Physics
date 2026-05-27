@@ -3478,8 +3478,8 @@ struct RadialFlowDecorr {
           histos.fill(HIST("Prof_Cov_Mult_etabin_spbin"), coll.multNTracksPV(), ietaA, isp, covAC);
         }
         if (std::isfinite(covCA)) {
-          histos.fill(HIST("Prof_Cov_Cent_etabin_spbin"), cent, ietaA, isp, covCA);
-          histos.fill(HIST("Prof_Cov_Mult_etabin_spbin"), coll.multNTracksPV(), ietaA, isp, covCA);
+          histos.fill(HIST("Prof_Cov_Cent_etabin_spbin"), cent, ietaC, isp, covCA);
+          histos.fill(HIST("Prof_Cov_Mult_etabin_spbin"), coll.multNTracksPV(), ietaC, isp, covCA);
         }
         if (std::isfinite(covFT0A)) {
           histos.fill(HIST("Prof_CovFT0A_Cent_etabin_spbin"), cent, ietaA, isp, covFT0A);
