@@ -268,22 +268,11 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNchSpec{axisNch, "Net_charge_dN"};
-    const AxisSpec axisPosChSpec{axisPosCh, "Pos_charge"};
-    const AxisSpec axisNegChSpec{axisNegCh, "Neg_charge"};
-    const AxisSpec axisNtSpec{axisNt, "Mult_midRap_Nch"};
-    const AxisSpec axisPrChSpec{axisPrCh, "Pr_charge"};
-    const AxisSpec axisAPrChSpec{axisAPrCh, "APr_charge"};
-    const AxisSpec axisKaChSpec{axisKaCh, "Ka_charge"};
-    const AxisSpec axisAKaChSpec{axisAKaCh, "AKa_charge"};
-    const AxisSpec axisPiChSpec{axisPiCh, "Pion_Positive"};
-    const AxisSpec axisAPiChSpec{axisAPiCh, "Pion_Negative"};
-
     const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
     const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
 
-    HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNchSpec, axisPosChSpec, axisNegChSpec, axisPrChSpec, axisAPrChSpec, axisKaChSpec, axisAKaChSpec, axisNtSpec, axisCent}});
-    HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNchSpec, axisPosChSpec, axisNegChSpec, axisPiChSpec, axisAPiChSpec, axisKaChSpec, axisAKaChSpec, axisNtSpec, axisCent}});
+    HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPrCh, axisAPrCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
+    HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPiCh, axisAPiCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
     HistogramConfigSpec histTPCPIDSparse({HistType::kTHnSparseD, {axisP, axisTPCNSigma, axisIdTag, axisMcTag}});
     HistogramConfigSpec histTOFPIDSparse({HistType::kTHnSparseD, {axisP, axisTOFNSigma, axisIdTag, axisMcTag}});
 
@@ -323,8 +312,8 @@ struct NchCumulantsId {
     hist.add("QA/events/preSel/multFT0", "multFT0", kTH1F, {axisMultFT0});
     hist.add("QA/events/preSel/centFT0", "centFT0", kTH1F, {axisCent});
     hist.addClone("QA/events/preSel/", "QA/events/postSel/");
-    hist.add("QA/events/postSel/net_charge", "net_charge", kTH1F, {axisNchSpec});
-    hist.add("QA/events/postSel/Nt_centFT", "Mid_rap_Mult_VS_Cent", kTH2D, {{axisCent}, {axisNtSpec}});
+    hist.add("QA/events/postSel/net_charge", "net_charge", kTH1F, {axisNch});
+    hist.add("QA/events/postSel/Nt_centFT", "Mid_rap_Mult_VS_Cent", kTH2D, {{axisCent}, {axisNt}});
 
     hist.add("QA/tracks/preSel/h_P", "p (Gev/c)", kTH1D, {axisP});
     hist.add("QA/tracks/preSel/h_P_InnerParameter", "p_InnerParameter (Gev/c)", kTH1D, {axisTPCInnerParam});
