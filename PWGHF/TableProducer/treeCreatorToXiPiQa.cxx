@@ -341,7 +341,7 @@ struct HfTreeCreatorToXiPiQa {
   using MatchedGenXiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>>;
 
   Filter filterGenXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(genSelection));
-  
+
   void init(InitContext const&)
   {
     if ((doprocessMcLiteXic0 && doprocessMcLiteOmegac0) || (doprocessMcFullXic0 && doprocessMcFullOmegac0)) {
@@ -817,7 +817,7 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~MC with DCAFitter~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
 
-  void processMcFullXic0(MyEventTable const& collisions, 
+  void processMcFullXic0(MyEventTable const& collisions,
                          MyTrackTable const&,
                          soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates,
                          MatchedGenXiPi const& mcParticles)
@@ -843,7 +843,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcFullOmegac0(MyEventTable const& collisions, 
+  void processMcFullOmegac0(MyEventTable const& collisions,
                             MyTrackTable const&,
                             soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates,
                             MatchedGenXiPi const& mcParticles)
@@ -869,7 +869,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0(MyEventTable const& collisions, 
+  void processMcLiteXic0(MyEventTable const& collisions,
                          MyTrackTable const&,
                          soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates,
                          MatchedGenXiPi const& mcParticles)
@@ -895,9 +895,9 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0WithFT0C(MyEventTableWithFT0C const& collisions, 
+  void processMcLiteXic0WithFT0C(MyEventTableWithFT0C const& collisions,
                                  MyTrackTable const&,
-                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates, 
+                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates,
                                  MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
@@ -921,9 +921,9 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0WithFT0M(MyEventTableWithFT0M const& collisions, 
+  void processMcLiteXic0WithFT0M(MyEventTableWithFT0M const& collisions,
                                  MyTrackTable const&,
-                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates, 
+                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates,
                                  MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
@@ -947,7 +947,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, 
+  void processMcLiteXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions,
                                       MyTrackTable const&,
                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates,
                                       MatchedGenXiPi const& mcParticles)
@@ -973,7 +973,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteOmegac0(MyEventTable const& collisions, 
+  void processMcLiteOmegac0(MyEventTable const& collisions,
                             MyTrackTable const&,
                             soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates,
                             MatchedGenXiPi const& mcParticles)
@@ -1010,7 +1010,7 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~MC with KFParticle~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
-  void processKfMcXic0(MyEventTable const& collisions, 
+  void processKfMcXic0(MyEventTable const& collisions,
                        MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates,
                        MatchedGenXiPi const& mcParticles)
@@ -1036,7 +1036,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfMcXic0WithFT0C(MyEventTableWithFT0C const& collisions, 
+  void processKfMcXic0WithFT0C(MyEventTableWithFT0C const& collisions,
                                MyTrackTable const&,
                                soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates,
                                MatchedGenXiPi const& mcParticles)
@@ -1062,7 +1062,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfMcXic0WithFT0M(MyEventTableWithFT0M const& collisions, 
+  void processKfMcXic0WithFT0M(MyEventTableWithFT0M const& collisions,
                                MyTrackTable const&,
                                soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates,
                                MatchedGenXiPi const& mcParticles)
@@ -1088,7 +1088,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfMcXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, 
+  void processKfMcXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions,
                                     MyTrackTable const&,
                                     soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates,
                                     MatchedGenXiPi const& mcParticles)
