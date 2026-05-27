@@ -68,9 +68,6 @@ struct HfTaskSigmac {
   Configurable<bool> addMassDiffAbsLambdaCToSigmacSparse{"addMassDiffAbsLambdaCToSigmacSparse", false, "enable the filling of |M(pkpi, piKp) - M(LambdaC)| in the Σc0,++ THnSparse"};
   Configurable<float> deltaMassSigmacRecoMax{"deltaMassSigmacRecoMax", 1000, "Maximum allowed value for Sigmac deltaMass. Conceived to reduce the output size (i.e. reject background above a certain threshold)"};
   Configurable<float> ptMinSc{"ptMinSc", -1.f, "Minimum accepted value for SigmaC-hadron pt (GeV/c)"};
-  ConfigurableAxis thnConfigAxisAbsEtaTrackMin{"thnConfigAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
-  ConfigurableAxis thnConfigAxisNumItsClsMin{"thnConfigAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
-  ConfigurableAxis thnConfigAxisNumTpcClsMin{"thnConfigAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
 
   bool isMc{};
   bool storeTrackProp{};
@@ -94,6 +91,9 @@ struct HfTaskSigmac {
   ConfigurableAxis thnConfigAxisBdtScoreLcNonPrompt{"thnConfigAxisBdtScoreLcNonPrompt", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisSoftPiAbsDca{"thnConfigAxisSoftPiAbsDca", {14, 0., 0.07}, ""};
   ConfigurableAxis thnConfigAxisMassDiffAbsLambdaC{"thnConfigAxisMassDiffAbsLambdaC", {12, 0, 0.06}, ""};
+  ConfigurableAxis thnConfigAxisAbsEtaTrackMin{"thnConfigAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
+  ConfigurableAxis thnConfigAxisNumItsClsMin{"thnConfigAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
+  ConfigurableAxis thnConfigAxisNumTpcClsMin{"thnConfigAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
 
   /// analysis histograms
   HistogramRegistry registry{
