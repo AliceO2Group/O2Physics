@@ -511,7 +511,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       case kOmegaMinus:
         return o2::track::PID::OmegaMinus;
       default:
-        LOGF(fatal, "Undefined PDG value from KFParticle given for conversion: %d", kfPdg);
+        LOGF(fatal, "Undefined PDG value from KFParticle given for conversion(%d). Replace it with PID of Pion", kfPdg);
+        return o2::track::PID::Pion;
     }
   }
 
