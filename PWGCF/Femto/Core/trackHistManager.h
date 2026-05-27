@@ -73,6 +73,8 @@ enum TrackHist {
   kPtVsDcaxy,
   kPtVsDcaz,
   kPtVsDca,
+  kPtVsDcaxyVsDcaz, // DCAxy vs DCAz vs pt for extraction of particle fraction
+  kPVsPTpc,
   // its pid
   kItsSignal,
   kItsElectron,
@@ -199,6 +201,7 @@ struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotHeliumPid{"plotHeliumPid", true, "Generate plots for Helium PID"};
   o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "MC ONLY: Plot pt vs DCAxy vs DCAz for different particle origins"};
   o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3122}, "MC ONLY: PDG codes of mothers of secondaries (Max 3 will be considered)"};
+  o2::framework::Configurable<bool> plotDcaCorrelation{"plotDcaCorrelation", true, "Plot pt vs DCAxy vs DCAz"};
   o2::framework::ConfigurableAxis itsCluster{"itsCluster", {{8, -0.5, 7.5}}, "ITS cluster"};
   o2::framework::ConfigurableAxis itsClusterIb{"itsClusterIb", {{4, -0.5, 3.5}}, "ITS cluster in inner barrel"};
   o2::framework::ConfigurableAxis tpcCrossedRows{"tpcCrossedRows", {{161, -0.5, 160.5}}, "TPC cluster"};
@@ -209,7 +212,7 @@ struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dcaXy{"dcaXy", {{300, -0.3, 0.3}}, "DCA_xy"};
   o2::framework::ConfigurableAxis dcaZ{"dcaZ", {{300, -0.3, 0.3}}, "DCA_Z"};
   o2::framework::ConfigurableAxis dca{"dca", {{300, 0, 0.3}}, "DCA"};
-  o2::framework::ConfigurableAxis p{"p", {{300, 0, 6}}, "Momentum axis"};
+  o2::framework::ConfigurableAxis p{"p", {{300, 0, 6}}, "Momentum axis. Used for all PID histograms and momentum correlation histogram"};
   o2::framework::ConfigurableAxis itsSignal{"itsSignal", {{150, 0, 15}}, "ITS Signal"};
   o2::framework::ConfigurableAxis itsElectron{"itsElectron", {{300, -3, 3}}, "ITS PID for electron"};
   o2::framework::ConfigurableAxis itsPion{"itsPion", {{300, -3, 3}}, "ITS PID for pion"};
@@ -306,6 +309,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kPtVsDcaxy, o2::framework::HistType::kTH2F, "hPtVsDcaxy", "p_{T} vs DCA_{XY}; p_{T} (GeV/#it{c}); DCA_{XY} (cm)"},
       {kPtVsDcaz, o2::framework::HistType::kTH2F, "hPtVsDcaz", "p_{T} vs DCA_{Z}; p_{T} (GeV/#it{c}); DCA_{Z} (cm)"},
       {kPtVsDca, o2::framework::HistType::kTH2F, "hPtVsDca", "p_{T} vs DCA; p_{T} (GeV/#it{c}); DCA (cm)"},
+      {kPtVsDcaxyVsDcaz, o2::framework::HistType::kTHnSparseF, "hPtVsDcaxyVsDcaz", "Transverse momentum vs DCA_{xy} vs DCA_{z}; p_{T} (GeV/#it{c}); DCA_{XY} (cm); DCA_{Z} (cm);"},
+      {kPVsPTpc, o2::framework::HistType::kTH2F, "hPVsPTpc", "Correlation p_{global} and p_{TPC}; p_{global} (GeV/#it{c}); p_{tpc} (GeV/#it{c})"},
       {kItsSignal, o2::framework::HistType::kTH2F, "hItsSignal", "ITS Signal; p (GeV/#it{c}) ; <ITS Cluster Size> x <cos #lambda>"},
       {kItsElectron, o2::framework::HistType::kTH2F, "hItsPidElectron", "ITS PID Electron; p (GeV/#it{c}) ; n#sigma_{TPC,el}"},
       {kItsPion, o2::framework::HistType::kTH2F, "hItsPidPion", "ITS PID Pion; p (GeV/#it{c}) ; n#sigma_{ITS,pi}"},
@@ -352,15 +357,15 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T,True} (GeV/#it{c})"},
       {kTrueEtaVsEta, o2::framework::HistType::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
       {kTruePhiVsPhi, o2::framework::HistType::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"},
-      {kNoMcParticle, o2::framework::HistType::kTHnSparseF, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kNoMcParticle, o2::framework::HistType::kTHnSparseF, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
       {kPrimary, o2::framework::HistType::kTHnSparseF, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kFromWrongCollision, o2::framework::HistType::kTHnSparseF, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kFromMaterial, o2::framework::HistType::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kMissidentified, o2::framework::HistType::kTHnSparseF, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kSecondary1, o2::framework::HistType::kTHnSparseF, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kSecondary2, o2::framework::HistType::kTHnSparseF, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kSecondary3, o2::framework::HistType::kTHnSparseF, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
-      {kSecondaryOther, o2::framework::HistType::kTHnSparseF, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kFromWrongCollision, o2::framework::HistType::kTHnSparseF, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kFromMaterial, o2::framework::HistType::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kMissidentified, o2::framework::HistType::kTHnSparseF, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary1, o2::framework::HistType::kTHnSparseF, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary2, o2::framework::HistType::kTHnSparseF, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary3, o2::framework::HistType::kTHnSparseF, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondaryOther, o2::framework::HistType::kTHnSparseF, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
     }};
 
 #define TRACK_HIST_ANALYSIS_MAP(conf) \
@@ -394,6 +399,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
     {kPtVsDcaxy, {confAnalysis.pt, confQa.dcaXy}},                                         \
     {kPtVsDcaz, {confAnalysis.pt, confQa.dcaZ}},                                           \
     {kPtVsDca, {confAnalysis.pt, confQa.dca}},                                             \
+    {kPtVsDcaxyVsDcaz, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},                      \
+    {kPVsPTpc, {confQa.p, confQa.p}},                                                      \
     {kItsSignal, {confQa.p, confQa.itsSignal}},                                            \
     {kItsElectron, {confQa.p, confQa.itsElectron}},                                        \
     {kItsPion, {confQa.p, confQa.itsPion}},                                                \
@@ -633,6 +640,8 @@ class TrackHistManager
     mPlotHeliumPid = ConfBinningQa.plotHeliumPid.value;
     mMomentumType = static_cast<modes::MomentumType>(ConfBinningQa.momentumType.value);
 
+    mPlotDcaCorrelation = ConfBinningQa.plotDcaCorrelation.value;
+
     mPlotOrigins = ConfBinningQa.plotOrigins.value;
     mPlotNSecondaries = ConfBinningQa.pdgCodesForMothersOfSecondary.value.size();
 
@@ -686,6 +695,11 @@ class TrackHistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDcaxy, HistTable), getHistDesc(kPtVsDcaxy, HistTable), getHistType(kPtVsDcaxy, HistTable), {Specs.at(kPtVsDcaxy)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDcaz, HistTable), getHistDesc(kPtVsDcaz, HistTable), getHistType(kPtVsDcaz, HistTable), {Specs.at(kPtVsDcaz)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDca, HistTable), getHistDesc(kPtVsDca, HistTable), getHistType(kPtVsDca, HistTable), {Specs.at(kPtVsDca)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPVsPTpc, HistTable), getHistDesc(kPVsPTpc, HistTable), getHistType(kPVsPTpc, HistTable), {Specs.at(kPVsPTpc)});
+    }
+
+    if (mPlotDcaCorrelation) {
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDcaxyVsDcaz, HistTable), getHistDesc(kPtVsDcaxyVsDcaz, HistTable), getHistType(kPtVsDcaxyVsDcaz, HistTable), {Specs.at(kPtVsDcaxyVsDcaz)});
     }
 
     std::string pidDir = std::string(prefix) + std::string(PidDir);
@@ -835,6 +849,11 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDcaxy, HistTable)), mAbsCharge * track.pt(), track.dcaXY());
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDcaz, HistTable)), mAbsCharge * track.pt(), track.dcaZ());
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDca, HistTable)), mAbsCharge * track.pt(), track.dca());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPVsPTpc, HistTable)), track.p(), track.tpcInnerParam());
+    }
+
+    if (mPlotDcaCorrelation) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDcaxyVsDcaz, HistTable)), mAbsCharge * track.pt(), track.dcaXY(), track.dcaZ());
     }
 
     float momentum = 0.f;
@@ -1013,6 +1032,7 @@ class TrackHistManager
   bool mPlotDeuteronPid = false;
   bool mPlotTritonPid = false;
   bool mPlotHeliumPid = false;
+  bool mPlotDcaCorrelation = false;
   bool mPlotOrigins = false;
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
