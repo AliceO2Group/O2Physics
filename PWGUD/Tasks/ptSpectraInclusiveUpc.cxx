@@ -56,10 +56,8 @@ struct PtSpectraInclusiveUpc {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   Preslice<o2::aod::McParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
   // define abbreviations
-  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using CCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>;
   using CC = CCs::iterator;
-  using MCparticles = aod::UDMcParticles::iterator;
   using TCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
   using TC = TCs::iterator;
   using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
@@ -112,7 +110,7 @@ struct PtSpectraInclusiveUpc {
     histos.add("DCAxy_data_protons", "DCAxy_data_protons", kTH1F, {axisDCAxy});
   }
 
-  void processSim(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParticles)
+  void processSim(aod::UDMcCollision const&, aod::UDMcParticles const& mcParticles)
   {
 
     for (const auto& mcParticle : mcParticles) {
