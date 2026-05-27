@@ -18,17 +18,25 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
-#include <CommonConstants/PhysicsConstants.h>
-#include <PWGUD/DataModel/UDTables.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
 #include <TRandom3.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <unordered_map>
 #include <vector>
 
