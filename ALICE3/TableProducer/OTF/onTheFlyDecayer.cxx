@@ -71,7 +71,7 @@ static const std::vector<int> pdgCodes{PDG_t::kK0Short,
 namespace o2::aod { O2ORIGIN("TMP"); }
 
 struct OnTheFlyDecayer {
-  Produces<aod::McCollisions> tableMcCollisions;
+  Produces<aod::McCollisions_001> tableMcCollisions;
   Produces<aod::StoredMcParticles_001> tableMcParticles;
 
   o2::upgrade::Decayer decayer;
@@ -168,7 +168,7 @@ struct OnTheFlyDecayer {
     decayParticles(stop, stop + ndau);
   }
 
-  void process(aod::McCollisions_001/*From<aod::Hash<"TMP"_h>>*/ const& mcCollisions, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
+  void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>> const& mcCollisions, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
     for (const auto& collision : mcCollisions) {
       allParticles.clear();
