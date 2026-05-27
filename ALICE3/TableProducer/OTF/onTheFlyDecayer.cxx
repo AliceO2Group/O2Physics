@@ -172,6 +172,8 @@ struct OnTheFlyDecayer {
   {
     for (const auto& collision : mcCollisions) {
       allParticles.clear();
+
+      // Reproduce collision table to have AOD origin
       mCollisionId = collision.globalIndex();
       tableMcCollisions(collision.bcId(),
                         collision.generatorsID(),
@@ -214,10 +216,11 @@ struct OnTheFlyDecayer {
 
 struct OnTheFlyDecayerExtensionSpawner {
   Spawns<aod::McParticles_001Extension> spawnMcParticlesExtensions;
-  void init(InitContext const&) {}
+  void init(o2::framework::InitContext&) {}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc), adaptAnalysisTask<OnTheFlyDecayerExtensionSpawner>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc),
+                      adaptAnalysisTask<OnTheFlyDecayerExtensionSpawner>(cfgc)};
 }

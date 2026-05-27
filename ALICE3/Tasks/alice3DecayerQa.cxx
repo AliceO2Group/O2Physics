@@ -80,31 +80,31 @@ struct Alice3DecayerQa {
   void init(o2::framework::InitContext&)
   {
     // QA with Table entries
-    histos.add("MCWithDau/hElPt", "hElPt", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hMuPt", "hMuPt", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hPiPt", "hPiPt", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hKaPt", "hKaPt", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hPrPt", "hPrPt", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hCollisionId", "hCollisionId", kTH1D, {axes.axisCollisionId});
-    histos.add("MCWithDau/hPdgCode", "hPdgCode", kTH1D, {axes.axisPdgCode});
-    histos.add("MCWithDau/hStatusCode", "hStatusCode", kTH1D, {axes.axisStatusCode});
-    histos.add("MCWithDau/hFlags", "hFlags", kTH1D, {axes.axisFlags});
-    histos.add("MCWithDau/hMothersIds", "hMothersIds", kTH1D, {axes.axisMothersIds});
-    histos.add("MCWithDau/hDaughtersIds", "hDaughtersIds", kTH1D, {axes.axisDaughtersIds});
-    histos.add("MCWithDau/hWeight", "hWeight", kTH1D, {axes.axisWeight});
-    histos.add("MCWithDau/hVx", "hVx", kTH1D, {axes.axisPos});
-    histos.add("MCWithDau/hVy", "hVy", kTH1D, {axes.axisPos});
-    histos.add("MCWithDau/hVz", "hVz", kTH1D, {axes.axisPos});
-    histos.add("MCWithDau/hVt", "hVt", kTH1D, {axes.axisPos});
-    histos.add("MCWithDau/hPhi", "hPhi", kTH1D, {axes.axisPhi});
-    histos.add("MCWithDau/hEta", "hEta", kTH1D, {axes.axisEta});
-    histos.add("MCWithDau/hRapidity", "hRapidity", kTH1D, {axes.axisRapidity});
-    histos.add("MCWithDau/hPx", "hPx", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hPy", "hPy", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hPz", "hPz", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hPt", "hPt", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hP", "hP", kTH1D, {axes.axisPt});
-    histos.add("MCWithDau/hE", "hE", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hElPt", "hElPt", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hMuPt", "hMuPt", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hPiPt", "hPiPt", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hKaPt", "hKaPt", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hPrPt", "hPrPt", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hCollisionId", "hCollisionId", kTH1D, {axes.axisCollisionId});
+    histos.add("McParticle/hPdgCode", "hPdgCode", kTH1D, {axes.axisPdgCode});
+    histos.add("McParticle/hStatusCode", "hStatusCode", kTH1D, {axes.axisStatusCode});
+    histos.add("McParticle/hFlags", "hFlags", kTH1D, {axes.axisFlags});
+    histos.add("McParticle/hMothersIds", "hMothersIds", kTH1D, {axes.axisMothersIds});
+    histos.add("McParticle/hDaughtersIds", "hDaughtersIds", kTH1D, {axes.axisDaughtersIds});
+    histos.add("McParticle/hWeight", "hWeight", kTH1D, {axes.axisWeight});
+    histos.add("McParticle/hVx", "hVx", kTH1D, {axes.axisPos});
+    histos.add("McParticle/hVy", "hVy", kTH1D, {axes.axisPos});
+    histos.add("McParticle/hVz", "hVz", kTH1D, {axes.axisPos});
+    histos.add("McParticle/hVt", "hVt", kTH1D, {axes.axisPos});
+    histos.add("McParticle/hPhi", "hPhi", kTH1D, {axes.axisPhi});
+    histos.add("McParticle/hEta", "hEta", kTH1D, {axes.axisEta});
+    histos.add("McParticle/hRapidity", "hRapidity", kTH1D, {axes.axisRapidity});
+    histos.add("McParticle/hPx", "hPx", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hPy", "hPy", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hPz", "hPz", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hPt", "hPt", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hP", "hP", kTH1D, {axes.axisPt});
+    histos.add("McParticle/hE", "hE", kTH1D, {axes.axisPt});
 
     // QA with daughters from Decayer
     histos.add("K0S/hGeneratedPt", "hGeneratedPt;#it{p}_{T} (GeV/#it{c})", kTH1D, {axes.axisPt});
@@ -132,6 +132,7 @@ struct Alice3DecayerQa {
 
   void process(const aod::McCollision& collision, const aod::McParticles& particles)
   {
+    LOG(info) << particles.size();
     // Group with collision
     auto trueElectronsGrouped = trueElectrons->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
     auto trueMuonsGrouped = trueMuons->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -143,19 +144,19 @@ struct Alice3DecayerQa {
     auto trueXiMinusGrouped = trueXiMinus->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
 
     for (const auto& particle : trueElectronsGrouped) {
-      histos.fill(HIST("MCWithDau/hElPt"), particle.pt());
+      histos.fill(HIST("McParticle/hElPt"), particle.pt());
     }
     for (const auto& particle : trueMuonsGrouped) {
-      histos.fill(HIST("MCWithDau/hMuPt"), particle.pt());
+      histos.fill(HIST("McParticle/hMuPt"), particle.pt());
     }
     for (const auto& particle : truePionsGrouped) {
-      histos.fill(HIST("MCWithDau/hPiPt"), particle.pt());
+      histos.fill(HIST("McParticle/hPiPt"), particle.pt());
     }
     for (const auto& particle : trueKaonsGrouped) {
-      histos.fill(HIST("MCWithDau/hKaPt"), particle.pt());
+      histos.fill(HIST("McParticle/hKaPt"), particle.pt());
     }
     for (const auto& particle : trueProtonsGrouped) {
-      histos.fill(HIST("MCWithDau/hPrPt"), particle.pt());
+      histos.fill(HIST("McParticle/hPrPt"), particle.pt());
     }
     for (const auto& particle : trueK0ShortGrouped) {
       histos.fill(HIST("K0S/hGeneratedPt"), particle.pt());
@@ -248,29 +249,29 @@ struct Alice3DecayerQa {
     }
 
     for (const auto& particle : particles) {
-      histos.fill(HIST("MCWithDau/hCollisionId"), particle.mcCollisionId());
-      histos.fill(HIST("MCWithDau/hPdgCode"), particle.pdgCode());
-      histos.fill(HIST("MCWithDau/hStatusCode"), particle.statusCode());
-      histos.fill(HIST("MCWithDau/hFlags"), particle.flags());
-      histos.fill(HIST("MCWithDau/hWeight"), particle.weight());
-      histos.fill(HIST("MCWithDau/hVx"), particle.vx());
-      histos.fill(HIST("MCWithDau/hVy"), particle.vy());
-      histos.fill(HIST("MCWithDau/hVz"), particle.vz());
-      histos.fill(HIST("MCWithDau/hVt"), particle.vt());
-      histos.fill(HIST("MCWithDau/hPhi"), particle.phi());
-      histos.fill(HIST("MCWithDau/hEta"), particle.eta());
-      histos.fill(HIST("MCWithDau/hRapidity"), particle.y());
-      histos.fill(HIST("MCWithDau/hPx"), particle.px());
-      histos.fill(HIST("MCWithDau/hPy"), particle.py());
-      histos.fill(HIST("MCWithDau/hPz"), particle.pz());
-      histos.fill(HIST("MCWithDau/hPt"), particle.pt());
-      histos.fill(HIST("MCWithDau/hP"), particle.p());
-      histos.fill(HIST("MCWithDau/hE"), particle.e());
+      histos.fill(HIST("McParticle/hCollisionId"), particle.mcCollisionId());
+      histos.fill(HIST("McParticle/hPdgCode"), particle.pdgCode());
+      histos.fill(HIST("McParticle/hStatusCode"), particle.statusCode());
+      histos.fill(HIST("McParticle/hFlags"), particle.flags());
+      histos.fill(HIST("McParticle/hWeight"), particle.weight());
+      histos.fill(HIST("McParticle/hVx"), particle.vx());
+      histos.fill(HIST("McParticle/hVy"), particle.vy());
+      histos.fill(HIST("McParticle/hVz"), particle.vz());
+      histos.fill(HIST("McParticle/hVt"), particle.vt());
+      histos.fill(HIST("McParticle/hPhi"), particle.phi());
+      histos.fill(HIST("McParticle/hEta"), particle.eta());
+      histos.fill(HIST("McParticle/hRapidity"), particle.y());
+      histos.fill(HIST("McParticle/hPx"), particle.px());
+      histos.fill(HIST("McParticle/hPy"), particle.py());
+      histos.fill(HIST("McParticle/hPz"), particle.pz());
+      histos.fill(HIST("McParticle/hPt"), particle.pt());
+      histos.fill(HIST("McParticle/hP"), particle.p());
+      histos.fill(HIST("McParticle/hE"), particle.e());
       for (const auto& motherParticleId : particle.mothersIds()) {
-        histos.fill(HIST("MCWithDau/hMothersIds"), motherParticleId);
+        histos.fill(HIST("McParticle/hMothersIds"), motherParticleId);
       }
       for (const auto& dauParticleId : particle.daughtersIds()) {
-        histos.fill(HIST("MCWithDau/hDaughtersIds"), dauParticleId);
+        histos.fill(HIST("McParticle/hDaughtersIds"), dauParticleId);
       }
     }
   }

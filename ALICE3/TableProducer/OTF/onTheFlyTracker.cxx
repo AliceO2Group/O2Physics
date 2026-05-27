@@ -30,7 +30,6 @@
 #include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFCollision.h"
-#include "ALICE3/DataModel/OTFMCParticle.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
@@ -137,7 +136,6 @@ struct OnTheFlyTracker {
   Produces<aod::StoredTracksCov> tableStoredTracksCov;
   Produces<aod::TracksCovExtension> tableTracksCovExtension;
   Produces<aod::McTrackLabels> tableMcTrackLabels;
-  Produces<aod::McTrackWithDauLabels> tableMcTrackWithDauLabels;
   Produces<aod::TracksDCA> tableTracksDCA;
   Produces<aod::TracksDCACov> tableTracksDCACov;
   Produces<aod::CollisionsAlice3> tableCollisionsAlice3;
@@ -1731,7 +1729,6 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
       tableMcTrackLabels(trackParCov.mcLabel, 0);
-      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType);
 
       // populate extra tables if required to do so
@@ -1933,7 +1930,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles, const int icfg)
+  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const int icfg)
   {
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
     tracksAlice3.clear();
@@ -2000,7 +1997,7 @@ struct OnTheFlyTracker {
 
       bool reconstructed = false;
       int nTrkHits = 0;
-      if (enablePrimarySmearing && mcParticle.isPrimary()) {
+      if (enablePrimarySmearing && mcParticle.isPhysicalPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
         nTrkHits = fastTrackerSettings.minSiliconHits;
@@ -2074,7 +2071,7 @@ struct OnTheFlyTracker {
     fillTracksInfo(ghostTracksAlice3, primaryVertex, icfg);
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));
