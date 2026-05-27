@@ -151,8 +151,13 @@ class MlResponse
   void init(bool enableOptimizations = false, int threads = 0)
   {
     uint8_t counterModel{0};
+    const int numCachedIndices = static_cast<int>(mCachedIndices.size());
     for (const auto& path : mPaths) {
       mModels[counterModel].initModel(path, enableOptimizations, threads);
+      const int numInputNodes = mModels[counterModel].getNumInputNodes();
+      if (numInputNodes != numCachedIndices) {
+        LOG(fatal) << "Number of input nodes in the model " << path << " is different from the number of input features indices (" << numInputNodes << " vs " << numCachedIndices << ")";
+      }
       ++counterModel;
     }
   }
