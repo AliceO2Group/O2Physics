@@ -24,7 +24,6 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -38,23 +37,14 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
-#include <TH2.h>
-#include <TH3.h>
-#include <TMCProcess.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
-#include <TString.h>
-#include <TVector3.h>
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <vector>
 

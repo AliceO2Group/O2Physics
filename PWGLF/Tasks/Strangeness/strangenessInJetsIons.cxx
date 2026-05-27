@@ -54,6 +54,7 @@
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <TH1.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
 #include <TVector2.h>
