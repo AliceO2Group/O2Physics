@@ -17,8 +17,6 @@
 /// \since  Dec 23, 2025
 ///
 
-#include "ALICE3/DataModel/OTFMCParticle.h"
-
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -46,7 +44,7 @@ struct Alice3DecayerQa {
     ConfigurableAxis axisCollisionId{"axisCollisionId", {1000, 0, 999}, "CollisionId axis for QA histograms"};
     ConfigurableAxis axisPdgCode{"axisPdgCode", {1000, 0, 999}, "PdgCode axis for QA histograms"};
     ConfigurableAxis axisStatusCode{"axisStatusCode", {1000, 0, 999}, "StatusCode axis for QA histograms"};
-    ConfigurableAxis axisFlags{"axisFlags", {10, 0, 9}, "Flags axis for QA histograms"};
+    ConfigurableAxis axisFlags{"axisFlags", {256, 0, 255}, "Flags axis for QA histograms"};
     ConfigurableAxis axisMothersIds{"axisMothersIds", {1000, 0, 999}, "MothersIds axis for QA histograms"};
     ConfigurableAxis axisDaughtersIds{"axisDaughtersIds", {1000, 0, 999}, "DaughtersIds axis for QA histograms"};
     ConfigurableAxis axisWeight{"axisWeight", {2, 0, 1}, "Weight axis for QA histograms"};
@@ -101,8 +99,6 @@ struct Alice3DecayerQa {
     histos.add("MCWithDau/hPhi", "hPhi", kTH1D, {axes.axisPhi});
     histos.add("MCWithDau/hEta", "hEta", kTH1D, {axes.axisEta});
     histos.add("MCWithDau/hRapidity", "hRapidity", kTH1D, {axes.axisRapidity});
-    histos.add("MCWithDau/hIsAlive", "hIsAlive", kTH1D, {axes.axisIsAlive});
-    histos.add("MCWithDau/hIsPrimary", "hIsPrimary", kTH1D, {axes.axisIsPrimary});
     histos.add("MCWithDau/hPx", "hPx", kTH1D, {axes.axisPt});
     histos.add("MCWithDau/hPy", "hPy", kTH1D, {axes.axisPt});
     histos.add("MCWithDau/hPz", "hPz", kTH1D, {axes.axisPt});
@@ -134,7 +130,7 @@ struct Alice3DecayerQa {
     hCheckHasXiMinusDecayed->GetXaxis()->SetBinLabel(2, "Yes");
   }
 
-  void process(const aod::McCollision& collision, const aod::McPartWithDaus& particles)
+  void process(const aod::McCollision& collision, const aod::McParticles& particles)
   {
     // Group with collision
     auto trueElectronsGrouped = trueElectrons->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -173,6 +169,7 @@ struct Alice3DecayerQa {
           // K0S -> pi+ pi-
           const bool k0sDecay = (dau0.pdgCode() == PDG_t::kPiPlus && dau1.pdgCode() == PDG_t::kPiMinus) ||
                                 (dau0.pdgCode() == PDG_t::kPiMinus && dau1.pdgCode() == PDG_t::kPiPlus);
+
           if (k0sDecay) {
             auto& positive = dau0.pdgCode() == PDG_t::kPiPlus ? dau0 : dau1;
             auto& negative = dau0.pdgCode() == PDG_t::kPiPlus ? dau1 : dau0;
@@ -196,6 +193,7 @@ struct Alice3DecayerQa {
           // Lambda -> p pi-
           const bool lambdaDecay = (dau0.pdgCode() == PDG_t::kProton && dau1.pdgCode() == PDG_t::kPiMinus) ||
                                    (dau0.pdgCode() == PDG_t::kPiMinus && dau1.pdgCode() == PDG_t::kProton);
+
           if (lambdaDecay) {
             auto& positive = dau0.pdgCode() == PDG_t::kProton ? dau0 : dau1;
             auto& negative = dau0.pdgCode() == PDG_t::kProton ? dau1 : dau0;
@@ -219,6 +217,7 @@ struct Alice3DecayerQa {
           // Xi- -> Lambda pi-
           const bool xiDecay = (dau0.pdgCode() == PDG_t::kLambda0 && dau1.pdgCode() == PDG_t::kPiMinus) ||
                                (dau0.pdgCode() == PDG_t::kPiMinus && dau1.pdgCode() == PDG_t::kLambda0);
+
           if (xiDecay) {
             auto& v0 = dau0.pdgCode() == PDG_t::kLambda0 ? dau0 : dau1;
             auto& bachelor = dau0.pdgCode() == PDG_t::kLambda0 ? dau1 : dau0;
@@ -261,8 +260,6 @@ struct Alice3DecayerQa {
       histos.fill(HIST("MCWithDau/hPhi"), particle.phi());
       histos.fill(HIST("MCWithDau/hEta"), particle.eta());
       histos.fill(HIST("MCWithDau/hRapidity"), particle.y());
-      histos.fill(HIST("MCWithDau/hIsAlive"), particle.isAlive());
-      histos.fill(HIST("MCWithDau/hIsPrimary"), particle.isPrimary());
       histos.fill(HIST("MCWithDau/hPx"), particle.px());
       histos.fill(HIST("MCWithDau/hPy"), particle.py());
       histos.fill(HIST("MCWithDau/hPz"), particle.pz());
