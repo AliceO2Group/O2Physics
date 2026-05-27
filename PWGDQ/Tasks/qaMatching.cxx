@@ -58,10 +58,12 @@
 #include <Math/SVector.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TAxis.h>
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
