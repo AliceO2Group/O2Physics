@@ -28,7 +28,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
-#include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
@@ -969,9 +968,9 @@ class PairHistManager
     const double tPt = std::sqrt(tPx * tPx + tPy * tPy);
     const double tMt = std::sqrt(tE * tE - tPz * tPz);
 
-    static constexpr double kMinTransverseMomentum = 1e-9;
-    if (tPt < kMinTransverseMomentum || tMt < kMinTransverseMomentum) {
-      return {0.0, 0.0, 0.0};
+    static constexpr double MinTransverseMomentum = 1e-9;
+    if (tPt < MinTransverseMomentum || tMt < MinTransverseMomentum) {
+      return {0.0f, 0.0f, 0.0f};
     }
 
     const double betaL = tPz / tE;
