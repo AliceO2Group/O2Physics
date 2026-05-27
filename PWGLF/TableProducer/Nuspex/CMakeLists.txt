@@ -123,3 +123,8 @@ o2physics_add_dpl_workflow(photon-deuteron
     SOURCES photonDeuteron.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(coalescence-tree-producer
+    SOURCES coalescenceTreeProducer.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
