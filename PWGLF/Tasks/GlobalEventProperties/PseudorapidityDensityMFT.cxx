@@ -119,7 +119,6 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 // using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 //  replace your alias with the extension included:
 using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-
 using MFTTracksLabeled =
   soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd3d,
             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
@@ -174,6 +173,7 @@ struct PseudorapidityDensityMFT {
     AllRecoCollisions = 1,
     HasMcCollision,
     RctMFT,
+    UseGoodItsLayersAll,
     UseContBestCollisionIndex,
     VzWindow,
     InelGt0,
@@ -348,6 +348,7 @@ struct PseudorapidityDensityMFT {
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+  Configurable<bool> useGoodItsLayersAll{"useGoodItsLayersAll", true, "all ITS layers are in a good state"};
   Configurable<bool> useNoCollInRofStandard{"useNoCollInRofStandard", true, "Require evsel::kNoCollInRofStrict in processGenReco"};
   Configurable<bool> useNoCollInRofStrict{"useNoCollInRofStrict", true, "Require evsel::kNoCollInRofStrict in processGenReco"};
   Configurable<bool> useNoCollInTimeRangeStrict{"useNoCollInTimeRangeStrict", true, "Require evsel::kNoCollInTimeRangeStrict in processGenReco"};
@@ -511,6 +512,7 @@ struct PseudorapidityDensityMFT {
         auto* x = h->GetXaxis();
         x->SetBinLabel(static_cast<int>(GenRecoCutBin::AllRecoCollisions), "All reco collisions (loop entry)");
         x->SetBinLabel(static_cast<int>(GenRecoCutBin::RctMFT), "myChecker (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::UseGoodItsLayersAll), "kIsGoodItsLayersAll");
         x->SetBinLabel(static_cast<int>(GenRecoCutBin::UseContBestCollisionIndex), "useContBestcollisionIndex");
         x->SetBinLabel(static_cast<int>(GenRecoCutBin::HasMcCollision), "has_mcCollision()");
         x->SetBinLabel(static_cast<int>(GenRecoCutBin::VzWindow), "Vz window");
@@ -2175,12 +2177,6 @@ struct PseudorapidityDensityMFT {
         }
         fillGenRecoCut(step.bin);
       }
-
-      if (useRctMFT && !myChecker(collision)) {
-        return false;
-      }
-      fillGenRecoCut(GenRecoCutBin::RctMFT);
-
       return true;
     };
 
@@ -2193,6 +2189,17 @@ struct PseudorapidityDensityMFT {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::HasMcCollision);
+
+      if (useRctMFT && !myChecker(collision)) {
+        continue;
+      }
+      fillGenRecoCut(GenRecoCutBin::RctMFT);
+
+      if (useGoodItsLayersAll &&
+          !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      fillGenRecoCut(GenRecoCutBin::UseGoodItsLayersAll);
 
       registry.fill(HIST("Purity/reco/CollisionNumContrib"), collision.numContrib());
 
@@ -2486,6 +2493,12 @@ struct PseudorapidityDensityMFT {
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::RctMFT);
+
+      if (useGoodItsLayersAll &&
+          !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      fillGenRecoCut(GenRecoCutBin::UseGoodItsLayersAll);
 
       registry.fill(HIST("Purity/reco/CollisionNumContrib"), collision.numContrib());
 

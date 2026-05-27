@@ -39,6 +39,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 #include <vector>
 
@@ -111,7 +112,11 @@ enum PairHist {
 
   // angular
   kDeltaEtaDeltaPhi,
-
+  // Bertsch-Pratt 3D decomposition in LCMS
+  kQout,
+  kQside,
+  kQlong,
+  kQoutQsideQlong,
   kPairHistogramLast
 };
 
@@ -174,6 +179,10 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
   o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
   o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
+  o2::framework::Configurable<bool> plotBertschPratt{"plotBertschPratt", false, "Enable 1D projections and 3D (q_out, q_side, q_long) Bertsch-Pratt histograms in LCMS"};
+  o2::framework::ConfigurableAxis qout{"qout", {{300, -1.5f, 1.5f}}, "q_{out} (GeV/c) in LCMS"};
+  o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
+  o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -250,6 +259,11 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
       // angular
       {kDeltaEtaDeltaPhi, o2::framework::HistType::kTH2F, "hDeltaEtaDeltaPhi", "#Delta#phi vs #Delta#eta; #Delta#phi; #Delta#eta"},
+      // Bertsch-Pratt 3D decomposition in LCMS
+      {kQout, o2::framework::HistType::kTH1F, "hQout", "q_{out} in LCMS; q_{out} (GeV/#it{c}); Entries"},
+      {kQside, o2::framework::HistType::kTH1F, "hQside", "q_{side} in LCMS; q_{side} (GeV/#it{c}); Entries"},
+      {kQlong, o2::framework::HistType::kTH1F, "hQlong", "q_{long} in LCMS; q_{long} (GeV/#it{c}); Entries"},
+      {kQoutQsideQlong, o2::framework::HistType::kTH3F, "hQoutQsideQlong", "Bertsch-Pratt 3D; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
     }};
 
 #define PAIR_HIST_ANALYSIS_MAP(confAnalysis, confMixing)                                                                                                                                                                     \
@@ -294,7 +308,11 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kMeMixingWindowRaw, {confMixing.particleBinning}},                                                                                                                                                                      \
     {kMeMixingWindowEffective, {confMixing.particleBinning}},                                                                                                                                                                \
     {kMeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
-    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
+    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},                                               \
+    {kQout, {confAnalysis.qout}},                                                                                                                                                                                            \
+    {kQside, {confAnalysis.qside}},                                                                                                                                                                                          \
+    {kQlong, {confAnalysis.qlong}},                                                                                                                                                                                          \
+    {kQoutQsideQlong, {confAnalysis.qout, confAnalysis.qside, confAnalysis.qlong}},
 
 #define PAIR_HIST_MC_MAP(conf)                                 \
   {kTrueKstarVsKstar, {conf.kstar, conf.kstar}},               \
@@ -388,6 +406,7 @@ class PairHistManager
 
     mPlotDalitz = ConfPairBinning.plotDalitz.value;
     mPlotDeltaEtaDeltaPhi = ConfPairBinning.plotDeltaEtaDeltaPhi.value;
+    mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
@@ -487,6 +506,10 @@ class PairHistManager
 
     // set kstar
     mKstar = getKstar(mParticle1, mParticle2);
+
+    if (mPlotBertschPratt) {
+      std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
+    }
 
     if (mPlotDeltaEtaDeltaPhi) {
       mDeltaEta = particle1.eta() - particle2.eta();
@@ -735,6 +758,12 @@ class PairHistManager
     if (mPlotDeltaEtaDeltaPhi) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kDeltaEtaDeltaPhi, HistTable), getHistDesc(kDeltaEtaDeltaPhi, HistTable), getHistType(kDeltaEtaDeltaPhi, HistTable), {Specs.at(kDeltaEtaDeltaPhi)});
     }
+    if (mPlotBertschPratt) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQout, HistTable), getHistDesc(kQout, HistTable), getHistType(kQout, HistTable), {Specs.at(kQout)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQside, HistTable), getHistDesc(kQside, HistTable), getHistType(kQside, HistTable), {Specs.at(kQside)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQlong, HistTable), getHistDesc(kQlong, HistTable), getHistType(kQlong, HistTable), {Specs.at(kQlong)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutQsideQlong, HistTable), getHistDesc(kQoutQsideQlong, HistTable), getHistType(kQoutQsideQlong, HistTable), {Specs.at(kQoutQsideQlong)});
+    }
   }
 
   void initMc(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -850,6 +879,12 @@ class PairHistManager
     if (mPlotDeltaEtaDeltaPhi) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kDeltaEtaDeltaPhi, HistTable)), mDeltaPhi, mDeltaEta);
     }
+    if (mPlotBertschPratt) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQout, HistTable)), mQout);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQside, HistTable)), mQside);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQlong, HistTable)), mQlong);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlong, HistTable)), mQout, mQside, mQlong);
+    }
   }
 
   void fillMc()
@@ -918,6 +953,43 @@ class PairHistManager
 
     // k* = 0.5 * sqrt(λ/s)
     return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
+  }
+
+  std::tuple<float, float, float> computeBertschPrattLCMS(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
+  {
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
+    const ROOT::Math::PxPyPzEVector pSum = p1 + p2;
+
+    const double tPx = pSum.Px();
+    const double tPy = pSum.Py();
+    const double tPz = pSum.Pz();
+    const double tE = pSum.E();
+
+    const double tPt = std::sqrt(tPx * tPx + tPy * tPy);
+    const double tMt = std::sqrt(tE * tE - tPz * tPz);
+
+    static constexpr double kMinTransverseMomentum = 1e-9;
+    if (tPt < kMinTransverseMomentum || tMt < kMinTransverseMomentum) {
+      return {0.0, 0.0, 0.0};
+    }
+
+    const double betaL = tPz / tE;
+    const double gammaL = tE / tMt;
+
+    const double kout1 = (p1.Px() * tPx + p1.Py() * tPy) / tPt;
+    const double kside1 = (-p1.Px() * tPy + p1.Py() * tPx) / tPt;
+    const double klong1 = gammaL * (p1.Pz() - betaL * p1.E());
+
+    const double kout2 = (p2.Px() * tPx + p2.Py() * tPy) / tPt;
+    const double kside2 = (p2.Py() * tPx - p2.Px() * tPy) / tPt;
+    const double klong2 = gammaL * (p2.Pz() - betaL * p2.E());
+
+    float qOut = static_cast<float>(kout1 - kout2);
+    float qSide = static_cast<float>(kside1 - kside2);
+    float qLong = static_cast<float>(klong1 - klong2);
+
+    return {qOut, qSide, qLong};
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
@@ -994,6 +1066,12 @@ class PairHistManager
 
   bool mPlotDalitz = false;
   bool mPlotDeltaEtaDeltaPhi = false;
+
+  bool mPlotBertschPratt = false;
+
+  float mQout = 0.f;
+  float mQside = 0.f;
+  float mQlong = 0.f;
 
   float mDeltaEta = 0.f;
   float mDeltaPhi = 0.f;
