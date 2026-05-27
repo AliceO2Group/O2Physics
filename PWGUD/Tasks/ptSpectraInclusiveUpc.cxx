@@ -22,6 +22,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include "Common/Core/RecoDecay.h"
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -32,20 +33,22 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 
-#include <Math/GenVector/LorentzVector.h>
-#include <Math/GenVector/PxPyPzM4D.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <cmath>
 #include <cstdlib>
+#include <array>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct PtSpectraInclusiveUpc {
+
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -60,7 +63,6 @@ struct PtSpectraInclusiveUpc {
   using CC = CCs::iterator;
   using TCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
   using TC = TCs::iterator;
-  using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
   const double etaMax = 0.9;
   const double yMax = 0.9;
@@ -71,6 +73,7 @@ struct PtSpectraInclusiveUpc {
 
   void init(InitContext const&)
   {
+    
     // axes
     const AxisSpec axisPt{nBinsPt, 0, 5, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec axisEventCounter{2, 0.5, 2.5, "Event type"};
@@ -113,35 +116,37 @@ struct PtSpectraInclusiveUpc {
   void processSim(aod::UDMcCollision const&, aod::UDMcParticles const& mcParticles)
   {
 
+    std::array<float, 3> trackMomentum;
+
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary())
         continue;
 
-      LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), o2::constants::physics::MassPionCharged);
+      trackMomentum[0] = mcParticle.px();
+      trackMomentum[1] = mcParticle.py();
+      trackMomentum[2] = mcParticle.pz();
 
       if (applyKineCutsInGen) {
-        if (std::fabs(pMC.Eta()) > etaMax)
+        if (std::fabs(RecoDecay::eta(trackMomentum)) > etaMax)
           continue;
 
-        if (std::fabs(pMC.Rapidity()) > yMax)
+        if (std::fabs(RecoDecay::y(trackMomentum, pdg->Mass(mcParticle.pdgCode()))) > yMax)
           continue;
 
-        if (pMC.Pt() < ptMin)
+        if (RecoDecay::pt(trackMomentum) < ptMin)
           continue;
       }
 
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
-        histos.fill(HIST("ptGeneratedPion"), pMC.Pt());
+        histos.fill(HIST("ptGeneratedPion"), RecoDecay::pt(trackMomentum));
       }
 
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus) {
-        pMC.SetM(o2::constants::physics::MassKaonCharged);
-        histos.fill(HIST("ptGeneratedKaon"), pMC.Pt());
+        histos.fill(HIST("ptGeneratedKaon"), RecoDecay::pt(trackMomentum));
       }
 
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton) {
-        pMC.SetM(o2::constants::physics::MassProton);
-        histos.fill(HIST("ptGeneratedProton"), pMC.Pt());
+        histos.fill(HIST("ptGeneratedProton"), RecoDecay::pt(trackMomentum));
       }
 
       histos.fill(HIST("myEventCounter"), 1); // gen event
@@ -157,9 +162,7 @@ struct PtSpectraInclusiveUpc {
     auto nSigmaKa = -999.;
     auto nSigmaPr = -999.;
 
-    LorentzVectorM* pion = new LorentzVectorM();
-    LorentzVectorM* kaon = new LorentzVectorM();
-    LorentzVectorM* proton = new LorentzVectorM();
+    std::array<float, 3> trackMomentum;
 
     for (const auto& track : tracks) {
       if (!track.isPVContributor()) {
@@ -183,20 +186,9 @@ struct PtSpectraInclusiveUpc {
         continue;
       }
 
-      pion->SetPx(track.px());
-      pion->SetPy(track.py());
-      pion->SetPz(track.pz());
-      pion->SetM(o2::constants::physics::MassPionCharged);
-
-      kaon->SetPx(track.px());
-      kaon->SetPy(track.py());
-      kaon->SetPz(track.pz());
-      kaon->SetM(o2::constants::physics::MassKaonCharged);
-
-      proton->SetPx(track.px());
-      proton->SetPy(track.py());
-      proton->SetPz(track.pz());
-      proton->SetM(o2::constants::physics::MassProton);
+      trackMomentum[0] = track.px();
+      trackMomentum[1] = track.py();
+      trackMomentum[2] = track.pz();
 
       if (!track.has_udMcParticle()) {
         continue;
@@ -212,24 +204,24 @@ struct PtSpectraInclusiveUpc {
         nSigmaPr = track.tpcNSigmaPr();
 
         if (std::abs(nSigmaPi) < sigmaMax) {
-          if (std::abs(pion->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) > yMax) {
             continue;
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            histos.fill(HIST("ptReconstructedTPCPion"), pion->Pt());
+            histos.fill(HIST("ptReconstructedTPCPion"), track.pt());
             histos.fill(HIST("DCAxy_primary_pions"), track.dcaXY());
           } else {
             histos.fill(HIST("DCAxy_secondary_pions"), track.dcaXY());
           }
         }
         if (std::abs(nSigmaKa) < sigmaMax) {
-          if (std::abs(kaon->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) > yMax) {
             continue;
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            histos.fill(HIST("ptReconstructedTPCKaon"), kaon->Pt());
+            histos.fill(HIST("ptReconstructedTPCKaon"), track.pt());
             histos.fill(HIST("DCAxy_primary_kaons"), track.dcaXY());
           } else {
             histos.fill(HIST("DCAxy_secondary_kaons"), track.dcaXY());
@@ -237,12 +229,12 @@ struct PtSpectraInclusiveUpc {
         }
 
         if (std::abs(nSigmaPr) < sigmaMax) {
-          if (std::abs(proton->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) > yMax) {
             continue;
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            histos.fill(HIST("ptReconstructedTPCProton"), proton->Pt());
+            histos.fill(HIST("ptReconstructedTPCProton"), track.pt());
             histos.fill(HIST("DCAxy_primary_protons"), track.dcaXY());
           } else {
             if (mcParticle.getProcess() == kPDecay) {
@@ -261,12 +253,12 @@ struct PtSpectraInclusiveUpc {
         nSigmaPr = track.tofNSigmaPr();
 
         if (std::abs(nSigmaPi) < sigmaMax) {
-          if (std::abs(pion->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) > yMax) {
             continue;
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            histos.fill(HIST("ptReconstructedTOFPion"), pion->Pt());
+            histos.fill(HIST("ptReconstructedTOFPion"), track.pt());
             if (!hasTpc)
               histos.fill(HIST("DCAxy_primary_pions"), track.dcaXY());
           } else {
@@ -275,12 +267,12 @@ struct PtSpectraInclusiveUpc {
           }
         }
         if (std::abs(nSigmaKa) < sigmaMax) {
-          if (std::abs(kaon->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) > yMax) {
             continue;
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            histos.fill(HIST("ptReconstructedTOFKaon"), kaon->Pt());
+            histos.fill(HIST("ptReconstructedTOFKaon"), track.pt());
             if (!hasTpc)
               histos.fill(HIST("DCAxy_primary_kaons"), track.dcaXY());
           } else {
@@ -290,12 +282,12 @@ struct PtSpectraInclusiveUpc {
         }
 
         if (std::abs(nSigmaPr) < sigmaMax) {
-          if (std::abs(proton->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) > yMax) {
             continue;
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            histos.fill(HIST("ptReconstructedTOFProton"), proton->Pt());
+            histos.fill(HIST("ptReconstructedTOFProton"), track.pt());
             if (!hasTpc)
               histos.fill(HIST("DCAxy_primary_protons"), track.dcaXY());
           } else {
@@ -321,9 +313,7 @@ struct PtSpectraInclusiveUpc {
     auto nSigmaKa = -999.;
     auto nSigmaPr = -999.;
 
-    LorentzVectorM* pion = new LorentzVectorM();
-    LorentzVectorM* kaon = new LorentzVectorM();
-    LorentzVectorM* proton = new LorentzVectorM();
+    std::array<float, 3> trackMomentum;
 
     for (const auto& track : tracks) {
       if (!track.isPVContributor()) {
@@ -347,20 +337,9 @@ struct PtSpectraInclusiveUpc {
         continue;
       }
 
-      pion->SetPx(track.px());
-      pion->SetPy(track.py());
-      pion->SetPz(track.pz());
-      pion->SetM(o2::constants::physics::MassPionCharged);
-
-      kaon->SetPx(track.px());
-      kaon->SetPy(track.py());
-      kaon->SetPz(track.pz());
-      kaon->SetM(o2::constants::physics::MassKaonCharged);
-
-      proton->SetPx(track.px());
-      proton->SetPy(track.py());
-      proton->SetPz(track.pz());
-      proton->SetM(o2::constants::physics::MassProton);
+      trackMomentum[0] = track.px();
+      trackMomentum[1] = track.py();
+      trackMomentum[2] = track.pz();
 
       bool hasTpc = false;
       // TPC tracks
@@ -371,26 +350,26 @@ struct PtSpectraInclusiveUpc {
         nSigmaPr = track.tpcNSigmaPr();
 
         if (std::abs(nSigmaPi) < sigmaMax) {
-          if (std::abs(pion->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) > yMax) {
             continue;
           }
-          histos.fill(HIST("ptDataTPCPion"), pion->Pt());
+          histos.fill(HIST("ptDataTPCPion"), track.pt());
           histos.fill(HIST("DCAxy_data_pions"), track.dcaXY());
         }
 
         if (std::abs(nSigmaKa) < sigmaMax) {
-          if (std::abs(kaon->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) > yMax) {
             continue;
           }
-          histos.fill(HIST("ptDataTPCKaon"), kaon->Pt());
+          histos.fill(HIST("ptDataTPCKaon"), track.pt());
           histos.fill(HIST("DCAxy_data_kaons"), track.dcaXY());
         }
 
         if (std::abs(nSigmaPr) < sigmaMax) {
-          if (std::abs(proton->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) > yMax) {
             continue;
           }
-          histos.fill(HIST("ptDataTPCProton"), proton->Pt());
+          histos.fill(HIST("ptDataTPCProton"), track.pt());
           histos.fill(HIST("DCAxy_data_protons"), track.dcaXY());
         }
       }
@@ -402,27 +381,27 @@ struct PtSpectraInclusiveUpc {
         nSigmaPr = track.tofNSigmaPr();
 
         if (std::abs(nSigmaPi) < sigmaMax) {
-          if (std::abs(pion->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) > yMax) {
             continue;
           }
-          histos.fill(HIST("ptDataTOFPion"), pion->Pt());
+          histos.fill(HIST("ptDataTOFPion"), track.pt());
           if (!hasTpc)
             histos.fill(HIST("DCAxy_data_pions"), track.dcaXY());
         }
         if (std::abs(nSigmaKa) < sigmaMax) {
-          if (std::abs(kaon->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) > yMax) {
             continue;
           }
-          histos.fill(HIST("ptDataTOFKaon"), kaon->Pt());
+          histos.fill(HIST("ptDataTOFKaon"), track.pt());
           if (!hasTpc)
             histos.fill(HIST("DCAxy_data_kaons"), track.dcaXY());
         }
 
         if (std::abs(nSigmaPr) < sigmaMax) {
-          if (std::abs(proton->Rapidity()) > yMax) {
+          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) > yMax) {
             continue;
           }
-          histos.fill(HIST("ptDataTOFProton"), proton->Pt());
+          histos.fill(HIST("ptDataTOFProton"), track.pt());
           if (!hasTpc)
             histos.fill(HIST("DCAxy_data_protons"), track.dcaXY());
         }
