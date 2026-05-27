@@ -153,9 +153,6 @@ struct PtSpectraInclusiveUpc {
   void processReco(CC const&, TCs const& tracks, aod::UDMcParticles const&)
   {
 
-    Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
-    pvContributors.bindTable(tracks);
-
     double dcaXyLimit = 0;
 
     auto nSigmaPi = -999.;
@@ -319,9 +316,6 @@ struct PtSpectraInclusiveUpc {
 
   void processData(CC const&, TCs const& tracks)
   {
-
-    Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
-    pvContributors.bindTable(tracks);
 
     double dcaXyLimit = 0;
 
