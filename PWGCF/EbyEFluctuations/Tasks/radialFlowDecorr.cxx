@@ -187,6 +187,7 @@ struct RadialFlowDecorr {
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut for inclusive hadron analysis"};
   Configurable<float> cfgCutPtUpperPID{"cfgCutPtUpperPID", 6.0f, "Higher pT cut for identified particle analysis"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute Eta cut"};
+  Configurable<int> cfgMinTracksPerEtaBin{"cfgMinTracksPerEtaBin", 0, "Min weighted-track sum required in every narrow eta bin for inclusive species (0 = disabled)"};
   Configurable<int> cfgNsubsample{"cfgNsubsample", 10, "Number of subsamples"};
   Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 1-->FT0C, 2-->FT0M, 3-->FDDM, 4-->FV0A"};
   Configurable<bool> cfgEvSelNoSameBunchPileup{"cfgEvSelNoSameBunchPileup", true, "Pileup removal"};
@@ -201,7 +202,7 @@ struct RadialFlowDecorr {
   Configurable<float> cfgLinPupParam2{"cfgLinPupParam2", 3.0f, "(Lower) Linear Pileup Cut Const"};
   Configurable<float> cfgLinPupParam3{"cfgLinPupParam3", 3.0f, "(Lower) Linear Pileup Slope"};
 
-  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 4000, "Max Nch range for PbPb collisions"};
+  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 5000, "Max Nch range for PbPb collisions"};
   Configurable<int> cfgNchOMax{"cfgNchOMax", 800, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Efficiency to be used for which system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
@@ -548,6 +549,32 @@ struct RadialFlowDecorr {
       if (trksize < (cfgLinPupParam2 + cfgLinPupParam3 * multPV))
         return false;
       histos.fill(HIST("hEvtCount"), 8.5);
+    }
+    return true;
+  }
+
+  template <std::size_t NspT, std::size_t NetaT, std::size_t NkT>
+  bool hasMinTracksInAllEtaBins(const double (&sw)[NspT][NetaT][NkT])
+  {
+    const int minTracks = cfgMinTracksPerEtaBin;
+    if (minTracks <= 0)
+      return true;
+    for (std::size_t ieta = 1; ieta < NetaT; ++ieta) {
+      if (sw[kInclusiveIdx][ieta][1] < static_cast<double>(minTracks))
+        return false;
+    }
+    return true;
+  }
+
+  template <std::size_t NspT, std::size_t NetaT>
+  bool hasMinTracksInAllEtaBins(const double (&sw)[NspT][NetaT])
+  {
+    const int minTracks = cfgMinTracksPerEtaBin;
+    if (minTracks <= 0)
+      return true;
+    for (std::size_t ieta = 1; ieta < NetaT; ++ieta) {
+      if (sw[kInclusiveIdx][ieta] < static_cast<double>(minTracks))
+        return false;
     }
     return true;
   }
@@ -1996,6 +2023,9 @@ struct RadialFlowDecorr {
       }
     }
 
+    if (!hasMinTracksInAllEtaBins(sumWiTruth) || !hasMinTracksInAllEtaBins(sumWiReco))
+      return;
+
     for (int isp = 0; isp < KNsp; ++isp) {
       histos.fill(HIST("MCReco/Prof_Cent_Nsp_Nchrec"), cent, isp, sumWiReco[isp][0]);
       histos.fill(HIST("MCReco/Prof_Mult_Nsp_Nchrec"), multPV, isp, sumWiReco[isp][0]);
@@ -2351,6 +2381,9 @@ struct RadialFlowDecorr {
         }
       }
     } // trkslice
+
+    if (!hasMinTracksInAllEtaBins(sumWkTru) || !hasMinTracksInAllEtaBins(sumWkReco))
+      return;
 
     for (int ieta = 0; ieta < KNEta; ++ieta) {
       const int ibx = state.pmeanTruNchEtabinSpbinStep2->GetXaxis()->FindBin(mcCollision.multNTracksPV());
@@ -3200,6 +3233,9 @@ struct RadialFlowDecorr {
       }
     }
 
+    if (!hasMinTracksInAllEtaBins(sumWi))
+      return;
+
     for (int isp = 0; isp < KNsp; ++isp) {
       if (sumWi[isp][0] < 1.0f)
         continue;
@@ -3372,6 +3408,9 @@ struct RadialFlowDecorr {
         }
       }
     }
+
+    if (!hasMinTracksInAllEtaBins(sumwk))
+      return;
 
     double amplFT0A = 0, amplFT0C = 0;
     if (coll.has_foundFT0()) {
