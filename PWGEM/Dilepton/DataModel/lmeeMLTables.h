@@ -263,14 +263,14 @@ DECLARE_SOA_COLUMN(MassLH, massLH, float); //! invariant mass of LH assuming kao
 DECLARE_SOA_COLUMN(PtLH, ptLH, float);     //! pt of LH
 
 DECLARE_SOA_COLUMN(PtSVL, ptSVL, float); //! pT of lepton at SV
-DECLARE_SOA_COLUMN(PlSVL, plSVL, float); //! pL of lepton at SV
+// DECLARE_SOA_COLUMN(PlSVL, plSVL, float); //! pL of lepton at SV
 DECLARE_SOA_COLUMN(PtSVH, ptSVH, float); //! pT of associated hadron at SV
-DECLARE_SOA_COLUMN(PlSVH, plSVH, float); //! pL of associated hadron at SV
+// DECLARE_SOA_COLUMN(PlSVH, plSVH, float); //! pL of associated hadron at SV
 
-DECLARE_SOA_COLUMN(PtFDL, ptFDL, float); //! pT of lepton perpendicular to flight direction
-DECLARE_SOA_COLUMN(PlFDL, plFDL, float); //! pL of lepton in parallel to flight direction
-DECLARE_SOA_COLUMN(PtFDH, ptFDH, float); //! pT of associated hadron perpendicular to flight direction
-DECLARE_SOA_COLUMN(PlFDH, plFDH, float); //! pL of associated hadron in parallel to flight direction
+// DECLARE_SOA_COLUMN(PtFDL, ptFDL, float); //! pT of lepton perpendicular to flight direction
+// DECLARE_SOA_COLUMN(PlFDL, plFDL, float); //! pL of lepton in parallel to flight direction
+// DECLARE_SOA_COLUMN(PtFDH, ptFDH, float); //! pT of associated hadron perpendicular to flight direction
+// DECLARE_SOA_COLUMN(PlFDH, plFDH, float); //! pL of associated hadron in parallel to flight direction
 
 DECLARE_SOA_COLUMN(PtFD, ptFD, float); //! visible momentum of LH pair perpendicular to flight direction = - missing pT due to neutrino perpendicular to flight direction
 DECLARE_SOA_COLUMN(PlFD, plFD, float); //! visible momentum of LH pair in parallel to flight direction
@@ -305,8 +305,8 @@ DECLARE_SOA_TABLE(EMMLLTPairs, "AOD", "EMMLLTPAIR", //!
                   // pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
                   pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
                   // pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr,
-                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PlSVL, emmllhpair::PtSVH, emmllhpair::PlSVH,
-                  emmllhpair::PtFD, emmllhpair::PlFD, emmllhpair::PtFDL, emmllhpair::PlFDL, emmllhpair::PtFDH, emmllhpair::PlFDH,
+                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PtSVH,
+                  emmllhpair::PtFD, emmllhpair::PlFD,
                   emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
                   emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
@@ -319,8 +319,8 @@ DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
                   emmllhpair::PtH, emmllhpair::RapidityV0,
                   emmllhpair::V0CPA, emmllhpair::V0CPAXY, emmllhpair::V0CPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
-                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PlSVL, emmllhpair::PtSVH, emmllhpair::PlSVH,
-                  emmllhpair::PtFD, emmllhpair::PlFD, emmllhpair::PtFDL, emmllhpair::PlFDL, emmllhpair::PtFDH, emmllhpair::PlFDH,
+                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PtSVH,
+                  emmllhpair::PtFD, emmllhpair::PlFD,
                   emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
                   emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
@@ -333,8 +333,8 @@ DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCPAIR", //!
                   emmllhpair::Signed1PtH, emmllhpair::RapidityC,
                   emmllhpair::CascCPA, emmllhpair::CascCPAXY, emmllhpair::CascCPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
-                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PlSVL, emmllhpair::PtSVH, emmllhpair::PlSVH,
-                  emmllhpair::PtFD, emmllhpair::PlFD, emmllhpair::PtFDL, emmllhpair::PlFDL, emmllhpair::PtFDH, emmllhpair::PlFDH,
+                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PtSVH,
+                  emmllhpair::PtFD, emmllhpair::PlFD,
                   emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
                   emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
