@@ -268,7 +268,7 @@ struct HfTaskUpcLc {
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
 
-        double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        double outputBkg(-1);
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
@@ -277,8 +277,6 @@ struct HfTaskUpcLc {
             const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
             if (mlProb.size() == NumberOfMlClasses) {
               outputBkg = mlProb[MlClassBackground]; /// bkg score
-              outputPrompt = mlProb[MlClassPrompt];  /// prompt score
-              outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             if (fillTreeOnlySingleGap) {
