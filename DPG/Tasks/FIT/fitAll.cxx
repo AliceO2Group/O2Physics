@@ -18,13 +18,16 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include <FDDBase/Constants.h>
 #include <FV0Base/Constants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <FDDBase/Constants.h>
-
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <vector>
