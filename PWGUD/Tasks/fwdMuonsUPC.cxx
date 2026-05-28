@@ -19,6 +19,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -33,8 +34,8 @@
 
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
-#include <TRandom3.h>
 #include <TPDGCode.h>
+#include <TRandom3.h>
 
 #include <cmath>
 #include <cstdint>
@@ -209,10 +210,7 @@ struct fwdMuonsUPC {
   // pT of muon pairs
   ConfigurableAxis axisPt{"axisPt", {250, 0.0f, 2.0f}, "#it{p}_{T}^{#mu#mu} (GeV/#it{c})"};
   // pT fit
-  ConfigurableAxis axisPtFit{"axisPtFit", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 
-                                                           0.11, 0.12, 0.13, 0.14, 0.15, 0.175, 0.20, 0.25, 0.30, 0.40, 0.50, 
-                                                           0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.50, 
-                                                           3.00, 3.50 }, "#it{p}_{T} (GeV/c)"};
+  ConfigurableAxis axisPtFit{"axisPtFit", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.175, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.50, 3.00, 3.50}, "#it{p}_{T} (GeV/c)"};
   // mass of muon pairs
   ConfigurableAxis axisMass{"axisMass", {500, 0.0f, 10.0f}, "m_{#mu#mu} (GeV/#it{c}^{2})"};
   // rapidity of muon pairs
@@ -347,7 +345,7 @@ struct fwdMuonsUPC {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    //ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), o2::constants::physics::MassMuon};
+    // ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), o2::constants::physics::MassMuon};
 
     std::array<float, 3> trackMomentum{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()};
     float eta = RecoDecay::eta(trackMomentum);
