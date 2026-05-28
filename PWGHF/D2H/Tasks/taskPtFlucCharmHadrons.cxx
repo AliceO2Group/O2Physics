@@ -420,12 +420,14 @@ struct HfTaskPtFlucCharmHadrons {
         float candPtProduct{0.f};
         float meanPtA{0.f};
         float meanPtB{0.f};
+        int nATrk{nA};
+        int nBTrk{nB};
         if (eta > etaAMin.value && eta < etaAMax.value) {
-          std::tie(meanPtB, nB) = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtB, nB, trkIDB);
+          std::tie(meanPtB, nBTrk) = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtB, nB, trkIDB);
           meanPtA = RawMeanPtA; // no need to remove daughters from A if candidate is in A
           candPtProduct = pt * meanPtB;
         } else if (eta > etaBMin.value && eta < etaBMax.value) {
-          std::tie(meanPtA, nA) = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtA, nA, trkIDA);
+          std::tie(meanPtA, nATrk) = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtA, nA, trkIDA);
           meanPtB = RawMeanPtB; // no need to remove daughters from B if candidate is in B
           candPtProduct = pt * meanPtA;
         }
@@ -434,7 +436,7 @@ struct HfTaskPtFlucCharmHadrons {
         auto [invMass, sign] = getCandMassAndSign<Channel, decltype(cand), T1, Trk>(cand);
 
         // fill charm-bulk correlation thnsparse
-        registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct, nA, nB);
+        registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct, nATrk, nBTrk);
       }
     } else {
       int nDcandTotA = 0;
