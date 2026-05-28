@@ -250,7 +250,7 @@ struct fwdMuonsUPC {
   // and a vector with the tracks
   // map == (key, element) == (udCollisionId, vector of trks)
   template <typename TTracks>
-  void collectCandIDs(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
+  void collectCandIDs(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks const& tracks)
   {
     for (const auto& tr : tracks) {
       int32_t candId = tr.udCollisionId();
@@ -265,7 +265,7 @@ struct fwdMuonsUPC {
   // and a vector with the tracks
   // map == (key, element) == (udMcCollisionId, vector of mc particles)
   template <typename TTracks>
-  void collectMcCandIDs(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
+  void collectMcCandIDs(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks const& tracks)
   {
     for (const auto& tr : tracks) {
       int32_t candId = tr.udMcCollisionId();
