@@ -154,6 +154,7 @@ struct CoalescenceTreeProducer {
     // Tree for pairs/triplets.
     // For deuterons only the first two baryons are stored.
     // For three-body states, the third-baryon branches are also created.
+    treeBoundState.setObject(new TTree("BoundStateTree", "Tree for coalescence studies"));
     treeBoundState->Branch("eventID", &eventID, "eventID/L");
 
     treeBoundState->Branch("idB1", &idB1, "idB1/L");
