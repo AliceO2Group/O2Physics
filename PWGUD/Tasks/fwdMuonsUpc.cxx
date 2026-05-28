@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file fwdMuonsUPC.cxx
+/// \file fwdMuonsUpc.cxx
 /// \brief perform some selections on fwd events and saves the results
 
 /// executable name o2-analysis-ud-fwd-muon-upc
@@ -190,7 +190,7 @@ const float kMaxZDCTime = 2.;
 const int k2Tracks = 2;
 const int k4Tracks = 4;
 
-struct fwdMuonsUPC {
+struct FwdMuonsUpc {
 
   // a PDG object
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -762,7 +762,7 @@ struct fwdMuonsUPC {
     }
   }
 
-  PROCESS_SWITCH(fwdMuonsUPC, processData, "", true);
+  PROCESS_SWITCH(FwdMuonsUpc, processData, "", true);
 
   // process MC Truth
   void processMcGen(aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts)
@@ -794,7 +794,7 @@ struct fwdMuonsUPC {
       processMcGenCand(cand, tr1, tr2);
     }
   }
-  PROCESS_SWITCH(fwdMuonsUPC, processMcGen, "", false);
+  PROCESS_SWITCH(FwdMuonsUpc, processMcGen, "", false);
 
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
@@ -834,12 +834,12 @@ struct fwdMuonsUPC {
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
   }
-  PROCESS_SWITCH(fwdMuonsUPC, processMcReco, "", false);
+  PROCESS_SWITCH(FwdMuonsUpc, processMcReco, "", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<fwdMuonsUPC>(cfgc),
+    adaptAnalysisTask<FwdMuonsUpc>(cfgc),
   };
 }
