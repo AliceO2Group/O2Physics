@@ -20,12 +20,14 @@
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -118,7 +120,7 @@ struct LfTreeCreatorNuclei {
                        (trackSelType.value == 2) ||
                        (trackSelType.value == 3);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
                                     aod::pidTPCLfFullPi, aod::pidTOFFullPi,
@@ -202,6 +204,7 @@ struct LfTreeCreatorNuclei {
                 collision.posZ(),
                 collision.centFV0A(),
                 collision.centFT0M(),
+                collision.multNTracksPVeta1(),
                 collision.sel8(),
                 collision.bc().runNumber());
 
@@ -250,7 +253,6 @@ struct LfTreeCreatorNuclei {
         track.tpcSignal(),
         track.pt(), track.eta(), track.phi(),
         track.sign(),
-        track.itsClusterSizes(),
         track.itsNCls(),
         track.tpcNClsFindable(),
         track.tpcNClsFindableMinusFound(),
@@ -258,7 +260,8 @@ struct LfTreeCreatorNuclei {
         track.tpcChi2NCl(),
         track.itsChi2NCl(),
         track.itsClusterMap(),
-        track.isPVContributor());
+        track.isPVContributor(),
+        track.itsClusterSizes());
 
       tableCandidateExtra(
         track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),

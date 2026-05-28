@@ -33,6 +33,11 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, // is INEL > 0
+                           [](int multPveta1) -> bool { return multPveta1 > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, // is INEL > 1
+                           [](int multPveta1) -> bool { return multPveta1 > 1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Selection_Bit, selection_bit, //! Dummy
                            [](o2::aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
 } // namespace fullEvent
@@ -44,6 +49,9 @@ DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   collision::PosZ,
                   fullEvent::CentFV0M,
                   fullEvent::CentFT0M,
+                  fullEvent::MultNTracksPVeta1,
+                  fullEvent::IsInelGt0<fullEvent::MultNTracksPVeta1>,
+                  fullEvent::IsInelGt1<fullEvent::MultNTracksPVeta1>,
                   fullEvent::IsEventReject,
                   fullEvent::RunNumber,
                   fullEvent::Selection_Bit<>);

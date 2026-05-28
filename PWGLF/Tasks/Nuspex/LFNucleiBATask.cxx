@@ -497,7 +497,7 @@ struct LFNucleiBATask {
     hSkim->GetXaxis()->SetBinLabel(2, "Skimmed events");
 
     if (enableCentrality) {
-      histos.add<TH2>("event/eventSelection", "eventSelection", HistType::kTH2D, {{8, -0.5, 7.5}, {binsPercentile, "Centrality FT0M"}});
+      histos.add<TH2>("event/eventSelection", "eventSelection", HistType::kTH2D, {{11, -0.5, 10.5}, {binsPercentile, "Centrality FT0M"}});
       auto h2d = histos.get<TH2>(HIST("event/eventSelection"));
       if (skimmingOptions.applySkimming)
         h2d->GetXaxis()->SetBinLabel(1, "Skimmed events");
@@ -511,8 +511,11 @@ struct LFNucleiBATask {
       h2d->GetXaxis()->SetBinLabel(6, "Sel8 cut");
       h2d->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
       h2d->GetXaxis()->SetBinLabel(8, "Multiplicity cut");
+      h2d->GetXaxis()->SetBinLabel(9, "INEL");
+      h2d->GetXaxis()->SetBinLabel(10, "INEL > 0");
+      h2d->GetXaxis()->SetBinLabel(11, "INEL > 1");
     } else {
-      histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{8, -0.5, 7.5}});
+      histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{11, -0.5, 10.5}});
       auto h1d = histos.get<TH1>(HIST("event/eventSelection"));
       if (skimmingOptions.applySkimming)
         h1d->GetXaxis()->SetBinLabel(1, "Skimmed events");
@@ -526,6 +529,9 @@ struct LFNucleiBATask {
       h1d->GetXaxis()->SetBinLabel(6, "Sel8 cut");
       h1d->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
       h1d->GetXaxis()->SetBinLabel(8, "Multiplicity cut");
+      h1d->GetXaxis()->SetBinLabel(9, "INEL");
+      h1d->GetXaxis()->SetBinLabel(10, "INEL > 0");
+      h1d->GetXaxis()->SetBinLabel(11, "INEL > 1");
     }
 
     if (enableCentrality)
@@ -2405,10 +2411,26 @@ struct LFNucleiBATask {
     if (enableCentrality && (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh)) {
       return;
     }
-    if (enableCentrality)
+    if (enableCentrality) {
       histos.fill(HIST("event/eventSelection"), 7, centFT0M);
-    else
+      histos.fill(HIST("event/eventSelection"), 8, centFT0M);
+    } else {
       histos.fill(HIST("event/eventSelection"), 7);
+      histos.fill(HIST("event/eventSelection"), 8);
+    }
+
+    if (event.isInelGt0()) {
+      if (enableCentrality)
+        histos.fill(HIST("event/eventSelection"), 9, centFT0M);
+      else
+        histos.fill(HIST("event/eventSelection"), 9);
+    }
+    if (event.isInelGt1()) {
+      if (enableCentrality)
+        histos.fill(HIST("event/eventSelection"), 10, centFT0M);
+      else
+        histos.fill(HIST("event/eventSelection"), 10);
+    }
 
     float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0., heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f, DPt = 0.f;
     bool isTritonTPCpid = false;
@@ -6090,7 +6112,7 @@ struct LFNucleiBATask {
     }
   }
 
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
   using EventCandidatesMC = soa::Join<EventCandidates, aod::McCollisionLabels>;
 
   using TrackCandidates0 = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
