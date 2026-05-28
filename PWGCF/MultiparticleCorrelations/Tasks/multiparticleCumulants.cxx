@@ -27,6 +27,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/O2DatabasePDG.h>
 
 #include <TCollection.h>
 #include <TFile.h>
@@ -312,7 +313,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     // *) For mc event only
     if constexpr (rm == eMc) {
       // TDatabasePDG *db= TDatabasePDG::Instance();
-      TParticlePDG* particle = db->GetParticle(track.pdgCode());
+      TParticlePDG* particle = pdg->GetParticle(track.pdgCode());
 
       if (!particle) {
         // LOGF(warning, "PDG code %d not found", track.pdgCode());
@@ -962,9 +963,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     wt.fWeightHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(wt.fWeightHistogramsList);
 
-    std::vector<Configurable<std::vector<float>>> lPcBins = {cfPtBins, cfPhiBins};
-    std::vector<Configurable<std::vector<float>>> lEvBins = {cfCentBins, cfMultBins, cfVerXBins, cfVerYBins, cfVerZBins, cfNumContribBins};
-    std::vector<Configurable<std::vector<float>>> lQABins = {cfCentBins, cfMultBins, cfNumContribBins};
+    std::vector<Configurable<std::vector<float>>> lPcBins = {tc.PtBins, tc.PhiBins};
+    std::vector<Configurable<std::vector<float>>> lEvBins = {tc.CentBins, tc.MultBins, tc.VerXBins, tc.VerYBins, tc.VerZBins, tc.NumContribBins};
+    std::vector<Configurable<std::vector<float>>> lQABins = {tc.CentBins, tc.MultBins, tc.NumContribBins};
 
     BookParticleHistograms<ePt>(lPcBins, pc);
     BookParticleHistograms<ePhi>(lPcBins, pc);
