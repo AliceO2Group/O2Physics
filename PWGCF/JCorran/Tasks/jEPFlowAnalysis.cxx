@@ -42,10 +42,10 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TComplex.h>
 #include <THn.h>
 #include <TPDGCode.h>
 #include <TProfile3D.h>
-#include <TComplex.h>
 
 #include <RtypesCore.h>
 
@@ -252,11 +252,11 @@ struct JEPFlowAnalysis {
 
     if (!coll.has_foundFT0()) {
       return false;
-    }                                
-    
-    auto ft0 = coll.foundFT0();       
-    TComplex qVecFT0C(0., 0.);        
-  
+    }
+
+    auto ft0 = coll.foundFT0();
+    TComplex qVecFT0C(0., 0.);
+
     for (std::size_t iChC = 0; iChC < ft0.channelC().size(); ++iChC) {
       int ft0CChId = ft0.channelC()[iChC] + 96;
       float ampl = ft0.amplitudeC()[iChC] / (cfgGainEq ? ft0RelGainConst[ft0CChId] : 1.);
@@ -413,7 +413,7 @@ struct JEPFlowAnalysis {
         }
       }
       if (i == 0) { // second harmonic only
-        auto qOvecM = calcFT0CRawQVecMag(coll, i +2);
+        auto qOvecM = calcFT0CRawQVecMag(coll, i + 2);
 
         epFlowHistograms.fill(HIST("hQoverM"), cent, highestPt, qOvecM);
         epFlowHistograms.fill(HIST("hQoverM2M"), cent, coll.qvecAmp()[detId], qOvecM);
