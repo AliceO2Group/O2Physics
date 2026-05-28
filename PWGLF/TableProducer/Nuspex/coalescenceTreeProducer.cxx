@@ -71,10 +71,7 @@ struct CoalescenceTreeProducer {
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
-  OutputObj<TTree> treeBoundState{
-    "treeBoundState",
-    OutputObjHandlingPolicy::AnalysisObject
-  };
+  OutputObj<TTree> treeBoundState{"treeBoundState", OutputObjHandlingPolicy::AnalysisObject};
 
   int64_t eventID = 0;                  // Event ID
   int64_t idB1 = 0, idB2 = 0, idB3 = 0; // MC particle IDs
