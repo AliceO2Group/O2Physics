@@ -1930,7 +1930,8 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const int icfg)
+  template <typename TMcParticles>
+  void processConfigurationDev(aod::McCollision const& mcCollision, TMcParticles const& mcParticles, const int icfg)
   {
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
     tracksAlice3.clear();
@@ -1997,11 +1998,11 @@ struct OnTheFlyTracker {
 
       bool reconstructed = false;
       int nTrkHits = 0;
-      if (enablePrimarySmearing && mcParticle.isPhysicalPrimary()) {
+      if (enablePrimarySmearing && otfParticle.checkBit(o2::upgrade::DecayerBits::IsPrimary)) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
         nTrkHits = fastTrackerSettings.minSiliconHits;
-      } else if (enableSecondarySmearing) {
+      } else if (enableSecondarySmearing && !otfParticle.checkBit(o2::upgrade::DecayerBits::IsPrimary) && otfParticle.checkBit(o2::upgrade::DecayerBits::ProducedByDecayer) && otfParticle.checkBit(o2::upgrade::DecayerBits::IsAlive)) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
@@ -2071,7 +2072,7 @@ struct OnTheFlyTracker {
     fillTracksInfo(ghostTracksAlice3, primaryVertex, icfg);
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::OTFDecayerBits> const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));

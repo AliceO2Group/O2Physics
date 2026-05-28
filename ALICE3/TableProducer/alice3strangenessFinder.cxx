@@ -418,7 +418,7 @@ struct Alice3strangenessFinder {
   }
 
   template <typename TCollision, typename TTracksGrouped>
-  void processFindV0CandidateNoPid(TCollision collision, TTracksGrouped negTracksGrouped, TTracksGrouped posTracksGrouped, TTracksGrouped bachTracksGrouped)
+  void processFindV0CandidateNoPid(const TCollision& collision, const TTracksGrouped& negTracksGrouped, const TTracksGrouped& posTracksGrouped, const TTracksGrouped& bachTracksGrouped)
   {
     const std::array<float, 3> vtx = {collision.posX(), collision.posY(), collision.posZ()};
     histos.fill(HIST("hEventCounter"), 1.0);

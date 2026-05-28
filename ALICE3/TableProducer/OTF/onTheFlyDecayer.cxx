@@ -17,6 +17,7 @@
 
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/OTFParticle.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 #include "ALICE3/Core/TrackUtilities.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -72,6 +73,7 @@ namespace o2::aod { O2ORIGIN("TMP"); }
 struct OnTheFlyDecayer {
   Produces<aod::McCollisions_001> tableMcCollisions;
   Produces<aod::StoredMcParticles_001> tableMcParticles;
+  Produces<aod::OTFDecayerBits> tableOTFDecayerBits;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -122,15 +124,15 @@ struct OnTheFlyDecayer {
     for (int i = start; i < stop; i++) {
       o2::upgrade::OTFParticle& particle = allParticles[i];
       if (particle.isFromMcParticles()) {
-        particle.setIsPrimary(true);
-        particle.setIsAlive(true);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsPrimary);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsAlive);
       }
 
       if (!canDecay(particle)) {
         continue;
       }
 
-      particle.setIsAlive(false);
+      particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
       std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
       const float decayRadius = decayer.getDecayRadius();
       const float trackVelocity = o2::upgrade::computeParticleVelocity(particle.p(), pdgDB->GetParticle(particle.pdgCode())->Mass());
@@ -152,8 +154,8 @@ struct OnTheFlyDecayer {
       for (o2::upgrade::OTFParticle daughter : decayStack) {
         daughter.setIndicesMother(i, i);
         daughter.setCollisionId(mCollisionId);
-        daughter.setIsAlive(true);
-        daughter.setIsPrimary(false);
+        daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
+        daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
         daughter.setProductionTime(trackTimeNS);
         allParticles.push_back(daughter);
         ndau++;
@@ -202,8 +204,9 @@ struct OnTheFlyDecayer {
         } else {
           histos.fill(HIST("hNaNBookkeeping"), 0);
         }
-
+        
         // todo: status codes
+        tableOTFDecayerBits(otfParticle.getBitsValue());
         tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
                         otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
                         otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
