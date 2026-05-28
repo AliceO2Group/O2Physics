@@ -152,7 +152,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   // *) Event cut
   Configurable<std::vector<float>> cfVertexZCut{"cfVertexZCut", {-10., 10.}, "vertex z position range: {min, max}[cm]"};
   Configurable<std::vector<float>> cfCentCut{"cfCentCut", {10., 20.}, "centrality range: {min, max}[%]"};
-  Configurable<std::vector<int>> cfNumContribCut{"cfNumContribCut", {0, 3000}, "NContribution range: {min, max}"};
+  Configurable<std::vector<float>> cfNumContribCut{"cfNumContribCut", {0, 3000.}, "NContribution range: {min, max}"};
 
   // *) Particle cut
   Configurable<std::vector<float>> cfPtCut{"cfPtCut", {0.2, 5.0}, "Pt range: {min, max}[GeV], with convention: min <= Pt < max"};
@@ -170,11 +170,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};
   Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {1000, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
   Configurable<std::vector<float>> cfCentBins{"cfCentBins", {100, 0., 100.}, "nCenBins, cenMin, cenMax"};
-  Configurable<std::vector<int>> cfMultBins{"cfMultBins", {100, 0, 5000}, "nMultBins, MultMin, MultMax"};
+  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {100, 0., 5000.}, "nMultBins, MultMin, MultMax"};
   Configurable<std::vector<float>> cfVerXBins{"cfVerXBins", {100, -0.05, 0.05}, "nVerXBins, VerXMin, VerXMax"};
   Configurable<std::vector<float>> cfVerYBins{"cfVerYBins", {100, -0.05, 0.05}, "nVerYBins, VerYMin, VerYMax"};
   Configurable<std::vector<float>> cfVerZBins{"cfVerZBins", {100, -50., 50.}, "nVerZBins, VerZMin, VerZMax"};
-  Configurable<std::vector<int>> cfNumContribBins{"cfNumContribBins", {100, 0, 5000}, "nNumContribBins, NumContribMin, NumContribMax"};
+  Configurable<std::vector<float>> cfNumContribBins{"cfNumContribBins", {100, 0., 5000.}, "nNumContribBins, NumContribMin, NumContribMax"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -200,7 +200,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     std::vector<float> fVertexZCut = {-10., 10.};
     std::vector<float> fCentCut = {10., 20.};
-    std::vector<int> fNumContribCut = {0, 3000};
+    std::vector<float> fNumContribCut = {0, 3000.};
 
     std::vector<float> fPtCut = {0.2, 5.0};
     std::vector<float> fEtaCut = {-0.8, 0.8};
@@ -208,6 +208,16 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     std::vector<float> fTpcNClsFoundCut = {70., 160.};
     std::vector<float> fDCAXYCut = {-3.2, 3.2};
     std::vector<float> fDCAZCut = {-2.4, 2.4};
+
+    std::vector<float> fPtBins = {0., 100.};
+    std::vector<float> fPhiBins = {0., o2::constants::math::TwoPI};
+
+    std::vector<float> fCentBins = {0., 100.};
+    std::vector<float> fMultBins = {0, 5000};
+    std::vector<float> fVerXBins = {-0.05, 0.05};
+    std::vector<float> fVerYBins = {-0.05, 0.05};
+    std::vector<float> fVerZBins = {-50., 50.};
+    std::vector<float> fNumContribBins = {0, 5000};
 
     std::string fFileWithWeights = "/scratch3/go52dab/O2tutorial/tutorial3-6/weights.root";
     std::string fRunNumber = "000123456";
@@ -238,11 +248,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   } wt;
 
   struct EventByEventQuantities {
-    int fReferenceMultiplicity = 0.;
+    float fReferenceMultiplicity = 0.;
     float fCentrality = 0.;
     float fCentralitySim = 0.;
     float fImpactParameter = 0.;
-    int fNumContrib = 0.;
+    float fNumContrib = 0.;
   } ebye;
 
   template <EnRlMc rm, typename T1>
@@ -560,15 +570,15 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     else if (tc.fMultEstm == "NTracksPV")
       rlCollisionMult = collision.multNTracksPV();
 
-    int rlCollisionNumContrib = 0.;
-    rlCollisionNumContrib = static_cast<int>(collision.numContrib());
+    float rlCollisionNumContrib = 0.;
+    rlCollisionNumContrib = static_cast<float>(collision.numContrib());
 
     if (tc.fPrintSwitch) {
       // Print centrality estimated with "FT0M" estimator:
       LOGF(info, "Centrality: %f", rlCollisionCent);
 
       // Print multiplicity:
-      LOGF(info, "Multiplicity: %f", static_cast<int>(rlCollisionMult));
+      LOGF(info, "Multiplicity: %f", static_cast<float>(rlCollisionMult));
 
       // Print vertex position:
       LOGF(info, "Vertex X position: %f", collision.posX());
@@ -576,7 +586,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       LOGF(info, "Vertex Z position: %f", collision.posZ());
 
       // Print NContributors
-      LOGF(info, "NContributors: %f", static_cast<int>(rlCollisionNumContrib));
+      LOGF(info, "NContributors: %f", static_cast<float>(rlCollisionNumContrib));
     }
     ebye.fCentrality = rlCollisionCent;
     ebye.fReferenceMultiplicity = rlCollisionMult;
@@ -705,7 +715,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     //  └ rec
     //  └ sim
 
-    std::vector<float> lPtBins = lPcBins[histType].value; // define local array and initialize it from an array set in the configurables
+    std::vector<float> lPtBins = lPcBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsPt = static_cast<int>(lPtBins[0]);
     float minPt = lPtBins[1];
     float maxPt = lPtBins[2];
@@ -766,7 +776,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     //  └ rec
     //  └ sim (without multiplicity and nContrib)
 
-    std::vector<float> lCentBins = lEvBins[histType].value; // define local array and initialize it from an array set in the configurables
+    std::vector<float> lCentBins = lEvBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsCent = static_cast<int>(lCentBins[0]);
     float minCent = lCentBins[1];
     float maxCent = lCentBins[2];
@@ -845,7 +855,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     // └ nContrib vs. multiplicity
     // └ others
 
-    std::vector<float> lCentBins = lQABins[histType].value;
+    std::vector<float> lCentBins = lQABins[histType];
     int nBinsCent = static_cast<int>(lCentBins[0]);
     float minCent = lCentBins[1];
     float maxCent = lCentBins[2];
@@ -930,6 +940,16 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     tc.fDCAXYCut = cfDCAXYCut;
     tc.fDCAZCut = cfDCAZCut;
 
+    tc.fPtBins = cfPtBins;
+    tc.fPhiBins = cfPhiBins;
+
+    tc.fCentBins = cfCentBins;
+    tc.fMultBins = cfMultBins;
+    tc.fVerXBins = cfVerXBins;
+    tc.fVerYBins = cfVerYBins;
+    tc.fVerZBins = cfVerZBins;
+    tc.fNumContribBins = cfNumContribBins;
+
     tc.fPrintSwitch = cfPrintSwitch;
     tc.fFileWithWeights = cfFileWithWeights;
     tc.fRunNumber = cfRunNumber;
@@ -963,9 +983,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     wt.fWeightHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(wt.fWeightHistogramsList);
 
-    std::vector<Configurable<std::vector<float>>> lPcBins = {tc.PtBins, tc.PhiBins};
-    std::vector<Configurable<std::vector<float>>> lEvBins = {tc.CentBins, tc.MultBins, tc.VerXBins, tc.VerYBins, tc.VerZBins, tc.NumContribBins};
-    std::vector<Configurable<std::vector<float>>> lQABins = {tc.CentBins, tc.MultBins, tc.NumContribBins};
+    std::vector<std::vector<float>> lPcBins = {tc.fPtBins, tc.fPhiBins};
+    std::vector<std::vector<float>> lEvBins = {tc.fCentBins, tc.fMultBins, tc.fVerXBins, tc.fVerYBins, tc.fVerZBins, tc.fNumContribBins};
+    std::vector<std::vector<float>> lQABins = {tc.fCentBins, tc.fMultBins, tc.fNumContribBins};
 
     BookParticleHistograms<ePt>(lPcBins, pc);
     BookParticleHistograms<ePhi>(lPcBins, pc);
@@ -976,7 +996,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     BookEventHistograms<eVertexZ>(lEvBins, ev);
     BookEventHistograms<eNumContrib>(lEvBins, ev);
     BookQAHistograms<eCent>(lQABins, qa);
-    BookQAHistograms<eNumContrib>(lQABins, qa);
+    BookQAHistograms<eMult>(lQABins, qa);
 
     if (wt.fWeightSwitch) {
       wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
