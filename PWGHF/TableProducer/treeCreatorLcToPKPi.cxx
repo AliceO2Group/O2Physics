@@ -478,6 +478,21 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  /// \brief function to check when applyMl == true if the HfMlLcToPKPi size is equal to that of the table with candidates
+  /// \param candidates Lc->pKpi candidate table
+  /// \param candidateMlScores ML scores table
+  template <typename CandType>
+  void checkHfMlLcToPKPiSize(CandType const& candidates, aod::HfMlLcToPKPi const& candidateMlScores)
+  {
+    if (applyMl) {
+      const auto candidatesSize = candidates.size();
+      const auto candidateMlScoresSize = candidateMlScores.size();
+      if (candidatesSize != candidateMlScoresSize) {
+        LOG(fatal) << "Tables with candidates and ML scores have different sizes (" << candidatesSize << " vs " << candidateMlScoresSize << ") while applyMl == true. Check if applyMl is enabled in the candidateSelectorLc";
+      }
+    }
+  }
+
   /// \brief function to fill event properties
   /// \param collisions Collision table
   template <bool UseCentrality, bool IsMc, typename Colls>
@@ -918,6 +933,7 @@ struct HfTreeCreatorLcToPKPi {
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                     soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
   {
+    checkHfMlLcToPKPiSize(candidates, candidateMlScores);
 
     constexpr bool IsMc = true;
 
@@ -1105,6 +1121,7 @@ struct HfTreeCreatorLcToPKPi {
                       aod::HfMlLcToPKPi const& candidateMlScores,
                       TracksWPid const&, aod::BCs const&)
   {
+    checkHfMlLcToPKPiSize(candidates, candidateMlScores);
 
     constexpr bool IsMc = false;
 
