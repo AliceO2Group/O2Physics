@@ -18,6 +18,7 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -346,10 +347,11 @@ struct fwdMuonsUPC {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), o2::constants::physics::MassMuon};
+    //ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), o2::constants::physics::MassMuon};
 
-    float eta = p.Eta();
-    float pt = p.Pt();
+    std::array<float, 3> trackMomentum{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()};
+    float eta = RecoDecay::eta(trackMomentum);
+    float pt = RecoDecay::pt(trackMomentum);
     float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
 
     if (eta < kEtaMin || eta > kEtaMax)
