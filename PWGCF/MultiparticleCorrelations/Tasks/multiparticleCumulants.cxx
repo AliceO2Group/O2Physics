@@ -25,9 +25,9 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <Framework/O2DatabasePDG.h>
 
 #include <TCollection.h>
 #include <TFile.h>
