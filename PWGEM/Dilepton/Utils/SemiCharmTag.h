@@ -53,14 +53,14 @@ struct LHPair { // struct to store electron-hadron pair information
   float impParCZZ{-999.f};
 
   float ptSVL{-999.f};
-  float plSVL{-999.f};
+  // float plSVL{-999.f};
   float ptSVH{-999.f};
-  float plSVH{-999.f};
+  // float plSVH{-999.f};
 
-  float ptFDL{-999.f};
-  float plFDL{-999.f};
-  float ptFDH{-999.f};
-  float plFDH{-999.f};
+  // float ptFDL{-999.f};
+  // float plFDL{-999.f};
+  // float ptFDH{-999.f};
+  // float plFDH{-999.f};
 
   float ptFD{-999.f};
   float plFD{-999.f};
@@ -109,8 +109,8 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
 
   pair.ptSVL = RecoDecay::sqrtSumOfSquares(pvec0[0], pvec0[1]);
   pair.ptSVH = RecoDecay::sqrtSumOfSquares(pvec1[0], pvec1[1]);
-  pair.plSVL = pvec0[2];
-  pair.plSVH = pvec1[2];
+  // pair.plSVL = pvec0[2];
+  // pair.plSVH = pvec1[2];
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
@@ -132,10 +132,10 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   pair.plFD = RecoDecay::dotProd(pvecSum, uvFD);
   pair.ptFD = RecoDecay::sqrtSumOfSquares(pvecSum[0] - pair.plFD * uvFD[0], pvecSum[1] - pair.plFD * uvFD[1], pvecSum[2] - pair.plFD * uvFD[2]);
 
-  pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
-  pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
-  pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
-  pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
+  // pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
+  // pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
+  // pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
+  // pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
 
   // propagate the 2 prongs to the secondary vertex
   leptonParCov.propagateTo(vtx[0], fitter.getBz());
@@ -228,8 +228,8 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
 
   pair.ptSVL = RecoDecay::sqrtSumOfSquares(pvec0[0], pvec0[1]);
   pair.ptSVH = RecoDecay::sqrtSumOfSquares(pvec1[0], pvec1[1]);
-  pair.plSVL = pvec0[2];
-  pair.plSVH = pvec1[2];
+  // pair.plSVL = pvec0[2];
+  // pair.plSVH = pvec1[2];
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
@@ -251,10 +251,10 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   pair.plFD = RecoDecay::dotProd(pvecSum, uvFD);
   pair.ptFD = RecoDecay::sqrtSumOfSquares(pvecSum[0] - pair.plFD * uvFD[0], pvecSum[1] - pair.plFD * uvFD[1], pvecSum[2] - pair.plFD * uvFD[2]);
 
-  pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
-  pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
-  pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
-  pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
+  // pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
+  // pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
+  // pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
+  // pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
 
   // propagate the 2 prongs to the secondary vertex
   leptonParCov.propagateTo(vtx[0], fitter.getBz());
@@ -356,8 +356,8 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
 
   pair.ptSVL = RecoDecay::sqrtSumOfSquares(pvec0[0], pvec0[1]);
   pair.ptSVH = RecoDecay::sqrtSumOfSquares(pvec1[0], pvec1[1]);
-  pair.plSVL = pvec0[2];
-  pair.plSVH = pvec1[2];
+  // pair.plSVL = pvec0[2];
+  // pair.plSVH = pvec1[2];
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
@@ -379,10 +379,10 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   pair.plFD = RecoDecay::dotProd(pvecSum, uvFD);
   pair.ptFD = RecoDecay::sqrtSumOfSquares(pvecSum[0] - pair.plFD * uvFD[0], pvecSum[1] - pair.plFD * uvFD[1], pvecSum[2] - pair.plFD * uvFD[2]);
 
-  pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
-  pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
-  pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
-  pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
+  // pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
+  // pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
+  // pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
+  // pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
 
   // propagate the 2 prongs to the secondary vertex
   leptonParCov.propagateTo(vtx[0], fitter.getBz());

@@ -73,33 +73,75 @@ struct CoalescenceTreeProducer {
 
   OutputObj<TTree> treeBoundState{"treeBoundState"};
 
-  int64_t eventID;          // Event ID
-  int64_t idB1, idB2, idB3; // MC particle IDs of the constituent baryons
+  int64_t eventID = 0;                  // Event ID
+  int64_t idB1 = 0, idB2 = 0, idB3 = 0; // MC particle IDs
 
-  int pdgB1, pdgB2, pdgB3;
-  int chargeB1, chargeB2, chargeB3;
+  int pdgB1 = 0, pdgB2 = 0, pdgB3 = 0;
+  int chargeB1 = 0, chargeB2 = 0, chargeB3 = 0;
 
-  // Space-time coordinates and momentum components of the constituent baryons in the lab frame
-  float xB1, yB1, zB1, tB1, pxB1, pyB1, pzB1;
-  float xB2, yB2, zB2, tB2, pxB2, pyB2, pzB2;
-  float xB3, yB3, zB3, tB3, pxB3, pyB3, pzB3;
-
-  static constexpr double MassP = o2::constants::physics::MassProton;
-  static constexpr double MassN = o2::constants::physics::MassNeutron;
-  static constexpr double MassL = o2::constants::physics::MassLambda0;
+  // Space-time coordinates and momentum components
+  float xB1 = 0.f, yB1 = 0.f, zB1 = 0.f, tB1 = 0.f, pxB1 = 0.f, pyB1 = 0.f, pzB1 = 0.f;
+  float xB2 = 0.f, yB2 = 0.f, zB2 = 0.f, tB2 = 0.f, pxB2 = 0.f, pyB2 = 0.f, pzB2 = 0.f;
+  float xB3 = 0.f, yB3 = 0.f, zB3 = 0.f, tB3 = 0.f, pxB3 = 0.f, pyB3 = 0.f, pzB3 = 0.f;
 
   struct Particle {
-    int64_t id;
-    int pdg;
-    int charge;
-    float x;
-    float y;
-    float z;
-    float t;
-    float px;
-    float py;
-    float pz;
-    float mass;
+    int64_t id = 0;
+    int pdg = 0;
+    int charge = 0;
+
+    float x = 0.f;
+    float y = 0.f;
+    float z = 0.f;
+    float t = 0.f;
+
+    float px = 0.f;
+    float py = 0.f;
+    float pz = 0.f;
+
+    float mass = 0.f;
+
+    Particle() = default;
+
+    template <typename T>
+    explicit Particle(T const& p)
+      : id(p.globalIndex()),
+        pdg(p.pdgCode()),
+        charge(chargeFromPdg(pdg)),
+        x(p.vx()),
+        y(p.vy()),
+        z(p.vz()),
+        t(p.vt()),
+        px(p.px()),
+        py(p.py()),
+        pz(p.pz()),
+        mass(static_cast<float>(massFromPdg(pdg)))
+    {
+    }
+
+    static int chargeFromPdg(int pdg)
+    {
+      if (pdg == PDG_t::kProton) {
+        return 1;
+      }
+      if (pdg == PDG_t::kProtonBar) {
+        return -1;
+      }
+      return 0;
+    }
+
+    static double massFromPdg(int pdg)
+    {
+      switch (std::abs(pdg)) {
+        case PDG_t::kProton:
+          return o2::constants::physics::MassProton;
+        case PDG_t::kNeutron:
+          return o2::constants::physics::MassNeutron;
+        case PDG_t::kLambda0:
+          return o2::constants::physics::MassLambda0;
+        default:
+          return -1.;
+      }
+    }
   };
 
   void init(InitContext&)
@@ -152,49 +194,6 @@ struct CoalescenceTreeProducer {
       treeBoundState->Branch("pyB3", &pyB3);
       treeBoundState->Branch("pzB3", &pzB3);
     }
-  }
-
-  int chargeFromPdg(int pdg) const
-  {
-    int charge(0);
-    if (pdg == PDG_t::kProton) {
-      charge = 1;
-    }
-    if (pdg == PDG_t::kProtonBar) {
-      charge = -1;
-    }
-    return charge;
-  }
-
-  double massFromPdg(int pdg) const
-  {
-    switch (std::abs(pdg)) {
-      case PDG_t::kProton:
-        return MassP;
-      case PDG_t::kNeutron:
-        return MassN;
-      case PDG_t::kLambda0:
-        return MassL;
-      default:
-        return -1.;
-    }
-  }
-
-  template <typename T>
-  Particle makeParticle(T const& p)
-  {
-    const int pdg = p.pdgCode();
-    return {p.globalIndex(),
-            pdg,
-            chargeFromPdg(pdg),
-            p.vx(),
-            p.vy(),
-            p.vz(),
-            p.vt(),
-            p.px(),
-            p.py(),
-            p.pz(),
-            static_cast<float>(massFromPdg(pdg))};
   }
 
   ROOT::Math::PxPyPzMVector makeFourVector(Particle const& p)
@@ -496,17 +495,17 @@ struct CoalescenceTreeProducer {
       const int pdg = particle.pdgCode();
 
       if (pdg == PDG_t::kProton) {
-        protons.push_back(makeParticle(particle));
+        protons.emplace_back(particle);
       } else if (pdg == PDG_t::kProtonBar) {
-        antiProtons.push_back(makeParticle(particle));
+        antiProtons.emplace_back(particle);
       } else if (pdg == PDG_t::kNeutron) {
-        neutrons.push_back(makeParticle(particle));
+        neutrons.emplace_back(particle);
       } else if (pdg == PDG_t::kNeutronBar) {
-        antiNeutrons.push_back(makeParticle(particle));
+        antiNeutrons.emplace_back(particle);
       } else if (pdg == PDG_t::kLambda0) {
-        lambdas.push_back(makeParticle(particle));
+        lambdas.emplace_back(particle);
       } else if (pdg == PDG_t::kLambda0Bar) {
-        antiLambdas.push_back(makeParticle(particle));
+        antiLambdas.emplace_back(particle);
       }
     }
   }
