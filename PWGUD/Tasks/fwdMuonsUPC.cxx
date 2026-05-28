@@ -33,6 +33,7 @@
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
 #include <TRandom3.h>
+#include <TPDGCode.h>
 
 #include <cmath>
 #include <cstdint>
@@ -272,7 +273,7 @@ struct fwdMuonsUPC {
       if (candId < 0) {
         continue;
       }
-      if (std::abs(tr.pdgCode()) != pdg->GetParticle("mu-")->PdgCode()) {
+      if (std::abs(tr.pdgCode()) != PDG_t::kMuonMinus) {
         continue;
       }
       tracksPerCand[candId].push_back(tr.globalIndex());
@@ -533,7 +534,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != pdg->GetParticle("mu-")->PdgCode() || std::abs(McPart2.pdgCode()) != pdg->GetParticle("mu-")->PdgCode()) {
+    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus) {
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
       return;
     }
@@ -596,7 +597,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != pdg->GetParticle("mu-")->PdgCode() || std::abs(McPart2.pdgCode()) != pdg->GetParticle("mu-")->PdgCode())
+    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
