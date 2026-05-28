@@ -258,7 +258,10 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);     //! Selection o
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                       //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                 //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                         //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(InvMassCharm, invMassCharm, float);           //! Reconstructed invariant mass of charm hadron (e.g. invMassXicPlus for Ξc± → Ξππ)
+DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);        //! Positive track ID from Λ in Ξ cascade (Ξc± → Ξππ)
+DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);       //! Negative track ID from Λ in Ξ cascade (Ξc± → Ξππ)
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, XicToXiPiPi = 1, N3ProngD = 2ecays };
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
@@ -415,6 +418,12 @@ DECLARE_SOA_TABLE(FDHfCand3Prong, "AOD", "FDHFCAND3PRONG", //! Table to store th
                   fdhf::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
+
+DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFCAND3PRONGXIC", //! Extension table for Ξc± → Ξππ candidates (aligned rows with FDHfCand3Prong)
+                  o2::soa::Index<>,
+                  fdhf::InvMassCharm,
+                  fdhf::CascPosTrackId,
+                  fdhf::CascNegTrackId);
 
 DECLARE_SOA_TABLE(FDHfCand2Prong, "AOD", "FDHFCAND2PRONG", //! Table to store the derived data for charm 3prong candidates
                   o2::soa::Index<>,
