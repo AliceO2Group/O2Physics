@@ -81,6 +81,10 @@ DECLARE_SOA_COLUMN(Ezna, ezna, float);
 DECLARE_SOA_COLUMN(Tznc, tznc, float);
 DECLARE_SOA_COLUMN(Eznc, eznc, float);
 DECLARE_SOA_COLUMN(Nclass, nclass, int);
+// other info
+DECLARE_SOA_COLUMN(PDCAp, pDCAp, float);
+DECLARE_SOA_COLUMN(PDCAn, pDCAn, float);
+DECLARE_SOA_COLUMN(AmpV0A, ampV0A, std::vector<float>);
 } // namespace dimu
 
 namespace o2::aod
@@ -91,7 +95,8 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::PhiAv, dimu::PhiCh,
                   dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip, dimu::TrackTypep,
                   dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin, dimu::TrackTypen,
-                  dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass);
+                  dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass,
+                  dimu::PDCAp, dimu::PDCAn, dimu::AmpV0A);
 } // namespace o2::aod
 
 // for saving tree with info on gen MC
@@ -153,6 +158,10 @@ DECLARE_SOA_COLUMN(GenPhip, genPhip, float);
 DECLARE_SOA_COLUMN(GenPtn, genPtn, float);
 DECLARE_SOA_COLUMN(GenEtan, genEtan, float);
 DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
+// other info
+DECLARE_SOA_COLUMN(PDCAp, pDCAp, float);
+DECLARE_SOA_COLUMN(PDCAn, pDCAn, float);
+DECLARE_SOA_COLUMN(AmpV0A, ampV0A, std::vector<float>);
 } // namespace recodimu
 
 namespace o2::aod
@@ -165,7 +174,8 @@ DECLARE_SOA_TABLE(RecoDimu, "AOD", "RECODIMU",
                   recodimu::Ptn, recodimu::Etan, recodimu::Phin, recodimu::TrackTypen,
                   recodimu::GenPt, recodimu::GenRap, recodimu::GenPhi,
                   recodimu::GenPtp, recodimu::GenEtap, recodimu::GenPhip,
-                  recodimu::GenPtn, recodimu::GenEtan, recodimu::GenPhin);
+                  recodimu::GenPtn, recodimu::GenEtan, recodimu::GenPhin,
+                  recodimu::PDCAp, recodimu::PDCAn, recodimu::AmpV0A);
 } // namespace o2::aod
 
 using namespace o2;
@@ -176,13 +186,10 @@ using namespace o2::framework::expressions;
 const float kRAbsMin = 17.6;
 const float kRAbsMid = 26.5;
 const float kRAbsMax = 89.5;
-const float kPDca1 = 200.;
-const float kPDca2 = 200.;
 float kEtaMin = -4.0;
 float kEtaMax = -2.5;
 const float kPtMin = 0.;
 
-const float kMaxAmpV0A = 100.;
 const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
@@ -223,6 +230,13 @@ struct FwdMuonsUpc {
   Configurable<float> highMass{"highMass", 10., "High mass cut"};
   Configurable<float> lowRapidity{"lowRapidity", -4.5, "Low rapidity cut"};
   Configurable<float> highRapidity{"highRapidity", -2., "High rapidity cut"};
+
+  // cuts on pDCA
+  Configurable<float> pDCA1{"pDCA1", 200., "pDCA cut for tracks with rAbs < 26.5 cm"};
+  Configurable<float> pDCA2{"pDCA2", 200., "pDCA cut for tracks with rAbs > 26.5 cm"};
+
+  // cut on V0A amplitude
+  Configurable<float> maxAmpV0A{"maxAmpV0A", 100., "Max amplitude in V0A"};
 
   // my track type
   // 0 = MCH-MID-MFT
@@ -350,7 +364,7 @@ struct FwdMuonsUpc {
     std::array<float, 3> trackMomentum{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()};
     float eta = RecoDecay::eta(trackMomentum);
     float pt = RecoDecay::pt(trackMomentum);
-    float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
+    float pDcaMax = rAbs < kRAbsMid ? pDCA1 : pDCA2;
 
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
@@ -402,7 +416,7 @@ struct FwdMuonsUpc {
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
-        if (ampsV0A[i] > kMaxAmpV0A)
+        if (ampsV0A[i] > maxAmpV0A)
           return;
       }
     }
@@ -516,14 +530,16 @@ struct FwdMuonsUpc {
               phiAverage, phiCharge,
               p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(myTrackType),
               p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(myTrackType),
-              zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
+              zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass,
+              tr1.pDca(), tr2.pDca(), ampsV0A);
     } else {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
               p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(), static_cast<int>(myTrackType),
               p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(), static_cast<int>(myTrackType),
-              zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
+              zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass,
+              tr2.pDca(), tr1.pDca(), ampsV0A);
     }
   }
 
@@ -605,7 +621,7 @@ struct FwdMuonsUpc {
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
-        if (ampsV0A[i] > kMaxAmpV0A)
+        if (ampsV0A[i] > maxAmpV0A)
           return;
       }
     }
@@ -706,7 +722,8 @@ struct FwdMuonsUpc {
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p1Mc.Pt(), p1Mc.Eta(), p1Mc.Phi(),
-               p2Mc.Pt(), p2Mc.Eta(), p2Mc.Phi());
+               p2Mc.Pt(), p2Mc.Eta(), p2Mc.Phi(),
+               tr1.pDca(), tr2.pDca(), ampsV0A);
     } else {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
@@ -716,7 +733,8 @@ struct FwdMuonsUpc {
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p2Mc.Pt(), p2Mc.Eta(), p2Mc.Phi(),
-               p1Mc.Pt(), p1Mc.Eta(), p1Mc.Phi());
+               p1Mc.Pt(), p1Mc.Eta(), p1Mc.Phi(),
+               tr2.pDca(), tr1.pDca(), ampsV0A);
     }
   }
 
