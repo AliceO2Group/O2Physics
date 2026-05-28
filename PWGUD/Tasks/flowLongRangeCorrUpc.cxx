@@ -21,6 +21,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <FT0Base/Geometry.h> // o2::ft0::Geometry
 #include <Framework/ASoA.h>
@@ -35,9 +36,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH3.h>
 #include <TRandom3.h>
-#include <TString.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>

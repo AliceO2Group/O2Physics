@@ -822,6 +822,8 @@ class VarManager : public TObject
     kWV2SP,
     kWV2EP,
     kU2Q2,
+    kU2Q2POS,
+    kU2Q2NEG,
     kU3Q3,
     kQ42XA,
     kQ42YA,
@@ -906,6 +908,8 @@ class VarManager : public TObject
     kPsi2C,
     kRandomPsi2,
     kCos2DeltaPhi,
+    kCos2DeltaPhiPOS,
+    kCos2DeltaPhiNEG,
     kCos2DeltaPhiMu1, // cos(phi - phi1) for muon1
     kCos2DeltaPhiMu2, ////cos(phi - phi2) for muon2
     kCos3DeltaPhi,
@@ -5751,6 +5755,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton vn could be accessible after dividing this product with the R factor
   values[kU2Q2] = values[kQ2X0A] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0A] * TMath::Sin(2 * v12.Phi());
+  values[kU2Q2POS] = values[kQ2X0APOS] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0APOS] * TMath::Sin(2 * v12.Phi());
+  values[kU2Q2NEG] = values[kQ2X0ANEG] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0ANEG] * TMath::Sin(2 * v12.Phi());
   values[kU3Q3] = values[kQ3X0A] * TMath::Cos(3 * v12.Phi()) + values[kQ3Y0A] * TMath::Sin(3 * v12.Phi());
   values[kR2SP_AB] = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
   values[kR2SP_AC] = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);
@@ -5758,12 +5764,16 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
 
   float Psi2A = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
+  float Psi2APOS = getEventPlane(2, values[kQ2X0APOS], values[kQ2Y0APOS]);
+  float Psi2ANEG = getEventPlane(2, values[kQ2X0ANEG], values[kQ2Y0ANEG]);
   float Psi3A = getEventPlane(3, values[kQ3X0A], values[kQ3Y0A]);
   float Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   float Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
   float Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
   float Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
   values[kCos2DeltaPhi] = TMath::Cos(2 * (v12.Phi() - Psi2A));
+  values[kCos2DeltaPhiPOS] = TMath::Cos(2 * (v12.Phi() - Psi2APOS));
+  values[kCos2DeltaPhiNEG] = TMath::Cos(2 * (v12.Phi() - Psi2ANEG));
   values[kCos3DeltaPhi] = TMath::Cos(3 * (v12.Phi() - Psi3A));
   values[kR2EP_AB] = TMath::Cos(2 * (Psi2A - Psi2B));
   values[kR2EP_AC] = TMath::Cos(2 * (Psi2A - Psi2C));
