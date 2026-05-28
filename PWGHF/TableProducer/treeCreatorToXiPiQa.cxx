@@ -632,8 +632,8 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  template <double massCharmBaryon, typename T>
-  void fillParticle(const T& particle)
+  template <typename T>
+  void fillParticle(const T& particle, double massCharmBaryon)
   {
     rowCandidateParticles(RecoDecay::m(particle.pVector(), particle.e()),
                           particle.pt(),
@@ -838,7 +838,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -864,7 +864,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassOmegaC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassOmegaC0);
       }
     }
   }
@@ -890,7 +890,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -916,7 +916,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -942,7 +942,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -968,7 +968,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -994,7 +994,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassOmegaC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassOmegaC0);
       }
     }
   }
@@ -1031,7 +1031,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -1057,7 +1057,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -1083,7 +1083,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
@@ -1109,7 +1109,7 @@ struct HfTreeCreatorToXiPiQa {
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
       for (const auto& particle : mcParticles) {
-        fillParticle<o2::constants::physics::MassXiC0>(particle);
+        fillParticle(particle, o2::constants::physics::MassXiC0);
       }
     }
   }
