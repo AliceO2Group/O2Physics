@@ -73,16 +73,16 @@ struct ZdcExtraTableProducer {
   Configurable<bool> cfgSaveQaHistos{"cfgSaveQaHistos", false, "Flag to save QA histograms"};
 
   enum SelectionCriteria {
-    kZvtx,
-    kSel8,
-    kOccupancy,
-    kNoSameBunchPileup,
-    kIsGoodZvtxFT0vsPV,
-    kNoCollInTimeRangeStandard,
-    kIsVertexITSTPC,
-    kIsGoodITSLayersAll,
-    kAllEvents,
-    kNEventSelections
+    ZVtxCut,
+    Sel8,
+    OccupancyCut,
+    NoSameBunchPileup,
+    IsGoodZvtxFT0vsPV,
+    NoCollInTimeRangeStandard,
+    IsVertexITSTPC,
+    IsGoodITSLayersAll,
+    AllEvents,
+    NEventSelections
   };
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -90,16 +90,16 @@ struct ZdcExtraTableProducer {
   void init(InitContext const&)
   {
 
-    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{kNEventSelections, 0, kNEventSelections}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAllEvents + 1, "kAllEvents");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kZvtx + 1, "kZvtx");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kSel8 + 1, "kSel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kOccupancy + 1, "kOccupancy");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNoSameBunchPileup + 1, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kIsVertexITSTPC + 1, "kIsVertexITSTPC");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
+    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{NEventSelections, 0, NEventSelections}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(AllEvents + 1, "AllEvents");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(ZVtxCut + 1, "ZVtxCut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(Sel8 + 1, "Sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(OccupancyCut + 1, "OccupancyCut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(NoSameBunchPileup + 1, "NoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsGoodZvtxFT0vsPV + 1, "IsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(NoCollInTimeRangeStandard + 1, "NoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsVertexITSTPC + 1, "IsVertexITSTPC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsGoodITSLayersAll + 1, "IsGoodITSLayersAll");
 
     // Skip histogram registration if QA flag is false
     if (!cfgSaveQaHistos) {
@@ -129,55 +129,55 @@ struct ZdcExtraTableProducer {
     uint8_t selectionBits = 0;
     bool selected;
 
-    registry.fill(HIST("hEventCount"), kAllEvents);
+    registry.fill(HIST("hEventCount"), AllEvents);
 
     selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
     if (selected) {
-      SETBIT(selectionBits, kZvtx);
-      registry.fill(HIST("hEventCount"), kZvtx);
+      SETBIT(selectionBits, ZVtxCut);
+      registry.fill(HIST("hEventCount"), ZVtxCut);
     }
 
     selected = collision.sel8();
     if (selected) {
-      SETBIT(selectionBits, kSel8);
-      registry.fill(HIST("hEventCount"), kSel8);
+      SETBIT(selectionBits, Sel8);
+      registry.fill(HIST("hEventCount"), Sel8);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
     selected = occupancy <= cfgEvSelsMaxOccupancy;
     if (selected) {
-      SETBIT(selectionBits, kOccupancy);
-      registry.fill(HIST("hEventCount"), kOccupancy);
+      SETBIT(selectionBits, OccupancyCut);
+      registry.fill(HIST("hEventCount"), OccupancyCut);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     if (selected) {
-      SETBIT(selectionBits, kNoSameBunchPileup);
-      registry.fill(HIST("hEventCount"), kNoSameBunchPileup);
+      SETBIT(selectionBits, NoSameBunchPileup);
+      registry.fill(HIST("hEventCount"), NoSameBunchPileup);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     if (selected) {
-      SETBIT(selectionBits, kIsGoodZvtxFT0vsPV);
-      registry.fill(HIST("hEventCount"), kIsGoodZvtxFT0vsPV);
+      SETBIT(selectionBits, IsGoodZvtxFT0vsPV);
+      registry.fill(HIST("hEventCount"), IsGoodZvtxFT0vsPV);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     if (selected) {
-      SETBIT(selectionBits, kNoCollInTimeRangeStandard);
-      registry.fill(HIST("hEventCount"), kNoCollInTimeRangeStandard);
+      SETBIT(selectionBits, NoCollInTimeRangeStandard);
+      registry.fill(HIST("hEventCount"), NoCollInTimeRangeStandard);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
     if (selected) {
-      SETBIT(selectionBits, kIsVertexITSTPC);
-      registry.fill(HIST("hEventCount"), kIsVertexITSTPC);
+      SETBIT(selectionBits, IsVertexITSTPC);
+      registry.fill(HIST("hEventCount"), IsVertexITSTPC);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     if (selected) {
-      SETBIT(selectionBits, kIsGoodITSLayersAll);
-      registry.fill(HIST("hEventCount"), kIsGoodITSLayersAll);
+      SETBIT(selectionBits, IsGoodITSLayersAll);
+      registry.fill(HIST("hEventCount"), IsGoodITSLayersAll);
     }
 
     return selectionBits;
@@ -196,28 +196,28 @@ struct ZdcExtraTableProducer {
 
         uint8_t evSelection = eventSelected(collision);
 
-        if (cfgEvSelSel8 && !TESTBIT(evSelection, kSel8)) {
+        if (cfgEvSelSel8 && !TESTBIT(evSelection, Sel8)) {
           continue;
         }
-        if (!TESTBIT(evSelection, kZvtx)) {
+        if (!TESTBIT(evSelection, ZVtxCut)) {
           continue;
         }
-        if (cfgEvSelsDoOccupancySel && !TESTBIT(evSelection, kOccupancy)) {
+        if (cfgEvSelsDoOccupancySel && !TESTBIT(evSelection, OccupancyCut)) {
           continue;
         }
-        if (cfgEvSelsNoSameBunchPileupCut && !TESTBIT(evSelection, kNoSameBunchPileup)) {
+        if (cfgEvSelsNoSameBunchPileupCut && !TESTBIT(evSelection, NoSameBunchPileup)) {
           continue;
         }
-        if (cfgEvSelsIsGoodZvtxFT0vsPV && !TESTBIT(evSelection, kIsGoodZvtxFT0vsPV)) {
+        if (cfgEvSelsIsGoodZvtxFT0vsPV && !TESTBIT(evSelection, IsGoodZvtxFT0vsPV)) {
           continue;
         }
-        if (cfgEvSelsNoCollInTimeRangeStandard && !TESTBIT(evSelection, kNoCollInTimeRangeStandard)) {
+        if (cfgEvSelsNoCollInTimeRangeStandard && !TESTBIT(evSelection, NoCollInTimeRangeStandard)) {
           continue;
         }
-        if (cfgEvSelsIsVertexITSTPC && !TESTBIT(evSelection, kIsVertexITSTPC)) {
+        if (cfgEvSelsIsVertexITSTPC && !TESTBIT(evSelection, IsVertexITSTPC)) {
           continue;
         }
-        if (cfgEvSelsIsGoodITSLayersAll && !TESTBIT(evSelection, kIsGoodITSLayersAll)) {
+        if (cfgEvSelsIsGoodITSLayersAll && !TESTBIT(evSelection, IsGoodITSLayersAll)) {
           continue;
         }
 
