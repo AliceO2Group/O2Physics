@@ -657,8 +657,8 @@ struct UpcPhotonuclearAnalysisJMG {
     int nchPVGapSideC = 0;
     int nchGapSideA = 0;
     int nchGapSideC = 0;
-    std::vector<float> vTrackPtSideA, vTrackPSideA, vTrackChargeSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA, vTrackTPCNSigmaProSideA, vTrackTOFNSigmaProSideA, vTrackTOFBetaSideA, vTrackTOFNBetaErrorSideA;
-    std::vector<float> vTrackPtSideC, vTrackPSideC, vTrackChargeSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC, vTrackTPCNSigmaProSideC, vTrackTOFNSigmaProSideC, vTrackTOFBetaSideC, vTrackTOFNBetaErrorSideC;
+    std::vector<float> vTrackPtSideA, vTrackPSideA, vTrackChargeSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA, vTrackTPCNSigmaProSideA, vTrackTOFNSigmaProSideA, vTrackTOFBetaSideA, vTrackTOFBetaErrorSideA;
+    std::vector<float> vTrackPtSideC, vTrackPSideC, vTrackChargeSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC, vTrackTPCNSigmaProSideC, vTrackTOFNSigmaProSideC, vTrackTOFBetaSideC, vTrackTOFBetaErrorSideC;
 
     int nTracksChargedSideA(-222), nTracksChargedSideC(-222);
     int multiplicitySideA(-222), multiplicitySideC(-222);
@@ -711,10 +711,12 @@ struct UpcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phiVal);
           histos.fill(HIST("Tracks/SGsideA/hTrackEta"), etaVal);
           histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), pTotal, track.tpcSignal());
-          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaPi(),2) + TMath::Power(track.tofNSigmaPi(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaKa(),2) + TMath::Power(tofNSigmaKa(),2)) > 3){
+          float nSigmaPi2 = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
+          float nSigmaKa2 = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
+          if (nSigmaPi2 < 9.0 && nSigmaKa2 > 9.0) {
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalPPiones"), pTotal, track.tpcSignal());
           }
-          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaKa(),2) + TMath::Power(track.tofNSigmaKa(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaPi(),2) + TMath::Power(tofNSigmaPi(),2)) > 3){
+          if (nSigmaKa2 < 9.0 && nSigmaPi2 > 9.0) {
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalPKaones"), pTotal, track.tpcSignal());
           }
           histos.fill(HIST("Tracks/SGsideA/hTrackTOFSignnalP"), pTotal, track.tofSignal());
@@ -785,10 +787,12 @@ struct UpcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
           histos.fill(HIST("Tracks/SGsideC/hTrackEta"), etaVal);
           histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), pTotal, track.tpcSignal());
-          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaPi(),2) + TMath::Power(track.tofNSigmaPi(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaKa(),2) + TMath::Power(tofNSigmaKa(),2)) > 3){
+          float nSigmaPi2 = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
+          float nSigmaKa2 = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
+          if (nSigmaPi2 < 9.0 && nSigmaKa2 > 9.0) {
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalPPiones"), pTotal, track.tpcSignal());
           }
-          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaKa(),2) + TMath::Power(track.tofNSigmaKa(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaPi(),2) + TMath::Power(tofNSigmaPi(),2)) > 3){
+          if (nSigmaKa2 < 9.0 && nSigmaPi2 > 9.0) {
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalPKaones"), pTotal, track.tpcSignal());
           }
           histos.fill(HIST("Tracks/SGsideC/hTrackTOFSignnalP"), pTotal, track.tofSignal());
