@@ -413,7 +413,7 @@ struct JEPFlowAnalysis {
         }
       }
       if (i == 0) { // second harmonic only
-        auto qOvecM = calcFT0CRawQVecMag(coll, i + 2);
+        auto qOvecM = calcFT0CRawQVecMag(coll, i + 2) / coll.qvecAmp()[detId];
 
         epFlowHistograms.fill(HIST("hQoverM"), cent, highestPt, qOvecM);
         epFlowHistograms.fill(HIST("hQoverM2M"), cent, coll.qvecAmp()[detId], qOvecM);
