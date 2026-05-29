@@ -17,8 +17,8 @@
 
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/OTFParticle.h"
-#include "ALICE3/DataModel/tracksAlice3.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -40,7 +40,6 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -67,8 +66,10 @@ static const std::vector<int> pdgCodes{PDG_t::kK0Short,
                                        PDG_t::kOmegaMinus,
                                        PDG_t::kOmegaPlusBar};
 
-// Witchcraft
-namespace o2::aod { O2ORIGIN("TMP"); }
+namespace o2::aod
+{
+O2ORIGIN("TMP");
+}
 
 struct OnTheFlyDecayer {
   Produces<aod::McCollisions_001> tableMcCollisions;
@@ -121,7 +122,7 @@ struct OnTheFlyDecayer {
   void decayParticles(const int start, const int stop)
   {
     int ndau = 0;
-    for (int i = start; i < stop; i++) {
+    for (int i = start; i < stop; ++i) {
       o2::upgrade::OTFParticle& particle = allParticles[i];
       if (particle.isFromMcParticles()) {
         particle.setBitOn(o2::upgrade::DecayerBits::IsPrimary);
@@ -169,49 +170,44 @@ struct OnTheFlyDecayer {
     decayParticles(stop, stop + ndau);
   }
 
-  void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>> const& mcCollisions, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
+  void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>>::iterator const& collision, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
-    for (const auto& collision : mcCollisions) {
-      allParticles.clear();
+    allParticles.clear();
 
-      // Reproduce collision table to have AOD origin
-      mCollisionId = collision.globalIndex();
-      tableMcCollisions(collision.bcId(),
-                        collision.generatorsID(),
-                        collision.posX(),
-                        collision.posY(),
-                        collision.posZ(),
-                        collision.t(),
-                        collision.weight(),
-                        collision.impactParameter(),
-                        collision.eventPlaneAngle());
+    // Reproduce collision table to have AOD origin
+    mCollisionId = collision.globalIndex();
+    tableMcCollisions(collision.bcId(),
+                      collision.generatorsID(),
+                      collision.posX(),
+                      collision.posY(),
+                      collision.posZ(),
+                      collision.t(),
+                      collision.weight(),
+                      collision.impactParameter(),
+                      collision.eventPlaneAngle());
 
-      // First we copy the particles from the table into a vector that is extendable
-      for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
-        const auto& mcParticle = mcParticles.rawIteratorAt(index);
-        allParticles.push_back(o2::upgrade::OTFParticle{mcParticle});
+    // First we copy the particles from the table into a vector that is extendable
+    for (const auto& particle : mcParticles) {
+      allParticles.emplace_back(o2::upgrade::OTFParticle{particle});
+    }
+
+    // Do all decays
+    decayParticles(0, allParticles.size());
+
+    // Fill output table
+    for (const auto& otfParticle : allParticles) {
+      if (otfParticle.hasNaN()) {
+        histos.fill(HIST("hNaNBookkeeping"), 1);
+      } else {
+        histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      // Do all decays
-      decayParticles(0, allParticles.size());
-
-      // Fill output table
-      for (int index{0}; index < static_cast<int>(allParticles.size()); ++index) {
-        const auto& otfParticle = allParticles[index];
-
-        if (otfParticle.hasNaN()) {
-          histos.fill(HIST("hNaNBookkeeping"), 1);
-        } else {
-          histos.fill(HIST("hNaNBookkeeping"), 0);
-        }
-        
-        // todo: status codes
-        tableOTFDecayerBits(otfParticle.getBitsValue());
-        tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
-                        otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
-                        otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
-                        otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
-      }
+      // todo: status codes
+      tableOTFDecayerBits(otfParticle.getBitsValue());
+      tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
+                       otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
+                       otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
+                       otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
     }
   }
 };
