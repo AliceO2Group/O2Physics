@@ -359,7 +359,6 @@ struct FwdMuonsUpc {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    // ROOT::Math::PxPyPzMVector p{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), o2::constants::physics::MassMuon};
 
     std::array<float, 3> trackMomentum{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()};
     float eta = RecoDecay::eta(trackMomentum);
@@ -428,7 +427,6 @@ struct FwdMuonsUpc {
 
     // select opposite charge events only
     if (cand.netCharge() != 0) {
-      // registry.fill(HIST("hSameSign"), cand.numContrib());
       return;
     }
 
@@ -499,12 +497,7 @@ struct FwdMuonsUpc {
     if (std::abs(zdc.timeC) < kMaxZDCTime)
       neutronC = true;
 
-    if (std::isinf(zdc.timeC))
-      neutronC = false;
-    if (std::isinf(zdc.timeA))
-      neutronA = false;
-
-    // fill the histos in neutron classes and assign neutron class label
+    // assign neutron class label
     // 0n0n
     if (neutronC == false && neutronA == false) {
       znClass = 1;
@@ -613,8 +606,10 @@ struct FwdMuonsUpc {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus)
+    if (std::abs(McPart1.pdgCode()) != PDG_t::kMuonMinus || std::abs(McPart2.pdgCode()) != PDG_t::kMuonMinus) {
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+      return;
+    }
 
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
@@ -626,9 +621,13 @@ struct FwdMuonsUpc {
       }
     }
 
+    // select events with exactly 2 forward tracks
+    if (cand.numContrib() != k2Tracks) {
+      return;
+    }
+
     // select opposite charge events only
     if (cand.netCharge() != 0) {
-      // registry.fill(HIST("hSameSign"), cand.numContrib());
       return;
     }
 
