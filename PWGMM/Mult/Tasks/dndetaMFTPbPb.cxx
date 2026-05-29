@@ -98,7 +98,7 @@ auto static constexpr CmaxAccFT0A = 4.9f;
 auto static constexpr CminAccFT0C = -3.3f;
 auto static constexpr CmaxAccFT0C = -2.1f;
 
-constexpr int CevtSel = 15;
+constexpr int CevtSel = 16;
 constexpr int CtrkSel = 7;
 constexpr int CtrkTrkBestSel = 6;
 constexpr int CambTrkType = 7;
