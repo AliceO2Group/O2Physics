@@ -1784,7 +1784,13 @@ struct FlowDecorrelation {
       }
     }
 
-    if (cfgSelCollByNch && (mcParticles.size() < cfgGeneralCuts.cfgCutMultMin || mcParticles.size() >= cfgGeneralCuts.cfgCutMultMax)) {
+    int tpcMult = 0;
+    for (const auto& track : mcParticles) {
+      if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+        tpcMult += 1;
+    }
+
+    if (cfgSelCollByNch && (tpcMult < cfgGeneralCuts.cfgCutMultMin || tpcMult >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
@@ -1794,7 +1800,7 @@ struct FlowDecorrelation {
     registry.fill(HIST("MCTrue/MCeventcount"), SameEvent); // because its same event i put it in the 1 bin
     if (!cfgCentTableUnavailable)
       registry.fill(HIST("MCTrue/MCCentrality"), cent);
-    registry.fill(HIST("MCTrue/MCNch"), mcParticles.size());
+    registry.fill(HIST("MCTrue/MCNch"), tpcMult);
     registry.fill(HIST("MCTrue/MCzVtx"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
@@ -1804,12 +1810,12 @@ struct FlowDecorrelation {
       }
     }
     if (cfgMcTrue.cfgUseCFStepAll) {
-      same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
+      same->fillEvent(tpcMult, CorrelationContainer::kCFStepAll);
       fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0C);
     }
 
     registry.fill(HIST("MCTrue/MCeventcount"), 2.5);
-    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
+    same->fillEvent(tpcMult, CorrelationContainer::kCFStepTrackedOnlyPrim);
     fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0C);
   }
   PROCESS_SWITCH(FlowDecorrelation, processMcSameTpcFt0c, "Process MC same event", false);
@@ -1818,8 +1824,12 @@ struct FlowDecorrelation {
   {
     auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
-      auto mult = associatedTracks.size();
-      return mult;
+      int tpcMult = 0;
+      for (const auto& track : associatedTracks) {
+        if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+          tpcMult += 1;
+      }
+      return tpcMult;
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, o2::aod::mccollision::PosZ, decltype(getTracksSize)>;
@@ -1831,22 +1841,20 @@ struct FlowDecorrelation {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
-        continue;
-
-      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
-        continue;
-
-      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
-
-      float cent = -1;
+      auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
+      auto groupedCollisions2 = collisions.sliceBy(collisionPerMCCollision, collision2.globalIndex());
+      float cent1 = -1;
+      float cent2 = -1;
       if (!cfgCentTableUnavailable) {
-        for (const auto& collision : groupedCollisions) {
-          cent = getCentrality(collision);
+        for (const auto& collision : groupedCollisions1) {
+          cent1 = getCentrality(collision);
+        }
+        for (const auto& collision : groupedCollisions2) {
+          cent2 = getCentrality(collision);
         }
       }
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && ((cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax) || (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax)))
         continue;
 
       registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
@@ -1874,7 +1882,13 @@ struct FlowDecorrelation {
       }
     }
 
-    if (cfgSelCollByNch && (mcParticles.size() < cfgGeneralCuts.cfgCutMultMin || mcParticles.size() >= cfgGeneralCuts.cfgCutMultMax)) {
+    int tpcMult = 0;
+    for (const auto& track : mcParticles) {
+      if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+        tpcMult += 1;
+    }
+
+    if (cfgSelCollByNch && (tpcMult < cfgGeneralCuts.cfgCutMultMin || tpcMult >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
@@ -1884,7 +1898,7 @@ struct FlowDecorrelation {
     registry.fill(HIST("MCTrue/MCeventcount"), SameEvent); // because its same event i put it in the 1 bin
     if (!cfgCentTableUnavailable)
       registry.fill(HIST("MCTrue/MCCentrality"), cent);
-    registry.fill(HIST("MCTrue/MCNch"), mcParticles.size());
+    registry.fill(HIST("MCTrue/MCNch"), tpcMult);
     registry.fill(HIST("MCTrue/MCzVtx"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
@@ -1894,12 +1908,12 @@ struct FlowDecorrelation {
       }
     }
     if (cfgMcTrue.cfgUseCFStepAll) {
-      same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
+      same->fillEvent(tpcMult, CorrelationContainer::kCFStepAll);
       fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0A);
     }
 
     registry.fill(HIST("MCTrue/MCeventcount"), 2.5);
-    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
+    same->fillEvent(tpcMult, CorrelationContainer::kCFStepTrackedOnlyPrim);
     fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0A);
   }
   PROCESS_SWITCH(FlowDecorrelation, processMcSameTpcFt0a, "Process MC same event", false);
@@ -1908,8 +1922,12 @@ struct FlowDecorrelation {
   {
     auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
-      auto mult = associatedTracks.size();
-      return mult;
+      int tpcMult = 0;
+      for (const auto& track : associatedTracks) {
+        if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+          tpcMult += 1;
+      }
+      return tpcMult;
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, o2::aod::mccollision::PosZ, decltype(getTracksSize)>;
@@ -1927,16 +1945,20 @@ struct FlowDecorrelation {
       if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
-
-      float cent = -1;
+      auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
+      auto groupedCollisions2 = collisions.sliceBy(collisionPerMCCollision, collision2.globalIndex());
+      float cent1 = -1;
+      float cent2 = -1;
       if (!cfgCentTableUnavailable) {
-        for (const auto& collision : groupedCollisions) {
-          cent = getCentrality(collision);
+        for (const auto& collision : groupedCollisions1) {
+          cent1 = getCentrality(collision);
+        }
+        for (const auto& collision : groupedCollisions2) {
+          cent2 = getCentrality(collision);
         }
       }
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && ((cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax) || (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax)))
         continue;
 
       registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
