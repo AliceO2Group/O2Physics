@@ -180,7 +180,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-if (!nameStr.compare("Electron2025_4_ldong")) {
+  if (!nameStr.compare("Electron2025_4_ldong")) {
     AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
     kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
     kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
