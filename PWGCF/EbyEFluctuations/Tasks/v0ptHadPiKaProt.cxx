@@ -354,7 +354,17 @@ struct V0ptHadPiKaProt {
     histos.add("h2DnsigmaPionTpcVsTofBeforeCut", "2D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH2F, {nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTpcVsTofBeforeCut", "2D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH2F, {nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTpcVsTofBeforeCut", "2D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH2F, {nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaPionItsVsPtBeforeCut", "2D hist of nSigmaITS vs. pT (pion)", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonItsVsPtBeforeCut", "2D hist of nSigmaITS vs. pT (kaon)", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonItsVsPtBeforeCut", "2D hist of nSigmaITS vs. pT (proton)", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaPionItsVsTofBeforeCut", "2D hist of nSigmaITS vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonItsVsTofBeforeCut", "2D hist of nSigmaITS vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonItsVsTofBeforeCut", "2D hist of nSigmaITS vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+
     // after cut
+    histos.add("h2DnsigmaPionItsVsPtAfterCut", "2D hist of nSigmaITS vs. pT (pion)", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonItsVsPtAfterCut", "2D hist of nSigmaITS vs. pT (kaon)", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonItsVsPtAfterCut", "2D hist of nSigmaITS vs. pT (proton)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaPionTpcVsPtAfterCut", "2D hist of nSigmaTPC vs. pT (pion)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTpcVsPtAfterCut", "2D hist of nSigmaTPC vs. pT (kaon)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTpcVsPtAfterCut", "2D hist of nSigmaTPC vs. pT (proton)", kTH2F, {ptAxis, nSigmaAxis});
@@ -364,6 +374,9 @@ struct V0ptHadPiKaProt {
     histos.add("h2DnsigmaPionTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaPionItsVsTofAfterCut", "3D hist of nSigmaITS vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonItsVsTofAfterCut", "3D hist of nSigmaITS vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonItsVsTofAfterCut", "3D hist of nSigmaITS vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
 
     // Analysis profiles
 
@@ -1206,6 +1219,10 @@ struct V0ptHadPiKaProt {
           double nSigmaTofPi = track.tofNSigmaPi();
           double nSigmaTofKa = track.tofNSigmaKa();
           double nSigmaTofProt = track.tofNSigmaPr();
+          double nSigmaItsPi = itsResponse.nSigmaITS<o2::track::PID::Pion>(track);
+          double nSigmaItsKa = itsResponse.nSigmaITS<o2::track::PID::Kaon>(track);
+          double nSigmaItsProt = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
+
           histos.fill(HIST("h2DnsigmaPionTpcVsPtBeforeCut"), track.pt(), nSigmaTpcPi);
           histos.fill(HIST("h2DnsigmaKaonTpcVsPtBeforeCut"), track.pt(), nSigmaTpcKa);
           histos.fill(HIST("h2DnsigmaProtonTpcVsPtBeforeCut"), track.pt(), nSigmaTpcProt);
@@ -1215,6 +1232,13 @@ struct V0ptHadPiKaProt {
           histos.fill(HIST("h2DnsigmaPionTpcVsTofBeforeCut"), nSigmaTpcPi, nSigmaTofPi);
           histos.fill(HIST("h2DnsigmaKaonTpcVsTofBeforeCut"), nSigmaTpcKa, nSigmaTofKa);
           histos.fill(HIST("h2DnsigmaProtonTpcVsTofBeforeCut"), nSigmaTpcProt, nSigmaTofProt);
+
+          histos.fill(HIST("h2DnsigmaPionItsVsPtBeforeCut"), track.pt(), nSigmaItsPi);
+          histos.fill(HIST("h2DnsigmaKaonItsVsPtBeforeCut"), track.pt(), nSigmaItsKa);
+          histos.fill(HIST("h2DnsigmaProtonItsVsPtBeforeCut"), track.pt(), nSigmaItsProt);
+          histos.fill(HIST("h2DnsigmaPionItsVsTofBeforeCut"), track.pt(), nSigmaItsPi, nSigmaTofPi);
+          histos.fill(HIST("h2DnsigmaKaonItsVsTofBeforeCut"), track.pt(), nSigmaItsKa, nSigmaTofKa);
+          histos.fill(HIST("h2DnsigmaProtonItsVsTofBeforeCut"), track.pt(), nSigmaItsProt, nSigmaTofProt);
 
           // identified particles selection
           bool isPion = false;
@@ -1240,16 +1264,22 @@ struct V0ptHadPiKaProt {
             histos.fill(HIST("h2DnsigmaPionTpcVsPtAfterCut"), track.pt(), nSigmaTpcPi);
             histos.fill(HIST("h2DnsigmaPionTofVsPtAfterCut"), track.pt(), nSigmaTofPi);
             histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), track.pt(), nSigmaTpcPi, nSigmaTofPi);
+            histos.fill(HIST("h2DnsigmaPionItsVsPtAfterCut"), track.pt(), nSigmaItsPi);
+            histos.fill(HIST("h2DnsigmaPionItsVsTofAfterCut"), track.pt(), nSigmaItsPi, nSigmaTofPi);
           }
           if (isKaon) {
             histos.fill(HIST("h2DnsigmaKaonTpcVsPtAfterCut"), track.pt(), nSigmaTpcKa);
             histos.fill(HIST("h2DnsigmaKaonTofVsPtAfterCut"), track.pt(), nSigmaTofKa);
             histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), track.pt(), nSigmaTpcKa, nSigmaTofKa);
+            histos.fill(HIST("h2DnsigmaKaonItsVsPtAfterCut"), track.pt(), nSigmaItsKa);
+            histos.fill(HIST("h2DnsigmaKaonItsVsTofAfterCut"), track.pt(), nSigmaItsKa, nSigmaTofKa);
           }
           if (isProton) {
             histos.fill(HIST("h2DnsigmaProtonTpcVsPtAfterCut"), track.pt(), nSigmaTpcProt);
             histos.fill(HIST("h2DnsigmaProtonTofVsPtAfterCut"), track.pt(), nSigmaTofProt);
             histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), track.pt(), nSigmaTpcProt, nSigmaTofProt);
+            histos.fill(HIST("h2DnsigmaProtonItsVsPtAfterCut"), track.pt(), nSigmaItsProt);
+            histos.fill(HIST("h2DnsigmaProtonItsVsTofAfterCut"), track.pt(), nSigmaItsProt, nSigmaTofProt);
           }
 
           auto pdgcodeRec = std::abs(particle.pdgCode());
@@ -1427,6 +1457,9 @@ struct V0ptHadPiKaProt {
       double nSigmaTofPi = track.tofNSigmaPi();
       double nSigmaTofKa = track.tofNSigmaKa();
       double nSigmaTofProt = track.tofNSigmaPr();
+      double nSigmaItsPi = itsResponse.nSigmaITS<o2::track::PID::Pion>(track);
+      double nSigmaItsKa = itsResponse.nSigmaITS<o2::track::PID::Kaon>(track);
+      double nSigmaItsProt = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
       histos.fill(HIST("h2DnsigmaPionTpcVsPtBeforeCut"), trkPt, nSigmaTpcPi);
       histos.fill(HIST("h2DnsigmaKaonTpcVsPtBeforeCut"), trkPt, nSigmaTpcKa);
       histos.fill(HIST("h2DnsigmaProtonTpcVsPtBeforeCut"), trkPt, nSigmaTpcProt);
@@ -1436,6 +1469,13 @@ struct V0ptHadPiKaProt {
       histos.fill(HIST("h2DnsigmaPionTpcVsTofBeforeCut"), nSigmaTpcPi, nSigmaTofPi);
       histos.fill(HIST("h2DnsigmaKaonTpcVsTofBeforeCut"), nSigmaTpcKa, nSigmaTofKa);
       histos.fill(HIST("h2DnsigmaProtonTpcVsTofBeforeCut"), nSigmaTpcProt, nSigmaTofProt);
+
+      histos.fill(HIST("h2DnsigmaPionItsVsPtBeforeCut"), trkPt, nSigmaItsPi);
+      histos.fill(HIST("h2DnsigmaKaonItsVsPtBeforeCut"), trkPt, nSigmaItsKa);
+      histos.fill(HIST("h2DnsigmaProtonItsVsPtBeforeCut"), trkPt, nSigmaItsProt);
+      histos.fill(HIST("h2DnsigmaPionItsVsTofBeforeCut"), trkPt, nSigmaItsPi, nSigmaTofPi);
+      histos.fill(HIST("h2DnsigmaKaonItsVsTofBeforeCut"), trkPt, nSigmaItsKa, nSigmaTofKa);
+      histos.fill(HIST("h2DnsigmaProtonItsVsTofBeforeCut"), trkPt, nSigmaItsProt, nSigmaTofProt);
 
       // identified particles selection
       bool isPion = false;
@@ -1461,16 +1501,22 @@ struct V0ptHadPiKaProt {
         histos.fill(HIST("h2DnsigmaPionTpcVsPtAfterCut"), trkPt, nSigmaTpcPi);
         histos.fill(HIST("h2DnsigmaPionTofVsPtAfterCut"), trkPt, nSigmaTofPi);
         histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), trkPt, nSigmaTpcPi, nSigmaTofPi);
+        histos.fill(HIST("h2DnsigmaPionItsVsPtAfterCut"), trkPt, nSigmaItsPi);
+        histos.fill(HIST("h2DnsigmaPionItsVsTofAfterCut"), trkPt, nSigmaItsPi, nSigmaTofPi);
       }
       if (isKaon) {
         histos.fill(HIST("h2DnsigmaKaonTpcVsPtAfterCut"), trkPt, nSigmaTpcKa);
         histos.fill(HIST("h2DnsigmaKaonTofVsPtAfterCut"), trkPt, nSigmaTofKa);
         histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), trkPt, nSigmaTpcKa, nSigmaTofKa);
+        histos.fill(HIST("h2DnsigmaKaonItsVsPtAfterCut"), trkPt, nSigmaItsKa);
+        histos.fill(HIST("h2DnsigmaKaonItsVsTofAfterCut"), trkPt, nSigmaItsKa, nSigmaTofKa);
       }
       if (isProton) {
         histos.fill(HIST("h2DnsigmaProtonTpcVsPtAfterCut"), trkPt, nSigmaTpcProt);
         histos.fill(HIST("h2DnsigmaProtonTofVsPtAfterCut"), trkPt, nSigmaTofProt);
         histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), trkPt, nSigmaTpcProt, nSigmaTofProt);
+        histos.fill(HIST("h2DnsigmaProtonItsVsPtAfterCut"), trkPt, nSigmaItsProt);
+        histos.fill(HIST("h2DnsigmaProtonItsVsTofAfterCut"), trkPt, nSigmaItsProt, nSigmaTofProt);
       }
 
       double effweightPion = 1.0;
