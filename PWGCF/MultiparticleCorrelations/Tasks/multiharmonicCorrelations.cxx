@@ -75,8 +75,8 @@ enum eEventHistograms {
   eEventHistograms_N
 };
 
-enum eCut{
-  eBefore=0,
+enum eCut {
+  eBefore = 0,
   eAfter,
   eCut_N
 };
@@ -93,7 +93,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
   // *) Define configurables:
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"}; // example for built-in type (float, string, etc.)
-  Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};               // example for an array
+  Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};                   // example for an array
   Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {100, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
   Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {100, 0., 100.}, "nCentrBins, centrMin, centrMax"};
   Configurable<std::vector<float>> cfXBins{"cfXBins", {1000, -100., 100.}, "nXBins, xMin, xMax"};
@@ -392,11 +392,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       event.fEventHistograms[eVertexZ][eRec][0]->Fill(collision.posZ());
       zrec = collision.posZ();
       event.fHistNContr->Fill(collision.numContrib());
-      if(cfCent.value=="FT0C")
+      if (cfCent.value == "FT0C")
         centr = collision.centFT0C();
-      else if(cfCent.value=="FT0M")
+      else if (cfCent.value == "FT0M")
         centr = collision.centFT0M();
-      else if(cfCent.value=="FT0A")
+      else if (cfCent.value == "FT0A")
         centr = collision.centFT0A();
       event.fHistCentr[eRec]->Fill(centr);
 
@@ -428,7 +428,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
 
       // *) Event cuts:
-      if (!EventCuts<rs>(collision) || centr>80.) { // Main call for event cuts
+      if (!EventCuts<rs>(collision) || centr > 80.) { // Main call for event cuts
         return;
       }
       event.fEventHistograms[eVertexZ][eRec][1]->Fill(zrec);
@@ -444,7 +444,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     }
 
     // Main loop over particles:
-    for (auto track: tracks) {
+    for (auto track : tracks) {
 
       // Fill reconstructed ...:
       float ptrec = 0., ptsim = 0.;
@@ -503,8 +503,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float v22 = (Q(2).Rho2() - M) / (M * (M - 1.));
     float v32 = (Q(3).Rho2() - M) / (M * (M - 1.));
     float v42 = (Q(4).Rho2() - M) / (M * (M - 1.));
-    LOGF(info, "Q(2)=%f", cor.Qvector[2].Rho2());
-    LOGF(info, "v22=%f", v22);
 
     cor.pv22_centr->Fill(centr, v22, M * (M - 1));
     cor.pv32_centr->Fill(centr, v32, M * (M - 1));
