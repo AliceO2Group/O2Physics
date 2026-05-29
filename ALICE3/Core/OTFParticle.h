@@ -58,7 +58,7 @@ class OTFParticle
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
-    if constexpr ( requires { particle.decayerBits(); } ) {
+    if constexpr (requires { particle.decayerBits(); }) {
       mBits = particle.decayerBits();
     } else {
       // If we are here, we created particle in the standard workflow -- without secondaries
@@ -162,7 +162,7 @@ class OTFParticle
   // Bits
   bool checkBit(DecayerBits bit) const { return mBits.test(static_cast<size_t>(bit)); }
   void setBit(DecayerBits bit, bool value = true) { mBits.set(static_cast<size_t>(bit), value); }
-  void setBitOn(DecayerBits bit)  { mBits.set(static_cast<size_t>(bit), true); }
+  void setBitOn(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), true); }
   void setBitOff(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), false); }
 
   std::bitset<8> getBits() const { return mBits; }
