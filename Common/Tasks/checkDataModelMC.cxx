@@ -25,6 +25,7 @@
 
 #include <TH1.h>
 
+#include <cstdint>
 #include <limits>
 #include <memory>
 

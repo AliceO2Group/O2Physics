@@ -1805,6 +1805,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Lxyz", "", false, 250, 0.0, 5.0, VarManager::kMass, 1000, 0.0, 5, VarManager::kVertexingLxyz);
         hm->AddHistogram(histClass, "Mass_OpeningAngle", "", false, 250, 0.0, 5.0, VarManager::kMass, 800, 0, 0.8, VarManager::kOpeningAngle);
       }
+      if (subGroupStr.Contains("flow-pos-neg-dimuon")) {
+        int varV2POS[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2POS, VarManager::kCos2DeltaPhiPOS};
+        int varV2NEG[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2NEG, VarManager::kCos2DeltaPhiNEG};
+
+        int bins[6] = {250, 60, 6, 18, 200, 40};
+        double minBins[6] = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
+        double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2POS", "", 6, varV2POS, bins, minBins, maxBins, 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2NEG", "", 6, varV2NEG, bins, minBins, maxBins, 0, -1, kTRUE);
+      }
       if (subGroupStr.Contains("flow-dimuon-high-mass")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2, VarManager::kCos2DeltaPhi};
 

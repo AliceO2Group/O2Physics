@@ -83,6 +83,7 @@ namespace
 {
 constexpr double betheBlochDefault[1][6]{{-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+static constexpr std::array<float, 9> tmpRadiiTPC{{85.f, 105.f, 125.f, 145.f, 165.f, 185.f, 205.f, 225.f, 245.f}};
 
 enum Selections {
   kNoCuts = 0,
@@ -189,7 +190,15 @@ struct HadNucleiFemto {
   Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut for rejection"};
   Configurable<float> settingCutNsigTOFPiMin{"settingCutNsigTOFPiMin", 3.0f, "Minimum TOF Pi Nsigma cut for rejection"};
   Configurable<float> settingCutNsigTOFKaMin{"settingCutNsigTOFKaMin", 3.0f, "Minimum TOF Ka Nsigma cut for rejection"};
+  Configurable<bool> settingEnablePionProtonRejection{"settingEnablePionProtonRejection", true, "If true, apply proton rejection in the pion PID"};
+  Configurable<bool> settingEnablePionKaonRejection{"settingEnablePionKaonRejection", true, "If true, apply kaon rejection in the pion PID"};
   Configurable<bool> settingUsePionReferencePIDCuts{"settingUsePionReferencePIDCuts", false, "If true, use the reference pion track/PID cuts from the pi-p study"};
+  Configurable<float> settingPionRefPtMin{"settingPionRefPtMin", 0.14f, "Minimum pT for the reference pion track cuts"};
+  Configurable<float> settingPionRefPtMax{"settingPionRefPtMax", 2.5f, "Maximum pT for the reference pion track cuts"};
+  Configurable<int> settingPionRefITSInnerBarrelMin{"settingPionRefITSInnerBarrelMin", 3, "Minimum ITS inner barrel clusters for the reference pion track cuts"};
+  Configurable<int> settingPionRefITSNClsMin{"settingPionRefITSNClsMin", 7, "Minimum ITS clusters for the reference pion track cuts"};
+  Configurable<int> settingPionRefTPCNClsFoundMin{"settingPionRefTPCNClsFoundMin", 80, "Minimum found TPC clusters for the reference pion track cuts"};
+  Configurable<int> settingPionRefTPCCrossedRowsMin{"settingPionRefTPCCrossedRowsMin", 90, "Minimum crossed TPC rows for the reference pion track cuts"};
   // Deuteron purity and PID cuts
   Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
   Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
@@ -199,6 +208,12 @@ struct HadNucleiFemto {
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
   Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
   Configurable<float> settingCutNsigmaTOFTPCDe{"settingCutNsigmaTOFTPCDe", 2.5f, "Value of the De TOF TPC combNsigma cut"};
+  Configurable<bool> settingUseProtonMassForKstarMt{"settingUseProtonMassForKstarMt", false, "If true, use proton mass instead of deuteron mass for kstar and mT"};
+  Configurable<bool> settingEnableClosePairRejection{"settingEnableClosePairRejection", false, "Enable close pair rejection for deuteron-hadron track pairs"};
+  Configurable<float> settingClosePairDeltaPhiMax{"settingClosePairDeltaPhiMax", 0.01f, "Maximum delta phi star for close pair rejection"};
+  Configurable<float> settingClosePairDeltaEtaMax{"settingClosePairDeltaEtaMax", 0.01f, "Maximum delta eta for close pair rejection"};
+  Configurable<int> settingClosePairRadiusMode{"settingClosePairRadiusMode", 1, "Close pair rejection mode: 0 = PV, 1 = average phi star, 2 = specific TPC radius"};
+  Configurable<float> settingClosePairSpecificRadius{"settingClosePairSpecificRadius", 85.f, "TPC radius in cm used when close pair rejection mode is 2"};
   // Hypertriton-specific cuts
   Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
   Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
@@ -278,6 +293,8 @@ struct HadNucleiFemto {
      {"hHadPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
      {"hHadEta", "eta distribution; #eta(had)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
+     {"h2CPRBefore", "Close pair rejection before cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{160, -2.0f, 2.0f}, {160, -3.2f, 3.2f}}}},
+     {"h2CPRAfter", "Close pair rejection after cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{160, -2.0f, 2.0f}, {160, -3.2f, 3.2f}}}},
 
      // dE/dx
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
@@ -529,26 +546,19 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectTrackPionReference(const Ttrack& candidate)
   {
-    constexpr float pionRefPtMin = 0.14f;
-    constexpr float pionRefPtMax = 2.5f;
-    constexpr int pionRefITSInnerBarrelMin = 3;
-    constexpr int pionRefITSNClsMin = 7;
-    constexpr int pionRefTPCNClsFoundMin = 80;
-    constexpr int pionRefTPCCrossedRowsMin = 90;
-
     if (std::abs(candidate.eta()) > settingCutEta) {
       return false;
     }
 
     const float absPt = std::abs(candidate.pt());
-    if (absPt < pionRefPtMin || absPt > pionRefPtMax) {
+    if (absPt < settingPionRefPtMin || absPt > settingPionRefPtMax) {
       return false;
     }
 
-    if (candidate.itsNClsInnerBarrel() < pionRefITSInnerBarrelMin ||
-        candidate.itsNCls() < pionRefITSNClsMin ||
-        candidate.tpcNClsFound() < pionRefTPCNClsFoundMin ||
-        candidate.tpcNClsCrossedRows() < pionRefTPCCrossedRowsMin) {
+    if (candidate.itsNClsInnerBarrel() < settingPionRefITSInnerBarrelMin ||
+        candidate.itsNCls() < settingPionRefITSNClsMin ||
+        candidate.tpcNClsFound() < settingPionRefTPCNClsFoundMin ||
+        candidate.tpcNClsCrossedRows() < settingPionRefTPCCrossedRowsMin) {
       return false;
     }
 
@@ -600,6 +610,85 @@ struct HadNucleiFemto {
     }
 
     return true;
+  }
+
+  template <typename Ttrack>
+  float phiAtSpecificRadiiTPC(const Ttrack& track, float radius) const
+  {
+    const float absPt = std::abs(track.pt());
+    if (absPt <= 0.f) {
+      return 999.f;
+    }
+    const float arg = 0.3f * static_cast<float>(track.sign()) * 0.1f * mDbz * radius * 0.01f / (2.f * absPt);
+    if (std::fabs(arg) >= 1.f) {
+      return 999.f;
+    }
+    return track.phi() - std::asin(arg);
+  }
+
+  float wrapDeltaPhi(float dphi) const
+  {
+    return std::atan2(std::sin(dphi), std::cos(dphi));
+  }
+
+  template <typename Ttrack1, typename Ttrack2>
+  float averagePhiStar(const Ttrack1& track1, const Ttrack2& track2) const
+  {
+    constexpr float invalidPhiStar = 999.f;
+    float dPhiAvg = 0.f;
+    int meaningfulEntries = 0;
+    for (const auto& radius : tmpRadiiTPC) {
+      const float phi1 = phiAtSpecificRadiiTPC(track1, radius);
+      const float phi2 = phiAtSpecificRadiiTPC(track2, radius);
+      if (phi1 == invalidPhiStar || phi2 == invalidPhiStar) {
+        continue;
+      }
+      dPhiAvg += wrapDeltaPhi(phi1 - phi2);
+      meaningfulEntries++;
+    }
+    if (meaningfulEntries == 0) {
+      return invalidPhiStar;
+    }
+    return dPhiAvg / static_cast<float>(meaningfulEntries);
+  }
+
+  template <typename Ttrack1, typename Ttrack2>
+  bool isClosePair(const Ttrack1& track1, const Ttrack2& track2)
+  {
+    constexpr int closePairRadiusModePv = 0;
+    constexpr int closePairRadiusModeSpecificTpc = 2;
+    constexpr float invalidPhiStar = 999.f;
+    if (!settingEnableClosePairRejection.value) {
+      return false;
+    }
+    if (track1.sign() != track2.sign()) {
+      return false;
+    }
+
+    const float deta = track1.eta() - track2.eta();
+    const float dphiAtPV = wrapDeltaPhi(track1.phi() - track2.phi());
+    const float dphiAtSpecificRadius = wrapDeltaPhi(phiAtSpecificRadiiTPC(track1, settingClosePairSpecificRadius.value) - phiAtSpecificRadiiTPC(track2, settingClosePairSpecificRadius.value));
+    const float dphiAvg = averagePhiStar(track1, track2);
+
+    float dphiToCut = dphiAvg;
+    if (settingClosePairRadiusMode.value == closePairRadiusModePv) {
+      dphiToCut = dphiAtPV;
+    } else if (settingClosePairRadiusMode.value == closePairRadiusModeSpecificTpc) {
+      dphiToCut = dphiAtSpecificRadius;
+    }
+
+    if (dphiToCut == invalidPhiStar) {
+      return false;
+    }
+
+    mQaRegistry.fill(HIST("h2CPRBefore"), deta, dphiToCut);
+    const bool isRejected = std::pow(dphiToCut, 2.f) / std::pow(settingClosePairDeltaPhiMax.value, 2.f) +
+                              std::pow(deta, 2.f) / std::pow(settingClosePairDeltaEtaMax.value, 2.f) <
+                            1.f;
+    if (!isRejected) {
+      mQaRegistry.fill(HIST("h2CPRAfter"), deta, dphiToCut);
+    }
+    return isRejected;
   }
 
   template <typename Ttrack>
@@ -700,15 +789,15 @@ struct HadNucleiFemto {
     if (std::abs(candidate.pt()) < settingCutHadptMin || std::abs(candidate.pt()) > settingCutHadptMax)
       return false;
     // reject protons and kaons
-    if (std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin)
+    if (settingEnablePionProtonRejection && std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin)
       return false;
-    if (std::abs(candidate.tpcNSigmaKa()) < settingCutNsigTPCKaMin)
+    if (settingEnablePionKaonRejection && std::abs(candidate.tpcNSigmaKa()) < settingCutNsigTPCKaMin)
       return false;
     mQaRegistry.fill(HIST("h2NsigmaHadPrTPC"), candidate.tpcNSigmaPr());
     mQaRegistry.fill(HIST("h2NsigmaHadKaTPC"), candidate.tpcNSigmaKa());
-    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < settingCutNsigTOFPrMin)
+    if (settingEnablePionProtonRejection && candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < settingCutNsigTOFPrMin)
       return false;
-    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < settingCutNsigTOFKaMin)
+    if (settingEnablePionKaonRejection && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < settingCutNsigTOFKaMin)
       return false;
     mQaRegistry.fill(HIST("h2NsigmaHadPrTOF"), candidate.tofNSigmaPr());
     if (candidate.hasTOF()) {
@@ -967,8 +1056,9 @@ struct HadNucleiFemto {
       hadNucand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
 
-    hadNucand.kstar = o2::analysis::femtoWorld::FemtoWorldMath::getkstar(trackHad, MassHad, trackDe, o2::constants::physics::MassDeuteron);
-    hadNucand.mT = o2::analysis::femtoWorld::FemtoWorldMath::getmT(trackHad, MassHad, trackDe, o2::constants::physics::MassDeuteron);
+    const float massLightNucleusForKstarMt = settingUseProtonMassForKstarMt ? static_cast<float>(o2::constants::physics::MassProton) : static_cast<float>(o2::constants::physics::MassDeuteron);
+    hadNucand.kstar = o2::analysis::femtoWorld::FemtoWorldMath::getkstar(trackHad, MassHad, trackDe, massLightNucleusForKstarMt);
+    hadNucand.mT = o2::analysis::femtoWorld::FemtoWorldMath::getmT(trackHad, MassHad, trackDe, massLightNucleusForKstarMt);
 
     return true;
   }
@@ -1075,6 +1165,9 @@ struct HadNucleiFemto {
         if (!selectTrackHadron(track1) || !selectionPIDHadron(track1)) {
           continue;
         }
+        if (isClosePair(track0, track1)) {
+          continue;
+        }
 
         SVCand trackPair;
         trackPair.tr0Idx = track0.globalIndex();
@@ -1128,6 +1221,9 @@ struct HadNucleiFemto {
       }
       for (const auto& hadCand : hadCands) {
         if (!selectTrackHadron(hadCand) || !selectionPIDHadron(hadCand)) {
+          continue;
+        }
+        if (isClosePair(DeCand, hadCand)) {
           continue;
         }
 
