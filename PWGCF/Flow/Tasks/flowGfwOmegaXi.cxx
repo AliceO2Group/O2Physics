@@ -432,10 +432,10 @@ struct FlowGfwOmegaXi {
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexXi"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexOmega"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
-      registry.add("correction/hPhiEtaInvmassK0s", "", {HistType::kTHnSparseF, {cfgaxisPhi, cfgaxisEta, axisK0sMass, cfgaxisPtK0s}});
-      registry.add("correction/hPhiEtaInvmassLambda", "", {HistType::kTHnSparseF, {cfgaxisPhi, cfgaxisEta, axisLambdaMass, cfgaxisPtLambda}});
-      registry.add("correction/hPhiEtaInvmassXi", "", {HistType::kTHnSparseF, {cfgaxisPhi, cfgaxisEta, axisXiMass, cfgaxisPtXi}});
-      registry.add("correction/hPhiEtaInvmassOmega", "", {HistType::kTHnSparseF, {cfgaxisPhi, cfgaxisEta, axisOmegaMass, cfgaxisPtOmega}});
+      registry.add("correction/hPhiEtaInvmassK0s", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, axisK0sMass}});
+      registry.add("correction/hPhiEtaInvmassLambda", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, axisLambdaMass}});
+      registry.add("correction/hPhiEtaInvmassXi", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, axisXiMass}});
+      registry.add("correction/hPhiEtaInvmassOmega", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, axisOmegaMass}});
     }
 
     registry.add("hEventCount", "", {HistType::kTH1D, {{14, 0, 14}}});
@@ -1379,7 +1379,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiK0scorr]->Fill(v0.phi(), wacc);
             }
             registry.fill(HIST("correction/hRunNumberPhiEtaVertexK0s"), matchedPosition, v0.phi(), v0.eta(), vtxz);
-            registry.fill(HIST("correction/hPhiEtaInvmassK0s"), v0.phi(), v0.eta(), v0.mK0Short(), v0.pt());
+            registry.fill(HIST("correction/hPhiEtaInvmassK0s"), v0.phi(), v0.eta(), v0.mK0Short());
           }
         }
         if (isLambda || isALambda) {
@@ -1414,9 +1414,9 @@ struct FlowGfwOmegaXi {
             }
             registry.fill(HIST("correction/hRunNumberPhiEtaVertexLambda"), matchedPosition, v0.phi(), v0.eta(), vtxz);
             if (isLambda)
-              registry.fill(HIST("correction/hPhiEtaInvmassLambda"), v0.phi(), v0.eta(), v0.mLambda(), v0.pt());
+              registry.fill(HIST("correction/hPhiEtaInvmassLambda"), v0.phi(), v0.eta(), v0.mLambda());
             if (isALambda)
-              registry.fill(HIST("correction/hPhiEtaInvmassLambda"), v0.phi(), v0.eta(), v0.mAntiLambda(), v0.pt());
+              registry.fill(HIST("correction/hPhiEtaInvmassLambda"), v0.phi(), v0.eta(), v0.mAntiLambda());
           }
         }
       }
@@ -1651,7 +1651,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiOmegacorr]->Fill(casc.phi(), wacc);
             }
             registry.fill(HIST("correction/hRunNumberPhiEtaVertexOmega"), matchedPosition, casc.phi(), casc.eta(), vtxz);
-            registry.fill(HIST("correction/hPhiEtaInvmassOmega"), casc.phi(), casc.eta(), casc.mOmega(), casc.pt());
+            registry.fill(HIST("correction/hPhiEtaInvmassOmega"), casc.phi(), casc.eta(), casc.mOmega());
           }
         }
         if (isXi) {
@@ -1681,7 +1681,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiXicorr]->Fill(casc.phi(), wacc);
             }
             registry.fill(HIST("correction/hRunNumberPhiEtaVertexXi"), matchedPosition, casc.phi(), casc.eta(), vtxz);
-            registry.fill(HIST("correction/hPhiEtaInvmassXi"), casc.phi(), casc.eta(), casc.mXi(), casc.pt());
+            registry.fill(HIST("correction/hPhiEtaInvmassXi"), casc.phi(), casc.eta(), casc.mXi());
           }
         }
       }
