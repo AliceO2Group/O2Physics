@@ -691,7 +691,7 @@ struct FwdMuonsUpc {
 
     ROOT::Math::PxPyPzMVector p1Mc{McPart1.px(), McPart1.py(), McPart1.pz(), o2::constants::physics::MassMuon};
     ROOT::Math::PxPyPzMVector p2Mc{McPart2.px(), McPart2.py(), McPart2.pz(), o2::constants::physics::MassMuon};
-    ROOT::Math::PxPyPzMVector pMc = p2Mc + p2Mc;
+    ROOT::Math::PxPyPzMVector pMc = p1Mc + p2Mc;
 
     // compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
