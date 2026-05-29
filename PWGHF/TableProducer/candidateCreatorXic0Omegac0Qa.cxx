@@ -997,6 +997,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         kfV0 = kfV0MassConstrained;
       }
       kfV0.TransportToDecayVertex();
+      kfV0.SetPDG(pdgIdOfV0);
 
       //~~~~~~~Construct cascade with KF~~~~~~~
       const KFParticle* cascDaughters[2] = {&kfBach, &kfV0};
@@ -1023,6 +1024,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       if (kfCasc.GetNDF() <= 0 || kfCasc.GetChi2() <= 0) {
         continue;
       }
+      kfCasc.SetPDG(pdgIdOfCascade);
 
       // perform cascade building on casc_rej - only for Omega
       if constexpr (decayChannel != hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
@@ -1035,6 +1037,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         }
 
         kfCascRej.GetMass(massCascRej, sigMassCascRej);
+        kfCascRej.SetPDG(pdgIdOfCascade);
       }
 
       // Set mass constraint to cascade
@@ -1073,6 +1076,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         hCandCounter->Fill(VertexFit);
         hInvMassCharmBaryon->Fill(massCharmBaryon);
       }
+      kfCharmBaryon.SetPDG(pdgIdOfCharmBaryon);
 
       // Set production vertex
       // PV
