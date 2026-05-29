@@ -2111,9 +2111,9 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
                 if (isAmbiExtra) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
                 }
               }
             } else {
@@ -2133,9 +2133,9 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
                   }
                 }
               } else {
@@ -2154,9 +2154,9 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
                   }
                 }
               }
