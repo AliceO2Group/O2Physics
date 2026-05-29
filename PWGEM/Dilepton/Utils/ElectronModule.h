@@ -278,7 +278,7 @@ struct cfgDFeT : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
   o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "tpcNSigmaKa", "signedMassLH", "dcaLH", "cpa", "cpaXY", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "tpcNSigmaKa", "signedMassLH", "dcaLH", "cpa", "cpaXY", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -295,7 +295,7 @@ struct cfgDFeV0 : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
   o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "dcaLH", "cpa", "cpaXY", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "dcaLH", "cpa", "cpaXY", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -312,7 +312,7 @@ struct cfgDFeC : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
   o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "dcaLH", "cpa", "cpaXY", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "dcaLH", "cpa", "cpaXY", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -1665,7 +1665,7 @@ class ElectronModule
           registry.fill(HIST("SCT/eT/hMass"), eTpair.mass);
           if (eTpair.isOK && fConfigDFeT.useML) {
             o2::analysis::pwgem::dilepton::sct::candidate candidate;
-            fillCandidate(candidate, eTpair, trackParCov, mDcaInfoCov);
+            fillCandidate(candidate, eTpair, hadronParCov, mDcaInfoCov);
             candidate.ptL = trackParCov.getPt();
             candidate.signLH = electron.sign() * hadron.sign();
             candidate.signedMassLH = electron.sign() * hadron.sign() * eTpair.mass;
@@ -2167,6 +2167,7 @@ class ElectronModule
     candidate.impPar3DHinSigma = dca3DinSigmaOTF(candidate.impParXYH, candidate.impParZH, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
     candidate.signLH = 0;
     candidate.dcaLH = pair.dca2legs;
+    candidate.logChi2PCA = std::log10(std::pow(pair.dca2legs, 2));
     candidate.massLH = pair.mass;
     candidate.signedMassLH = pair.mass;
     candidate.cpa = pair.cospa;

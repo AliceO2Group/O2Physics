@@ -63,6 +63,7 @@ enum class InputFeaturesSCT : uint8_t {
   impPar3DHinSigma,
   signLH,
   dcaLH,
+  logChi2PCA,
   massLH,
   signedMassLH,
   missingPtNuPerpToFD,
@@ -109,6 +110,7 @@ struct candidate {
   // LH pair information
   int signLH{0};
   float dcaLH{0};
+  float logChi2PCA{0};
   float massLH{0};
   float signedMassLH{0};
   float missingPtNuPerpToFD{0};
@@ -162,6 +164,7 @@ class MlResponseSCT : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_TRACK(impPar3DHinSigma);
       CHECK_AND_FILL_TRACK(signLH);
       CHECK_AND_FILL_TRACK(dcaLH);
+      CHECK_AND_FILL_TRACK(logChi2PCA);
       CHECK_AND_FILL_TRACK(massLH);
       CHECK_AND_FILL_TRACK(signedMassLH);
       CHECK_AND_FILL_TRACK(missingPtNuPerpToFD);
@@ -240,6 +243,7 @@ class MlResponseSCT : public MlResponse<TypeOutputScore>
       FILL_MAP_TRACK(impPar3DHinSigma),
       FILL_MAP_TRACK(signLH),
       FILL_MAP_TRACK(dcaLH),
+      FILL_MAP_TRACK(logChi2PCA),
       FILL_MAP_TRACK(massLH),
       FILL_MAP_TRACK(signedMassLH),
       FILL_MAP_TRACK(missingPtNuPerpToFD),

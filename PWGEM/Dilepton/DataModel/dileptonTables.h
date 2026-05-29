@@ -697,7 +697,7 @@ DECLARE_SOA_COLUMN(BDTScoreNonpromptHcUINT8, bdtScoreNonpromptHcUINT8, std::vect
 DECLARE_SOA_COLUMN(BDTScoreHbUINT8, bdtScoreHbUINT8, std::vector<uint8_t>);                   //! scaling factor is 255.
 DECLARE_SOA_COLUMN(HadronType, hadronType, std::vector<uint8_t>);                             //! 0:track, 1:K0S, 2:Lambda, 3:AntiLambda, 4:XiMinus, 5:XiPlus, 6:OmegaMinus, 7:OmegaPlus
 
-DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](std::vector<uint8_t> p0, std::vector<uint8_t> p1, std::vector<uint8_t> p2, std::vector<uint8_t> p3, std::vector<uint8_t> type, int index) -> std::array<float, 5> {
+DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](gsl::span<const uint8_t> p0, gsl::span<const uint8_t> p1, gsl::span<const uint8_t> p2, gsl::span<const uint8_t> p3, gsl::span<const uint8_t> type, const int index) -> std::array<float, 5> {
   return std::array<float, 5>{
     std::nextafter(p0[index] / 255.f, std::numeric_limits<float>::infinity()),
     std::nextafter(p1[index] / 255.f, std::numeric_limits<float>::infinity()),
@@ -705,7 +705,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](std::vector<uint8_t> p0, std::
     std::nextafter(p3[index] / 255.f, std::numeric_limits<float>::infinity()),
     static_cast<float>(type[index])};
 });
-DECLARE_SOA_DYNAMIC_COLUMN(NSV, nSV, [](std::vector<uint8_t> type) -> size_t { return type.size(); });
+DECLARE_SOA_DYNAMIC_COLUMN(NSV, nSV, [](gsl::span<const uint8_t> type) -> size_t { return type.size(); });
 
 DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float); //!
