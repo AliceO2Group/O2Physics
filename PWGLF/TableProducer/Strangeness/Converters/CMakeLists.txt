@@ -9,11 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(stradautracksconverter
-                    SOURCES stradautracksconverter.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(stradautrackstpcpidconverter
                     SOURCES stradautrackstpcpidconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -26,11 +21,6 @@ o2physics_add_dpl_workflow(stradautrackstofpidconverter
 
 o2physics_add_dpl_workflow(stradautrackstofpidconverter2
                     SOURCES stradautrackstofpidconverter2.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(stradautracksextraconverter
-                    SOURCES stradautracksextraconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -79,6 +69,21 @@ o2physics_add_dpl_workflow(straevselsconverter5
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(straevselsconverter6
+                    SOURCES straevselsconverter6.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselextrasconverter
+                    SOURCES straevselextrasconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselextrasconverter2
+                    SOURCES straevselextrasconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(straevselsconverter2rawcents
                     SOURCES straevselsconverter2rawcents.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -121,11 +126,6 @@ o2physics_add_dpl_workflow(strastampsconverter
 
 o2physics_add_dpl_workflow(stracentconverter
                     SOURCES stracentconverter.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(stracentconverter2
-                    SOURCES stracentconverter2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

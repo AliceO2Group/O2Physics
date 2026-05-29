@@ -17,36 +17,36 @@
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector3Dfwd.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
-#include <TMath.h>
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector2D.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
 
-#include <cstddef>
+#include <fairlogger/Logger.h>
+
 #include <string>
 #include <tuple>
 #include <vector>
@@ -54,6 +54,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using std::array;
 using namespace o2::aod::rctsel;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
@@ -804,7 +805,7 @@ struct LfTaskLambdaSpinCorr {
   using v0Cand = soa::Filtered<v0Candidates>;
 
   // void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& V0s, dauTracks const&)
-  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Cand const& V0s, dauTracks const&)
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator const& collision, v0Cand const& V0s, dauTracks const&)
   {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
@@ -926,7 +927,7 @@ struct LfTaskLambdaSpinCorr {
   // Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
   Preslice<v0Cand> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
   // void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Candidates const& V0s, dauTracks const&)
-  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Cand const& V0s, dauTracks const&)
+  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, v0Cand const& V0s, dauTracks const&)
 
   {
 

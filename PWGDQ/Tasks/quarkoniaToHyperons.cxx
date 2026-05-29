@@ -29,51 +29,72 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
+
+#include <TFile.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include "Math/Vector3D.h"
+
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Common/Core/trackUtilities.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/MatLayerCylSet.h>
-#include <DetectorsBase/Propagator.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Array2D.h>
-#include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include <Math/Vector3Dfwd.h>
-#include <TH1.h>
-#include <TMath.h>
+#include <Math/Vector4D.h>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TVector3.h>
+#include <TProfile.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -139,7 +160,7 @@ struct QuarkoniaToHyperons {
   Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
-  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position (cm)"};
+  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
 
   Configurable<bool> buildK0sK0sPairs{"buildK0sK0sPairs", false, "Build K0s K0s from charmonia decay"};
   Configurable<bool> buildLaLaBarPairs{"buildLaLaBarPairs", false, "Build Lambda antiLambda from charmonia decay"};
@@ -368,7 +389,7 @@ struct QuarkoniaToHyperons {
     ConfigurableAxis axisHypPairPhi{"axisHypPairPhi", {180, 0.0f, constants::math::TwoPI}, "Hyperon pair azimuthal angle (rad)"};
   } axes;
 
-  o2::base::MatLayerCylSet* lut; // material LUT for DCA fitter
+  o2::base::MatLayerCylSet* lut;       // material LUT for DCA fitter
   o2::vertexing::DCAFitterN<2> fitter;
 
   // helper object
@@ -378,7 +399,7 @@ struct QuarkoniaToHyperons {
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // For manual sliceBy
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   enum Selection : uint64_t { selCosPA = 0,
                               selRadius,
@@ -794,10 +815,10 @@ struct QuarkoniaToHyperons {
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAPair", "h3dMassXiXiBarVsDCAPair", kTH3F, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairCosPA", "h3dMassXiXiBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle", "h3dMassXiXiBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/XiXiBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass}); 
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass}); 
+        histos.add("QA/LaLaBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/LaLaBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildOmOmBarPairs) {
@@ -890,8 +911,8 @@ struct QuarkoniaToHyperons {
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairOpAngle", "h3dMassOmOmBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairEta", "h3dMassOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairPhi", "h3dMassOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/OmOmBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/LaLaBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/LaLaBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
 
@@ -1061,13 +1082,11 @@ struct QuarkoniaToHyperons {
     std::array<float, 3> antiHyperonMomentum = {0.0f, 0.0f, 0.0f};
     float DCADau = -999.f;
     float CosPA = -1.f;
-    float OpAngle = -999.f;
-    float Eta() const
-    {
+    float OpAngle = -999.f; 
+    float Eta() const {
       return RecoDecay::eta(std::array{hyperonMomentum[0] + antiHyperonMomentum[0], hyperonMomentum[1] + antiHyperonMomentum[1], hyperonMomentum[2] + antiHyperonMomentum[2]});
     }
-    float Phi() const
-    {
+    float Phi() const {
       return RecoDecay::phi(std::array{hyperonMomentum[0] + antiHyperonMomentum[0], hyperonMomentum[1] + antiHyperonMomentum[1]});
     }
   };
@@ -1122,7 +1141,7 @@ struct QuarkoniaToHyperons {
     TVector3 hyp2Momentum(pairInfo.antiHyperonMomentum[0], pairInfo.antiHyperonMomentum[1], pairInfo.antiHyperonMomentum[2]);
     pairInfo.OpAngle = hyp1Momentum.Angle(hyp2Momentum);
 
-    if (d < 1e-5f) {                                 // Parallel or nearly parallel lines
+    if (d < 1e-5f) {                  // Parallel or nearly parallel lines
       pairInfo.X = pairInfo.Y = pairInfo.Z = -999.f; // should we use another dummy value? Perhaps 999.f?
       return pairInfo;
     }
@@ -1201,6 +1220,7 @@ struct QuarkoniaToHyperons {
 
     return pairInfo;
   }
+
 
   template <typename TCollision>
   bool isEventAccepted(TCollision collision, bool fillHists)
@@ -2497,7 +2517,7 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
   {
     // Custom grouping
     v0sGrouped.clear();
@@ -2674,7 +2694,7 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     // Custom grouping
     v0sGrouped.clear();

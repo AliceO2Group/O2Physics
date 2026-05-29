@@ -16,23 +16,24 @@
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/cascqaanalysis.h"
 
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/runDataProcessing.h>
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include <TPDGCode.h>
 
-#include <cmath>
-#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -89,7 +90,7 @@ struct FlowEfficiencyCasc {
   AxisSpec axisK0sMass = {400, 0.4f, 0.6f, "Inv. Mass (GeV)"};
   AxisSpec axisLambdaMass = {160, 1.08f, 1.16f, "Inv. Mass (GeV)"};
 
-  using MyCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents>;
+  using MyCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCents>;
   using MyMcCollisions = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
   using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
   using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
@@ -345,7 +346,7 @@ struct FlowEfficiencyCasc {
   }
   PROCESS_SWITCH(FlowEfficiencyCasc, processRec, "process reconstructed information", true);
 
-  void processGen(MyMcCollisions::iterator const&, soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels>> const& coll, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMCs, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MCs)
+  void processGen(MyMcCollisions::iterator const&, soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCollLabels>> const& coll, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMCs, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MCs)
   {
     registry.fill(HIST("mcEventCounter"), 0.5);
     int rectracknum = 0;
