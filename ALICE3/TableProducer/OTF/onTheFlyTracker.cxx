@@ -23,11 +23,11 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
-#include "GeometryContainer.h"
-
 #include "ALICE3/Core/DetLayer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/FlatTrackSmearer.h"
+#include "ALICE3/Core/GeometryContainer.h"
+#include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFMCParticle.h"
