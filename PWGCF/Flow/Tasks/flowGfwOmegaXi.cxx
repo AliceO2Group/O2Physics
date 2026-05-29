@@ -970,8 +970,7 @@ struct FlowGfwOmegaXi {
         if (weight_nua == 1 && checkleft == 1 && checkright == 1)
           return false;
       }
-    }
-    else
+    } else
       weight_nua = 1;
     return true;
   }
