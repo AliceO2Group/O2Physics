@@ -42,7 +42,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH2.h>
-#include <TH3.h>
 #include <TMath.h>
 #include <TRandom3.h>
 #include <TString.h>

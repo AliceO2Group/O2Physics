@@ -63,18 +63,19 @@ enum class InputFeaturesSCT : uint8_t {
   impPar3DHinSigma,
   signLH,
   dcaLH,
+  logChi2PCA,
   massLH,
   signedMassLH,
   missingPtNuPerpToFD,
   correctedMass,
   cpa,
   cpaXY,
-  impParXY,
-  impParZ,
-  impPar3D,
-  impParXYinSigma,
-  impParZinSigma,
-  impPar3DinSigma,
+  // impParXY,
+  // impParZ,
+  // impPar3D,
+  // impParXYinSigma,
+  // impParZinSigma,
+  // impPar3DinSigma,
   decayLengthXY,
   decayLengthZ,
   decayLength3D,
@@ -109,18 +110,19 @@ struct candidate {
   // LH pair information
   int signLH{0};
   float dcaLH{0};
+  float logChi2PCA{0};
   float massLH{0};
   float signedMassLH{0};
   float missingPtNuPerpToFD{0};
   float correctedMass{0};
   float cpa{0};
   float cpaXY{0};
-  float impParXY{0};
-  float impParZ{0};
-  float impPar3D{0};
-  float impParXYinSigma{0};
-  float impParZinSigma{0};
-  float impPar3DinSigma{0};
+  // float impParXY{0};
+  // float impParZ{0};
+  // float impPar3D{0};
+  // float impParXYinSigma{0};
+  // float impParZinSigma{0};
+  // float impPar3DinSigma{0};
   float decayLengthXY{0};
   float decayLengthZ{0};
   float decayLength3D{0};
@@ -162,18 +164,19 @@ class MlResponseSCT : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_TRACK(impPar3DHinSigma);
       CHECK_AND_FILL_TRACK(signLH);
       CHECK_AND_FILL_TRACK(dcaLH);
+      CHECK_AND_FILL_TRACK(logChi2PCA);
       CHECK_AND_FILL_TRACK(massLH);
       CHECK_AND_FILL_TRACK(signedMassLH);
       CHECK_AND_FILL_TRACK(missingPtNuPerpToFD);
       CHECK_AND_FILL_TRACK(correctedMass);
       CHECK_AND_FILL_TRACK(cpa);
       CHECK_AND_FILL_TRACK(cpaXY);
-      CHECK_AND_FILL_TRACK(impParXY);
-      CHECK_AND_FILL_TRACK(impParZ);
-      CHECK_AND_FILL_TRACK(impPar3D);
-      CHECK_AND_FILL_TRACK(impParXYinSigma);
-      CHECK_AND_FILL_TRACK(impParZinSigma);
-      CHECK_AND_FILL_TRACK(impPar3DinSigma);
+      // CHECK_AND_FILL_TRACK(impParXY);
+      // CHECK_AND_FILL_TRACK(impParZ);
+      // CHECK_AND_FILL_TRACK(impPar3D);
+      // CHECK_AND_FILL_TRACK(impParXYinSigma);
+      // CHECK_AND_FILL_TRACK(impParZinSigma);
+      // CHECK_AND_FILL_TRACK(impPar3DinSigma);
       CHECK_AND_FILL_TRACK(decayLengthXY);
       CHECK_AND_FILL_TRACK(decayLengthZ);
       CHECK_AND_FILL_TRACK(decayLength3D);
@@ -240,18 +243,19 @@ class MlResponseSCT : public MlResponse<TypeOutputScore>
       FILL_MAP_TRACK(impPar3DHinSigma),
       FILL_MAP_TRACK(signLH),
       FILL_MAP_TRACK(dcaLH),
+      FILL_MAP_TRACK(logChi2PCA),
       FILL_MAP_TRACK(massLH),
       FILL_MAP_TRACK(signedMassLH),
       FILL_MAP_TRACK(missingPtNuPerpToFD),
       FILL_MAP_TRACK(correctedMass),
       FILL_MAP_TRACK(cpa),
       FILL_MAP_TRACK(cpaXY),
-      FILL_MAP_TRACK(impParXY),
-      FILL_MAP_TRACK(impParZ),
-      FILL_MAP_TRACK(impPar3D),
-      FILL_MAP_TRACK(impParXYinSigma),
-      FILL_MAP_TRACK(impParZinSigma),
-      FILL_MAP_TRACK(impPar3DinSigma),
+      // FILL_MAP_TRACK(impParXY),
+      // FILL_MAP_TRACK(impParZ),
+      // FILL_MAP_TRACK(impPar3D),
+      // FILL_MAP_TRACK(impParXYinSigma),
+      // FILL_MAP_TRACK(impParZinSigma),
+      // FILL_MAP_TRACK(impPar3DinSigma),
       FILL_MAP_TRACK(decayLengthXY),
       FILL_MAP_TRACK(decayLengthZ),
       FILL_MAP_TRACK(decayLength3D),

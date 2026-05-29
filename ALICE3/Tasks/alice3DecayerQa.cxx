@@ -29,8 +29,10 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
 #include <TPDGCode.h>
 
+#include <cstddef>
 #include <vector>
 
 using namespace o2;

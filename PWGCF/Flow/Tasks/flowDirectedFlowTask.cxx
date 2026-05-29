@@ -163,8 +163,8 @@ struct flowDirectedFlowTask {
     histos.add("hQxCvscent", "Qx C vs centrality", kTH2F, {{centAxis}, {qAxis}});
     histos.add("hQyCvscent", "Qy C vs centrality", kTH2F, {{centAxis}, {qAxis}});
 
-    histos.add("hpResCosAC", "cos(#Psi_{A}-#Psi_{C}) vs centrality", kTH2F, {{centAxis}, {resAxis}});
-    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH2F, {{centAxis}, {resAxis}});
+    histos.add("hpResCosAC", "cos(#Psi_{A}-#Psi_{C}) vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
+    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
     histos.add("hpQxAQxC", "QxA QxC", kTH2F, {{centAxis}, {resAxis}});
     histos.add("hpQyAQyC", "QyA QyC", kTH2F, {{centAxis}, {resAxis}});
     histos.add("hpQxAQyC", "QxA QyC", kTH2F, {{centAxis}, {resAxis}});
@@ -524,8 +524,8 @@ struct flowDirectedFlowTask {
     float dotAC = qxA * qxC + qyA * qyC;
     float resDot = dotAC / (magA * magC);
 
-    histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC));
-    histos.fill(HIST("hpResDotAC"), centrality, resDot);
+    histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC), q1);
+    histos.fill(HIST("hpResDotAC"), centrality, resDot, q1);
     histos.fill(HIST("hpQxAQxC"), centrality, qxA * qxC);
     histos.fill(HIST("hpQyAQyC"), centrality, qyA * qyC);
     histos.fill(HIST("hpQxAQyC"), centrality, qxA * qyC);
