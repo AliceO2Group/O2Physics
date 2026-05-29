@@ -34,6 +34,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TRandom.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -57,6 +59,7 @@ struct LongrangecorrDerived {
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
+    Configurable<double> cfgSampleSize{"cfgSampleSize", 10, "Sample size for bootstrapping"};
     Configurable<int> cfgPidMask{"cfgPidMask", 0, "Selection bitmask for the TPC particle"};
     Configurable<int> cfgV0Mask{"cfgV0Mask", 0, "Selection bitmask for the V0 particle"};
     Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
@@ -80,7 +83,6 @@ struct LongrangecorrDerived {
     ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
     ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
-    ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt assoc axis for histograms"};
     ConfigurableAxis axisVtxZ{"axisVtxZ", {40, -20, 20}, "vertex axis"};
     ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {96, 3.5, 4.9}, "#eta assoc axis"};
     ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -91,6 +93,7 @@ struct LongrangecorrDerived {
     ConfigurableAxis axisChannel{"axisChannel", {208, 0, 208}, "FT0 channel"};
     ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
     ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
+    ConfigurableAxis axisSample{"axisSample", {10, 0, 10}, "sample axis for histograms"};
 
     ConfigurableAxis axisTPCNClsFound{"axisTPCNClsFound", {200, -0.5, 199.5}, "TPC Cluster axis"};
     ConfigurableAxis axisTPCNClsCrossedRows{"axisTPCNClsCrossedRows", {200, -0.5, 199.5}, "TPC NCrossedRow axis"};
@@ -155,10 +158,10 @@ struct LongrangecorrDerived {
 
   void init(InitContext const&)
   {
-    std::vector<AxisSpec> corrAxis = {{cfgAxis.axisVtxZ, "z-vtx (cm)"},
+    std::vector<AxisSpec> corrAxis = {{cfgAxis.axisSample, "Sample"},
+                                      {cfgAxis.axisVtxZ, "z-vtx (cm)"},
                                       {cfgAxis.axisMultiplicity, "multiplicity"},
                                       {cfgAxis.axisPtTrigger, "p_{T} (GeV/c)"},
-                                      {cfgAxis.axisPtAssoc, "p_{T} (GeV/c)"},
                                       {cfgAxis.axisDeltaPhi, "#Delta#varphi (rad)"},
                                       {cfgAxis.axisDeltaEta, "#Delta#eta"}};
     std::vector<AxisSpec> effAxis = {{cfgAxis.axisVertexEfficiency, "z-vtx (cm)"},
@@ -182,14 +185,13 @@ struct LongrangecorrDerived {
     histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaTrig});
     histos.add("Trig_pt", "Trig_pt", kTH1D, {cfgAxis.axisPtTrigger});
     histos.add("Trig_invMass", "Trig_invMass", kTH1D, {cfgAxis.axisInvMassQA});
-    histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
+    histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {cfgAxis.axisSample, cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
     histos.add("Trig_amp", "Trig_amp", kTH1D, {cfgAxis.axisAmplitude});
     histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
     histos.add("Assoc_eta", "Assoc_eta", kTH1D, {cfgAxis.axisEtaAssoc});
     histos.add("Assoc_phi", "Assoc_phi", kTH1D, {cfgAxis.axisPhi});
     histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaAssoc});
-    histos.add("Assoc_pt", "Assoc_pt", kTH1D, {cfgAxis.axisPtAssoc});
     histos.add("Assoc_amp", "Assoc_amp", kTH1D, {cfgAxis.axisAmplitude});
     histos.add("Channel_vs_Assoc_amp", "Channel_vs_Assoc_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
@@ -285,8 +287,6 @@ struct LongrangecorrDerived {
     if constexpr (requires { track.channelID(); }) {
       histos.fill(HIST("Assoc_amp"), track.amplitude());
       histos.fill(HIST("Channel_vs_Assoc_amp"), track.channelID(), track.amplitude());
-    } else {
-      histos.fill(HIST("Assoc_pt"), track.pt());
     }
     if constexpr (requires { track.nClusters(); }) {
       histos.fill(HIST("MFTNClusters"), track.nClusters());
@@ -317,6 +317,7 @@ struct LongrangecorrDerived {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
+    int fSampleIndex = gRandom->Uniform(0, cfgSel.cfgSampleSize);
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       if constexpr (requires { triggerTrack.channelID(); }) {
@@ -338,11 +339,11 @@ struct LongrangecorrDerived {
       if (!mixing) {
         fillTrigTrackQA(triggerTrack);
         if constexpr (requires { triggerTrack.channelID(); }) {
-          histos.fill(HIST("Trig_hist"), vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl);
         } else if constexpr (requires { triggerTrack.invMass(); }) {
-          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl);
         } else {
-          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
         }
       }
       for (auto const& assoTrack : assocs) {
@@ -365,11 +366,11 @@ struct LongrangecorrDerived {
           histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
         }
         if constexpr (requires { triggerTrack.channelID(); }) {
-          target->getPairHist()->Fill(step, vz, multiplicity, 1.0, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
         } else if constexpr (requires { triggerTrack.invMass(); }) {
-          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl);
         } else {
-          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
         }
       } // associated tracks
     } // trigger tracks
