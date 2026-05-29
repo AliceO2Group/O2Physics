@@ -664,6 +664,7 @@ struct FlattenictyPikp {
           registryData.add("Tracks/postSel/hPt", "", kTH1F, {ptAxis});
           registryData.add("Tracks/postSel/hPhi", "", kTH1F, {phiAxis});
           registryData.add("Tracks/postSel/hEta", "", kTH1F, {etaAxis});
+          registryData.add("Tracks/postSel/hTpcInnerParamVsP", ";Global track p (GeV/#it{c});Track p at inner wall of the TPC (GeV/#it{c});", kTH2F, {pAxis, pAxis});
           registryData.add("Tracks/postSel/hDCAXYvsPt", "", kTH2F, {ptAxis, dcaXYAxis});
           registryData.add("Tracks/postSel/hDCAZvsPt", "", kTH2F, {ptAxis, dcaZAxis});
           // tpc
@@ -721,6 +722,8 @@ struct FlattenictyPikp {
       registryData.addClone("Tracks/V0qa/pi/La/", "Tracks/V0qa/pr/La/");
       registryData.addClone("Tracks/V0qa/pi/ALa/", "Tracks/V0qa/pr/ALa/");
 
+      // charged pT
+      registryData.add({"Tracks/all/hFlatVsPt", "; #eta; mult; flat; #it{p} (GeV/#it{c}); #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, ptAxis}}});
       // dEdx PID
       registryData.add({"Tracks/all/hdEdx", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
       // Clean samples
@@ -1080,11 +1083,14 @@ struct FlattenictyPikp {
       // PID TPC dEdx
       if (cfgFillChrgType) {
         if (track.sign() * track.p() > Cnull) {
+          registryData.fill(HIST(Cprefix) + HIST(Ccharge[kPos]) + HIST("hFlatVsPt"), track.eta(), mult, flat, track.p(), track.pt());
           registryData.fill(HIST(Cprefix) + HIST(Ccharge[kPos]) + HIST("hdEdx"), track.eta(), mult, flat, track.p(), dEdx);
         } else {
+          registryData.fill(HIST(Cprefix) + HIST(Ccharge[kNeg]) + HIST("hFlatVsPt"), track.eta(), mult, flat, track.p(), track.pt());
           registryData.fill(HIST(Cprefix) + HIST(Ccharge[kNeg]) + HIST("hdEdx"), track.eta(), mult, flat, track.p(), dEdx);
         }
       } else {
+        registryData.fill(HIST(Cprefix) + HIST(Ccharge[kAll]) + HIST("hFlatVsPt"), track.eta(), mult, flat, track.p(), track.pt());
         registryData.fill(HIST(Cprefix) + HIST(Ccharge[kAll]) + HIST("hdEdx"), track.eta(), mult, flat, track.p(), dEdx);
       }
 
@@ -1657,6 +1663,7 @@ struct FlattenictyPikp {
       registryData.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hPt"), track.pt());
       registryData.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hPhi"), track.phi());
       registryData.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hEta"), track.eta());
+      registryData.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hTpcInnerParamVsP"), track.tpcInnerParam(), track.p());
       registryData.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hDCAXYvsPt"), track.pt(), track.dcaXY());
       registryData.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hDCAZvsPt"), track.pt(), track.dcaZ());
 

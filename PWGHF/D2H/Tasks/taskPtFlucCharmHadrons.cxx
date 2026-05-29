@@ -186,7 +186,7 @@ struct HfTaskPtFlucCharmHadrons {
 
     // charm-bulk correlations (optional)
     if (saveCharmBulkCorrelations) {
-      registry.add("hCharmBulkCorrelations", "Charm-bulk correlations", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, aMlOne, aMlTwo, aCandEta, aMPtTrkA, aMPtTrkB, aPtCandProduct}, true);
+      registry.add("hCharmBulkCorrelations", "Charm-bulk correlations", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, aMlOne, aMlTwo, aCandEta, aMPtTrkA, aMPtTrkB, aPtCandProduct, aNTrkA, aNTrkB}, true);
       registry.add("hMeanPtTrkAllColls", "Mean pT of charged hadrons for all collisions", HistType::kTHnSparseF, {aCent, aMPtTrkA, aMPtTrkB, aPtTrkProduct, aNTrkA, aNTrkB}, true);
     }
 
@@ -250,7 +250,7 @@ struct HfTaskPtFlucCharmHadrons {
 
   /// remove candidate daughters from the mean pT of tracks in A and B (if they are in the respective subevent)
   template <DecayChannel Channel, typename CandT>
-  float removeDaughtersFromMeanPt(const CandT& cand, float rawMeanPt, int n, const std::vector<int>& trkIDs)
+  std::pair<float, int> removeDaughtersFromMeanPt(const CandT& cand, float rawMeanPt, int n, const std::vector<int>& trkIDs)
   {
     int removedCount = 0;
     float removedSumPt = 0.f;
@@ -270,9 +270,9 @@ struct HfTaskPtFlucCharmHadrons {
     }
     if (removedCount > 0) {
       double totalSum = static_cast<double>(rawMeanPt) * n;
-      return static_cast<float>((totalSum - removedSumPt) / (n - removedCount));
+      return {static_cast<float>((totalSum - removedSumPt) / (n - removedCount)), n - removedCount};
     }
-    return rawMeanPt;
+    return {rawMeanPt, n};
   }
 
   // ---------------------------------------------------------------------------
@@ -420,12 +420,14 @@ struct HfTaskPtFlucCharmHadrons {
         float candPtProduct{0.f};
         float meanPtA{0.f};
         float meanPtB{0.f};
+        int nATrk{nA};
+        int nBTrk{nB};
         if (eta > etaAMin.value && eta < etaAMax.value) {
-          meanPtB = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtB, nB, trkIDB);
+          std::tie(meanPtB, nBTrk) = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtB, nB, trkIDB);
           meanPtA = RawMeanPtA; // no need to remove daughters from A if candidate is in A
           candPtProduct = pt * meanPtB;
         } else if (eta > etaBMin.value && eta < etaBMax.value) {
-          meanPtA = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtA, nA, trkIDA);
+          std::tie(meanPtA, nATrk) = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtA, nA, trkIDA);
           meanPtB = RawMeanPtB; // no need to remove daughters from B if candidate is in B
           candPtProduct = pt * meanPtA;
         }
@@ -434,7 +436,7 @@ struct HfTaskPtFlucCharmHadrons {
         auto [invMass, sign] = getCandMassAndSign<Channel, decltype(cand), T1, Trk>(cand);
 
         // fill charm-bulk correlation thnsparse
-        registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct);
+        registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct, nATrk, nBTrk);
       }
     } else {
       int nDcandTotA = 0;

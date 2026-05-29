@@ -414,7 +414,7 @@ void VarManager::FillEfficiency(float* values)
     }
     TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
     // Get the bin indices for the efficiency histogram
-    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPairPt]);
+    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
     binPt = (binPt == 0 ? 1 : binPt);
     binPt = (binPt > efficiencyHist->GetXaxis()->GetNbins() ? efficiencyHist->GetXaxis()->GetNbins() : binPt);
     int binCent = efficiencyHist->GetYaxis()->FindBin(values[kCentFT0C]);
