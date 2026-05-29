@@ -534,11 +534,11 @@ struct HfTaskDstarToD0Pi {
   /// @tparam T1 type of the candidate table
   /// @tparam applyMl a boolean to apply ML or not
   /// @param candsMcRecSel reconstructed candidates with selection flag
-  /// @param rowsMcPartilces generated particles  table
+  // /// @param rowsMcPartilces generated particles  table
   template <bool ApplyMl, typename T1>
-  void runMcRecTaskDstar(T1 const& candsMcRecSel, CandDstarMcGen const& rowsMcPartilces)
+  void runMcRecTaskDstar(T1 const& candsMcRecSel /*, CandDstarMcGen const& rowsMcPartilces*/)
   {
-    int8_t signDstar = 0;
+    // int8_t signDstar = 0;
     // MC at Reconstruction level
     for (const auto& candDstarMcRec : candsMcRecSel) {
       auto ptDstarRecSig = candDstarMcRec.pt();
@@ -551,10 +551,11 @@ struct HfTaskDstarToD0Pi {
       auto nPVContributors = collision.numContrib();                                                              // number of PV contributors
       if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // if MC matching is successful at Reconstruction Level
         // get MC Mother particle
-        auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
-        auto indexMother = RecoDecay::getMother(rowsMcPartilces, prong0.template mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
-        auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
-        auto ptMother = particleMother.pt();
+        // auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
+        // auto indexMother = RecoDecay::getMother(rowsMcPartilces, prong0.template mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
+        // auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
+        // auto ptMother = particleMother.pt();
+        auto ptMother = candDstarMcRec.ptBhadMotherPart();
         int const pdgBhadMother = candDstarMcRec.pdgBhadMotherPart();
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
         if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
@@ -876,7 +877,7 @@ struct HfTaskDstarToD0Pi {
                      aod::TracksWMc const&)
   {
     rowsSelectedCandDstarMcRec.bindExternalIndices(&collisions);
-    runMcRecTaskDstar<false, Partition<CandDstarWSelFlagMcRec>>(rowsSelectedCandDstarMcRec, rowsMcPartilces);
+    runMcRecTaskDstar<false, Partition<CandDstarWSelFlagMcRec>>(rowsSelectedCandDstarMcRec /*, rowsMcPartilces*/);
     runMcGenTaskDstar(collisions, rowsMcPartilces);
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processMcWoMl, "Process MC Data without ML", false);
@@ -887,7 +888,7 @@ struct HfTaskDstarToD0Pi {
                     aod::TracksWMc const&)
   {
     rowsSelectedCandDstarMcRecWMl.bindExternalIndices(&collisions);
-    runMcRecTaskDstar<true, Partition<CandDstarWSelFlagWMlMcRec>>(rowsSelectedCandDstarMcRecWMl, rowsMcPartilces);
+    runMcRecTaskDstar<true, Partition<CandDstarWSelFlagWMlMcRec>>(rowsSelectedCandDstarMcRecWMl /*, rowsMcPartilces*/);
     runMcGenTaskDstar(collisions, rowsMcPartilces);
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processMcWML, "Process MC Data with ML", false);
