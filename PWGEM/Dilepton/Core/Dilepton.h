@@ -94,6 +94,11 @@ using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = o2::soa::Filtered<MyElectrons>;
 using FilteredMyElectron = FilteredMyElectrons::iterator;
 
+using MyElectronsSCT = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronsBDTSCT>;
+using MyElectronSCT = MyElectronsSCT::iterator;
+using FilteredMyElectronsSCT = o2::soa::Filtered<MyElectronsSCT>;
+using FilteredMyElectronSCT = FilteredMyElectronsSCT::iterator;
+
 using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived>;
 using MyMuon = MyMuons::iterator;
 using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
@@ -102,7 +107,7 @@ using FilteredMyMuon = FilteredMyMuons::iterator;
 using MyEMH_electron = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>;
 using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
 
-template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, typename TEMH, typename... Types>
+template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, bool withSCT, typename TEMH, typename... Types>
 struct Dilepton {
 
   // Configurables
@@ -257,15 +262,20 @@ struct Dilepton {
     o2::framework::Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
 
     // configuration for PID ML
-    o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
-    o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-    o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20.f}, "Bin limits for ML application"};
-    o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.98, 0.98, 0.9, 0.9, 0.95, 0.95, 0.8, 0.8}, "ML cuts per bin"};
-    o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
-    o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
-    o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
-    o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-    o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+    // o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
+    // o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
+    o2::framework::Configurable<std::vector<double>> binsMLPID{"binsMLPID", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20.f}, "Bin limits for ML application"};
+    o2::framework::Configurable<std::vector<double>> cutsMLPID{"cutsMLPID", std::vector<double>{0.97, 0.97, 0.97, 0.8, 0.95, 0.95, 0.8, 0.8}, "ML cuts per bin"};
+    // o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
+    // o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
+    // o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+    // o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    // o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+
+    o2::framework::Configurable<std::vector<double>> binsMLSCT{"binsMLSCT", std::vector<double>{0.1, 0.4, 0.6, 0.8, 1, 2, 4, 20.f}, "Bin limits for ML application"};
+    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_prompt_hc{"cutsMLSCTeT_prompt_hc", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for prompt hc"};
+    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_nonprompt_hc{"cutsMLSCTeT_nonprompt_hc", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for nonprompt hc"};
+    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_hb{"cutsMLSCTeT_hb", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for hb"};
   } dielectroncuts;
 
   DimuonCut fDimuonCut;
@@ -328,8 +338,8 @@ struct Dilepton {
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   // o2::ccdb::CcdbApi ccdbApi;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
+  int mRunNumber{0};
+  float d_bz{0};
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   // static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
@@ -793,14 +803,14 @@ struct Dilepton {
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       std::vector<float> binsML{};
-      binsML.reserve(dielectroncuts.binsMl.value.size());
-      for (size_t i = 0; i < dielectroncuts.binsMl.value.size(); i++) {
-        binsML.emplace_back(dielectroncuts.binsMl.value[i]);
+      binsML.reserve(dielectroncuts.binsMLPID.value.size());
+      for (size_t i = 0; i < dielectroncuts.binsMLPID.value.size(); i++) {
+        binsML.emplace_back(dielectroncuts.binsMLPID.value[i]);
       }
       std::vector<float> thresholdsML{};
-      thresholdsML.reserve(dielectroncuts.cutsMl.value.size());
-      for (size_t i = 0; i < dielectroncuts.cutsMl.value.size(); i++) {
-        thresholdsML.emplace_back(dielectroncuts.cutsMl.value[i]);
+      thresholdsML.reserve(dielectroncuts.cutsMLPID.value.size());
+      for (size_t i = 0; i < dielectroncuts.cutsMLPID.value.size(); i++) {
+        thresholdsML.emplace_back(dielectroncuts.cutsMLPID.value[i]);
       }
       fDielectronCut.SetMLThresholds(binsML, thresholdsML);
     } // end of PID ML
@@ -835,6 +845,26 @@ struct Dilepton {
     fDimuonCut.SetMaxdPtdEtadPhiwrtMCHMID(dimuoncuts.cfg_max_relDPt_wrt_matchedMCHMID, dimuoncuts.cfg_max_DEta_wrt_matchedMCHMID, dimuoncuts.cfg_max_DPhi_wrt_matchedMCHMID); // this is relevant for global muons
     fDimuonCut.SetMFTHitMap(dimuoncuts.requireMFTHitMap, dimuoncuts.requiredMFTDisks);
     fDimuonCut.EnableTTCA(dimuoncuts.enableTTCA);
+  }
+
+  template <typename TTrack>
+  bool foundHFSV(TTrack const& track)
+  {
+    int ptbin = lower_bound(dielectroncuts.binsMLSCT.value.begin(), dielectroncuts.binsMLSCT.value.end(), track.pt()) - dielectroncuts.binsMLSCT.value.begin() - 1;
+    if (ptbin < 0) {
+      ptbin = 0;
+    } else if (static_cast<int>(dielectroncuts.binsMLSCT.value.size()) - 2 < ptbin) {
+      ptbin = static_cast<int>(dielectroncuts.binsMLSCT.value.size()) - 2;
+    }
+
+    for (int i = 0; i < static_cast<int>(track.nSV()); i++) {
+      auto probaSCT = track.probaSCT(i);
+      // LOGF(info, "track.globalIndex() = %d, pt = %f, i = %d, probaSCT[0] = %f, probaSCT[1] = %f, probaSCT[2] = %f, probaSCT[3] = %f", track.globalIndex(), track.pt(), i, probaSCT[0], probaSCT[1], probaSCT[2], probaSCT[3]);
+      if (probaSCT[1] > dielectroncuts.cutsMLSCTeT_prompt_hc.value[ptbin] || probaSCT[2] > dielectroncuts.cutsMLSCTeT_nonprompt_hc.value[ptbin] || probaSCT[3] > dielectroncuts.cutsMLSCTeT_hb.value[ptbin]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   template <typename TQvectors>
@@ -886,6 +916,11 @@ struct Dilepton {
           }
         } else { // cut-based
           if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
+            return false;
+          }
+        }
+        if constexpr (withSCT) {
+          if (foundHFSV(t1) || foundHFSV(t2)) {
             return false;
           }
         }
@@ -1244,7 +1279,8 @@ struct Dilepton {
   using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
 
   o2::framework::SliceCache cache;
-  o2::framework::Preslice<MyElectrons> perCollision_electron = o2::aod::emprimaryelectron::emeventId;
+  // o2::framework::Preslice<MyElectrons> perCollision_electron = o2::aod::emprimaryelectron::emeventId;
+  o2::framework::Preslice<o2::aod::EMPrimaryElectronEMEventIds> perCollision_electron = o2::aod::emprimaryelectron::emeventId;
   o2::framework::expressions::Filter trackFilter_electron = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc;
   o2::framework::expressions::Filter pidFilter_electron = dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl;
   o2::framework::expressions::Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), true, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
@@ -1266,10 +1302,14 @@ struct Dilepton {
                                                                    ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) <= static_cast<uint8_t>(0), true),
                                                                  o2::aod::emprimaryelectron::pfb >= static_cast<uint8_t>(0));
 
-  o2::framework::Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
-  o2::framework::Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
+  // o2::framework::Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
+  // o2::framework::Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
+  using TElectronType = std::tuple_element_t<0, std::tuple<Types...>>;
+  o2::framework::Partition<TElectronType> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
+  o2::framework::Partition<TElectronType> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
 
-  o2::framework::Preslice<MyMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;
+  // o2::framework::Preslice<MyMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;
+  o2::framework::Preslice<o2::aod::EMPrimaryMuonEMEventIds> perCollision_muon = o2::aod::emprimarymuon::emeventId;
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
   o2::framework::expressions::Filter prefilter_derived_muon = ifnode(dimuoncuts.cfg_apply_cuts_from_prefilter_derived.node() && dimuoncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
@@ -1545,6 +1585,13 @@ struct Dilepton {
           return false;
         }
       }
+
+      if constexpr (withSCT) {
+        if (foundHFSV(t1) || foundHFSV(t2)) {
+          return false;
+        }
+      }
+
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.IsSelectedTrack(t1) || !cut.IsSelectedTrack(t2)) {
         return false;

@@ -25,5 +25,5 @@ using namespace o2::framework;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, MyEMH_muon, FilteredMyMuons>>(cfgc, TaskName{"dimuon"})};
+    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, false, MyEMH_muon, FilteredMyMuons>>(cfgc, TaskName{"dimuon"})};
 }

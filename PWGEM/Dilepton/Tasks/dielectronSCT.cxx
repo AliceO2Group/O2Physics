@@ -25,5 +25,5 @@ using namespace o2::framework;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, false, MyEMH_electron, FilteredMyElectrons>>(cfgc, TaskName{"dielectron"})};
+    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, true, MyEMH_electron, FilteredMyElectronsSCT>>(cfgc, TaskName{"dielectron-sct"})};
 }
