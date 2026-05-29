@@ -60,8 +60,11 @@ DECLARE_SOA_COLUMN(EnergyZNC, energyZNC, float);
 DECLARE_SOA_COLUMN(AmplitudeFV0A, amplitudeFV0A, float);
 DECLARE_SOA_COLUMN(Occupancy, occupancy, float);
 DECLARE_SOA_COLUMN(UPCMode, upcMode, float);
+DECLARE_SOA_COLUMN(PVz, pvz, float);
 DECLARE_SOA_COLUMN(PtSideA, ptSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(RapSideA, rapSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(PSideA, pSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(ChargeSideA, chargeSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(PseudorapSideA, pseudorapSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(PhiSideA, phiSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(TpcSignalSideA, tpcSignalSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(TofSignalSideA, tofSignalSideA, std::vector<float>);
@@ -69,8 +72,14 @@ DECLARE_SOA_COLUMN(TpcNSigmaPiSideA, tpcNSigmaPiSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(TofNSigmaPiSideA, tofNSigmaPiSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(TpcNSigmaKaSideA, tpcNSigmaKaSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(TofNSigmaKaSideA, tofNSigmaKaSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcNSigmaProSideA, tpcNSigmaProSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TofNSigmaProSideA, tofNSigmaProSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TofBetaSideA, tofBetaSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TofBetaErrorSideA, tofBetaErrorSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(PtSideC, ptSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(RapSideC, rapSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(PSideC, pSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(ChargeSideC, chargeSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(PseudorapSideC, pseudorapSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(PhiSideC, phiSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(TpcSignalSideC, tpcSignalSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(TofSignalSideC, tofSignalSideC, std::vector<float>);
@@ -78,6 +87,10 @@ DECLARE_SOA_COLUMN(TpcNSigmaPiSideC, tpcNSigmaPiSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(TofNSigmaPiSideC, tofNSigmaPiSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(TpcNSigmaKaSideC, tpcNSigmaKaSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(TofNSigmaKaSideC, tofNSigmaKaSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcNSigmaProSideC, tpcNSigmaProSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TofNSigmaProSideC, tofNSigmaProSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TofBetaSideC, tofBetaSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TofBetaErrorSideC, tofBetaErrorSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(NchSideA, nchSideA, int);
 DECLARE_SOA_COLUMN(MultiplicitySideA, multiplicitySideA, int);
 DECLARE_SOA_COLUMN(NchSideC, nchSideC, int);
@@ -97,8 +110,11 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::AmplitudeFV0A,
                   tree::Occupancy,
                   tree::UPCMode,
+                  tree::PVz,
                   tree::PtSideA,
-                  tree::RapSideA,
+                  tree::PSideA,
+                  tree::ChargeSideA,
+                  tree::PseudorapSideA,
                   tree::PhiSideA,
                   tree::TpcSignalSideA,
                   tree::TofSignalSideA,
@@ -106,8 +122,14 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::TofNSigmaPiSideA,
                   tree::TpcNSigmaKaSideA,
                   tree::TofNSigmaKaSideA,
+                  tree::TpcNSigmaProSideA,
+                  tree::TofNSigmaProSideA,
+                  tree::TofBetaSideA,
+                  tree::TofBetaErrorSideA,
                   tree::PtSideC,
-                  tree::RapSideC,
+                  tree::PSideC,
+                  tree::ChargeSideC,
+                  tree::PseudorapSideC,
                   tree::PhiSideC,
                   tree::TpcSignalSideC,
                   tree::TofSignalSideC,
@@ -115,6 +137,10 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::TofNSigmaPiSideC,
                   tree::TpcNSigmaKaSideC,
                   tree::TofNSigmaKaSideC,
+                  tree::TpcNSigmaProSideC,
+                  tree::TofNSigmaProSideC,
+                  tree::TofBetaSideC,
+                  tree::TofBetaErrorSideC,
                   tree::NchSideA,
                   tree::MultiplicitySideA,
                   tree::NchSideC,
@@ -286,6 +312,8 @@ struct UpcPhotonuclearAnalysisJMG {
     histos.add("Tracks/SGsideA/hTrackPhi", "#it{#phi} distribution; #it{#phi}; counts", kTH1F, {axisPhi});
     histos.add("Tracks/SGsideA/hTrackEta", "#it{#eta} distribution; #it{#eta}; counts", kTH1F, {axisEta});
     histos.add("Tracks/SGsideA/hTrackTPCSignnalP", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
+    histos.add("Tracks/SGsideA/hTrackTPCSignnalPPiones", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
+    histos.add("Tracks/SGsideA/hTrackTPCSignnalPKaones", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
     histos.add("Tracks/SGsideA/hTrackTOFSignnalP", "#it{TOF signal vs p}; #it{p*charge}; #it{TOF signal}", kTH2F, {axisP, axisTPCSignal});
     histos.add("Tracks/SGsideA/hTrackITSNCls", "#it{N Clusters ITS} distribution; #it{N Clusters ITS}; counts", kTH1F, {axisNCls});
     histos.add("Tracks/SGsideA/hTrackITSChi2NCls", "#it{N Clusters Chi2 ITS} distribution; #it{N Clusters Chi2 ITS}; counts", kTH1F, {axisChi2NCls});
@@ -318,6 +346,8 @@ struct UpcPhotonuclearAnalysisJMG {
     histos.add("Tracks/SGsideC/hTrackPhi", "#it{#phi} distribution; #it{#phi}; counts", kTH1F, {axisPhi});
     histos.add("Tracks/SGsideC/hTrackEta", "#it{#eta} distribution; #it{#eta}; counts", kTH1F, {axisEta});
     histos.add("Tracks/SGsideC/hTrackTPCSignnalP", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
+    histos.add("Tracks/SGsideC/hTrackTPCSignnalPPiones", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
+    histos.add("Tracks/SGsideC/hTrackTPCSignnalPKaones", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
     histos.add("Tracks/SGsideC/hTrackTOFSignnalP", "#it{TOF signal vs p}; #it{p*charge}; #it{TOF signal}", kTH2F, {axisP, axisTPCSignal});
     histos.add("Tracks/SGsideC/hTrackITSNCls", "#it{N Clusters ITS} distribution; #it{N Clusters ITS}; counts", kTH1F, {axisNCls});
     histos.add("Tracks/SGsideC/hTrackITSChi2NCls", "#it{N Clusters Chi2 ITS} distribution; #it{N Clusters Chi2 ITS}; counts", kTH1F, {axisChi2NCls});
@@ -627,8 +657,8 @@ struct UpcPhotonuclearAnalysisJMG {
     int nchPVGapSideC = 0;
     int nchGapSideA = 0;
     int nchGapSideC = 0;
-    std::vector<float> vTrackPtSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA;
-    std::vector<float> vTrackPtSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC;
+    std::vector<float> vTrackPtSideA, vTrackPSideA, vTrackChargeSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA, vTrackTPCNSigmaProSideA, vTrackTOFNSigmaProSideA, vTrackTOFBetaSideA, vTrackTOFNBetaErrorSideA;
+    std::vector<float> vTrackPtSideC, vTrackPSideC, vTrackChargeSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC, vTrackTPCNSigmaProSideC, vTrackTOFNSigmaProSideC, vTrackTOFBetaSideC, vTrackTOFNBetaErrorSideC;
 
     int nTracksChargedSideA(-222), nTracksChargedSideC(-222);
     int multiplicitySideA(-222), multiplicitySideC(-222);
@@ -675,13 +705,23 @@ struct UpcPhotonuclearAnalysisJMG {
           nTracksCharged++;
           sumPt += track.pt();
           float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
+          float pTotal = momentum(track.px(), track.py(), track.pz()) * track.sign();
+          float etaVal = eta(track.px(), track.py(), track.pz());
           histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phiVal);
-          histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-          histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
-          histos.fill(HIST("Tracks/SGsideA/hTrackTOFSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tofSignal());
+          histos.fill(HIST("Tracks/SGsideA/hTrackEta"), etaVal);
+          histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), pTotal, track.tpcSignal());
+          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaPi(),2) + TMath::Power(track.tofNSigmaPi(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaKa(),2) + TMath::Power(tofNSigmaKa(),2)) > 3){
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalPPiones"), pTotal, track.tpcSignal());
+          }
+          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaKa(),2) + TMath::Power(track.tofNSigmaKa(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaPi(),2) + TMath::Power(tofNSigmaPi(),2)) > 3){
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalPKaones"), pTotal, track.tpcSignal());
+          }
+          histos.fill(HIST("Tracks/SGsideA/hTrackTOFSignnalP"), pTotal, track.tofSignal());
           vTrackPtSideA.push_back(track.pt());
-          vTrackEtaSideA.push_back(eta(track.px(), track.py(), track.pz()));
+          vTrackPSideA.push_back(pTotal);
+          vTrackChargeSideA.push_back(track.sign());
+          vTrackEtaSideA.push_back(etaVal);
           vTrackPhiSideA.push_back(phiVal);
           vTrackTPCSignalSideA.push_back(track.tpcSignal());
           vTrackTOFSignalSideA.push_back(track.tofSignal());
@@ -689,6 +729,10 @@ struct UpcPhotonuclearAnalysisJMG {
           vTrackTOFNSigmaPiSideA.push_back(track.tofNSigmaPi());
           vTrackTPCNSigmaKaSideA.push_back(track.tpcNSigmaKa());
           vTrackTOFNSigmaKaSideA.push_back(track.tofNSigmaKa());
+          vTrackTPCNSigmaProSideA.push_back(track.tpcNSigmaPr());
+          vTrackTOFNSigmaProSideA.push_back(track.tofNSigmaPr());
+          vTrackTOFBetaSideA.push_back(track.beta());
+          vTrackTOFBetaErrorSideA.push_back(track.betaerror());
 
           histos.fill(HIST("Tracks/SGsideA/hTrackITSNCls"), track.itsNCls());
           histos.fill(HIST("Tracks/SGsideA/hTrackITSChi2NCls"), track.itsChi2NCl());
@@ -735,13 +779,23 @@ struct UpcPhotonuclearAnalysisJMG {
           nTracksCharged++;
           sumPt += track.pt();
           float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
+          float pTotal = momentum(track.px(), track.py(), track.pz()) * track.sign();
+          float etaVal = eta(track.px(), track.py(), track.pz());
           histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
-          histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-          histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
-          histos.fill(HIST("Tracks/SGsideC/hTrackTOFSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tofSignal());
+          histos.fill(HIST("Tracks/SGsideC/hTrackEta"), etaVal);
+          histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), pTotal, track.tpcSignal());
+          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaPi(),2) + TMath::Power(track.tofNSigmaPi(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaKa(),2) + TMath::Power(tofNSigmaKa(),2)) > 3){
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalPPiones"), pTotal, track.tpcSignal());
+          }
+          if(TMath::Sqrt(TMath::Power(track.tpcNSigmaKa(),2) + TMath::Power(track.tofNSigmaKa(),2)) < 3 && TMath::Sqrt(TMath::Power(tpcNSigmaPi(),2) + TMath::Power(tofNSigmaPi(),2)) > 3){
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalPKaones"), pTotal, track.tpcSignal());
+          }
+          histos.fill(HIST("Tracks/SGsideC/hTrackTOFSignnalP"), pTotal, track.tofSignal());
           vTrackPtSideC.push_back(track.pt());
-          vTrackEtaSideC.push_back(eta(track.px(), track.py(), track.pz()));
+          vTrackPSideC.push_back(pTotal);
+          vTrackChargeSideC.push_back(track.sign());
+          vTrackEtaSideC.push_back(etaVal);
           vTrackPhiSideC.push_back(phiVal);
           vTrackTPCSignalSideC.push_back(track.tpcSignal());
           vTrackTOFSignalSideC.push_back(track.tofSignal());
@@ -749,6 +803,10 @@ struct UpcPhotonuclearAnalysisJMG {
           vTrackTOFNSigmaPiSideC.push_back(track.tofNSigmaPi());
           vTrackTPCNSigmaKaSideC.push_back(track.tpcNSigmaKa());
           vTrackTOFNSigmaKaSideC.push_back(track.tofNSigmaKa());
+          vTrackTPCNSigmaProSideC.push_back(track.tpcNSigmaPr());
+          vTrackTOFNSigmaProSideC.push_back(track.tofNSigmaPr());
+          vTrackTOFBetaSideC.push_back(track.beta());
+          vTrackTOFBetaErrorSideC.push_back(track.betaerror());
 
           histos.fill(HIST("Tracks/SGsideC/hTrackITSNCls"), track.itsNCls());
           histos.fill(HIST("Tracks/SGsideC/hTrackITSChi2NCls"), track.itsChi2NCl());
@@ -787,7 +845,10 @@ struct UpcPhotonuclearAnalysisJMG {
          reconstructedCollision.totalFV0AmplitudeA(),
          reconstructedCollision.occupancyInTime(),
          reconstructedCollision.flags(),
+         reconstructedCollision.posZ(),
          vTrackPtSideA,
+         vTrackPSideA,
+         vTrackChargeSideA,
          vTrackEtaSideA,
          vTrackPhiSideA,
          vTrackTPCSignalSideA,
@@ -796,7 +857,13 @@ struct UpcPhotonuclearAnalysisJMG {
          vTrackTOFNSigmaPiSideA,
          vTrackTPCNSigmaKaSideA,
          vTrackTOFNSigmaKaSideA,
+         vTrackTPCNSigmaProSideA,
+         vTrackTOFNSigmaProSideA,
+         vTrackTOFBetaSideA,
+         vTrackTOFBetaErrorSideA,
          vTrackPtSideC,
+         vTrackPSideC,
+         vTrackChargeSideC,
          vTrackEtaSideC,
          vTrackPhiSideC,
          vTrackTPCSignalSideA,
@@ -805,6 +872,10 @@ struct UpcPhotonuclearAnalysisJMG {
          vTrackTOFNSigmaPiSideA,
          vTrackTPCNSigmaKaSideA,
          vTrackTOFNSigmaKaSideA,
+         vTrackTPCNSigmaProSideA,
+         vTrackTOFNSigmaProSideA,
+         vTrackTOFBetaSideA,
+         vTrackTOFBetaErrorSideA,
          nTracksChargedSideA,
          multiplicitySideA,
          nTracksChargedSideC,
