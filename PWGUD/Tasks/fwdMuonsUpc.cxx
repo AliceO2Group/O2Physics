@@ -414,7 +414,7 @@ struct FwdMuonsUpc {
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
-      if (std::abs(ampsRelBCsV0A[i]) <= 1) {
+      if (std::abs(ampsRelBCsV0A[i]) <= 0) {
         if (ampsV0A[i] > maxAmpV0A)
           return;
       }
@@ -615,7 +615,7 @@ struct FwdMuonsUpc {
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
-      if (std::abs(ampsRelBCsV0A[i]) <= 1) {
+      if (std::abs(ampsRelBCsV0A[i]) <= 0) {
         if (ampsV0A[i] > maxAmpV0A)
           return;
       }
