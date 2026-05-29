@@ -2105,10 +2105,21 @@ struct LongRangeDihadronCor {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
-      if (cfgGeneral.cfgSelCollByNch && (tracks1.size() < cfgGeneral.cfgCutMultMin || tracks1.size() >= cfgGeneral.cfgCutMultMax))
+      int tpcMult1 = 0;
+      for (const auto& track : tracks1) {
+        if (std::abs(track.eta()) < cfgGeneral.cfgEtaTpcCut)
+          tpcMult1 += 1;
+      }
+      int tpcMult2 = 0;
+      for (const auto& track : tracks2) {
+        if (std::abs(track.eta()) < cfgGeneral.cfgEtaTpcCut)
+          tpcMult2 += 1;
+      }
+
+      if (cfgGeneral.cfgSelCollByNch && (tpcMult1 < cfgGeneral.cfgCutMultMin || tpcMult1 >= cfgGeneral.cfgCutMultMax))
         continue;
 
-      if (cfgGeneral.cfgSelCollByNch && (tracks2.size() < cfgGeneral.cfgCutMultMin || tracks2.size() >= cfgGeneral.cfgCutMultMax))
+      if (cfgGeneral.cfgSelCollByNch && (tpcMult2 < cfgGeneral.cfgCutMultMin || tpcMult2 >= cfgGeneral.cfgCutMultMax))
         continue;
 
       auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
@@ -2164,10 +2175,21 @@ struct LongRangeDihadronCor {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
-      if (cfgGeneral.cfgSelCollByNch && (tracks1.size() < cfgGeneral.cfgCutMultMin || tracks1.size() >= cfgGeneral.cfgCutMultMax))
+      int tpcMult1 = 0;
+      for (const auto& track : tracks1) {
+        if (std::abs(track.eta()) < cfgGeneral.cfgEtaTpcCut)
+          tpcMult1 += 1;
+      }
+      int tpcMult2 = 0;
+      for (const auto& track : tracks2) {
+        if (std::abs(track.eta()) < cfgGeneral.cfgEtaTpcCut)
+          tpcMult2 += 1;
+      }
+
+      if (cfgGeneral.cfgSelCollByNch && (tpcMult1 < cfgGeneral.cfgCutMultMin || tpcMult1 >= cfgGeneral.cfgCutMultMax))
         continue;
 
-      if (cfgGeneral.cfgSelCollByNch && (tracks2.size() < cfgGeneral.cfgCutMultMin || tracks2.size() >= cfgGeneral.cfgCutMultMax))
+      if (cfgGeneral.cfgSelCollByNch && (tpcMult2 < cfgGeneral.cfgCutMultMin || tpcMult2 >= cfgGeneral.cfgCutMultMax))
         continue;
 
       auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
@@ -2363,6 +2385,16 @@ struct LongRangeDihadronCor {
         cent1 = getCentrality(collision1);
         cent2 = getCentrality(collision2);
       }
+
+      int tpcMult = 0;
+      for (const auto& track : tracksTruth1) {
+        if (std::abs(track.eta()) < cfgGeneral.cfgEtaTpcCut)
+          tpcMult += 1;
+      }
+
+      if (cfgGeneral.cfgSelCollByNch && (tpcMult < cfgGeneral.cfgCutMultMin || tpcMult >= cfgGeneral.cfgCutMultMax))
+        continue;
+
       if (cfgGeneral.cfgUseAdditionalEventCut && !eventSelected(collision1, tracksRecon1.size(), cent1, false))
         continue;
       if (cfgGeneral.cfgUseAdditionalEventCut && !eventSelected(collision2, tracksRecon2.size(), cent2, false))
@@ -2429,6 +2461,16 @@ struct LongRangeDihadronCor {
         cent1 = getCentrality(collision1);
         cent2 = getCentrality(collision2);
       }
+
+      int tpcMult = 0;
+      for (const auto& track : tracksTruth1) {
+        if (std::abs(track.eta()) < cfgGeneral.cfgEtaTpcCut)
+          tpcMult += 1;
+      }
+
+      if (cfgGeneral.cfgSelCollByNch && (tpcMult < cfgGeneral.cfgCutMultMin || tpcMult >= cfgGeneral.cfgCutMultMax))
+        continue;
+
       if (cfgGeneral.cfgUseAdditionalEventCut && !eventSelected(collision1, tracksRecon1.size(), cent1, false))
         continue;
       if (cfgGeneral.cfgUseAdditionalEventCut && !eventSelected(collision2, tracksRecon2.size(), cent2, false))

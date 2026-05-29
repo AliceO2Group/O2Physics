@@ -1841,6 +1841,23 @@ struct FlowDecorrelation {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
+      int tpcMult1 = 0;
+      for (const auto& track : tracks1) {
+        if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+          tpcMult1 += 1;
+      }
+      int tpcMult2 = 0;
+      for (const auto& track : tracks2) {
+        if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+          tpcMult2 += 1;
+      }
+
+      if (cfgSelCollByNch && (tpcMult1 < cfgGeneralCuts.cfgCutMultMin || tpcMult1 >= cfgGeneralCuts.cfgCutMultMax))
+        continue;
+
+      if (cfgSelCollByNch && (tpcMult2 < cfgGeneralCuts.cfgCutMultMin || tpcMult2 >= cfgGeneralCuts.cfgCutMultMax))
+        continue;
+
       auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
       auto groupedCollisions2 = collisions.sliceBy(collisionPerMCCollision, collision2.globalIndex());
       float cent1 = -1;
@@ -1939,10 +1956,21 @@ struct FlowDecorrelation {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
+      int tpcMult1 = 0;
+      for (const auto& track : tracks1) {
+        if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+          tpcMult1 += 1;
+      }
+      int tpcMult2 = 0;
+      for (const auto& track : tracks2) {
+        if (std::abs(track.eta()) < cfgMcTrue.cfgEtaTpcCut)
+          tpcMult2 += 1;
+      }
+
+      if (cfgSelCollByNch && (tpcMult1 < cfgGeneralCuts.cfgCutMultMin || tpcMult1 >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
+      if (cfgSelCollByNch && (tpcMult2 < cfgGeneralCuts.cfgCutMultMin || tpcMult2 >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
