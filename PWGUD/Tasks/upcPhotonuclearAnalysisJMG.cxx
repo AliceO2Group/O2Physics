@@ -50,7 +50,7 @@ namespace tree
 DECLARE_SOA_COLUMN(GapSide, gapSide, float);
 DECLARE_SOA_COLUMN(GapSideTimeZN, gapSideTimeZN, float);
 DECLARE_SOA_COLUMN(Sbp, sbp, int);
-DECLARE_SOA_COLUMN(ITSROFb, itsROFb, int);
+DECLARE_SOA_COLUMN(ItsRofB, itsRofB, int);
 DECLARE_SOA_COLUMN(VtxITSTPCCut, vtxITSTPCCut, int);
 DECLARE_SOA_COLUMN(ZVtxFT0vsPvCut, zVtxFT0vsPvCut, int);
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
@@ -59,8 +59,8 @@ DECLARE_SOA_COLUMN(EnergyZNA, energyZNA, float);
 DECLARE_SOA_COLUMN(EnergyZNC, energyZNC, float);
 DECLARE_SOA_COLUMN(AmplitudeFV0A, amplitudeFV0A, float);
 DECLARE_SOA_COLUMN(Occupancy, occupancy, float);
-DECLARE_SOA_COLUMN(UPCMode, upcMode, float);
-DECLARE_SOA_COLUMN(PVz, pvz, float);
+DECLARE_SOA_COLUMN(UpcMode, upcMode, float);
+DECLARE_SOA_COLUMN(Pvz, pvz, float);
 DECLARE_SOA_COLUMN(PtSideA, ptSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(PSideA, pSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(ChargeSideA, chargeSideA, std::vector<float>);
@@ -100,7 +100,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::GapSide,
                   tree::GapSideTimeZN,
                   tree::Sbp,
-                  tree::ITSROFb,
+                  tree::ItsRofB,
                   tree::VtxITSTPCCut,
                   tree::ZVtxFT0vsPvCut,
                   tree::TimeZNA,
@@ -109,8 +109,8 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::EnergyZNC,
                   tree::AmplitudeFV0A,
                   tree::Occupancy,
-                  tree::UPCMode,
-                  tree::PVz,
+                  tree::UpcMode,
+                  tree::Pvz,
                   tree::PtSideA,
                   tree::PSideA,
                   tree::ChargeSideA,
@@ -148,7 +148,8 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
 } // namespace o2::aod
 
 static constexpr float CFGPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
-constexpr float kThreeHalfPi = 1.5f * PI;
+constexpr float KThreeHalfPi = 1.5f * PI;
+constexpr float KMaxInSigmaPID = 9.0f;
 
 struct UpcPhotonuclearAnalysisJMG {
 
@@ -226,7 +227,7 @@ struct UpcPhotonuclearAnalysisJMG {
                                                "Pair cuts on various particles"};
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {32, -PIHalf, kThreeHalfPi}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {32, -PIHalf, KThreeHalfPi}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {32, -1.6, 1.6}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
@@ -713,10 +714,10 @@ struct UpcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), pTotal, track.tpcSignal());
           float nSigmaPi2 = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
           float nSigmaKa2 = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
-          if (nSigmaPi2 < 9.0 && nSigmaKa2 > 9.0) {
+          if (nSigmaPi2 < KMaxInSigmaPID && nSigmaKa2 > KMaxInSigmaPID) {
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalPPiones"), pTotal, track.tpcSignal());
           }
-          if (nSigmaKa2 < 9.0 && nSigmaPi2 > 9.0) {
+          if (nSigmaKa2 < KMaxInSigmaPID && nSigmaPi2 > KMaxInSigmaPID) {
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalPKaones"), pTotal, track.tpcSignal());
           }
           histos.fill(HIST("Tracks/SGsideA/hTrackTOFSignnalP"), pTotal, track.tofSignal());
@@ -789,10 +790,10 @@ struct UpcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), pTotal, track.tpcSignal());
           float nSigmaPi2 = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
           float nSigmaKa2 = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
-          if (nSigmaPi2 < 9.0 && nSigmaKa2 > 9.0) {
+          if (nSigmaPi2 < KMaxInSigmaPID && nSigmaKa2 > KMaxInSigmaPID) {
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalPPiones"), pTotal, track.tpcSignal());
           }
-          if (nSigmaKa2 < 9.0 && nSigmaPi2 > 9.0) {
+          if (nSigmaKa2 < KMaxInSigmaPID && nSigmaPi2 > KMaxInSigmaPID) {
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalPKaones"), pTotal, track.tpcSignal());
           }
           histos.fill(HIST("Tracks/SGsideC/hTrackTOFSignnalP"), pTotal, track.tofSignal());
