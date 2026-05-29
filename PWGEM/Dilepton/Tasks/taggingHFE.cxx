@@ -273,21 +273,21 @@ struct taggingHFE {
     std::string prefix = "lKPairCut";
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
     Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
-    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 1.0, "max distance between 2 legs"};
+    Configurable<float> cfg_max_chi2PCA{"cfg_max_chi2PCA", 1.0, "max chi2 at PCA"};
   } lKPairCut;
 
   struct : ConfigurableGroup {
     std::string prefix = "lV0PairCut";
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
     Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
-    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 1.0, "max distance between 2 legs"};
+    Configurable<float> cfg_max_chi2PCA{"cfg_max_chi2PCA", 1.0, "max chi2 at PCA"};
   } lV0PairCut;
 
   struct : ConfigurableGroup {
     std::string prefix = "lCPairCut";
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
     Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
-    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 1.0, "max distance between 2 legs"};
+    Configurable<float> cfg_max_chi2PCA{"cfg_max_chi2PCA", 1.0, "max chi2 at PCA"};
   } lCPairCut;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -1727,7 +1727,7 @@ struct taggingHFE {
             continue;
           }
 
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
             continue;
           }
 
@@ -1762,11 +1762,11 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.ptSVL, eKpair.ptSVH,
-                     eKpair.ptFD, eKpair.plFD,
-                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     eKpair.mass, eKpair.p,
+                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
+                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -1788,7 +1788,7 @@ struct taggingHFE {
           if (!eKpair.isOK) {
             continue;
           }
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
             continue;
           }
 
@@ -1823,11 +1823,11 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.ptSVL, eKpair.ptSVH,
-                     eKpair.ptFD, eKpair.plFD,
-                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     eKpair.mass, eKpair.p,
+                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
+                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -1858,7 +1858,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
             continue;
           }
 
@@ -1902,11 +1902,11 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.ptSVL, eV0pair.ptSVH,
-                      eV0pair.ptFD, eV0pair.plFD,
-                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.p,
+                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
+                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of K0S loop
@@ -1937,7 +1937,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
             continue;
           }
 
@@ -1965,11 +1965,11 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.ptSVL, eV0pair.ptSVH,
-                      eV0pair.ptFD, eV0pair.plFD,
-                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.p,
+                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
+                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of Lambda loop
@@ -1999,7 +1999,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
             continue;
           }
 
@@ -2033,11 +2033,11 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.ptSVL, eCpair.ptSVH,
-                        eCpair.ptFD, eCpair.plFD,
-                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.p,
+                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
+                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Xi- loop
@@ -2067,7 +2067,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
             continue;
           }
 
@@ -2101,11 +2101,11 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.ptSVL, eCpair.ptSVH,
-                        eCpair.ptFD, eCpair.plFD,
-                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.p,
+                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
+                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Omega- loop
@@ -2163,7 +2163,7 @@ struct taggingHFE {
             continue;
           }
 
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
             continue;
           }
 
@@ -2198,11 +2198,11 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.ptSVL, eKpair.ptSVH,
-                     eKpair.ptFD, eKpair.plFD,
-                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     eKpair.mass, eKpair.p,
+                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
+                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -2225,7 +2225,7 @@ struct taggingHFE {
           if (!eKpair.isOK) {
             continue;
           }
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
             continue;
           }
 
@@ -2260,11 +2260,11 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.pt, eKpair.ptSVL, eKpair.ptSVH,
-                     eKpair.ptFD, eKpair.plFD,
-                     eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
+                     eKpair.mass, eKpair.p,
+                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
+                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -2295,7 +2295,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
             continue;
           }
 
@@ -2338,11 +2338,11 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.ptSVL, eV0pair.ptSVH,
-                      eV0pair.ptFD, eV0pair.plFD,
-                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.p,
+                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
+                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of K0S loop
@@ -2373,7 +2373,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
             continue;
           }
 
@@ -2401,11 +2401,11 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.pt, eV0pair.ptSVL, eV0pair.ptSVH,
-                      eV0pair.ptFD, eV0pair.plFD,
-                      eV0pair.dca2legs, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
+                      eV0pair.mass, eV0pair.p,
+                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
+                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of Anti-Lambda loop
@@ -2435,7 +2435,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
             continue;
           }
 
@@ -2469,11 +2469,11 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.ptSVL, eCpair.ptSVH,
-                        eCpair.ptFD, eCpair.plFD,
-                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.p,
+                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
+                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Xi+ loop
@@ -2503,7 +2503,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
             continue;
           }
 
@@ -2537,11 +2537,11 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.pt, eCpair.ptSVL, eCpair.ptSVH,
-                        eCpair.ptFD, eCpair.plFD,
-                        eCpair.dca2legs, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
+                        eCpair.mass, eCpair.p,
+                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
+                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Omega+ loop
