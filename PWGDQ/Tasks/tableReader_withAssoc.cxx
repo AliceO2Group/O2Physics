@@ -1794,19 +1794,23 @@ struct AnalysisSameEventPairing {
     uint32_t dileptonMcDecision = static_cast<uint32_t>(0); // placeholder, copy of the dqEfficiency.cxx one
     int sign1 = 0;
     int sign2 = 0;
-    dielectronList.reserve(1);
-    dimuonList.reserve(1);
-    dielectronsExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dimuonsExtraList.reserve(1);
-    dileptonInfoList.reserve(1);
-    dileptonFlowList.reserve(1);
+    // Reserve capacity for the output tables to avoid repeated reallocations
+    // inside the Arrow builders.  Unused capacity is virtual address space
+    // only — pages are not faulted in until written.
+    auto nAssocs = assocs.size();
+    dielectronList.reserve(nAssocs);
+    dimuonList.reserve(nAssocs);
+    dielectronsExtraList.reserve(nAssocs);
+    dielectronInfoList.reserve(nAssocs);
+    dimuonsExtraList.reserve(nAssocs);
+    dileptonInfoList.reserve(nAssocs);
+    dileptonFlowList.reserve(nAssocs);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
-      dimuonAllList.reserve(1);
+      dielectronAllList.reserve(nAssocs);
+      dimuonAllList.reserve(nAssocs);
     }
     if (fConfigOptions.polarTables.value) {
-      dileptonPolarList.reserve(1);
+      dileptonPolarList.reserve(nAssocs);
     }
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
@@ -2388,7 +2392,7 @@ struct AnalysisSameEventPairing {
     const auto& histNames = fTrackMuonHistNames;
     int nPairCuts = (fPairCuts.size() > 0) ? fPairCuts.size() : 1;
 
-    electronmuonList.reserve(1);
+    electronmuonList.reserve(assocs1.size());
 
     uint32_t twoTrackFilter = 0;
     int sign1 = 0;
@@ -3085,7 +3089,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/)
+  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
   {
     fPairCount.clear();
 
@@ -3098,8 +3102,8 @@ struct AnalysisAsymmetricPairing {
 
     int sign1 = 0;
     int sign2 = 0;
-    ditrackList.reserve(1);
-    ditrackExtraList.reserve(1);
+    ditrackList.reserve(assocs.size());
+    ditrackExtraList.reserve(assocs.size());
 
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 
