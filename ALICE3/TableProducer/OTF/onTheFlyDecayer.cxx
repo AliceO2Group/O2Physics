@@ -202,7 +202,6 @@ struct OnTheFlyDecayer {
         histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      // todo: status codes
       tableOTFDecayerBits(otfParticle.getBitsValue());
       tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
                        otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
