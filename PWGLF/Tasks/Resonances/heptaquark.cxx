@@ -14,28 +14,28 @@
 
 #include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
 
-#include "Common/Core/trackUtilities.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TLorentzVector.h>
-#include <TMath.h>
-#include <TRandom3.h>
-
-#include <fairlogger/Logger.h>
+#include <TMathBase.h>
+#include <TRandom.h>
+#include <TVector3.h>
 
 #include <algorithm>
-#include <iostream>
-#include <iterator>
+#include <cmath>
+#include <cstdlib>
 #include <string>
 #include <vector>
 

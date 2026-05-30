@@ -32,7 +32,7 @@ namespace o2::aod::pwgem::photonmeson::utils::eventhistogram
 inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry, bool useWeight = false)
 {
   // event info
-  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", o2::framework::kTH1D, {{12, 0.5, 12.5}}, useWeight);
+  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", o2::framework::HistType::kTH1D, {{12, 0.5, 12.5}}, useWeight);
   hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
   hCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
   hCollisionCounter->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
@@ -67,16 +67,16 @@ inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry, bool
                                                 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
                                                "centrality FT0C (%)"};
 
-  fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::kTH1D, {{220, -11, +11}}, useWeight);
-  fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, useWeight);
-  fRegistry->add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, useWeight);
-  fRegistry->add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", o2::framework::kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, useWeight);
-  fRegistry->add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", o2::framework::kTH1F, {{axis_cent_ft0a}}, useWeight);
-  fRegistry->add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", o2::framework::kTH1F, {{axis_cent_ft0c}}, useWeight);
-  fRegistry->add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", o2::framework::kTH1F, {{axis_cent_ft0m}}, useWeight);
-  fRegistry->add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", o2::framework::kTH2F, {{110, 0, 110}, {500, 0, 5000}}, useWeight);
-  fRegistry->add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", o2::framework::kTH2F, {{60, 0, 60000}, {500, 0, 5000}}, useWeight);
-  fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", o2::framework::kTH2F, {{60, 0, 60000}, {500, 0, 10000}}, useWeight);
+  fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::HistType::kTH1D, {{220, -11, +11}}, useWeight);
+  fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", o2::framework::HistType::kTH1F, {{6001, -0.5, 6000.5}}, useWeight);
+  fRegistry->add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", o2::framework::HistType::kTH1F, {{6001, -0.5, 6000.5}}, useWeight);
+  fRegistry->add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", o2::framework::HistType::kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", o2::framework::HistType::kTH1F, {{axis_cent_ft0a}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", o2::framework::HistType::kTH1F, {{axis_cent_ft0c}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", o2::framework::HistType::kTH1F, {{axis_cent_ft0m}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", o2::framework::HistType::kTH2F, {{110, 0, 110}, {500, 0, 5000}}, useWeight);
+  fRegistry->add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", o2::framework::HistType::kTH2F, {{60, 0, 60000}, {500, 0, 5000}}, useWeight);
+  fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", o2::framework::HistType::kTH2F, {{60, 0, 60000}, {500, 0, 10000}}, useWeight);
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 

@@ -9,18 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <boost/regex.hpp>
-#include <TObjArray.h>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "SelectionFilterAndAnalysis.h"
 
+#include <TNamed.h>
+
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
 using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 
 ClassImp(SelectionFilterAndAnalysis);

@@ -454,6 +454,7 @@ struct checkMCPairTemplate {
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2l_diffb/"); // LS
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2c2l/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2cc2l/");
+    fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2ll/");
 
     // for charmed hadrons // create 28 combinations
     static constexpr std::string_view charmed_mesons[] = {"Dplus", "D0", "Dsplus"}; // 411, 421, 431
@@ -2518,6 +2519,9 @@ struct checkMCPairTemplate {
         case static_cast<int>(EM_HFeeType::kBCCe_BCCe):
           fillGenHistograms<21>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2l_b2cc2l
           break;
+        case static_cast<int>(EM_HFeeType::kBCCee):
+          fillGenHistograms<22>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2ll
+          break;
         default:
           break;
       }
@@ -2804,6 +2808,9 @@ struct checkMCPairTemplate {
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
+        if (cfgRequireTrueAssociation && (mcpos.emmceventId() != collision.emmceventId() || mcneg.emmceventId() != collision.emmceventId())) {
+          continue;
+        }
 
         if (isPairOK(pos, neg, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), neg.globalIndex()));
@@ -2820,6 +2827,9 @@ struct checkMCPairTemplate {
         if (cfgEventGeneratorType >= 0 && mccollision_from_pos2.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
+        if (cfgRequireTrueAssociation && (mcpos1.emmceventId() != collision.emmceventId() || mcpos2.emmceventId() != collision.emmceventId())) {
+          continue;
+        }
 
         if (isPairOK(pos1, pos2, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(pos1.globalIndex(), pos2.globalIndex()));
@@ -2834,6 +2844,9 @@ struct checkMCPairTemplate {
         auto mcneg2 = mcparticles.iteratorAt(neg2.emmcparticleId());
         auto mccollision_from_neg2 = mcneg2.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg2.getSubGeneratorId() != cfgEventGeneratorType) {
+          continue;
+        }
+        if (cfgRequireTrueAssociation && (mcneg1.emmceventId() != collision.emmceventId() || mcneg2.emmceventId() != collision.emmceventId())) {
           continue;
         }
         if (isPairOK(neg1, neg2, cut, tracks)) {

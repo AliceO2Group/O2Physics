@@ -13,28 +13,34 @@
 /// \brief Task for jet Lund plane. Creates histograms for offline unfolding (including QA histos), and optionally tables.
 /// \author Zoltan Varga <zoltan.varga@cern.ch>
 
-#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 #include <THnSparse.h>
 
+#include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -49,8 +55,14 @@ namespace o2::aod
 {
 // Parent table: one row per collision stored in the MiniAOD
 DECLARE_SOA_COLUMN(MiniCollTag, miniCollTag, uint8_t);
+DECLARE_SOA_COLUMN(MiniCollMcCollisionId, miniCollMcCollisionId, int64_t);
+DECLARE_SOA_COLUMN(MiniCollWeight, miniCollWeight, float);
+DECLARE_SOA_COLUMN(MiniCollPtHard, miniCollPtHard, float);
 DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLL",
-                  MiniCollTag);
+                  MiniCollTag,
+                  MiniCollMcCollisionId,
+                  MiniCollWeight,
+                  MiniCollPtHard);
 
 // MiniJets -> MiniCollisions
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(MiniCollision, miniCollision, "MINICOLLS");
@@ -77,6 +89,10 @@ DECLARE_SOA_COLUMN(SoftEta, softEta, float);
 DECLARE_SOA_COLUMN(SoftPhi, softPhi, float);
 
 DECLARE_SOA_TABLE(MiniSplittings, "AOD", "MINISPL",
+                  MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
+
+// Inclusive splittings for all accepted jets (det or part), independent of matching
+DECLARE_SOA_TABLE(MiniSplittingsAll, "AOD", "MINISPLA",
                   MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
 
 // Jet-jet matching (MC)
@@ -136,6 +152,12 @@ struct JetMatchInfo {
   float dR{1e9f};
   float relPt{-1.f};
   float otherPt{};
+};
+
+struct McEventInfo {
+  int64_t mcCollisionId{-1};
+  float weight{1.f};
+  float ptHard{-1.f};
 };
 
 inline float deltaPhi(float phi1, float phi2)
@@ -287,6 +309,7 @@ struct JetLundPlaneUnfolding {
   Produces<aod::MiniCollisions> outMiniCollisions;
   Produces<aod::MiniJets> outMiniJets;
   Produces<aod::MiniSplittings> outMiniSplittings;
+  Produces<aod::MiniSplittingsAll> outMiniSplittingsAll;
   Produces<aod::MiniJetMatches> outMiniJetMatches;
 
   // FastJet reclustering setup (C/A)
@@ -393,6 +416,9 @@ struct JetLundPlaneUnfolding {
                      (aod::jet::eta > jetEtaMin.node()) &&
                      (aod::jet::eta < jetEtaMax.node()) &&
                      (aod::jet::r == nround(jetR.node() * 100.f));
+
+  // Reconstructed collisions grouped by their associated MC collision.
+  PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
 
   // Type aliases
   using RecoJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;
@@ -519,7 +545,7 @@ struct JetLundPlaneUnfolding {
 
     int miniCollIdx = -1;
     if (writeMiniAOD.value) {
-      outMiniCollisions(static_cast<uint8_t>(0));
+      outMiniCollisions(static_cast<uint8_t>(0), int64_t{-1}, 1.f, -1.f);
       miniCollIdx = outMiniCollisions.lastIndex();
     }
     for (auto const& jet : jets) {
@@ -536,6 +562,11 @@ struct JetLundPlaneUnfolding {
         for (auto const& s : spl) {
           outMiniSplittings(miniJetIdx, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
         }
+
+        uint16_t sidAll = 0;
+        for (auto const& s : spl) {
+          outMiniSplittingsAll(miniJetIdx, sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
+        }
       }
     }
   }
@@ -543,9 +574,10 @@ struct JetLundPlaneUnfolding {
 
   // MC PROCESSING (det + part + response)
 
-  void processMC(DetJetsMatched const& detJets,
-                 PartJetsMatched const& partJets,
-                 aod::JetCollisions const&,
+  void processMC(soa::Filtered<DetJetsMatched> const& detJets,
+                 soa::Filtered<PartJetsMatched> const& partJets,
+                 soa::Filtered<aod::JetCollisionsMCD> const& collisions,
+                 aod::JetMcCollisions const& mcCollisions,
                  aod::JetTracks const& tracks,
                  aod::JetParticles const& particles)
   {
@@ -555,6 +587,7 @@ struct JetLundPlaneUnfolding {
     std::unordered_map<uint64_t, bool> truthMatchedById;
     std::unordered_map<uint64_t, std::vector<SplittingObs>> truthSplittingsById;
     std::unordered_map<uint64_t, JetMatchInfo> truthBestDet;
+    std::unordered_set<uint64_t> acceptedTruthJetKeys;
     std::unordered_set<uint64_t> detSplittingsWritten;
     std::unordered_set<uint64_t> truthSplittingsWritten;
     auto h6 = registry.get<THnSparse>(HIST("hLundResponse6D"));
@@ -567,6 +600,21 @@ struct JetLundPlaneUnfolding {
     std::unordered_map<uint64_t, int> detJetToMiniJetIdx;
     std::unordered_map<uint64_t, int> partJetToMiniJetIdx;
 
+    std::unordered_map<int64_t, McEventInfo> mcEventInfoById;
+    for (auto const& mcCollision : mcCollisions) {
+      const int64_t mcCollisionId = mcCollision.globalIndex();
+      mcEventInfoById.emplace(mcCollisionId,
+                              McEventInfo{mcCollisionId, mcCollision.weight(), mcCollision.ptHard()});
+    }
+
+    std::unordered_map<int64_t, McEventInfo> mcEventInfoByDetCollisionId;
+    for (auto const& collision : collisions) {
+      auto mcInfoIt = mcEventInfoById.find(collision.mcCollisionId());
+      if (mcInfoIt != mcEventInfoById.end()) {
+        mcEventInfoByDetCollisionId.emplace(collision.globalIndex(), mcInfoIt->second);
+      }
+    }
+
     // --- Truth pass ---
     // Fill inclusive truth histograms, cache truth splittings, write all accepted
     // truth jets to MiniJets, and determine the best detector candidate for each truth jet.
@@ -575,10 +623,22 @@ struct JetLundPlaneUnfolding {
         continue;
       }
 
+      auto collisionsPerMCPJet = collisions.sliceBy(CollisionsPerMCPCollision, partJet.mcCollisionId());
+      if (collisionsPerMCPJet.size() < 1) {
+        continue;
+      }
+
+      auto partMcInfoIt = mcEventInfoById.find(partJet.mcCollisionId());
+      if (partMcInfoIt == mcEventInfoById.end()) {
+        continue;
+      }
+      const auto partMcInfo = partMcInfoIt->second;
+
       registry.fill(HIST("hJetPtTruthAll"), partJet.pt());
       fillJetCountSummary(4);
 
       const uint64_t truthJetKey = partJet.globalIndex();
+      acceptedTruthJetKeys.insert(truthJetKey);
       auto spl = getPrimarySplittings(partJet, particles);
       truthSplittingsById[truthJetKey] = spl;
 
@@ -591,7 +651,7 @@ struct JetLundPlaneUnfolding {
         int partMiniCollIdx = -1;
         auto collIt = partMiniCollByKey.find(partCollKey);
         if (collIt == partMiniCollByKey.end()) {
-          outMiniCollisions(static_cast<uint8_t>(0));
+          outMiniCollisions(static_cast<uint8_t>(0), partMcInfo.mcCollisionId, partMcInfo.weight, partMcInfo.ptHard);
           partMiniCollIdx = outMiniCollisions.lastIndex();
           partMiniCollByKey.emplace(partCollKey, partMiniCollIdx);
         } else {
@@ -600,6 +660,11 @@ struct JetLundPlaneUnfolding {
 
         outMiniJets(partMiniCollIdx, /*level*/ JetLevel::Part, partJet.r(), partJet.pt(), partJet.eta(), partJet.phi());
         partJetToMiniJetIdx[truthJetKey] = outMiniJets.lastIndex();
+
+        uint16_t sidAll = 0;
+        for (auto const& s : spl) {
+          outMiniSplittingsAll(partJetToMiniJetIdx[truthJetKey], sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, partJet.pt());
+        }
       }
 
       if (!partJet.has_matchedJetGeo()) {
@@ -608,7 +673,7 @@ struct JetLundPlaneUnfolding {
 
       JetMatchInfo bestDet{};
       bool foundDet = false;
-      for (auto const& candDetJet : partJet.template matchedJetGeo_as<DetJetsMatched>()) {
+      for (auto const& candDetJet : partJet.template matchedJetGeo_as<soa::Filtered<DetJetsMatched>>()) {
         if (!passJetFiducial(candDetJet, rWanted)) {
           continue;
         }
@@ -638,12 +703,18 @@ struct JetLundPlaneUnfolding {
     }
 
     // --- Detector loop ---
-    // Write all accepted detector jets to MiniJets. A final matched pair is accepted only
+    // Write accepted detector jets to MiniJets. A final matched pair is accepted only
     // if the detector jet and truth jet are mutual best matches under the same cuts.
     for (auto const& detJet : detJets) {
       if (!passJetFiducial(detJet, rWanted)) {
         continue;
       }
+
+      auto detMcInfoIt = mcEventInfoByDetCollisionId.find(detJet.collisionId());
+      if (detMcInfoIt == mcEventInfoByDetCollisionId.end()) {
+        continue;
+      }
+      const auto detMcInfo = detMcInfoIt->second;
 
       registry.fill(HIST("hJetPtRecoAll"), detJet.pt());
       fillJetCountSummary(1);
@@ -659,7 +730,7 @@ struct JetLundPlaneUnfolding {
         int detMiniCollIdx = -1;
         auto collIt = detMiniCollByKey.find(detCollKey);
         if (collIt == detMiniCollByKey.end()) {
-          outMiniCollisions(static_cast<uint8_t>(0));
+          outMiniCollisions(static_cast<uint8_t>(0), detMcInfo.mcCollisionId, detMcInfo.weight, detMcInfo.ptHard);
           detMiniCollIdx = outMiniCollisions.lastIndex();
           detMiniCollByKey.emplace(detCollKey, detMiniCollIdx);
         } else {
@@ -668,6 +739,11 @@ struct JetLundPlaneUnfolding {
 
         outMiniJets(detMiniCollIdx, /*level*/ JetLevel::Det, detJet.r(), detJet.pt(), detJet.eta(), detJet.phi());
         detJetToMiniJetIdx[detJetKey] = outMiniJets.lastIndex();
+
+        uint16_t sidAll = 0;
+        for (auto const& s : detSpl) {
+          outMiniSplittingsAll(detJetToMiniJetIdx[detJetKey], sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, detJet.pt());
+        }
       }
 
       if (!detJet.has_matchedJetGeo()) {
@@ -680,7 +756,12 @@ struct JetLundPlaneUnfolding {
       bool foundMatch = false;
       std::vector<SplittingObs> bestPartSpl;
 
-      for (auto const& candPartJet : detJet.template matchedJetGeo_as<PartJetsMatched>()) {
+      for (auto const& candPartJet : detJet.template matchedJetGeo_as<soa::Filtered<PartJetsMatched>>()) {
+        const uint64_t candTruthKey = candPartJet.globalIndex();
+        if (acceptedTruthJetKeys.find(candTruthKey) == acceptedTruthJetKeys.end()) {
+          continue;
+        }
+
         if (!passJetFiducial(candPartJet, rWanted)) {
           continue;
         }
@@ -697,7 +778,6 @@ struct JetLundPlaneUnfolding {
         }
 
         if (!foundMatch || dR < bestTruth.dR) {
-          const uint64_t candTruthKey = candPartJet.globalIndex();
           bestTruth.otherKey = candTruthKey;
           bestTruth.dR = dR;
           bestTruth.relPt = rel;
@@ -784,6 +864,15 @@ struct JetLundPlaneUnfolding {
     // --- Final truth pass for misses ---
     for (auto const& partJet : partJets) {
       if (!passJetFiducial(partJet, rWanted)) {
+        continue;
+      }
+
+      auto collisionsPerMCPJet = collisions.sliceBy(CollisionsPerMCPCollision, partJet.mcCollisionId());
+      if (collisionsPerMCPJet.size() < 1) {
+        continue;
+      }
+
+      if (mcEventInfoById.find(partJet.mcCollisionId()) == mcEventInfoById.end()) {
         continue;
       }
 

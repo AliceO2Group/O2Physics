@@ -154,6 +154,9 @@ class BaseSelection
       case 1: // mandatory cut; only one threshold so the most permissive bit is skipped and no extra bit is stored
         mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, true, true, false);
         break;
+      case 2: // pass through mode; cut is neither minimal nor optional and we store all bits
+        mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, false, false, false);
+        break;
       default:
         LOG(fatal) << "Invalid switch for boolean selection";
     }
@@ -301,8 +304,8 @@ class BaseSelection
       mFinalBitmask |= (selectionContainer.getBitmask() << selectionContainer.getOffset());
 
       for (std::size_t j = 0; j < selectionContainer.getNSelections(); ++j) {
-        if (j == 0 && selectionContainer.isMinimalCut()) {
-          // minimal cuts are always filled
+        if (j == 0 && selectionContainer.skipMostPermissiveBit()) {
+          // if the most permissive bit is skipped, this means this cut always applies
           mHistRegistry->fill(HIST(HistName), binCenter);
         } else {
           // use container's internal offset for checking the bit
@@ -367,10 +370,10 @@ class BaseSelection
 
         line << "    " << std::left << std::setw(25) << sel;
 
-        if (j == 0 && container.isMinimalCut()) {
-          line << "-> minimal cut, no bit saved";
+        if (j == 0 && container.skipMostPermissiveBit()) {
+          line << "-> most permissive bit not saved";
         } else {
-          int bit = container.getOffset() + (j - (container.isMinimalCut() ? 1 : 0));
+          int bit = container.getOffset() + (j - (container.skipMostPermissiveBit() ? 1 : 0));
           line << "-> Bit: 0x" << std::hex << std::uppercase << (1ULL << bit) << std::dec;
         }
 
@@ -394,7 +397,7 @@ class BaseSelection
     mHistRegistry = registry;
     // create histogram with one bin per selection, plus two summary bins (all analyzed, all passed)
     int nBins = mNSelection + 2;
-    mHistRegistry->add(HistName, "; Selection Bits; Entries", o2::framework::kTH1F, {{nBins, -0.5, nBins - 0.5}});
+    mHistRegistry->add(HistName, "; Selection Bits; Entries", o2::framework::HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}});
 
     int binIndex = 0;
     int offset = 0;

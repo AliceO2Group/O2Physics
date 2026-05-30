@@ -18,20 +18,28 @@
 #include <CCDB/CcdbApi.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/ConfigParamRegistry.h>
+#include <Framework/ConfigParamSpec.h>
 #include <Framework/ConfigParamStore.h>
+#include <Framework/Logger.h>
+#include <Framework/ParamRetriever.h>
 #include <Framework/ServiceRegistry.h>
 #include <Framework/ServiceRegistryRef.h>
+#include <Framework/Variant.h>
 
 #include <TFile.h>
 #include <TMap.h>
 #include <TObjString.h>
+#include <TString.h>
 #include <TSystem.h>
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <string.h>
 
 // Taken from O2/Framework/AnalysisSupport/src/Plugin.cxx
 auto readMetadata(std::unique_ptr<TFile>& currentFile) -> std::vector<o2::framework::ConfigParamSpec>

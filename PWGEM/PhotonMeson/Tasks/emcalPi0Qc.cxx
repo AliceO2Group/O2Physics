@@ -63,6 +63,7 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>;
+using MyMCCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions, o2::aod::McCollisionLabels>;
 using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels, o2::aod::Timestamps>;
 
 struct Photon {
@@ -94,6 +95,11 @@ struct Photon {
   int id;
   uint8_t sm;
   bool onDCal; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
+};
+
+enum SubGeneratorId {
+  none = -1,
+  mbGap = 0
 };
 
 struct Meson {
@@ -156,6 +162,7 @@ struct EmcalPi0Qc {
   Configurable<float> mMinOpenAngleCut{"mMinOpenAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"mClusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   Configurable<bool> mSplitEMCalDCal{"mSplitEMCalDCal", 0, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
+  Configurable<bool> mDoSumw2{"mDoSumw2", 1, "enable Sumw2 for all histograms"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
 
@@ -173,6 +180,7 @@ struct EmcalPi0Qc {
 
   // event mixing class
   EventMixVec evtMix;
+  float mWeight = 1.0f; // current event weight, by default 1.0
 
   o2::ccdb::CcdbApi ccdbApi;
   int lastRunNumber = -1; // get the runnumber to obtain the SOR of the run to get t - SOR in (s) later
@@ -197,8 +205,27 @@ struct EmcalPi0Qc {
     const AxisSpec invmassAxis{invmassBinning, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
     const AxisSpec ptAxis{pTBinning, "#it{p}_{T} (GeV/#it{c})"};
 
-    if (doprocessCollision) {
-      mHistManager.add("events", "events;;#it{count}", HistType::kTH1F, {{7, 0.5, 7.5}});
+    if (doprocessCollisionMC) {
+      mHistManager.add("eventsWithoutWeight", "events without weight;;#it{count}", HistType::kTH1F, {{8, 0.5, 8.5}}, mDoSumw2.value);
+      auto heventWithoutWeight = mHistManager.get<TH1>(HIST("eventsWithoutWeight"));
+      heventWithoutWeight->GetXaxis()->SetBinLabel(1, "All events");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(2, "Has MC collision");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(3, "sel8");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(4, "EMCal readout");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(5, "1+ Contributor");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(6, "z<10cm");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(7, "unique col");
+      heventWithoutWeight->GetXaxis()->SetBinLabel(8, "EMCal cell>0");
+
+      // histogram the number of gap events and signal events (2 bins, bin 1 gap bin 2 signal)
+      mHistManager.add("signalGapEvents", "number of signal and gap events;;#it{count}", HistType::kTH1F, {{2, 0.5, 2.5}}, mDoSumw2.value);
+      auto hsignalGapEvents = mHistManager.get<TH1>(HIST("signalGapEvents"));
+      hsignalGapEvents->GetXaxis()->SetBinLabel(1, "Gap events");
+      hsignalGapEvents->GetXaxis()->SetBinLabel(2, "Signal events");
+    }
+
+    if (doprocessCollision || doprocessCollisionMC) {
+      mHistManager.add("events", "events;;#it{count}", HistType::kTH1F, {{7, 0.5, 7.5}}, mDoSumw2.value);
       auto heventType = mHistManager.get<TH1>(HIST("events"));
       heventType->GetXaxis()->SetBinLabel(1, "All events");
       heventType->GetXaxis()->SetBinLabel(2, "sel8");
@@ -207,49 +234,65 @@ struct EmcalPi0Qc {
       heventType->GetXaxis()->SetBinLabel(5, "z<10cm");
       heventType->GetXaxis()->SetBinLabel(6, "unique col");
       heventType->GetXaxis()->SetBinLabel(7, "EMCal cell>0");
-      mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", HistType::kTH1F, {{200, -20, 20}});
-      mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", HistType::kTH1F, {{200, -20, 20}});
-      mHistManager.add("hEventPerTime", "number of events per time", HistType::kTH1F, {collisionTimeAxis});
+      mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", HistType::kTH1F, {{200, -20, 20}}, mDoSumw2.value);
+      mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", HistType::kTH1F, {{200, -20, 20}}, mDoSumw2.value);
+      mHistManager.add("hEventPerTime", "number of events per time", HistType::kTH1F, {collisionTimeAxis}, mDoSumw2.value);
+
+      // emcal hardware triggers
+      mHistManager.add("eventsEMCALHardwareTriggers", "events with EMCal hardware triggers;;#it{count}", HistType::kTH1F, {{12, 0.5, 12.5}}, mDoSumw2.value);
+      auto heventsEMCALHardwareTriggers = mHistManager.get<TH1>(HIST("eventsEMCALHardwareTriggers"));
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(1, "kTVXinEMC");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(2, "kEMC7");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(3, "kDMC7");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(4, "kEG1");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(5, "kEG2");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(6, "kDG1");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(7, "kDG2");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(8, "kEJ1");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(9, "kEJ2");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(10, "kDJ1");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(11, "kDJ2");
+      heventsEMCALHardwareTriggers->GetXaxis()->SetBinLabel(12, "All");
     }
 
     if (doprocessAmbiguous) {
-      mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", HistType::kTH1F, {bcAxis});
-      mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", HistType::kTH1F, {bcAxis});
+      mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", HistType::kTH1F, {bcAxis}, mDoSumw2.value);
+      mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", HistType::kTH1F, {bcAxis}, mDoSumw2.value);
     }
     // cluster properties
     for (const bool& iBeforeCuts : {false, true}) {
       const char* clusterDirectory = iBeforeCuts ? "ClustersBeforeCuts" : "ClustersAfterCuts";
-      mHistManager.add(Form("%s/clusterE", clusterDirectory), "Energy of cluster", HistType::kTH1F, {energyAxis});
-      mHistManager.add(Form("%s/clusterE_SimpleBinning", clusterDirectory), "Energy of cluster", HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
-      mHistManager.add(Form("%s/clusterTime", clusterDirectory), "Time of cluster", HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
-      mHistManager.add(Form("%s/clusterEtaPhi", clusterDirectory), "Eta and phi of cluster", HistType::kTH2F, {{100, -1, 1, "#eta"}, {100, 0, o2::constants::math::TwoPI, "#phi"}});
-      mHistManager.add(Form("%s/clusterM02", clusterDirectory), "M02 of cluster", HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
-      mHistManager.add(Form("%s/clusterM20", clusterDirectory), "M20 of cluster", HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
-      mHistManager.add(Form("%s/clusterNLM", clusterDirectory), "Number of local maxima of cluster", HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
-      mHistManager.add(Form("%s/clusterNCells", clusterDirectory), "Number of cells in cluster", HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
-      mHistManager.add(Form("%s/clusterDistanceToBadChannel", clusterDirectory), "Distance to bad channel", HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
+      mHistManager.add(Form("%s/clusterE", clusterDirectory), "Energy of cluster", HistType::kTH1F, {energyAxis}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterE_SimpleBinning", clusterDirectory), "Energy of cluster", HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterTime", clusterDirectory), "Time of cluster", HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterEtaPhi", clusterDirectory), "Eta and phi of cluster", HistType::kTH2F, {{100, -1, 1, "#eta"}, {100, 0, o2::constants::math::TwoPI, "#phi"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterM02", clusterDirectory), "M02 of cluster", HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterM20", clusterDirectory), "M20 of cluster", HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterNLM", clusterDirectory), "Number of local maxima of cluster", HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterNCells", clusterDirectory), "Number of cells in cluster", HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}}, mDoSumw2.value);
+      mHistManager.add(Form("%s/clusterDistanceToBadChannel", clusterDirectory), "Distance to bad channel", HistType::kTH1F, {{100, 0, 100, "#it{d}"}}, mDoSumw2.value);
     }
 
     // meson related histograms
-    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", HistType::kTH2F, {invmassAxis, ptAxis});
-    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", HistType::kTH2F, {invmassAxis, ptAxis});
-    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", HistType::kTH2F, {invmassAxis, ptAxis});
+    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
 
     if (mSplitEMCalDCal) {
-      mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassAxis, ptAxis});
-      mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassAxis, ptAxis});
-      mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassAxis, ptAxis});
-      mHistManager.add("invMassVsPt_DCal", "invariant mass and pT of meson candidates with both clusters on DCal", HistType::kTH2F, {invmassAxis, ptAxis});
-      mHistManager.add("invMassVsPtBackground_DCal", "invariant mass and pT of background meson candidates with both clusters on DCal", HistType::kTH2F, {invmassAxis, ptAxis});
-      mHistManager.add("invMassVsPtMixedBackground_DCal", "invariant mass and pT of mixed background meson candidates with both clusters on DCal", HistType::kTH2F, {invmassAxis, ptAxis});
+      mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+      mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+      mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+      mHistManager.add("invMassVsPt_DCal", "invariant mass and pT of meson candidates with both clusters on DCal", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+      mHistManager.add("invMassVsPtBackground_DCal", "invariant mass and pT of background meson candidates with both clusters on DCal", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
+      mHistManager.add("invMassVsPtMixedBackground_DCal", "invariant mass and pT of mixed background meson candidates with both clusters on DCal", HistType::kTH2F, {invmassAxis, ptAxis}, mDoSumw2.value);
     }
 
     // add histograms per supermodule
     for (int ism = 0; ism < 20; ++ism) {
-      mHistManager.add(Form("clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM%d", ism), Form("Cluster time vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {clusterTimeAxis, collisionTimeAxis});
-      mHistManager.add(Form("clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM%d", ism), Form("Cluster number of cells vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {{50, 0, 50}, collisionTimeAxis});
-      mHistManager.add(Form("clusterM02VsTimeStamp/clusterM02VsTimeStampSM%d", ism), Form("Cluster M02 vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {{400, 0, 5}, collisionTimeAxis});
-      mHistManager.add(Form("mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM%d", ism), Form("invariant mass vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {invmassAxis, collisionTimeAxis});
+      mHistManager.add(Form("clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM%d", ism), Form("Cluster time vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {clusterTimeAxis, collisionTimeAxis}, mDoSumw2.value);
+      mHistManager.add(Form("clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM%d", ism), Form("Cluster number of cells vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {{50, 0, 50}, collisionTimeAxis}, mDoSumw2.value);
+      mHistManager.add(Form("clusterM02VsTimeStamp/clusterM02VsTimeStampSM%d", ism), Form("Cluster M02 vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {{400, 0, 5}, collisionTimeAxis}, mDoSumw2.value);
+      mHistManager.add(Form("mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM%d", ism), Form("invariant mass vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {invmassAxis, collisionTimeAxis}, mDoSumw2.value);
     }
 
     if (mVetoBCID->length()) {
@@ -277,6 +320,7 @@ struct EmcalPi0Qc {
     LOG(info) << "mRequireCaloReadout = " << mRequireCaloReadout.value;
     LOG(info) << "mRequireEMCalCells = " << mRequireEMCalCells.value;
     LOG(info) << "mSplitEMCalDCal = " << mSplitEMCalDCal.value;
+    LOG(info) << "mDoSumw2 = " << mDoSumw2.value;
   }
 
   template <uint8_t supermoduleID>
@@ -285,16 +329,16 @@ struct EmcalPi0Qc {
     static constexpr std::string_view ClusterTimeHistSM[20] = {"clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM0", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM1", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM2", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM3", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM4", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM5", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM6", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM7", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM8", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM9", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM10", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM11", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM12", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM13", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM14", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM15", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM16", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM17", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM18", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM19"};
     static constexpr std::string_view ClusterNcellHistSM[20] = {"clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM0", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM1", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM2", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM3", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM4", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM5", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM6", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM7", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM8", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM9", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM10", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM11", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM12", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM13", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM14", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM15", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM16", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM17", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM18", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM19"};
     static constexpr std::string_view ClusterM02HistSM[20] = {"clusterM02VsTimeStamp/clusterM02VsTimeStampSM0", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM1", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM2", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM3", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM4", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM5", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM6", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM7", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM8", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM9", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM10", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM11", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM12", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM13", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM14", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM15", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM16", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM17", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM18", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM19"};
-    mHistManager.fill(HIST(ClusterTimeHistSM[supermoduleID]), time, timeSinceSOR);
-    mHistManager.fill(HIST(ClusterNcellHistSM[supermoduleID]), NCell, timeSinceSOR);
-    mHistManager.fill(HIST(ClusterM02HistSM[supermoduleID]), m02, timeSinceSOR);
+    mHistManager.fill(HIST(ClusterTimeHistSM[supermoduleID]), time, timeSinceSOR, mWeight);
+    mHistManager.fill(HIST(ClusterNcellHistSM[supermoduleID]), NCell, timeSinceSOR, mWeight);
+    mHistManager.fill(HIST(ClusterM02HistSM[supermoduleID]), m02, timeSinceSOR, mWeight);
   }
 
   template <uint8_t supermoduleID>
   void supermoduleHistHelperMeson(float minv, float timeSinceSOR)
   {
     static constexpr std::string_view MesonInvMassHistSM[20] = {"mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM0", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM1", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM2", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM3", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM4", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM5", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM6", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM7", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM8", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM9", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM10", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM11", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM12", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM13", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM14", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM15", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM16", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM17", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM18", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM19"};
-    mHistManager.fill(HIST(MesonInvMassHistSM[supermoduleID]), minv, timeSinceSOR);
+    mHistManager.fill(HIST(MesonInvMassHistSM[supermoduleID]), minv, timeSinceSOR, mWeight);
   }
 
   void fillSupermoduleHistogramsPhoton(int supermoduleID, float time, float m02, int NCell, float timeSinceSOR)
@@ -455,13 +499,50 @@ struct EmcalPi0Qc {
     }
 
     for (const auto& collision : collisions) {
+
       mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
+
+      // emcal hardware triggers
+      if (collision.alias_bit(kTVXinEMC)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 1);
+      }
+      if (collision.alias_bit(kEMC7)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 2);
+      }
+      if (collision.alias_bit(kDMC7)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 3);
+      }
+      if (collision.alias_bit(kEG1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 4);
+      }
+      if (collision.alias_bit(kEG2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 5);
+      }
+      if (collision.alias_bit(kDG1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 6);
+      }
+      if (collision.alias_bit(kDG2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 7);
+      }
+      if (collision.alias_bit(kEJ1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 8);
+      }
+      if (collision.alias_bit(kEJ2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 9);
+      }
+      if (collision.alias_bit(kDJ1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 10);
+      }
+      if (collision.alias_bit(kDJ2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 11);
+      }
+      mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 12);
 
       if (mDoEventSel.value && (!collision.sel8())) { // Check sel8
         continue;
       }
-      mHistManager.fill(HIST("events"), 2);                               // Fill sel8
-      if (mRequireCaloReadout.value && !collision.alias_bit(kTVXinEMC)) { // Check whether EMC was read out
+      mHistManager.fill(HIST("events"), 2);
+      if (mRequireCaloReadout.value && !(collision.alias_bit(kTVXinEMC) || collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7) || collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2))) { // Check whether EMC was read out
         continue;
       }
       mHistManager.fill(HIST("events"), 3); // Fill readout
@@ -520,6 +601,138 @@ struct EmcalPi0Qc {
     }
   }
   PROCESS_SWITCH(EmcalPi0Qc, processCollision, "Process clusters from collision", false);
+
+  /// \brief Process EMCAL clusters from MC-tagged collisions and set event weight
+  void processCollisionMC(MyBCs const& bcs, MyMCCollisions const& collisions, o2::aod::McCollisions const&, o2::aod::EMCALClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells, o2::aod::EMCALClusterCells const& clusterCells)
+  {
+    auto cellIter = cells.begin();
+    auto bcIter = bcs.begin();
+    int runNumber = bcIter.runNumber();
+    std::unordered_map<uint64_t, int> cellGlobalBCs;
+    // Build map of number of cells for corrected BCs using global BCs
+    // used later in the determination whether a BC has EMC cell content (for speed reason)
+    for (const auto& cell : cells) {
+      cellGlobalBCs[cell.bc_as<MyBCs>().globalBC()]++;
+    }
+
+    for (const auto& collision : collisions) {
+      mWeight = 1.0f;
+      // emcal hardware triggers
+      if (collision.alias_bit(kTVXinEMC)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 1);
+      }
+      if (collision.alias_bit(kEMC7)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 2);
+      }
+      if (collision.alias_bit(kDMC7)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 3);
+      }
+      if (collision.alias_bit(kEG1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 4);
+      }
+      if (collision.alias_bit(kEG2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 5);
+      }
+      if (collision.alias_bit(kDG1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 6);
+      }
+      if (collision.alias_bit(kDG2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 7);
+      }
+      if (collision.alias_bit(kEJ1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 8);
+      }
+      if (collision.alias_bit(kEJ2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 9);
+      }
+      if (collision.alias_bit(kDJ1)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 10);
+      }
+      if (collision.alias_bit(kDJ2)) {
+        mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 11);
+      }
+      mHistManager.fill(HIST("eventsEMCALHardwareTriggers"), 12);
+
+      if (collision.has_mcCollision()) {
+        mWeight = collision.mcCollision().weight();
+        if (collision.mcCollision().getSubGeneratorId() == SubGeneratorId::mbGap) {
+          mHistManager.fill(HIST("signalGapEvents"), 1); // Fill gap events bin of signalGapEvents histogram
+        } else {
+          mHistManager.fill(HIST("signalGapEvents"), 2); // Fill signal events bin of signalGapEvents histogram
+        }
+      }
+
+      mHistManager.fill(HIST("events"), 1, mWeight);     // Fill "All events" bin of event histogram
+      mHistManager.fill(HIST("eventsWithoutWeight"), 1); // Fill "All events" bin of event histogram without weight
+      if (collision.has_mcCollision()) {
+        mHistManager.fill(HIST("eventsWithoutWeight"), 2); // Fill "Has MC collision" bin of event histogram without weight
+      }
+      if (mDoEventSel.value && (!collision.sel8())) { // Check sel8
+        continue;
+      }
+
+      mHistManager.fill(HIST("events"), 2, mWeight);                                                                                                                                                                                                                                                                                                                            // Fill sel8
+      mHistManager.fill(HIST("eventsWithoutWeight"), 3);                                                                                                                                                                                                                                                                                                                        // Fill sel8 bin of event histogram without weight
+      if (mRequireCaloReadout.value && !(collision.alias_bit(kTVXinEMC) || collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7) || collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2))) { // Check whether EMC was read out
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 3, mWeight);           // Fill readout
+      mHistManager.fill(HIST("eventsWithoutWeight"), 4);       // Fill readout bin of event histogram without weight
+      if (mDoEventSel.value && collision.numContrib() < 0.5) { // Skip collisions without contributors
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 4, mWeight);     // Fill >1 vtx contr. bin of event histogram
+      mHistManager.fill(HIST("eventsWithoutWeight"), 5); // Fill >1 vtx contr. bin of event histogram without weight
+      mHistManager.fill(HIST("eventVertexZAll"), collision.posZ(), mWeight);
+      if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 5, mWeight);     // Fill z-Vertex selected bin of event histogram
+      mHistManager.fill(HIST("eventsWithoutWeight"), 6); // Fill z-Vertex selected bin of event histogram without weight
+      mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ(), mWeight);
+
+      if (mDoEventSel.value && collision.ambiguous()) { // Skip ambiguous collisions (those that are in BCs including multiple collisions)
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 6, mWeight);     // Fill "One collision in BC" bin of event histogram
+      mHistManager.fill(HIST("eventsWithoutWeight"), 7); // Fill "One collision in BC" bin of event histogram without weight
+      if (mDoEventSel.value) {
+        auto found = cellGlobalBCs.find(collision.foundBC_as<MyBCs>().globalBC());
+        if (mRequireEMCalCells.value && (found == cellGlobalBCs.end() || found->second == 0)) { // Skip collisions without any readout EMCal cells
+          continue;
+        }
+      }
+      mHistManager.fill(HIST("events"), 7, mWeight);     // Fill at least one non0 cell in EMCal of event histogram (Selected)
+      mHistManager.fill(HIST("eventsWithoutWeight"), 8); // Fill at least one non0 cell in EMCal of event histogram (Selected) without weight
+      // Get BC and run number
+      int64_t foundBCId = collision.foundBCId();
+      if (foundBCId >= 0) {
+        bcIter.setCursor(foundBCId);
+      }
+      runNumber = bcIter.runNumber();
+
+      // Fetch SOR only when run changes
+      if (runNumber != lastRunNumber) {
+        std::map<std::string, std::string> headers, metadata;
+        headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadata, -1);
+        tsSOR = atol(headers["SOR"].c_str());
+        // LOGP(info, "Run {} | SOR = {} ms", runNumber, tsSOR);
+        lastRunNumber = runNumber;
+      }
+
+      // Time since SOR in minutes (bc.timestamp() is in ms)
+      float timeSinceSORMin = (bcIter.timestamp() - tsSOR) / 1000.0f / 60.f;
+      mHistManager.fill(HIST("hEventPerTime"), timeSinceSORMin, mWeight);
+
+      auto clustersPerColl = clusters.sliceBy(perCollision, collision.globalIndex());
+      if (clustersPerColl.size() == 0) {
+        continue;
+      }
+      processClusters(clustersPerColl, clusterCells, cellIter, timeSinceSORMin);
+      processMesons(timeSinceSORMin);
+    }
+  }
+  PROCESS_SWITCH(EmcalPi0Qc, processCollisionMC, "Process clusters from MC-tagged collisions", false);
 
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
@@ -614,15 +827,15 @@ struct EmcalPi0Qc {
     static constexpr std::string_view ClusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
     static constexpr std::string_view ClusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
     static constexpr std::string_view ClusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
-    mHistManager.fill(HIST(ClusterQAHistEnergy[BeforeCuts]), cluster.energy());
-    mHistManager.fill(HIST(ClusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy());
-    mHistManager.fill(HIST(ClusterQAHistTime[BeforeCuts]), cluster.time());
-    mHistManager.fill(HIST(ClusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi());
-    mHistManager.fill(HIST(ClusterQAHistM02[BeforeCuts]), cluster.m02());
-    mHistManager.fill(HIST(ClusterQAHistM20[BeforeCuts]), cluster.m20());
-    mHistManager.fill(HIST(ClusterQAHistNLM[BeforeCuts]), cluster.nlm());
-    mHistManager.fill(HIST(ClusterQAHistNCells[BeforeCuts]), cluster.nCells());
-    mHistManager.fill(HIST(ClusterQAHistDistanceToBadChannel[BeforeCuts]), cluster.distanceToBadChannel());
+    mHistManager.fill(HIST(ClusterQAHistEnergy[BeforeCuts]), cluster.energy(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistTime[BeforeCuts]), cluster.time(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistM02[BeforeCuts]), cluster.m02(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistM20[BeforeCuts]), cluster.m20(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistNLM[BeforeCuts]), cluster.nlm(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistNCells[BeforeCuts]), cluster.nCells(), mWeight);
+    mHistManager.fill(HIST(ClusterQAHistDistanceToBadChannel[BeforeCuts]), cluster.distanceToBadChannel(), mWeight);
   }
 
   /// \brief Return a boolean that states, whether a cluster should be rejected by the applied cluster cuts
@@ -668,7 +881,7 @@ struct EmcalPi0Qc {
         // build meson from photons
         Meson meson(mPhotons[ig1], mPhotons[ig2]);
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
-          mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
+          mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt(), mWeight);
 
           uint8_t sm1 = mPhotons[ig1].sm;
           uint8_t sm2 = mPhotons[ig2].sm;
@@ -678,9 +891,9 @@ struct EmcalPi0Qc {
 
           if (mSplitEMCalDCal) {
             if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal) {
-              mHistManager.fill(HIST("invMassVsPt_EMCal"), meson.getMass(), meson.getPt());
+              mHistManager.fill(HIST("invMassVsPt_EMCal"), meson.getMass(), meson.getPt(), mWeight);
             } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal) {
-              mHistManager.fill(HIST("invMassVsPt_DCal"), meson.getMass(), meson.getPt());
+              mHistManager.fill(HIST("invMassVsPt_DCal"), meson.getMass(), meson.getPt(), mWeight);
             }
           }
         }
@@ -688,6 +901,7 @@ struct EmcalPi0Qc {
         // calculate background candidates (rotation background)
         calculateBackground(meson, ig1, ig2);
       }
+      // TODO: for now this part makes no sense when running JJ MC due to weights
       calculateMixedBack(mPhotons[ig1]);
     }
 
@@ -736,22 +950,22 @@ struct EmcalPi0Qc {
 
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
-        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
+        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mWeight);
         if (mSplitEMCalDCal) {
           if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
+            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated1.getMass(), mesonRotated1.getPt(), mWeight);
           } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
+            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated1.getMass(), mesonRotated1.getPt(), mWeight);
           }
         }
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
-        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
+        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mWeight);
         if (mSplitEMCalDCal) {
           if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
+            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated2.getMass(), mesonRotated2.getPt(), mWeight);
           } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
+            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated2.getMass(), mesonRotated2.getPt(), mWeight);
           }
         }
       }
@@ -803,7 +1017,7 @@ struct EmcalPi0Qc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAssociate"}, SetDefaultProcesses{{{"processCollision", true}, {"processAmbiguous", false}}}),  // o2-linter: disable=name/o2-task (adapted multiple times)
-    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processAmbiguous", true}}})}; // o2-linter: disable=name/o2-task (adapted multiple times)
+    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAssociate"}, SetDefaultProcesses{{{"processCollision", true}, {"processCollisionMC", false}, {"processAmbiguous", false}}}),  // o2-linter: disable=name/o2-task (adapted multiple times)
+    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processCollisionMC", false}, {"processAmbiguous", true}}})}; // o2-linter: disable=name/o2-task (adapted multiple times)
   return workflow;
 }

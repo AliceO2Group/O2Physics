@@ -46,6 +46,21 @@ constexpr char PrefixTrack2V0Se[] = "CPR_Track2V0/SE/";
 constexpr char PrefixTrack1V0Me[] = "CPR_Track1V0/ME/";
 constexpr char PrefixTrack2V0Me[] = "CPR_Track2V0/ME/";
 
+constexpr char PrefixTrack1CascadeSe[] = "CPR_Track1Cascade/SE/";
+constexpr char PrefixTrack2CascadeSe[] = "CPR_Track2Cascade/SE/";
+constexpr char PrefixTrack1CascadeMe[] = "CPR_Track1Cascade/ME/";
+constexpr char PrefixTrack2CascadeMe[] = "CPR_Track2Cascade/ME/";
+
+constexpr char PrefixTrack1V0DaughterSe[] = "CPR_Track1V0Dau/SE/";
+constexpr char PrefixTrack2V0DaughterSe[] = "CPR_Track2V0Dau/SE/";
+constexpr char PrefixTrack1V0DaughterMe[] = "CPR_Track1V0Dau/ME/";
+constexpr char PrefixTrack2V0DaughterMe[] = "CPR_Track2V0Dau/ME/";
+
+constexpr char PrefixTrack1CascadeBachelorSe[] = "CPR_Track1CascadeBachelor/SE/";
+constexpr char PrefixTrack2CascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
+constexpr char PrefixTrack1CascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
+constexpr char PrefixTrack2CascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
+
 template <const char* prefixTrack1Track2,
           const char* prefixTrack2Track3,
           const char* prefixTrack1Track3>
@@ -149,6 +164,64 @@ class CloseTripletRejectionTrackTrackV0
   closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
   closepairrejection::ClosePairRejectionTrackV0<prefixTrack1V0> mCtrTrack1V0;
   closepairrejection::ClosePairRejectionTrackV0<prefixTrack2V0> mCtrTrack2V0;
+};
+
+template <const char* prefixTrack1Track2,
+          const char* prefixTrack1Bachelor,
+          const char* prefixTrack1V0Daughter,
+          const char* prefixTrack2Bachelor,
+          const char* prefixTrack2V0Daughter>
+class CloseTripletRejectionTrackTrackCascade
+{
+ public:
+  CloseTripletRejectionTrackTrackCascade() = default;
+  ~CloseTripletRejectionTrackTrackCascade() = default;
+
+  template <typename T1, typename T2, typename T3>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specsBachelor,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specsV0Daughter,
+            T1 const& confCpr,
+            T2 const& confCprBachelor,
+            T3 const& confCprV0Daughter,
+            int absChargeTrack1,
+            int absChargeTrack2)
+  {
+    mCtrTrack12.init(registry, specs, confCpr, absChargeTrack1, absChargeTrack2);
+    mCtrTrack1Cascade.init(registry, specsBachelor, specsV0Daughter, confCprBachelor, confCprV0Daughter, absChargeTrack1);
+    mCtrTrack2Cascade.init(registry, specsBachelor, specsV0Daughter, confCprBachelor, confCprV0Daughter, absChargeTrack2);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrTrack12.setMagField(magField);
+    mCtrTrack1Cascade.setMagField(magField);
+    mCtrTrack2Cascade.setMagField(magField);
+  }
+  template <typename T1, typename T2, typename T3, typename T4>
+  void setTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable)
+  {
+    mCtrTrack12.setPair(track1, track2, trackTable);
+    mCtrTrack1Cascade.setPair(track1, cascade, trackTable);
+    mCtrTrack2Cascade.setPair(track2, cascade, trackTable);
+  }
+  bool isCloseTriplet() const
+  {
+    return mCtrTrack12.isClosePair() || mCtrTrack1Cascade.isClosePair() || mCtrTrack2Cascade.isClosePair();
+  }
+
+  void fill(float q3)
+  {
+    mCtrTrack12.fill(q3);
+    mCtrTrack1Cascade.fill(q3);
+    mCtrTrack2Cascade.fill(q3);
+  }
+
+ private:
+  closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
+  closepairrejection::ClosePairRejectionTrackCascade<prefixTrack1Bachelor, prefixTrack1V0Daughter> mCtrTrack1Cascade;
+  closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
 };
 
 }; // namespace closetripletrejection

@@ -15,9 +15,9 @@
 
 #include "ALICE3/Core/FastTracker.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/Logger.h>
+
+#include <string>
 
 void testFastTracker(std::string geometryFile = "a3geo.ini")
 {

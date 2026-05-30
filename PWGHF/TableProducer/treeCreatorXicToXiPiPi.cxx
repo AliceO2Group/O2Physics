@@ -34,6 +34,7 @@
 #include <Rtypes.h>
 
 #include <cstdint>
+#include <numeric>
 
 using namespace o2;
 using namespace o2::framework;

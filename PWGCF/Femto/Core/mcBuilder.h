@@ -134,10 +134,9 @@ class McBuilder
         // Not yet created → create it
         auto mcCol = col.template mcCollision_as<T3>();
         this->fillMcCollision<system>(mcCol, mcProducts);
-        it = mCollisionMap.find(originalIndex);
       }
       // Add label
-      mcProducts.producedCollisionLabels(it->second);
+      mcProducts.producedCollisionLabels(mCollisionMap.at(originalIndex)); // mc collsions has been added so we can now safely retrieve the index
     } else {
       // If no MC collision associated, fill empty label
       mcProducts.producedCollisionLabels(-1);
@@ -231,9 +230,15 @@ class McBuilder
   template <modes::System system, typename T1, typename T2>
   void fillMcCollision(T1 const& mcCol, T2& mcProducts)
   {
-    mcProducts.producedMcCollisions(
-      mcCol.multMCNParticlesEta08(),
-      mcCol.centFT0M());
+    float centrality = -1;
+    if constexpr (modes::isFlagSet(system, modes::System::kPP)) {
+      centrality = mcCol.centFT0M();
+    }
+    if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
+      centrality = mcCol.centFT0C();
+    }
+
+    mcProducts.producedMcCollisions(mcCol.multMCNParticlesEta08(), centrality);
     mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
   }
 

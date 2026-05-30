@@ -24,8 +24,10 @@
 #include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -46,8 +48,10 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <memory>
@@ -61,6 +65,7 @@ using namespace o2::framework::expressions;
 
 struct JetSpectraEseTask {
   Configurable<std::string> cfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency"};
+  Configurable<std::string> cfgEfficiency3D{"cfgEfficiency3D", "", "CCDB path to 3D efficiency"};
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
@@ -143,8 +148,10 @@ struct JetSpectraEseTask {
 
   Service<ccdb::BasicCCDBManager> ccdb;
   struct Efficiency {
-    TH1D* hEff = nullptr;
+    TH1F* hEff = nullptr;
+    TH3F* h3Eff = nullptr;
     bool isLoaded = false;
+    bool is3D = false;
   } cfg;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
@@ -405,17 +412,22 @@ struct JetSpectraEseTask {
       registry.add("hTrackPt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {eseAxis}, {occAxis}}});
       registry.add("hTrackEta", "track #eta;#eta_{track};entries", {HistType::kTH3F, {{centAxis}, {etaAxis}, {occAxis}}});
       registry.add("hTrackPhi", "track #phi;#phi_{track};entries", {HistType::kTH3F, {{centAxis}, {phiAxis}, {occAxis}}});
-      registry.add("hOccupancy", "Occupancy;Occupancy;entries", {HistType::kTH1F, {{occAxis}}});
+      registry.add("hOccupancy", "Occupancy;Occupancy;entries", {HistType::kTH2F, {{centAxis}, {occAxis}}});
+      registry.add("hOccupancyEv", "Occupancy;Occupancy;entries", {HistType::kTH2F, {{centAxis}, {occAxis}}});
       registry.add("hPsiOccupancy", "Occupancy;#Psi_{2};entries", {HistType::kTH3F, {{centAxis}, {150, -2.5, 2.5}, {occAxis}}});
+      registry.add("hSTrackPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {phiAxis}, {etaAxis}, {occAxis}}});
+      registry.add("hSJetPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {phiAxis}, {etaAxis}, {occAxis}}});
     }
     if (doprocessMCGenTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCGen track");
+      registry.add("mcgen/h3TrackPtGen", ";#it{p}_{T,track}; vtxZ; #eta", {HistType::kTH3F, {{assocTrackPt}, {vertexZAxis}, {etaAxis}}});
       registry.add("mcgen/hTrackPtGen", "", {HistType::kTH1F, {{assocTrackPt}}});
       registry.add("mcgen/hTrackEtaGen", "", {HistType::kTH1F, {{etaAxis}}});
       registry.add("mcgen/hTrackPhiGen", "", {HistType::kTH1F, {{phiAxis}}});
     }
     if (doprocessMCRecoTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCRec track");
+      registry.add("mcrec/h3TrackPtReco", ";#it{p}_{T,track}; vtxZ; #eta", {HistType::kTH3F, {{assocTrackPt}, {vertexZAxis}, {etaAxis}}});
       registry.add("mcrec/hTrackPtReco", "", {HistType::kTH1F, {{assocTrackPt}}});
       registry.add("mcrec/hTrackEtaReco", "", {HistType::kTH1F, {{etaAxis}}});
       registry.add("mcrec/hTrackPhiReco", "", {HistType::kTH1F, {{phiAxis}}});
@@ -430,22 +442,37 @@ struct JetSpectraEseTask {
       return;
     }
     if (!cfgEfficiency.value.empty()) {
-      cfg.hEff = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      cfg.hEff = ccdb->getForTimeStamp<TH1F>(cfgEfficiency, timestamp);
       if (cfg.hEff == nullptr) {
         LOGF(fatal, "Could not load track efficiency from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded tracking efficiency from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.hEff);
+    }
+    if (!cfgEfficiency3D.value.empty()) {
+      cfg.h3Eff = ccdb->getForTimeStamp<TH3F>(cfgEfficiency3D, timestamp);
+      if (cfg.h3Eff == nullptr) {
+        LOGF(fatal, "Could not load track efficiency from %s", cfgEfficiency3D.value.c_str());
+      }
+      LOGF(info, "Loaded 3D tracking efficiency from %s (%p)", cfgEfficiency3D.value.c_str(), (void*)cfg.h3Eff);
+      cfg.is3D = true;
     }
     cfg.isLoaded = true;
     return;
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track)
+  double getEfficiency(TTrack track, auto vtxZ)
   {
     double eff{1.0};
-    if (cfg.hEff)
-      eff = cfg.hEff->GetBinContent(cfg.hEff->FindBin(track.pt()));
+    if (cfg.is3D) {
+      if (cfg.h3Eff) {
+        eff = cfg.h3Eff->GetBinContent(cfg.h3Eff->FindBin(track.pt(), track.eta(), vtxZ));
+      }
+    } else {
+      if (cfg.hEff) {
+        eff = cfg.hEff->GetBinContent(cfg.hEff->FindBin(track.pt()));
+      }
+    }
     if (eff == 0)
       return -1.;
     else
@@ -524,7 +551,7 @@ struct JetSpectraEseTask {
       for (const auto& track : tracks) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
-        double weff = getEfficiency(track);
+        double weff = getEfficiency(track, collision.posZ());
         if (weff < 0)
           continue;
         auto deta = track.eta() - jet.eta();
@@ -534,7 +561,7 @@ struct JetSpectraEseTask {
       }
     }
     for (const auto& track : tracks) {
-      double weff = getEfficiency(track);
+      double weff = getEfficiency(track, collision.posZ());
       if (weff < 0)
         continue;
       registry.fill(HIST("trackQA/before/hTrackPt"), centrality, track.pt(), weff);
@@ -622,7 +649,7 @@ struct JetSpectraEseTask {
         for (const auto& track : tracks2) {
           if (!jetderiveddatautilities::selectTrack(track, trackSelection))
             continue;
-          double weff = getEfficiency(track);
+          double weff = getEfficiency(track, c2.posZ());
           if (weff < 0)
             continue;
           auto deta = track.eta() - jet.eta();
@@ -632,7 +659,7 @@ struct JetSpectraEseTask {
       }
 
       for (const auto& track : tracks2) {
-        double weff = getEfficiency(track);
+        double weff = getEfficiency(track, c2.posZ());
         if (weff < 0)
           continue;
         registry.fill(HIST("trackQA/before/hTrackPtMixed"), centrality, track.pt(), weff);
@@ -699,7 +726,7 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processESEBackground, "process random cones with event plane and ESE", false);
 
   void processESEOccupancy(soa::Join<aod::JetCollisions, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
-                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks)
+                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   {
     float count{0.5};
     registry.fill(HIST("hEventCounterOcc"), count++);
@@ -708,21 +735,31 @@ struct JetSpectraEseTask {
 
     auto occupancy{collision.trackOccupancyInTimeRange()};
     registry.fill(HIST("hPsiOccupancy"), collision.centFT0M(), psi.psi2, occupancy);
-    registry.fill(HIST("hOccupancy"), occupancy);
+    registry.fill(HIST("hOccupancy"), collision.centFT0M(), occupancy);
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hEventCounterOcc"), count++);
+    registry.fill(HIST("hOccupancyEv"), collision.centFT0M(), occupancy);
 
     for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection))
         continue;
 
       registry.fill(HIST("hTrackPt"), collision.centFT0M(), track.pt(), qPerc[0], occupancy);
+      registry.fill(HIST("hSTrackPtPhiEtaOcc"), collision.centFT0M(), track.pt(), track.phi(), track.eta(), occupancy);
       if (track.pt() < cfgOccupancyPtCut->at(0) || track.pt() > cfgOccupancyPtCut->at(1))
         continue;
       registry.fill(HIST("hTrackEta"), collision.centFT0M(), track.eta(), occupancy);
       registry.fill(HIST("hTrackPhi"), collision.centFT0M(), track.phi(), occupancy);
+    }
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
+        continue;
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      registry.fill(HIST("hSJetPtPhiEtaOcc"), collision.centFT0M(), jet.pt(), jet.phi(), jet.eta(), occupancy);
     }
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEOccupancy, "process occupancy", false);
@@ -903,6 +940,7 @@ struct JetSpectraEseTask {
         continue;
       }
 
+      registry.fill(HIST("mcgen/h3TrackPtGen"), particle.pt(), collision.posZ(), particle.eta());
       registry.fill(HIST("mcgen/hTrackPtGen"), particle.pt());
       registry.fill(HIST("mcgen/hTrackEtaGen"), particle.eta());
       registry.fill(HIST("mcgen/hTrackPhiGen"), particle.phi());
@@ -968,6 +1006,7 @@ struct JetSpectraEseTask {
         }
         seenMcParticles.push_back(particle.globalIndex());
 
+        registry.fill(HIST("mcrec/h3TrackPtReco"), track.pt(), collision.posZ(), track.eta());
         registry.fill(HIST("mcrec/hTrackPtReco"), track.pt());
         registry.fill(HIST("mcrec/hTrackEtaReco"), track.eta());
         registry.fill(HIST("mcrec/hTrackPhiReco"), track.phi());

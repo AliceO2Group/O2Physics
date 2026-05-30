@@ -26,17 +26,19 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/TableProducer/PID/pidTPCBase.h"
+#include "Common/TableProducer/PID/pidTPCBase.h" // IWYU pragma: keep
 #include "Tools/ML/model.h"
 
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <TFile.h>
 #include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
 #include <TMatrixDfwd.h>
 #include <TRandom.h>
@@ -50,6 +52,8 @@
 #include <ratio>
 #include <string>
 #include <vector>
+
+#include <math.h>
 
 namespace o2::aod
 {
@@ -299,11 +303,11 @@ class pidTPCModule
     // initialize PID response
     response = new o2::pid::tpc::Response();
 
-    enableFlagIfTableRequired(context, "DEdxsCorrected", pidTPCopts.savedEdxsCorrected);
+    o2::common::core::enableFlagIfTableRequired(context, "DEdxsCorrected", pidTPCopts.savedEdxsCorrected);
 
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, o2::framework::Configurable<int>& flag) {
-      enableFlagIfTableRequired(context, "pidTPC" + particle, flag);
+      o2::common::core::enableFlagIfTableRequired(context, "pidTPC" + particle, flag);
     };
     enableFlag("FullEl", pidTPCopts.pidFullEl);
     enableFlag("FullMu", pidTPCopts.pidFullMu);
@@ -326,7 +330,7 @@ class pidTPCModule
     enableFlag("Al", pidTPCopts.pidTinyAl);
 
     if (metadataInfo.isMC()) {
-      enableFlagIfTableRequired(context, "mcTPCTuneOnData", pidTPCopts.enableTuneOnDataTable);
+      o2::common::core::enableFlagIfTableRequired(context, "mcTPCTuneOnData", pidTPCopts.enableTuneOnDataTable);
     }
 
     speciesNetworkFlags[0] = pidTPCopts.useNetworkEl;

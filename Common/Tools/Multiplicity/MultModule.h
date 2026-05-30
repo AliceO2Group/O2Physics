@@ -308,6 +308,8 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   // Autoconfigure process functions
   o2::framework::Configurable<bool> autoConfigureProcess{"autoConfigureProcess", false, "if true, will configure process function switches based on metadata"};
 
+  o2::framework::Configurable<bool> doNTrackStudies{"doNTrackStudies", true, "if true, will fill Ntracks in MultsExtra"};
+
   // do vertex-Z equalized or not
   o2::framework::Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
 
@@ -316,6 +318,12 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> maxPtGlobalTrack{"maxPtGlobalTrack", 1e+10, "max. pT for global tracks"};
   o2::framework::Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
   o2::framework::Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
+
+  // MFT track counter configurables
+  o2::framework::Configurable<int> minNclsMFTTrack{"minNclsMFTTrack", 5, "min. number of MFT clusters for MFT tracks"};
+  o2::framework::Configurable<float> maxDCAxyToPVMFTTrack{"maxDCAxyToPVMFTTrack", 2.0f, "max DCAxy to PV for MFT tracks (cm)"};
+  o2::framework::Configurable<float> minEtaMFTTrack{"minEtaMFTTrack", -3.9f, "min. pseudorapidity for MFT tracks (nominal: -3.6)"};
+  o2::framework::Configurable<float> maxEtaMFTTrack{"maxEtaMFTTrack", -2.0f, "max. pseudorapidity for MFT tracks (nominal: -2.45)"};
 
   // ccdb information
   o2::framework::Configurable<std::string> ccdbPathVtxZ{"ccdbPathVtxZ", "Centrality/Calibration", "The CCDB path for vertex-Z calibration"};
@@ -903,9 +911,15 @@ class MultModule
     if (internalOpts.mEnabledTables[kMultsExtra]) {
       cursors.tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                          bc.runNumber(), collision.posZ(), collision.sel8(),
-                         mults.multHasITS, mults.multHasTPC, mults.multHasTOF, mults.multHasTRD,
-                         mults.multITSOnly, mults.multTPCOnly, mults.multITSTPC,
-                         mults.multAllTracksTPCOnly, mults.multAllTracksITSTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasITS,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTOF,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTRD,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multITSOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multTPCOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multITSTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multAllTracksTPCOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multAllTracksITSTPC,
                          collision.trackOccupancyInTimeRange(),
                          collision.ft0cOccupancyInTimeRange(),
                          collision.flags());
@@ -980,7 +994,7 @@ class MultModule
     int nTracks = 0;
 
     for (const auto& track : mfttracks) {
-      if (track.nClusters() >= 5) { // hardcoded for now
+      if (track.nClusters() >= internalOpts.minNclsMFTTrack.value) {
         nAllTracks++;
       }
     }
@@ -988,13 +1002,13 @@ class MultModule
     if (retracks.size() > 0) {
       for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if (track.nClusters() < 5) {
+        if (track.nClusters() < internalOpts.minNclsMFTTrack.value) {
           continue; // min cluster requirement
         }
-        if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
+        if (track.eta() > internalOpts.maxEtaMFTTrack.value || track.eta() < internalOpts.minEtaMFTTrack.value) {
           continue; // too far to be of true interest
         }
-        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
+        if (std::abs(retrack.bestDCAXY()) > internalOpts.maxDCAxyToPVMFTTrack.value) {
           continue; // does not point to PV properly
         }
         nTracks++;
@@ -1233,11 +1247,11 @@ class MultModule
         // invoke loading only for requested centralities
         if (internalOpts.mEnabledTables[kCentFV0As])
           getccdb(fv0aInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0Ms])
+        if (internalOpts.mEnabledTables[kCentFT0Ms] || internalOpts.mEnabledTables[kBCCentFT0Ms])
           getccdb(ft0mInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0As])
+        if (internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0As])
           getccdb(ft0aInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0Cs])
+        if (internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kBCCentFT0Cs])
           getccdb(ft0cInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           getccdb(ft0cVariant1Info, internalOpts.generatorName);

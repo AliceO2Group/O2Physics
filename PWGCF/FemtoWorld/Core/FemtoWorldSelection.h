@@ -13,8 +13,10 @@
 /// \brief FemtoWorldSelection - small generic class to do selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef FEMTOWORLDSELECTION_H_
-#define FEMTOWORLDSELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDSELECTION_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDSELECTION_H_
+
+#include <cstdlib>
 
 namespace o2::analysis::femtoWorld
 {
@@ -115,4 +117,4 @@ class FemtoWorldSelection
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDSELECTION_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDSELECTION_H_

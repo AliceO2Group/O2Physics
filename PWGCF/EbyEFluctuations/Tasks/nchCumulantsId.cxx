@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file nchCumulantsId.cxx
+/// \file NchCumulantsId.cxx
 /// \brief Event by Event conserved charges fluctuations
 /// \author Pravata Panigrahi <pravata.panigrahi@cern.ch> :: Sadhana Dash(sadhana@phy.iitb.ac.in)
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -20,19 +21,30 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH2.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -46,6 +58,12 @@ using namespace std;
 #define ID_BIT_PR 2
 #define ID_BIT_EL 3
 #define ID_BIT_DE 4
+
+#define MC_BIT_PI 0 // MC particle identification bits
+#define MC_BIT_KA 1
+#define MC_BIT_PR 2
+#define MC_BIT_EL 3
+#define MC_BIT_DE 4
 
 #define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))  // avoid name bitset as std::bitset is already there
 #define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit))) // bit check will return int value, not bool, use BITCHECK != 0 in Analysi
@@ -104,54 +122,68 @@ struct NchCumulantsId {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "cut for eta"};
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
-  Configurable<int> netChBin{"netChBin", 160, "bins for netch"};
-  Configurable<float> netChMax{"netChMax", 80.0, "max for netch"};
-  Configurable<float> netChMin{"netChMin", -80.0, "min for netch"};
-  Configurable<int> chBins{"chBins", 501, "bins for ch"};
-  Configurable<float> chMax{"chMax", 500.0, "max for ch"};
-  Configurable<float> chMin{"chMin", -1.0, "min for ch"};
-  Configurable<float> midRapMax{"midRapMax", 1000.0, "max for midrapmult"};
-  Configurable<int> midRapBins{"midRapBins", 1001, "bins for midrapmult"};
+
+  ConfigurableAxis axisNch{"axisNch", {1200, -60.0, 60.0}, "Net_charge_dN"};
+  ConfigurableAxis axisPosCh{"axisPosCh", {3010, -0.5, 300.5}, "Pos_charge"};
+  ConfigurableAxis axisNegCh{"axisNegCh", {3010, -0.5, 300.5}, "Neg_charge"};
+  ConfigurableAxis axisNt{"axisNt", {8010, -0.5, 800.5}, "Mult_midRap_Nch"};
+  ConfigurableAxis axisPrCh{"axisPrCh", {3010, -0.5, 300.5}, "Pr_charge"};
+  ConfigurableAxis axisAPrCh{"axisAPrCh", {3010, -0.5, 300.5}, "APr_charge"};
+  ConfigurableAxis axisKaCh{"axisKaCh", {3010, -0.5, 300.5}, "Ka_charge"};
+  ConfigurableAxis axisAKaCh{"axisAKaCh", {3010, -0.5, 300.5}, "AKa_charge"};
+  ConfigurableAxis axisPiCh{"axisPiCh", {3010, -0.5, 300.5}, "Pion_Positive"};
+  ConfigurableAxis axisAPiCh{"axisAPiCh", {3010, -0.5, 300.5}, "Pion_Negative"};
 
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
+  Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
+
+  Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
+  Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
+  Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
 
   // Configurables for particle Identification
-  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
+  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
   Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
   Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
   Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
   Configurable<bool> cfgId05DoTpcInnerParamId{"cfgId05DoTpcInnerParamId", false, "cfgId05DoTpcInnerParamId"};
 
   Configurable<float> cfgIdPi01ThrPforTOF{"cfgIdPi01ThrPforTOF", 0.7, "cfgIdPi01ThrPforTOF"};
-  Configurable<int> cfgIdPi02IdCutTypeLowP{"cfgIdPi02IdCutTypeLowP", 0, "cfgIdPi02IdCutTypeLowP"};
+  Configurable<int> cfgIdPi02IdCutTypeLowP{"cfgIdPi02IdCutTypeLowP", 1, "cfgIdPi02IdCutTypeLowP"};
   Configurable<float> cfgIdPi03NSigmaTPCLowP{"cfgIdPi03NSigmaTPCLowP", 2.0, "cfgIdPi03NSigmaTPCLowP"};
   Configurable<float> cfgIdPi04NSigmaTOFLowP{"cfgIdPi04NSigmaTOFLowP", 2.0, "cfgIdPi04NSigmaTOFLowP"};
   Configurable<float> cfgIdPi05NSigmaRadLowP{"cfgIdPi05NSigmaRadLowP", 4.0, "cfgIdPi05NSigmaRadLowP"};
-  Configurable<int> cfgIdPi06IdCutTypeHighP{"cfgIdPi06IdCutTypeHighP", 0, "cfgIdPi06IdCutTypeHighP"};
+  Configurable<int> cfgIdPi06IdCutTypeHighP{"cfgIdPi06IdCutTypeHighP", 1, "cfgIdPi06IdCutTypeHighP"};
   Configurable<float> cfgIdPi07NSigmaTPCHighP{"cfgIdPi07NSigmaTPCHighP", 2.0, "cfgIdPi07NSigmaTPCHighP"};
   Configurable<float> cfgIdPi08NSigmaTOFHighP{"cfgIdPi08NSigmaTOFHighP", 2.0, "cfgIdPi08NSigmaTOFHighP"};
   Configurable<float> cfgIdPi09NSigmaRadHighP{"cfgIdPi09NSigmaRadHighP", 4.0, "cfgIdPi09NSigmaRadHighP"};
 
   Configurable<float> cfgIdKa01ThrPforTOF{"cfgIdKa01ThrPforTOF", 0.8, "cfgIdKa01ThrPforTOF"};
-  Configurable<int> cfgIdKa02IdCutTypeLowP{"cfgIdKa02IdCutTypeLowP", 0, "cfgIdKa02IdCutTypeLowP"};
+  Configurable<int> cfgIdKa02IdCutTypeLowP{"cfgIdKa02IdCutTypeLowP", 1, "cfgIdKa02IdCutTypeLowP"};
   Configurable<float> cfgIdKa03NSigmaTPCLowP{"cfgIdKa03NSigmaTPCLowP", 2.0, "cfgIdKa03NSigmaTPCLowP"};
   Configurable<float> cfgIdKa04NSigmaTOFLowP{"cfgIdKa04NSigmaTOFLowP", 2.0, "cfgIdKa04NSigmaTOFLowP"};
   Configurable<float> cfgIdKa05NSigmaRadLowP{"cfgIdKa05NSigmaRadLowP", 4.0, "cfgIdKa05NSigmaRadLowP"};
-  Configurable<int> cfgIdKa06IdCutTypeHighP{"cfgIdKa06IdCutTypeHighP", 0, "cfgIdKa06IdCutTypeHighP"};
+  Configurable<int> cfgIdKa06IdCutTypeHighP{"cfgIdKa06IdCutTypeHighP", 1, "cfgIdKa06IdCutTypeHighP"};
   Configurable<float> cfgIdKa07NSigmaTPCHighP{"cfgIdKa07NSigmaTPCHighP", 2.0, "cfgIdKa07NSigmaTPCHighP"};
   Configurable<float> cfgIdKa08NSigmaTOFHighP{"cfgIdKa08NSigmaTOFHighP", 2.0, "cfgIdKa08NSigmaTOFHighP"};
   Configurable<float> cfgIdKa09NSigmaRadHighP{"cfgIdKa09NSigmaRadHighP", 4.0, "cfgIdKa09NSigmaRadHighP"};
 
   Configurable<float> cfgIdPr01ThrPforTOF{"cfgIdPr01ThrPforTOF", 0.8, "cfgIdPr01ThrPforTOF"};
-  Configurable<int> cfgIdPr02IdCutTypeLowP{"cfgIdPr02IdCutTypeLowP", 0, "cfgIdPr02IdCutTypeLowP"};
+  Configurable<int> cfgIdPr02IdCutTypeLowP{"cfgIdPr02IdCutTypeLowP", 1, "cfgIdPr02IdCutTypeLowP"};
   Configurable<float> cfgIdPr03NSigmaTPCLowP{"cfgIdPr03NSigmaTPCLowP", 2.0, "cfgIdPr03NSigmaTPCLowP"};
   Configurable<float> cfgIdPr04NSigmaTOFLowP{"cfgIdPr04NSigmaTOFLowP", 2.0, "cfgIdPr04NSigmaTOFLowP"};
   Configurable<float> cfgIdPr05NSigmaRadLowP{"cfgIdPr05NSigmaRadLowP", 4.0, "cfgIdPr05NSigmaRadLowP"};
-  Configurable<int> cfgIdPr06IdCutTypeHighP{"cfgIdPr06IdCutTypeHighP", 0, "cfgIdPr06IdCutTypeHighP"};
+  Configurable<int> cfgIdPr06IdCutTypeHighP{"cfgIdPr06IdCutTypeHighP", 1, "cfgIdPr06IdCutTypeHighP"};
   Configurable<float> cfgIdPr07NSigmaTPCHighP{"cfgIdPr07NSigmaTPCHighP", 2.0, "cfgIdPr07NSigmaTPCHighP"};
   Configurable<float> cfgIdPr08NSigmaTOFHighP{"cfgIdPr08NSigmaTOFHighP", 2.0, "cfgIdPr08NSigmaTOFHighP"};
   Configurable<float> cfgIdPr09NSigmaRadHighP{"cfgIdPr09NSigmaRadHighP", 4.0, "cfgIdPr09NSigmaRadHighP"};
+
+  Configurable<float> cfgIdElRejLowNSigma{"cfgIdElRejLowNSigma", -3.0, "cfgIdElRejLowNSigma"};
+  Configurable<float> cfgIdElRejHighNSigma{"cfgIdElRejHighNSigma", 5.0, "cfgIdElRejHighNSigma"};
+  Configurable<float> cfgIdPiRejNSigma{"cfgIdPiRejNSigma", 3.0, "cfgIdPiRejNSigma"};
+  Configurable<float> cfgIdKaRejNSigma{"cfgIdKaRejNSigma", 3.0, "cfgIdKaRejNSigma"};
+  Configurable<float> cfgIdPrRejNSigma{"cfgIdPrRejNSigma", 3.0, "cfgIdPrRejNSigma"};
 
   struct : ConfigurableGroup {
     Configurable<float> cfgVetoId01PiTPC{"cfgVetoId01PiTPC", 3.0, "cfgVetoId01PiTPC"};
@@ -236,19 +268,13 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNch(netChBin, netChMin, netChMax, "Net_charge_dN");
-    const AxisSpec axisPosCh(chBins, chMin, chMax, "Pos_charge");
-    const AxisSpec axisNegCh(chBins, chMin, chMax, "Neg_charge");
-    const AxisSpec axisNt(midRapBins, chMin, midRapMax, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(chBins, chMin, chMax, "Pr_charge");
-    const AxisSpec axisAPrCh(chBins, chMin, chMax, "APr_charge");
-    const AxisSpec axisKaCh(chBins, chMin, chMax, "Ka_charge");
-    const AxisSpec axisAKaCh(chBins, chMin, chMax, "AKa_charge");
-    const AxisSpec axisPiCh(chBins, chMin, chMax, "Pion_Positive");
-    const AxisSpec axisAPiCh(chBins, chMin, chMax, "Pion_Negative");
+    const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
+    const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
 
     HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPrCh, axisAPrCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
     HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPiCh, axisAPiCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
+    HistogramConfigSpec histTPCPIDSparse({HistType::kTHnSparseD, {axisP, axisTPCNSigma, axisIdTag, axisMcTag}});
+    HistogramConfigSpec histTOFPIDSparse({HistType::kTHnSparseD, {axisP, axisTOFNSigma, axisIdTag, axisMcTag}});
 
     HistogramConfigSpec histPPt({HistType::kTH2F, {axisP, axisPt}});
     HistogramConfigSpec histPTpcInnerParam({HistType::kTH2F, {axisP, axisTPCInnerParam}});
@@ -267,6 +293,17 @@ struct NchCumulantsId {
     HistogramConfigSpec histTpcNSigmaTofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
 
     HistogramConfigSpec histPtMc({HistType::kTH1F, {axisPt}});
+
+    // Register histograms for PID validation
+    // Register TPC spares per species
+    hist.add("PIDValidation/tpcSparse_Pi", "p vs tpcNSigmaPi vs idTag vs mcTag (Pion)", histTPCPIDSparse);
+    hist.add("PIDValidation/tpcSparse_Ka", "p vs tpcNSigmaKa vs idTag vs mcTag (Kaon)", histTPCPIDSparse);
+    hist.add("PIDValidation/tpcSparse_Pr", "p vs tpcNSigmaPr vs idTag vs mcTag (Proton)", histTPCPIDSparse);
+
+    // Register TOF spares per species
+    hist.add("PIDValidation/tofSparse_Pi", "p vs tofNSigmaPi vs idTag vs mcTag (Pion)", histTOFPIDSparse);
+    hist.add("PIDValidation/tofSparse_Ka", "p vs tofNSigmaKa vs idTag vs mcTag (Kaon)", histTOFPIDSparse);
+    hist.add("PIDValidation/tofSparse_Pr", "p vs tofNSigmaPr vs idTag vs mcTag (Proton)", histTOFPIDSparse);
 
     // QA check histos
 
@@ -765,8 +802,44 @@ struct NchCumulantsId {
     }
   }
 
+  template <typename T>
+  int getMCTag(const T& track)
+  {
+    int mcTag = 0;
+    if (!track.has_mcParticle())
+      return mcTag;
+    auto mcPart = track.mcParticle();
+    int pdgCode = std::abs(mcPart.pdgCode());
+
+    if (pdgCode == kPiPlus || pdgCode == kPiMinus)
+      BITSET(mcTag, MC_BIT_PI);
+    else if (pdgCode == kKPlus || pdgCode == kKMinus)
+      BITSET(mcTag, MC_BIT_KA);
+    else if (pdgCode == kProton || pdgCode == kProtonBar)
+      BITSET(mcTag, MC_BIT_PR);
+    else if (pdgCode == kElectron || pdgCode == kPositron)
+      BITSET(mcTag, MC_BIT_EL);
+    else if (pdgCode == kDeuteron || pdgCode == -kDeuteron)
+      BITSET(mcTag, MC_BIT_DE);
+
+    return mcTag;
+  }
   //
   //______________________________Identification Functions________________________________________________________________
+  // Victor slection cuts for electron and other rejections
+  template <typename T>
+  bool selTrackForId(const T& track)
+  {
+    if (cfgIdElRejLowNSigma < track.tpcNSigmaEl() && track.tpcNSigmaEl() < cfgIdElRejHighNSigma &&
+        std::fabs(track.tpcNSigmaPi()) > cfgIdPiRejNSigma &&
+        std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
+        std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   // Pion
   template <typename T>
   bool selPion(const T& track, int& IdMethod)
@@ -884,6 +957,28 @@ struct NchCumulantsId {
     fillIdentificationQA<mode, kKa, NoId>(hist, track); // Look at Kaon
     fillIdentificationQA<mode, kPr, NoId>(hist, track); // Look at Proton
   }
+
+  //  template <int Mode, int pidMode, typename H, typename T>
+  //  void fillGenTrackQA(H& histReg, const T& mcTrack)
+  //  {
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h12_p"), mcTrack.p());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h13_pt"), mcTrack.pt());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), mcTrack.eta());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), mcTrack.phi());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), mcTrack.y());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
+  //  }
+  //
+  //  template <int Mode, int pidMode, typename H, typename T>
+  //  void fillRecoTrackQA(H& histReg, const T& track)
+  //  {
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h12_p"), track.p());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h13_pt"), track.pt());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), track.eta());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), track.phi());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), track.y());
+  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), track.pt(), track.eta());
+  //  }
 
   template <HistRegEnum2 DIR, PidEnum P, ChargeEnum C, typename TrackType>
   void fillGenTrackQA(HistogramRegistry& r, const TrackType& t)
@@ -1017,12 +1112,27 @@ struct NchCumulantsId {
   using MyAllTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
                                 aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl,
                                 aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>;
-  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels>;
 
   using MyTracksWithMclabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTOFmass,
                                          aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe,
                                          aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe, aod::McTrackLabels>;
-  using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels, aod::McCollisionLabels>;
+
+  template <typename CollisionType>
+  bool isEventSelected(const CollisionType& col)
+  {
+    if (cfgEvSel01doNoSameBunchPileup &&
+        !col.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (cfgEvSel02doIsGoodZvtxFT0vsPV &&
+        !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (cfgEvSel03doIsGoodITSLayersAll &&
+        !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
+      return false;
+    return true;
+  }
 
   // tracks and collision filters
   Filter col = aod::evsel::sel8 == true;
@@ -1072,6 +1182,8 @@ struct NchCumulantsId {
 
     if constexpr (analysisType == doDataProcessing) {
       for (const auto& col : collisions) {
+        if (!isEventSelected(col))
+          continue;
         nP = 0;
         nM = 0;
         nCh = 0;
@@ -1099,6 +1211,11 @@ struct NchCumulantsId {
           }
           if (track.sign() == -1) {
             nM += hPtEtaForEffCorrection[kCh][kNeg]->GetBinContent(ptEtaBin);
+          }
+
+          // Reject electrons first
+          if (cfgDoRejectionForId && !selTrackForId(track)) {
+            continue;
           }
 
           int idMethod;
@@ -1162,6 +1279,8 @@ struct NchCumulantsId {
           LOG(warning) << "No MC collision for this collision, skip...";
           continue;
         }
+        if (!isEventSelected(col))
+          continue;
         float nP = 0;
         float nM = 0;
         float nCh = 0;
@@ -1197,17 +1316,34 @@ struct NchCumulantsId {
           idMethodKa = kUnidentified;
           idMethodPr = kUnidentified;
 
+          // Get MC tag
+          int mcTag = getMCTag(track);
+
+          // Reject electrons first
+          if (cfgDoRejectionForId && !selTrackForId(track)) {
+            continue;
+          }
+
           if (selPion(track, idMethodPi)) {
             trackIsPion = true;
             BITSET(trackIdTag, ID_BIT_PI);
+            hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
+            if (track.hasTOF())
+              hist.fill(HIST("PIDValidation/tofSparse_Pi"), track.p(), track.tofNSigmaPi(), trackIdTag, mcTag);
           }
           if (selKaon(track, idMethodKa)) {
             trackIsKaon = true;
             BITSET(trackIdTag, ID_BIT_KA);
+            hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
+            if (track.hasTOF())
+              hist.fill(HIST("PIDValidation/tofSparse_Ka"), track.p(), track.tofNSigmaKa(), trackIdTag, mcTag);
           }
           if (selProton(track, idMethodPr)) {
             trackIsProton = true;
             BITSET(trackIdTag, ID_BIT_PR);
+            hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
+            if (track.hasTOF())
+              hist.fill(HIST("PIDValidation/tofSparse_Pr"), track.p(), track.tofNSigmaPr(), trackIdTag, mcTag);
           }
 
           if constexpr (analysisType == doPurityProcessing) {
@@ -1288,6 +1424,8 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this event, skip...";
         continue;
       }
+      if (!isEventSelected(col))
+        continue;
       const auto& mcColl = col.mcCollision();
 
       // ---- apply same Vz cut as data/reco ----
@@ -1321,6 +1459,7 @@ struct NchCumulantsId {
         int pdg = mcTrack.pdgCode();
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
           nP++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
@@ -1330,6 +1469,7 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
           nM++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
@@ -1341,21 +1481,27 @@ struct NchCumulantsId {
         }
         // ----- Pions -----
         if (pdg == kPiPlus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kPiMinus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kKPlus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kProton) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nAPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
@@ -1390,6 +1536,8 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this collision, skip...";
         continue;
       }
+      if (!isEventSelected(col))
+        continue;
       auto mcCollision = col.mcCollision();
 
       if (checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ)
@@ -1420,6 +1568,7 @@ struct NchCumulantsId {
         int pdg = mcTrack.pdgCode();
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
           nPGen++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
@@ -1429,6 +1578,7 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
+          // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
           nMGen++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
@@ -1438,23 +1588,29 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         }
-
+        // ----- Pions -----
         if (pdg == kPiPlus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kPiMinus) {
+          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kKPlus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
+          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kProton) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
+          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nAPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
@@ -1497,6 +1653,8 @@ struct NchCumulantsId {
           continue;
         int pdg = mcPart.pdgCode();
 
+        int mcTag = getMCTag(track);
+
         fillTrackQA<qaTracksPostSel>(track);
 
         trackIsPion = false;
@@ -1507,17 +1665,41 @@ struct NchCumulantsId {
         idMethodKa = kUnidentified;
         idMethodPr = kUnidentified;
 
+        // Reject electrons first
+        if (cfgDoRejectionForId && !selTrackForId(track)) {
+          continue;
+        }
+
+        // Fill separate spares for each species if it passes the cut
         if (selPion(track, idMethodPi)) {
           trackIsPion = true;
           BITSET(trackIdTag, ID_BIT_PI);
+          // Fill TPC sparse for pion
+          hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
+          // Fill TOF sparse for pion if has TOF
+          if (track.hasTOF()) {
+            hist.fill(HIST("PIDValidation/tofSparse_Pi"), track.p(), track.tofNSigmaPi(), trackIdTag, mcTag);
+          }
         }
         if (selKaon(track, idMethodKa)) {
           trackIsKaon = true;
           BITSET(trackIdTag, ID_BIT_KA);
+          // Fill TPC sparse for kaon
+          hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
+          // Fill TOF sparse for kaon if has TOF
+          if (track.hasTOF()) {
+            hist.fill(HIST("PIDValidation/tofSparse_Ka"), track.p(), track.tofNSigmaKa(), trackIdTag, mcTag);
+          }
         }
         if (selProton(track, idMethodPr)) {
           trackIsProton = true;
           BITSET(trackIdTag, ID_BIT_PR);
+          // Fill TPC sparse for proton
+          hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
+          // Fill TOF sparse for proton if has TOF
+          if (track.hasTOF()) {
+            hist.fill(HIST("PIDValidation/tofSparse_Pr"), track.p(), track.tofNSigmaPr(), trackIdTag, mcTag);
+          }
         }
 
         // bool isKnownCharged = (std::abs(pdg) == kPiPlus  ||
@@ -1556,6 +1738,11 @@ struct NchCumulantsId {
             nAPiRec += hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(recoAnalysis, track);
           }
+          // PID band QA for pions
+          if (idMethodPi == kTPCidentified)
+            fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
+          if (idMethodPi == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
         } else if (trackIsKaon) {
           if (track.sign() > 0) {
             nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
@@ -1564,6 +1751,11 @@ struct NchCumulantsId {
             nAKaRec += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
           }
+          // PID band QA for kaons
+          if (idMethodKa == kTPCidentified)
+            fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
+          if (idMethodKa == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
         } else if (trackIsProton) {
           if (track.sign() > 0) {
             nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
@@ -1572,26 +1764,28 @@ struct NchCumulantsId {
             nAPrRec += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
           }
+          // PID band QA for protons
+          if (idMethodPr == kTPCidentified)
+            fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
+          if (idMethodPr == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
         }
         // purity check - check pdg aginst sign
         bool purityPion = false;
+        bool purityKaon = false;
+        bool purityProton = false;
+
         if (trackIsPion) {
           if (track.sign() > 0 && pdg == kPiPlus)
             purityPion = true;
           if (track.sign() < 0 && pdg == kPiMinus)
             purityPion = true;
-        }
-
-        bool purityKaon = false;
-        if (trackIsKaon) {
+        } else if (trackIsKaon) {
           if (track.sign() > 0 && pdg == kKPlus)
             purityKaon = true;
           if (track.sign() < 0 && pdg == kKMinus)
             purityKaon = true;
-        }
-
-        bool purityProton = false;
-        if (trackIsProton) {
+        } else if (trackIsProton) {
           if (track.sign() > 0 && pdg == kProton)
             purityProton = true;
           if (track.sign() < 0 && pdg == kProtonBar)

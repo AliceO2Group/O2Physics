@@ -34,6 +34,11 @@ name: Clean PR checks
         type: boolean
         default: true
 
+      'check_build/O2Physics/staging':
+        description: build/O2Physics/staging
+        type: boolean
+        default: true
+
 permissions: {}
 
 jobs:

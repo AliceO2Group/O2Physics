@@ -13,8 +13,18 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Expressions.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdint>
+
+#include <math.h>
 
 namespace o2::aod
 {
@@ -140,7 +150,7 @@ struct PartitionColExtra {
 struct BuildHmpidIndex {
   // build the index table HMPIDTracksIndex
   Builds<aod::HMPIDTracksIndex> idx;
-  void init(InitContext const&){};
+  void init(InitContext const&) {};
 };
 
 struct ConsumeHmpidIndex {

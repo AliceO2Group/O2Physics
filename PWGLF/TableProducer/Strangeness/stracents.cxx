@@ -15,25 +15,30 @@
 /// \author ALICE
 //
 
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <map>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/MetadataHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <TH1F.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
 #include <TFormula.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "TList.h"
+#include <TH1.h>
+#include <TList.h>
+#include <TProfile.h>
+
+#include <cmath>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

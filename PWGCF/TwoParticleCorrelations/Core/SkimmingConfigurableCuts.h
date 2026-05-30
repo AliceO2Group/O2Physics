@@ -8,23 +8,27 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef SKIMMING_CONFIGURABLE_CUTS_CLASSES_H
-#define SKIMMING_CONFIGURABLE_CUTS_CLASSES_H
+
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_
+
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+
+#include <TF1.h>
+#include <TList.h>
+#include <TNamed.h>
+#include <TObject.h>
+#include <TString.h>
 
 #include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TMath.h>
-#include <TList.h>
-#include <TF1.h>
-#include <set>
-#include <vector>
-#include <regex>
-#include <TObjArray.h>
 
-#include <fairlogger/Logger.h>
-#include "Framework/DataTypes.h"
+#include <cstdint>
+#include <functional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2
 {
@@ -629,4 +633,4 @@ class TrackSelectionBrick : public SpecialCutBrick
 } // namespace analysis
 } // namespace o2
 
-#endif // SKIMMING_CONFIGURABLE_CUTS_CLASSES_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_

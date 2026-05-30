@@ -51,6 +51,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -120,6 +121,7 @@ DECLARE_SOA_COLUMN(TimeResMFT, timeResMFT, float);
 DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);
 DECLARE_SOA_COLUMN(McMaskMFT, mcMaskMFT, int);
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t);
+DECLARE_SOA_COLUMN(TrackTypeMFT, trackTypeMFT, int);
 
 DECLARE_SOA_COLUMN(CXXMFT, cXXMFT, float);
 DECLARE_SOA_COLUMN(CYYMFT, cYYMFT, float);
@@ -183,6 +185,7 @@ DECLARE_SOA_TABLE(FwdMatchMLCandidates, "AOD", "FWDMLCAND",
                   fwdmatchcandidates::TimeResMFT,
                   fwdmatchcandidates::Chi2MFT,
                   fwdmatchcandidates::MftClusterSizesAndTrackFlags,
+                  fwdmatchcandidates::TrackTypeMFT,
                   fwdmatchcandidates::CXXMFT,
                   fwdmatchcandidates::CYYMFT,
                   fwdmatchcandidates::CPhiPhiMFT,
@@ -236,6 +239,8 @@ struct mftMchMatcher {
   Configurable<bool> fKeepBestMatch{"cfgKeepBestMatch", false, "Keep only the best match global muons in the skimming"};
   Configurable<float> fzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
 
+  Configurable<float> fSamplingFraction{"cfgSamplingFraction", 1.f, "Fraction of randomly selected events to be processed"};
+
   ////   Variables for ccdb
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -262,6 +267,9 @@ struct mftMchMatcher {
   o2::ccdb::CcdbApi fCCDBApi;
 
   o2::parameters::GRPMagField* fGrpMag = nullptr;
+
+  std::uniform_real_distribution<double> mDistribution{0.0, 1.0};
+  std::mt19937 mGenerator;
 
   o2::globaltracking::MatchGlobalFwd mMatching;
 
@@ -403,8 +411,15 @@ struct mftMchMatcher {
       ccdbManager->get<TGeoManager>(geoPath);
     }
 
-    // int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
-    AxisSpec matchTypeAxis = {static_cast<int>(kMatchTypeUndefined), 0, static_cast<double>(kMatchTypeUndefined), ""};
+    if (fSamplingFraction < 1.0) {
+      std::random_device rd;
+      mGenerator = std::mt19937(rd());
+    }
+    auto hAcceptedEvents = std::get<std::shared_ptr<TH1>>(registry.add("acceptedEvents", "Accepted events", {HistType::kTH1F, {{2, 0, 2.f, ""}}}));
+    hAcceptedEvents->GetXaxis()->SetBinLabel(1, "total");
+    hAcceptedEvents->GetXaxis()->SetBinLabel(2, "accepted");
+
+    AxisSpec matchTypeAxis = {static_cast<int>(kMatchTypeUndefined) + 1, 0, static_cast<double>(kMatchTypeUndefined) + 1, ""};
     auto hMatchType = std::get<std::shared_ptr<TH1>>(registry.add("matchType", "Match type", {HistType::kTH1F, {matchTypeAxis}}));
     hMatchType->GetXaxis()->SetBinLabel(1, "true (leading)");
     hMatchType->GetXaxis()->SetBinLabel(2, "wrong (leading)");
@@ -414,6 +429,7 @@ struct mftMchMatcher {
     hMatchType->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(7, "decay (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+    hMatchType->GetXaxis()->SetBinLabel(9, "undefined");
   }
 
   template <typename TMuons>
@@ -444,8 +460,6 @@ struct mftMchMatcher {
                           TMFT const& mftTracks,
                           std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
-    static constexpr int muonPdgCode = 13;
-
     // outer loop on muon tracks
     for (const auto& muonTrack : muonTracks) {
       // only consider MCH standalone or MCH-MID matches
@@ -457,7 +471,6 @@ struct mftMchMatcher {
       if (!muonTrack.has_collision()) {
         continue;
       }
-      auto muonCollisionId = muonTrack.collisionId();
 
       // skip tracks that do not have an associated MC particle
       if (!muonTrack.has_mcParticle()) {
@@ -465,23 +478,11 @@ struct mftMchMatcher {
       }
       // get the index associated to the MC particle
       auto muonMcParticle = muonTrack.mcParticle();
-      if (std::abs(muonMcParticle.pdgCode()) != muonPdgCode) {
-        continue;
-      }
 
       int64_t muonMcTrackIndex = muonMcParticle.globalIndex();
 
       // inner loop on MFT tracks
       for (const auto& mftTrack : mftTracks) {
-        // only consider MFT tracks associated to the same collision as the muon track
-        if (!mftTrack.has_collision()) {
-          continue;
-        }
-        auto mftCollisionId = mftTrack.collisionId();
-        if (mftCollisionId != muonCollisionId) {
-          continue;
-        }
-
         // skip tracks that do not have an associated MC particle
         if (!mftTrack.has_mcParticle()) {
           continue;
@@ -548,8 +549,10 @@ struct mftMchMatcher {
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
 
-    if (!muonTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
-      return result;
+    if (!mchTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
+      // if either the MCH or the MFT tracks are fakes (not associated to any MC particles)
+      // we consider the match as fake
+      return (isBestMatch ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading);
     }
 
     bool isPaired = isPairedMuon(mchTrack.globalIndex(), matchablePairs);
@@ -571,23 +574,29 @@ struct mftMchMatcher {
     return result;
   }
 
-  void processMC(MyEvents const& collisions,
-                 aod::BCsWithTimestamps const& bcs,
-                 MyMuonsMC const& muonTracks,
-                 MyMFTsMC const& mftTracks,
-                 MyMFTCovariances const& mftCovs,
-                 aod::McParticles const& /*mcParticles*/)
+  template <bool isMc, class TCOLLS, class TBCS, class TMUONS, class TMFTS, class TCOVS>
+  void fillTable(TCOLLS const& collisions,
+                 TBCS const& /*bcs*/,
+                 TMUONS const& muonTracks,
+                 TMFTS const& mftTracks,
+                 TCOVS const& mftCovs)
   {
-    if (bcs.size() > 0) {
-      auto bc = bcs.begin();
-      initCCDB(bc);
-      VarManager::SetMatchingPlane(fzMatching.value);
+    registry.get<TH1>(HIST("acceptedEvents"))->Fill(0);
+    // reject a randomly selected fraction of events
+    if (fSamplingFraction < 1.0) {
+      double rnd = mDistribution(mGenerator);
+      if (rnd > fSamplingFraction) {
+        return;
+      }
     }
+    registry.get<TH1>(HIST("acceptedEvents"))->Fill(1);
 
     fillBestMuonMatches(muonTracks);
 
     std::vector<std::pair<int64_t, int64_t>> matchablePairs;
-    fillMatchablePairs(muonTracks, mftTracks, matchablePairs);
+    if constexpr (isMc) {
+      fillMatchablePairs(muonTracks, mftTracks, matchablePairs);
+    }
 
     mftCovIndexes.clear();
     for (auto& mftTrackCov : mftCovs) {
@@ -613,10 +622,10 @@ struct mftMchMatcher {
       }
 
       const auto& collision = collisions.rawIteratorAt(muon.collisionId());
-      auto bc_coll = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc_coll = collision.template bc_as<TBCS>();
 
-      auto muontrack = muon.template matchMCHTrack_as<MyMuonsMC>();
-      auto mfttrack = muon.template matchMFTTrack_as<MyMFTsMC>();
+      auto muontrack = muon.template matchMCHTrack_as<TMUONS>();
+      auto mfttrack = muon.template matchMFTTrack_as<TMFTS>();
       auto const& mfttrackcov = mftCovs.rawIteratorAt(mftCovIndexes[mfttrack.globalIndex()]);
 
       auto muonTime = muontrack.trackTime() + bc_coll.globalBC() * o2::constants::lhc::LHCBunchSpacingNS;
@@ -644,8 +653,20 @@ struct mftMchMatcher {
       bool IsAmbig = (muon.compatibleCollIds().size() != 1);
       int MFTMult = collision.mftNtracks();
 
-      auto matchType = getMatchType(muon, muonTracks, mftTracks, matchablePairs, isBestMatch);
+      auto matchType = kMatchTypeUndefined;
+      if constexpr (isMc) {
+        matchType = getMatchType(muon, muonTracks, mftTracks, matchablePairs, isBestMatch);
+      }
       bool isSignal = (matchType == kMatchTypeTrueLeading) || (matchType == kMatchTypeTrueNonLeading);
+
+      int mcMaskMuon = 0;
+      int mcMaskMft = 0;
+      int ncMaskGlob = 0;
+      if constexpr (isMc) {
+        mcMaskMuon = muontrack.mcMask();
+        mcMaskMft = mfttrack.mcMask();
+        ncMaskGlob = muon.mcMask();
+      }
 
       registry.get<TH1>(HIST("matchType"))->Fill(static_cast<int>(matchType));
 
@@ -666,8 +687,8 @@ struct mftMchMatcher {
         muonpropCov(3, 3),
         muonpropCov(4, 4),
         muonpropCov(1, 0),
-        muonpropCov(2, 0),
         muonpropCov(2, 1),
+        muonpropCov(2, 0),
         muonpropCov(3, 0),
         muonpropCov(3, 1),
         muonpropCov(3, 2),
@@ -684,14 +705,15 @@ struct mftMchMatcher {
         mfttrack.trackTimeRes(),
         mfttrack.chi2(),
         mfttrack.mftClusterSizesAndTrackFlags(),
+        (mfttrack.isCA() ? 1 : 0),
         mftpropCov(0, 0),
         mftpropCov(1, 1),
         mftpropCov(2, 2),
         mftpropCov(3, 3),
         mftpropCov(4, 4),
         mftpropCov(1, 0),
-        mftpropCov(2, 0),
         mftpropCov(2, 1),
+        mftpropCov(2, 0),
         mftpropCov(3, 0),
         mftpropCov(3, 1),
         mftpropCov(3, 2),
@@ -705,15 +727,48 @@ struct mftMchMatcher {
         muon.fwdDcaY(),
         IsAmbig,
         MFTMult,
-        muontrack.mcMask(),
-        mfttrack.mcMask(),
-        muon.mcMask(),
+        mcMaskMuon,
+        mcMaskMft,
+        ncMaskGlob,
         static_cast<int>(matchType),
         isSignal);
     }
   }
 
+  void processMC(MyEvents const& collisions,
+                 aod::BCsWithTimestamps const& bcs,
+                 MyMuonsMC const& muonTracks,
+                 MyMFTsMC const& mftTracks,
+                 MyMFTCovariances const& mftCovs,
+                 aod::McParticles const& /*mcParticles*/)
+  {
+    if (bcs.size() > 0) {
+      auto bc = bcs.begin();
+      initCCDB(bc);
+      VarManager::SetMatchingPlane(fzMatching.value);
+    }
+
+    fillTable<true>(collisions, bcs, muonTracks, mftTracks, mftCovs);
+  }
+
   PROCESS_SWITCH(mftMchMatcher, processMC, "process_MC", true);
+
+  void processRD(MyEvents const& collisions,
+                 aod::BCsWithTimestamps const& bcs,
+                 MyMuonsWithCov const& muonTracks,
+                 MyMFTs const& mftTracks,
+                 MyMFTCovariances const& mftCovs)
+  {
+    if (bcs.size() > 0) {
+      auto bc = bcs.begin();
+      initCCDB(bc);
+      VarManager::SetMatchingPlane(fzMatching.value);
+    }
+
+    fillTable<false>(collisions, bcs, muonTracks, mftTracks, mftCovs);
+  }
+
+  PROCESS_SWITCH(mftMchMatcher, processRD, "process_RD", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

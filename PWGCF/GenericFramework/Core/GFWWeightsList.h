@@ -16,15 +16,20 @@
 
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
-#include <map>
+
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
+
+#include <TCollection.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cstdio>
+#include <map>
 #include <string>
 #include <vector>
-
-#include "Framework/Logger.h"
-
-#include "TObjArray.h"
-#include "GFWWeights.h"
 
 class GFWWeightsList : public TNamed
 {

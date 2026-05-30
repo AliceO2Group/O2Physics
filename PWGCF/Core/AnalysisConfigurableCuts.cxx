@@ -11,6 +11,10 @@
 
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 
+#include <TNamed.h>
+
+#include <Rtypes.h>
+
 using namespace o2::analysis;
 
 ClassImp(SimpleInclusiveCut);
