@@ -280,6 +280,7 @@ struct StrangenessInJetsIons {
     const AxisSpec qtarmAxis{1000, 0.0f, 0.30f, "q_{T}^{arm}"};
     const AxisSpec numBkgParticles{500, 0.0, 500.0, "Number of particles"};
     const AxisSpec deltaPtAxis{2400, -60.0, 60.0, "#delta #it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec rhoAxis{100, 0.0, 50.0, "#it{#rho} (GeV/#it{c})"};
 
     // Join enum ParticleOfInterest and the configurable vector particlesOfInterest in a map particleOfInterestDict
     const std::vector<int>& particleOnOff = particleOfInterest;
@@ -330,8 +331,13 @@ struct StrangenessInJetsIons {
       registryData.add("n_jets_vs_mult", "n_jets_vs_mult", HistType::kTH2F, {multAxis, numJets});
 
       // Delta pT distribution
-      registryData.add("delta_pT_data", "delta_pT_data", HistType::kTH2F, {multAxis, deltaPtAxis});
-      registryData.add("delta_pT_RC_data", "delta_pT_RC_data", HistType::kTH2F, {multAxis, deltaPtAxis});
+      // registryData.add("delta_pT_data", "delta_pT_data", HistType::kTH2F, {multAxis, deltaPtAxis});
+      // registryData.add("delta_pT_RC_data", "delta_pT_RC_data", HistType::kTH2F, {multAxis, deltaPtAxis});
+      registryData.add("h2_centrality_deltaPt_RandomCone", "h2_centrality_deltaPt_RandomCone", HistType::kTH2F, {multAxis, deltaPtAxis});
+      registryData.add("h2_centrality_rhoPerp", "h2_centrality_rhoPerp", HistType::kTH2F, {multAxis, rhoAxis});
+      
+      registryData.add("rho_perp", "rho_perp", HistType::kTH2F, {multAxis, rhoAxis});
+      registryData.add("rho_median", "rho_median", HistType::kTH2F, {multAxis, rhoAxis});
 
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
@@ -754,6 +760,54 @@ struct StrangenessInJetsIons {
     double u2x = (-b - std::sqrt(delta)) / (2.0 * a);
     double u2y = (-pz2 - px * u2x) / py;
     u2.SetXYZ(u2x, u2y, pz);
+  }
+
+  void computeRandomConeDeltaPt(const std::vector<fastjet::PseudoJet>& fjParticles,
+                                const std::vector<fastjet::PseudoJet>& jets,
+                                float multiplicity, double rhoPerp)
+  {
+    // Generate eta and phi for random cone in acceptance region
+    double randomConeEta = fRng.Uniform(configTracks.etaMin + rJet, configTracks.etaMax - rJet);
+    double randomConePhi = fRng.Uniform(0.0, TMath::TwoPi());
+
+    // Exclude leading jet region
+    if (!jets.empty()) {
+      float dPhiLeadingJet = getDeltaPhi(jets[0].phi(), randomConePhi);
+      float dEtaLeadingJet = jets[0].eta() - randomConeEta;
+      float dRLeadingJet = std::sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet);
+
+      int attempts = 0;
+      const int maxAttempts = 100;
+      // If the random cone overlaps with the leading jet (distance < 1.5), then generate the coordinates again
+      while (dRLeadingJet < 1.5 && attempts < maxAttempts) {
+        randomConeEta = fRng.Uniform(configTracks.etaMin + rJet, configTracks.etaMax - rJet);
+        randomConePhi = fRng.Uniform(0.0, TMath::TwoPi());
+
+        dPhiLeadingJet = getDeltaPhi(jets[0].phi(), randomConePhi);
+        dEtaLeadingJet = jets[0].eta() - randomConeEta;
+        dRLeadingJet = std::sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet);
+        attempts++;
+      }
+    }
+
+    // Sum pT of all the particles (charged tracks + V0 if included) falling in the random cone
+    float randomConePt = 0.0;
+    for (auto const& part : fjParticles) {
+      float dPhi = getDeltaPhi(part.phi(), randomConePhi);
+      float dEta = part.eta() - randomConeEta;
+      float dR = std::sqrt(dEta * dEta + dPhi * dPhi);
+
+      if (dR < rJet) {
+        randomConePt += part.pt();
+      }
+    }
+
+    // Compute delta pT: pT_cone - (Area_cone * rho)
+    double coneArea = TMath::Pi() * rJet * rJet;
+    double deltaPtRandomCone = randomConePt - (coneArea * rhoPerp);
+
+    registryData.fill(HIST("h2_centrality_deltaPt_RandomCone"), multiplicity, deltaPtRandomCone);
+    registryData.fill(HIST("h2_centrality_rhoPerp"), multiplicity, rhoPerp);
   }
 
   // Find ITS hit
@@ -1949,6 +2003,7 @@ struct StrangenessInJetsIons {
         continue;
       auto mother = mcParticles.iteratorAt(mcPart.mothersIds()[0]);
       int motherPdg = std::abs(mother.pdgCode());
+      LOG(info) << "[AddV0sForJetReconstructionMCP] Mother pdg code:" << motherPdg;
       if (motherPdg == kK0Short || motherPdg == kLambda0) {
         isTrackReplaced[i] = true;
         // LOG(info) << "[AddV0sForJetReconstructionMCP] V0 daughter particle found in fjParticleObj.";
@@ -2151,13 +2206,7 @@ struct StrangenessInJetsIons {
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
     auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
-
-    // Jet selection
-    bool isAtLeastOneJetSelected = false;
-    std::vector<TVector3> selectedJet;
-    std::vector<TVector3> ue1;
-    std::vector<TVector3> ue2;
-    std::vector<double> jetPt;
+    auto [rhoMedian, rhoMMedian] = backgroundSub.estimateRhoAreaMedian(fjParticles, true);
 
     // Event multiplicity
     float multiplicity;
@@ -2166,6 +2215,19 @@ struct StrangenessInJetsIons {
     } else {
       multiplicity = collision.centFT0M();
     }
+
+    registryData.fill(HIST("rho_perp"), multiplicity, rhoPerp);
+    registryData.fill(HIST("rho_median"), multiplicity, rhoMedian);
+
+    // Delta pT distributions with random cone technique
+    computeRandomConeDeltaPt(fjParticles, jets, multiplicity, rhoPerp);
+
+    // Jet selection
+    bool isAtLeastOneJetSelected = false;
+    std::vector<TVector3> selectedJet;
+    std::vector<TVector3> ue1;
+    std::vector<TVector3> ue2;
+    std::vector<double> jetPt;
 
     // Loop over reconstructed jets
     for (const auto& jet : jets) {
@@ -2182,8 +2244,8 @@ struct StrangenessInJetsIons {
       isAtLeastOneJetSelected = true;
 
       // delta pT distribution after jet selection by pT
-      double deltaPt = jet.pt() - jetMinusBkg.pt();
-      registryData.fill(HIST("delta_pT_data"), multiplicity, deltaPt);
+      // double deltaPt = jet.pt() - jetMinusBkg.pt();
+      // registryData.fill(HIST("delta_pT_data"), multiplicity, deltaPt);
 
       // Calculation of perpendicular cones
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
