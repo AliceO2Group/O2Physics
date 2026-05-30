@@ -152,6 +152,7 @@ struct StrangenessInJetsIons {
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
   Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
   Configurable<bool> doThermalToyModel{"doThermalToyModel", false, "Use the thermal toy model to embed background particles to the jet finder input list"};
+  Configurable<bool> doPlotRho{"doPlotRho", false, "Plot rho distributions computed with perpendicular cone and area median method."};
   Configurable<bool> saveChargedParticleMB{"saveChargedParticleMB", false, "Store charged particle information to build inclusive spectra."};
 
   // Event selection
@@ -331,11 +332,9 @@ struct StrangenessInJetsIons {
       registryData.add("n_jets_vs_mult", "n_jets_vs_mult", HistType::kTH2F, {multAxis, numJets});
 
       // Delta pT distribution
-      // registryData.add("delta_pT_data", "delta_pT_data", HistType::kTH2F, {multAxis, deltaPtAxis});
-      // registryData.add("delta_pT_RC_data", "delta_pT_RC_data", HistType::kTH2F, {multAxis, deltaPtAxis});
       registryData.add("h2_centrality_deltaPt_RandomCone", "h2_centrality_deltaPt_RandomCone", HistType::kTH2F, {multAxis, deltaPtAxis});
       registryData.add("h2_centrality_rhoPerp", "h2_centrality_rhoPerp", HistType::kTH2F, {multAxis, rhoAxis});
-      
+
       registryData.add("rho_perp", "rho_perp", HistType::kTH2F, {multAxis, rhoAxis});
       registryData.add("rho_median", "rho_median", HistType::kTH2F, {multAxis, rhoAxis});
 
@@ -400,10 +399,6 @@ struct StrangenessInJetsIons {
       // Jet counters
       registryMC.add("n_jets_vs_mult_pT_mc_gen", "n_jets_vs_mult_pT_mc_gen", HistType::kTH2F, {multAxis, ptJetAxis});
       registryMC.add("n_jets_vs_mult_mc_gen", "n_jets_vs_mult_mc_gen", HistType::kTH2F, {multAxis, numJets});
-
-      // Delta pT distribution
-      registryMC.add("delta_pT_gen", "delta_pT_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
-      // registryMC.add("delta_pT_RC_gen", "delta_pT_RC_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
 
       if (doThermalToyModel) {
         registryMC.add("thermalToy_pT_gen", "thermalToy_pT_gen", HistType::kTH2F, {multAxis, ptAxis});
@@ -505,9 +500,6 @@ struct StrangenessInJetsIons {
       // Jet counters
       registryMC.add("n_jets_vs_mult_pT_mc_rec", "n_jets_vs_mult_pT_mc_rec", HistType::kTH2F, {multAxis, ptJetAxis});
       registryMC.add("n_jets_vs_mult_mc_rec", "n_jets_vs_mult_mc_rec", HistType::kTH2F, {multAxis, numJets});
-
-      // Delta pT distribution
-      registryMC.add("delta_pT_rec", "delta_pT_rec", HistType::kTH2F, {multAxis, deltaPtAxis});
 
       if (doThermalToyModel) {
         registryMC.add("thermalToy_pT_rec", "thermalToy_pT_rec", HistType::kTH2F, {multAxis, ptAxis});
@@ -2003,7 +1995,7 @@ struct StrangenessInJetsIons {
         continue;
       auto mother = mcParticles.iteratorAt(mcPart.mothersIds()[0]);
       int motherPdg = std::abs(mother.pdgCode());
-      LOG(info) << "[AddV0sForJetReconstructionMCP] Mother pdg code:" << motherPdg;
+      // LOG(info) << "[AddV0sForJetReconstructionMCP] Mother pdg code:" << motherPdg;
       if (motherPdg == kK0Short || motherPdg == kLambda0) {
         isTrackReplaced[i] = true;
         // LOG(info) << "[AddV0sForJetReconstructionMCP] V0 daughter particle found in fjParticleObj.";
@@ -2206,7 +2198,6 @@ struct StrangenessInJetsIons {
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
     auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
-    auto [rhoMedian, rhoMMedian] = backgroundSub.estimateRhoAreaMedian(fjParticles, true);
 
     // Event multiplicity
     float multiplicity;
@@ -2216,8 +2207,11 @@ struct StrangenessInJetsIons {
       multiplicity = collision.centFT0M();
     }
 
-    registryData.fill(HIST("rho_perp"), multiplicity, rhoPerp);
-    registryData.fill(HIST("rho_median"), multiplicity, rhoMedian);
+    if (doPlotRho) {
+      auto [rhoMedian, rhoMMedian] = backgroundSub.estimateRhoAreaMedian(fjParticles, true);
+      registryData.fill(HIST("rho_perp"), multiplicity, rhoPerp);
+      registryData.fill(HIST("rho_median"), multiplicity, rhoMedian);
+    }
 
     // Delta pT distributions with random cone technique
     computeRandomConeDeltaPt(fjParticles, jets, multiplicity, rhoPerp);
@@ -2242,10 +2236,6 @@ struct StrangenessInJetsIons {
       if (jetMinusBkg.pt() < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
-
-      // delta pT distribution after jet selection by pT
-      // double deltaPt = jet.pt() - jetMinusBkg.pt();
-      // registryData.fill(HIST("delta_pT_data"), multiplicity, deltaPt);
 
       // Calculation of perpendicular cones
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -2600,10 +2590,6 @@ struct StrangenessInJetsIons {
         // Fill jet counter
         registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
 
-        // delta pT distribution after jet selection by pT
-        double deltaPt = jet.pt() - jetMinusBkg.pt();
-        registryMC.fill(HIST("delta_pT_gen"), genMultiplicity, deltaPt);
-
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
         double coneRadius = std::sqrt(jet.area() / PI); // TODO: replace with rJet (similar results)
@@ -2911,10 +2897,6 @@ struct StrangenessInJetsIons {
         if (jetMinusBkg.pt() < minJetPt)
           continue;
         isAtLeastOneJetSelected = true;
-
-        // delta pT distribution after jet selection by pT
-        double deltaPt = jet.pt() - jetMinusBkg.pt();
-        registryMC.fill(HIST("delta_pT_rec"), multiplicity, deltaPt);
 
         // Perpendicular cones
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
