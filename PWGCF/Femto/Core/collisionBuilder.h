@@ -585,11 +585,12 @@ class CollisionBuilder
     }
 
     // PbPb specific columns
-    if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
-      if (mProduceQns) {
-        collisionProducts.producedQns(utils::qn(col));
-      }
-    }
+    // TODO: enable later update
+    // if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
+    //   if (mProduceQns) {
+    //     collisionProducts.producedQns(utils::qn(col));
+    //   }
+    // }
 
     mCollisionAlreadyFilled = true;
   }

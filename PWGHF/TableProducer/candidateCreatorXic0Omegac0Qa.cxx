@@ -258,16 +258,15 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   HfEventSelection hfEvSel;
 
   // PDG Id of daughter tracks & V0s & cascades & charm baryons - Used in KFParticle
-  int pdgIdOfV0DauPos, pdgIdOfV0DauNeg, pdgIdOfBach, pdgIdOfCharmBach;
-  int pdgIdOfAntiV0DauPos, pdgIdOfAntiV0DauNeg, pdgIdOfAntiBach, pdgIdOfAntiCharmBach;
-  int pdgIdOfV0, pdgIdOfCascade, pdgIdOfCharmBaryon;
+  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfCharmBach{};
+  int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
-  // Track PID - Used in DCAFitter
-  int trackPidOfCascade;
+  // Track PID: PID value of tracks defined under o2::track::PID namespace
+  int trackPidOfCascade{};
 
   // Mass of daughter tracks & V0s & cascades & charm baryons;
-  float massOfV0DauPos, massOfV0DauNeg, massOfBach, massOfCharmBach;
-  float massOfV0, massOfCascade, massOfCharmBaryon;
+  float massOfV0DauPos{}, massOfV0DauNeg{}, massOfCharmBach{};
+  float massOfV0{}, massOfCascade{};
 
   // Pointer of histograms for QA
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaKa;
@@ -317,11 +316,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfBach = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
 
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kPiPlus;
-      pdgIdOfAntiCharmBach = kPiMinus;
-
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kXiMinus;
       pdgIdOfCharmBaryon = kXiC0;
@@ -338,11 +332,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
       pdgIdOfCharmBach = kPiPlus;
-
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kKPlus;
-      pdgIdOfAntiCharmBach = kPiMinus;
 
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kOmegaMinus;
@@ -361,11 +350,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfBach = kKMinus;
       pdgIdOfCharmBach = kKPlus;
 
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kKPlus;
-      pdgIdOfAntiCharmBach = kKMinus;
-
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
@@ -378,25 +362,21 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       massOfV0 = o2::constants::physics::MassLambda;
       massOfCascade = o2::constants::physics::MassOmegaMinus;
     }
-    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-    LOGF(info, "PDG ID of V0 positive daughter: %d", pdgIdOfV0DauPos);
-    LOGF(info, "PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
-    LOGF(info, "PDG ID of Bachelor: %d", pdgIdOfBach);
-    LOGF(info, "PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "PDG ID of anti V0 positive daughter: %d", pdgIdOfAntiV0DauPos);
-    LOGF(info, "PDG ID of anti V0 negative daughter: %d", pdgIdOfAntiV0DauNeg);
-    LOGF(info, "PDG ID of anti Bachelor: %d", pdgIdOfAntiBach);
-    LOGF(info, "PDG ID of anti Charm Bachelor: %d", pdgIdOfAntiCharmBach);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "PDG ID of V0: %d", pdgIdOfV0);
-    LOGF(info, "PDG ID of Cascade: %d", pdgIdOfCascade);
-    LOGF(info, "PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "Mass of V0 set as: %f", massOfV0);
-    LOGF(info, "Mass of CharmBach set as: %f", massOfCharmBach);
-    LOGF(info, "Mass of Casc as: %f", massOfCascade);
-    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGF(info, "  Chosen reconstruction info: ToXiPi(%d)/ ToOmegaPi(%d)/ ToOmegaKa(%d)", xipiEnabledDca + xipiEnabledKf, omegapiEnabledDca + omegapiEnabledKf, omegakaEnabledDca + omegakaEnabledKf);
+    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGF(info, "  PDG ID of V0 positive daughter: %d", pdgIdOfV0DauPos);
+    LOGF(info, "  PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
+    LOGF(info, "  PDG ID of V0: %d", pdgIdOfV0);
+    LOGF(info, "  PDG ID of Bachelor: %d", pdgIdOfBach);
+    LOGF(info, "  PDG ID of Cascade: %d", pdgIdOfCascade);
+    LOGF(info, "  PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
+    LOGF(info, "  PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
+    LOGF(info, "-----------------------------------------------------------------------");
+    LOGF(info, "  Mass of V0 set as: %f", massOfV0);
+    LOGF(info, "  Mass of CharmBach set as: %f", massOfCharmBach);
+    LOGF(info, "  Mass of Casc as: %f", massOfCascade);
+    LOGF(info, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
     // Add histogram to indicate which sv method was used
     registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {kTH1F, {{2, 0.0, 2.0}}});
@@ -512,11 +492,29 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
   } // end of initialization
 
-  ////////////////////////////////////////////////////////////
-  //                                                        //
-  //         Candidate reconstruction with DCAFitter        //
-  //                                                        //
-  ////////////////////////////////////////////////////////////
+  // helper function to convert PDG of KFParticle object into appropriate track PID.
+  // exclusively used to make input of getTrackParCovFromKFP()
+  // \brief kfPdg is Pdg value of KFParticle object
+  o2::track::PID::ID convertPDGIntoPID(const int kfPdg)
+  {
+    switch (std::abs(kfPdg)) {
+      case kPiPlus:
+        return o2::track::PID::Pion;
+      case kKPlus:
+        return o2::track::PID::Kaon;
+      case kProton:
+        return o2::track::PID::Proton;
+      case kLambda0:
+        return o2::track::PID::Lambda;
+      case kXiMinus:
+        return o2::track::PID::XiMinus;
+      case kOmegaMinus:
+        return o2::track::PID::OmegaMinus;
+      default:
+        LOGF(fatal, "Undefined PDG value from KFParticle given for conversion(%d). Replace it with PID of Pion", kfPdg);
+        return o2::track::PID::Pion;
+    }
+  }
 
   // template function for running charm baryon reconstruction with DCAFitter
   /// \brief centEstimator is for different centrality estimators
@@ -961,11 +959,12 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       const KFPTrack kfTrackBach = createKFPTrackFromTrack(bachTrack);
 
       bool isAnti = (bachTrack.signed1Pt() > 0 ? true : false);
+      int bachCharge = (bachTrack.signed1Pt() > 0 ? +1 : -1);
 
-      KFParticle kfPos(kfTrack0, (isAnti ? pdgIdOfAntiV0DauPos : pdgIdOfV0DauPos));
-      KFParticle kfNeg(kfTrack1, (isAnti ? pdgIdOfAntiV0DauNeg : pdgIdOfV0DauNeg));
-      KFParticle kfBach(kfTrackBach, (isAnti ? pdgIdOfAntiBach : pdgIdOfBach));
-      KFParticle kfBachRej(kfTrackBach, (isAnti ? pdgIdOfAntiBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
+      KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
+      KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
+      KFParticle kfBach(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach));
+      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
 
       // ~~~~~~~Construct V0 with KF~~~~~~~
       const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
@@ -998,6 +997,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         kfV0 = kfV0MassConstrained;
       }
       kfV0.TransportToDecayVertex();
+      kfV0.SetPDG(pdgIdOfV0);
 
       //~~~~~~~Construct cascade with KF~~~~~~~
       const KFParticle* cascDaughters[2] = {&kfBach, &kfV0};
@@ -1024,6 +1024,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       if (kfCasc.GetNDF() <= 0 || kfCasc.GetChi2() <= 0) {
         continue;
       }
+      kfCasc.SetPDG(pdgIdOfCascade);
 
       // perform cascade building on casc_rej - only for Omega
       if constexpr (decayChannel != hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
@@ -1036,6 +1037,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         }
 
         kfCascRej.GetMass(massCascRej, sigMassCascRej);
+        kfCascRej.SetPDG(pdgIdOfCascade);
       }
 
       // Set mass constraint to cascade
@@ -1049,7 +1051,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       //~~~~~~~Construct Charm Baryon with KF~~~~~~~
       auto trackCharmBachelor = tracks.rawIteratorAt(cand.prong0Id());
       const KFPTrack kfTrackCharmBach = createKFPTrackFromTrack(trackCharmBachelor);
-      const KFParticle kfCharmBach(kfTrackCharmBach, (isAnti ? pdgIdOfAntiCharmBach : pdgIdOfCharmBach));
+      const KFParticle kfCharmBach(kfTrackCharmBach, (isAnti ? -pdgIdOfCharmBach : pdgIdOfCharmBach));
       const KFParticle* charmBaryonDaughters[2] = {&kfCharmBach, &kfCasc};
 
       KFParticle kfCharmBaryon;
@@ -1074,6 +1076,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         hCandCounter->Fill(VertexFit);
         hInvMassCharmBaryon->Fill(massCharmBaryon);
       }
+      kfCharmBaryon.SetPDG(pdgIdOfCharmBaryon);
 
       // Set production vertex
       // PV
@@ -1109,6 +1112,18 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
       //----------Reconstruct information after vertex fit----------
+      auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, convertPDGIntoPID(kfPos.GetPDG()), 1);
+      auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, convertPDGIntoPID(kfNeg.GetPDG()), -1);
+      auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, convertPDGIntoPID(kfBachToCasc.GetPDG()), bachCharge);
+      auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, convertPDGIntoPID(kfCharmBachToCharmBaryon.GetPDG()), -bachCharge);
+      auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, convertPDGIntoPID(kfCascToCharmBaryon.GetPDG()), bachCharge);
+
+      trackParCovV0DauPos.setAbsCharge(1);
+      trackParCovV0DauNeg.setAbsCharge(1);
+      trackParCovBach.setAbsCharge(1);
+      trackParCovCharmBach.setAbsCharge(1);
+      trackParCovCasc.setAbsCharge(1);
+
       std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
       std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
 
@@ -1124,17 +1139,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfVertex.GetCovarianceMatrix(covMatrixPv);
 
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-
-      auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1);
-      auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1);
-      auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, kfBachToCasc.GetPDG(), (isAnti ? 1 : -1));
-      auto trackParCovCharmBach = getTrackParCovFromKFP(kfCharmBachToCharmBaryon, kfCharmBachToCharmBaryon.GetPDG(), (isAnti ? -1 : 1));
-      auto trackParCovCasc = getTrackParCovFromKFP(kfCascToCharmBaryon, kfCascToCharmBaryon.GetPDG(), (isAnti ? 1 : -1));
-      trackParCovV0DauPos.setAbsCharge(1);
-      trackParCovV0DauNeg.setAbsCharge(1);
-      trackParCovBach.setAbsCharge(1);
-      trackParCovCharmBach.setAbsCharge(1);
-      trackParCovCasc.setAbsCharge(1);
 
       //----------Calculate physical quantities and fill candidate table----------
 

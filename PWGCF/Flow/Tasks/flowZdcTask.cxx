@@ -61,7 +61,6 @@ struct FlowZdcTask {
   Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
-  Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
   Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
   Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
   Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
@@ -70,9 +69,10 @@ struct FlowZdcTask {
   Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
   Configurable<float> maxAmpFT0M{"maxAmpFT0M", 2500, "Max FT0M amp"};
-  Configurable<int> nBinsAmpFV0{"nBinsAmpFV0", 100, "N bins FV0 amp"};
-  Configurable<float> maxAmpFV0{"maxAmpFV0", 2000, "Max FV0 amp"};
+  Configurable<int> nBinsAmpFT0M{"nBinsAmpFT0M", 100, "N bins FT0M amp"};
   Configurable<int> nBinsZDC{"nBinsZDC", 400, "nBinsZDC"};
+  Configurable<int> nBinsZP{"nBinsZP", 50, "nBinsZP"};
+  Configurable<int> nBinsZN{"nBinsZN", 50, "nBinsZN"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
@@ -224,8 +224,8 @@ struct FlowZdcTask {
       histos.add("ZNCVsFT0C", ";T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0M", ";T0A+T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsCent", ";T0C cent;ZNC Amplitude;", kTH2F, {{{nBinsCent, 0., maxCent}, {nBinsZDC, -0.5, maxZn}}});
-      histos.add("ZPAZNAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}, {nBinsZDC, -0.5, maxZn}}});
-      histos.add("ZPCZNCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}, {nBinsZDC, -0.5, maxZn}}});
+      histos.add("ZPAZNAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+      histos.add("ZPCZNCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
       histos.add("ZPAVsFT0A", ";T0A (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPAVsFT0C", ";T0C (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});
@@ -269,11 +269,9 @@ struct FlowZdcTask {
       histos.add("ampFT0C", ";T0C (#times 1/100);", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
       histos.add("ampFT0A", ";T0A (#times 1/100);", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
       histos.add("ampFT0M", ";T0A+T0C (#times 1/100);", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0M}});
-      histos.add("ampFV0A", ";V0A (#times 1/100);", kTH1F, {{nBinsAmpFV0, 0., maxAmpFV0}});
       histos.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
-      histos.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsMeanPt", ";#it{N}_{ch} (|#eta|<0.8);#LT[#it{p}_{T}]#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
       histos.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
@@ -406,7 +404,7 @@ struct FlowZdcTask {
     return true;
   }
 
-  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
+  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
   {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (!isEventSelected(collision)) {
@@ -419,7 +417,7 @@ struct FlowZdcTask {
     auto zdc = foundBC.zdc();
     auto cent = collision.centFT0C();
 
-    float aT0A = 0., aT0C = 0., aV0A = 0.;
+    float aT0A = 0., aT0C = 0.;
     if (foundBC.has_ft0()) {
       for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
         aT0A += amplitude;
@@ -429,11 +427,6 @@ struct FlowZdcTask {
       }
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::TZero);
-    if (foundBC.has_fv0a()) {
-      for (const auto& amplitude : foundBC.fv0a().amplitude()) {
-        aV0A += amplitude;
-      }
-    }
     const double normT0M{(aT0A + aT0C) / 100.};
     float et = 0., meanpt = 0.;
     int itsTracks = 0, glbTracks = 0;
@@ -507,9 +500,7 @@ struct FlowZdcTask {
     histos.fill(HIST("ampFT0C"), aT0C / 100.);
     histos.fill(HIST("ampFT0A"), aT0A / 100.);
     histos.fill(HIST("ampFT0M"), (aT0A + aT0C) / 100.);
-    histos.fill(HIST("ampFV0A"), aV0A / 100.);
     // charged particle correlations
-    histos.fill(HIST("NchVsFV0A"), aV0A / 100., glbTracks);
     histos.fill(HIST("NchVsFT0A"), aT0A / 100., glbTracks);
     histos.fill(HIST("NchVsFT0C"), aT0C / 100., glbTracks);
     histos.fill(HIST("NchVsFT0M"), (aT0A + aT0C) / 100., glbTracks);

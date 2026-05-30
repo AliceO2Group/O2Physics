@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(nuclei-spectra
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(deuteron-in-triggered-events
+    SOURCES deuteronInTriggeredEvents.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2::DetectorsBase O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(spectra-derived
     SOURCES spectraDerivedMaker.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -116,5 +121,10 @@ o2physics_add_dpl_workflow(particle-composition-correction
 
 o2physics_add_dpl_workflow(photon-deuteron
     SOURCES photonDeuteron.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(coalescence-tree-producer
+    SOURCES coalescenceTreeProducer.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

@@ -54,7 +54,12 @@ namespace consumeddata
 {
 using Run3PpCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0As, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms>;
 using Run3PpMcRecoCollisions = o2::soa::Join<Run3PpCollisions, o2::aod::McCollisionLabels>;
-using Run3PpMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Ms>;
+using Run3PpMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0As, o2::aod::McCentFT0Cs, o2::aod::McCentFT0Ms>;
+
+using Run3PbPbCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0As, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms>;
+
+using Run3PbPbMcRecoCollisions = o2::soa::Join<Run3PbPbCollisions, o2::aod::McCollisionLabels>;
+using Run3PbPbMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0As, o2::aod::McCentFT0Cs, o2::aod::McCentFT0Ms>;
 
 using Run3FullPidTracks =
   soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
@@ -288,6 +293,19 @@ struct FemtoProducer {
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3pp, "Process tracks", true);
 
+  void processTracksRun3PbPb(consumeddata::Run3PbPbCollisions::iterator const& col,
+                             o2::aod::BCsWithTimestamps const& bcs,
+                             consumeddata::Run3FullPidTracks const& tracks)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksRun3PbPb, "Process tracks in PbPB collisions", false);
+
   // process tracks and v0s
   void processTracksV0sRun3pp(consumeddata::Run3PpCollisions::iterator const& col,
                               o2::aod::BCsWithTimestamps const& bcs,
@@ -303,6 +321,21 @@ struct FemtoProducer {
     processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
   };
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3pp, "Process tracks and v0s", false);
+
+  void processTracksV0sRun3PbPb(consumeddata::Run3PbPbCollisions::iterator const& col,
+                                o2::aod::BCsWithTimestamps const& bcs,
+                                consumeddata::Run3FullPidTracks const& tracks,
+                                consumeddata::Run3Vzeros const& v0s)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+    processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
+  };
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3PbPb, "Process tracks and v0s in PbPB collisions", false);
 
   // process tracks and kinks
   void processTracksKinksRun3pp(consumeddata::Run3PpCollisions::iterator const& col,
@@ -374,6 +407,21 @@ struct FemtoProducer {
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3ppMc, "Provide reconstructed and generated Tracks", false);
 
+  void processTracksRun3PbPbMc(consumeddata::Run3PbPbMcRecoCollisions::iterator const& col,
+                               consumeddata::Run3PbPbMcGenCollisions const& mcCols,
+                               o2::aod::BCsWithTimestamps const& bcs,
+                               consumeddata::Run3McRecoTracks const& tracks,
+                               consumeddata::Run3McGenParticles const& mcParticles)
+  {
+    if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracks, mcParticles)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processMcTracks<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksRun3PbPbMc, "Provide reconstructed and generated Tracks in PbPb collisions", false);
+
   // process monte carlo tracks and v0s
   void processTracksV0sRun3ppMc(consumeddata::Run3PpMcRecoCollisions::iterator const& col,
                                 consumeddata::Run3PpMcGenCollisions const& mcCols,
@@ -391,6 +439,23 @@ struct FemtoProducer {
     processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0s, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3ppMc, "Provide reconstructed and generated tracks and v0s", false);
+
+  void processTracksV0sRun3PbPbMc(consumeddata::Run3PbPbMcRecoCollisions::iterator const& col,
+                                  consumeddata::Run3PbPbMcGenCollisions const& mcCols,
+                                  o2::aod::BCsWithTimestamps const& bcs,
+                                  consumeddata::Run3McRecoTracks const& tracks,
+                                  consumeddata::Run3RecoVzeros const& v0s,
+                                  consumeddata::Run3McGenParticles const& mcParticles)
+  {
+    if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracks, mcParticles)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processMcTracks<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
+    processMcV0s<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, v0s, mcParticles);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3PbPbMc, "Provide reconstructed and generated tracks and v0s in PbPb collisions", false);
 
   // process monte carlo tracks and kinks
   void processTracksKinksRun3ppMc(consumeddata::Run3PpMcRecoCollisions::iterator const& col,

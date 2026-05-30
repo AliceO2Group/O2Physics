@@ -582,7 +582,8 @@ struct Alice3TrackingTranslator {
         tableTracksAlice3Pdg(pdgCode); // PdgCode to the linked MC truth particle
 
         tableTracksExtraA3(m_nMeasurements, // nSiliconHits (using m_nMeasurements as proxy)
-                           0);              // nTPCHits
+                           0,               // nTPCHits
+                           0);              // trackType
 
         // Fill extra track info
         tableStoredTracksExtra(0.f,                                 // TPCInnerParam

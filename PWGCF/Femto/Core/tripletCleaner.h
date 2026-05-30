@@ -99,6 +99,49 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner
   }
 };
 
+class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
+{
+ public:
+  TrackTrackCascadeTripletCleaner() = default;
+  ~TrackTrackCascadeTripletCleaner() = default;
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable) const
+  {
+    auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
+    auto posDaughter = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
+    auto negDaughter = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
+    return this->isCleanTrackPair(track1, track2) &&
+           this->isCleanTrackPair(track1, posDaughter) &&
+           this->isCleanTrackPair(track1, negDaughter) &&
+           this->isCleanTrackPair(track1, bachelor) &&
+           this->isCleanTrackPair(track2, posDaughter) &&
+           this->isCleanTrackPair(track2, negDaughter) &&
+           this->isCleanTrackPair(track2, bachelor);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable, T5 const& partonicMothers) const
+  {
+    if (!this->isCleanTriplet(track1, track2, cascade, trackTable)) {
+      return false;
+    }
+    // pair is clean
+    // no check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(track1, track2, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, cascade, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, cascade, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(track1, track2, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, cascade, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, cascade, partonicMothers);
+    }
+    return true;
+  }
+};
+
 } // namespace tripletcleaner
 } // namespace o2::analysis::femto
 

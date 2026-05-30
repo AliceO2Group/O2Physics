@@ -53,24 +53,29 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 TH1D* tmpFqErr[6][5][52];
-
+float collisionZ = 0.f;
 struct FactorialMomentsTask {
   Configurable<bool> useITS{"useITS", false, "Select tracks with ITS"};
   Configurable<bool> useTPC{"useTPC", false, "Select tracks with TPC"};
   Configurable<bool> useGlobal{"useGlobal", true, "Select global tracks"};
   Configurable<bool> applyCheckPtForRec{"applyCheckPtForRec", false, "Apply checkpT for reconstructed tracks"};
   Configurable<bool> applyCheckPtForMC{"applyCheckPtForMC", true, "Apply checkpT for MC-generated tracks"};
+  Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
+  Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
   Configurable<float> centralEta{"centralEta", 0.9, "eta limit for tracks"};
   Configurable<int> numPt{"numPt", 5, "number of pT bins"};
   Configurable<float> ptMin{"ptMin", 0.2f, "lower pT cut"};
-  Configurable<float> dcaXY{"dcaXY", 2.4f, "DCA xy cut"};
-  Configurable<float> dcaZ{"dcaZ", 2.0f, "DCA z cut"};
+  Configurable<float> dcaXY{"dcaXY", 0.1f, "DCA xy cut"};
+  Configurable<float> dcaZ{"dcaZ", 1.0f, "DCA z cut"};
+  Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
+  Configurable<float> cfgCutItsChi2NCl{"cfgCutItsChi2NCl", 40.0f, "Maximum ITSchi2NCl"};
   Configurable<float> mintPCCls{"mintPCCls", 70.0f, "minimum number of TPC clusters"};
   Configurable<std::vector<int>> centLimits{"centLimits", {0, 5}, "centrality min and max"};
   Configurable<std::vector<float>> vertexXYZ{"vertexXYZ", {0.3f, 0.4f, 10.0f}, "vertex cuts"};
   Configurable<std::vector<float>> ptCuts{"ptCuts", {0.2f, 2.0f}, "pT cuts"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
   Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
   Configurable<bool> isApplyVertexTRDmatched{"isApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
@@ -81,14 +86,20 @@ struct FactorialMomentsTask {
   Configurable<bool> includeITSTracks{"includeITSTracks", false, "ITS Tracks"};
   Configurable<int> samplesize{"samplesize", 100, "Sample size"};
   Configurable<bool> useMC{"useMC", false, "Use MC information"};
+  Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "Require global track in filter"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 6, "Minimum Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
+  Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
+  Configurable<float> cfgTPCnCrossedRowsOverFindableCls{"cfgTPCnCrossedRowsOverFindableCls", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
   Configurable<int> reduceOutput{"reduceOutput", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
-  Filter filterTracks = (nabs(aod::track::eta) < centralEta) && (aod::track::pt >= ptMin) && (nabs(aod::track::dcaXY) < dcaXY) && (nabs(aod::track::dcaZ) < dcaZ);
+  Filter filterTracks = (nabs(aod::track::eta) < centralEta) && (aod::track::pt >= ptMin);
   Filter filterCollisions = (nabs(aod::collision::posZ) < vertexXYZ.value[2]) && (nabs(aod::collision::posX) < vertexXYZ.value[0]) && (nabs(aod::collision::posY) < vertexXYZ.value[1]);
   Service<o2::framework::O2DatabasePDG> pdg;
   // Histograms
   HistogramRegistry histos1{
     "histos1",
     {
+      {"h3DVtxZetaPhi", "VtxZ vs #eta vs #phi;VtxZ;#eta;#phi", {HistType::kTH3F, {{20, -10, 10}, {16, -0.8, 0.8}, {100, 0., o2::constants::math::TwoPI}}}},
       {"hRecoPtBefore", "Reco pT before cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
       {"hGenPtBefore", "Gen pT before cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
       {"hRecoPtAfter", "Reco pT after cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
@@ -118,6 +129,8 @@ struct FactorialMomentsTask {
   HistogramRegistry histos{
     "histos",
     {
+
+      {"mtpcsignalvspt", "tpcsignal vs #pt", {HistType::kTH2F, {{900, 0, 10}, {1400, 0, 1400}}}},
       {"mChargeBefore", "Charge before MC cuts;charge;entries", {HistType::kTH1F, {{7, -3.5, 3.5}}}},
       {"mChargeAfter", "Charge after MC cuts;charge;entries", {HistType::kTH1F, {{7, -3.5, 3.5}}}},
       {"mCollID", "collisionID", {HistType::kTH1I, {{1000, -10000, 10000}}}},
@@ -153,6 +166,10 @@ struct FactorialMomentsTask {
     },
     OutputObjHandlingPolicy::AnalysisObject,
     true};
+  const double dcaxyMaxTrackPar0 = 0.0105;
+  const double dcaxyMaxTrackPar1 = 0.035;
+  const double dcaxyMaxTrackPar2 = 1.1;
+  const double dcazMaxTrack = 2.0;
   static const int nBins = 52;
   double kMinCharge = 1e-6;
   static const int nfqOrder = 6;
@@ -167,6 +184,7 @@ struct FactorialMomentsTask {
   std::array<std::array<std::array<double, nBins>, 5>, 6> errorFq = {{{{{0, 0, 0, 0, 0}}}}};
   std::vector<std::shared_ptr<TH2>> mHistArrReset;
   std::vector<std::shared_ptr<TH1>> mHistArrQA;
+  std::vector<std::shared_ptr<TH3>> mHistArrEff;
   std::vector<std::shared_ptr<TH1>> mFqBinFinal;
   std::vector<std::shared_ptr<TH1>> mBinConFinal;
   std::vector<std::shared_ptr<TH1>> mFqBinFinalSampled;
@@ -185,14 +203,15 @@ struct FactorialMomentsTask {
       }
     }
     AxisSpec axisPt[5] = {{100, -0.01, 3 * ptCuts.value[1], ""}, {100, -0.01, 3 * ptCuts.value[3], ""}, {100, -0.01, 3 * ptCuts.value[5], ""}, {100, -0.01, 3 * ptCuts.value[7], ""}, {100, -0.01, 3 * ptCuts.value[9], ""}}; // pT axis
-    auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{8, 0.5, 8.5}}));
-    mEventSelected->GetXaxis()->SetBinLabel(1, "all");
-    mEventSelected->GetXaxis()->SetBinLabel(2, "sel8");
-    mEventSelected->GetXaxis()->SetBinLabel(3, "sameBunchPileup");
-    mEventSelected->GetXaxis()->SetBinLabel(4, "goodZvtxFT0vsPV");
-    mEventSelected->GetXaxis()->SetBinLabel(5, "vertexITSTPC");
-    mEventSelected->GetXaxis()->SetBinLabel(6, "centrality");
-    mEventSelected->GetXaxis()->SetBinLabel(7, "final");
+    auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{7, 0.5, 8.5}}));
+    mEventSelected->GetXaxis()->SetBinLabel(0, "all");
+    mEventSelected->GetXaxis()->SetBinLabel(1, "sel8");
+    mEventSelected->GetXaxis()->SetBinLabel(2, "kNoITSROFrameBorder");
+    mEventSelected->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
+    mEventSelected->GetXaxis()->SetBinLabel(4, "sameBunchPileup");
+    mEventSelected->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
+    mEventSelected->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
+    mEventSelected->GetXaxis()->SetBinLabel(7, "FTOC");
     auto mTrackSelected = std::get<std::shared_ptr<TH1>>(histos.add(
       "mTrackSelected", "Track Selection Steps", HistType::kTH1D, {{5, 0.5, 5.5}}));
     mTrackSelected->GetXaxis()->SetBinLabel(1, "all");
@@ -207,6 +226,7 @@ struct FactorialMomentsTask {
       binningM[iM] = 2 * (iM + 2);
     }
     for (int iPt = 0; iPt < numPt; ++iPt) {
+      mHistArrEff.push_back(std::get<std::shared_ptr<TH3>>(histos.add(Form("bin%i/m3DVtxZetaPhi", iPt + 1), Form("#eta #phi #vtxz for bin %.2f-%.2f;vz;#eta;#phi", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH3F, {{20, -10, 10}, {16, -0.8, +0.8}, {100, 0., o2::constants::math::TwoPI}})));
       mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mEta", iPt + 1), Form("#eta for bin %.2f-%.2f;#eta", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, -2, 2}})));
       mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPt", iPt + 1), Form("pT for bin %.2f-%.2f;pT", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {axisPt[iPt]})));
       mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPhi", iPt + 1), Form("#phi for bin %.2f-%.2f;#phi", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, o2::constants::math::TwoPI}})));
@@ -236,24 +256,22 @@ struct FactorialMomentsTask {
   template <typename T>
   void checkpT(const T& track)
   {
-    for (int iPt = 0; iPt < numPt; ++iPt) {
+    for (auto iPt = 0; iPt < numPt; ++iPt) {
       if (track.pt() > ptCuts.value[2 * iPt] && track.pt() < ptCuts.value[2 * iPt + 1]) {
         float iphi = track.phi();
         iphi = gRandom->Gaus(iphi, o2::constants::math::TwoPI);
-        iphi = RecoDecay::constrainAngle(iphi);
-
+        iphi = RecoDecay::constrainAngle(iphi, 0.);
+        mHistArrEff[iPt]->Fill(collisionZ, track.eta(), iphi);
         mHistArrQA[iPt * 4]->Fill(track.eta());
         mHistArrQA[iPt * 4 + 1]->Fill(track.pt());
-        mHistArrQA[iPt * 4 + 2]->Fill(track.phi());
+        mHistArrQA[iPt * 4 + 2]->Fill(iphi);
         countTracks[iPt]++;
-
-        for (int iM = 0; iM < nBins; ++iM) {
-          mHistArrReset[iPt * nBins + iM]->Fill(track.eta(), track.phi());
+        for (auto iM = 0; iM < nBins; ++iM) {
+          mHistArrReset[iPt * nBins + iM]->Fill(track.eta(), iphi);
         }
       }
     }
   }
-
   void calculateMoments(std::vector<std::shared_ptr<TH2>> hist)
   {
     double binContent = 0;
@@ -319,21 +337,36 @@ struct FactorialMomentsTask {
   void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>::iterator const& coll, TracksFMs const& tracks)
   {
     // selection of events
+    histos.fill(HIST("mEventSelected"), 0);
     if (!coll.sel8()) {
       return;
     }
+    if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+
+    histos.fill(HIST("mEventSelected"), 2);
+    if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+      return;
+    }
+    histos.fill(HIST("mEventSelected"), 3);
     if (isApplySameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return;
     }
+    histos.fill(HIST("mEventSelected"), 4);
+    if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+      return;
+    }
+    histos.fill(HIST("mEventSelected"), 5);
     if (isApplyGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
-    if (isApplyVertexITSTPC && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return;
-    }
+    histos.fill(HIST("mEventSelected"), 6);
     if (coll.centFT0C() < centLimits.value[0] || coll.centFT0C() > centLimits.value[1]) {
       return;
     }
+    collisionZ = coll.posZ();
+    histos.fill(HIST("mEventSelected"), 7);
     histos.fill(HIST("mVertexX"), coll.posX());
     histos.fill(HIST("mVertexY"), coll.posY());
     histos.fill(HIST("mVertexZ"), coll.posZ());
@@ -354,29 +387,32 @@ struct FactorialMomentsTask {
         continue;
       if (useGlobal && !track.isGlobalTrack())
         continue;
-      histos.fill(HIST("mCollID"), track.collisionId());
-      histos.fill(HIST("mEta"), track.eta());
-      histos.fill(HIST("mPt"), track.pt());
-      histos.fill(HIST("mPhi"), track.phi());
-      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-      histos.fill(HIST("mNClsITS"), track.itsNCls());
-      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-      histos.fill(HIST("mChi2TRD"), track.trdChi2());
-      histos.fill(HIST("mDCAxy"), track.dcaXY());
-      histos.fill(HIST("mDCAx"), track.dcaZ());
-      histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
-      histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
-      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-      checkpT(track);
-    }
 
+      if (std::fabs(track.dcaXY()) < (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2))) {
+        histos.fill(HIST("mCollID"), track.collisionId());
+        histos.fill(HIST("mEta"), track.eta());
+        histos.fill(HIST("mPt"), track.pt());
+        histos.fill(HIST("mPhi"), track.phi());
+        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+        histos.fill(HIST("mNClsITS"), track.itsNCls());
+        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+        histos.fill(HIST("mChi2TRD"), track.trdChi2());
+        histos.fill(HIST("mDCAxy"), track.dcaXY());
+        histos.fill(HIST("mtpcsignalvspt"), track.pt(), track.tpcSignal());
+        histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
+        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+        checkpT(track);
+      }
+    }
     for (int iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
@@ -412,6 +448,7 @@ struct FactorialMomentsTask {
     if (coll.centFT0C() < centLimits.value[0] || coll.centFT0C() > centLimits.value[1]) {
       return;
     }
+
     histos.fill(HIST("mEventSelected"), 5);
     histos.fill(HIST("mVertexX"), coll.posX());
     histos.fill(HIST("mVertexY"), coll.posY());
@@ -430,28 +467,31 @@ struct FactorialMomentsTask {
         continue;
       if (useGlobal && !track.isGlobalTrack())
         continue;
-      histos.fill(HIST("mCollID"), track.collisionId());
-      histos.fill(HIST("mEta"), track.eta());
-      histos.fill(HIST("mPt"), track.pt());
-      histos.fill(HIST("mPhi"), track.phi());
-      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-      histos.fill(HIST("mNClsITS"), track.itsNCls());
-      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-      histos.fill(HIST("mChi2TRD"), track.trdChi2());
-      histos.fill(HIST("mDCAxy"), track.dcaXY());
-      histos.fill(HIST("mDCAx"), track.dcaZ());
-      histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
-      histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
-      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-      if (applyCheckPtForRec && !applyCheckPtForMC) {
-        checkpT(track);
+      if (std::fabs(track.dcaXY()) < (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2))) {
+        histos.fill(HIST("mCollID"), track.collisionId());
+        histos.fill(HIST("mEta"), track.eta());
+        histos.fill(HIST("mPt"), track.pt());
+        histos.fill(HIST("mPhi"), track.phi());
+        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+        histos.fill(HIST("mNClsITS"), track.itsNCls());
+        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+        histos.fill(HIST("mChi2TRD"), track.trdChi2());
+        histos.fill(HIST("mDCAxy"), track.dcaXY());
+        histos.fill(HIST("mDCAx"), track.dcaZ());
+        histos.fill(HIST("mtpcsignalvspt"), track.pt(), track.tpcSignal());
+        histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
+        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+        if (applyCheckPtForRec && !applyCheckPtForMC) {
+          checkpT(track);
+        }
       }
     }
     auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());

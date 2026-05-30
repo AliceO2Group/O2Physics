@@ -2344,11 +2344,11 @@ struct HfTaskCharmPolarisation {
           float const xQvec = (*qVecs).at(0);
           float const yQvec = (*qVecs).at(1);
           ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
-          ROOT::Math::XYZVector const qVec = ROOT::Math::XYZVector(xQvec, yQvec, 0.);
-          ROOT::Math::XYZVector threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-          float const phiEP = qVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(qVec.Mag2());
+          float const phiStarBeam = std::atan2(threeVecDauCM.Y(), threeVecDauCM.X());
+          float const psiAngle = epHelper.GetEventPlane(xQvec, yQvec, 2);
+          float const deltaPhiStarEP = RecoDecay::constrainAngle(phiStarBeam - psiAngle, 0., 2);
           float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
-          fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
+          fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, deltaPhiStarEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
         }
         if (DoMc) {
           // EP analysis for MC

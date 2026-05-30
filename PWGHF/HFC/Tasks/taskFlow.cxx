@@ -2031,7 +2031,11 @@ struct HfTaskFlow {
       float phi1 = reassociatedMftTrack.phi();
       o2::math_utils::bringTo02Pi(phi1);
 
-      target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+      if (!configTask.doEtaDependentFlow) {
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+      } else {
+        target->getTriggerHist()->Fill(step, eta1, multiplicity, posZ, triggerWeight);
+      }
 
       if (configTask.doEtaDependentFlow) {
         registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, eta1, triggerWeight); // think about event weight in near future

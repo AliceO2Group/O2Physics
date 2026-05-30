@@ -60,7 +60,9 @@ class multCalibrator : public TNamed
   void SetAnchorPointPercentage(Float_t lPer) { fAnchorPointPercentage = lPer; }
 
   void SetStandardAdaptiveBoundaries();   // standard adaptive (pp-like)
+  void SetRun3AdaptiveBoundaries();       // Run 3 adaptive (down to 0.00001%)
   void SetStandardOnePercentBoundaries(); // standard 1% (Pb-Pb like)
+  bool IsBinningSane(TH1* histogram);     // for safety
 
   // Master Function in this Class: To be called once filenames are set
   Bool_t Calibrate();
