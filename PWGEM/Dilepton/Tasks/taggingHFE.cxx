@@ -274,6 +274,7 @@ struct taggingHFE {
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
     Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
     Configurable<float> cfg_max_chi2PCA{"cfg_max_chi2PCA", 1.0, "max chi2 at PCA"};
+    o2::framework::Configurable<float> cfg_max_massLH{"cfg_max_massLH", 1e+10, "max massLH in GeV/c2"}; // set hb mass. SVs whose mass is above this mass cannot be HF hadrons.
   } lKPairCut;
 
   struct : ConfigurableGroup {
@@ -281,6 +282,7 @@ struct taggingHFE {
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
     Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
     Configurable<float> cfg_max_chi2PCA{"cfg_max_chi2PCA", 1.0, "max chi2 at PCA"};
+    o2::framework::Configurable<float> cfg_max_massLH{"cfg_max_massLH", 1e+10, "max massLH in GeV/c2"}; // set hb mass. SVs whose mass is above this mass cannot be HF hadrons.
   } lV0PairCut;
 
   struct : ConfigurableGroup {
@@ -288,6 +290,7 @@ struct taggingHFE {
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
     Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
     Configurable<float> cfg_max_chi2PCA{"cfg_max_chi2PCA", 1.0, "max chi2 at PCA"};
+    o2::framework::Configurable<float> cfg_max_massLH{"cfg_max_massLH", 1e+10, "max massLH in GeV/c2"}; // set hb mass. SVs whose mass is above this mass cannot be HF hadrons.
   } lCPairCut;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -1727,7 +1730,7 @@ struct taggingHFE {
             continue;
           }
 
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA || lKPairCut.cfg_max_massLH < eKpair.mass) {
             continue;
           }
 
@@ -1788,7 +1791,7 @@ struct taggingHFE {
           if (!eKpair.isOK) {
             continue;
           }
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA || lKPairCut.cfg_max_massLH < eKpair.mass) {
             continue;
           }
 
@@ -1858,7 +1861,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA || lV0PairCut.cfg_max_massLH < eV0pair.mass) {
             continue;
           }
 
@@ -1937,7 +1940,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA || lV0PairCut.cfg_max_massLH < eV0pair.mass) {
             continue;
           }
 
@@ -1999,7 +2002,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA || lCPairCut.cfg_max_massLH < eCpair.mass) {
             continue;
           }
 
@@ -2067,7 +2070,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA || lCPairCut.cfg_max_massLH < eCpair.mass) {
             continue;
           }
 
@@ -2163,7 +2166,7 @@ struct taggingHFE {
             continue;
           }
 
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA || lKPairCut.cfg_max_massLH < eKpair.mass) {
             continue;
           }
 
@@ -2225,7 +2228,7 @@ struct taggingHFE {
           if (!eKpair.isOK) {
             continue;
           }
-          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA) {
+          if (eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz || lKPairCut.cfg_max_chi2PCA < eKpair.chi2PCA || lKPairCut.cfg_max_massLH < eKpair.mass) {
             continue;
           }
 
@@ -2295,7 +2298,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA || lV0PairCut.cfg_max_massLH < eV0pair.mass) {
             continue;
           }
 
@@ -2373,7 +2376,7 @@ struct taggingHFE {
           if (!eV0pair.isOK) {
             continue;
           }
-          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA) {
+          if (eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz || lV0PairCut.cfg_max_chi2PCA < eV0pair.chi2PCA || lV0PairCut.cfg_max_massLH < eV0pair.mass) {
             continue;
           }
 
@@ -2435,7 +2438,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA || lCPairCut.cfg_max_massLH < eCpair.mass) {
             continue;
           }
 
@@ -2503,7 +2506,7 @@ struct taggingHFE {
           if (!eCpair.isOK) {
             continue;
           }
-          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA) {
+          if (eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz || lCPairCut.cfg_max_chi2PCA < eCpair.chi2PCA || lCPairCut.cfg_max_massLH < eCpair.mass) {
             continue;
           }
 
