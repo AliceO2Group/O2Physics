@@ -428,7 +428,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
 
       // *) Event cuts:
-      if (!EventCuts<rs>(collision) || centr > 80.) { // Main call for event cuts
+      float centrcut = 80.;
+      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
         return;
       }
       event.fEventHistograms[eVertexZ][eRec][1]->Fill(zrec);
@@ -437,14 +438,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     }
 
     // before loop over particles
-    float eta = 0;
     float phi = 0;
     for (int ih = 0; ih < maxHarmonic; ih++) {
       cor.Qvector[ih] = TComplex(0., 0.);
     }
 
     // Main loop over particles:
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
 
       // Fill reconstructed ...:
       float ptrec = 0., ptsim = 0.;
@@ -453,7 +453,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         pc.fHistPt[eRec]->Fill(track.pt());
         event.fEventHistograms[ePt][eRec][0]->Fill(track.pt());
         ptrec = track.pt();
-        eta = track.eta();
         phi = track.phi();
         pc.fHistPhi[eRec]->Fill(track.phi());
         pc.fHistCharge[eRec]->Fill(track.sign());
@@ -473,7 +472,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
           pc.fHistPt[eSim]->Fill(mcparticle.pt());
           event.fEventHistograms[ePt][eSim][0]->Fill(mcparticle.pt());
           ptsim = mcparticle.pt();
-          eta = mcparticle.eta();
           phi = mcparticle.phi();
           pc.fHistPhi[eSim]->Fill(mcparticle.phi());
           // pc.fHistCharge[eSim]->Fill(mcparticle.sign());
