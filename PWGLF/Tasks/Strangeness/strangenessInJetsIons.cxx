@@ -1939,19 +1939,19 @@ struct StrangenessInJetsIons {
         pj.set_user_index(p.pdgCode());
         v0PseudoJets.push_back(pj);
         // LOG(info) << "[AddV0sForJetReconstructionMCP] Add V0 as input for jet finder.";
+      }
+    }
 
-        // Remove V0 daughter particles if already in the input list for the jet finder
-        for (long unsigned int i = 0; i < fjParticleObj.size(); ++i) {
-          const auto& mcPart = fjParticleObj[i];
-          if (!mcPart.has_mothers())
-            continue;
-          auto mother = mcParticles.iteratorAt(mcPart.mothersIds()[0]);
-          int motherPdg = std::abs(mother.pdgCode());
-          if (motherPdg == kK0Short || motherPdg == kLambda0) {
-            isTrackReplaced[i] = true;
-            // LOG(info) << "[AddV0sForJetReconstructionMCP] V0 daughter particle found in fjParticleObj.";
-          }
-        }
+    // Remove V0 daughter particles if already in the input list for the jet finder
+    for (long unsigned int i = 0; i < fjParticleObj.size(); ++i) {
+      const auto& mcPart = fjParticleObj[i];
+      if (!mcPart.has_mothers())
+        continue;
+      auto mother = mcParticles.iteratorAt(mcPart.mothersIds()[0]);
+      int motherPdg = std::abs(mother.pdgCode());
+      if (motherPdg == kK0Short || motherPdg == kLambda0) {
+        isTrackReplaced[i] = true;
+        // LOG(info) << "[AddV0sForJetReconstructionMCP] V0 daughter particle found in fjParticleObj.";
       }
     }
 
@@ -2034,6 +2034,9 @@ struct StrangenessInJetsIons {
       double pt = fTsallisToy->GetRandom(&fRng);
       double phi = fRng.Uniform(0.0, TMath::TwoPi());
       double eta = fRng.Uniform(configTracks.etaMin, configTracks.etaMax);
+
+      if (pt < 0.1f)
+        continue;
 
       double px = pt * std::cos(phi);
       double py = pt * std::sin(phi);
