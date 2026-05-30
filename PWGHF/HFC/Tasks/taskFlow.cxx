@@ -2182,67 +2182,67 @@ struct HfTaskFlow {
     } // end of trigger loop
   } // end of fillCorrelationsFt0aFt0c
 
-  template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
-  void fillCorrelationsMonteCarlo(TTarget target, CorrelationContainer::CFStep step,
-                                  TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                                  float multiplicity, float posZ, bool sameEvent)
-  {
-    auto triggerWeight = 1;
-    auto associatedWeight = 1;
-    auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+  // template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
+  // void fillCorrelationsMonteCarlo(TTarget target, CorrelationContainer::CFStep step,
+  //                                 TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
+  //                                 float multiplicity, float posZ, bool sameEvent)
+  // {
+  //   auto triggerWeight = 1;
+  //   auto associatedWeight = 1;
+  //   auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
+  //   int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
-    for (auto const& track1 : tracks1) {
+  //   for (auto const& track1 : tracks1) {
 
-      if (track1.eta() < configTask.etaMcParticlesTriggerMin || track1.eta() > configTask.etaMcParticlesTriggerMax) {
-        continue;
-      }
-      if (track1.pt() < configTask.ptMcParticlesTriggerMin || track1.pt() > configTask.ptMcParticlesTriggerMax) {
-        continue;
-      }
-      if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track1.isPhysicalPrimary()) {
-        continue;
-      }
+  //     if (track1.eta() < configTask.etaMcParticlesTriggerMin || track1.eta() > configTask.etaMcParticlesTriggerMax) {
+  //       continue;
+  //     }
+  //     if (track1.pt() < configTask.ptMcParticlesTriggerMin || track1.pt() > configTask.ptMcParticlesTriggerMax) {
+  //       continue;
+  //     }
+  //     if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track1.isPhysicalPrimary()) {
+  //       continue;
+  //     }
 
-      target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
-      if (configTask.doEtaDependentFlow) {
-        registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.eta(), triggerWeight);
-      } else {
-        registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.pt(), triggerWeight);
-      }
+  //     target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
+  //     if (configTask.doEtaDependentFlow) {
+  //       registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.eta(), triggerWeight);
+  //     } else {
+  //       registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.pt(), triggerWeight);
+  //     }
 
-      for (auto const& track2 : tracks2) {
+  //     for (auto const& track2 : tracks2) {
 
-        if (track1.globalIndex() == track2.globalIndex()) {
-          continue;
-        }
-        if (track2.eta() < configTask.etaMcParticlesAssocMin || track2.eta() > configTask.etaMcParticlesAssocMax) {
-          continue;
-        }
-        if (track2.pt() < configTask.ptMcParticlesAssocMin || track2.pt() > configTask.ptMcParticlesAssocMax) {
-          continue;
-        }
-        if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track2.isPhysicalPrimary()) {
-          continue;
-        }
+  //       if (track1.globalIndex() == track2.globalIndex()) {
+  //         continue;
+  //       }
+  //       if (track2.eta() < configTask.etaMcParticlesAssocMin || track2.eta() > configTask.etaMcParticlesAssocMax) {
+  //         continue;
+  //       }
+  //       if (track2.pt() < configTask.ptMcParticlesAssocMin || track2.pt() > configTask.ptMcParticlesAssocMax) {
+  //         continue;
+  //       }
+  //       if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track2.isPhysicalPrimary()) {
+  //         continue;
+  //       }
 
-        float deltaPhi = RecoDecay::constrainAngle(track2.phi() - track1.phi(), -PIHalf);
-        float deltaEta = track2.eta() - track1.eta();
+  //       float deltaPhi = RecoDecay::constrainAngle(track2.phi() - track1.phi(), -PIHalf);
+  //       float deltaEta = track2.eta() - track1.eta();
 
-        if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
-          target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ,
-                                      triggerWeight * associatedWeight);
-        } else if (configTask.doEtaDependentFlow) {
-          target->getPairHist()->Fill(step, sampleIndex, posZ, track2.eta(), track1.eta(), deltaPhi, deltaEta,
-                                      triggerWeight * associatedWeight);
-        } else {
-          target->getPairHist()->Fill(step, sampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta,
-                                      triggerWeight * associatedWeight);
-        }
-      } // end of loop over track2
+  //       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
+  //         target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ,
+  //                                     triggerWeight * associatedWeight);
+  //       } else if (configTask.doEtaDependentFlow) {
+  //         target->getPairHist()->Fill(step, sampleIndex, posZ, track2.eta(), track1.eta(), deltaPhi, deltaEta,
+  //                                     triggerWeight * associatedWeight);
+  //       } else {
+  //         target->getPairHist()->Fill(step, sampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta,
+  //                                     triggerWeight * associatedWeight);
+  //       }
+  //     } // end of loop over track2
 
-    } // end of loop over track1
-  }
+  //   } // end of loop over track1
+  // }
 
   // ===============================================================================================================================================================================
   //      mixCollisions for RECONSTRUCTED events
