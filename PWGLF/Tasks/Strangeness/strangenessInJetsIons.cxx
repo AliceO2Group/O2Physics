@@ -3953,8 +3953,8 @@ struct StrangenessInJetsIons {
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processDataMB, "Process data in minimum bias events", false);
 
-  void processPrepareUnfolding(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const& genCollisions,
-                               SimCollisions const& recoCollisions,
+  void processPrepareUnfolding(SimCollisions const& recoCollisions,
+                               soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const&,
                                DaughterTracksMC const& mcTracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
                                aod::McParticles const& mcParticles)
   {
