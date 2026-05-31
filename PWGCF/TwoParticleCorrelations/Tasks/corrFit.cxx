@@ -779,7 +779,7 @@ struct CorrFit {
     for (auto const& track : tracks) {
 
       if (cfgRefMultiplicity) {
-        if (track.pt() < 0.2 || track.pt() > 3.0)
+        if (track.pt() > cfgRefpTMax)
           continue;
       }
 
