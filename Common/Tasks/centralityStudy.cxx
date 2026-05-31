@@ -871,7 +871,7 @@ struct centralityStudy {
         uint64_t bcTimestamp = multbc.timestamp();
         const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
-        if (constexpr(requires { collision.FT0C(); })) {
+        if constexpr(requires { collision.FT0C(); }) {
           histos.fill(HIST("hInteractionRateVsCentrality"), collision.centFT0C(), interactionRate);
           if (studies.doRunByRunHistograms) {
             getHist(TH2, histPath + "hInteractionRateVsCentrality")->Fill(collision.centFT0C(), interactionRate);
