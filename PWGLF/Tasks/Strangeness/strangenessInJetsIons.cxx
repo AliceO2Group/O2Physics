@@ -154,6 +154,7 @@ struct StrangenessInJetsIons {
   Configurable<bool> useV0inJetRec{"useV0inJetRec", true, "Include V0s in jet reconstruction"};
   Configurable<bool> doThermalToyModel{"doThermalToyModel", false, "Use the thermal toy model to embed background particles to the jet finder input list"};
   Configurable<bool> doPlotRho{"doPlotRho", false, "Plot rho distributions computed with perpendicular cone and area median method."};
+  Configurable<bool> doRandomConeSys{"doRandomConeSys", false, "Study particle contribution outside jets using random cones with same pseudorapidity and phi generated in [pi/3, 2*pi/3]."};
   Configurable<bool> saveChargedParticleMB{"saveChargedParticleMB", false, "Store charged particle information to build inclusive spectra."};
 
   // Event selection
@@ -336,9 +337,10 @@ struct StrangenessInJetsIons {
       registryData.add("h2_centrality_deltaPt_RandomCone", "h2_centrality_deltaPt_RandomCone", HistType::kTH2F, {multAxis, deltaPtAxis});
       registryData.add("h2_centrality_rhoPerp", "h2_centrality_rhoPerp", HistType::kTH2F, {multAxis, rhoAxis});
 
-      registryData.add("rho_perp", "rho_perp", HistType::kTH2F, {multAxis, rhoAxis});
-      registryData.add("rho_median", "rho_median", HistType::kTH2F, {multAxis, rhoAxis});
-
+      if (doPlotRho) {
+        registryData.add("rho_perp", "rho_perp", HistType::kTH2F, {multAxis, rhoAxis});
+        registryData.add("rho_median", "rho_median", HistType::kTH2F, {multAxis, rhoAxis});
+      }
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
@@ -350,6 +352,11 @@ struct StrangenessInJetsIons {
         registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassLambdaAxis});
         registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassK0sAxis});
         registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassK0sAxis});
+        if (doRandomConeSys) {
+          registryData.add("Lambda_in_rc", "Lambda_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassLambdaAxis});
+          registryData.add("AntiLambda_in_rc", "AntiLambda_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassLambdaAxis});
+          registryData.add("K0s_in_rc", "K0s_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassK0sAxis});
+        }
       }
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
@@ -414,6 +421,11 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_generated_ue", "Lambda_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_jet", "AntiLambda_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_ue", "AntiLambda_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("Lambda_generated_rc", "Lambda_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("AntiLambda_generated_rc", "AntiLambda_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("K0s_generated_rc", "K0s_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+        }
 
         // --- Histograms for the full event (without jets)
         registryMC.add("K0s_generated_MB", "K0s_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
@@ -521,6 +533,11 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_reconstructed_ue", "Lambda_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_jet", "AntiLambda_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_ue", "AntiLambda_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("Lambda_reconstructed_rc", "Lambda_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("AntiLambda_reconstructed_rc", "AntiLambda_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("K0s_reconstructed_rc", "K0s_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+        }
 
         // Histograms for secondary hadrons
         registryMC.add("K0s_reconstructed_jet_incl", "K0s_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
@@ -529,6 +546,11 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_reconstructed_ue_incl", "Lambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_jet_incl", "AntiLambda_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("Lambda_reconstructed_rc_incl", "Lambda_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("AntiLambda_reconstructed_rc_incl", "AntiLambda_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("K0s_reconstructed_rc_incl", "K0s_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+        }
 
         // Histograms for generated particles in reconstructed events
         registryMC.add("K0s_gen_recoEvent_jet", "K0s_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -537,6 +559,11 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_gen_recoEvent_ue", "Lambda_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_gen_recoEvent_jet", "AntiLambda_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_gen_recoEvent_ue", "AntiLambda_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("Lambda_gen_recoEvent_rc", "Lambda_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("AntiLambda_gen_recoEvent_rc", "AntiLambda_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("K0s_gen_recoEvent_rc", "K0s_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+        }
 
         // --- Histograms for the full event (without jets)
         registryMC.add("K0s_reconstructed_MB", "K0s_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
@@ -753,6 +780,23 @@ struct StrangenessInJetsIons {
     double u2x = (-b - std::sqrt(delta)) / (2.0 * a);
     double u2y = (-pz2 - px * u2x) / py;
     u2.SetXYZ(u2x, u2y, pz);
+  }
+
+  // Compute two random directions in phi to vector p
+  void getRandomConeDirections(const fastjet::PseudoJet& jet, TVector3& u1, TVector3& u2, double minDeltaPhi, double maxDeltaPhi)
+  {
+    // Generate random deltaPhi in specified range
+    double randomDeltaPhi = fRng.Uniform(minDeltaPhi, maxDeltaPhi);
+
+    u1.SetPtEtaPhi(jet.pt(), jet.eta(), jet.phi() + randomDeltaPhi);
+    u2.SetPtEtaPhi(jet.pt(), jet.eta(), jet.phi() - randomDeltaPhi);
+  }
+
+  float getDeltaR(double eta1, double phi1, double etaAxis, double phiAxis)
+  {
+    float deltaEta = eta1 - etaAxis;
+    float deltaPhi = getDeltaPhi(phi1, phiAxis);
+    return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
   }
 
   void computeRandomConeDeltaPt(const std::vector<fastjet::PseudoJet>& fjParticles,
@@ -2222,6 +2266,8 @@ struct StrangenessInJetsIons {
     std::vector<TVector3> selectedJet;
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
+    std::vector<TVector3> rcSys1; // randomn cone 1
+    std::vector<TVector3> rcSys2; // randomn cone 2
     std::vector<double> jetPt;
 
     // Loop over reconstructed jets
@@ -2244,6 +2290,13 @@ struct StrangenessInJetsIons {
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
       if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
         continue;
+      }
+
+      TVector3 rcSysAxis1(0, 0, 0), rcSysAxis2(0, 0, 0);
+      if (doRandomConeSys) {
+        getRandomConeDirections(jet, rcSysAxis1, rcSysAxis2, TMath::Pi() / 3.0, 2.0 * TMath::Pi() / 3.0);
+        rcSys1.emplace_back(rcSysAxis1);
+        rcSys2.emplace_back(rcSysAxis2);
       }
 
       // Store jet and UE axes
@@ -2287,6 +2340,13 @@ struct StrangenessInJetsIons {
           const float deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
           const float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+          bool isInRC = false;
+          if (doRandomConeSys) {
+            const float deltaRrc1 = getDeltaR(v0dir.Eta(), v0dir.Phi(), rcSys1[i].Eta(), rcSys1[i].Phi());
+            const float deltaRrc2 = getDeltaR(v0dir.Eta(), v0dir.Phi(), rcSys2[i].Eta(), rcSys2[i].Phi());
+            isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+          }
+
           // Fill Armenteros-Podolanski TH2
           // registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
 
@@ -2298,6 +2358,9 @@ struct StrangenessInJetsIons {
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
             }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("K0s_in_rc"), multiplicity, v0.pt(), v0.mK0Short());
+            }
           }
           // Lambda
           if (passedLambdaSelection(v0, pos, neg, vtxPos)) {
@@ -2307,6 +2370,9 @@ struct StrangenessInJetsIons {
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
             }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("Lambda_in_rc"), multiplicity, v0.pt(), v0.mLambda());
+            }
           }
           // AntiLambda
           if (passedAntiLambdaSelection(v0, pos, neg, vtxPos)) {
@@ -2315,6 +2381,9 @@ struct StrangenessInJetsIons {
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
+            }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("AntiLambda_in_rc"), multiplicity, v0.pt(), v0.mAntiLambda());
             }
           }
         }
@@ -2600,6 +2669,11 @@ struct StrangenessInJetsIons {
           continue;
         }
 
+        TVector3 rcSysAxis1(0, 0, 0), rcSysAxis2(0, 0, 0);
+        if (doRandomConeSys) {
+          getRandomConeDirections(jet, rcSysAxis1, rcSysAxis2, TMath::Pi() / 3.0, 2.0 * TMath::Pi() / 3.0);
+        }
+
         // Loop over strange hadrons
         int index = -1;
         for (const auto& hadron : strHadronMomentum) {
@@ -2616,6 +2690,13 @@ struct StrangenessInJetsIons {
           double deltaEtaUe2 = hadron.Eta() - ueAxis2.Eta();
           double deltaPhiUe2 = getDeltaPhi(hadron.Phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          bool isInRC = false;
+          if (doRandomConeSys) {
+            const float deltaRrc1 = getDeltaR(hadron.Eta(), hadron.Phi(), rcSysAxis1.Eta(), rcSysAxis1.Phi());
+            const float deltaRrc2 = getDeltaR(hadron.Eta(), hadron.Phi(), rcSysAxis2.Eta(), rcSysAxis2.Phi());
+            isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+          }
 
           // Select particles inside jet
           if (deltaRJet < coneRadius) {
@@ -2762,6 +2843,29 @@ struct StrangenessInJetsIons {
                 break;
             }
           }
+
+          // Select particles inside random cones (RC)
+          if (doRandomConeSys && isInRC) {
+            switch (pdg[index]) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
         }
       }
       // Fill jet counter
@@ -2782,6 +2886,8 @@ struct StrangenessInJetsIons {
     std::vector<TVector3> selectedJet;
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
+    std::vector<TVector3> rcSys1; // randomn cone 1
+    std::vector<TVector3> rcSys2; // randomn cone 2
 
     // Jet and area definitions
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
@@ -2804,6 +2910,8 @@ struct StrangenessInJetsIons {
       selectedJet.clear();
       ue1.clear();
       ue2.clear();
+      rcSys1.clear();
+      rcSys2.clear();
 
       // Fill event counter before any selection
       registryMC.fill(HIST("number_of_events_mc_rec"), 0.5);
@@ -2907,6 +3015,13 @@ struct StrangenessInJetsIons {
           continue;
         }
 
+        TVector3 rcSysAxis1(0, 0, 0), rcSysAxis2(0, 0, 0);
+        if (doRandomConeSys) {
+          getRandomConeDirections(jet, rcSysAxis1, rcSysAxis2, TMath::Pi() / 3.0, 2.0 * TMath::Pi() / 3.0);
+          rcSys1.emplace_back(rcSysAxis1);
+          rcSys2.emplace_back(rcSysAxis2);
+        }
+
         // Store selected jet and UE cone axes
         selectedJet.emplace_back(jetAxis);
         ue1.emplace_back(ueAxis1);
@@ -2950,6 +3065,13 @@ struct StrangenessInJetsIons {
           const double deltaPhiUe2 = getDeltaPhi(momVec.Phi(), ue2[i].Phi());
           const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+          bool isInRC = false;
+          if (doRandomConeSys) {
+            const float deltaRrc1 = getDeltaR(momVec.Eta(), momVec.Phi(), rcSys1[i].Eta(), rcSys1[i].Phi());
+            const float deltaRrc2 = getDeltaR(momVec.Eta(), momVec.Phi(), rcSys2[i].Eta(), rcSys2[i].Phi());
+            isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+          }
+
           // Select particles inside jet
           if (deltaRJet < rJet) {
             switch (particle.pdgCode()) {
@@ -2987,6 +3109,27 @@ struct StrangenessInJetsIons {
               case kLambda0Bar:
                 if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("AntiLambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+          if (doRandomConeSys && isInRC) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_rc"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_rc"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_rc"), multiplicity, momVec.Pt());
                 }
                 break;
               default:
@@ -3047,6 +3190,13 @@ struct StrangenessInJetsIons {
             double deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+            bool isInRC = false;
+            if (doRandomConeSys) {
+              const float deltaRrc1 = getDeltaR(v0dir.Eta(), v0dir.Phi(), rcSys1[i].Eta(), rcSys1[i].Phi());
+              const float deltaRrc2 = getDeltaR(v0dir.Eta(), v0dir.Phi(), rcSys2[i].Eta(), rcSys2[i].Phi());
+              isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+            }
+
             // Fill Armenteros-Podolanski TH2
             // registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
 
@@ -3058,6 +3208,9 @@ struct StrangenessInJetsIons {
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_ue"), multiplicity, v0.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("K0s_reconstructed_rc"), multiplicity, v0.pt());
+              }
             }
             // Lambda
             if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0 && isPhysPrim) {
@@ -3067,6 +3220,9 @@ struct StrangenessInJetsIons {
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_ue"), multiplicity, v0.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("Lambda_reconstructed_rc"), multiplicity, v0.pt());
+              }
             }
             // AntiLambda
             if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar && isPhysPrim) {
@@ -3075,6 +3231,9 @@ struct StrangenessInJetsIons {
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_ue"), multiplicity, v0.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("AntiLambda_reconstructed_rc"), multiplicity, v0.pt());
               }
             }
 
@@ -3087,6 +3246,9 @@ struct StrangenessInJetsIons {
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_ue_incl"), multiplicity, v0.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("K0s_reconstructed_rc_incl"), multiplicity, v0.pt());
+              }
             }
             // Lambda
             if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0) {
@@ -3096,6 +3258,9 @@ struct StrangenessInJetsIons {
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_ue_incl"), multiplicity, v0.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("Lambda_reconstructed_rc_incl"), multiplicity, v0.pt());
+              }
             }
             // AntiLambda
             if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar) {
@@ -3104,6 +3269,9 @@ struct StrangenessInJetsIons {
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_ue_incl"), multiplicity, v0.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("AntiLambda_reconstructed_rc_incl"), multiplicity, v0.pt());
               }
             }
           }
