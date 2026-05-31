@@ -477,7 +477,6 @@ struct centralityStudy {
       histPointers.insert({histPath + "hPVChi2VsCentrality", histos.add((histPath + "hPVChi2VsCentrality").c_str(), "hPVChi2VsCentrality", {kTH2F, {{axisCentrality, axisPVChi2}}})});
       histPointers.insert({histPath + "hDeltaTimeVsCentrality", histos.add((histPath + "hDeltaTimeVsCentrality").c_str(), "hDeltaTimeVsCentrality", {kTH2F, {{axisCentrality, axisDeltaTime}}})});
       histPointers.insert({histPath + "hInteractionRateVsCentrality", histos.add((histPath + "hInteractionRateVsCentrality").c_str(), "hInteractionRateVsCentrality", {kTH2F, {{axisCentrality, axisInteractionRate}}})});
-
     }
 
     if (studies.doNGlobalTracksVsRawSignals) {
@@ -872,7 +871,7 @@ struct centralityStudy {
         uint64_t bcTimestamp = multbc.timestamp();
         const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
-        if (constexpr (requires { collision.FT0C(); })) {
+        if (constexpr(requires { collision.FT0C(); })) {
           histos.fill(HIST("hInteractionRateVsCentrality"), collision.centFT0C(), interactionRate);
           if (studies.doRunByRunHistograms) {
             getHist(TH2, histPath + "hInteractionRateVsCentrality")->Fill(collision.centFT0C(), interactionRate);
