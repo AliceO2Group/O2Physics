@@ -301,6 +301,7 @@ struct centralityStudy {
         histos.add("hNMFTTracksVsCentrality", "hNMFTTracksVsCentrality", kTH2F, {axisCentrality, axisMultMFTTracks});
         histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
         histos.add("hDeltaTimeVsCentrality", "hDeltaTimeVsCentrality", kTH2F, {axisCentrality, axisDeltaTime});
+        histos.add("hInteractionRateVsCentrality", "hInteractionRateVsCentrality", kTH2F, {axisCentrality, axisInteractionRate});
 
         if (studies.doOccupancyStudyVsCentrality2d) {
           histos.add("hNcontribsProfileVsTrackOccupancyVsCentrality", "hNcontribsProfileVsTrackOccupancyVsCentrality", kTProfile2D, {axisTrackOccupancy, axisCentrality});
@@ -434,6 +435,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
       histPointers.insert({histPath + "hNMFTTracks", histos.add((histPath + "hNMFTTracks").c_str(), "hNMFTTracks", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
       histPointers.insert({histPath + "hNPVContributors", histos.add((histPath + "hNPVContributors").c_str(), "hNPVContributors", {kTH1D, {{axisMultUltraFinePVContributors}}})});
+      histPointers.insert({histPath + "hInteractionRate", histos.add((histPath + "hInteractionRate").c_str(), "hInteractionRate", {kTH1D, {{axisInteractionRate}}})});
 
       if (applyVertexZEqualization) {
         histPointers.insert({histPath + "hFT0C_Collisions_Unequalized", histos.add((histPath + "hFT0C_Collisions_Unequalized").c_str(), "hFT0C_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0C}}})});
@@ -474,6 +476,8 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNMFTTracksVsCentrality", histos.add((histPath + "hNMFTTracksVsCentrality").c_str(), "hNMFTTracksVsCentrality", {kTH2F, {{axisCentrality, axisMultMFTTracks}}})});
       histPointers.insert({histPath + "hPVChi2VsCentrality", histos.add((histPath + "hPVChi2VsCentrality").c_str(), "hPVChi2VsCentrality", {kTH2F, {{axisCentrality, axisPVChi2}}})});
       histPointers.insert({histPath + "hDeltaTimeVsCentrality", histos.add((histPath + "hDeltaTimeVsCentrality").c_str(), "hDeltaTimeVsCentrality", {kTH2F, {{axisCentrality, axisDeltaTime}}})});
+      histPointers.insert({histPath + "hInteractionRateVsCentrality", histos.add((histPath + "hInteractionRateVsCentrality").c_str(), "hInteractionRateVsCentrality", {kTH2F, {{axisCentrality, axisInteractionRate}}})});
+
     }
 
     if (studies.doNGlobalTracksVsRawSignals) {
@@ -497,7 +501,6 @@ struct centralityStudy {
       histPointers.insert({histPath + "hPVzProfileCoVsTime", histos.add((histPath + "hPVzProfileCoVsTime").c_str(), "hPVzProfileCoVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
       histPointers.insert({histPath + "hPVzProfileBcVsTime", histos.add((histPath + "hPVzProfileBcVsTime").c_str(), "hPVzProfileBcVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
       histPointers.insert({histPath + "hIRProfileVsTime", histos.add((histPath + "hIRProfileVsTime").c_str(), "hIRProfileVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
-      histPointers.insert({histPath + "hInteractionRate", histos.add((histPath + "hInteractionRate").c_str(), "hInteractionRate", {kTH1D, {{axisInteractionRate}}})});
     }
   }
 
@@ -869,6 +872,12 @@ struct centralityStudy {
         uint64_t bcTimestamp = multbc.timestamp();
         const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
+        if (constexpr (requires { collision.FT0C(); })) {
+          histos.fill(HIST("hInteractionRateVsCentrality"), collision.centFT0C(), interactionRate);
+          if (studies.doRunByRunHistograms) {
+            getHist(TH2, histPath + "hInteractionRateVsCentrality")->Fill(collision.centFT0C(), interactionRate);
+          }
+        }
         if (studies.doRunByRunHistograms) {
           getHist(TH1, histPath + "hInteractionRate")->Fill(interactionRate);
           if (studies.doTimeStudies) {
