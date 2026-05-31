@@ -77,7 +77,6 @@ struct CorrFit {
   O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
   O2_DEFINE_CONFIGURABLE(cfgRefMultiplicity, bool, false, "Use multiplicity of reference tracks for multiplicity correlation cut instead of Nch")
 
-
   struct : ConfigurableGroup{
              O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
                O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
@@ -690,7 +689,6 @@ struct CorrFit {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiency.value.c_str(), "READ");
         mEfficiency = reinterpret_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
 
-        std::cout << "Loaded efficiency histogram from local file " << cfgEfficiency.value.c_str() << " with pointer " << mEfficiency << std::endl;
       } else {
         mEfficiency = ccdb->getForTimeStamp<TH3D>(cfgEfficiency, timestamp);
       }
@@ -699,20 +697,18 @@ struct CorrFit {
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
     }
-    if (cfgEfficiencyNch.value.empty() == false){
+    if (cfgEfficiencyNch.value.empty() == false) {
       if (cfgLocalEfficiencyNch) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyNch.value.c_str(), "READ");
         mEfficiencyNch = reinterpret_cast<TH1D*>(fEfficiencyTrigger->Get("ccdb_object"));
 
-        std::cout << "Loaded efficiency for Nch corrected histogram from local file " << cfgEfficiencyNch.value.c_str() << " with pointer " << mEfficiencyNch << std::endl;
       } else {
         mEfficiencyNch = ccdb->getForTimeStamp<TH1D>(cfgEfficiencyNch, timestamp);
       }
-      if (!mEfficiencyNch ) {
+      if (!mEfficiencyNch) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyNch.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiencyNch.value.c_str(), (void*)mEfficiencyNch);
-
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
@@ -782,9 +778,9 @@ struct CorrFit {
     float weight_Nch = 1.0f;
     for (auto const& track : tracks) {
 
-      if (cfgRefMultiplicity){
+      if (cfgRefMultiplicity) {
         if (track.pt() < 0.2 || track.pt() > 3.0)
-        continue;
+          continue;
       }
 
       if (!getEfficiencyCorrection_Nch(weight_Nch, track.pt())) {
@@ -792,10 +788,8 @@ struct CorrFit {
       }
 
       nTracksCorrected += weight_Nch;
-
     }
     multiplicity = nTracksCorrected;
-
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
@@ -988,9 +982,9 @@ struct CorrFit {
           continue;
 
         if (cfgRefpTt) {
-         if (track2.pt() > cfgRefpTMax) {
-           continue;
-         }
+          if (track2.pt() > cfgRefpTMax) {
+            continue;
+          }
         }
         if (track1.pt() <= track2.pt())
           continue; // skip if the trigger pt is less than the associate pt
@@ -1084,7 +1078,6 @@ struct CorrFit {
       return;
     }
 
-
     const auto& ft0 = collision.foundFT0();
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, multiplicity, kFT0A, eventWeight);
   }
@@ -1136,9 +1129,8 @@ struct CorrFit {
       }
 
       if (cfgQaCheck) {
-      registry.fill(HIST("Nch_corrected"), multiplicity);
-    }
-
+        registry.fill(HIST("Nch_corrected"), multiplicity);
+      }
 
       const auto& ft0 = collision2.foundFT0();
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, multiplicity, kFT0A, eventWeight);
@@ -1184,7 +1176,6 @@ struct CorrFit {
     if (cfgQaCheck) {
       registry.fill(HIST("Nch_corrected"), multiplicity);
     }
-
 
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, multiplicity, kFT0C, 1.0f);
   }
@@ -1236,9 +1227,8 @@ struct CorrFit {
       }
 
       if (cfgQaCheck) {
-      registry.fill(HIST("Nch_corrected"), multiplicity);
-    }
-
+        registry.fill(HIST("Nch_corrected"), multiplicity);
+      }
 
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, multiplicity, kFT0C, eventWeight);
     }
@@ -1286,7 +1276,6 @@ struct CorrFit {
     if (cfgQaCheck) {
       registry.fill(HIST("Nch_corrected"), multiplicity);
     }
-
 
     fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, ft0, collision.posZ(), SameEvent, multiplicity, eventWeight);
   }
@@ -1340,8 +1329,8 @@ struct CorrFit {
       }
 
       if (cfgQaCheck) {
-      registry.fill(HIST("Nch_corrected"), multiplicity);
-    }
+        registry.fill(HIST("Nch_corrected"), multiplicity);
+      }
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
 
       fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0Col1, ft0Col2, collision1.posZ(), MixedEvent, multiplicity, eventWeight);
@@ -1368,9 +1357,8 @@ struct CorrFit {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     loadCorrection(bc.timestamp());
-    
+
     fillYield(collision, tracks);
-    
 
     double multiplicity = tracks.size();
 
