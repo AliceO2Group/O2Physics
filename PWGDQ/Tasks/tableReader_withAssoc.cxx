@@ -1469,7 +1469,7 @@ struct AnalysisSameEventPairing {
 
           if (fEnableBarrelHistos) {
             names = {
-              //change define histname
+              // change define histname
               Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName()),
@@ -2131,8 +2131,8 @@ struct AnalysisSameEventPairing {
           }
         } // end loop (cuts)
 
-        //edit
-        //rotation 20 times
+        // edit
+        // rotation 20 times
         if constexpr (TPairType == VarManager::kDecayToEE) {
           twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
 
@@ -2144,8 +2144,6 @@ struct AnalysisSameEventPairing {
           auto t2 = a2.template reducedtrack_as<TTracks>();
           sign1 = t1.sign();
           sign2 = t2.sign();
-          // store the ambiguity number of the two dilepton legs in the last 4 digits of the two-track filter
-          // TODO: Make sure that we do not work with more than 28 track bits
           if (t1.barrelAmbiguityInBunch() > 1) {
             twoTrackFilter |= (static_cast<uint32_t>(1) << 28);
           }
@@ -2158,43 +2156,43 @@ struct AnalysisSameEventPairing {
           if (t2.barrelAmbiguityOutOfBunch() > 1) {
             twoTrackFilter |= (static_cast<uint32_t>(1) << 31);
           }
-          
-        for (int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-            isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
-            isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
-            isUnambiguous = !(isAmbiInBunch || isAmbiOutOfBunch);
-            isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
-            isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
-            if constexpr (TPairType == VarManager::kDecayToEE) {
-              if (isLeg1Ambi && isLeg2Ambi) {
-                std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
-                if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
-                  if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
-                    isAmbiExtra = true;
+
+          for (int icut = 0; icut < ncuts; icut++) {
+            if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+              isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+              isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+              isUnambiguous = !(isAmbiInBunch || isAmbiOutOfBunch);
+              isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
+              isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
+              if constexpr (TPairType == VarManager::kDecayToEE) {
+                if (isLeg1Ambi && isLeg2Ambi) {
+                  std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
+                  if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
+                    if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
+                      isAmbiExtra = true;
+                    } else {
+                      fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
+                    }
                   } else {
-                    fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
+                    fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
                   }
-                } else {
-                  fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
                 }
               }
-            }
-            if (sign1 * sign2 < 0) {
-              for (int i = 0; i < 20; i++) {
+              if (sign1 * sign2 < 0) {
+                for (int i = 0; i < 20; i++) {
                   VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2);
                   if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
-                  if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    if (isAmbiExtra) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    }
                   }
                 }
               }
             }
           }
         }
-        }
-//end
+        // end
       } // end loop over pairs of track associations
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
       if (fEnableBarrelHistos && fConfigQA) {

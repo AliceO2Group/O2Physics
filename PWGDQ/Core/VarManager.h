@@ -64,6 +64,7 @@
 #include <TObject.h>
 #include <TRandom.h>
 #include <TString.h>
+
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
@@ -1362,7 +1363,7 @@ class VarManager : public TObject
   static void FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
-  template <int pairType, uint32_t fillMap, typename T1, typename T2>        
+  template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPairRotation(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
   static void FillPairCollision(C const& collision, T1 const& t1, T2 const& t2, float* values = nullptr);
@@ -3712,7 +3713,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
-//change_start: rotation pair
+// change_start: rotation pair
 template <int pairType, uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
 {
@@ -3747,7 +3748,8 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
   double dphi = gRandom->Uniform(0., 2. * TMath::Pi());
   double rotationphi2 = t2.phi() + dphi;
 
-  if (rotationphi2 > 2. * TMath::Pi()) rotationphi2 -= 2. * TMath::Pi();
+  if (rotationphi2 > 2. * TMath::Pi())
+    rotationphi2 -= 2. * TMath::Pi();
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
@@ -3771,9 +3773,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
   values[kPt2] = t2.pt();
   values[kEta2] = t2.eta();
   values[kPhi2] = rotationphi2;
-
 }
-
 
 template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
 void VarManager::FillPairCollision(const C& collision, T1 const& t1, T2 const& t2, float* values)
