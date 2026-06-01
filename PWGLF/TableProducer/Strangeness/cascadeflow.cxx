@@ -33,9 +33,9 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
+#include "Math/GenVector/Boost.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
 #include "TRandom3.h"
 
 #include <memory>
