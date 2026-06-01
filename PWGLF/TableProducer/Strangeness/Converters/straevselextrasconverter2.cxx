@@ -43,7 +43,7 @@ struct straevselextrasconverter2 {
                       -999.,  // dummy timeFV0A,
                       -999.,  // dummy timeFT0A,
                       -999.,  // dummy timeFT0C,
-                      0, 	  // dummy triggerMaskFT0,
+                      0,      // dummy triggerMaskFT0,
                       -999,   // dummy gapSide,
                       -999.,  // dummy totalFT0AmplitudeA,
                       -999.,  // dummy totalFT0AmplitudeC,

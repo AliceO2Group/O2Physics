@@ -560,7 +560,7 @@ struct strangederivedbuilder {
           products.strangeCents(collision.centFT0M(), collision.centFT0A(),
                                 centrality, collision.centFV0A(), collision.centFT0CVariant1(), collision.centFT0CVariant2(),
                                 collision.centMFT(), collision.centNGlobal(), collision.centNTPV());
-	  products.strangeEvSels(collision.sel8(), collision.selection_raw(),
+          products.strangeEvSels(collision.sel8(), collision.selection_raw(),
                                  collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
                                  collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
                                  collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
@@ -584,8 +584,8 @@ struct strangederivedbuilder {
                                       collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
                                       collision.trackOccupancyInTimeRange(),
                                       collision.ft0cOccupancyInTimeRange(),
-                                      timeFDDA, timeFDDC, // FDD info
-                                      timeFV0A, // FV0A info
+                                      timeFDDA, timeFDDC,                 // FDD info
+                                      timeFV0A,                           // FV0A info
                                       timeFT0A, timeFT0C, ft0TriggerMask, // FT0 info
                                       // UPC info
                                       gapSide,
