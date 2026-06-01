@@ -9,11 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file strangederivedbuilder.cxx
+/// \brief this task provides general links between collisions and strange objects reconstructed in various ways.
+/// It is meant to help with providing auxiliary information when dealing with derived data.
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
+//
 //__________________________________________________
-// this task provides general links between collisions
-// and strange objects reconstructed in various ways.
-// It is meant to help with providing auxiliary information
-// when dealing with derived data.
+//
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
@@ -481,7 +485,7 @@ struct strangederivedbuilder {
       if constexpr (requires { udCollIterator.gapSide(); }) { // check if this table is the expected one
         auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
         if (udCollision.size() == 1) { // check that the slicing provide a unique UD collision
-          for (auto& udColl : udCollision) {
+          for (const auto& udColl : udCollision) {
             gapSide = udColl.gapSide();
             totalFT0AmplitudeA = udColl.totalFT0AmplitudeA();
             totalFT0AmplitudeC = udColl.totalFT0AmplitudeC();
@@ -652,21 +656,26 @@ struct strangederivedbuilder {
   void populateEventTimes(coll const& collisions, TTracks const& tracks)
   {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
+    std::vector<double> collisionEventTimeErr(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
     for (const auto& track : tracks) {
       if (track.hasTOF() && track.collisionId() >= 0) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
+        // Take the average of the error instead of propagating the error as all event time error from tracks are fully correlated
+        collisionEventTimeErr[track.collisionId()] += track.tofEvTimeErr();
         collisionNtracks[track.collisionId()]++;
       }
     }
     for (const auto& collision : collisions) {
       if (collisionNtracks[collision.globalIndex()] > 0) {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
+        collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTimeErr[collision.globalIndex()] = -1e-6; // undefined
       }
       histos.fill(HIST("h2dCollisionTimesVsNTracks"), collisionNtracks[collision.globalIndex()], collisionEventTime[collision.globalIndex()]);
-      products.straEvTimes(collisionEventTime[collision.globalIndex()]);
+      products.straEvTimes(collisionEventTime[collision.globalIndex()], collisionEventTimeErr[collision.globalIndex()]);
     }
   }
 
@@ -896,7 +905,7 @@ struct strangederivedbuilder {
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaPr()));
           // populate daughter-level TOF information
           if (tr.hasTOF()) {
-            products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.length(), tr.tofExpMom());
+            products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.tofEvTimeErr(), tr.length(), tr.tofExpMom());
           }
         } else {
           // populate with empty fully-compatible Nsigmas if no corresponding table available
@@ -1029,8 +1038,8 @@ struct strangederivedbuilder {
 
   void processPureSimulation(aod::McParticles const& mcParticles)
   {
-    for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5) {
+    for (auto const& mcp : mcParticles) {
+      if (std::abs(mcp.y()) < 0.5) {
         static_for<0, nSpecies - 1>([&](auto i) {
           constexpr int index = i.value;
           if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits, index)) {
@@ -1047,7 +1056,7 @@ struct strangederivedbuilder {
     // identify best-of collision
     int biggestNContribs = -1;
     float bestCentrality = 100.5;
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
         bestCentrality = collision.centFT0C();
@@ -1059,8 +1068,8 @@ struct strangederivedbuilder {
     }
     histos.fill(HIST("h2dNVerticesVsCentrality"), bestCentrality, collisions.size());
 
-    for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
+    for (auto const& mcp : mcParticles) {
+      if (std::abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
         static_for<0, nSpecies - 1>([&](auto i) {
           constexpr int index = i.value;
           if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits, index)) {
@@ -1083,29 +1092,29 @@ struct strangederivedbuilder {
     std::fill(genOmegaPlus.begin(), genOmegaPlus.end(), 0);
 
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
-    for (auto& mcCollision : mcCollisions) {
+    for (auto const& mcCollision : mcCollisions) {
       const uint64_t mcCollIndex = mcCollision.globalIndex();
 
       // use one of the generated histograms as the bin finder
       auto hBinFinder = histos.get<TH2>(HIST("h2dGeneratedK0Short"));
 
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
-      for (auto& mcp : mcParticles) {
-        if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
+      for (auto const& mcp : mcParticles) {
+        if (std::abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
           auto binNumber = hBinFinder->FindBin(mcCollision.bestCollisionCentFT0C(), mcp.pt()); // caution: pack
-          if (mcp.pdgCode() == 310)
+          if (mcp.pdgCode() == PDG_t::kK0Short)
             genK0Short[binNumber]++;
-          if (mcp.pdgCode() == 3122)
+          if (mcp.pdgCode() == PDG_t::kLambda0)
             genLambda[binNumber]++;
-          if (mcp.pdgCode() == -3122)
+          if (mcp.pdgCode() == PDG_t::kLambda0Bar)
             genAntiLambda[binNumber]++;
-          if (mcp.pdgCode() == 3312)
+          if (mcp.pdgCode() == PDG_t::kXiMinus)
             genXiMinus[binNumber]++;
-          if (mcp.pdgCode() == -3312)
+          if (mcp.pdgCode() == PDG_t::kXiPlusBar)
             genXiPlus[binNumber]++;
-          if (mcp.pdgCode() == 3334)
+          if (mcp.pdgCode() == PDG_t::kOmegaMinus)
             genOmegaMinus[binNumber]++;
-          if (mcp.pdgCode() == -3334)
+          if (mcp.pdgCode() == PDG_t::kOmegaPlusBar)
             genOmegaPlus[binNumber]++;
         }
       }
