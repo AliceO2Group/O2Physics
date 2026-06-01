@@ -26,7 +26,7 @@ struct straevselextrasconverter2 {
 
   void process(aod::StraEvSels const& straEvSels)
   {
-    for (auto& values : straEvSels) {
+    for (const auto& /*values*/ : straEvSels) {
       straEvSelExtras(-999.,  // dummy multZNA,
                       -999.,  // dummy multZNC,
                       -999.,  // dummy multZEM1,
