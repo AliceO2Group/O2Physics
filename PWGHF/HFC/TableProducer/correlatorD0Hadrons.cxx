@@ -266,6 +266,9 @@ struct HfCorrelatorD0Hadrons {
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsCentFt0m{"binsCentFt0m", {100, 0., 100.}, "Centrality percentile (FT0M)"};
+  ConfigurableAxis binsBdtScoreBkg{"binsBdtScoreBkg", {500, 0., 1.}, "Bdt score background"};
+  ConfigurableAxis binsBdtScorePrompt{"binsBdtScorePrompt", {200, 0., 1.}, "Bdt score prompt"};
+  ConfigurableAxis binsBdtScoreNonPrompt{"binsBdtScoreNonPrompt", {200, 0., 1.}, "Bdt score non-prompt"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -285,9 +288,9 @@ struct HfCorrelatorD0Hadrons {
     AxisSpec const axisSignalStatus = {200, 0., 200., "Signal status"};
     AxisSpec axisEvtCount = {1, -0.5, 0.5};
     AxisSpec const axisTrkCount = {5, 0., 5.};
-    AxisSpec axisBdtScoreBkg = {500, 0., 1., "Bdt score background"};
-    AxisSpec axisBdtScorePrompt = {200, 0., 1., "Bdt score prompt"};
-    AxisSpec axisBdtScoreNonPrompt = {200, 0., 1., "Bdt score Nonprompt"};
+    AxisSpec axisBdtScoreBkg = {binsBdtScoreBkg, "Bdt score background"};
+    AxisSpec axisBdtScorePrompt = {binsBdtScorePrompt, "Bdt score prompt"};
+    AxisSpec axisBdtScoreNonPrompt = {binsBdtScoreNonPrompt, "Bdt score Nonprompt"};
     AxisSpec axisOrigin = {10, 0., 10., "Candidate origin"};
     AxisSpec axisCent = {binsCentFt0m, "Centrality"};
 
@@ -322,9 +325,11 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hYRec", "D0,D0bar candidates - MC reco", {HistType::kTH1F, {axisRapidity}});
     registry.add("hMassD0RecSig", "D0 signal candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0RecRef", "D0 reflection candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
+    registry.add("hMassD0RecRefAfterRejectBoth", "D0 reflection candidates after rejecting D0 and D0bar candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0RecBg", "D0 background candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0barRecSig", "D0bar signal candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0barRecRef", "D0bar reflection candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
+    registry.add("hMassD0barRecRefAfterRejectBoth", "D0bar reflection candidates after rejecting D0 and D0bar candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0barRecBg", "D0bar background candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hPtCandRecSigPrompt", "D0,Hadron candidates Prompt - MC Reco", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtVsMLScoresVsEtaRecSigPrompt", "Prompt D0-D0bar signal candidates MLVsPtVsEta - MC reco", {HistType::kTHnSparseD, {{axisBdtScoreBkg}, {axisBdtScorePrompt}, {axisBdtScoreNonPrompt}, {axisPtD}, {axisEta}}});
@@ -583,9 +588,15 @@ struct HfCorrelatorD0Hadrons {
   void processMcRec(SelectedCollisions::iterator const& collision,
                     SelectedTracksMcRec const& tracks,
                     SelectedCandidatesMcRecMl const& candidates,
-                    aod::McParticles const& mcParticles)
+                    aod::McParticles const& mcParticles,
+                    aod::BCsWithTimestamps const&)
   {
     BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
+
     // find leading particle
     if (correlateD0WithLeadingParticle) {
       leadingIndex = findLeadingParticle(tracks, etaTrackMax.value);
@@ -625,6 +636,30 @@ struct HfCorrelatorD0Hadrons {
     std::vector<float> outputMlD0 = {-1., -1., -1.};
     std::vector<float> outputMlD0bar = {-1., -1., -1.};
 
+    std::vector<int64_t> softPionTrackIdsForOfflineMixing;
+    std::vector<int> softPionStatusesForOfflineMixing;
+    bool hasAcceptedD0ForOfflineMixing = false;
+
+    auto addSoftPionTrackForOfflineMixing = [&softPionTrackIdsForOfflineMixing, &softPionStatusesForOfflineMixing](int64_t trackId, int softPiStatus) {
+      for (auto iTrack = 0u; iTrack < softPionTrackIdsForOfflineMixing.size(); ++iTrack) {
+        if (softPionTrackIdsForOfflineMixing[iTrack] == trackId) {
+          softPionStatusesForOfflineMixing[iTrack] |= softPiStatus;
+          return;
+        }
+      }
+      softPionTrackIdsForOfflineMixing.push_back(trackId);
+      softPionStatusesForOfflineMixing.push_back(softPiStatus);
+    };
+
+    auto getSoftPionStatusForOfflineMixing = [&softPionTrackIdsForOfflineMixing, &softPionStatusesForOfflineMixing](int64_t trackId) {
+      for (auto iTrack = 0u; iTrack < softPionTrackIdsForOfflineMixing.size(); ++iTrack) {
+        if (softPionTrackIdsForOfflineMixing[iTrack] == trackId) {
+          return softPionStatusesForOfflineMixing[iTrack];
+        }
+      }
+      return static_cast<int>(aod::hf_d0_assoc_tracks::NotSoftPi);
+    };
+
     for (const auto& candidate : candidates) {
       bool isD0Prompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isD0NonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -645,6 +680,10 @@ struct HfCorrelatorD0Hadrons {
 
       const auto invMassD0 = HfHelper::invMassD0ToPiK(candidate);
       const auto invMassD0bar = HfHelper::invMassD0barToKPi(candidate);
+
+      if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
+        hasAcceptedD0ForOfflineMixing = true;
+      }
 
       if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         // fill per-candidate distributions from D0/D0bar true candidates
@@ -671,6 +710,9 @@ struct HfCorrelatorD0Hadrons {
           }
         } else if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassD0RecRef"), invMassD0, candidate.pt(), efficiencyWeight);
+          if (candidate.isSelD0bar() < selectionFlagD0bar) {
+            registry.fill(HIST("hMassD0RecRefAfterRejectBoth"), invMassD0, candidate.pt(), efficiencyWeight);
+          }
         } else {
           registry.fill(HIST("hMassD0RecBg"), invMassD0, candidate.pt(), efficiencyWeight);
         }
@@ -678,6 +720,7 @@ struct HfCorrelatorD0Hadrons {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
         registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0[0], outputMlD0[1], outputMlD0[2], invMassD0, candidate.pt(), candidate.eta(), isD0Prompt, cent, efficiencyWeight);
+        entryD0(candidate.phi(), candidate.eta(), candidate.pt(), invMassD0, poolBin, gCollisionId, timeStamp, (candidate.isSelD0bar() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only);
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {                                             // only reco as D0bar
         if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // also matched as D0bar
@@ -693,6 +736,9 @@ struct HfCorrelatorD0Hadrons {
           }
         } else if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassD0barRecRef"), invMassD0bar, candidate.pt(), efficiencyWeight);
+          if (candidate.isSelD0() < selectionFlagD0) {
+            registry.fill(HIST("hMassD0barRecRefAfterRejectBoth"), invMassD0bar, candidate.pt(), efficiencyWeight);
+          }
         } else {
           registry.fill(HIST("hMassD0barRecBg"), invMassD0bar, candidate.pt(), efficiencyWeight);
         }
@@ -700,6 +746,7 @@ struct HfCorrelatorD0Hadrons {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
         registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), isD0Prompt, cent, efficiencyWeight);
+        entryD0(candidate.phi(), candidate.eta(), candidate.pt(), invMassD0bar, poolBin, gCollisionId, timeStamp, (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
       }
       entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
       entryD0CandGenInfo(isD0Prompt);
@@ -740,12 +787,14 @@ struct HfCorrelatorD0Hadrons {
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - invMassD0) - softPiMass) < ptSoftPionMax) {
+            addSoftPionTrackForOfflineMixing(track.globalIndex(), aod::hf_d0_assoc_tracks::SoftPiD0);
             continue;
           }
         }
 
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           if ((std::abs(invMassDstar2 - invMassD0bar) - softPiMass) < ptSoftPionMax) {
+            addSoftPionTrackForOfflineMixing(track.globalIndex(), aod::hf_d0_assoc_tracks::SoftPiD0bar);
             continue;
           }
         }
@@ -806,6 +855,20 @@ struct HfCorrelatorD0Hadrons {
         entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
       } // end inner loop (Tracks)
     } // end of outer loop (D0)
+
+    // loop to save tables for offline event mixing
+    if (hasAcceptedD0ForOfflineMixing) {
+      for (const auto& track : tracks) {
+        const auto softPiStatus = getSoftPionStatusForOfflineMixing(track.globalIndex());
+
+        registry.fill(HIST("hTracksBeforeSoftMix"), track.pt());
+        if (softPiStatus == aod::hf_d0_assoc_tracks::NotSoftPi) {
+          registry.fill(HIST("hTracksAfterSoftMix"), track.pt());
+        }
+
+        entryD0Hadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp, softPiStatus);
+      }
+    }
   }
 
   PROCESS_SWITCH(HfCorrelatorD0Hadrons, processMcRec, "Process MC Reco mode", true);
@@ -817,6 +880,8 @@ struct HfCorrelatorD0Hadrons {
   {
     BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
+    int gCollisionId = mcCollision.globalIndex();
+    int64_t timeStamp = 0;
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
     registry.fill(HIST("hEvtCountGen"), 0);
     // MC gen level
@@ -828,6 +893,29 @@ struct HfCorrelatorD0Hadrons {
     bool isD0NonPrompt = false;
     int trackOrigin = -1;
     float cent = 100.; // Centrality Placeholder: will be updated later
+    std::vector<int64_t> softPionTrackIdsForOfflineMixing;
+    std::vector<int> softPionStatusesForOfflineMixing;
+    bool hasAcceptedD0ForOfflineMixing = false;
+
+    auto addSoftPionTrackForOfflineMixing = [&softPionTrackIdsForOfflineMixing, &softPionStatusesForOfflineMixing](int64_t trackId, int softPiStatus) {
+      for (auto iTrack = 0u; iTrack < softPionTrackIdsForOfflineMixing.size(); ++iTrack) {
+        if (softPionTrackIdsForOfflineMixing[iTrack] == trackId) {
+          softPionStatusesForOfflineMixing[iTrack] |= softPiStatus;
+          return;
+        }
+      }
+      softPionTrackIdsForOfflineMixing.push_back(trackId);
+      softPionStatusesForOfflineMixing.push_back(softPiStatus);
+    };
+
+    auto getSoftPionStatusForOfflineMixing = [&softPionTrackIdsForOfflineMixing, &softPionStatusesForOfflineMixing](int64_t trackId) {
+      for (auto iTrack = 0u; iTrack < softPionTrackIdsForOfflineMixing.size(); ++iTrack) {
+        if (softPionTrackIdsForOfflineMixing[iTrack] == trackId) {
+          return softPionStatusesForOfflineMixing[iTrack];
+        }
+      }
+      return static_cast<int>(aod::hf_d0_assoc_tracks::NotSoftPi);
+    };
 
     for (const auto& particleTrigg : mcParticles) {
       if (std::abs(particleTrigg.pdgCode()) != Pdg::kD0) {
@@ -841,6 +929,7 @@ struct HfCorrelatorD0Hadrons {
         if (ptCandMin >= 0. && particleTrigg.pt() < ptCandMin) {
           continue;
         }
+        hasAcceptedD0ForOfflineMixing = true;
 
         registry.fill(HIST("hD0PoolBin"), poolBin);
         registry.fill(HIST("hPtCandGen"), particleTrigg.pt());
@@ -860,6 +949,7 @@ struct HfCorrelatorD0Hadrons {
           registry.fill(HIST("hPtCandGenNonPrompt"), particleTrigg.pt());
           registry.fill(HIST("hPtVsEtaCandGenSigNonPrompt"), particleTrigg.pt(), particleTrigg.eta());
         }
+        entryD0(particleTrigg.phi(), particleTrigg.eta(), particleTrigg.pt(), MassD0, poolBin, gCollisionId, timeStamp, (particleTrigg.pdgCode() == Pdg::kD0) ? o2::aod::hf_correlation_d0_hadron::D0Only : o2::aod::hf_correlation_d0_hadron::D0barOnly);
 
         // =============== D-h correlation dedicated section =====================
         for (const auto& particleAssoc : mcParticles) {
@@ -884,6 +974,7 @@ struct HfCorrelatorD0Hadrons {
           auto indexMotherD0 = RecoDecay::getMother(mcParticles, particleTrigg, Pdg::kDStar, true, nullptr, 1);
           bool correlationStatus = false;
           if (std::abs(particleAssoc.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
+            addSoftPionTrackForOfflineMixing(particleAssoc.globalIndex(), (particleTrigg.pdgCode() == Pdg::kD0) ? aod::hf_d0_assoc_tracks::SoftPiD0 : aod::hf_d0_assoc_tracks::SoftPiD0bar);
             if (!storeAutoCorrelationFlag) {
               continue;
             }
@@ -911,6 +1002,31 @@ struct HfCorrelatorD0Hadrons {
         } // end inner loop (Tracks)
       }
     } // end outer loop (D0)
+
+    if (hasAcceptedD0ForOfflineMixing) {
+      for (const auto& particleAssoc : mcParticles) {
+        if (std::abs(particleAssoc.eta()) > etaTrackMax) {
+          continue;
+        }
+        if (particleAssoc.pt() < ptTrackMin) {
+          continue;
+        }
+        if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
+          continue;
+        }
+        if (!particleAssoc.isPhysicalPrimary()) {
+          continue;
+        }
+        const auto softPiStatus = getSoftPionStatusForOfflineMixing(particleAssoc.globalIndex());
+
+        registry.fill(HIST("hTracksBeforeSoftMix"), particleAssoc.pt());
+        if (softPiStatus == aod::hf_d0_assoc_tracks::NotSoftPi) {
+          registry.fill(HIST("hTracksAfterSoftMix"), particleAssoc.pt());
+        }
+
+        entryD0Hadron(particleAssoc.phi(), particleAssoc.eta(), particleAssoc.pt(), poolBin, gCollisionId, timeStamp, softPiStatus);
+      }
+    }
   }
 
   PROCESS_SWITCH(HfCorrelatorD0Hadrons, processMcGen, "Process MC Gen mode", false);

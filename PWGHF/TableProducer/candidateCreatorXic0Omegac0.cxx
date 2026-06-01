@@ -28,6 +28,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+//
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -57,6 +58,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
@@ -830,7 +832,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle const kfNegKa(kfTrackBach, kKMinus);
       KFParticle const kfNegPiRej(kfTrackBach, kPiMinus); // rej
       KFParticle const kfPosPi(kfTrack0, kPiPlus);
-      KFParticle const kfNegPr(kfTrack1, kProton);
+      KFParticle const kfNegPr(kfTrack1, kProtonBar);
       KFParticle const kfPosKa(kfTrackBach, kKPlus);
       KFParticle const kfPosPiRej(kfTrackBach, kPiPlus); // rej
 
@@ -888,6 +890,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       // construct cascade
       KFParticle kfOmega;
       KFParticle kfOmegarej; // rej
+      kfOmega.SetPDG(bachCharge < 0 ? kOmegaMinus : kOmegaPlusBar);
+      kfOmegarej.SetPDG(bachCharge < 0 ? kOmegaMinus : kOmegaPlusBar);
       kfOmega.SetConstructMethod(kfConstructMethod);
       kfOmegarej.SetConstructMethod(kfConstructMethod); // rej
       try {
@@ -1323,7 +1327,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle const kfNegPi(kfTrack1, kPiMinus);
       KFParticle const kfNegBachPi(kfTrackBach, kPiMinus);
       KFParticle const kfPosPi(kfTrack0, kPiPlus);
-      KFParticle const kfNegPr(kfTrack1, kProton);
+      KFParticle const kfNegPr(kfTrack1, kProtonBar);
       KFParticle const kfPosBachPi(kfTrackBach, kPiPlus);
 
       KFParticle kfBachPion;
@@ -1381,6 +1385,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       const KFParticle* xiDaugthers[2] = {&kfBachPion, &kfV0};
       // construct cascade
       KFParticle kfXi;
+      kfXi.SetPDG(bachCharge < 0 ? kXiMinus : kXiPlusBar);
       kfXi.SetConstructMethod(kfConstructMethod);
       try {
         kfXi.Construct(xiDaugthers, 2);

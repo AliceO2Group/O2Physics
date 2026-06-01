@@ -21,19 +21,30 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH2.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -112,6 +123,17 @@ struct NchCumulantsId {
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
 
+  ConfigurableAxis axisNch{"axisNch", {1200, -60.0, 60.0}, "Net_charge_dN"};
+  ConfigurableAxis axisPosCh{"axisPosCh", {3010, -0.5, 300.5}, "Pos_charge"};
+  ConfigurableAxis axisNegCh{"axisNegCh", {3010, -0.5, 300.5}, "Neg_charge"};
+  ConfigurableAxis axisNt{"axisNt", {8010, -0.5, 800.5}, "Mult_midRap_Nch"};
+  ConfigurableAxis axisPrCh{"axisPrCh", {3010, -0.5, 300.5}, "Pr_charge"};
+  ConfigurableAxis axisAPrCh{"axisAPrCh", {3010, -0.5, 300.5}, "APr_charge"};
+  ConfigurableAxis axisKaCh{"axisKaCh", {3010, -0.5, 300.5}, "Ka_charge"};
+  ConfigurableAxis axisAKaCh{"axisAKaCh", {3010, -0.5, 300.5}, "AKa_charge"};
+  ConfigurableAxis axisPiCh{"axisPiCh", {3010, -0.5, 300.5}, "Pion_Positive"};
+  ConfigurableAxis axisAPiCh{"axisAPiCh", {3010, -0.5, 300.5}, "Pion_Negative"};
+
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
   Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
@@ -121,7 +143,7 @@ struct NchCumulantsId {
   Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
 
   // Configurables for particle Identification
-  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
+  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
   Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
   Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
   Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
@@ -245,17 +267,6 @@ struct NchCumulantsId {
     const AxisSpec axisTPCNSigma = {200, -10.0, 10.0, "n#sigma_{TPC}"};
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
-
-    const AxisSpec axisNch(100, -50, 50, "Net_charge_dN");
-    const AxisSpec axisPosCh(101, -1, 100, "Pos_charge");
-    const AxisSpec axisNegCh(101, -1, 100, "Neg_charge");
-    const AxisSpec axisNt(201, -1, 200, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(101, -1, 100, "Pr_charge");
-    const AxisSpec axisAPrCh(101, -1, 100, "APr_charge");
-    const AxisSpec axisKaCh(101, -1, 100, "Ka_charge");
-    const AxisSpec axisAKaCh(101, -1, 100, "AKa_charge");
-    const AxisSpec axisPiCh(101, -1, 100, "Pion_Positive");
-    const AxisSpec axisAPiCh(101, -1, 100, "Pion_Negative");
 
     const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
     const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};

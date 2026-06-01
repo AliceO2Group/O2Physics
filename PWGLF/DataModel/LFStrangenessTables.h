@@ -66,6 +66,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total s
 
 // event time
 DECLARE_SOA_COLUMN(EventTime, eventTime, float); //! event time (FT0, TOF) for TOF PID (stored once per event)
+// event time
+DECLARE_SOA_COLUMN(EventTimeErr, eventTimeErr, float); //! event time (FT0, TOF) for TOF PID (stored once per event)
 } // namespace stracollision
 
 //______________________________________________________
@@ -371,14 +373,17 @@ DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-in
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
                             bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
-DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
+DECLARE_SOA_TABLE(StraEvTimes_000, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
                   stracollision::EventTime);
+DECLARE_SOA_TABLE_VERSIONED(StraEvTimes_001, "AOD", "STRAEVTIMES", 1, //! event time (FT0, TOF)
+                            stracollision::EventTime, stracollision::EventTimeErr);
 
 using StraRawCents = StraRawCents_004;
 using StraCents = StraCents_002;
 using StraEvSels = StraEvSels_006;
 using StraEvSelExtras = StraEvSelExtras_001;
 using StraStamps = StraStamps_001;
+using StraEvTimes = StraEvTimes_001;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 

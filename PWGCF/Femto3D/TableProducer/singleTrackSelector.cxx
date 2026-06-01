@@ -183,9 +183,11 @@ struct singleTrackSelector {
       registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hGen_EtaPhiPt_Helium3", "Gen (anti)Helium3 in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Triton", "Gen (anti)triton in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPt_Helium3", "Gen (anti)Helium3 in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Triton", "Gen (anti)triton in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
     }
   }
 
@@ -582,6 +584,12 @@ struct singleTrackSelector {
         } else if (mcParticle.pdgCode() == -1000020030) {
           registry.fill(HIST("hReco_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
         }
+
+        if (mcParticle.pdgCode() == 1000010030) {
+          registry.fill(HIST("hReco_EtaPhiPt_Triton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -1000010030) {
+          registry.fill(HIST("hReco_EtaPhiPt_Triton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
       }
     }
   }
@@ -621,6 +629,12 @@ struct singleTrackSelector {
         registry.fill(HIST("hGen_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
       } else if (mcParticle.pdgCode() == -1000020030) {
         registry.fill(HIST("hGen_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+
+      if (mcParticle.pdgCode() == 1000010030) {
+        registry.fill(HIST("hGen_EtaPhiPt_Triton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -1000010030) {
+        registry.fill(HIST("hGen_EtaPhiPt_Triton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
       }
     }
   }
