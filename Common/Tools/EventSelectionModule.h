@@ -103,7 +103,7 @@ struct bcselConfigurables : o2::framework::ConfigurableGroup { // o2-linter: dis
 // event selection configurables
 struct evselConfigurables : o2::framework::ConfigurableGroup { // o2-linter: disable=name/struct (temporary fix)
   std::string prefix = "evselOpts";
-  bool isMC_metadata = false; // o2-linter: disable=name/function-variable (temporary fix)
+  bool isMC_metadata = false;                                                                                              // o2-linter: disable=name/function-variable (temporary fix)
   o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run event selection or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   o2::framework::Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
