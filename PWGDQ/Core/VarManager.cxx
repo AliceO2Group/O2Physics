@@ -443,7 +443,7 @@ void VarManager::FillEfficiency(float* values)
     int binCosThetaStarRandom = efficiencyHist->GetZaxis()->FindBin(values[kCosThetaStarRandom]);
     binCosThetaStarRandom = (binCosThetaStarRandom == 0 ? 1 : binCosThetaStarRandom);
     binCosThetaStarRandom = (binCosThetaStarRandom > efficiencyHist->GetZaxis()->GetNbins() ? efficiencyHist->GetZaxis()->GetNbins() : binCosThetaStarRandom);
-    
+
     // get the efficiency value from the histogram
     values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarRandom);
     values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
