@@ -937,7 +937,7 @@ struct HfHelper {
     }
 
     // J/Psi mass
-    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(binPt, "DeltaM J/Psi")) {
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) > cuts->get(binPt, "DeltaM J/Psi")) {
       return false;
     }
 
@@ -1127,12 +1127,12 @@ struct HfHelper {
     }
 
     // phi mass
-    if (std::abs(mCandPhi - o2::constants::physics::MassPhi) < cuts->get(binPt, "DeltaM phi")) {
+    if (std::abs(mCandPhi - o2::constants::physics::MassPhi) > cuts->get(binPt, "DeltaM phi")) {
       return false;
     }
 
     // J/Psi mass
-    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(binPt, "DeltaM J/Psi")) {
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) > cuts->get(binPt, "DeltaM J/Psi")) {
       return false;
     }
 
