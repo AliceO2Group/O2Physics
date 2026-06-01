@@ -2807,6 +2807,8 @@ struct HStrangeCorrelation {
           histos.fill(HIST("Generated/hPositive") + HIST(Particlenames[Index]), mcParticle.pt(), mcParticle.eta(), 1);
         else if (i == IndexPion && mcParticle.pdgCode() < Neutral)
           histos.fill(HIST("Generated/hNegative") + HIST(Particlenames[Index]), mcParticle.pt(), mcParticle.eta(), 1);
+        else if (mcParticle.pdgCode() == PdgCodes[i])
+          histos.fill(HIST("Generated/h") + HIST(Particlenames[Index]), mcParticle.pt(), mcParticle.eta(), 1);
       });
     }
     if (collisions.size() < 1)
