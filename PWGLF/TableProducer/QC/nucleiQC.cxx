@@ -620,7 +620,7 @@ struct nucleiQC {
       if (!mFillSpecies[iSpecies])
         continue;
 
-      if (reconstructedMcParticles.count(particle.globalIndex()) > 0)
+      if (reconstructedMcParticles.count(mcIndex) > 0)
         continue;
 
       if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
@@ -642,7 +642,7 @@ struct nucleiQC {
       fillNucleusGeneratedVariables(particle, candidate);
 
       writeCandidate(candidate);
-      mFilledMcParticleIds.emplace_back(mcIndex);
+      mFilledMcParticleIds.emplace_back(particle.globalIndex());
       dispatchFillHistograms</*isGenerated*/ true>(iSpecies, candidate);
     }
   }
