@@ -35,7 +35,7 @@ struct CentralityQa {
 
   Configurable<int> nBins{"nBins", 1050, "number of bins"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {1000, 0, 1000}, "Multiplicity"};
-  ConfigurableAxis axisMultiplicityITS{"axisMultiplicityITS", {1000, 0, 1000}, "Multiplicity ITS IB"};
+  ConfigurableAxis axisMultiplicityPV{"axisMultiplicityPV", {1000, 0, 1000}, "Multiplicity PV"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
@@ -139,28 +139,28 @@ struct CentralityQa {
       histos.add("hCentProfileNGlobal", "NGlobal centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileMFT", "MFT centrality (%)", kTProfile, {{nBins, 0, 105.}});
 
-      histos.add("hMultEta05VsCentFV0A", "FV0A centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentFT0M", "FT0M centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentFT0A", "FT0A centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentFT0C", "FT0C centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentFT0CVar1", "FT0CVar1 centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentFT0CVar2", "FT0CVar2 centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentFDDM", "FDDM centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentNTPV", "NTPV centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentNGlobal", "NGlobal centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
-      histos.add("hMultEta05VsCentMFT", "MFT centrality (%); Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityITS});
+      histos.add("hMultEta05VsCentFV0A", "FV0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0M", "FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0A", "FT0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0C", "FT0C centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0CVar1", "FT0CVar1 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0CVar2", "FT0CVar2 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFDDM", "FDDM centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentNTPV", "NTPV centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentNGlobal", "NGlobal centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentMFT", "MFT centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
 
       if (isMC) {
-        histos.add("hMultEta05VsGenMultFV0A", "Multiplicity FV0A; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultFT0M", "Multiplicity FT0M; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultFT0A", "Multiplicity FT0A; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultFT0C", "Multiplicity FT0C; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultFT0CVar1", "Multiplicity FT0CVar1; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultFT0CVar2", "Multiplicity FT0CVar2; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultFDDM", "Multiplicity FDDM; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultNTPV", "Multiplicity NTPV; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultNGlobal", "Multiplicity NGlobal; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
-        histos.add("hMultEta05VsGenMultMFT", "Multiplicity MFT; Multiplicity ITS Inner barrel (|#it{#eta}| < 1.5)", kTH2D, {axisMultiplicity, axisMultiplicityITS});
+        histos.add("hMultEta05VsGenMultFV0A", "Multiplicity FV0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0M", "Multiplicity FT0M; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0A", "Multiplicity FT0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0C", "Multiplicity FT0C; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0CVar1", "Multiplicity FT0CVar1; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0CVar2", "Multiplicity FT0CVar2; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFDDM", "Multiplicity FDDM; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultNTPV", "Multiplicity NTPV; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultNGlobal", "Multiplicity NGlobal; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultMFT", "Multiplicity MFT; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
       }
     }
 
