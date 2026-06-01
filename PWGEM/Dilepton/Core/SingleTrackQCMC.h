@@ -333,6 +333,7 @@ struct SingleTrackQCMC {
 
       if (cfgFillQA) {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+        fRegistry.add("Track/PID/positive/hTPCdEdxMC", "TPC dE/dx MC;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         // fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -684,6 +685,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
 
         fRegistry.fill(HIST("Track/PID/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+        fRegistry.fill(HIST("Track/PID/positive/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
         fRegistry.fill(HIST("Track/PID/positive/hTOFbeta"), track.p(), track.beta());
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
@@ -730,6 +732,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
 
         fRegistry.fill(HIST("Track/PID/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+        fRegistry.fill(HIST("Track/PID/negative/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
         fRegistry.fill(HIST("Track/PID/negative/hTOFbeta"), track.p(), track.beta());
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
