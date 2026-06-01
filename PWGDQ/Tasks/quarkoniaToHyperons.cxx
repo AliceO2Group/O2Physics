@@ -34,43 +34,46 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UPCHelpers.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "Math/Vector3D.h"
-#include <Math/Vector4D.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
+#include <Math/Vector3Dfwd.h>
+#include <TH1.h>
+#include <TMath.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
+#include <TVector3.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -136,7 +139,7 @@ struct QuarkoniaToHyperons {
   Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
-  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position (cm)"};
 
   Configurable<bool> buildK0sK0sPairs{"buildK0sK0sPairs", false, "Build K0s K0s from charmonia decay"};
   Configurable<bool> buildLaLaBarPairs{"buildLaLaBarPairs", false, "Build Lambda antiLambda from charmonia decay"};
@@ -793,8 +796,8 @@ struct QuarkoniaToHyperons {
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle", "h3dMassXiXiBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/LaLaBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/XiXiBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/XiXiBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildOmOmBarPairs) {
@@ -887,8 +890,8 @@ struct QuarkoniaToHyperons {
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairOpAngle", "h3dMassOmOmBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairEta", "h3dMassOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairPhi", "h3dMassOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/LaLaBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/OmOmBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/OmOmBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
 
@@ -932,7 +935,7 @@ struct QuarkoniaToHyperons {
     histos.print();
   }
 
-  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator or so
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber() || (ccdbConfigurations.useCustomRunNumber && mRunNumber == ccdbConfigurations.customRunNumber)) {
