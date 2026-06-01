@@ -258,7 +258,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   o2::vertexing::DCAFitterN<2> dfD1;  // 2-prong vertex fitter (to rebuild D01 vertex)
   o2::vertexing::DCAFitterN<2> dfD2;  // 2-prong vertex fitter (to rebuild D02 vertex)
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   double bz{0.};
@@ -599,7 +599,6 @@ struct HfTreeCreatorTccToD0D0Pi {
               }
               hCandidatesTcc->Fill(SVFitting::FitOk);
 
-              dfTcc.propagateTracksToVertex();        // propagate the softpi and D0 pair to the Tcc vertex
               trackD1.getPxPyPzGlo(pVecD1);           // momentum of D1 at the Tcc vertex
               trackD2.getPxPyPzGlo(pVecD2);           // momentum of D2 at the Tcc vertex
               trackParCovPi.getPxPyPzGlo(pVecSoftPi); // momentum of pi at the Tcc vertex

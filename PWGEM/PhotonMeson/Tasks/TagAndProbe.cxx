@@ -22,6 +22,7 @@
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
@@ -29,6 +30,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -41,6 +43,7 @@
 
 #include <Math/GenVector/AxisAngle.h>
 #include <Math/GenVector/Rotation3D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <THashList.h>
 #include <TString.h>
@@ -64,14 +67,11 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
-
-using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
-using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct TagAndProbe {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -247,7 +247,7 @@ struct TagAndProbe {
     LOGF(info, "Number of Pair cuts = %d", fPairCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::pmeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -285,15 +285,15 @@ struct TagAndProbe {
       for (auto& g1 : photons1_coll) {
 
         if constexpr (pairtype == PairType::kPCMPCM) {
-          if (!tagcut.template IsSelected<TLegs>(g1)) {
+          if (!tagcut.template IsSelected<decltype(g1), TLegs>(g1)) {
             continue;
           }
         } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-          if (!tagcut.template IsSelected<int>(g1)) {
+          if (!tagcut.template IsSelected<decltype(g1)>(g1)) {
             continue;
           }
         } else if constexpr (pairtype == PairType::kEMCEMC) {
-          if (!tagcut.template IsSelected<int>(g1)) {
+          if (!tagcut.template IsSelected<decltype(g1)>(g1)) {
             continue;
           }
         }
@@ -318,15 +318,15 @@ struct TagAndProbe {
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Probe_Same"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kPCMPCM) {
-                if (!probecut.template IsSelected<TLegs>(g2)) {
+                if (!probecut.template IsSelected<decltype(g2), TLegs>(g2)) {
                   continue;
                 }
               } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-                if (!probecut.template IsSelected<int>(g2)) {
+                if (!probecut.template IsSelected<decltype(g2)>(g2)) {
                   continue;
                 }
               } else if constexpr (pairtype == PairType::kEMCEMC) {
-                if (!probecut.template IsSelected<int>(g2)) {
+                if (!probecut.template IsSelected<decltype(g2)>(g2)) {
                   continue;
                 }
               }
@@ -379,15 +379,15 @@ struct TagAndProbe {
 
       for (auto& g1 : photons_coll1) {
         if constexpr (pairtype == PairType::kPCMPCM) {
-          if (!tagcut.template IsSelected<TLegs>(g1)) {
+          if (!tagcut.template IsSelected<decltype(g1), TLegs>(g1)) {
             continue;
           }
         } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-          if (!tagcut.template IsSelected<int>(g1)) {
+          if (!tagcut.template IsSelected<decltype(g1)>(g1)) {
             continue;
           }
         } else if constexpr (pairtype == PairType::kEMCEMC) {
-          if (!tagcut.template IsSelected<int>(g1)) {
+          if (!tagcut.template IsSelected<decltype(g1)>(g1)) {
             continue;
           }
         }
@@ -409,15 +409,15 @@ struct TagAndProbe {
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Probe_Mixed"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kPCMPCM) {
-                if (!probecut.template IsSelected<TLegs>(g2)) {
+                if (!probecut.template IsSelected<decltype(g2), TLegs>(g2)) {
                   continue;
                 }
               } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-                if (!probecut.template IsSelected<int>(g2)) {
+                if (!probecut.template IsSelected<decltype(g2)>(g2)) {
                   continue;
                 }
               } else if constexpr (pairtype == PairType::kEMCEMC) {
-                if (!probecut.template IsSelected<int>(g2)) {
+                if (!probecut.template IsSelected<decltype(g2)>(g2)) {
                   continue;
                 }
               }
@@ -439,7 +439,7 @@ struct TagAndProbe {
     if (photons_coll.size() < 3) {
       return;
     }
-    const double rotationAngle = M_PI / 2.0; // rotaion angle 90°
+    const double rotationAngle = o2::constants::math::PIHalf; // rotaion angle 90°
     // ROOT::Math::XYZVector meson3D(meson.Px(), meson.Py(), meson.Pz());
     ROOT::Math::AxisAngle rotationAxis(meson.Vect(), rotationAngle);
     // LOG(info) << "rotationAxis.Angle() = " << rotationAxis.Angle();
@@ -461,7 +461,7 @@ struct TagAndProbe {
         // only combine rotated photons with other photons
         continue;
       }
-      if (!cut.template IsSelected<aod::SkimEMCClusters>(photon)) {
+      if (!cut.template IsSelected<decltype(photon)>(photon)) {
         continue;
       }
 

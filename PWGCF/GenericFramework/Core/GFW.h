@@ -17,9 +17,7 @@
 #define PWGCF_GENERICFRAMEWORK_CORE_GFW_H_
 
 #include "GFWCumulant.h"
-#include "GFWPowerArray.h"
 
-#include <algorithm>
 #include <complex>
 #include <cstdio>
 #include <string>

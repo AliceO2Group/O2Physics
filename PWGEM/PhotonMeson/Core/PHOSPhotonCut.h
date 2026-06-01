@@ -9,21 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for v0 photon selection
-//
+/// \file PHOSPhotonCut.h
+/// \brief Header of class for phos photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
-#include "Rtypes.h"
-#include "TNamed.h"
+#include <Framework/ASoA.h>
+
+#include <TNamed.h>
+
+#include <Rtypes.h>
 
 class PHOSPhotonCut : public TNamed
 {
@@ -41,7 +38,7 @@ class PHOSPhotonCut : public TNamed
   static const char* mCutNames[static_cast<int>(PHOSPhotonCuts::kNCuts)];
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
-  template <typename T, typename Cluster>
+  template <o2::soa::is_iterator Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
     // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimPHOSClusters table.
@@ -74,7 +71,7 @@ class PHOSPhotonCut : public TNamed
   }
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
-  template <typename Cluster>
+  template <o2::soa::is_iterator Cluster>
   bool IsSelectedCluster(Cluster const& cls, const PHOSPhotonCuts& cut) const
   {
     switch (cut) {
@@ -101,7 +98,7 @@ class PHOSPhotonCut : public TNamed
  private:
   float mMinEnergy{0.1f}, mMaxEnergy{1e+10f};
 
-  ClassDef(PHOSPhotonCut, 1);
+  ClassDef(PHOSPhotonCut, 2);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_

@@ -15,13 +15,15 @@
 /// \brief  Task to test the PID features and utilities
 ///
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/StaticFor.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
-// O2Physics includes
-#include "Common/DataModel/PIDResponse.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/InitContext.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod::pidutils;

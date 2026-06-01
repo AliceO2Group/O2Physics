@@ -204,6 +204,16 @@ o2physics_add_dpl_workflow(fwd-muons-upc
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(upc-fwd-jpsi-rl
+                           SOURCES upcFwdJpsiRl.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-semi-fwd-jpsi-rl
+                           SOURCES upcSemiFwdJpsiRl.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-event-itsrof-counter
                            SOURCES upcEventITSROFcounter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
@@ -251,6 +261,16 @@ o2physics_add_dpl_workflow(flow-cumulants-upc
 
 o2physics_add_dpl_workflow(flow-correlations-upc
                            SOURCES flowCorrelationsUpc.cxx
+			               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-mc-upc
+                           SOURCES flowMcUpc.cxx
+			               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-long-range-corr-upc
+                           SOURCES flowLongRangeCorrUpc.cxx
 			               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
@@ -263,3 +283,18 @@ o2physics_add_dpl_workflow(upc-test-rct-tables
                            SOURCES upcTestRctTables.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-exclusive-jpsi-midrapidity
+                           SOURCES sgExclusiveJpsiMidrapidity.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fitbit-mapping
+													 SOURCES upcTestFITBitMapping.cxx
+													 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+													 COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pt-spectra-inclusive-upc
+													 SOURCES ptSpectraInclusiveUpc.cxx
+													 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+													 COMPONENT_NAME Analysis)

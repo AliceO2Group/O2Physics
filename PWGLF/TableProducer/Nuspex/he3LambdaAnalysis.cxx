@@ -16,29 +16,37 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsTPC/BetheBlochAleph.h>
-#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector4D.h>
-#include <TRandom3.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
 
-#include <algorithm>
+#include <GPUROOTCartesianFwd.h>
+
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -260,7 +268,7 @@ struct he3LambdaAnalysis {
       }
       hTPCsignalAll->Fill(track.tpcInnerParam() * track.sign(), track.tpcSignal());
       const float pt = track.pt() * 2.0f;
-      float expTPCSignal = o2::tpc::BetheBlochAleph(track.tpcInnerParam() * 2.0f / constants::physics::MassHelium3, mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+      float expTPCSignal = o2::common::BetheBlochAleph(track.tpcInnerParam() * 2.0f / constants::physics::MassHelium3, mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
       double nSigmaTPC = (track.tpcSignal() - expTPCSignal) / (expTPCSignal * mBBparamsHe[5]);
       hTPCnSigmaAll->Fill(track.tpcInnerParam() * track.sign(), nSigmaTPC);
       if (pt < cfgHe3.ptMin || pt > cfgHe3.ptMax || std::abs(track.eta()) > cfgHe3.etaMax || track.tpcInnerParam() < cfgHe3.minTPCrigidity || std::abs(nSigmaTPC) > cfgHe3.nSigmaTPCMax) {

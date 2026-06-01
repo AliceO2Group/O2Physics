@@ -9,7 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "DGCutparHolder.h"
+#include "PWGUD/Core/DGCutparHolder.h"
+
+#include <vector>
 
 // setter
 void DGCutparHolder::SetNDtcoll(int ndtcoll)

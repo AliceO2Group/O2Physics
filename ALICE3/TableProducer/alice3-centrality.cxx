@@ -11,13 +11,26 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, UNICAMP/CERN
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TString.h>
+
+#include <cmath>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -54,7 +67,7 @@ struct ALICE3Centrality {
   void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks)
   {
     if (!centralityLoaded) {
-      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
+      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", 1);
       centralityLoaded = true;
       LOGF(info, "ALICE 3 centrality calibration loaded!");
     }

@@ -23,23 +23,24 @@
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonUtils/NameConf.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TProfile.h"
-#include "TVector3.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TProfile.h>
+#include <TString.h>
 
 #include <array>
+#include <cmath>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>

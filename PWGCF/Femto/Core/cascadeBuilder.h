@@ -23,11 +23,11 @@
 #include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-
-#include "fairlogger/Logger.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
 #include <algorithm>
 #include <array>
@@ -90,17 +90,17 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 #undef CASCADE_DEFAULT_BITS
 
-#define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                              \
-  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Track PDG code"};                       \
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the charge of the Cascade "};                      \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                        \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                      \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                   \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                    \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                     \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};        \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"}; \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"}; \
+#define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                                                       \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "Cascade PDG code. Set sign to +1 to select antiparticle"}; \
+  o2::framework::Configurable<int> sign{"sign", -1, "Sign of the charge of the Cascade"};                                               \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                 \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                               \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                            \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                             \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                              \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                 \
+  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"};                          \
+  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"};                          \
   o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
@@ -379,8 +379,8 @@ class CascadeBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& cascadeProducts, T6 const& fullCascades, T7 const& fullTracks, T8& trackBuilder, T9& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& cascadeProducts, T6 const& cascades, T7 const& tracks, T8& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -389,26 +389,69 @@ class CascadeBuilder
     int64_t bachelorIndex = 0;
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
-    for (const auto& cascade : fullCascades) {
+    for (const auto& cascade : cascades) {
       if (!mCascadeSelection.checkFilters(cascade)) {
         continue;
       }
-      mCascadeSelection.applySelections(cascade, fullTracks, col);
+      mCascadeSelection.applySelections(cascade, tracks, col);
       if (!mCascadeSelection.passesAllRequiredSelections()) {
         continue;
       }
 
-      auto bachelor = cascade.template bachelor_as<T7>();
-      auto posDaughter = cascade.template posTrack_as<T7>();
-      auto negDaughter = cascade.template negTrack_as<T7>();
-
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
-      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts, indexMap);
-      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
-      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts, indexMap);
+      auto bachelor = cascade.template bachelor_as<T7>();
+      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts);
+
+      auto posDaughter = cascade.template posTrack_as<T7>();
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
+
+      auto negDaughter = cascade.template negTrack_as<T7>();
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
 
       fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+    }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void fillMcCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& cascadeProducts, T7 const& cascades, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+
+    int64_t bachelorIndex = 0;
+    int64_t posDaughterIndex = 0;
+    int64_t negDaughterIndex = 0;
+    for (const auto& cascade : cascades) {
+      if (!mCascadeSelection.checkFilters(cascade)) {
+        continue;
+      }
+      mCascadeSelection.applySelections(cascade, tracks, col);
+      if (!mCascadeSelection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+      auto bachelor = cascade.template bachelor_as<T8>();
+      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      auto posDaughter = cascade.template posTrack_as<T8>();
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      auto negDaughter = cascade.template negTrack_as<T8>();
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+      if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+        mcBuilder.template fillMcXiWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
+        ;
+      }
+      if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+        mcBuilder.template fillMcOmegaWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
+        ;
+      }
     }
   }
 

@@ -17,15 +17,23 @@
 /// \since  May 27, 2025
 ///
 
-#include <map>
-#include <vector>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ConfigParamRegistry.h"
-#include "TEfficiency.h"
-#include "THashList.h"
+#include <TEfficiency.h>
+#include <THashList.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

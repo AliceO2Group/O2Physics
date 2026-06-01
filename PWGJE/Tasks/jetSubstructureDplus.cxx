@@ -13,11 +13,10 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Tasks/jetSubstructureHF.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/Tasks/jetSubstructureHF.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
@@ -27,7 +26,11 @@
 
 #include <vector>
 
-using JetSubstructureDplus = JetSubstructureHFTask<soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents>, soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::DplusChargedEventWiseSubtractedJets, aod::DplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesDplusData, aod::CandidatesDplusMCP, aod::DplusCJetSSs, aod::DplusChargedSPs, aod::DplusChargedPRs, aod::DplusCMCDJetSSs, aod::DplusChargedMCDetectorLevelSPs, aod::DplusChargedMCDetectorLevelPRs, aod::DplusCMCPJetSSs, aod::DplusChargedMCParticleLevelSPs, aod::DplusChargedMCParticleLevelPRs, aod::DplusCEWSJetSSs, aod::DplusChargedEventWiseSubtractedSPs, aod::DplusChargedEventWiseSubtractedPRs, aod::JTrackDplusSubs>;
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+using JetSubstructureDplus = JetSubstructureHFTask<soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents>, soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::DplusChargedEventWiseSubtractedJets, aod::DplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesDplusData, aod::CandidatesDplusMCP, aod::DplusCJetSSs, aod::DplusCJetRs, aod::DplusChargedSPs, aod::DplusChargedPRs, aod::DplusCMCDJetSSs, aod::DplusCMCDJetRs, aod::DplusChargedMCDetectorLevelSPs, aod::DplusChargedMCDetectorLevelPRs, aod::DplusCMCPJetSSs, aod::DplusCMCPJetRs, aod::DplusChargedMCParticleLevelSPs, aod::DplusChargedMCParticleLevelPRs, aod::DplusCEWSJetSSs, aod::DplusChargedEventWiseSubtractedSPs, aod::DplusChargedEventWiseSubtractedPRs, aod::JTrackDplusSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

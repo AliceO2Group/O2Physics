@@ -27,11 +27,11 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/Zorro.h"
 
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-
-#include "fairlogger/Logger.h"
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
 #include <algorithm>
 #include <cmath>
@@ -59,10 +59,12 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> sphericityMax{"sphericityMax", 1.f, "Maximum sphericity"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
+  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: If positive, keep 0 = MB, <0 triggered on something"};
 };
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBits");
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all tracks are passed through. Bits for all selections are stored."};
   o2::framework::Configurable<int> sel8{"sel8", 1, "Use sel8 (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> noSameBunchPileup{"noSameBunchPileup", 0, "Reject collisions in case of pileup with another collision in the same foundBC (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isVertexItsTpc{"isVertexItsTpc", 0, "At least one ITS-TPC track found for the vertex (-1: stored in bitmaks; 0 off; 1 on)"};
@@ -86,8 +88,9 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
 struct ConfCcdb : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("ConfCcdb");
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField/Run2 -> GLO/GRP/GRP"};
+  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField, Run2 -> GLO/GRP/GRP"};
   o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
+  o2::framework::Configurable<int> magFieldForced{"magFieldForced", 0, "Force value for magnetic field (kG). This will skip calls to the ccdb. Deactivate by setting value to 0"};
 };
 
 struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {
@@ -173,7 +176,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config)
   {
-    // cuts
+    // filters
     mVtxZMin = filter.vtxZMin.value;
     mVtxZMax = filter.vtxZMax.value;
     mMagFieldMin = filter.magFieldMin.value;
@@ -185,26 +188,48 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     mSphericityMin = filter.sphericityMin.value;
     mSphericityMax = filter.sphericityMax.value;
 
-    // flags
-    this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
-    this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
-    this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
-    this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
-    this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
-    this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
-    this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
-    this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
-    this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
-    this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
-    this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
-    this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
-    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, true, true, false);
-    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, true, true, false);
+    // if pass through mode is activated, each cut is neutral (i.e. neither minimal nor optional and we do store all bits, so the most permissive bit is not skipped for minimal selections)
+    mPassThrough = config.passThrough.value;
+
+    if (mPassThrough) {
+      this->addSelection(kSel8, collisionSelectionNames.at(kSel8), 2);
+      this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), 2);
+      this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), 2);
+      this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), 2);
+      this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), 2);
+      this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), 2);
+      this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), 2);
+      this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), 2);
+      this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), 2);
+      this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), 2);
+      this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), 2);
+      this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), 2);
+    } else {
+      this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
+      this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
+      this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
+      this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
+      this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
+      this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
+      this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
+      this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
+      this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
+      this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
+      this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
+      this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
+    }
+
+    const bool isMinimalCut = mPassThrough ? false : true;
+    const bool isOptionalCut = mPassThrough ? false : true;
+    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+
+    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
 
     std::vector<float> triggerValues(config.triggers.value.size(), 1.f);
-    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, true);
+    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, isOptionalCut);
     this->addComments(kTriggers, config.triggers.value);
 
     this->setupContainers<HistName>(registry);
@@ -223,7 +248,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   template <typename T>
   void setSphericity(T tracks)
   {
-    mSphericity = utils::sphericity(tracks);
+    mSphericity = computeSphericity(tracks);
   }
 
   float getSphericity() const { return mSphericity; }
@@ -309,7 +334,42 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->assembleBitmask<HistName>();
   };
 
+  bool passThroughAllCollisions() const { return mPassThrough; }
+
  protected:
+  template <typename T>
+  float computeSphericity(T const& tracks)
+  {
+    int minNumberTracks = 2;
+    double maxSphericity = 2.f;
+    if (tracks.size() <= minNumberTracks) {
+      return maxSphericity;
+    }
+    // Initialize the transverse momentum tensor components
+    double sxx = 0.;
+    double syy = 0.;
+    double sxy = 0.;
+    double sumPt = 0.;
+    // Loop over the tracks to compute the tensor components
+    for (const auto& track : tracks) {
+      sxx += (track.px() * track.px()) / track.pt();
+      syy += (track.py() * track.py()) / track.pt();
+      sxy += (track.px() * track.py()) / track.pt();
+      sumPt += track.pt();
+    }
+    sxx /= sumPt;
+    syy /= sumPt;
+    sxy /= sumPt;
+    // Compute the eigenvalues (real values)
+    double lambda1 = ((sxx + syy) + std::sqrt((sxx + syy) * (sxx + syy) - 4. * (sxx * syy - sxy * sxy))) / 2.;
+    double lambda2 = ((sxx + syy) - std::sqrt((sxx + syy) * (sxx + syy) - 4. * (sxx * syy - sxy * sxy))) / 2.;
+    if (lambda1 <= 0. || lambda2 <= 0.) {
+      return maxSphericity;
+    }
+    // Compute sphericity
+    return static_cast<float>(2. * lambda2 / (lambda1 + lambda2));
+  }
+
   // filter cuts
   float mVtxZMin = -12.f;
   float mVtxZMax = -12.f;
@@ -326,6 +386,8 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   float mSphericity = 0.f;
   float mCentrality = 0.f;
   float mMultiplicity = 0.f;
+
+  bool mPassThrough = false;
 };
 
 struct CollisionBuilderProducts : o2::framework::ProducesGroup {
@@ -360,6 +422,27 @@ class CollisionBuilder
   void init(o2::framework::HistogramRegistry* registry, T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
   {
     LOG(info) << "Initialize femto collision builder...";
+
+    mMagFieldForced = confCcdb.magFieldForced.value;
+    mGrpPath = confCcdb.grpPath.value;
+    mSubGeneratorId = confFilter.subGeneratorId.value;
+
+    if (!confBits.triggers.value.empty()) {
+      mUseTrigger = true;
+      for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
+        mTriggerNames += confBits.triggers.value[i];
+        if (i != confBits.triggers.value.size() - 1) {
+          mTriggerNames += ",";
+        }
+      }
+      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
+    }
+    if (confRct.useRctFlags.value) {
+      mUseRctFlags = true;
+      LOG(info) << "Init RCT flag checker with label: " << confRct.label.value << "; use ZDC: " << confRct.useZdc.value << "; Limimted acceptance is bad: " << confRct.treatLimitedAcceptanceAsBad.value;
+      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
+    }
+
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
     mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
@@ -375,22 +458,6 @@ class CollisionBuilder
       return;
     }
 
-    if (!confBits.triggers.value.empty()) {
-      mUseTrigger = true;
-      for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
-        mTriggerNames += confBits.triggers.value[i];
-        if (i != confBits.triggers.value.size() - 1) {
-          mTriggerNames += ",";
-        }
-      }
-      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
-    }
-    if (confRct.useRctFlags.value) {
-      mUseRctFlags = true;
-      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
-    }
-    mGrpPath = confCcdb.grpPath.value;
-
     mCollisionSelection.configure(registry, confFilter, confBits);
     mCollisionSelection.printSelections(colSelsName);
     LOG(info) << "Initialization done...";
@@ -401,14 +468,21 @@ class CollisionBuilder
   {
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
-      static o2::parameters::GRPMagField* grpo = nullptr;
-      grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
-      if (grpo == nullptr) {
-        LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+      if (mMagFieldForced == 0) {
+        static o2::parameters::GRPMagField* grpo = nullptr;
+        LOG(info) << "Get magentic field with Path: " << mGrpPath << "; Run number: " << mRunNumber;
+        grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        if (grpo == nullptr) {
+          LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+        }
+        mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
+      } else {
+        LOG(info) << "Force magentic field to " << mMagFieldForced << "kG";
+        mMagField = mMagFieldForced;
       }
-      mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
 
       if (mUseTrigger) {
+        LOG(info) << "Init Zorro with Run Number: " << mRunNumber << "; timestamp: " << bc.timestamp() << "; Trigger Names: " << mTriggerNames;
         mZorro.initCCDB(ccdb.service, mRunNumber, bc.timestamp(), mTriggerNames);
         mZorro.populateHistRegistry(histRegistry, mRunNumber);
       }
@@ -430,6 +504,35 @@ class CollisionBuilder
   template <typename T1>
   bool checkCollision(T1 const& col)
   {
+
+    if (mCollisionSelection.passThroughAllCollisions()) {
+      return true;
+    }
+
+    // check RCT flags first
+    if (mUseRctFlags) {
+      if (!mRctFlagsChecker(col)) {
+        return false;
+      }
+    }
+    // make other checks
+    return mCollisionSelection.checkFilters(col) &&
+           mCollisionSelection.passesAllRequiredSelections();
+  }
+
+  template <typename T1, typename T2>
+  bool checkCollision(T1 const& col, T2 const& /*mcCols*/)
+  {
+    // check sub generator id of associated generated collision
+    if (mSubGeneratorId >= 0) {
+      if (col.has_mcCollision()) {
+        auto mcCol = col.template mcCollision_as<T2>();
+        if (mcCol.getSubGeneratorId() != mSubGeneratorId) {
+          return false;
+        }
+      }
+    }
+
     // check RCT flags first
     if (mUseRctFlags && !mRctFlagsChecker(col)) {
       return false;
@@ -446,7 +549,7 @@ class CollisionBuilder
       return;
     }
 
-    if (mCollisionAleadyFilled) {
+    if (mCollisionAlreadyFilled) {
       return;
     }
 
@@ -482,31 +585,41 @@ class CollisionBuilder
     }
 
     // PbPb specific columns
-    if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
-      if (mProduceQns) {
-        collisionProducts.producedQns(utils::qn(col));
-      }
-    }
+    // TODO: enable later update
+    // if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
+    //   if (mProduceQns) {
+    //     collisionProducts.producedQns(utils::qn(col));
+    //   }
+    // }
 
-    mCollisionAleadyFilled = true;
+    mCollisionAlreadyFilled = true;
   }
 
-  void reset()
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcCollision(T1& collisionProducts, T2 const& col, T3 const& mcCols, T4& mcProducts, T5& mcBuilder)
   {
-    mCollisionAleadyFilled = false;
+    if (mCollisionAlreadyFilled) {
+      return;
+    }
+    this->template fillCollision<system>(collisionProducts, col);
+    mcBuilder.template fillMcCollisionWithLabel<system>(mcProducts, col, mcCols);
   }
+
+  void reset() { mCollisionAlreadyFilled = false; }
 
  private:
   CollisionSelection<HistName> mCollisionSelection;
-  bool mCollisionAleadyFilled = false;
+  bool mCollisionAlreadyFilled = false;
   Zorro mZorro;
   bool mUseTrigger = false;
   int mRunNumber = -1;
   std::string mGrpPath = std::string("");
+  int mMagFieldForced = 0;
   int mMagField = 0;
   aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
   bool mUseRctFlags = false;
   std::string mTriggerNames = std::string("");
+  int mSubGeneratorId = -1;
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
   bool mProducedCollisionMasks = false;

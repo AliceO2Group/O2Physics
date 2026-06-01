@@ -16,14 +16,9 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Turin Polytechnic University and INFN Turin
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFRICH.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "Common/Core/RecoDecay.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -32,8 +27,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <cstddef>
 #include <cstdint>
-#include <vector>
+#include <numeric>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -270,6 +266,7 @@ struct Alice3HfTreeCreator3Prong {
     Configurable<bool> fillPid{"fillPid", false, "fill PID info"};
   } fillTables;
   // parameters for production of training samples
+  Configurable<bool> fillSwapMassHypo{"fillSwapMassHypo", false, "Flag to fill derived tables with swapped mass hypothesis"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", true, "Flag to fill derived tables with signal"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background"};
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of cands to keep"};
@@ -475,8 +472,10 @@ struct Alice3HfTreeCreator3Prong {
       if (cand.isSelMassHypo0()) {
         fillRecoTables<CharmHad, false>(cand);
       }
-      if (cand.isSelMassHypo1()) {
-        fillRecoTables<CharmHad, true>(cand);
+      if (fillSwapMassHypo) {
+        if (cand.isSelMassHypo1()) {
+          fillRecoTables<CharmHad, true>(cand);
+        }
       }
     }
     fillGenTables<CharmHad>(candsGen);

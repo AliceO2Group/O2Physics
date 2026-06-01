@@ -13,8 +13,8 @@
 /// \brief source of class for emcal photon selection.
 /// \author M. Hemmer, marvin.hemmer@cern.ch; N. Strangmann, nicolas.strangmann@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-//
+#include "EMCPhotonCut.h"
+
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include <Framework/Logger.h>
@@ -80,6 +80,12 @@ void EMCPhotonCut::SetUseSecondaryTM(bool flag)
 {
   mUseSecondaryTM = flag;
   LOG(info) << "EM Photon Cluster Cut, using secondary TM cut is set to : " << mUseTM;
+}
+
+void EMCPhotonCut::SetDoQA(bool flag)
+{
+  mDoQA = flag;
+  LOG(info) << "EM Photon Cluster Cut, QA is set to: " << mUseTM;
 }
 
 void EMCPhotonCut::print() const

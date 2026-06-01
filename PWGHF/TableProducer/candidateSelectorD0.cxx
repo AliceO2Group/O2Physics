@@ -244,7 +244,7 @@ struct HfCandidateSelectorD0 {
     }
 
     // invariant-mass cut
-    float massD0, massD0bar;
+    float massD0{}, massD0bar{};
     if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       massD0 = candidate.kfGeoMassD0();
       massD0bar = candidate.kfGeoMassD0bar();

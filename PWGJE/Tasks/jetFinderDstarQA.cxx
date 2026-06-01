@@ -13,10 +13,9 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Tasks/jetFinderHFQA.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/Tasks/jetFinderHFQA.h"
 
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
@@ -24,6 +23,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using JetFinderDstarQATask = JetFinderHFQATask<aod::DstarChargedJets, aod::DstarChargedJetConstituents, aod::DstarChargedJetsMatchedToDstarChargedEventWiseSubtractedJets, aod::CandidatesDstarData, aod::DstarChargedMCDetectorLevelJets, aod::DstarChargedMCDetectorLevelJetConstituents, aod::DstarChargedMCDetectorLevelJetsMatchedToDstarChargedMCParticleLevelJets, aod::DstarChargedMCDetectorLevelJetEventWeights, aod::CandidatesDstarMCD, aod::DstarChargedMCParticleLevelJets, aod::DstarChargedMCParticleLevelJetConstituents, aod::DstarChargedMCParticleLevelJetsMatchedToDstarChargedMCDetectorLevelJets, aod::DstarChargedMCParticleLevelJetEventWeights, aod::DstarChargedEventWiseSubtractedJets, aod::DstarChargedEventWiseSubtractedJetConstituents, aod::DstarChargedEventWiseSubtractedJetsMatchedToDstarChargedJets, aod::CandidatesDstarMCP, aod::JTrackDstarSubs, aod::BkgDstarRhos>;
 

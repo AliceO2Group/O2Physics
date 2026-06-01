@@ -38,15 +38,7 @@ concept IsB0ToDstarPiChannel = requires(T candidate) {
   candidate.prongD0Id();
 };
 
-class HfHelper
-{
- public:
-  /// Default constructor
-  HfHelper() = default;
-
-  /// Default destructor
-  ~HfHelper() = default;
-
+struct HfHelper {
   // 2-prong
 
   // D0(bar) → π± K∓
@@ -526,7 +518,7 @@ class HfHelper
     double etaJpsi = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
     double phiJpsi = RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0());
 
-    double etaPi, phiPi;
+    double etaPi{}, phiPi{};
 
     if (numPi <= 1) {
       etaPi = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});

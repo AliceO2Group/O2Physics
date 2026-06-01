@@ -15,23 +15,21 @@
 
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_
-#include <vector>
-#include "TH3F.h"
-#include "TProfile2D.h"
-#include "TProfile.h"
-#include "TNamed.h"
-#include "TH1.h"
-#include "TMath.h"
-#include "TFile.h"
-#include "TAxis.h"
-#include "TString.h"
-#include "TObjArray.h"
-#include "TRandom.h"
-#include "TString.h"
-#include "TCollection.h"
-#include "TAxis.h"
-#include "ProfileSubset.h"
-#include "Framework/HistogramSpec.h"
+
+#include <Framework/HistogramSpec.h>
+
+#include <TAxis.h>
+#include <TCollection.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class FlowContainer : public TNamed
 {
@@ -72,7 +70,7 @@ class FlowContainer : public TNamed
   double* GetMultiRebin(int& nBins);
   void SetPropagateErrors(bool newval) { fPropagateErrors = newval; }
   TProfile* GetCorrXXVsMulti(const char* order, int l_pti = 0);                             // pti = 0 for pt-integrated
-  TProfile* GetCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1); // 0 for multi. integrated
+  TH1D* GetCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1);     // 0 for multi. integrated
   TH1D* GetHistCorrXXVsMulti(const char* order, int l_pti = 0);                             // pti = 0 for pt-integrated
   TH1D* GetHistCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1); // 0 for multi. integrated
 

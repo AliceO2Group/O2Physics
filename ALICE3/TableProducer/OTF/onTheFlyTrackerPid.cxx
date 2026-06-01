@@ -20,43 +20,39 @@
 /// \since  May 22, 2025
 ///
 
-#include "TableHelper.h"
+#include "GeometryContainer.h"
 
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/GeomConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <CommonUtils/NameConf.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
+#include <MathUtils/Primitive2D.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TF1.h>
 #include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TString.h>
-#include <TVector3.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -91,32 +87,27 @@ static constexpr size_t kMaxValidHitsForTruncation56 = 3;
 static constexpr size_t kMaxValidHitsForTruncation34 = 2;
 static constexpr size_t kMaxValidHitsForTruncation12 = 1;
 
-// Constants for LUT binning
-// To do: Include in LUT header or similar
-static constexpr int kLUTEtaBins = 50;
-static constexpr float kLUTEtaMin = -2.5f;
-static constexpr float kLUTEtaMax = 2.5f;
-static constexpr int kLUTPtBins = 500;
-static constexpr float kLUTPtMin = 0.0f;
-static constexpr float kLUTPtMax = 10.0f;
-
 class ToTLUT
 {
  public:
-  explicit ToTLUT(int maxLayers, float analysisEtaMinVal = 0.0f, float analysisEtaMaxVal = 1.0f, float analysisPtMinVal = 0.0f, float analysisPtMaxVal = 10.0f)
+  explicit ToTLUT(int maxLayers,
+                  int etaBins, float etaMin, float etaMax,
+                  int pBins, float pMin, float pMax,
+                  float analysisEtaMinVal = 0.0f, float analysisEtaMaxVal = 1.0f,
+                  float analysisPMinVal = 0.0f, float analysisPMaxVal = 10.0f)
     : mMaxLayers(maxLayers),
       mAnalysisEtaMin(analysisEtaMinVal),
       mAnalysisEtaMax(analysisEtaMaxVal),
-      mAnalysisPtMin(analysisPtMinVal),
-      mAnalysisPtMax(analysisPtMaxVal),
-      mEtaBins(kLUTEtaBins),
-      mEtaMin(kLUTEtaMin),
-      mEtaMax(kLUTEtaMax),
-      mPtBins(kLUTPtBins),
-      mPtMin(kLUTPtMin),
-      mPtMax(kLUTPtMax),
-      mEtaBinWidth((kLUTEtaMax - kLUTEtaMin) / kLUTEtaBins),
-      mPtBinWidth((kLUTPtMax - kLUTPtMin) / kLUTPtBins)
+      mAnalysisPMin(analysisPMinVal),
+      mAnalysisPMax(analysisPMaxVal),
+      mEtaBins(etaBins),
+      mEtaMin(etaMin),
+      mEtaMax(etaMax),
+      mPBins(pBins),
+      mPMin(pMin),
+      mPMax(pMax),
+      mEtaBinWidth((etaMax - etaMin) / etaBins),
+      mPBinWidth((pMax - pMin) / pBins)
   {
     mPdgToIndexMap.reserve(10);
     mIndexToPdgMap.reserve(10);
@@ -136,38 +127,38 @@ class ToTLUT
 
   bool load(int pdg, const std::string& filename)
   {
-    if (!filename.empty() && strncmp(filename.c_str(), "ccdb:", 5) == 0) {
-      std::string basePath = std::string(filename).substr(5);
-      std::string path = basePath + "/PDG_" + std::to_string(pdg);
+    if (filename.empty()) {
+      LOG(warning) << "Provided filename is empty for PDG " << pdg;
+      return false;
+    }
+    if (filename.rfind("ccdb:", 0) == 0) {       // Check if filename starts with "ccdb:"
+      std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
       const std::string outPath = "/tmp/ToTLUTs/";
-
-      std::string localFilename = Form("%s/lut_tot_%d.root", outPath.c_str(), pdg);
+      const std::string localFilename = outPath + ccdbPath + "/snapshot.root";
       std::ifstream checkFile(localFilename);
-      if (!checkFile.is_open()) {
+      if (!checkFile.is_open()) { // File is not found, need to download it from CCDB
         if (!mCcdbManager) {
           LOG(fatal) << "CCDB manager not set. Please set it before loading LUT from CCDB.";
         }
         std::map<std::string, std::string> metadata;
-        mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
-
-        std::string foundFile = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
-        std::ifstream testFile(foundFile);
+        LOG(info) << "Retrieving " << localFilename << " from CCDB path: " << ccdbPath;
+        mCcdbManager->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
+        std::ifstream testFile(localFilename);
         if (!testFile.is_open()) {
-          LOG(error) << "Could not find downloaded CCDB file for PDG " << pdg;
+          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg << " in file " << localFilename;
           return false;
         }
         testFile.close();
-
-        return load(pdg, foundFile);
-      } else {
+        return load(pdg, localFilename);
+      } else { // File is found, proceed to load it
         checkFile.close();
         return load(pdg, localFilename);
       }
     }
-
+    // In case the file is already available locally
     TFile* f = TFile::Open(filename.c_str());
     if (!f || f->IsZombie()) {
-      LOG(error) << "Failed to open LUT file: " << filename;
+      LOG(fatal) << "Failed to open LUT file: " << filename;
       return false;
     }
 
@@ -178,7 +169,7 @@ class ToTLUT
       mPdgToIndexMap[pdg] = currentPdgIdx;
       mIndexToPdgMap.push_back(pdg);
 
-      size_t totalSize = (currentPdgIdx + 1) * mMaxLayers * mEtaBins * mPtBins;
+      size_t totalSize = (currentPdgIdx + 1) * mMaxLayers * mEtaBins * mPBins;
       if (mLUTHistogramFlat.size() < totalSize) {
         mLUTHistogramFlat.resize(totalSize, nullptr);
       }
@@ -197,28 +188,30 @@ class ToTLUT
           continue;
         }
 
-        for (int ptBin = 0; ptBin < mPtBins; ++ptBin) {
-          float ptMinBin = mPtMin + ptBin * mPtBinWidth;
-          float ptMaxBin = ptMinBin + mPtBinWidth;
-          float ptCenter = (ptMinBin + ptMaxBin) / 2.0f;
+        for (int pBin = 0; pBin < mPBins; ++pBin) {
+          float pMinBin = mPMin + pBin * mPBinWidth;
+          float pMaxBin = pMinBin + mPBinWidth;
+          float pCenter = (pMinBin + pMaxBin) / 2.0f;
 
-          if (ptCenter < mAnalysisPtMin || ptCenter >= mAnalysisPtMax) {
+          if (pCenter < mAnalysisPMin || pCenter >= mAnalysisPMax) {
             continue;
           }
 
-          TString histName = Form("tot_%d_barrel%d_eta%.2f-%.2f_pt%.2f-%.2f", pdg, layer, etaMinBin, etaMaxBin, ptMinBin, ptMaxBin);
+          TString histName = Form("tot_%d_barrel%d_eta%.2f-%.2f_p%.2f-%.2f", pdg, layer, etaMinBin, etaMaxBin, pMinBin, pMaxBin);
 
           TH1F* histFromFile = dynamic_cast<TH1F*>(f->Get(histName));
           if (histFromFile) {
             TH1F* clonedHist = static_cast<TH1F*>(histFromFile->Clone());
             clonedHist->SetDirectory(nullptr);
 
-            size_t flatIdx = getFlatIndex(currentPdgIdx, layer, etaBin, ptBin);
+            size_t flatIdx = getFlatIndex(currentPdgIdx, layer, etaBin, pBin);
             mLUTHistogramFlat[flatIdx] = clonedHist;
           } else {
-            size_t flatIdx = getFlatIndex(currentPdgIdx, layer, etaBin, ptBin);
+            size_t flatIdx = getFlatIndex(currentPdgIdx, layer, etaBin, pBin);
             mLUTHistogramFlat[flatIdx] = nullptr;
-            success = false;
+            if (layer >= kMinLayerForTruncation) {
+              success = false;
+            }
           }
         }
       }
@@ -229,14 +222,14 @@ class ToTLUT
     return success;
   }
 
-  TH1F* getHistogramForSampling(int pdgIdx, int layer, int etaBin, int ptBin) const
+  TH1F* getHistogramForSampling(int pdgIdx, int layer, int etaBin, int pBin) const
   {
     if (pdgIdx < 0 || static_cast<size_t>(pdgIdx) >= getNumPdgTypes() ||
         layer < 0 || layer >= mMaxLayers ||
-        etaBin < 0 || etaBin >= mEtaBins || ptBin < 0 || ptBin >= mPtBins) {
+        etaBin < 0 || etaBin >= mEtaBins || pBin < 0 || pBin >= mPBins) {
       return nullptr;
     }
-    size_t flatIdx = getFlatIndex(pdgIdx, layer, etaBin, ptBin);
+    size_t flatIdx = getFlatIndex(pdgIdx, layer, etaBin, pBin);
     return (flatIdx < mLUTHistogramFlat.size()) ? mLUTHistogramFlat[flatIdx] : nullptr;
   }
 
@@ -255,15 +248,15 @@ class ToTLUT
     return std::min(static_cast<int>((clampedEta - mEtaMin) / mEtaBinWidth), mEtaBins - 1);
   }
 
-  inline int getPtBin(float pt) const
+  inline int getPBin(float p) const
   {
-    const float clampedPt = std::max(mPtMin, std::min(pt, mPtMax - 1e-6f));
-    return std::min(static_cast<int>((clampedPt - mPtMin) / mPtBinWidth), mPtBins - 1);
+    const float clampedP = std::max(mPMin, std::min(p, mPMax - 1e-6f));
+    return std::min(static_cast<int>((clampedP - mPMin) / mPBinWidth), mPBins - 1);
   }
 
-  inline size_t getFlatIndex(int pdgIdx, int layer, int etaBin, int ptBin) const
+  inline size_t getFlatIndex(int pdgIdx, int layer, int etaBin, int pBin) const
   {
-    return ((pdgIdx * mMaxLayers + layer) * mEtaBins + etaBin) * mPtBins + ptBin;
+    return ((pdgIdx * mMaxLayers + layer) * mEtaBins + etaBin) * mPBins + pBin;
   }
 
   size_t getNumPdgTypes() const
@@ -279,17 +272,17 @@ class ToTLUT
   int mMaxLayers;
   float mAnalysisEtaMin;
   float mAnalysisEtaMax;
-  float mAnalysisPtMin;
-  float mAnalysisPtMax;
+  float mAnalysisPMin;
+  float mAnalysisPMax;
   int mEtaBins;
   float mEtaMin;
   float mEtaMax;
-  int mPtBins;
-  float mPtMin;
-  float mPtMax;
+  int mPBins;
+  float mPMin;
+  float mPMax;
 
   float mEtaBinWidth;
-  float mPtBinWidth;
+  float mPBinWidth;
 
  private:
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
@@ -299,6 +292,8 @@ static constexpr int kNumHypothesisParticles = 9;
 std::array<std::array<std::shared_ptr<TH2>, kNumHypothesisParticles>, kNumHypothesisParticles> h2dBarrelNsigmaTrue;
 std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dHitsPerTrackVsP;
 std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dToTvsPperParticle;
+std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dHitsPerTrackVsPLin;
+std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dToTvsPperParticleLin;
 
 struct OnTheFlyTrackerPid {
 
@@ -397,23 +392,42 @@ struct OnTheFlyTrackerPid {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for electrons"};
-  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for muons"};
-  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for pions"};
-  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for kaons"};
-  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for protons"};
-  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for deuteron"};
-  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for triton"};
-  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for helium-3"};
-  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for alphas"};
+  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_11", "ToT LUT for electrons"};
+  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_13", "ToT LUT for muons"};
+  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_211", "ToT LUT for pions"};
+  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_321", "ToT LUT for kaons"};
+  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_2212", "ToT LUT for protons"};
+  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_1000010020", "ToT LUT for deuteron"};
+  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_1000010030", "ToT LUT for triton"};
+  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_1000020030", "ToT LUT for helium-3"};
+  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs_ALMIRA/Scale1/PDG_1000020040", "ToT LUT for alphas"};
 
-  Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss) for track propagation"};
   Configurable<int> maxBarrelLayers{"maxBarrelLayers", 11, "Maximum number of barrel layers"};
   Configurable<int> numLogBins{"numLogBins", 200, "Number of logarithmic momentum bins"};
   Configurable<float> analysisEtaMin{"analysisEtaMin", 0.0f, "Minimum |eta| for LUT loading optimization"};
   Configurable<float> analysisEtaMax{"analysisEtaMax", 1.0f, "Maximum |eta| for LUT loading optimization"};
-  Configurable<float> analysisPtMin{"analysisPtMin", 0.0f, "Minimum pT (GeV/c) for LUT loading optimization"};
-  Configurable<float> analysisPtMax{"analysisPtMax", 10.0f, "Maximum pT (GeV/c) for LUT loading optimization"};
+  Configurable<float> analysisPMin{"analysisPMin", 0.0f, "Minimum |p| (GeV/c) for LUT loading optimization"};
+  Configurable<float> analysisPMax{"analysisPMax", 10.0f, "Maximum |p| (GeV/c) for LUT loading optimization"};
+
+  // LUT binning (has to match LUTs)
+  Configurable<int> lutEtaBins{"lutEtaBins", 50, "Number of eta bins in the LUT"};
+  Configurable<float> lutEtaMin{"lutEtaMin", -2.5f, "Minimum eta in the LUT"};
+  Configurable<float> lutEtaMax{"lutEtaMax", 2.5f, "Maximum eta in the LUT"};
+  Configurable<int> lutPBins{"lutPBins", 500, "Number of momentum bins in the LUT"};
+  Configurable<float> lutPMin{"lutPMin", 0.0f, "Minimum momentum in the LUT (GeV/c)"};
+  Configurable<float> lutPMax{"lutPMax", 10.0f, "Maximum momentum in the LUT (GeV/c)"};
+
+  // ToT histogram axis
+  Configurable<int> totHistBins{"totHistBins", 600, "Number of bins on the ToT axis"};
+  Configurable<float> totHistMin{"totHistMin", 0.0f, "Minimum of the ToT axis (#mus/10#mum)"};
+  Configurable<float> totHistMax{"totHistMax", 10.0f, "Maximum of the ToT axis (#mus/10#mum)"};
+
+  // Momentum axis binning choice
+  Configurable<bool> enableLogPBins{"enableLogPBins", true, "Enable logarithmic momentum binning for ToT vs p histograms"};
+  Configurable<bool> enableLinearPBins{"enableLinearPBins", false, "Enable linear momentum binning for ToT vs p histograms"};
+  Configurable<int> numLinearBins{"numLinearBins", 500, "Number of linear momentum bins"};
+  Configurable<float> linearPMin{"linearPMin", 0.0f, "Minimum momentum for linear-binned histograms (GeV/c)"};
+  Configurable<float> linearPMax{"linearPMax", 10.0f, "Maximum momentum for linear-binned histograms (GeV/c)"};
 
   std::vector<double> mLogBins;
 
@@ -429,10 +443,17 @@ struct OnTheFlyTrackerPid {
     1000020040  // Alpha
   };
 
-  void init(o2::framework::InitContext&)
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
+  void init(o2::framework::InitContext& initContext)
   {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
+
+    mGeoContainer.setCcdbManager(ccdb.operator->());
+    mGeoContainer.init(initContext);
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
 
     if (static_cast<size_t>(maxBarrelLayers.value) > kTrackerRadii.size()) {
       LOG(fatal) << "Configured maxBarrelLayers (" << maxBarrelLayers.value
@@ -440,7 +461,11 @@ struct OnTheFlyTrackerPid {
                  << "). Please adjust maxBarrelLayers.";
     }
 
-    mToTLUT = std::make_unique<ToTLUT>(maxBarrelLayers.value, analysisEtaMin.value, analysisEtaMax.value, analysisPtMin.value, analysisPtMax.value);
+    mToTLUT = std::make_unique<ToTLUT>(maxBarrelLayers.value,
+                                       lutEtaBins.value, lutEtaMin.value, lutEtaMax.value,
+                                       lutPBins.value, lutPMin.value, lutPMax.value,
+                                       analysisEtaMin.value, analysisEtaMax.value,
+                                       analysisPMin.value, analysisPMax.value);
 
     mToTLUT->setCcdbManager(ccdb.operator->());
 
@@ -470,16 +495,29 @@ struct OnTheFlyTrackerPid {
       mLogBins.push_back(std::pow(10, logMin + i * dLog));
     }
 
-    const AxisSpec axisMomentum{mLogBins, "#it{p/z} (GeV/#it{c})"};
-    const AxisSpec axisToT{600, 0., 300., "ToT (#mus/10#mum)"};
+    const AxisSpec axisToT{totHistBins.value, static_cast<double>(totHistMin.value), static_cast<double>(totHistMax.value), "ToT (#mus/10#mum)"};
     const AxisSpec axisNsigma{200, -10., 10., "N#sigma"};
     const AxisSpec axisLayer{maxBarrelLayers.value, -0.5, static_cast<double>(maxBarrelLayers.value) - 0.5, "Layer"};
     const AxisSpec axisHitsPerTrack{maxBarrelLayers.value + 1, -0.5, static_cast<double>(maxBarrelLayers.value) + 0.5, "# Hits per track"};
 
-    histos.add("hToTvsP", "ToT vs #it{p/z}; #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)", kTH2F, {axisMomentum, axisToT});
-    histos.add("hToTvsPt", "ToT vs #it{p}; #it{p} (GeV/#it{c}); ToT (#mus/10#mum)", kTH2F, {mLogBins, axisToT});
+    if (!enableLogPBins.value && !enableLinearPBins.value) {
+      LOG(fatal) << "At least one of enableLogPBins or enableLinearPBins must be true.";
+    }
+
     histos.add("hHitLayers", "Number of hits on each detector layer;Layer;Counts", kTH1F, {axisLayer});
     histos.add("hHitMultiplicity", "Hit multiplicity along the track; # Hits per track;Counts", kTH1F, {axisHitsPerTrack});
+
+    if (enableLogPBins.value) {
+      const AxisSpec axisMomentumLog{mLogBins, "#it{p/z} (GeV/#it{c})"};
+      histos.add("hToTvsP", "ToT vs #it{p/z}; #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)", kTH2F, {axisMomentumLog, axisToT});
+      histos.add("hToTvsMom", "ToT vs #it{p}; #it{p} (GeV/#it{c}); ToT (#mus/10#mum)", kTH2F, {mLogBins, axisToT});
+    }
+
+    if (enableLinearPBins.value) {
+      const AxisSpec axisMomentumLin{numLinearBins.value, static_cast<double>(linearPMin.value), static_cast<double>(linearPMax.value), "#it{p/z} (GeV/#it{c})"};
+      histos.add("hToTvsPLin", "ToT vs #it{p/z} (linear); #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)", kTH2F, {axisMomentumLin, axisToT});
+      histos.add("hToTvsMomLin", "ToT vs #it{p} (linear); #it{p} (GeV/#it{c}); ToT (#mus/10#mum)", kTH2F, {axisMomentumLin, axisToT});
+    }
 
     std::vector<std::pair<int, std::string>> particleInfo = {
       {11, "Elec"}, {13, "Muon"}, {211, "Pion"}, {321, "Kaon"}, {2212, "Prot"}, {1000010020, "Deut"}, {1000010030, "Trit"}, {1000020030, "He3"}, {1000020040, "Al"}};
@@ -506,39 +544,55 @@ struct OnTheFlyTrackerPid {
       else if (trueName == "Al")
         trueNamePretty = "#it{^{4}He}";
 
-      std::string hitsVsPName = "HitsPerTrack/hHitsPerTrackVsP_" + trueName;
-      std::string hitsVsPTitle = "N_hits vs #it{p/z} for " + trueNamePretty + "; #it{p/z} (GeV/#it{c}); N_hits";
-      h2dHitsPerTrackVsP[iTrue] = histos.add<TH2>(hitsVsPName.c_str(), hitsVsPTitle.c_str(), kTH2F, {axisMomentum, axisHitsPerTrack});
+      if (enableLogPBins.value) {
+        const AxisSpec axisMomentumLog{mLogBins, "#it{p/z} (GeV/#it{c})"};
 
-      std::string totVsPName = "ToTvsP/hToTvsP_" + trueName;
-      std::string totVsPTitle = "ToT vs #it{p/z} for " + trueNamePretty + "; #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)";
-      h2dToTvsPperParticle[iTrue] = histos.add<TH2>(totVsPName.c_str(), totVsPTitle.c_str(), kTH2F, {axisMomentum, axisToT});
+        std::string hitsVsPName = "HitsPerTrack/hHitsPerTrackVsP_" + trueName;
+        std::string hitsVsPTitle = "N_hits vs #it{p/z} for " + trueNamePretty + "; #it{p/z} (GeV/#it{c}); N_hits";
+        h2dHitsPerTrackVsP[iTrue] = histos.add<TH2>(hitsVsPName.c_str(), hitsVsPTitle.c_str(), kTH2F, {axisMomentumLog, axisHitsPerTrack});
 
-      for (size_t iHyp = 0; iHyp < particleInfo.size(); ++iHyp) {
-        std::string hypName = particleInfo[iHyp].second;
-        std::string hypNamePretty = hypName; // Fallback
-        if (hypName == "Elec")
-          hypNamePretty = "#it{e}";
-        else if (hypName == "Muon")
-          hypNamePretty = "#it{#mu}";
-        else if (hypName == "Pion")
-          hypNamePretty = "#it{#pi}";
-        else if (hypName == "Kaon")
-          hypNamePretty = "#it{K}";
-        else if (hypName == "Prot")
-          hypNamePretty = "#it{p}";
-        else if (hypName == "Deut")
-          hypNamePretty = "#it{d}";
-        else if (hypName == "Trit")
-          hypNamePretty = "#it{t}";
-        else if (hypName == "He3")
-          hypNamePretty = "#it{^{3}He}";
-        else if (hypName == "Al")
-          hypNamePretty = "#it{^{4}He}";
+        std::string totVsPName = "ToTvsP/hToTvsP_" + trueName;
+        std::string totVsPTitle = "ToT vs #it{p/z} for " + trueNamePretty + "; #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)";
+        h2dToTvsPperParticle[iTrue] = histos.add<TH2>(totVsPName.c_str(), totVsPTitle.c_str(), kTH2F, {axisMomentumLog, axisToT});
 
-        std::string histName = "NSigma/BarrelNsigmaTrue" + trueName + "Vs" + hypName + "Hypothesis";
-        std::string histTitle = "Nsigma (True " + trueNamePretty + " vs Hyp " + hypNamePretty + "); #it{p/z} (GeV/#it{c}); N#sigma";
-        h2dBarrelNsigmaTrue[iTrue][iHyp] = histos.add<TH2>(histName.c_str(), histTitle.c_str(), kTH2F, {axisMomentum, axisNsigma});
+        for (size_t iHyp = 0; iHyp < particleInfo.size(); ++iHyp) {
+          std::string hypName = particleInfo[iHyp].second;
+          std::string hypNamePretty = hypName; // Fallback
+          if (hypName == "Elec")
+            hypNamePretty = "#it{e}";
+          else if (hypName == "Muon")
+            hypNamePretty = "#it{#mu}";
+          else if (hypName == "Pion")
+            hypNamePretty = "#it{#pi}";
+          else if (hypName == "Kaon")
+            hypNamePretty = "#it{K}";
+          else if (hypName == "Prot")
+            hypNamePretty = "#it{p}";
+          else if (hypName == "Deut")
+            hypNamePretty = "#it{d}";
+          else if (hypName == "Trit")
+            hypNamePretty = "#it{t}";
+          else if (hypName == "He3")
+            hypNamePretty = "#it{^{3}He}";
+          else if (hypName == "Al")
+            hypNamePretty = "#it{^{4}He}";
+
+          std::string histName = "NSigma/BarrelNsigmaTrue" + trueName + "Vs" + hypName + "Hypothesis";
+          std::string histTitle = "Nsigma (True " + trueNamePretty + " vs Hyp " + hypNamePretty + "); #it{p/z} (GeV/#it{c}); N#sigma";
+          h2dBarrelNsigmaTrue[iTrue][iHyp] = histos.add<TH2>(histName.c_str(), histTitle.c_str(), kTH2F, {axisMomentumLog, axisNsigma});
+        }
+      }
+
+      if (enableLinearPBins.value) {
+        const AxisSpec axisMomentumLin{numLinearBins.value, static_cast<double>(linearPMin.value), static_cast<double>(linearPMax.value), "#it{p/z} (GeV/#it{c})"};
+
+        std::string hitsVsPLinName = "HitsPerTrackLin/hHitsPerTrackVsPLin_" + trueName;
+        std::string hitsVsPLinTitle = "N_hits vs #it{p/z} for " + trueNamePretty + " (linear); #it{p/z} (GeV/#it{c}); N_hits";
+        h2dHitsPerTrackVsPLin[iTrue] = histos.add<TH2>(hitsVsPLinName.c_str(), hitsVsPLinTitle.c_str(), kTH2F, {axisMomentumLin, axisHitsPerTrack});
+
+        std::string totVsPLinName = "ToTvsPLin/hToTvsPLin_" + trueName;
+        std::string totVsPLinTitle = "ToT vs #it{p/z} for " + trueNamePretty + " (linear); #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)";
+        h2dToTvsPperParticleLin[iTrue] = histos.add<TH2>(totVsPLinName.c_str(), totVsPLinTitle.c_str(), kTH2F, {axisMomentumLin, axisToT});
       }
     }
   }
@@ -579,7 +633,6 @@ struct OnTheFlyTrackerPid {
         continue;
       }
 
-      const float pt = mcParticle.pt();
       const float p = mcParticle.p();
       const float eta = mcParticle.eta();
       const int truePdgCode = std::abs(mcParticle.pdgCode());
@@ -600,7 +653,7 @@ struct OnTheFlyTrackerPid {
         continue;
       }
 
-      const int binnedPt = mToTLUT->getPtBin(pt);
+      const int binnedP = mToTLUT->getPBin(p);
       const int binnedEta = mToTLUT->getEtaBin(std::abs(eta));
 
       uint16_t hitMap = 0;
@@ -609,14 +662,14 @@ struct OnTheFlyTrackerPid {
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f;
-      if (o2track.propagateToDCA(mcPvVtx, dBz)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         xPv = o2track.getX();
       }
 
       if (xPv > kTrkXThreshold) {
         for (int layer = 0; layer < maxBarrelLayers.value; ++layer) {
           float layerRadius = kTrackerRadii[layer];
-          float trackLength = computeTrackLength(o2track, layerRadius, dBz);
+          float trackLength = computeTrackLength(o2track, layerRadius, mMagneticField);
 
           if (trackLength > 0) {
             hitMap |= (1 << layer);
@@ -627,13 +680,18 @@ struct OnTheFlyTrackerPid {
       }
 
       histos.fill(HIST("hHitMultiplicity"), nHitLayers);
-      h2dHitsPerTrackVsP[truePdgIdx]->Fill(rigidity, nHitLayers);
+      if (enableLogPBins.value) {
+        h2dHitsPerTrackVsP[truePdgIdx]->Fill(rigidity, nHitLayers);
+      }
+      if (enableLinearPBins.value) {
+        h2dHitsPerTrackVsPLin[truePdgIdx]->Fill(rigidity, nHitLayers);
+      }
 
       std::vector<float> validToTs;
 
       for (int layer = kMinLayerForTruncation; layer < maxBarrelLayers.value; ++layer) {
         if ((hitMap >> layer) & 0x1) {
-          TH1F* totHist = mToTLUT->getHistogramForSampling(truePdgIdx, layer, binnedEta, binnedPt);
+          TH1F* totHist = mToTLUT->getHistogramForSampling(truePdgIdx, layer, binnedEta, binnedP);
 
           if (totHist && totHist->GetEntries() > 1) {
             float sampledToT = totHist->GetRandom();
@@ -663,14 +721,21 @@ struct OnTheFlyTrackerPid {
         }
         truncatedMeanToT = sum / static_cast<float>(nUse);
 
-        histos.fill(HIST("hToTvsPt"), p, truncatedMeanToT);
-        histos.fill(HIST("hToTvsP"), rigidity, truncatedMeanToT);
-        h2dToTvsPperParticle[truePdgIdx]->Fill(rigidity, truncatedMeanToT);
+        if (enableLogPBins.value) {
+          histos.fill(HIST("hToTvsMom"), p, truncatedMeanToT);
+          histos.fill(HIST("hToTvsP"), rigidity, truncatedMeanToT);
+          h2dToTvsPperParticle[truePdgIdx]->Fill(rigidity, truncatedMeanToT);
+        }
+        if (enableLinearPBins.value) {
+          histos.fill(HIST("hToTvsMomLin"), p, truncatedMeanToT);
+          histos.fill(HIST("hToTvsPLin"), rigidity, truncatedMeanToT);
+          h2dToTvsPperParticleLin[truePdgIdx]->Fill(rigidity, truncatedMeanToT);
+        }
       }
 
       nSigmaValues.fill(999.f);
 
-      if (truncatedMeanToT > 0) {
+      if (enableLogPBins.value && truncatedMeanToT > 0) {
         for (size_t iHyp = 0; iHyp < mHypothesisPdgCodes.size(); ++iHyp) {
           int hypPdgCode = mHypothesisPdgCodes[iHyp];
           int hypPdgIdx = mToTLUT->getPdgIndex(hypPdgCode);

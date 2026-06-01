@@ -14,6 +14,7 @@
 /// \author marvin.hemmer@cern.ch
 /// dependencies: emcal-correction-task
 
+#include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
@@ -37,11 +38,13 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::emcdownscaling;
 
 struct SkimmerGammaCalo {
 
@@ -53,12 +56,21 @@ struct SkimmerGammaCalo {
   Produces<aod::EMCClusterMCLabels> tableEMCClusterMCLabels;
   Produces<aod::SkimEMCCells> tableCellEMCReco;
 
+  Produces<aod::EmEmcClusters_000> tableEmEmcClusters;
+  Produces<aod::EmEmcMTracks> tableEmEmcMTracks;
+  Produces<aod::EmEmcMSTracks> tableEmEmcMSTracks;
+
+  Produces<aod::MinClusters> tableMinClusters;
+  Produces<aod::MinMTracks> tableMinMTracks;
+  Produces<aod::MinMSTracks> tableMinMSTracks;
+
   // Configurable for filter/cuts
   Configurable<float> minTime{"minTime", -200., "Minimum cluster time for time cut"};
   Configurable<float> maxTime{"maxTime", +200., "Maximum cluster time for time cut"};
   Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
+  Configurable<float> maxE{"maxE", std::numeric_limits<uint16_t>::max(), "Maximum energy for energy cut"};
   Configurable<bool> removeExotic{"removeExotic", false, "Flag to enable the removal of exotic clusters."};
   Configurable<std::vector<int>> clusterDefinitions{"clusterDefinitions", {0, 1, 2, 10, 11, 12, 13, 20, 21, 22, 30, 40, 41, 42, 43, 44, 45}, "Cluster definitions to be accepted (e.g. 13 for kV3MostSplitLowSeed)"};
   Configurable<float> maxdEta{"maxdEta", 0.1, "Set a maximum difference in eta for tracks and cluster to still count as matched"};
@@ -163,7 +175,7 @@ struct SkimmerGammaCalo {
         continue;
       }
       // Energy cut
-      if (emccluster.energy() < minE) {
+      if (emccluster.energy() < minE || emccluster.energy() > maxE) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
       }
@@ -234,6 +246,39 @@ struct SkimmerGammaCalo {
 
       tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
                         emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vPhi, vEta, vP, vPt, vPhiSecondaries, vEtaSecondaries, vPSecondaries, vPtSecondaries);
+
+      tableEmEmcClusters(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
+                         emccluster.nCells(), emccluster.time(), emccluster.isExotic());
+
+      tableMinClusters(emccluster.collisionId(), convertForStorage<int8_t>(emccluster.definition(), Observable::kDefinition),
+                       convertForStorage<uint16_t>(emccluster.energy(), Observable::kEnergy),
+                       convertForStorage<int16_t>(emccluster.eta(), Observable::kEta),
+                       convertForStorage<uint16_t>(emccluster.phi(), Observable::kPhi),
+                       convertForStorage<uint8_t>((emccluster.nCells() & 0x7F) | (emccluster.isExotic() << 7), Observable::kNCellsExo),
+                       convertForStorage<int16_t>(emccluster.m02(), Observable::kM02),
+                       convertForStorage<int16_t>(emccluster.time(), Observable::kTime));
+
+      if (vEta.size() > 0) {
+        for (size_t iPart = 0; iPart < vEta.size(); ++iPart) {
+          tableEmEmcMTracks(tableEmEmcClusters.lastIndex(), vEta[iPart], vPhi[iPart], vP[iPart], vPt[iPart]);
+          tableMinMTracks(tableMinClusters.lastIndex(),
+                          convertForStorage<int16_t>(vPhi[iPart], Observable::kDeltaPhi),
+                          convertForStorage<int16_t>(vEta[iPart], Observable::kDeltaEta),
+                          convertForStorage<uint16_t>(vP[iPart], Observable::kEnergy),
+                          convertForStorage<uint16_t>(vPt[iPart], Observable::kEnergy));
+        }
+      }
+      if (vEtaSecondaries.size() > 0) {
+        for (size_t iPart = 0; iPart < vEtaSecondaries.size(); ++iPart) {
+          tableEmEmcMSTracks(tableEmEmcClusters.lastIndex(), vEtaSecondaries[iPart], vPhiSecondaries[iPart], vPSecondaries[iPart], vPtSecondaries[iPart]);
+          tableMinMSTracks(tableMinClusters.lastIndex(),
+                           convertForStorage<int16_t>(vPhiSecondaries[iPart], Observable::kDeltaPhi),
+                           convertForStorage<int16_t>(vEtaSecondaries[iPart], Observable::kDeltaEta),
+                           convertForStorage<uint16_t>(vPSecondaries[iPart], Observable::kEnergy),
+                           convertForStorage<uint16_t>(vPtSecondaries[iPart], Observable::kEnergy));
+        }
+      }
+
       vEta.clear();
       vPhi.clear();
       vP.clear();

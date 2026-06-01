@@ -17,7 +17,9 @@
 #ifndef PWGDQ_DATAMODEL_MCHTRKEFFTABLES_H_
 #define PWGDQ_DATAMODEL_MCHTRKEFFTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

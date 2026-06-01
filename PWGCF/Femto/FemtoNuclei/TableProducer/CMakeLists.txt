@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(pinucleifemto
-          SOURCES PiNucleiFemto.cxx
+o2physics_add_dpl_workflow(hadnucleifemto
+          SOURCES HadNucleiFemto.cxx
           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)

@@ -45,3 +45,13 @@ o2physics_add_dpl_workflow(lumi-stability-light-ions
         SOURCES lumiStabilityLightIons.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCCDB O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lumi-stability-p-p
+        SOURCES lumiStabilityPP.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCCDB O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lumi-zdc-qa
+        SOURCES lumiZdcQa.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCCDB O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)

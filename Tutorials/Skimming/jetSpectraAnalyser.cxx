@@ -14,18 +14,14 @@
 // Author: Nima Zardoshti
 //
 
-#include "TH1F.h"
-#include "TTree.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "DataModel/JEDerived.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,7 +35,7 @@ struct JetSpectraAnalyser {
      {"hNJetConstituents", "Number of constituents;N;entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
      {"hConstituentPt", "Constituent pT; Constituent #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
 
-  //Filter jetCuts = aod::jet::pt > f_jetPtMin;
+  // Filter jetCuts = aod::jet::pt > f_jetPtMin;
 
   void process(aod::JEJet const& jet,
                aod::JEConstituents const& constituents)

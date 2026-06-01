@@ -86,7 +86,7 @@ DECLARE_SOA_COLUMN(FlagCharmBachInterm, flagCharmBachInterm, int8_t);           
 DECLARE_SOA_COLUMN(NKinkedTracks, nKinkedTracks, int8_t);                                  //! Number of kinked tracks found in MC matching
 } // namespace hf_cand_reso_to_trk_lite
 
-DECLARE_SOA_TABLE(HfCandDTrkLites, "AOD", "HFCANDDTRKLITE", //! Table with some B0 properties
+DECLARE_SOA_TABLE(HfCandDTrkLites, "AOD", "HFCANDDTRKLITE", //! Table with candidate charm hadron properties
                                                             // Candidate Properties
                   hf_cand_reso_to_trk_lite::M,
                   hf_cand_reso_to_trk_lite::Pt,
@@ -123,7 +123,7 @@ DECLARE_SOA_TABLE(HfCandDTrkLites, "AOD", "HFCANDDTRKLITE", //! Table with some 
                   hf_cand_reso_to_trk_lite::FlagCharmBachInterm,
                   hf_cand_reso_to_trk_lite::NKinkedTracks);
 
-DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with some B0 properties
+DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with gen level charm hadron properties
                   hf_cand_reso_to_trk_lite::Pt,
                   hf_cand_reso_to_trk_lite::Y,
                   hf_cand_reso_to_trk_lite::Origin,
@@ -132,7 +132,8 @@ DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with some B0
 } // namespace o2::aod
 
 enum DecayChannel : uint8_t {
-  D0Kplus = 0
+  D0Kplus = 0,
+  D0Proton
 };
 
 struct HfTaskCharmResoToDTrkReduced {
@@ -210,17 +211,25 @@ struct HfTaskCharmResoToDTrkReduced {
   void fillCand(const Cand& candidate, const Coll& collision, const CharmBach& bach0, const TrkBach& bach1)
   {
     // Base
-    float massReso{0}, cosThetaStar{0};
-    int8_t sign{0};
     float tpcNSigmaBach1{0}, tofNSigmaBach1{0}, tpcTofNSigmaBach1{0};
+    double bachMass = 0.f;
+
     if constexpr (Channel == DecayChannel::D0Kplus) {
-      massReso = useDeltaMass ? candidate.invMass() + MassD0 : candidate.invMass();
-      cosThetaStar = RecoDecay::cosThetaStar(std::array{bach0.pVector(), bach1.pVector()}, std::array{MassD0, MassKPlus}, massReso, 0);
+      bachMass = MassKPlus;
       tpcNSigmaBach1 = bach1.tpcNSigmaKa();
       tofNSigmaBach1 = bach1.tofNSigmaKa();
       tpcTofNSigmaBach1 = bach1.tpcTofNSigmaKa();
-      sign = bach1.sign();
+    } else if constexpr (Channel == DecayChannel::D0Proton) {
+      bachMass = MassProton;
+      tpcNSigmaBach1 = bach1.tpcNSigmaPr();
+      tofNSigmaBach1 = bach1.tofNSigmaPr();
+      tpcTofNSigmaBach1 = bach1.tpcTofNSigmaPr();
     }
+
+    float massReso = useDeltaMass ? candidate.invMass() + MassD0 : candidate.invMass();
+    float cosThetaStar = RecoDecay::cosThetaStar(std::array{bach0.pVector(), bach1.pVector()}, std::array{MassD0, bachMass}, massReso, 0);
+    int8_t sign = bach1.sign();
+
     float y = RecoDecay::y(std::array{candidate.px(), candidate.py(), candidate.pz()}, massReso);
     float eta = RecoDecay::eta(std::array{candidate.px(), candidate.py(), candidate.pz()});
     float phi = RecoDecay::phi(candidate.px(), candidate.py());
@@ -362,6 +371,9 @@ struct HfTaskCharmResoToDTrkReduced {
           case DecayChannel::D0Kplus:
             massReso = cand.invMass() + MassD0;
             break;
+          case DecayChannel::D0Proton:
+            massReso = cand.invMass() + MassD0;
+            break;
           default:
             break;
         }
@@ -450,6 +462,25 @@ struct HfTaskCharmResoToDTrkReduced {
     processData<false, true, DecayChannel::D0Kplus>(collisions, candidates, charmBachs, trkBachs);
   }
   PROCESS_SWITCH(HfTaskCharmResoToDTrkReduced, processD0KplusDataWithMl, "Process data for D0Kplus analysis with Ml", false);
+
+  void processD0ProtonData(aod::HfRedCollisions const& collisions,
+                           ReducedReso2PrTrk const& candidates,
+                           aod::HfRed2PrNoTrks const& charmBachs,
+                           aod::HfRedTrkNoParams const& trkBachs)
+  {
+    processData<false, false, DecayChannel::D0Proton>(collisions, candidates, charmBachs, trkBachs);
+  }
+  PROCESS_SWITCH(HfTaskCharmResoToDTrkReduced, processD0ProtonData, "Process data for D0Proton analysis", true);
+
+  // Process data with ML
+  void processD0ProtonDataWithMl(aod::HfRedCollisions const& collisions,
+                                 ReducedReso2PrTrk const& candidates,
+                                 soa::Join<aod::HfRed2PrNoTrks, aod::HfRed2ProngsMl> const& charmBachs,
+                                 aod::HfRedTrkNoParams const& trkBachs)
+  {
+    processData<false, true, DecayChannel::D0Proton>(collisions, candidates, charmBachs, trkBachs);
+  }
+  PROCESS_SWITCH(HfTaskCharmResoToDTrkReduced, processD0ProtonDataWithMl, "Process data for D0Proton analysis with Ml", false);
 
   // MC
   void processD0KplusMC(aod::HfRedCollisions const& collisions,

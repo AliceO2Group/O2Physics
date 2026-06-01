@@ -22,5 +22,6 @@
 #pragma link C++ class EMCPhotonCut + ;
 #pragma link C++ class EMPhotonEventCut + ;
 #pragma link C++ class PairCut + ;
+#pragma link C++ class EMBitFlags + ;
 
 #endif // PWGEM_PHOTONMESON_CORE_PWGEMPHOTONMESONCORELINKDEF_H_

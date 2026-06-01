@@ -24,43 +24,48 @@
 /// \since  May 22, 2024
 ///
 
-#include "TableHelper.h"
+#include "GeometryContainer.h"
 
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FlatTrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <CommonConstants/GeomConstants.h>
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <CommonUtils/NameConf.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
+#include <ReconstructionDataFormats/Track.h>
 
+#include <Math/GenVector/PositionVector3D.h>
+#include <TAxis.h>
 #include <TEfficiency.h>
+#include <TH2.h>
 #include <THashList.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
+#include <TString.h>
 
+#include <array>
+#include <cmath>
+#include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -89,7 +94,6 @@ struct OnTheFlyTofPid {
   // more could be added (especially a disk TOF at a certain z?)
   // in the evolution of this effort
   struct : ConfigurableGroup {
-    Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
     Configurable<bool> considerEventTime{"considerEventTime", true, "flag to consider event time"};
     Configurable<float> innerTOFRadius{"innerTOFRadius", 20, "barrel inner TOF radius (cm)"};
     Configurable<float> outerTOFRadius{"outerTOFRadius", 80, "barrel outer TOF radius (cm)"};
@@ -132,8 +136,8 @@ struct OnTheFlyTofPid {
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  // Track smearer (here used to get absolute pt and eta uncertainties if simConfig.flagTOFLoadDelphesLUTs is true)
-  o2::delphes::DelphesO2TrackSmearer mSmearer;
+  // Track smearer array, one per geometry
+  std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -143,39 +147,69 @@ struct OnTheFlyTofPid {
   OutputObj<THashList> listEfficiency{"efficiency"};
   static constexpr int kParticles = 9;
 
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
-    pRandomNumberGenerator.SetSeed(0); // fully randomize
-    if (simConfig.magneticField.value < o2::constants::math::Epsilon) {
-      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", simConfig.magneticField, false)) {
-        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
-      }
-      LOG(info) << "Bz = " << simConfig.magneticField.value << " T";
-    }
+    mGeoContainer.setCcdbManager(ccdb.operator->());
+    mGeoContainer.init(initContext);
 
-    // Load LUT for pt and eta smearing
-    if (simConfig.flagIncludeTrackTimeRes && simConfig.flagTOFLoadDelphesLUTs) {
-      mSmearer.setCcdbManager(ccdb.operator->());
-      auto loadLUT = [&](int pdg, const std::string& cfgNameToInherit) {
-        std::string lut = "none";
-        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, lut, false)) {
-          LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
+    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+
+    pRandomNumberGenerator.SetSeed(0); // fully randomize
+    if (simConfig.flagTOFLoadDelphesLUTs) {
+      for (int icfg = 0; icfg < nGeometries; ++icfg) {
+        const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+        mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
+        mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+        std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
+        for (const auto& entry : globalConfiguration) {
+          int pdg = 0;
+          if (entry.first.find("lut") != 0) {
+            continue;
+          }
+          if (entry.first.find("lutEl") != std::string::npos) {
+            pdg = kElectron;
+          } else if (entry.first.find("lutMu") != std::string::npos) {
+            pdg = kMuonMinus;
+          } else if (entry.first.find("lutPi") != std::string::npos) {
+            pdg = kPiPlus;
+          } else if (entry.first.find("lutKa") != std::string::npos) {
+            pdg = kKPlus;
+          } else if (entry.first.find("lutPr") != std::string::npos) {
+            pdg = kProton;
+          } else if (entry.first.find("lutDe") != std::string::npos) {
+            pdg = o2::constants::physics::kDeuteron;
+          } else if (entry.first.find("lutTr") != std::string::npos) {
+            pdg = o2::constants::physics::kTriton;
+          } else if (entry.first.find("lutHe3") != std::string::npos) {
+            pdg = o2::constants::physics::kHelium3;
+          } else if (entry.first.find("lutAl") != std::string::npos) {
+            pdg = o2::constants::physics::kAlpha;
+          }
+
+          std::string filename = entry.second;
+          if (pdg == 0) {
+            LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
+          }
+          LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          // strip from leading/trailing spaces
+          filename.erase(0, filename.find_first_not_of(" "));
+          filename.erase(filename.find_last_not_of(" ") + 1);
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
+          if (!success) {
+            LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+          }
         }
-        bool success = mSmearer.loadTable(pdg, lut.c_str());
-        if (!success && !lut.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lut;
-        }
-      };
-      loadLUT(11, "lutEl");
-      loadLUT(13, "lutMu");
-      loadLUT(211, "lutPi");
-      loadLUT(321, "lutKa");
-      loadLUT(2212, "lutPr");
-      loadLUT(1000010020, "lutDe");
-      loadLUT(1000010030, "lutTr");
-      loadLUT(1000020030, "lutHe3");
-      loadLUT(1000020040, "lutAl");
+      }
     }
 
     if (plotsConfig.doQAplots) {
@@ -403,89 +437,14 @@ struct OnTheFlyTofPid {
 
   bool isInInnerTOFActiveArea(const o2::track::TrackParCov& track)
   {
-    static TOFLayerEfficiency innerTOFLayer(simConfig.innerTOFRadius, simConfig.innerTOFLength, simConfig.innerTOFPixelDimension, simConfig.innerTOFFractionOfInactiveArea, simConfig.magneticField);
+    static TOFLayerEfficiency innerTOFLayer(simConfig.innerTOFRadius, simConfig.innerTOFLength, simConfig.innerTOFPixelDimension, simConfig.innerTOFFractionOfInactiveArea, mMagneticField);
     return innerTOFLayer.isTrackInActiveArea(track);
   }
 
   bool isInOuterTOFActiveArea(const o2::track::TrackParCov& track)
   {
-    static TOFLayerEfficiency outerTOFLayer(simConfig.outerTOFRadius, simConfig.outerTOFLength, simConfig.outerTOFPixelDimension, simConfig.outerTOFFractionOfInactiveArea, simConfig.magneticField);
+    static TOFLayerEfficiency outerTOFLayer(simConfig.outerTOFRadius, simConfig.outerTOFLength, simConfig.outerTOFPixelDimension, simConfig.outerTOFFractionOfInactiveArea, mMagneticField);
     return outerTOFLayer.isTrackInActiveArea(track);
-  }
-
-  /// function to calculate track length of this track up to a certain radius
-  /// \param track the input track
-  /// \param radius the radius of the layer you're calculating the length to
-  /// \param magneticField the magnetic field to use when propagating
-  static float computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField)
-  {
-    // don't make use of the track parametrization
-    float length = -100;
-
-    o2::math_utils::CircleXYf_t trcCircle;
-    float sna, csa;
-    track.getCircleParams(magneticField, trcCircle, sna, csa);
-
-    // distance between circle centers (one circle is at origin -> easy)
-    const float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
-
-    // condition of circles touching - if not satisfied returned length will be -100
-    if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
-      length = 0.0f;
-
-      // base radical direction
-      const float ux = trcCircle.xC / centerDistance;
-      const float uy = trcCircle.yC / centerDistance;
-      // calculate perpendicular vector (normalized) for +/- displacement
-      const float vx = -uy;
-      const float vy = +ux;
-      // calculate coordinate for radical line
-      const float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
-      // calculate absolute displacement from center-to-center axis
-      const float displace = (0.5f / centerDistance) * std::sqrt(
-                                                         (-centerDistance + trcCircle.rC - radius) *
-                                                         (-centerDistance - trcCircle.rC + radius) *
-                                                         (-centerDistance + trcCircle.rC + radius) *
-                                                         (centerDistance + trcCircle.rC + radius));
-
-      // possible intercept points of track and TOF layer in 2D plane
-      const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
-      const float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
-
-      // decide on correct intercept point
-      std::array<float, 3> mom;
-      track.getPxPyPzGlo(mom);
-      const float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
-      const float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
-
-      // get start point
-      std::array<float, 3> startPoint;
-      track.getXYZGlo(startPoint);
-
-      float cosAngle = -1000, modulus = -1000;
-
-      if (scalarProduct1 > scalarProduct2) {
-        modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
-      } else {
-        modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
-      }
-      cosAngle /= modulus;
-      length = trcCircle.rC * std::acos(cosAngle);
-      length *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
-    }
-    return length;
-  }
-
-  /// returns velocity in centimeters per picoseconds
-  /// \param momentum the momentum of the tarck
-  /// \param mass the mass of the particle
-  float computeParticleVelocity(float momentum, float mass)
-  {
-    const float a = momentum / mass;
-    // uses light speed in cm/ps so output is in those units
-    return o2::constants::physics::LightSpeedCm2PS * a / std::sqrt((1.f + a * a));
   }
 
   struct TracksWithTime {
@@ -594,7 +553,7 @@ struct OnTheFlyTofPid {
     return trackTimeResolution;
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::OTFLUTConfigId>::iterator const& collision,
                soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks,
                aod::McParticles const&,
                aod::McCollisions const&)
@@ -656,13 +615,13 @@ struct OnTheFlyTofPid {
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f; // Threshold to consider a good propagation of the track
-      if (o2track.propagateToDCA(mcPvVtx, simConfig.magneticField)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         xPv = o2track.getX();
       }
       float trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (xPv > kTrkXThreshold) {
-        trackLengthInnerTOF = computeTrackLength(o2track, simConfig.innerTOFRadius, simConfig.magneticField);
-        trackLengthOuterTOF = computeTrackLength(o2track, simConfig.outerTOFRadius, simConfig.magneticField);
+        trackLengthInnerTOF = o2::upgrade::computeTrackLength(o2track, simConfig.innerTOFRadius, mMagneticField);
+        trackLengthOuterTOF = o2::upgrade::computeTrackLength(o2track, simConfig.outerTOFRadius, mMagneticField);
       }
 
       // Check if the track hit a sensitive area of the TOF
@@ -671,8 +630,10 @@ struct OnTheFlyTofPid {
         trackLengthInnerTOF = -999.f;
       } else {
         float x = 0.f;
-        o2track.getXatLabR(simConfig.innerTOFRadius, x, simConfig.magneticField);
-        histos.fill(HIST("iTOF/h2HitMap"), o2track.getZAt(x, simConfig.magneticField), simConfig.innerTOFRadius * o2track.getPhiAt(x, simConfig.magneticField));
+        o2track.getXatLabR(simConfig.innerTOFRadius, x, mMagneticField);
+        if (plotsConfig.doQAplots) {
+          histos.fill(HIST("iTOF/h2HitMap"), o2track.getZAt(x, mMagneticField), simConfig.innerTOFRadius * o2track.getPhiAt(x, mMagneticField));
+        }
       }
 
       const bool activeOuterTOF = isInOuterTOFActiveArea(o2track);
@@ -680,8 +641,10 @@ struct OnTheFlyTofPid {
         trackLengthOuterTOF = -999.f;
       } else {
         float x = 0.f;
-        o2track.getXatLabR(simConfig.outerTOFRadius, x, simConfig.magneticField);
-        histos.fill(HIST("oTOF/h2HitMap"), o2track.getZAt(x, simConfig.magneticField), simConfig.outerTOFRadius * o2track.getPhiAt(x, simConfig.magneticField));
+        o2track.getXatLabR(simConfig.outerTOFRadius, x, mMagneticField);
+        if (plotsConfig.doQAplots) {
+          histos.fill(HIST("oTOF/h2HitMap"), o2track.getZAt(x, mMagneticField), simConfig.outerTOFRadius * o2track.getPhiAt(x, mMagneticField));
+        }
       }
 
       // get mass to calculate velocity
@@ -691,7 +654,7 @@ struct OnTheFlyTofPid {
         upgradeTofMC(-999.f, -999.f, -999.f, -999.f);
         continue;
       }
-      const float v = computeParticleVelocity(o2track.getP(), pdgInfo->Mass());
+      const float v = o2::upgrade::computeParticleVelocity(o2track.getP(), pdgInfo->Mass());
       const float expectedTimeInnerTOF = trackLengthInnerTOF > 0 ? trackLengthInnerTOF / v + eventCollisionTimePS : -999.f; // arrival time to the Inner TOF in ps
       const float expectedTimeOuterTOF = trackLengthOuterTOF > 0 ? trackLengthOuterTOF / v + eventCollisionTimePS : -999.f; // arrival time to the Outer TOF in ps
       upgradeTofMC(expectedTimeInnerTOF, trackLengthInnerTOF, expectedTimeOuterTOF, trackLengthOuterTOF);
@@ -705,12 +668,12 @@ struct OnTheFlyTofPid {
       float trackLengthRecoInnerTOF = -1, trackLengthRecoOuterTOF = -1;
       auto recoTrack = getTrackParCov(track);
       xPv = -100.f;
-      if (recoTrack.propagateToDCA(pvVtx, simConfig.magneticField)) {
+      if (recoTrack.propagateToDCA(pvVtx, mMagneticField)) {
         xPv = recoTrack.getX();
       }
       if (xPv > kTrkXThreshold) {
-        trackLengthRecoInnerTOF = computeTrackLength(recoTrack, simConfig.innerTOFRadius, simConfig.magneticField);
-        trackLengthRecoOuterTOF = computeTrackLength(recoTrack, simConfig.outerTOFRadius, simConfig.magneticField);
+        trackLengthRecoInnerTOF = o2::upgrade::computeTrackLength(recoTrack, simConfig.innerTOFRadius, mMagneticField);
+        trackLengthRecoOuterTOF = o2::upgrade::computeTrackLength(recoTrack, simConfig.outerTOFRadius, mMagneticField);
       }
 
       // cache the track info needed for the event time calculation
@@ -831,7 +794,7 @@ struct OnTheFlyTofPid {
         nSigmaOuterTOF[ii] = -100;
 
         momentumHypotheses[ii] = rigidity * kParticleCharges[ii]; // Total momentum for this hypothesis
-        const float v = computeParticleVelocity(momentumHypotheses[ii], kParticleMasses[ii]);
+        const float v = o2::upgrade::computeParticleVelocity(momentumHypotheses[ii], kParticleMasses[ii]);
 
         expectedTimeInnerTOF[ii] = trackLengthInnerTOF / v;
         expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;
@@ -847,13 +810,13 @@ struct OnTheFlyTofPid {
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(trkWithTime.mMomentum.second);
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
-            if (mSmearer.hasTable(kParticlePdgs[ii])) { // Only if the LUT for this particle was loaded
-              ptResolution = mSmearer.getAbsPtRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
-              etaResolution = mSmearer.getAbsEtaRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
+            if (mSmearer[collision.lutConfigId()]->hasTable(kParticlePdgs[ii])) { // Only if the LUT for this particle was loaded
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
             }
           }
-          const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.innerTOFRadius, simConfig.magneticField);
-          const float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.outerTOFRadius, simConfig.magneticField);
+          const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.innerTOFRadius, mMagneticField);
+          const float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.outerTOFRadius, mMagneticField);
           innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
@@ -903,15 +866,15 @@ struct OnTheFlyTofPid {
             }
           }
         }
-      }
 
-      const float deltaTrackLengthInnerTOF = std::abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
-      if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0) {
-        histos.fill(HIST("iTOF/h2dDeltaTrackLengthInnerVsPt"), noSmearingPt, deltaTrackLengthInnerTOF);
-      }
-      const float deltaTrackLengthOuterTOF = std::abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
-      if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0) {
-        histos.fill(HIST("oTOF/h2dDeltaTrackLengthOuterVsPt"), noSmearingPt, deltaTrackLengthOuterTOF);
+        const float deltaTrackLengthInnerTOF = std::abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
+        if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0) {
+          histos.fill(HIST("iTOF/h2dDeltaTrackLengthInnerVsPt"), noSmearingPt, deltaTrackLengthInnerTOF);
+        }
+        const float deltaTrackLengthOuterTOF = std::abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
+        if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0) {
+          histos.fill(HIST("oTOF/h2dDeltaTrackLengthOuterVsPt"), noSmearingPt, deltaTrackLengthOuterTOF);
+        }
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)

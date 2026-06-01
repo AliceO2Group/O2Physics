@@ -71,6 +71,7 @@ struct HfTaskSingleMuonMult {
   Configurable<float> rAbsorbMin{"rAbsorbMin", 17.6, "R at absorber end minimum value"};
   Configurable<float> rAbsorbMax{"rAbsorbMax", 89.5, "R at absorber end maximum value"};
   Configurable<float> rAbsorbMid{"rAbsorbMid", 26.5, "R at absorber end split point for different p*DCA selections"};
+  Configurable<float> chi2Max{"chi2Max", 1e6f, "MCH-MFT matching chi2 maximum value"};
   Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
@@ -95,7 +96,7 @@ struct HfTaskSingleMuonMult {
     AxisSpec const axisNCh{500, 0.5, 500.5, "#it{N}_{ch}"};
     AxisSpec const axisNMu{20, -0.5, 19.5, "#it{N}_{#mu}"};
     AxisSpec const axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec const axisEta{250, -5., 5., "#it{#eta}"};
+    AxisSpec const axisEta{1000, -5., 5., "#it{#eta}"};
     AxisSpec const axisTheta{500, 170., 180., "#it{#theta}"};
     AxisSpec const axisRAbsorb{1000, 0., 100., "#it{R}_{Absorb} (cm)"};
     AxisSpec const axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
@@ -118,13 +119,13 @@ struct HfTaskSingleMuonMult {
     registry.add("hMuBeforeMatchMFT", "Muon information before any Kinemeatic cuts applied", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("hMuBeforeAccCuts", "Muon information before applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("h3DCABeforeAccCuts", "DCAx,DCAy,DCAz information before Acceptance cuts", {HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}});
-    registry.add("hMuDeltaPtBeforeAccCuts", "Muon information with DeltaPt before applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10});
+    registry.add("hMuDeltaPtBeforeAccCuts", "Muon information with DeltaPt before applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDeltaPt, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("hMuAfterEtaCuts", "Muon information after applying Eta cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("hMuAfterRAbsorbCuts", "Muon information after applying RAbsorb cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("hMuAfterPdcaCuts", "Muon information after applying Pdca cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("hMuAfterAccCuts", "Muon information after applying all Kinematic cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("h3DCAAfterAccCuts", "DCAx,DCAy,DCAz information after Acceptance cuts", {HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}});
-    registry.add("hMuDeltaPtAfterAccCuts", "Muon information with DeltaPt after applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10});
+    registry.add("hMuDeltaPtAfterAccCuts", "Muon information with DeltaPt after applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDeltaPt, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
 
     registry.add("hTHnTrk", "Muon information with multiplicity", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisSign}, 5});
     registry.add("h3MultNchNmu", "Number of muons and multiplicity", {HistType::kTH3F, {axisCent, axisNCh, axisNMu}});
@@ -192,6 +193,7 @@ struct HfTaskSingleMuonMult {
       const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbsorb{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
       const auto dcaXY{RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY())};
       const auto muTrackType{muon.trackType()};
+      float dptBefore{0.}, dptAfter{0.};
 
       registry.fill(HIST("hMuBeforeMatchMFT"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
@@ -202,11 +204,9 @@ struct HfTaskSingleMuonMult {
 
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
-        auto dpt = muonType3.pt() - pt;
-        if (muTrackType == ForwardTrackTypeEnum::GlobalMuonTrack) {
-          registry.fill(HIST("hMuDeltaPtBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, dpt);
-        }
+        dptBefore = muonType3.pt() - pt;
       }
+      registry.fill(HIST("hMuDeltaPtBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dptBefore, pDca, chi2, muTrackType);
 
       // Apply various standard muon acceptance cuts
       // eta cuts
@@ -233,7 +233,7 @@ struct HfTaskSingleMuonMult {
       registry.fill(HIST("hMuAfterPdcaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       //  MCH-MFT matching chi2
-      if (muon.chi2() >= 1e6) {
+      if (muon.chi2() >= chi2Max) {
         continue;
       }
       registry.fill(HIST("hMuonSel"), Chi2Cut);
@@ -241,17 +241,15 @@ struct HfTaskSingleMuonMult {
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCAAfterAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
-      nMu++;
-      nMuType[muTrackType]++;
 
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
-        auto dpt = muonType3.pt() - pt;
-
-        if (muTrackType == ForwardTrackTypeEnum::GlobalMuonTrack) {
-          registry.fill(HIST("hMuDeltaPtAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, dpt);
-        }
+        dptAfter = muonType3.pt() - pt;
       }
+      registry.fill(HIST("hMuDeltaPtAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dptAfter, pDca, chi2, muTrackType);
+
+      nMu++;
+      nMuType[muTrackType]++;
     }
 
     registry.fill(HIST("h3MultNchNmu"), cent, nCh, nMu);

@@ -11,7 +11,13 @@
 
 #include "PWGDQ/Core/AnalysisCut.h"
 
+#include <TNamed.h>
+
+#include <Rtypes.h>
+
 #include <iostream>
+#include <vector>
+
 using std::cout;
 using std::endl;
 

@@ -13,18 +13,20 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "RecoDecay.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
@@ -80,6 +82,17 @@ struct JetFinderQATask {
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
   Configurable<int> intRateNBins{"intRateNBins", 50, "number of bins for interaction rate axis"};
   Configurable<float> intRateMax{"intRateMax", 50000.0, "maximum value of interaction rate axis"};
+  Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
+  Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
+  Configurable<bool> checkCentFT0M{"checkCentFT0M", false, "0: centFT0C as default, 1: use centFT0M estimator"};
+
+  // Configurable<int> qcCutOnJetMultVsPt{"qcCutOnJetMultVsPt", false, "debug configurable for LHC26a7 10% test production with strange high mult jet pupulation"};
+  Configurable<double> multCutCheck_proportionalFactor{"multCut_proportionalFactor", 0.5, "debug cut value for LHC26a7 10% test production with strange high mult jet pupulation"};
+  Configurable<double> multCutCheck_abscissaAtOrigin{"multCut_abscissaAtOrigin", 5, "debug cut value LHC26a7 10% test production with strange high mult jet pupulation"};
+  Configurable<int> multCutCheck_analyseMBGapEvents{"multCutCheck_analyseMBGapEvents", 0, "flag to choose to reject min. bias gap events; -1: MBGap only, 0: skip MBGap events, 1: analyse all events"};
+  Configurable<bool> doMultCutCheck{"doMultCutCheck", false, "decide to apply multCutCheck or not"};
+  Configurable<bool> multCutCheck_applyRCTSelections{"multCutCheck_applyRCTSelections", true, "decide to apply RCT selections"};
+  Configurable<bool> multCutCheck_applyWeightCorrection{"multCutCheck_applyWeightCorrection", true, "decide to apply weight correction"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -88,6 +101,8 @@ struct JetFinderQATask {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+
+  float simPtRef = 10.;
 
   std::vector<double> jetPtBins;
   std::vector<double> jetPtBinsRhoAreaSub;
@@ -160,6 +175,8 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_track_pt", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {200, 0., 200.}}});
       registry.add("h3_jet_r_jet_pt_track_eta", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, trackEtaAxis}});
       registry.add("h3_jet_r_jet_pt_track_phi", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {160, -1.0, 7.}}});
+
+      registry.add("h3_jet_r_jet_pt_jet_angularity", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
       registry.add("h3_jet_r_jet_pt_leadingtrack_pt", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c}); #it{p}_{T,leading track} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {200, 0.0, 200.0}}});
       registry.add("h_jet_phat", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
       registry.add("h_jet_ptcut", "p_{T} cut;p_{T,jet} (GeV/#it{c});N;entries", {HistType::kTH2F, {{300, 0, 300}, {20, 0, 5}}});
@@ -241,6 +258,7 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_part_jet_pt_part_track_pt_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,jet tracks}^{part} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {200, 0., 200.}}});
       registry.add("h3_jet_r_part_jet_pt_part_track_eta_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#eta_{jet tracks}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, trackEtaAxis}});
       registry.add("h3_jet_r_part_jet_pt_part_track_phi_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#varphi_{jet tracks}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {160, -1.0, 7.}}});
+      registry.add("h3_jet_r_part_jet_pt_part_jet_angularity_part", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
       registry.add("h_jet_phat_part", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
       registry.add("h_jet_ptcut_part", "p_{T} cut;p_{T,jet}^{part} (GeV/#it{c});N;entries", {HistType::kTH2F, {{300, 0, 300}, {20, 0, 5}}});
       registry.add("h_jet_phat_part_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
@@ -256,11 +274,14 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedgeo", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); #varphi_{jet}^{tag} - #varphi_{jet}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedgeo", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}{T,LT}^{tag} - #it{p}{T,LT}^{base}) / #it{p}{T,LT}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedgeo", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}{T,LT}^{tag} - #it{p}{T,LT}^{base}) / #it{p}{T,LT}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
+      registry.add("h3_jet_r_jet_pt_tag_angularity_matchedgeo", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
+      registry.add("h3_jet_r_jet_pt_base_angularity_matchedgeo", "#it{R}_{jet};#it{p}_{T,jet}^{base} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
       registry.add("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedgeo", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #eta_{jet}^{tag}; #eta_{jet}^{base}", {HistType::kTH3F, {jetPtAxis, jetEtaAxis, jetEtaAxis}});
       registry.add("h3_jet_pt_tag_jet_phi_tag_jet_phi_base_matchedgeo", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #varphi_{jet}^{tag}; #varphi_{jet}^{base}", {HistType::kTH3F, {jetPtAxis, {160, -1.0, 7.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedgeo", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); N_{jet tracks}^{tag}; N_{jet tracks}^{base}", {HistType::kTH3F, {jetPtAxis, {200, -0.5, 199.5}, {200, -0.5, 199.5}}});
       registry.add("h3_jet_pt_tag_jet_leadingtrack_pt_tag_jet_leadingtrack_pt_base_matchedgeo", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #it{p}_{T,LT}^{tag}; #it{p}_{T,LT}^{tag}", {HistType::kTH3F, {jetPtAxis, {200, 0., 100.}, {200, 0., 100.}}});
       registry.add("h3_jet_pt_tag_jet_leadingtrack_fraction_tag_jet_leadingtrack_fraction_base_matchedgeo", ";#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,LT}^{tag} /  #it{p}_{T,jet}^{tag} ; #it{p}_{T,LT}^{tag} / #it{p}_{T,jet}^{base}", {HistType::kTH3F, {jetPtAxis, {50, 0., 1.}, {50, 0., 1.}}});
+      registry.add("h3_jet_pt_tag_jet_angularity_tag_jet_angularity_base_matchedgeo", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); angularity^{tag}; angularity^{base}", {HistType::kTH3F, {jetPtAxis, {30, 0., 1.}, {30, 0., 1.}}});
 
       registry.add("h3_jet_r_jet_pt_tag_jet_pt_base_matchedpt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, jetPtAxis}});
       registry.add("h3_jet_r_jet_eta_tag_jet_eta_base_matchedpt", "#it{R}_{jet};#eta_{jet}^{tag};#eta_{jet}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetEtaAxis, jetEtaAxis}});
@@ -271,11 +292,14 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedpt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); #varphi_{jet}^{tag} - #varphi_{jet}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedpt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}{T,LT}^{tag} - #it{p}{T,LT}^{base}) / #it{p}{T,LT}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {500, -5.0, 5.0}}});
       registry.add("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedpt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}{T,LT}^{tag} - #it{p}{T,LT}^{base}) / #it{p}{T,LT}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
+      registry.add("h3_jet_r_jet_pt_tag_angularity_matchedpt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
+      registry.add("h3_jet_r_jet_pt_base_angularity_matchedpt", "#it{R}_{jet};#it{p}_{T,jet}^{base} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
       registry.add("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedpt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #eta_{jet}^{tag}; #eta_{jet}^{base}", {HistType::kTH3F, {jetPtAxis, jetEtaAxis, jetEtaAxis}});
       registry.add("h3_jet_pt_tag_jet_phi_tag_jet_phi_base_matchedpt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #varphi_{jet}^{tag}; #varphi_{jet}^{base}", {HistType::kTH3F, {jetPtAxis, {160, -1.0, 7.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedpt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); N_{jet tracks}^{tag}; N_{jet tracks}^{base}", {HistType::kTH3F, {jetPtAxis, {200, -0.5, 199.5}, {200, -0.5, 199.5}}});
       registry.add("h3_jet_pt_tag_jet_leadingtrack_pt_tag_jet_leadingtrack_pt_base_matchedpt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #it{p}_{T,LT}^{tag}; #it{p}_{T,LT}^{tag}", {HistType::kTH3F, {jetPtAxis, {200, 0., 100.}, {200, 0., 100.}}});
       registry.add("h3_jet_pt_tag_jet_leadingtrack_fraction_tag_jet_leadingtrack_fraction_base_matchedpt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,LT}^{tag} /  #it{p}_{T,jet}^{tag} ; #it{p}_{T,LT}^{tag} / #it{p}_{T,jet}^{base}", {HistType::kTH3F, {jetPtAxis, {50, 0., 1.}, {50, 0., 1.}}});
+      registry.add("h3_jet_pt_tag_jet_angularity_tag_jet_angularity_base_matchedpt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); angularity^{tag}; angularity^{base}", {HistType::kTH3F, {jetPtAxis, {30, 0., 1.}, {30, 0., 1.}}});
 
       registry.add("h3_jet_r_jet_pt_tag_jet_pt_base_matchedgeopt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, jetPtAxis}});
       registry.add("h3_jet_r_jet_eta_tag_jet_eta_base_matchedgeopt", "#it{R}_{jet};#eta_{jet}^{tag};#eta_{jet}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetEtaAxis, jetEtaAxis}});
@@ -286,11 +310,14 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedgeopt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); #varphi_{jet}^{tag} - #varphi_{jet}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedgeopt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}{T,LT}^{tag} - #it{p}{T,LT}^{base}) / #it{p}{T,LT}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {500, -5.0, 5.0}}});
       registry.add("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedgeopt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}{T,LT}^{tag} - #it{p}{T,LT}^{base}) / #it{p}{T,LT}^{base}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {100, -1.0, 1.0}}});
+      registry.add("h3_jet_r_jet_pt_tag_angularity_matchedgeopt", "#it{R}_{jet};#it{p}_{T,jet}^{tag} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
+      registry.add("h3_jet_r_jet_pt_base_angularity_matchedgeopt", "#it{R}_{jet};#it{p}_{T,jet}^{base} (GeV/#it{c});angularity", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, {30, 0., 1.}}});
       registry.add("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #eta_{jet}^{tag}; #eta_{jet}^{base}", {HistType::kTH3F, {jetPtAxis, jetEtaAxis, jetEtaAxis}});
       registry.add("h3_jet_pt_tag_jet_phi_tag_jet_phi_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #varphi_{jet}^{tag}; #varphi_{jet}^{base}", {HistType::kTH3F, {jetPtAxis, {160, -1.0, 7.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); N_{jet tracks}^{tag}; N_{jet tracks}^{base}", {HistType::kTH3F, {jetPtAxis, {200, -0.5, 199.5}, {200, -0.5, 199.5}}});
       registry.add("h3_jet_pt_tag_jet_leadingtrack_pt_tag_jet_leadingtrack_pt_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); #it{p}_{T,LT}^{tag}; #it{p}_{T,LT}^{tag}", {HistType::kTH3F, {jetPtAxis, {200, 0., 100.}, {200, 0., 100.}}});
       registry.add("h3_jet_pt_tag_jet_leadingtrack_fraction_tag_jet_leadingtrack_fraction_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,LT}^{tag} /  #it{p}_{T,jet}^{tag} ; #it{p}_{T,LT}^{tag} / #it{p}_{T,jet}^{base}", {HistType::kTH3F, {jetPtAxis, {50, 0., 1.}, {50, 0., 1.}}});
+      registry.add("h3_jet_pt_tag_jet_angularity_tag_jet_angularity_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); angularity^{tag}; angularity^{base}", {HistType::kTH3F, {jetPtAxis, {30, 0., 1.}, {30, 0., 1.}}});
       registry.add("h3_ptcut_jet_pt_tag_jet_pt_base_matchedgeo", "N;#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH3F, {{20, 0., 5.}, {300, 0., 300.}, {300, 0., 300.}}});
     }
 
@@ -358,7 +385,7 @@ struct JetFinderQATask {
       registry.add("h_xsecErrSumWeighted", "Summed Cross section error per collision in pb with weights; Summed Cross section error per collision in pb with weights; entries", {HistType::kTH1F, {{1, 0., 1.}}});
     }
 
-    AxisSpec occupancyAxis = {142, -1.5, 14000.5, "occupancy"};
+    AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
     AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
 
     if (doprocessOccupancyQA) {
@@ -369,10 +396,78 @@ struct JetFinderQATask {
       registry.add("h2_occupancy_ntracksselptetacuts_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
       registry.add("h2_occupancy_ntracksselptetacuts_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
     }
+
+    if (doprocessQcMultCutCheck) {
+      std::vector<double> centralityBinning{0., 10., 50., 70., 100};
+      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
+      bool doSumw2 = true;
+
+      AxisSpec centralityAxis = {1200, -10., 110., "Centrality"};
+      AxisSpec trackPtAxis = {200, -0.5, 199.5, "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec trackEtaAxis = {nBinsEta, -1.0, 1.0, "#eta"};
+      AxisSpec phiAxis = {160, -1.0, 7.0, "#varphi"};
+      AxisSpec jetPtAxis = {200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec jetPtAxisRhoAreaSub = {400, -200., 200., "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec jetEtaAxis = {nBinsEta, -1.0, 1.0, "#eta"};
+
+      registry.add("h_fakecollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+
+      registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+      registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}});
+
+      registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}, doSumw2);
+      registry.add("h2_centrality_collisions_weighted", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}}, doSumw2);
+      registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}}, doSumw2);
+
+      registry.add("h_collisions_zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}}, doSumw2);
+      registry.add("h_collisions_ntracks", "N_{tracks};", {HistType::kTH1F, {{10000, 0.0, 10000.0}}}, doSumw2);
+      registry.add("h_collisions_njets", "N_{jets};", {HistType::kTH1F, {{10000, 0.0, 10000.0}}}, doSumw2);
+
+      registry.add("h2_centrality_ntracks", "; centrality; N_{tracks};", {HistType::kTH2F, {{1100, 0., 110.0}, {10000, 0.0, 10000.0}}});
+      registry.add("h2_centrality_njets", "; centrality; N_{jets};", {HistType::kTH2F, {{1100, 0., 110.0}, {10000, 0.0, 10000.0}}});
+      registry.add("h2_ntracks_rho", "; N_{tracks}; #it{rho} (GeV/area);", {HistType::kTH2F, {{10000, 0.0, 10000.0}, {400, 0.0, 400.0}}});
+      registry.add("h2_centrality_rho", "; centrality; #it{rho} (GeV/area);", {HistType::kTH2F, {{1100, 0., 110.}, {400, 0., 400.0}}});
+
+      registry.add("h2_centrality_track_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {centAxis, {200, 0., 200.}}});
+      registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
+      registry.add("h2_track_pt_track_sigmapt", "#sigma(#it{p}_{T})/#it{p}_{T}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {100000, 0.0, 10.0}}});
+      registry.add("h2_track_pt_high_track_sigmapt", "#sigma(#it{p}_{T})/#it{p}_{T}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {100000, 0.0, 10.0}}});
+      registry.add("h2_track_pt_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {10000, 0.0, 1.0}}});
+      registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {10000, 0.0, 1.0}}});
+
+      registry.add("h_mccollision_processid", "mccollision process id;mccollision process id;entries", {HistType::kTH1D, {{200, 0.0, 200.0}}});
+
+      registry.add("h_particle_pdgcode", "particle pdgcode;particle pdgcode;entries", {HistType::kTH1D, {{3000, 0.0, 3000.0}}});
+      registry.add("h_particle_genstatuscode", "particle gen status code;particle gen status code;entries", {HistType::kTH1D, {{420, -210.0, 210.0}}});
+      registry.add("h_particle_hepmcstatuscode", "particle hep mc status code;particle hep mc status code;entries", {HistType::kTH1D, {{210, 0.0, 210.0}}});
+      registry.add("h_particle_process", "particle process;particle process;entries", {HistType::kTH1D, {{50, 0.0, 50.0}}});
+      registry.add("h_particle_producedbygenerator", "particle producedByGenerator status;particle producedByGenerator status;entries", {HistType::kTH1D, {{2, 0.0, 2}}});
+
+      registry.add("h_particle_primary_pdgcode", "primary particle pdgcode;primary particle pdgcode;entries", {HistType::kTH1D, {{3000, 0.0, 3000.0}}});
+      registry.add("h_particle_primary_genstatuscode", "primary particle gen status code;primary particle gen status code;entries", {HistType::kTH1D, {{420, -210.0, 210.0}}});
+      registry.add("h_particle_primary_hepmcstatuscode", "primary particle hep mc status code;primary particle hep mc status code;entries", {HistType::kTH1D, {{210, 0.0, 210.0}}});
+      registry.add("h_particle_primary_process", "primary particle process;primary particle process;entries", {HistType::kTH1D, {{50, 0.0, 50.0}}});
+      registry.add("h_particle_primary_producedbygenerator", "primary particle producedByGenerator status;primary particle producedByGenerator status;entries", {HistType::kTH1D, {{2, 0.0, 2}}});
+
+      registry.add("h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxis}}, doSumw2);
+      registry.add("h_jet_eta", "jet eta;#eta; counts", {HistType::kTH1F, {jetEtaAxis}}, doSumw2);
+      registry.add("h_jet_phi", "jet phi;#phi; counts", {HistType::kTH1F, {phiAxis}}, doSumw2);
+      registry.add("h2_centrality_jet_pt", "centrality vs. jet pT;centrality; #it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH2F, {centralityAxis, jetPtAxis}}, doSumw2);
+      registry.add("h2_centrality_jet_eta", "centrality vs. jet eta;centrality; #eta; counts", {HistType::kTH2F, {centralityAxis, jetEtaAxis}}, doSumw2);
+      registry.add("h2_centrality_jet_phi", "centrality vs. jet phi;centrality; #varphi; counts", {HistType::kTH2F, {centralityAxis, phiAxis}}, doSumw2);
+      registry.add("h2_jet_pt_jet_area", "jet #it{p}_{T,jet} vs. Area_{jet}; #it{p}_{T,jet} (GeV/#it{c}); Area_{jet}", {HistType::kTH2F, {jetPtAxis, {150, 0., 1.5}}}, doSumw2);
+      registry.add("h2_jet_pt_jet_ntracks", "jet #it{p}_{T,jet} vs. N_{jet tracks}; #it{p}_{T,jet} (GeV/#it{c}); N_{jet, tracks}", {HistType::kTH2F, {jetPtAxis, {200, -0.5, 199.5}}}, doSumw2);
+      registry.add("h2_jet_pt_track_pt", "jet #it{p}_{T,jet} vs. #it{p}_{T,track}; #it{p}_{T,jet} (GeV/#it{c});  #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, trackPtAxis}}, doSumw2);
+      registry.add("h3_jet_pt_jet_eta_jet_phi", "jet pt vs. eta vs. phi", {HistType::kTH3F, {jetPtAxis, jetEtaAxis, phiAxis}}, doSumw2);
+    }
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
+  Filter particleCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta > trackEtaMin && aod::jmcparticle::eta < trackEtaMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut &&
+                      ((checkCentFT0M ? aod::jcollision::centFT0M : aod::jcollision::centFT0C) >= centralityMin) &&
+                      ((checkCentFT0M ? aod::jcollision::centFT0M : aod::jcollision::centFT0C) < centralityMax));
   PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>> McCollisionsPerMCPCollision = aod::jmccollision::mcCollisionId;
 
@@ -453,12 +548,16 @@ struct JetFinderQATask {
     registry.fill(HIST("h3_jet_r_jet_pt_jet_ntracks"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size(), weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_area"), jet.r() / 100.0, jet.pt(), jet.area(), weight);
 
+    float angularity = 0.;
     for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
 
       registry.fill(HIST("h3_jet_r_jet_pt_track_pt"), jet.r() / 100.0, jet.pt(), constituent.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_track_eta"), jet.r() / 100.0, jet.pt(), constituent.eta(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_track_phi"), jet.r() / 100.0, jet.pt(), constituent.phi(), weight);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
+    angularity /= (jet.pt() * (jet.r() / 100.f));
+    registry.fill(HIST("h3_jet_r_jet_pt_jet_angularity"), jet.r() / 100.0, jet.pt(), angularity, weight);
   }
 
   template <typename T>
@@ -547,16 +646,20 @@ struct JetFinderQATask {
     registry.fill(HIST("h3_jet_r_part_jet_eta_part_jet_phi_part"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_ntracks_part"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size(), weight);
 
+    float angularity = 0.;
     for (auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
 
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_pt_part"), jet.r() / 100.0, jet.pt(), constituent.pt(), weight);
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_eta_part"), jet.r() / 100.0, jet.pt(), constituent.eta(), weight);
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_phi_part"), jet.r() / 100.0, jet.pt(), constituent.phi(), weight);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
+    angularity /= (jet.pt() * (jet.r() / 100.f));
+    registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_angularity_part"), jet.r() / 100.0, jet.pt(), angularity, weight);
   }
 
   template <typename T, typename U>
-  void fillMatchedHistograms(T const& jetBase, float leadingTrackPtBase, float weight = 1.0, float pTHat = 999.)
+  void fillMatchedHistograms(T const& jetBase, float leadingTrackPtBase, float angularity, float weight = 1.0, float pTHat = 999.)
   {
     if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
@@ -575,13 +678,18 @@ struct JetFinderQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_eta_base_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), jetTag.eta() - jetBase.eta(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
         float leadingTrackPtTag = 0.;
+        float angularityTag = 0.;
         for (auto& constituent : jetTag.template tracks_as<aod::JetParticles>()) {
           if (constituent.pt() > leadingTrackPtTag) {
             leadingTrackPtTag = constituent.pt();
           }
+          angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent), alpha);
         }
+        angularityTag /= (jetTag.pt() * (jetTag.r() / 100.f));
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag - leadingTrackPtBase) / leadingTrackPtTag, weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag / jetTag.pt()) - (leadingTrackPtBase / jetBase.pt()), weight);
+        registry.fill(HIST("h3_jet_r_jet_pt_tag_angularity_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), angularityTag, weight);
+        registry.fill(HIST("h3_jet_r_jet_pt_base_angularity_matchedgeo"), jetBase.r() / 100.0, jetBase.pt(), angularity, weight);
 
         for (int N = 1; N < 21; N++) {
           if (jetBase.pt() < N * 0.25 * pTHat && jetTag.pt() < N * 0.25 * pTHat) {
@@ -595,6 +703,7 @@ struct JetFinderQATask {
           registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedgeo"), jetTag.pt(), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
           registry.fill(HIST("h3_jet_pt_tag_jet_leadingtrack_pt_tag_jet_leadingtrack_pt_base_matchedgeo"), jetTag.pt(), leadingTrackPtTag, leadingTrackPtBase, weight);
           registry.fill(HIST("h3_jet_pt_tag_jet_leadingtrack_fraction_tag_jet_leadingtrack_fraction_base_matchedgeo"), jetTag.pt(), leadingTrackPtTag / jetTag.pt(), leadingTrackPtBase / jetBase.pt(), weight);
+          registry.fill(HIST("h3_jet_pt_tag_jet_angularity_tag_jet_angularity_base_matchedgeo"), jetTag.pt(), angularityTag, angularity, weight);
         }
       }
     }
@@ -611,13 +720,18 @@ struct JetFinderQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_eta_base_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), jetTag.eta() - jetBase.eta(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
         float leadingTrackPtTag = 0.;
+        float angularityTag = 0.;
         for (auto& constituent : jetTag.template tracks_as<aod::JetParticles>()) {
           if (constituent.pt() > leadingTrackPtTag) {
             leadingTrackPtTag = constituent.pt();
           }
+          angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent), alpha);
         }
+        angularityTag /= (jetTag.pt() * (jetTag.r() / 100.f));
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag - leadingTrackPtBase) / leadingTrackPtTag, weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag / jetTag.pt()) - (leadingTrackPtBase / jetBase.pt()), weight);
+        registry.fill(HIST("h3_jet_r_jet_pt_tag_angularity_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), angularityTag, weight);
+        registry.fill(HIST("h3_jet_r_jet_pt_base_angularity_matchedpt"), jetBase.r() / 100.0, jetBase.pt(), angularity, weight);
 
         if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedpt"), jetTag.pt(), jetTag.eta(), jetBase.eta(), weight);
@@ -625,6 +739,7 @@ struct JetFinderQATask {
           registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetTag.pt(), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
           registry.fill(HIST("h3_jet_pt_tag_jet_leadingtrack_pt_tag_jet_leadingtrack_pt_base_matchedpt"), jetTag.pt(), leadingTrackPtTag, leadingTrackPtBase, weight);
           registry.fill(HIST("h3_jet_pt_tag_jet_leadingtrack_fraction_tag_jet_leadingtrack_fraction_base_matchedpt"), jetTag.pt(), leadingTrackPtTag / jetTag.pt(), leadingTrackPtBase / jetBase.pt(), weight);
+          registry.fill(HIST("h3_jet_pt_tag_jet_angularity_tag_jet_angularity_base_matchedpt"), jetTag.pt(), angularityTag, angularity, weight);
         }
       }
     }
@@ -645,13 +760,18 @@ struct JetFinderQATask {
           registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_eta_base_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), jetTag.eta() - jetBase.eta(), weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
           float leadingTrackPtTag = 0.;
+          float angularityTag = 0.;
           for (auto& constituent : jetTag.template tracks_as<aod::JetParticles>()) {
             if (constituent.pt() > leadingTrackPtTag) {
               leadingTrackPtTag = constituent.pt();
             }
+            angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent), alpha);
           }
+          angularityTag /= (jetTag.pt() * (jetTag.r() / 100.f));
           registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag - leadingTrackPtBase) / leadingTrackPtTag, weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag / jetTag.pt()) - (leadingTrackPtBase / jetBase.pt()), weight);
+          registry.fill(HIST("h3_jet_r_jet_pt_tag_angularity_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), angularityTag, weight);
+          registry.fill(HIST("h3_jet_r_jet_pt_base_angularity_matchedgeopt"), jetBase.r() / 100.0, jetBase.pt(), angularity, weight);
 
           if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
             registry.fill(HIST("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedgeopt"), jetTag.pt(), jetTag.eta(), jetBase.eta(), weight);
@@ -659,6 +779,7 @@ struct JetFinderQATask {
             registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedgeopt"), jetTag.pt(), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
             registry.fill(HIST("h3_jet_pt_tag_jet_leadingtrack_pt_tag_jet_leadingtrack_pt_base_matchedgeopt"), jetTag.pt(), leadingTrackPtTag, leadingTrackPtBase, weight);
             registry.fill(HIST("h3_jet_pt_tag_jet_leadingtrack_fraction_tag_jet_leadingtrack_fraction_base_matchedgeopt"), jetTag.pt(), leadingTrackPtTag / jetTag.pt(), leadingTrackPtBase / jetBase.pt(), weight);
+            registry.fill(HIST("h3_jet_pt_tag_jet_angularity_tag_jet_angularity_base_matchedgeopt"), jetTag.pt(), angularityTag, angularity, weight);
           }
         }
       }
@@ -769,9 +890,70 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
+  enum mbGapSelectionRequirement {
+    mbGapOnly = -1,
+    mbGapSkip = 0,
+    mbGapAndSignal = 1
+  };
+
+  template <typename TColl>
+  bool applyCollisionCuts_multCutCheck(TColl const& collision, bool fillHistograms = false, bool isWeighted = false, float eventWeight = 1.0)
+  {
+    float centrality = -1.0;
+    checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
+
+    if (fillHistograms) {
+      registry.fill(HIST("h_collisions"), 0.5);
+      registry.fill(HIST("h2_centrality_collisions"), centrality, 0.5, eventWeight);
+      if (isWeighted)
+        registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
+    }
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, multCutCheck_applyRCTSelections)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("h_collisions"), 1.5);
+      registry.fill(HIST("h2_centrality_collisions"), centrality, 1.5, eventWeight);
+      if (isWeighted)
+        registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
+    }
+
+    if (centrality < centralityMin || centralityMax < centrality) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("h_collisions"), 2.5);
+      registry.fill(HIST("h2_centrality_collisions"), centrality, 2.5, eventWeight);
+      if (isWeighted)
+        registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
+    }
+
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("h_collisions"), 3.5);
+      registry.fill(HIST("h2_centrality_collisions"), centrality, 3.5, eventWeight);
+      if (isWeighted)
+        registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
+    }
+
+    if (multCutCheck_analyseMBGapEvents == mbGapSelectionRequirement::mbGapOnly && collision.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return false;
+    } else if (multCutCheck_analyseMBGapEvents == mbGapSelectionRequirement::mbGapSkip && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return false;
+    }
+
+    return true;
+  }
+
   void processJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -793,6 +975,9 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -812,6 +997,9 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -829,6 +1017,9 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -844,6 +1035,9 @@ struct JetFinderQATask {
   void processEvtWiseConstSubJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelEventWiseSubtractedJets, aod::ChargedMCDetectorLevelEventWiseSubtractedJetConstituents> const& jets, aod::JetTracksSub const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -866,6 +1060,9 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -874,12 +1071,15 @@ struct JetFinderQATask {
         continue;
       }
       float leadingTrackPtBase = 0.;
+      float angularity = 0.;
       for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
         if (constituent.pt() > leadingTrackPtBase) {
           leadingTrackPtBase = constituent.pt();
         }
+        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
       }
-      fillMatchedHistograms<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>::iterator, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>>(jet, leadingTrackPtBase);
+      angularity /= (jet.pt() * (jet.r() / 100.f));
+      fillMatchedHistograms<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>::iterator, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>>(jet, leadingTrackPtBase, angularity);
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsSubMatched, "jet finder QA matched unsubtracted and constituent subtracted jets", false);
@@ -887,6 +1087,9 @@ struct JetFinderQATask {
   void processJetsMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -901,12 +1104,12 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
 
-  void processJetsMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
+  void processJetsMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
-    if (collision.isOutlier()) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -946,7 +1149,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
 
-  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>> const& collisions)
+  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -963,7 +1166,7 @@ struct JetFinderQATask {
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits) && !collisionspermcpjet.begin().isOutlier()) {
+        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
           fillMCPHistograms(jet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
         }
       } else {
@@ -982,6 +1185,9 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -990,17 +1196,20 @@ struct JetFinderQATask {
         continue;
       }
       float leadingTrackPtBase = 0.;
+      float angularity = 0.;
       for (auto& constituent : mcdjet.template tracks_as<aod::JetTracks>()) {
         if (constituent.pt() > leadingTrackPtBase) {
           leadingTrackPtBase = constituent.pt();
         }
+        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(mcdjet, constituent), alpha);
       }
-      fillMatchedHistograms<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>::iterator, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>(mcdjet, leadingTrackPtBase, 1., collision.mcCollision().ptHard());
+      angularity /= (mcdjet.pt() * (mcdjet.r() / 100.f));
+      fillMatchedHistograms<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>::iterator, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>(mcdjet, leadingTrackPtBase, angularity, 1., collision.mcCollision().ptHard());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPMCDMatched, "jet finder QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                                         aod::JetMcCollisions const&,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets,
                                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const&,
@@ -1009,7 +1218,7 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
-    if (collision.isOutlier()) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (const auto& mcdjet : mcdjets) {
@@ -1020,19 +1229,22 @@ struct JetFinderQATask {
         continue;
       }
       float leadingTrackPtBase = 0.;
+      float angularity = 0.;
       for (auto& constituent : mcdjet.template tracks_as<aod::JetTracks>()) {
         if (constituent.pt() > leadingTrackPtBase) {
           leadingTrackPtBase = constituent.pt();
         }
+        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(mcdjet, constituent), alpha);
       }
-      fillMatchedHistograms<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>::iterator, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>(mcdjet, leadingTrackPtBase, collision.weight(), collision.mcCollision().ptHard());
+      angularity /= (mcdjet.pt() * (mcdjet.r() / 100.f));
+      fillMatchedHistograms<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>::iterator, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>(mcdjet, leadingTrackPtBase, angularity, collision.weight(), collision.mcCollision().ptHard());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPMCDMatchedWeighted, "jet finder QA matched mcp and mcd with weighted events", false);
 
   void processMCCollisionsWeighted(aod::JetMcCollision const& collision)
   {
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
@@ -1177,7 +1389,7 @@ struct JetFinderQATask {
                      aod::JetMcCollisions const&,
                      soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     registry.fill(HIST("h_collisions"), 0.5);
@@ -1196,12 +1408,12 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
 
-  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>::iterator const& collision,
+  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                              aod::JetMcCollisions const&,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     float eventWeight = collision.weight();
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     registry.fill(HIST("h_collisions"), 0.5);
@@ -1216,11 +1428,6 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
-    if (collision.isOutlier()) {
-      return;
-    }
-    registry.fill(HIST("h_collisions"), 3.5);
-    registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
     fillTrackHistograms(collision, tracks, eventWeight, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetFinderQATask, processTracksWeighted, "QA for charged tracks weighted", false);
@@ -1228,7 +1435,7 @@ struct JetFinderQATask {
   void processTracksSub(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                         soa::Filtered<aod::JetTracksSub> const& tracks)
   {
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -1247,7 +1454,7 @@ struct JetFinderQATask {
 
   void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -1278,7 +1485,7 @@ struct JetFinderQATask {
 
   void processRandomConeMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     randomCone(collision, jets, tracks);
@@ -1287,7 +1494,7 @@ struct JetFinderQATask {
 
   void processOccupancyQA(soa::Filtered<aod::JetCollisions>::iterator const& collision, aod::JetTracks const& tracks)
   {
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     int occupancy = collision.trackOccupancyInTimeRange();
@@ -1307,12 +1514,102 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_occupancy_ntrackssel_presel"), occupancy, nTracksAllAcceptanceAndSelected);
     registry.fill(HIST("h2_occupancy_ntracksselptetacuts_presel"), occupancy, nTracksInAcceptanceAndSelected);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      registry.fill(HIST("h2_occupancy_ntracksall_postsel"), occupancy, nTracksAll);
-      registry.fill(HIST("h2_occupancy_ntrackssel_postsel"), occupancy, nTracksAllAcceptanceAndSelected);
-      registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel"), occupancy, nTracksInAcceptanceAndSelected);
+      return;
     }
+    registry.fill(HIST("h2_occupancy_ntracksall_postsel"), occupancy, nTracksAll);
+    registry.fill(HIST("h2_occupancy_ntrackssel_postsel"), occupancy, nTracksAllAcceptanceAndSelected);
+    registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel"), occupancy, nTracksInAcceptanceAndSelected);
   }
   PROCESS_SWITCH(JetFinderQATask, processOccupancyQA, "occupancy QA on jet derived data", false);
+
+  void processQcMultCutCheck(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JMcCollisionLbs>>::iterator const& collision,
+                             soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
+                             soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
+                             soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets,
+                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
+                             soa::Filtered<aod::JetParticles> const& mcparticles)
+  {
+    float eventWeight = multCutCheck_applyWeightCorrection ? collision.weight() : 1;
+
+    bool hasJetAboveMultCut = false;
+    for (auto const& mcdjet : mcdjets) {
+      if (mcdjet.tracksIds().size() > multCutCheck_proportionalFactor * mcdjet.pt() + multCutCheck_abscissaAtOrigin) {
+        hasJetAboveMultCut = true;
+      }
+    }
+    if (doMultCutCheck && hasJetAboveMultCut == false) {
+      return;
+    }
+
+    bool fillHistograms = true;
+    bool isWeighted = multCutCheck_applyWeightCorrection;
+    if (!applyCollisionCuts_multCutCheck(collision, fillHistograms, isWeighted, eventWeight)) {
+      return;
+    }
+    registry.fill(HIST("h_collisions_zvertex"), collision.posZ(), eventWeight);
+
+    if (collision.has_mcCollision()) { // the collision is not fake and has one associated mc coll; .mccollision() can be called
+      auto jetMcCollision = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
+      auto aodMcCollision = jetMcCollision.mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>();
+
+      registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection"), simPtRef / (std::pow(collision.weight(), 1.0 / pTHatExponent)), jetMcCollision.ptHard());
+      registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted"), simPtRef / (std::pow(collision.weight(), 1.0 / pTHatExponent)), jetMcCollision.ptHard(), eventWeight);
+      registry.fill(HIST("h_mccollision_processid"), aodMcCollision.processId(), eventWeight);
+    } else {
+      registry.fill(HIST("h_fakecollisions"), 0.5);
+    }
+
+    registry.fill(HIST("h_collisions_ntracks"), tracks.size(), eventWeight);
+    registry.fill(HIST("h2_centrality_ntracks"), collision.centFT0M(), tracks.size(), eventWeight);
+    registry.fill(HIST("h_collisions_njets"), mcdjets.size(), eventWeight);
+    registry.fill(HIST("h2_centrality_njets"), collision.centFT0M(), mcdjets.size(), eventWeight);
+    registry.fill(HIST("h2_ntracks_rho"), tracks.size(), collision.rho(), eventWeight);
+    registry.fill(HIST("h2_centrality_rho"), collision.centFT0M(), collision.rho(), eventWeight);
+
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      registry.fill(HIST("h2_centrality_track_pt"), collision.centFT0M(), track.pt(), eventWeight);
+      registry.fill(HIST("h2_centrality_track_eta"), collision.centFT0M(), track.eta(), eventWeight);
+      registry.fill(HIST("h2_track_pt_track_sigma1overpt"), track.pt(), track.sigma1Pt(), eventWeight);
+      registry.fill(HIST("h2_track_pt_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), eventWeight);
+      registry.fill(HIST("h2_track_pt_high_track_sigma1overpt"), track.pt(), track.sigma1Pt(), eventWeight);
+      registry.fill(HIST("h2_track_pt_high_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), eventWeight);
+    }
+
+    for (auto const& mcparticle : mcparticles) {
+      registry.fill(HIST("h_particle_pdgcode"), mcparticle.pdgCode(), eventWeight);
+      registry.fill(HIST("h_particle_genstatuscode"), mcparticle.getGenStatusCode(), eventWeight);
+      registry.fill(HIST("h_particle_hepmcstatuscode"), mcparticle.getHepMCStatusCode(), eventWeight);
+      registry.fill(HIST("h_particle_process"), mcparticle.getProcess(), eventWeight);
+      registry.fill(HIST("h_particle_producedbygenerator"), mcparticle.producedByGenerator(), eventWeight);
+      if (mcparticle.isPhysicalPrimary()) {
+        registry.fill(HIST("h_particle_primary_pdgcode"), mcparticle.pdgCode(), eventWeight);
+        registry.fill(HIST("h_particle_primary_genstatuscode"), mcparticle.getGenStatusCode(), eventWeight);
+        registry.fill(HIST("h_particle_primary_hepmcstatuscode"), mcparticle.getHepMCStatusCode(), eventWeight);
+        registry.fill(HIST("h_particle_primary_process"), mcparticle.getProcess(), eventWeight);
+        registry.fill(HIST("h_particle_primary_producedbygenerator"), mcparticle.producedByGenerator(), eventWeight);
+      }
+    }
+
+    for (auto const& mcdjet : mcdjets) {
+      registry.fill(HIST("h_jet_pt"), mcdjet.pt(), eventWeight);
+      registry.fill(HIST("h_jet_eta"), mcdjet.eta(), eventWeight);
+      registry.fill(HIST("h_jet_phi"), mcdjet.phi(), eventWeight);
+      registry.fill(HIST("h2_centrality_jet_pt"), collision.centFT0M(), mcdjet.pt(), eventWeight);
+      registry.fill(HIST("h2_centrality_jet_eta"), collision.centFT0M(), mcdjet.eta(), eventWeight);
+      registry.fill(HIST("h2_centrality_jet_phi"), collision.centFT0M(), mcdjet.phi(), eventWeight);
+      registry.fill(HIST("h3_jet_pt_jet_eta_jet_phi"), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), eventWeight);
+
+      registry.fill(HIST("h2_jet_pt_jet_area"), mcdjet.pt(), mcdjet.area(), eventWeight);
+      registry.fill(HIST("h2_jet_pt_jet_ntracks"), mcdjet.pt(), mcdjet.tracksIds().size(), eventWeight);
+      for (const auto& constituent : mcdjet.template tracks_as<soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>>>()) {
+        registry.fill(HIST("h2_jet_pt_track_pt"), mcdjet.pt(), constituent.pt(), eventWeight);
+      }
+    }
+  }
+  PROCESS_SWITCH(JetFinderQATask, processQcMultCutCheck, "processing QC on collision, track and jet quantities after cut on collision based on jet quantities;", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
