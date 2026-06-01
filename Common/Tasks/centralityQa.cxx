@@ -169,7 +169,7 @@ struct CentralityQa {
   }
 
   template <typename TCollision>
-  bool isEventAccepted(TCollision collision)
+  bool isEventAccepted(TCollision const& collision)
   // check whether the collision passes our collision selections
   {
     if constexpr (
