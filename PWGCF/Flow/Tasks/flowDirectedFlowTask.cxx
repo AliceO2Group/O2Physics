@@ -128,7 +128,7 @@ struct flowDirectedFlowTask {
   ConfigurableAxis spAxis{"spAxis", {400, -10.0, 10.0}, "SP observable"};
   ConfigurableAxis q1Axis{"q1Axis", {VARIABLE_WIDTH, 0., 0.5, 1., 1.5, 2., 3., 5., 10.}, "q_{1}^{ZDC}"};
   ConfigurableAxis qAxis{"qAxis", {200, -10., 10.}, "Q"};
-  ConfigurableAxis resAxis{"resAxis", {200, -1., 1.}, "resolution / correlation"};
+  ConfigurableAxis resAxis{"resAxis", {200, -2., 2.}, "resolution / correlation"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -525,7 +525,7 @@ struct flowDirectedFlowTask {
     float resDot = dotAC / (magA * magC);
 
     histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC), q1);
-    histos.fill(HIST("hpResDotAC"), centrality, resDot, q1);
+    histos.fill(HIST("hpResDotAC"), centrality, dotAC, q1);
     histos.fill(HIST("hpQxAQxC"), centrality, qxA * qxC);
     histos.fill(HIST("hpQyAQyC"), centrality, qyA * qyC);
     histos.fill(HIST("hpQxAQyC"), centrality, qxA * qyC);
