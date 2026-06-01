@@ -667,7 +667,7 @@ struct CentralityQa {
     if (!isEventAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    // const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>(); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
 
     histos.fill(HIST("hCentMFT"), col.centMFT());
     histos.fill(HIST("hCentProfileMFT"), col.centMFT(), col.multNTracksPVetaHalf());
