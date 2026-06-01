@@ -522,7 +522,6 @@ struct flowDirectedFlowTask {
     float qxFull = qxC - qxA;
     float qyFull = qyC - qyA;
     float dotAC = qxA * qxC + qyA * qyC;
-    float resDot = dotAC / (magA * magC);
 
     histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC), q1);
     histos.fill(HIST("hpResDotAC"), centrality, dotAC, q1);
