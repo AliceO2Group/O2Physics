@@ -83,7 +83,7 @@ using namespace o2::constants::math;
 auto static constexpr CintZero = 0;
 auto static constexpr KminFt0cCell = 96;
 auto static constexpr TotFt0Channels = 208;
-AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
+AxisSpec axisEvent{20, 0.5, 20.5, "#Event", "EventAxis"};
 AxisSpec axisTrackSel{10, 0.5, 10.5, "#Track", "TrackAxis"};
 auto static constexpr KminCharge = 3.0f;
 static constexpr std::string_view species[] = {"Pi", "Ka", "Pr"};
@@ -112,7 +112,9 @@ struct LongrangeMaker {
     Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, "bestCollIndex"};
     Configurable<bool> isrejectFlangeEvent{"isrejectFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, "Enable NoCollInTimeRangeStandard cut"};
+    Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, "Enable NoCollInTimeRangeStrict cut"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
+    Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, "Enable NoCollInRofStrict cut"};
     Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
     Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
     Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
@@ -142,6 +144,7 @@ struct LongrangeMaker {
   struct : ConfigurableGroup {
     Configurable<bool> cfgUseChi2Cut{"cfgUseChi2Cut", false, "Use condition on MFT track: chi2/Nclusters"};
     Configurable<bool> cfgRequireCA{"cfgRequireCA", false, "Use Cellular Automaton track-finding algorithm"};
+    Configurable<bool> cfgRequireLTF{"cfgRequireLTF", false, "Use LTF track-finding algorithm"};
     Configurable<bool> useMftPtCut{"useMftPtCut", true, "Choose to apply MFT track pT cut"};
     Configurable<int> cfgMftCluster{"cfgMftCluster", 5, "cut on MFT Cluster"};
     Configurable<float> cfgMftEtaMax{"cfgMftEtaMax", -2.4f, "Maximum MFT eta cut"};
@@ -251,11 +254,13 @@ struct LongrangeMaker {
     x->SetBinLabel(6, "ApplyGoodZvtxFT0vsPV");
     x->SetBinLabel(7, "ApplyGoodITSLayersAll");
     x->SetBinLabel(8, "ApplyExtraCorrCut");
-    x->SetBinLabel(9, "ApplyNoCollInTimeRangeStandard");
-    x->SetBinLabel(10, "ApplyNoCollInRofStandard");
-    x->SetBinLabel(11, "ApplyNoHighMultCollInPrevRof");
-    x->SetBinLabel(12, "ApplyOccupancySelection");
-    x->SetBinLabel(13, "reject flange event");
+    x->SetBinLabel(9, "ApplyNoCollInRofStandard");
+    x->SetBinLabel(10, "ApplyNoCollInRofStrict");
+    x->SetBinLabel(11, "ApplyNoCollInTimeRangeStandard");
+    x->SetBinLabel(12, "ApplyNoCollInTimeRangeStrict");
+    x->SetBinLabel(13, "ApplyNoHighMultCollInPrevRof");
+    x->SetBinLabel(14, "ApplyOccupancySelection");
+    x->SetBinLabel(15, "reject flange event");
     histos.add("hSelectionResult", "hSelectionResult", kTH1I, {{5, -0.5, 4.5}});
 
     histos.add("hMftTrkSel", "hMftTrkSel", kTH1D, {axisTrackSel}, false);
@@ -276,9 +281,6 @@ struct LongrangeMaker {
     xMftBestTrk->SetBinLabel(3, "Orphan track selection");
     xMftBestTrk->SetBinLabel(4, "DCAxy selection");
     xMftBestTrk->SetBinLabel(5, "DCAz selection");
-
-    histos.add("ReassignedMFTtrackAmbDegree", "ReassignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
-    histos.add("AssignedMFTtrackAmbDegree", "AssignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
 
     histos.add("FT0A_Amp", "FT0A_Amp", kTH1D, {cfgAxis.axisAmplitude});
     histos.add("FT0A_Amp_gaincorrected", "FT0A_Amp_gaincorrected", kTH1D, {cfgAxis.axisAmplitude});
@@ -427,7 +429,7 @@ struct LongrangeMaker {
           return;
         }
       }
-      histos.fill(HIST("EventHist"), 13);
+      histos.fill(HIST("EventHist"), 15);
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
         auto chanelid = ft0.channelA()[iCh];
         float ampl = ft0.amplitudeA()[iCh];
@@ -483,12 +485,6 @@ struct LongrangeMaker {
         continue;
       }
       auto phi = itrack.phi();
-      if (itrack.collisionId() != reassoMftTrack.bestCollisionId()) {
-        histos.fill(HIST("ReassignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
-      }
-      if (itrack.collisionId() == reassoMftTrack.bestCollisionId()) {
-        histos.fill(HIST("AssignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
-      }
       o2::math_utils::bringTo02Pi(phi);
       lrmfttracks(lrcollision.lastIndex(),
                   reassoMftTrack.ambDegree(),
@@ -497,7 +493,9 @@ struct LongrangeMaker {
                   phi,
                   itrack.nClusters(),
                   reassoMftTrack.bestDCAXY(),
-                  reassoMftTrack.bestDCAZ());
+                  reassoMftTrack.bestDCAZ(),
+                  itrack.isCA(),
+                  itrack.collisionId() != reassoMftTrack.bestCollisionId());
     }
 
     // v0 loop
@@ -664,12 +662,6 @@ struct LongrangeMaker {
         }
         auto phi = itrack.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (itrack.collisionId() != reassoMftTrack.bestCollisionId()) {
-          histos.fill(HIST("ReassignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
-        }
-        if (itrack.collisionId() == reassoMftTrack.bestCollisionId()) {
-          histos.fill(HIST("AssignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
-        }
         upclrmfttracks(upclrcollision.lastIndex(),
                        reassoMftTrack.ambDegree(),
                        itrack.pt(),
@@ -677,7 +669,9 @@ struct LongrangeMaker {
                        phi,
                        itrack.nClusters(),
                        reassoMftTrack.bestDCAXY(),
-                       reassoMftTrack.bestDCAZ());
+                       reassoMftTrack.bestDCAZ(),
+                       itrack.isCA(),
+                       itrack.collisionId() != reassoMftTrack.bestCollisionId());
       }
 
       // v0 loop
@@ -869,12 +863,6 @@ struct LongrangeMaker {
         }
         auto phi = itrack.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (itrack.collisionId() != reassoMftTrack.bestCollisionId()) {
-          histos.fill(HIST("ReassignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
-        }
-        if (itrack.collisionId() == reassoMftTrack.bestCollisionId()) {
-          histos.fill(HIST("AssignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
-        }
         lrmfttracks(lrcollision.lastIndex(),
                     reassoMftTrack.ambDegree(),
                     itrack.pt(),
@@ -882,7 +870,9 @@ struct LongrangeMaker {
                     phi,
                     itrack.nClusters(),
                     reassoMftTrack.bestDCAXY(),
-                    reassoMftTrack.bestDCAZ());
+                    reassoMftTrack.bestDCAZ(),
+                    itrack.isCA(),
+                    itrack.collisionId() != reassoMftTrack.bestCollisionId());
       }
 
       for (const auto& particle : mcparticles) {
@@ -1034,6 +1024,12 @@ struct LongrangeMaker {
         if (!isMftTrackSelected(track)) {
           continue;
         }
+        if (cfgmfttrksel.cfgRequireCA && !track.isCA()) {
+          continue;
+        }
+        if (cfgmfttrksel.cfgRequireLTF && track.isCA()) {
+          continue;
+        }
         if (!track.has_mcParticle())
           continue;
         auto particle = track.mcParticle();
@@ -1096,22 +1092,30 @@ struct LongrangeMaker {
       return false;
     }
     histos.fill(HIST("EventHist"), 8);
-    if (cfgevtsel.isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return false;
-    }
-    histos.fill(HIST("EventHist"), 9);
     if (cfgevtsel.isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
+    histos.fill(HIST("EventHist"), 9);
+    if (cfgevtsel.isApplyNoCollInRofStrict && !col.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
     histos.fill(HIST("EventHist"), 10);
-    if (cfgevtsel.isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (cfgevtsel.isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 11);
-    if (cfgevtsel.isApplyOccuSelection && (col.trackOccupancyInTimeRange() > cfgevtsel.cfgOccuCut)) {
+    if (cfgevtsel.isApplyNoCollInTimeRangeStrict && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 12);
+    if (cfgevtsel.isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 13);
+    if (cfgevtsel.isApplyOccuSelection && (col.trackOccupancyInTimeRange() > cfgevtsel.cfgOccuCut)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 14);
     return true;
   }
 
@@ -1246,9 +1250,6 @@ struct LongrangeMaker {
     }
     if constexpr (fillHis) {
       histos.fill(HIST("hMftTrkSel"), 5);
-    }
-    if (cfgmfttrksel.cfgRequireCA && !track.isCA()) {
-      return false;
     }
     if constexpr (fillHis) {
       histos.fill(HIST("hMftTrkSel"), 6);

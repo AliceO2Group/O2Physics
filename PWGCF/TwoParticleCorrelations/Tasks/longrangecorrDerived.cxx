@@ -76,6 +76,8 @@ struct LongrangecorrDerived {
     Configurable<float> cfgMftDcaz{"cfgMftDcaz", 2.0f, "cut on DCA z for MFT tracks"};
     Configurable<bool> cfgRejectAmbTrk{"cfgRejectAmbTrk", false, "Condition to reject Ambiguous tracks"};
     Configurable<bool> cfgRejectNonAmbTrk{"cfgRejectNonAmbTrk", false, "Condition to reject Non-Ambiguous tracks"};
+    Configurable<bool> cfgRequireCA{"cfgRequireCA", false, "Use Cellular Automaton track-finding algorithm"};
+    Configurable<bool> cfgRequireLTF{"cfgRequireLTF", false, "Use LTF track-finding algorithm"};
   } cfgSel;
 
   struct : ConfigurableGroup {
@@ -203,10 +205,12 @@ struct LongrangecorrDerived {
     histos.add("TPCChi2NCl", "TPCChi2NCl", kTH1D, {cfgAxis.axisTPCChi2NCl});
     histos.add("TPCdcaZ", "TPCdcaZ", kTH1D, {cfgAxis.axisTPCdcaZ});
 
-    histos.add("MFTAmbDegree", "MFTAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
     histos.add("MFTNClusters", "MFTNClusters", kTH1D, {cfgAxis.axisMFTNClusters});
     histos.add("MFTbestDCAXY", "MFTbestDCAXY", kTH1D, {cfgAxis.axisMFTbestDCAXY});
     histos.add("MFTbestDCAZ", "MFTbestDCAZ", kTH1D, {cfgAxis.axisMFTbestDCAZ});
+
+    histos.add("ReassignedMFTtrackAmbDegree", "ReassignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
+    histos.add("AssignedMFTtrackAmbDegree", "AssignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
   }
 
   template <typename TTrack>
@@ -232,6 +236,10 @@ struct LongrangecorrDerived {
       if (cfgSel.cfgRejectAmbTrk && track.ambDegree() > 1)
         return false;
       if (cfgSel.cfgRejectNonAmbTrk && track.ambDegree() == 1)
+        return false;
+      if (cfgSel.cfgRequireCA && !track.isCA())
+        return false;
+      if (cfgSel.cfgRequireLTF && track.isCA())
         return false;
       return true;
     } else {
@@ -274,7 +282,11 @@ struct LongrangecorrDerived {
       histos.fill(HIST("MFTNClusters"), track.nClusters());
       histos.fill(HIST("MFTbestDCAXY"), track.bestDCAXY());
       histos.fill(HIST("MFTbestDCAZ"), track.bestDCAZ());
-      histos.fill(HIST("MFTAmbDegree"), track.ambDegree());
+      if (track.isReassigned()) {
+        histos.fill(HIST("ReassignedMFTtrackAmbDegree"), track.ambDegree());
+      } else {
+        histos.fill(HIST("AssignedMFTtrackAmbDegree"), track.ambDegree());
+      }
     }
   }
 
@@ -292,7 +304,11 @@ struct LongrangecorrDerived {
       histos.fill(HIST("MFTNClusters"), track.nClusters());
       histos.fill(HIST("MFTbestDCAXY"), track.bestDCAXY());
       histos.fill(HIST("MFTbestDCAZ"), track.bestDCAZ());
-      histos.fill(HIST("MFTAmbDegree"), track.ambDegree());
+      if (track.isReassigned()) {
+        histos.fill(HIST("ReassignedMFTtrackAmbDegree"), track.ambDegree());
+      } else {
+        histos.fill(HIST("AssignedMFTtrackAmbDegree"), track.ambDegree());
+      }
     }
   }
 
