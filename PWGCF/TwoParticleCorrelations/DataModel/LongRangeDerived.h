@@ -18,6 +18,8 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
 
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CommonConstants/MathConstants.h>
