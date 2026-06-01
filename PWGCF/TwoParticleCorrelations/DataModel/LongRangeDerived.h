@@ -159,6 +159,8 @@ DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(IsCA, isCA, bool);
+DECLARE_SOA_COLUMN(IsReassigned, isReassigned, bool);
 
 enum TrackPid {
   kSpCharge,
@@ -226,7 +228,9 @@ DECLARE_SOA_TABLE(LRMftTracks, "AOD", "LRMFTTRACK",
                   lrcorrtrktable::Phi,
                   fwdtrack::NClusters,
                   fwdtrack::BestDCAXY,
-                  fwdtrack::BestDCAZ);
+                  fwdtrack::BestDCAZ,
+                  lrcorrtrktable::IsCA,
+                  lrcorrtrktable::IsReassigned);
 using LRMftTrack = LRMftTracks::iterator;
 
 DECLARE_SOA_TABLE(UpcLRMidTracks, "AOD", "UPCLRMIDTRACK",
@@ -281,7 +285,9 @@ DECLARE_SOA_TABLE(UpcLRMftTracks, "AOD", "UPCLRMFTTRACK",
                   lrcorrtrktable::Phi,
                   fwdtrack::NClusters,
                   fwdtrack::BestDCAXY,
-                  fwdtrack::BestDCAZ);
+                  fwdtrack::BestDCAZ,
+                  lrcorrtrktable::IsCA,
+                  lrcorrtrktable::IsReassigned);
 using UpcLRMftTrack = UpcLRMftTracks::iterator;
 } // namespace o2::aod
 
