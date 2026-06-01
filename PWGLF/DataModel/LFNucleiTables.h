@@ -61,20 +61,20 @@ namespace full
 {
 DECLARE_SOA_INDEX_COLUMN(LfNuclEvent, lfNuclEvent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Sign, sign, int16_t);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
                            [](float pt, float eta, float mass) -> float {
-                             const auto p = pt * cosh(eta);
-                             const auto pz = pt * sinh(eta);
-                             const auto energy = sqrt(p * p + mass * mass);
-                             return 0.5f * log((energy + pz) / (energy - pz));
+                             const auto p = pt * std::cosh(eta);
+                             const auto pz = pt * std::sinh(eta);
+                             const auto energy = std::sqrt(p * p + mass * mass);
+                             return 0.5f * std::log((energy + pz) / (energy - pz));
                            });
 // ITS
-DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(ItsClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
 // TPC
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float);
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float);
@@ -103,7 +103,7 @@ DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
-DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
+DECLARE_SOA_COLUMN(TpcInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
@@ -178,7 +178,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::IsEvTimeT0AC,
                   full::HasTOF,
                   full::HasTRD,
-                  full::TPCInnerParam,
+                  full::TpcInnerParam,
                   full::Beta,
                   full::PIDForTracking,
                   full::TPCSignal,
@@ -196,7 +196,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::IsPVContributor,
                   full::P<full::Pt, full::Eta>,
                   full::Rapidity<full::Pt, full::Eta>,
-                  full::ITSClusterSizes,
+                  full::ItsClusterSizes,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
@@ -211,7 +211,7 @@ DECLARE_SOA_TABLE_VERSIONED(LfCandNucleusDummy, "AOD", "LFNUCL", 1,
                             full::IsEvTimeT0AC,
                             full::HasTOF,
                             full::HasTRD,
-                            full::TPCInnerParam,
+                            full::TpcInnerParam,
                             full::Beta,
                             full::PIDForTracking,
                             full::TPCSignal,
@@ -228,7 +228,7 @@ DECLARE_SOA_TABLE_VERSIONED(LfCandNucleusDummy, "AOD", "LFNUCL", 1,
                             track::ITSClusterMap,
                             full::IsPVContributor,
                             full::P<full::Pt, full::Eta>,
-                            full::ITSClusterSizes,
+                            full::ItsClusterSizes,
                             dummy::TPCNSigmaPi<full::HasTOF>, dummy::TPCNSigmaKa<full::HasTOF>, dummy::TPCNSigmaPr<full::HasTOF>,
                             dummy::TPCNSigmaTr<full::HasTOF>, dummy::TPCNSigmaAl<full::HasTOF>,
                             dummy::TOFNSigmaPi<full::HasTOF>, dummy::TOFNSigmaKa<full::HasTOF>, dummy::TOFNSigmaPr<full::HasTOF>,

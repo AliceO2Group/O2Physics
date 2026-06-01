@@ -94,7 +94,7 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
   Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
-  Configurable<bool> TVXtrigger{"TVXtrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+  Configurable<bool> tvxTrigger{"tvxTrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
   Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
   Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
 
@@ -149,7 +149,7 @@ struct LfTreeCreatorNuclei {
       if ((track.pt() < ptcutLow.value) || (track.pt() > ptcutHigh.value)) {
         continue;
       }
-      if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
+      if ((std::abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (std::abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
         continue;
       }
       out = kTRUE;
@@ -233,7 +233,7 @@ struct LfTreeCreatorNuclei {
         if ((track.pt() < ptcutLow.value) || (track.pt() > ptcutHigh.value)) {
           continue;
         }
-        if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
+        if ((std::abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (std::abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
           continue;
         }
       }
@@ -313,7 +313,7 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 0);
 
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        if (TVXtrigger)
+        if (tvxTrigger)
           continue;
       } else {
         hEvents.fill(HIST("eventSelection"), 1);
@@ -371,7 +371,7 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 0);
 
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        if (TVXtrigger)
+        if (tvxTrigger)
           continue;
       } else {
         hEvents.fill(HIST("eventSelection"), 1);
