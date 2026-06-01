@@ -143,7 +143,7 @@ enum ParticleFlags {
   kFromLi4 = BIT(1),         // from Li4 decay
   kFromHypertriton = BIT(2), // from hypertriton decay
   kFromMaterial = BIT(3),    // from material
-  kFromOtherDecays = BIT(4), // from other decays
+  kFromOtherDecays = BIT(4), // from other (weak) decays
 };
 
 constexpr double kItsParamsDefault[static_cast<int>(Species::kAllSpecies)][6] = {
@@ -291,7 +291,9 @@ struct he3HadronFemto {
 
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
   Configurable<bool> settingFillQa{"settingFillQa", false, "Fill QA table"};
-  Configurable<bool> settingFillPrimariesAndMixedMc{"settingFillPrimariesAndMixedMc", false, "Fill primary MC tracks and mixed tracks (e.g. a primary track and one from Li4)"};
+  Configurable<bool> settingFillPrimariesMc{"settingFillPrimariesMc", false, "Fill primary MC tracks"};
+  Configurable<bool> settingFillLi4DaughtersMc{"settingFillLi4DaughtersMc", true, "Fill tracks from Li4 decays in MC"};
+  Configurable<bool> settingFillMixedMc{"settingFillMixedMc", false, "Fill mixed MC tracks (e.g. a primary track and one from Li4)"};
 
   // Zorro
   Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
@@ -1059,7 +1061,7 @@ struct he3HadronFemto {
         } else if (std::abs(mother.pdgCode()) == H3LPDG) {
           flag |= ParticleFlags::kFromHypertriton;
         } else {
-          flag |= ParticleFlags::kFromOtherDecays;
+          return; // other decays is thought for weak decays
         }
       }
 
@@ -1260,7 +1262,16 @@ struct he3HadronFemto {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
 
-        if (!settingFillPrimariesAndMixedMc && ((he3Hadcand.flags == Flags::kMixedPair) || he3Hadcand.flags == Flags::kBothPrimaries)) {
+        LOG(info) << "He3 flags: " << int(he3Hadcand.flagsHe3) << ", Hadron flags: " << int(he3Hadcand.flagsHad) << ", Pair flags: " << int(he3Hadcand.flags);
+        if (!settingFillPrimariesMc && (he3Hadcand.flags == Flags::kBothPrimaries)) {
+          continue;
+        }
+
+        if (!settingFillLi4DaughtersMc && (he3Hadcand.flags == Flags::kBothFromLi4)) {
+          continue;
+        }
+
+        if (!settingFillMixedMc && (he3Hadcand.flags == Flags::kMixedPair)) {
           continue;
         }
 

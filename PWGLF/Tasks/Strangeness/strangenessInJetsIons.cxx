@@ -269,6 +269,8 @@ struct StrangenessInJetsIons {
 
     const AxisSpec ptAxis{500, 0.0, 50.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptJetAxis{100, 0.0, 100.0, "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec ptJetRecoAxisUnfold{200, 0.0, 200.0, "#it{p}_{T,jet}^{rec} (GeV/#it{c})"};
+    const AxisSpec ptJetGenAxisUnfold{200, 0.0, 200.0, "#it{p}_{T,jet}^{gen} (GeV/#it{c})"};
     const AxisSpec ptChargedAxis{10000, 0.0, 100.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec numJets{21, -0.5, 20.5, "Number of jets per collision"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
@@ -413,6 +415,9 @@ struct StrangenessInJetsIons {
         registryMC.add("thermalToy_nBkg_gen", "thermalToy_nBkg_gen", HistType::kTH2F, {multAxis, numBkgParticles});
       }
 
+      registryMC.add("h2_centrality_deltaPt_RandomCone_gen", "h2_centrality_deltaPt_RandomCone_gen", HistType::kTH2F, {multAxis, deltaPtAxis});
+      registryMC.add("h2_centrality_rhoPerp_gen", "h2_centrality_rhoPerp_gen", HistType::kTH2F, {multAxis, rhoAxis});
+
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
         registryMC.add("K0s_generated_jet", "K0s_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -522,6 +527,10 @@ struct StrangenessInJetsIons {
         registryMC.add("charged_embedJets_rec_jet", "charged_embedJets_rec_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("charged_embedJets_rec_ue", "charged_embedJets_rec_ue", HistType::kTH2F, {multAxis, ptAxis});
       }
+
+      registryMC.add("h2_centrality_deltaPt_RandomCone_rec", "h2_centrality_deltaPt_RandomCone_rec", HistType::kTH2F, {multAxis, deltaPtAxis});
+      registryMC.add("h2_centrality_rhoPerp_rec", "h2_centrality_rhoPerp_rec", HistType::kTH2F, {multAxis, rhoAxis});
+
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
@@ -669,6 +678,22 @@ struct StrangenessInJetsIons {
         registryDataMB.add("ChargedTrack_in_MB", "ChargedTrack_in_MB", HistType::kTH2F, {multAxis, ptChargedAxis});
       }
     }
+
+    if (doprocessPrepareUnfolding) {
+      // Response matrix detector (only mathced)
+      // Assi: X = Centrality, Y = pT_gen, Z = pT_reco
+      registryMC.add("hDetectorResponse", "hDetectorResponse", HistType::kTH3F, {multAxis, ptJetGenAxisUnfold, ptJetRecoAxisUnfold});
+
+      // Efficiency components (GEN level)
+      // Assi: X = Centrality, Y = pT_gen
+      registryMC.add("hJetPtGenTotal", "hJetPtGenTotal", HistType::kTH2F, {multAxis, ptJetGenAxisUnfold});
+      registryMC.add("hJetPtGenMatched", "hJetPtGenMatched", HistType::kTH2F, {multAxis, ptJetGenAxisUnfold});
+
+      // Purity components (RECO level)
+      // Assi: X = Centrality, Y = pT_reco
+      registryMC.add("hJetPtRecoTotal", "hJetPtRecoTotal", HistType::kTH2F, {multAxis, ptJetRecoAxisUnfold});
+      registryMC.add("hJetPtRecoMatched", "hJetPtRecoMatched", HistType::kTH2F, {multAxis, ptJetRecoAxisUnfold});
+    }
   }
 
   // Delta phi calculation
@@ -799,9 +824,11 @@ struct StrangenessInJetsIons {
     return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
   }
 
+  // selProcess = 0 (data), = 1 (MC GEN), = 2 (MC REC)
   void computeRandomConeDeltaPt(const std::vector<fastjet::PseudoJet>& fjParticles,
                                 const std::vector<fastjet::PseudoJet>& jets,
-                                float multiplicity, double rhoPerp)
+                                float multiplicity, double rhoPerp,
+                                int selProcess = 0)
   {
     // Generate eta and phi for random cone in acceptance region
     double randomConeEta = fRng.Uniform(configTracks.etaMin + rJet, configTracks.etaMax - rJet);
@@ -843,8 +870,17 @@ struct StrangenessInJetsIons {
     double coneArea = TMath::Pi() * rJet * rJet;
     double deltaPtRandomCone = randomConePt - (coneArea * rhoPerp);
 
-    registryData.fill(HIST("h2_centrality_deltaPt_RandomCone"), multiplicity, deltaPtRandomCone);
-    registryData.fill(HIST("h2_centrality_rhoPerp"), multiplicity, rhoPerp);
+    if (selProcess == 0) {
+      registryData.fill(HIST("h2_centrality_deltaPt_RandomCone"), multiplicity, deltaPtRandomCone);
+      registryData.fill(HIST("h2_centrality_rhoPerp"), multiplicity, rhoPerp);
+    } else if (selProcess == 1) {
+      // Ricordati di definire questi istogrammi nel tuo book/registry MC!
+      registryMC.fill(HIST("h2_centrality_deltaPt_RandomCone_gen"), multiplicity, deltaPtRandomCone);
+      registryMC.fill(HIST("h2_centrality_rhoPerp_gen"), multiplicity, rhoPerp);
+    } else if (selProcess == 2) {
+      registryMC.fill(HIST("h2_centrality_deltaPt_RandomCone_rec"), multiplicity, deltaPtRandomCone);
+      registryMC.fill(HIST("h2_centrality_rhoPerp_rec"), multiplicity, rhoPerp);
+    }
   }
 
   // Find ITS hit
@@ -2149,6 +2185,48 @@ struct StrangenessInJetsIons {
     }
   }
 
+  void ProcessJetMatchingFactorized(const std::vector<fastjet::PseudoJet>& jetsGen,
+                                    const std::vector<fastjet::PseudoJet>& jetsReco,
+                                    float centrality)
+  {
+    const double maxDeltaR = 0.24;
+    std::vector<bool> isRecoJetMatched(jetsReco.size(), false);
+
+    for (const auto& jetGen : jetsGen) {
+      registryMC.fill(HIST("hJetPtGenTotal"), centrality, jetGen.pt());
+    }
+
+    for (const auto& jetReco : jetsReco) {
+      registryMC.fill(HIST("hJetPtRecoTotal"), centrality, jetReco.pt());
+    }
+
+    // --- Geometrical matching reco <----> gen
+    for (const auto& jetGen : jetsGen) {
+      int bestRecoIdx = -1;
+      double minDeltaR = maxDeltaR;
+
+      // Search closest jet RECO in (eta,phi) space
+      for (long unsigned int iReco = 0; iReco < jetsReco.size(); ++iReco) {
+        if (isRecoJetMatched[iReco])
+          continue;
+
+        double dR = jetGen.delta_R(jetsReco[iReco]);
+        if (dR < minDeltaR) {
+          minDeltaR = dR;
+          bestRecoIdx = iReco;
+        }
+      }
+
+      if (bestRecoIdx != -1) {
+        isRecoJetMatched[bestRecoIdx] = true; // RECO matched
+
+        registryMC.fill(HIST("hDetectorResponse"), centrality, jetGen.pt(), jetsReco[bestRecoIdx].pt());
+        registryMC.fill(HIST("hJetPtGenMatched"), centrality, jetGen.pt());
+        registryMC.fill(HIST("hJetPtRecoMatched"), centrality, jetsReco[bestRecoIdx].pt());
+      }
+    }
+  }
+
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
                    aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
@@ -2636,6 +2714,9 @@ struct StrangenessInJetsIons {
       // Estimate background energy density (rho) in perpendicular cone
       auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
+      // Delta pT distributions with random cone technique
+      computeRandomConeDeltaPt(fjParticles, jets, genMultiplicity, rhoPerp, 1);
+
       // Loop over clustered jets
       int countSelJet = 0; // number of selected jets
       for (const auto& jet : jets) {
@@ -2988,6 +3069,9 @@ struct StrangenessInJetsIons {
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
       auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Delta pT distributions with random cone technique
+      computeRandomConeDeltaPt(fjParticles, jets, multiplicity, rhoPerp, 2);
 
       // Jet selection
       bool isAtLeastOneJetSelected = false;
@@ -3868,6 +3952,146 @@ struct StrangenessInJetsIons {
     }
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processDataMB, "Process data in minimum bias events", false);
+
+  void processPrepareUnfolding(SimCollisions const& recoCollisions,
+                               soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const&,
+                               DaughterTracksMC const& mcTracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
+                               aod::McParticles const& mcParticles)
+  {
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over reco collisions
+    for (const auto& recoColl : recoCollisions) {
+      if (!recoColl.has_mcCollision()) {
+        continue;
+      }
+
+      // Event selections
+      if (!recoColl.sel8())
+        continue;
+      if (std::fabs(recoColl.posZ()) > zVtx)
+        continue;
+      if (requireNoSameBunchPileup && !recoColl.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+      if (requireGoodZvtxFT0vsPV && !recoColl.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+
+      // Centrality
+      const auto& mcCollision = recoColl.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
+      float centrality;
+      if (centrEstimator == 0) {
+        centrality = mcCollision.centFT0C();
+      } else {
+        centrality = mcCollision.centFT0M();
+      }
+
+      std::vector<fastjet::PseudoJet> jetsGenThisEvent;
+      std::vector<fastjet::PseudoJet> jetsRecoThisEvent;
+
+      // ---- Extract reconstructed jets ----
+      // Number of V0 and cascades per collision
+      auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, recoColl.globalIndex());
+      auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, recoColl.globalIndex());
+      const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
+
+      // Vertex position vector
+      TVector3 vtxPos(recoColl.posX(), recoColl.posY(), recoColl.posZ());
+      std::vector<fastjet::PseudoJet> fjParticlesReco;
+      std::vector<std::decay_t<decltype(*tracksPerColl.begin())>> fjTracks;
+      for (auto const& track : tracksPerColl) {
+        if (!passedTrackSelectionForJetReconstruction(track))
+          continue;
+
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
+        fjParticlesReco.emplace_back(fourMomentum);
+        fjTracks.push_back(track);
+      }
+
+      // Include V0s as tracks for jet reconstruction
+      if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+        AddV0sForJetReconstructionMCD(fjParticlesReco, fjTracks, v0sPerColl, mcParticles, vtxPos);
+      }
+      fjTracks.clear();
+
+      if (fjParticlesReco.size() >= 1) { // Reject empty events
+        fastjet::ClusterSequenceArea csReco(fjParticlesReco, jetDef, areaDef);
+        std::vector<fastjet::PseudoJet> recoJets = fastjet::sorted_by_pt(csReco.inclusive_jets());
+        if (recoJets.empty())
+          continue;
+        auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticlesReco, recoJets[0], rJet);
+
+        for (const auto& jet : recoJets) {
+          // jet must be fully contained in the acceptance
+          if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
+            continue;
+
+          // jet pt must be larger than threshold
+          auto jetForSub = jet;
+          fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+          if (jetMinusBkg.pt() < minJetPt)
+            continue;
+
+          jetsRecoThisEvent.push_back(jetMinusBkg);
+        }
+      }
+      // ----------------------------------------
+
+      // ---- Extract generated jets ----
+      // LOG(info) << "recoCollisions.globalIndex()" << recoColl.globalIndex();
+      // LOG(info) << "recoColl.mcCollisionId()" << recoColl.mcCollisionId();
+      // LOG(info) << "mcCollision.globalIndex()" << mcCollision.globalIndex();
+      std::vector<fastjet::PseudoJet> fjParticlesGen;
+      std::vector<std::decay_t<decltype(*mcParticlesPerColl.begin())>> fjParticleObj;
+
+      for (const auto& particle : mcParticlesPerColl) {
+        double minPtParticle = 0.1f;
+        if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
+          continue;
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+          continue;
+
+        // Build 4-momentum assuming charged pion mass
+        static constexpr float kMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+        const double energy = std::sqrt(particle.p() * particle.p() + kMassPionChargedSquared);
+        fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
+        fourMomentum.set_user_index(particle.pdgCode());
+        fjParticlesGen.emplace_back(fourMomentum);
+        fjParticleObj.push_back(particle);
+      }
+
+      if (useV0inJetRec && particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+        AddV0sForJetReconstructionMCP(fjParticlesGen, fjParticleObj, mcParticlesPerColl, mcParticles);
+      }
+
+      if (fjParticlesGen.size() >= 1) { // Skip events with no particles
+        fastjet::ClusterSequenceArea csGen(fjParticlesGen, jetDef, areaDef);
+        std::vector<fastjet::PseudoJet> genJets = fastjet::sorted_by_pt(csGen.inclusive_jets());
+        if (genJets.empty())
+          continue;
+        auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticlesGen, genJets[0], rJet);
+
+        for (const auto& jet : genJets) {
+          if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
+            continue;
+
+          auto jetForSub = jet;
+          fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+          if (jetMinusBkg.pt() < minJetPt)
+            continue;
+
+          jetsGenThisEvent.push_back(jetMinusBkg);
+        }
+      }
+      // ----------------------------------------
+
+      // Fill histograms for unfolding
+      ProcessJetMatchingFactorized(jetsGenThisEvent, jetsRecoThisEvent, centrality);
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJetsIons, processPrepareUnfolding, "Process to prepare hsitograms for the unfolding procedure", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
