@@ -61,6 +61,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -265,7 +266,7 @@ struct nucleiQC {
   }
 
   template <int iSpecies, bool isMc, typename Ttrack, typename Tcollision>
-  bool trackSelection(const Ttrack& track, const Tcollision& collision)
+  bool trackSelection(const Ttrack& track)
   {
     mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNoCuts);
 
@@ -525,7 +526,7 @@ struct nucleiQC {
       candidate.nsigmaTof);
   }
 
-  void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles, const aod::McCollisions& mcCollisions)
+  void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles, const aod::McCollisions& /*mcCollisions*/)
   {
     gRandom->SetSeed(67);
     std::unordered_set<int> reconstructedMcParticles;
@@ -590,7 +591,7 @@ struct nucleiQC {
           }
 
           mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
-          if (!trackSelection<kSpeciesRt, /*isMc*/ true>(track, collision))
+          if (!trackSelection<kSpeciesRt, /*isMc*/ true>(track))
             return;
           mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
 
