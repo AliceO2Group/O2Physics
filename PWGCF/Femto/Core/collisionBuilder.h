@@ -569,23 +569,22 @@ class CollisionBuilder
     if (mProducedSphericities) {
       collisionProducts.producedSphericities(mCollisionSelection.getSphericity());
     }
-    if (mProducedMultiplicities) {
-      collisionProducts.producedMultiplicityEstimators(
-        col.multFT0A(),
-        col.multFT0C(),
-        col.multNTracksPVeta1(),
-        col.multNTracksPVetaHalf(),
-        col.trackOccupancyInTimeRange(),
-        col.ft0cOccupancyInTimeRange());
-    }
-    if (mProducedCentralities) {
-      collisionProducts.producedCentralityEstimators(
-        col.centFT0A(),
-        col.centFT0C());
-    }
-
+    // TODO: enable later for better QA
+    // if (mProducedMultiplicities) {
+    //   collisionProducts.producedMultiplicityEstimators(
+    //     col.multFT0A(),
+    //     col.multFT0C(),
+    //     col.multNTracksPVeta1(),
+    //     col.multNTracksPVetaHalf(),
+    //     col.trackOccupancyInTimeRange(),
+    //     col.ft0cOccupancyInTimeRange());
+    // }
+    // if (mProducedCentralities) {
+    //   collisionProducts.producedCentralityEstimators(
+    //     col.centFT0A(),
+    //     col.centFT0C());
+    // }
     // PbPb specific columns
-    // TODO: enable later update
     // if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
     //   if (mProduceQns) {
     //     collisionProducts.producedQns(utils::qn(col));

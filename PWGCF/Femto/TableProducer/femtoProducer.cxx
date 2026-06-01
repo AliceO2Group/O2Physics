@@ -52,14 +52,14 @@ namespace o2::analysis::femto
 {
 namespace consumeddata
 {
-using Run3PpCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0As, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms>;
+using Run3PpCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Ms>;
 using Run3PpMcRecoCollisions = o2::soa::Join<Run3PpCollisions, o2::aod::McCollisionLabels>;
-using Run3PpMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0As, o2::aod::McCentFT0Cs, o2::aod::McCentFT0Ms>;
+using Run3PpMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Ms>;
 
-using Run3PbPbCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0As, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms>;
+using Run3PbPbCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Cs>;
 
 using Run3PbPbMcRecoCollisions = o2::soa::Join<Run3PbPbCollisions, o2::aod::McCollisionLabels>;
-using Run3PbPbMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0As, o2::aod::McCentFT0Cs, o2::aod::McCentFT0Ms>;
+using Run3PbPbMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Cs>;
 
 using Run3FullPidTracks =
   soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
