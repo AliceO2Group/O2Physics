@@ -1130,6 +1130,7 @@ class VarManager : public TObject
   enum EfficiencyType {
     kNone = 0,
     kPairPtCentFT0cCosThetaStarFT0c,
+    kPairPtCentFT0cCosThetaStarRandom,
     // Add more efficiency types as needed
     kNEfficiencyTypes
   };
