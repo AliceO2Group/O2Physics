@@ -642,7 +642,7 @@ struct nucleiQC {
       fillNucleusGeneratedVariables(particle, candidate);
 
       writeCandidate(candidate);
-      mFilledMcParticleIds.emplace_back(particle.globalIndex());
+      mFilledMcParticleIds.emplace_back(mcIndex);
       dispatchFillHistograms</*isGenerated*/ true>(iSpecies, candidate);
     }
   }
