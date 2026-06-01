@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 
 struct CentralityQa {
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{"histos"};
 
   bool isRun2 = false;
   bool isMC = false;
