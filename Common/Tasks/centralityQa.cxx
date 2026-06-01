@@ -22,6 +22,8 @@
 #include <TH1.h>
 #include <TProfile.h>
 
+#include <cstdlib>
+
 using namespace o2;
 using namespace o2::framework;
 

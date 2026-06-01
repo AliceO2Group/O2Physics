@@ -261,6 +261,7 @@ DECLARE_SOA_COLUMN(CascadeType, cascadeType, uint8_t); //! cascade type, 0 = XiM
 // LH pair variables
 DECLARE_SOA_COLUMN(MassLH, massLH, float); //! invariant mass of LH assuming kaon
 DECLARE_SOA_COLUMN(PtLH, ptLH, float);     //! pt of LH
+DECLARE_SOA_COLUMN(PLH, pLH, float);       //! p of LH
 
 DECLARE_SOA_COLUMN(PtSVL, ptSVL, float); //! pT of lepton at SV
 // DECLARE_SOA_COLUMN(PlSVL, plSVL, float); //! pL of lepton at SV
@@ -275,10 +276,11 @@ DECLARE_SOA_COLUMN(PtSVH, ptSVH, float); //! pT of associated hadron at SV
 DECLARE_SOA_COLUMN(PtFD, ptFD, float); //! visible momentum of LH pair perpendicular to flight direction = - missing pT due to neutrino perpendicular to flight direction
 DECLARE_SOA_COLUMN(PlFD, plFD, float); //! visible momentum of LH pair in parallel to flight direction
 
-DECLARE_SOA_COLUMN(DcaLH, dcalh, float); //! DCA between lepton and hadron
-DECLARE_SOA_COLUMN(CPA, cpa, float);     //! cosine of pointing angle of LH pair
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float); //! cosine of pointing angle of LH pair in XY
-DECLARE_SOA_COLUMN(CPARZ, cpaRZ, float); //! cosine of pointing angle of LH pair in RZ
+// DECLARE_SOA_COLUMN(DcaLH, dcalh, float); //! DCA between lepton and hadron
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! DCA between lepton and hadron
+DECLARE_SOA_COLUMN(CPA, cpa, float);         //! cosine of pointing angle of LH pair
+DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);     //! cosine of pointing angle of LH pair in XY
+DECLARE_SOA_COLUMN(CPARZ, cpaRZ, float);     //! cosine of pointing angle of LH pair in RZ
 
 DECLARE_SOA_COLUMN(Lxy, lxy, float);         //! decay length of LH pair
 DECLARE_SOA_COLUMN(Lz, lz, float);           //! decay length of LH pair
@@ -287,11 +289,11 @@ DECLARE_SOA_COLUMN(LxyErr, lxyErr, float);   //! decay length resolution of LH p
 DECLARE_SOA_COLUMN(LzErr, lzErr, float);     //! decay length resolution of LH pair
 DECLARE_SOA_COLUMN(LxyzErr, lxyzErr, float); //! decay length resolution of LH pair
 
-DECLARE_SOA_COLUMN(ImpParXY, impParXY, float);   //! impact parameter for LH in XY plane
-DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);     //! impact parameter for LH in Z plane
-DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float); //! sigma of impact parameter for LH in XY
-DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float); //! sigma of impact parameter for LH, correlation term
-DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float); //! sigma of impact parameter for LH in Z
+// DECLARE_SOA_COLUMN(ImpParXY, impParXY, float);   //! impact parameter for LH in XY plane
+// DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);     //! impact parameter for LH in Z plane
+// DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float); //! sigma of impact parameter for LH in XY
+// DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float); //! sigma of impact parameter for LH, correlation term
+// DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float); //! sigma of impact parameter for LH in Z
 
 DECLARE_SOA_COLUMN(PdgCodeH, pdgCodeH, int);                    //! pdg code of associated hadron
 DECLARE_SOA_COLUMN(PdgCodeIM, pdgCodeIM, int);                  //! pdg code of intermediate hadron from HF hadrons. e.g K*, D*
@@ -305,11 +307,11 @@ DECLARE_SOA_TABLE(EMMLLTPairs, "AOD", "EMMLLTPAIR", //!
                   // pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
                   pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
                   // pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr,
-                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PtSVH,
-                  emmllhpair::PtFD, emmllhpair::PlFD,
-                  emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
+                  emmllhpair::MassLH, emmllhpair::PLH,
+                  // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
+                  emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
-                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  // emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
                   emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLTPair = EMMLLTPairs::iterator;
@@ -319,11 +321,11 @@ DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
                   emmllhpair::PtH, emmllhpair::RapidityV0,
                   emmllhpair::V0CPA, emmllhpair::V0CPAXY, emmllhpair::V0CPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
-                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PtSVH,
-                  emmllhpair::PtFD, emmllhpair::PlFD,
-                  emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
+                  emmllhpair::MassLH, emmllhpair::PLH,
+                  // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
+                  emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
-                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  // emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
                   emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLV0Pair = EMMLLV0Pairs::iterator;
@@ -333,11 +335,11 @@ DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCPAIR", //!
                   emmllhpair::Signed1PtH, emmllhpair::RapidityC,
                   emmllhpair::CascCPA, emmllhpair::CascCPAXY, emmllhpair::CascCPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
-                  emmllhpair::MassLH, emmllhpair::PtLH, emmllhpair::PtSVL, emmllhpair::PtSVH,
-                  emmllhpair::PtFD, emmllhpair::PlFD,
-                  emmllhpair::DcaLH, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
+                  emmllhpair::MassLH, emmllhpair::PLH,
+                  // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
+                  emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
-                  emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  // emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
                   emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
 // iterators
 using EMMLLCascPair = EMMLLCascPairs::iterator;

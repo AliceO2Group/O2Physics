@@ -562,7 +562,7 @@ class PairHistManager
     // compute true kinematics
     mTrueKt = getKt(mTrueParticle1, mTrueParticle2);
     mTrueMt = getMt(mTrueParticle1, mTrueParticle2);
-    mTrueMt = getMinv(mTrueParticle1, mTrueParticle2);
+    mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
     mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
   }
 
@@ -968,9 +968,9 @@ class PairHistManager
     const double tPt = std::sqrt(tPx * tPx + tPy * tPy);
     const double tMt = std::sqrt(tE * tE - tPz * tPz);
 
-    static constexpr double kMinTransverseMomentum = 1e-9;
-    if (tPt < kMinTransverseMomentum || tMt < kMinTransverseMomentum) {
-      return {0.0, 0.0, 0.0};
+    static constexpr double MinTransverseMomentum = 1e-9;
+    if (tPt < MinTransverseMomentum || tMt < MinTransverseMomentum) {
+      return {0.0f, 0.0f, 0.0f};
     }
 
     const double betaL = tPz / tE;

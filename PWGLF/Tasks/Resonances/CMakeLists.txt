@@ -94,8 +94,8 @@ o2physics_add_dpl_workflow(lambda1520spherocityanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(delta-analysis
-    SOURCES deltaanalysis.cxx
+o2physics_add_dpl_workflow(deltaanalysis
+    SOURCES deltaAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

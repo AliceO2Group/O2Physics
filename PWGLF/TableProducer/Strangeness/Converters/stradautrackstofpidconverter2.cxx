@@ -8,6 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file stradautrackstofpidconverter2.cxx
+/// \brief Converts DauTrackTOFPIDs_000 into DauTrackTOFPID_001 and StraEvTimes_000
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
+//
+
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -24,7 +32,7 @@ using namespace o2::framework;
 // converts DauTrackTOFPIDs_000 to _001
 struct stradautrackstofpidconverter2 {
   Produces<aod::DauTrackTOFPIDs_001> dautracktofpids;
-  Produces<aod::StraEvTimes> straEvTimes;
+  Produces<aod::StraEvTimes_000> straEvTimes;
 
   void process(aod::StraCollisions const& collisions, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs_000> const& dauTracks, soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& v0s)
   {

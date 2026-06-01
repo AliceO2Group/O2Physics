@@ -223,6 +223,7 @@ struct muonQa {
     Configurable<double> fChamberResolutionX{"cfgChamberResolutionX", 0.4, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
     Configurable<double> fChamberResolutionY{"cfgChamberResolutionY", 0.4, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
     Configurable<double> fSigmaCutImprove{"cfgSigmaCutImprove", 6., "Sigma cut for track improvement"};
+    Configurable<double> fDipoleZcorr{"cfgDipoleZcorr", 0.0f, "Correction to the dipole z position"};
   } configRealign;
 
   ///    Variables to event mixing criteria
@@ -1651,6 +1652,11 @@ struct muonQa {
       fgValues.errorClusters.emplace_back(eCls);
       fgValues.DEIDs.emplace_back(cluster.deId());
 
+      // subtract the dipole shift correction from the cluster z position
+      if (configRealign.fDipoleZcorr != 0) {
+        clusterMCH->z -= configRealign.fDipoleZcorr;
+      }
+
       // Add transformed cluster into temporary variable
       convertedTrack.createParamAtCluster(*clusterMCH);
     }
@@ -1661,6 +1667,12 @@ struct muonQa {
         removable = RemoveTrack(convertedTrack);
       } else {
         LOGF(fatal, "Muon track %d has no associated clusters.", muon.globalIndex());
+      }
+
+      // add back the dipole shift correction to the track z
+      if (configRealign.fDipoleZcorr != 0) {
+        auto& trackParam = *(convertedTrack.begin());
+        trackParam.setZ(trackParam.getZ() + configRealign.fDipoleZcorr);
       }
 
       for (auto it = convertedTrack.begin(); it != convertedTrack.end(); it++) {

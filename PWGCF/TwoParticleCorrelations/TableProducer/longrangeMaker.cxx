@@ -198,6 +198,7 @@ struct LongrangeMaker {
     ConfigurableAxis axisSpecies = {"axisSpecies", {4, 0.5, 4.5}, "Species axis"};
     ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
     ConfigurableAxis axisChannel{"axisChannel", {208, 0, 208}, "FT0 channel"};
+    ConfigurableAxis axisMFTAmbDegree{"axisMFTAmbDegree", {50, -0.5, 49.5}, "Track Ambiguity axis"};
   } cfgAxis;
 
   Configurable<std::vector<double>> itsNsigmaPidCut{"itsNsigmaPidCut", std::vector<double>{3, 2.5, 2, -3, -2.5, -2}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
@@ -275,6 +276,9 @@ struct LongrangeMaker {
     xMftBestTrk->SetBinLabel(3, "Orphan track selection");
     xMftBestTrk->SetBinLabel(4, "DCAxy selection");
     xMftBestTrk->SetBinLabel(5, "DCAz selection");
+
+    histos.add("ReassignedMFTtrackAmbDegree", "ReassignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
+    histos.add("AssignedMFTtrackAmbDegree", "AssignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
 
     histos.add("FT0A_Amp", "FT0A_Amp", kTH1D, {cfgAxis.axisAmplitude});
     histos.add("FT0A_Amp_gaincorrected", "FT0A_Amp_gaincorrected", kTH1D, {cfgAxis.axisAmplitude});
@@ -393,22 +397,22 @@ struct LongrangeMaker {
       lrmidtracks(lrcollision.lastIndex(),
                   track.tpcNClsFound(),
                   track.tpcNClsCrossedRows(),
-                  aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkchi2>(track.tpcChi2NCl()),
-                  aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(track.pt()),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(track.eta()),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(track.phi()),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(track.dcaZ()),
+                  track.tpcChi2NCl(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.dcaZ(),
                   aod::lrcorrtrktable::kSpCharge);
 
       if (pid != aod::lrcorrtrktable::kSpCharge) {
         lrmidtracks(lrcollision.lastIndex(),
                     track.tpcNClsFound(),
                     track.tpcNClsCrossedRows(),
-                    aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkchi2>(track.tpcChi2NCl()),
-                    aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(track.pt()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(track.eta()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(track.phi()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(track.dcaZ()),
+                    track.tpcChi2NCl(),
+                    track.pt(),
+                    track.eta(),
+                    track.phi(),
+                    track.dcaZ(),
                     pid);
       }
     }
@@ -433,11 +437,14 @@ struct LongrangeMaker {
         if (cfgfittrksel.cfgVerbosity > 0) {
           LOGF(info, "FT0A info: Channel = %d | indexchannel = %d | %f | %f", chanelid, iCh, ft0gainvalues[chanelid], ft0gainvalues[iCh]);
         }
+        if (eta > cfgfittrksel.cfgFt0aEtaMax || eta < cfgfittrksel.cfgFt0aEtaMin) {
+          continue;
+        }
         lrft0atracks(lrcollision.lastIndex(),
                      chanelid,
-                     aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkamp>(gainampl),
-                     aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(eta),
-                     aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi));
+                     gainampl,
+                     eta,
+                     phi);
         histos.fill(HIST("FT0A_Amp"), ampl);
         histos.fill(HIST("FT0A_Channel_vs_Amp"), chanelid, ampl);
         histos.fill(HIST("FT0A_Amp_gaincorrected"), gainampl);
@@ -452,11 +459,14 @@ struct LongrangeMaker {
         if (cfgfittrksel.cfgVerbosity > 0) {
           LOGF(info, "FT0C info: Channel = %d | indexchannel = %d | %f | %f", chanelid, iCh, ft0gainvalues[chanelid], ft0gainvalues[iCh]);
         }
+        if (eta > cfgfittrksel.cfgFt0cEtaMax || eta < cfgfittrksel.cfgFt0cEtaMin) {
+          continue;
+        }
         lrft0ctracks(lrcollision.lastIndex(),
                      chanelid,
-                     aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkamp>(gainampl),
-                     aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(eta),
-                     aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi));
+                     gainampl,
+                     eta,
+                     phi);
         histos.fill(HIST("FT0C_Amp"), ampl);
         histos.fill(HIST("FT0C_Channel_vs_Amp"), chanelid, ampl);
         histos.fill(HIST("FT0C_Amp_gaincorrected"), gainampl);
@@ -473,15 +483,21 @@ struct LongrangeMaker {
         continue;
       }
       auto phi = itrack.phi();
+      if (itrack.collisionId() != reassoMftTrack.bestCollisionId()) {
+        histos.fill(HIST("ReassignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
+      }
+      if (itrack.collisionId() == reassoMftTrack.bestCollisionId()) {
+        histos.fill(HIST("AssignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
+      }
       o2::math_utils::bringTo02Pi(phi);
       lrmfttracks(lrcollision.lastIndex(),
                   reassoMftTrack.ambDegree(),
-                  aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(itrack.pt()),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(itrack.eta()),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi),
+                  itrack.pt(),
+                  itrack.eta(),
+                  phi,
                   itrack.nClusters(),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(reassoMftTrack.bestDCAXY()),
-                  aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(reassoMftTrack.bestDCAZ()));
+                  reassoMftTrack.bestDCAXY(),
+                  reassoMftTrack.bestDCAZ());
     }
 
     // v0 loop
@@ -498,9 +514,9 @@ struct LongrangeMaker {
         lrv0tracks(lrcollision.lastIndex(),
                    posTrack.globalIndex(),
                    negTrack.globalIndex(),
-                   aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(v0.pt()),
-                   aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(v0.eta()),
-                   aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(v0.phi()),
+                   v0.pt(),
+                   v0.eta(),
+                   v0.phi(),
                    v0.mK0Short(),
                    aod::lrcorrtrktable::kSpK0short);
       }
@@ -515,9 +531,9 @@ struct LongrangeMaker {
         lrv0tracks(lrcollision.lastIndex(),
                    posTrack.globalIndex(),
                    negTrack.globalIndex(),
-                   aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(v0.pt()),
-                   aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(v0.eta()),
-                   aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(v0.phi()),
+                   v0.pt(),
+                   v0.eta(),
+                   v0.phi(),
                    massV0,
                    aod::lrcorrtrktable::kSpLambda);
       }
@@ -526,9 +542,9 @@ struct LongrangeMaker {
         lrv0tracks(lrcollision.lastIndex(),
                    posTrack.globalIndex(),
                    negTrack.globalIndex(),
-                   aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(v0.pt()),
-                   aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(v0.eta()),
-                   aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(v0.phi()),
+                   v0.pt(),
+                   v0.eta(),
+                   v0.phi(),
                    massV0,
                    aod::lrcorrtrktable::kSpALambda);
       } // end of Lambda and Anti-Lambda processing
@@ -586,22 +602,22 @@ struct LongrangeMaker {
         upclrmidtracks(upclrcollision.lastIndex(),
                        track.tpcNClsFound(),
                        track.tpcNClsCrossedRows(),
-                       aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkchi2>(track.tpcChi2NCl()),
-                       aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(track.pt()),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(track.eta()),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(track.phi()),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(track.dcaZ()),
+                       track.tpcChi2NCl(),
+                       track.pt(),
+                       track.eta(),
+                       track.phi(),
+                       track.dcaZ(),
                        aod::lrcorrtrktable::kSpCharge);
 
         if (pid != aod::lrcorrtrktable::kSpCharge) {
           upclrmidtracks(upclrcollision.lastIndex(),
                          track.tpcNClsFound(),
                          track.tpcNClsCrossedRows(),
-                         aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkchi2>(track.tpcChi2NCl()),
-                         aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(track.pt()),
-                         aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(track.eta()),
-                         aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(track.phi()),
-                         aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(track.dcaZ()),
+                         track.tpcChi2NCl(),
+                         track.pt(),
+                         track.eta(),
+                         track.phi(),
+                         track.dcaZ(),
                          pid);
         }
       }
@@ -614,22 +630,28 @@ struct LongrangeMaker {
           float ampl = ft0.amplitudeA()[iCh];
           auto phi = getPhiFT0(chanelid, 0);
           auto eta = getEtaFT0(chanelid, 0);
+          if (eta > cfgfittrksel.cfgFt0aEtaMax || eta < cfgfittrksel.cfgFt0aEtaMin) {
+            continue;
+          }
           upclrft0atracks(upclrcollision.lastIndex(),
                           chanelid,
-                          aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkamp>(ampl),
-                          aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(eta),
-                          aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi));
+                          ampl,
+                          eta,
+                          phi);
         }
         for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
           auto chanelid = ft0.channelC()[iCh] + KminFt0cCell;
           float ampl = ft0.amplitudeC()[iCh];
           auto phi = getPhiFT0(chanelid, 1);
           auto eta = getEtaFT0(chanelid, 1);
+          if (eta > cfgfittrksel.cfgFt0cEtaMax || eta < cfgfittrksel.cfgFt0cEtaMin) {
+            continue;
+          }
           upclrft0ctracks(upclrcollision.lastIndex(),
                           chanelid,
-                          aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkamp>(ampl),
-                          aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(eta),
-                          aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi));
+                          ampl,
+                          eta,
+                          phi);
         }
       }
 
@@ -642,14 +664,20 @@ struct LongrangeMaker {
         }
         auto phi = itrack.phi();
         o2::math_utils::bringTo02Pi(phi);
+        if (itrack.collisionId() != reassoMftTrack.bestCollisionId()) {
+          histos.fill(HIST("ReassignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
+        }
+        if (itrack.collisionId() == reassoMftTrack.bestCollisionId()) {
+          histos.fill(HIST("AssignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
+        }
         upclrmfttracks(upclrcollision.lastIndex(),
                        reassoMftTrack.ambDegree(),
-                       aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(itrack.pt()),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(itrack.eta()),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi),
+                       itrack.pt(),
+                       itrack.eta(),
+                       phi,
                        itrack.nClusters(),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(reassoMftTrack.bestDCAXY()),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(reassoMftTrack.bestDCAZ()));
+                       reassoMftTrack.bestDCAXY(),
+                       reassoMftTrack.bestDCAZ());
       }
 
       // v0 loop
@@ -666,9 +694,9 @@ struct LongrangeMaker {
           upclrv0tracks(upclrcollision.lastIndex(),
                         posTrack.globalIndex(),
                         negTrack.globalIndex(),
-                        aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(v0.pt()),
-                        aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(v0.eta()),
-                        aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(v0.phi()),
+                        v0.pt(),
+                        v0.eta(),
+                        v0.phi(),
                         v0.mK0Short(),
                         aod::lrcorrtrktable::kSpK0short);
         }
@@ -683,9 +711,9 @@ struct LongrangeMaker {
           upclrv0tracks(upclrcollision.lastIndex(),
                         posTrack.globalIndex(),
                         negTrack.globalIndex(),
-                        aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(v0.pt()),
-                        aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(v0.eta()),
-                        aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(v0.phi()),
+                        v0.pt(),
+                        v0.eta(),
+                        v0.phi(),
                         massV0,
                         aod::lrcorrtrktable::kSpLambda);
         }
@@ -694,9 +722,9 @@ struct LongrangeMaker {
           upclrv0tracks(upclrcollision.lastIndex(),
                         posTrack.globalIndex(),
                         negTrack.globalIndex(),
-                        aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(v0.pt()),
-                        aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(v0.eta()),
-                        aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(v0.phi()),
+                        v0.pt(),
+                        v0.eta(),
+                        v0.phi(),
                         massV0,
                         aod::lrcorrtrktable::kSpALambda);
         } // end of Lambda and Anti-Lambda processing
@@ -768,22 +796,22 @@ struct LongrangeMaker {
         lrmidtracks(lrcollision.lastIndex(),
                     track.tpcNClsFound(),
                     track.tpcNClsCrossedRows(),
-                    aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkchi2>(track.tpcChi2NCl()),
-                    aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(track.pt()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(track.eta()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(track.phi()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(track.dcaZ()),
+                    track.tpcChi2NCl(),
+                    track.pt(),
+                    track.eta(),
+                    track.phi(),
+                    track.dcaZ(),
                     aod::lrcorrtrktable::kSpCharge);
 
         if (pid != aod::lrcorrtrktable::kSpCharge) {
           lrmidtracks(lrcollision.lastIndex(),
                       track.tpcNClsFound(),
                       track.tpcNClsCrossedRows(),
-                      aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkchi2>(track.tpcChi2NCl()),
-                      aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(track.pt()),
-                      aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(track.eta()),
-                      aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(track.phi()),
-                      aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(track.dcaZ()),
+                      track.tpcChi2NCl(),
+                      track.pt(),
+                      track.eta(),
+                      track.phi(),
+                      track.dcaZ(),
                       pid);
         }
       }
@@ -797,11 +825,14 @@ struct LongrangeMaker {
           auto phi = getPhiFT0(chanelid, 0);
           auto eta = getEtaFT0(chanelid, 0);
           auto gainampl = ampl / ft0gainvalues[chanelid];
+          if (eta > cfgfittrksel.cfgFt0aEtaMax || eta < cfgfittrksel.cfgFt0aEtaMin) {
+            continue;
+          }
           lrft0atracks(lrcollision.lastIndex(),
                        chanelid,
-                       aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkamp>(gainampl),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(eta),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi));
+                       gainampl,
+                       eta,
+                       phi);
           histos.fill(HIST("FT0A_Amp"), ampl);
           histos.fill(HIST("FT0A_Channel_vs_Amp"), chanelid, ampl);
           histos.fill(HIST("FT0A_Amp_gaincorrected"), gainampl);
@@ -813,11 +844,14 @@ struct LongrangeMaker {
           auto phi = getPhiFT0(chanelid, 1);
           auto eta = getEtaFT0(chanelid, 1);
           auto gainampl = ampl / ft0gainvalues[chanelid];
+          if (eta > cfgfittrksel.cfgFt0cEtaMax || eta < cfgfittrksel.cfgFt0cEtaMin) {
+            continue;
+          }
           lrft0ctracks(lrcollision.lastIndex(),
                        chanelid,
-                       aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkamp>(gainampl),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(eta),
-                       aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi));
+                       gainampl,
+                       eta,
+                       phi);
           histos.fill(HIST("FT0C_Amp"), ampl);
           histos.fill(HIST("FT0C_Channel_vs_Amp"), chanelid, ampl);
           histos.fill(HIST("FT0C_Amp_gaincorrected"), gainampl);
@@ -835,14 +869,20 @@ struct LongrangeMaker {
         }
         auto phi = itrack.phi();
         o2::math_utils::bringTo02Pi(phi);
+        if (itrack.collisionId() != reassoMftTrack.bestCollisionId()) {
+          histos.fill(HIST("ReassignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
+        }
+        if (itrack.collisionId() == reassoMftTrack.bestCollisionId()) {
+          histos.fill(HIST("AssignedMFTtrackAmbDegree"), reassoMftTrack.ambDegree());
+        }
         lrmfttracks(lrcollision.lastIndex(),
                     reassoMftTrack.ambDegree(),
-                    aod::lrcorrtrktable::packInTable<aod::lrcorrtrktable::binning::trkpt>(itrack.pt()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trketa>(itrack.eta()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkphi>(phi),
+                    itrack.pt(),
+                    itrack.eta(),
+                    phi,
                     itrack.nClusters(),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(reassoMftTrack.bestDCAXY()),
-                    aod::lrcorrtrktable::packSymmetric<aod::lrcorrtrktable::binning::trkdca>(reassoMftTrack.bestDCAZ()));
+                    reassoMftTrack.bestDCAXY(),
+                    reassoMftTrack.bestDCAZ());
       }
 
       for (const auto& particle : mcparticles) {
