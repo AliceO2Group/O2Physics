@@ -31,23 +31,23 @@
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @raymondEhlers @mpuccio @lietava @fgrosa @ariedel-cern
 /EventFiltering/PWGEM @alibuild @dsekihat @nstrangm @mpuccio @lietava @fgrosa @ariedel-cern
 
-/PWGCF @alibuild @victor-gonzalez @otonvd @shouqiye @lauraser
+/PWGCF @alibuild @victor-gonzalez @shouqiye @lauraser
 /PWGCF/Core @alibuild @jgrosseo @lauraser
-/PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @otonvd @shouqiye @wrzesaCERN
-/PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @otonvd @shouqiye @wrzesaCERN
-/PWGCF/Femto3D @alibuild @glromane @sofiatomassini @lauraser @dimihayl @victor-gonzalez @otonvd @shouqiye @wrzesaCERN
-/PWGCF/FemtoUniverse @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @otonvd @shouqiye @wrzesaCERN
-/PWGCF/FemtoWorld @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @otonvd @shouqiye @wrzesaCERN
-/PWGCF/Flow @alibuild @majanik @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/GenericFramework @alibuild @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/MultiparticleCorrelations @alibuild @abilandz @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/JCorran @alibuild @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/TwoParticleCorrelations @alibuild @Luzhiyongg @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye @lauraser
-/PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @otonvd @shouqiye @lauraser
+/PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @shouqiye @lauraser
+/PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @shouqiye @lauraser
+/PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @shouqiye @lauraser
+/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @shouqiye @lauraser
+/PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
+/PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
+/PWGCF/Femto3D @alibuild @glromane @sofiatomassini @lauraser @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
+/PWGCF/FemtoUniverse @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
+/PWGCF/FemtoWorld @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
+/PWGCF/Flow @alibuild @majanik @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
+/PWGCF/GenericFramework @alibuild @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
+/PWGCF/MultiparticleCorrelations @alibuild @abilandz @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
+/PWGCF/JCorran @alibuild @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
+/PWGCF/TwoParticleCorrelations @alibuild @Luzhiyongg @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
+/PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @shouqiye @lauraser
 
 /PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93 @XiaozhiBai
 /PWGEM @alibuild @feisenhu @dsekihat @jokonig @hscheid
