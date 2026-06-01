@@ -22,13 +22,10 @@
 
 #include "Common/DataModel/Multiplicity.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/Logger.h>
 
 #include <cstdint>
-#include <utility>
 
 namespace o2::aod
 {
