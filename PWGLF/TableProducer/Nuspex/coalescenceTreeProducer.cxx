@@ -79,7 +79,7 @@ struct CoalescenceTreeProducer {
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
-  OutputObj<TTree> treeBoundState{"treeBoundState"};
+  OutputObj<TTree> treeBoundState{"treeBoundState", OutputObjHandlingPolicy::AnalysisObject};
 
   int64_t eventID = 0;                  // Event ID
   int64_t idB1 = 0, idB2 = 0, idB3 = 0; // MC particle IDs
@@ -162,45 +162,47 @@ struct CoalescenceTreeProducer {
     // Tree for pairs/triplets.
     // For deuterons only the first two baryons are stored.
     // For three-body states, the third-baryon branches are also created.
-    treeBoundState->Branch("eventID", &eventID);
+    treeBoundState.setObject(new TTree("BoundStateTree", "Tree for coalescence studies"));
+    treeBoundState->Branch("eventID", &eventID, "eventID/L");
 
-    treeBoundState->Branch("idB1", &idB1);
-    treeBoundState->Branch("idB2", &idB2);
+    treeBoundState->Branch("idB1", &idB1, "idB1/L");
+    treeBoundState->Branch("idB2", &idB2, "idB2/L");
 
-    treeBoundState->Branch("pdgB1", &pdgB1);
-    treeBoundState->Branch("pdgB2", &pdgB2);
+    treeBoundState->Branch("pdgB1", &pdgB1, "pdgB1/I");
+    treeBoundState->Branch("pdgB2", &pdgB2, "pdgB2/I");
 
-    treeBoundState->Branch("chargeB1", &chargeB1);
-    treeBoundState->Branch("chargeB2", &chargeB2);
+    treeBoundState->Branch("chargeB1", &chargeB1, "chargeB1/I");
+    treeBoundState->Branch("chargeB2", &chargeB2, "chargeB2/I");
 
-    treeBoundState->Branch("xB1", &xB1);
-    treeBoundState->Branch("yB1", &yB1);
-    treeBoundState->Branch("zB1", &zB1);
-    treeBoundState->Branch("tB1", &tB1);
-    treeBoundState->Branch("pxB1", &pxB1);
-    treeBoundState->Branch("pyB1", &pyB1);
-    treeBoundState->Branch("pzB1", &pzB1);
+    treeBoundState->Branch("xB1", &xB1, "xB1/F");
+    treeBoundState->Branch("yB1", &yB1, "yB1/F");
+    treeBoundState->Branch("zB1", &zB1, "zB1/F");
+    treeBoundState->Branch("tB1", &tB1, "tB1/F");
+    treeBoundState->Branch("pxB1", &pxB1, "pxB1/F");
+    treeBoundState->Branch("pyB1", &pyB1, "pyB1/F");
+    treeBoundState->Branch("pzB1", &pzB1, "pzB1/F");
 
-    treeBoundState->Branch("xB2", &xB2);
-    treeBoundState->Branch("yB2", &yB2);
-    treeBoundState->Branch("zB2", &zB2);
-    treeBoundState->Branch("tB2", &tB2);
-    treeBoundState->Branch("pxB2", &pxB2);
-    treeBoundState->Branch("pyB2", &pyB2);
-    treeBoundState->Branch("pzB2", &pzB2);
+    treeBoundState->Branch("xB2", &xB2, "xB2/F");
+    treeBoundState->Branch("yB2", &yB2, "yB2/F");
+    treeBoundState->Branch("zB2", &zB2, "zB2/F");
+    treeBoundState->Branch("tB2", &tB2, "tB2/F");
+    treeBoundState->Branch("pxB2", &pxB2, "pxB2/F");
+    treeBoundState->Branch("pyB2", &pyB2, "pyB2/F");
+    treeBoundState->Branch("pzB2", &pzB2, "pzB2/F");
 
     if (static_cast<int>(boundStateSpecies) != kDeuteron) {
-      treeBoundState->Branch("idB3", &idB3);
-      treeBoundState->Branch("pdgB3", &pdgB3);
-      treeBoundState->Branch("chargeB3", &chargeB3);
+      treeBoundState->Branch("idB3", &idB3, "idB3/L");
 
-      treeBoundState->Branch("xB3", &xB3);
-      treeBoundState->Branch("yB3", &yB3);
-      treeBoundState->Branch("zB3", &zB3);
-      treeBoundState->Branch("tB3", &tB3);
-      treeBoundState->Branch("pxB3", &pxB3);
-      treeBoundState->Branch("pyB3", &pyB3);
-      treeBoundState->Branch("pzB3", &pzB3);
+      treeBoundState->Branch("pdgB3", &pdgB3, "pdgB3/I");
+      treeBoundState->Branch("chargeB3", &chargeB3, "chargeB3/I");
+
+      treeBoundState->Branch("xB3", &xB3, "xB3/F");
+      treeBoundState->Branch("yB3", &yB3, "yB3/F");
+      treeBoundState->Branch("zB3", &zB3, "zB3/F");
+      treeBoundState->Branch("tB3", &tB3, "tB3/F");
+      treeBoundState->Branch("pxB3", &pxB3, "pxB3/F");
+      treeBoundState->Branch("pyB3", &pyB3, "pyB3/F");
+      treeBoundState->Branch("pzB3", &pzB3, "pzB3/F");
     }
   }
 
