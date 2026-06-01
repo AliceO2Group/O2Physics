@@ -25,7 +25,6 @@
 
 #include <cstdlib>
 
-
 using namespace o2;
 using namespace o2::framework;
 
@@ -69,7 +68,7 @@ struct CentralityQa {
     Configurable<bool> requireIsBBT0C{"requireIsBBT0C", false, "Require beam-beam collisions based on timing information in FT0C"};
 
     Configurable<bool> rejectMismatchedBCs{"rejectMismatchedBCs", false, "Reject collision with BC different from MC BC"};
-    Configurable<bool> rejectMismatchedFoundBCs{"rejectMismatchedFoundBCs", false, "Reject collision with found BC different from MC BC"};    
+    Configurable<bool> rejectMismatchedFoundBCs{"rejectMismatchedFoundBCs", false, "Reject collision with found BC different from MC BC"};
 
     // Run 2 specific event selections
     Configurable<bool> requireSel7{"requireSel7", true, "require sel7 event selection (Run 2 only: event selection decision based on V0A & V0C)"};
@@ -87,23 +86,23 @@ struct CentralityQa {
   } eventSelections;
 
   void init(o2::framework::InitContext& /*initContext*/)
-  { 
-    if (doprocessRun2PP || 
-        doprocessRun2PPb || 
+  {
+    if (doprocessRun2PP ||
+        doprocessRun2PPb ||
         doprocessRun2PbPb) {
       isRun2 = true;
     } else {
       isRun2 = false;
     }
 
-    if (doprocessMonteCarloRun3_FV0A || 
-        doprocessMonteCarloRun3_FT0M || 
-        doprocessMonteCarloRun3_FT0A || 
-        doprocessMonteCarloRun3_FT0C || 
-        doprocessMonteCarloRun3_FT0CVar1 || 
-        doprocessMonteCarloRun3_FT0CVar2 || 
-        doprocessMonteCarloRun3_MFT || 
-        doprocessMonteCarloRun3_NGlobal || 
+    if (doprocessMonteCarloRun3_FV0A ||
+        doprocessMonteCarloRun3_FT0M ||
+        doprocessMonteCarloRun3_FT0A ||
+        doprocessMonteCarloRun3_FT0C ||
+        doprocessMonteCarloRun3_FT0CVar1 ||
+        doprocessMonteCarloRun3_FT0CVar2 ||
+        doprocessMonteCarloRun3_MFT ||
+        doprocessMonteCarloRun3_NGlobal ||
         doprocessMonteCarloRun3_NTPV) {
       isMC = true;
     } else {
@@ -169,7 +168,6 @@ struct CentralityQa {
     histos.print();
   }
 
-
   template <typename TCollision>
   bool isEventAccepted(TCollision collision)
   // check whether the collision passes our collision selections
@@ -184,8 +182,7 @@ struct CentralityQa {
       requires { collision.centFDDM(); } ||
       requires { collision.centNTPV(); } ||
       requires { collision.centNGlobal(); } ||
-      requires { collision.centMFT(); }
-    ) { // check if we are in Run 3
+      requires { collision.centMFT(); }) { // check if we are in Run 3
       if (eventSelections.requireSel8 && !collision.sel8()) {
         return false;
       }
@@ -518,7 +515,7 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processRun3_MFT, "Process with Run 3 MFT estimator", false);
 
   void processMonteCarloRun3_FV0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
+                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
@@ -535,7 +532,7 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FV0A, "Process with Run 3 FV0A estimator", false);
 
   void processMonteCarloRun3_FT0M(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
+                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
@@ -547,12 +544,12 @@ struct CentralityQa {
     histos.fill(HIST("hCentFT0M"), col.centFT0M());
     histos.fill(HIST("hCentProfileFT0M"), col.centFT0M(), col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsCentFT0M"), col.centFT0M(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsGenMultFT0M"), mcCol.multMCFT0A()+mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsGenMultFT0M"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
   void processMonteCarloRun3_FT0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0As>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
+                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
@@ -568,7 +565,7 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0A, "Process with Run 3 FT0A estimator", false);
 
   void processMonteCarloRun3_FT0C(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
+                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
@@ -584,8 +581,8 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0C, "Process with Run 3 FT0C estimator", false);
 
   void processMonteCarloRun3_FT0CVar1(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0CVariant1s>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
+                                      soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
+                                      soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
       return;
@@ -600,8 +597,8 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0CVar1, "Process with Run 3 FT0CVar1 estimator", false);
 
   void processMonteCarloRun3_FT0CVar2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0CVariant2s>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
+                                      soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
+                                      soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
       return;
@@ -616,7 +613,7 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0CVar2, "Process with Run 3 FT0CVar2 estimator", false);
 
   void processMonteCarloRun3_FDDM(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFDDMs>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
+                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
@@ -627,12 +624,12 @@ struct CentralityQa {
     histos.fill(HIST("hCentFDDM"), col.centFDDM());
     histos.fill(HIST("hCentProfileFDDM"), col.centFDDM(), col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsCentFDDM"), col.centFDDM(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsGenMultFDDM"), mcCol.multMCFDDA()+mcCol.multMCFDDC(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsGenMultFDDM"), mcCol.multMCFDDA() + mcCol.multMCFDDC(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FDDM, "Process with Run 3 FDDM estimator", false);
 
   void processMonteCarloRun3_NTPV(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentNTPVs>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
+                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
@@ -648,8 +645,8 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_NTPV, "Process with Run 3 NTPV estimator", false);
 
   void processMonteCarloRun3_NGlobal(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentNGlobals>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
+                                     soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
+                                     soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
       return;
@@ -664,8 +661,8 @@ struct CentralityQa {
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_NGlobal, "Process with Run 3 NGlobal estimator", false);
 
   void processMonteCarloRun3_MFT(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentMFTs>::iterator const& col,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras>  const& /*mcCollisions*/,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
+                                 soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
+                                 soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isEventAccepted(col)) {
       return;
