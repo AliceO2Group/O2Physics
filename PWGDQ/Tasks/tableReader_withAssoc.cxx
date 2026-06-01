@@ -222,6 +222,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+using MyEventsMultExtraNoQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
@@ -337,7 +338,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -579,6 +580,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithMultExtra>(events);
     publishSelections<gkEventFillMapWithMultExtra>(events);
   }
+  void processSkimmedWithMultExtraNoQvector(MyEventsMultExtraNoQvector const& events)
+  {
+    runEventSelection<gkEventFillMapWithMultExtra>(events);
+    publishSelections<gkEventFillMapWithMultExtra>(events);
+  }
   void processSkimmedWithMultExtraZdc(MyEventsMultExtraZdc const& events)
   {
     runEventSelection<gkEventFillMapWithMultExtraZdc>(events);
@@ -616,6 +622,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedBasic, "Run event selection on DQ skimmed events with basic tables", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraNoQvector, "Run event selection on DQ skimmed events, with mult extra and without Q-vector", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
