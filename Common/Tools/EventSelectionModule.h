@@ -91,7 +91,6 @@ struct bcselEntry {
 struct bcselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "bcselOpts";
   o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confTriggerBcShift{"triggerBcShift", 0, "set either custom shift or 999 for apass2/apass3 in LHC22o-t"};                                       // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
@@ -453,16 +452,6 @@ class BcSelectionModule
       return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
-    // map from GlobalBC to BcId needed to find triggerBc
-    std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
-    for (const auto& bc : bcs) {
-      mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
-    }
-
-    int triggerBcShift = bcselOpts.confTriggerBcShift;
-    if (bcselOpts.confTriggerBcShift == 999) {                                                                                                                               // o2-linter: disable=magic-number (special shift for early 2022 data)
-      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294; // o2-linter: disable=magic-number (magic list of runs)
-    }
 
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
@@ -481,11 +470,8 @@ class BcSelectionModule
       }
 
       uint32_t alias{0};
-      // workaround for pp2022 (trigger info is shifted by -294 bcs)
-      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
-      if (triggerBcId && aliases) {
-        auto triggerBc = bcs.iteratorAt(triggerBcId);
-        uint64_t triggerMask = triggerBc.triggerMask();
+      if (aliases) {
+        uint64_t triggerMask = bc.triggerMask();
         for (const auto& al : aliases->GetAliasToTriggerMaskMap()) {
           if (triggerMask & al.second) {
             alias |= BIT(al.first);
