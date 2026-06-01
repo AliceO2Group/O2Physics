@@ -265,7 +265,7 @@ struct nucleiQC {
     LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
 
-  template <int iSpecies, bool isMc, typename Ttrack, typename Tcollision>
+  template <int iSpecies, bool isMc, typename Ttrack>
   bool trackSelection(const Ttrack& track)
   {
     mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNoCuts);
