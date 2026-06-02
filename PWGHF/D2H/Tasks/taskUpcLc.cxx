@@ -17,7 +17,6 @@
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -29,12 +28,11 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
+#include <CommonDataFormat/TimeStamp.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -44,11 +42,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
-
-#include <TPDGCode.h>
 
 #include <array>
 #include <cmath>
