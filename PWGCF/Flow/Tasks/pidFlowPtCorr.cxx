@@ -551,6 +551,12 @@ struct PidFlowPtCorr {
     oba4Ch->Add(new TNamed("ptSquareAve", "ptSquareAve"));
     oba4Ch->Add(new TNamed("ptAve", "ptAve"));
     oba4Ch->Add(new TNamed("hMeanPt", "hMeanPt"));
+
+    oba4Ch->Add(new TNamed("covV2PtWeightOne", "covV2PtWeightOne"));
+    oba4Ch->Add(new TNamed("c22TrackWeightOne", "c22TrackWeightOne"));
+    oba4Ch->Add(new TNamed("hMeanPtWeightOne", "hMeanPtWeightOne"));
+    oba4Ch->Add(new TNamed("ptAveWeightOne", "ptAveWeightOne"));
+    oba4Ch->Add(new TNamed("ptSquareAveWeightOne", "ptSquareAveWeightOne"));
     // end fill TObjArray for charged
 
     // init fFCCh
@@ -591,7 +597,7 @@ struct PidFlowPtCorr {
     registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hPionMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hPionMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
     if (switchsOpts.cfgClosureTest.value != 0) {
       registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
@@ -602,12 +608,12 @@ struct PidFlowPtCorr {
     registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hKaonMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hKaonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
     registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hProtonMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     // end pid
     // end init tprofile3d for <2'> - meanpt
 
@@ -689,9 +695,9 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", false)); // 30
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "PrPr08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap33", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap33", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap33", false));
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", false)); // 35
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", false));
@@ -1075,7 +1081,7 @@ struct PidFlowPtCorr {
       return;
 
     registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
-    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, nch * dnx * val);
+    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, 1.);
   }
 
   /**
@@ -1116,7 +1122,7 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hPionMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+        registry.fill(HIST("meanptCentNbs/hPionMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
 
         if (switchsOpts.cfgClosureTest.value != 0) {
           double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, true).real();
@@ -1151,7 +1157,7 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hKaonMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+        registry.fill(HIST("meanptCentNbs/hKaonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
 
         break;
         // end kaon
@@ -1168,7 +1174,7 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hProtonMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+        registry.fill(HIST("meanptCentNbs/hProtonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
 
         break;
         // end proton
@@ -1247,7 +1253,14 @@ struct PidFlowPtCorr {
     return;
   }
 
-  void fillFCvnpt(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const double& ptSum, const double& nch, const char* tarName)
+  void fillFCvnpt(MyParticleType type,
+                  const GFW::CorrConfig& corrconf,
+                  const double& cent,
+                  const double& rndm,
+                  const double& ptSum,
+                  const double& nch,
+                  const char* tarName,
+                  bool useWeightOne = false)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -1257,17 +1270,17 @@ struct PidFlowPtCorr {
     if (std::fabs(val) < 1) {
       switch (type) {
         case MyParticleType::kCharged:
-          fFCCh->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCCh->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
 
         case MyParticleType::kPion:
-          fFCPi->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCPi->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
         case MyParticleType::kKaon:
-          fFCKa->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCKa->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
         case MyParticleType::kProton:
-          fFCPr->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCPr->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
 
         default:
@@ -2123,6 +2136,8 @@ struct PidFlowPtCorr {
         fillFC(MyParticleType::kProton, corrconfigs.at(10), cent, rndm, "c22");
       }
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, nch, nch, "c22TrackWeightOne", true);
+
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(1), cent, rndm, nch, nch, "c24TrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(2), cent, rndm, nch, nch, "c22FullTrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(3), cent, rndm, nch, nch, "c32TrackWeight");
@@ -2137,6 +2152,8 @@ struct PidFlowPtCorr {
       fillFCvnpt(MyParticleType::kProton, corrconfigs.at(34), cent, rndm, nch, nch, "c32TrackWeight");
 
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, ptSum, nch, "covV2PtWeightOne", true);
+
       fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, ptSum, nch, "covV2Pt");
       fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, ptSum, nch, "covV2Pt");
       fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, ptSum, nch, "covV2Pt");
@@ -2190,21 +2207,25 @@ struct PidFlowPtCorr {
       }
 
       fFCCh->FillProfile("hMeanPt", cent, (ptSum / nch), nch, rndm);
+      fFCCh->FillProfile("hMeanPtWeightOne", cent, (ptSum / nch), 1., rndm);
 
       if (nPionWeighted > 0) {
         fFCPi->FillProfile("hMeanPt", cent, (pionPtSum / nPionWeighted), nPionWeighted, rndm);
+        fFCPi->FillProfile("hMeanPtWeightOne", cent, (pionPtSum / nPionWeighted), 1., rndm);
         fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
         fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
       }
 
       if (nKaonWeighted > 0) {
         fFCKa->FillProfile("hMeanPt", cent, (kaonPtSum / nKaonWeighted), nKaonWeighted, rndm);
+        fFCKa->FillProfile("hMeanPtWeightOne", cent, (kaonPtSum / nKaonWeighted), 1., rndm);
         fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
         fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
       }
 
       if (nProtonWeighted > 0) {
         fFCPr->FillProfile("hMeanPt", cent, (protonPtSum / nProtonWeighted), nProtonWeighted, rndm);
+        fFCPr->FillProfile("hMeanPtWeightOne", cent, (protonPtSum / nProtonWeighted), 1., rndm);
         fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
         fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
       }
@@ -2215,9 +2236,17 @@ struct PidFlowPtCorr {
                            (ptSum * ptSum - ptSquareSum) / nchDiff,
                            nchDiff, rndm);
 
+        fFCCh->FillProfile("ptSquareAveWeightOne", cent,
+                           (ptSum * ptSum - ptSquareSum) / nchDiff,
+                           1., rndm);
+
         fFCCh->FillProfile("ptAve", cent,
                            (nch * ptSum - ptSumw2) / nchDiff,
                            nchDiff, rndm);
+
+        fFCCh->FillProfile("ptAveWeightOne", cent,
+                           (nch * ptSum - ptSumw2) / nchDiff,
+                           1., rndm);
       }
 
       double pionDiff = nPionWeighted * nPionWeighted - nPionSquare;
@@ -2226,9 +2255,17 @@ struct PidFlowPtCorr {
                            (pionPtSum * pionPtSum - pionPtSquareSum) / pionDiff,
                            pionDiff, rndm);
 
+        fFCPi->FillProfile("ptSquareAveWeightOne", cent,
+                           (pionPtSum * pionPtSum - pionPtSquareSum) / pionDiff,
+                           1., rndm);
+
         fFCPi->FillProfile("ptAve", cent,
                            (nPionWeighted * pionPtSum - pionPtSumw2) / pionDiff,
                            pionDiff, rndm);
+
+        fFCPi->FillProfile("ptAveWeightOne", cent,
+                           (nPionWeighted * pionPtSum - pionPtSumw2) / pionDiff,
+                           1., rndm);
       }
 
       double kaonDiff = nKaonWeighted * nKaonWeighted - nKaonSquare;
@@ -2237,9 +2274,17 @@ struct PidFlowPtCorr {
                            (kaonPtSum * kaonPtSum - kaonPtSquareSum) / kaonDiff,
                            kaonDiff, rndm);
 
+        fFCKa->FillProfile("ptSquareAveWeightOne", cent,
+                           (kaonPtSum * kaonPtSum - kaonPtSquareSum) / kaonDiff,
+                           1., rndm);
+
         fFCKa->FillProfile("ptAve", cent,
                            (nKaonWeighted * kaonPtSum - kaonPtSumw2) / kaonDiff,
                            kaonDiff, rndm);
+
+        fFCKa->FillProfile("ptAveWeightOne", cent,
+                           (nKaonWeighted * kaonPtSum - kaonPtSumw2) / kaonDiff,
+                           1., rndm);
       }
 
       double protonDiff = nProtonWeighted * nProtonWeighted - nProtonSquare;
@@ -2248,9 +2293,17 @@ struct PidFlowPtCorr {
                            (protonPtSum * protonPtSum - protonPtSquareSum) / protonDiff,
                            protonDiff, rndm);
 
+        fFCPr->FillProfile("ptSquareAveWeightOne", cent,
+                           (protonPtSum * protonPtSum - protonPtSquareSum) / protonDiff,
+                           1., rndm);
+
         fFCPr->FillProfile("ptAve", cent,
                            (nProtonWeighted * protonPtSum - protonPtSumw2) / protonDiff,
                            protonDiff, rndm);
+
+        fFCPr->FillProfile("ptAveWeightOne", cent,
+                           (nProtonWeighted * protonPtSum - protonPtSumw2) / protonDiff,
+                           1., rndm);
       }
 
     } // end fill hist using fillProfile
