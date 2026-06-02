@@ -18,9 +18,9 @@
 ///
 /// \note based on taskD0.cxx, taskLc.cxx
 
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -37,12 +37,12 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <numeric>
-
 #include <THnSparse.h>
+
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -258,19 +258,19 @@ struct HfTaskLcToK0sP {
       // Data with ML: {mass, pt, centrality, bkg, prompt, non-prompt, numPvContr}
       if (doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M) {
         registry.add("hnLcK0sPDataWithBdt", "THn for Lc->K0sP data with BDT", HistType::kTHnSparseF,
-          {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreBkg, thnAxisBdtScorePrompt, thnAxisBdtScoreNonPrompt, thnAxisNumPvContr});
+                     {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreBkg, thnAxisBdtScorePrompt, thnAxisBdtScoreNonPrompt, thnAxisNumPvContr});
       }
 
       // MC Rec with ML: {mass, pt, centrality, bkg, prompt, non-prompt, numPvContr, origin}
       if (doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M) {
         registry.add("hnLcK0sPRecMcWithBdt", "THn for Lc->K0sP MC rec with BDT", HistType::kTHnSparseF,
-          {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreBkg, thnAxisBdtScorePrompt, thnAxisBdtScoreNonPrompt, thnAxisNumPvContr, thnAxisOrigin});
+                     {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreBkg, thnAxisBdtScorePrompt, thnAxisBdtScoreNonPrompt, thnAxisNumPvContr, thnAxisOrigin});
       }
 
       // MC Gen: {pt, centrality, rapidity, numPvContr, ptB, origin}
       if (doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M) {
         registry.add("hnLcK0sPGenMc", "THn for Lc->K0sP MC gen", HistType::kTHnSparseF,
-          {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisNumPvContr, thnAxisPtB, thnAxisOrigin});
+                     {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisNumPvContr, thnAxisPtB, thnAxisOrigin});
       }
     }
   }
@@ -518,18 +518,18 @@ struct HfTaskLcToK0sP {
   }
 
   void processDataStd(Collisions const& collisions,
-              FilteredCandLcToPK0SWSelFlag const& candidates,
-              TracksWPid const&)
+                      FilteredCandLcToPK0SWSelFlag const& candidates,
+                      TracksWPid const&)
   {
     runAnalysisPerCollisionData<false>(collisions, candidates);
   }
   PROCESS_SWITCH(HfTaskLcToK0sP, processDataStd, "Process Data", false);
 
   void processMcStd(CollisionsMc const& collisions,
-                 FilteredCandLcToPK0SWSelFlagAndMc const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
-                 aod::TracksWMc const&,
-                 TracksWPid const&)
+                    FilteredCandLcToPK0SWSelFlagAndMc const& candidates,
+                    soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
+                    aod::TracksWMc const&,
+                    TracksWPid const&)
   {
     runAnalysisPerCollisionMc<false>(collisions, candidates, mcParticles);
   }
@@ -537,8 +537,8 @@ struct HfTaskLcToK0sP {
 
   // Data with ML
   void processDataWithMl(Collisions const& collisions,
-                        FilteredCandLcToPK0SWSelFlagAndMl const& candidates,
-                        TracksWPid const&)
+                         FilteredCandLcToPK0SWSelFlagAndMl const& candidates,
+                         TracksWPid const&)
   {
     runAnalysisPerCollisionData<true>(collisions, candidates);
   }
@@ -546,10 +546,10 @@ struct HfTaskLcToK0sP {
 
   // MC Rec and Gen with ML
   void processMcWithMl(CollisionsMc const& collisions,
-                          FilteredCandLcToPK0SWSelFlagAndMcAndMl const& candidates,
-                          soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
-                          aod::TracksWMc const&,
-                          TracksWPid const&)
+                       FilteredCandLcToPK0SWSelFlagAndMcAndMl const& candidates,
+                       soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
+                       aod::TracksWMc const&,
+                       TracksWPid const&)
   {
     runAnalysisPerCollisionMc<true>(collisions, candidates, mcParticles);
   }
@@ -604,10 +604,10 @@ struct HfTaskLcToK0sP {
 
   // MC Std with FT0M centrality
   void processMcStdWithFT0M(CollisionsMcWithFT0M const& collisions,
-                             FilteredCandLcToPK0SWSelFlagAndMc const& candidates,
-                             soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
-                             aod::TracksWMc const&,
-                             TracksWPid const&)
+                            FilteredCandLcToPK0SWSelFlagAndMc const& candidates,
+                            soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
+                            aod::TracksWMc const&,
+                            TracksWPid const&)
   {
     runAnalysisPerCollisionMc<false>(collisions, candidates, mcParticles);
   }
@@ -615,10 +615,10 @@ struct HfTaskLcToK0sP {
 
   // MC with ML + FT0C centrality
   void processMcWithMlWithFT0C(CollisionsMcWithFT0C const& collisions,
-                                FilteredCandLcToPK0SWSelFlagAndMcAndMl const& candidates,
-                                soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
-                                aod::TracksWMc const&,
-                                TracksWPid const&)
+                               FilteredCandLcToPK0SWSelFlagAndMcAndMl const& candidates,
+                               soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
+                               aod::TracksWMc const&,
+                               TracksWPid const&)
   {
     runAnalysisPerCollisionMc<true>(collisions, candidates, mcParticles);
   }
