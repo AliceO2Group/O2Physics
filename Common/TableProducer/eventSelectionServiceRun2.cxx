@@ -43,7 +43,7 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
-struct EventselectionRun2 {
+struct EventselectionRun2 { // o2-linter: disable=name/workflow-file (exception due to metadata-driven topology)
   o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
@@ -53,7 +53,7 @@ struct EventselectionRun2 {
   o2::common::eventselection::EvselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
 
-  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
+  Produces<aod::Timestamps> timestampTable; // Table with SOR timestamps produced by the task
   Produces<aod::BcSels> bcsel;
   Produces<aod::EvSels> evsel;
 
@@ -102,7 +102,7 @@ struct EventselectionRun2 {
   }
 };
 
-struct EventselectionRun3 {
+struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception due to metadata-driven topology)
   o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 

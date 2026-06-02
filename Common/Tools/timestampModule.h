@@ -109,9 +109,9 @@ class TimestampModule
         // FIXME this should not have been a problem, to be investigated
         ccdb->clearCache(timestampOpts.orbitResetPath.value.data());
 
-        constexpr int maxRunNumberUnanchored = 499999;
-        constexpr int minRunNumberUnanchored = 300000;
-        const bool isUnanchoredRun3MC = runNumber >= minRunNumberUnanchored && runNumber < maxRunNumberUnanchored;
+        const int maxRunNumberUnanchored = 499999;
+        const int minRunNumberUnanchored = 300000;
+        const bool isUnanchoredRun3MC = runNumber >= minRunNumberUnanchored && runNumber <= maxRunNumberUnanchored;
         if (timestampOpts.isRun2MC.value == 1 || isUnanchoredRun3MC) {
           // isRun2MC: bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
           // isUnanchoredRun3MC: assuming orbit-reset is done in the beginning of each run

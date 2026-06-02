@@ -1757,13 +1757,13 @@ class LumiModule
         double perBcRateTCE = static_cast<double>(mCounterTCE[i + 1] - mCounterTCE[i]) / nOrbits / nCollidingBCs;
         double perBcRateZNC = static_cast<double>(mCounterZNC[i + 1] - mCounterZNC[i]) / nOrbits / nCollidingBCs;
         double perBcRateZEM = static_cast<double>(mCounterZEM[i + 1] - mCounterZEM[i]) / nOrbits / nCollidingBCs;
-        constexpr float rateMin = 1.e-10;
+        const float rateMin = 1.e-10;
         double muTVX = (perBcRateTVX < 1 && perBcRateTVX > rateMin) ? -std::log(1 - perBcRateTVX) : 0;
         double muTCE = (perBcRateTCE < 1 && perBcRateTCE > rateMin) ? -std::log(1 - perBcRateTCE) : 0;
         double muZNC = (perBcRateZNC < 1 && perBcRateZNC > rateMin) ? -std::log(1 - perBcRateZNC) : 0;
         double muZEM = (perBcRateZEM < 1 && perBcRateZEM > rateMin) ? -std::log(1 - perBcRateZEM) : 0;
         LOGP(debug, "orbit={} muTVX={} muTCE={} muZNC={} muZEM={}", mOrbits[i], muTVX, muTCE, muZNC, muZEM);
-        constexpr float muMin = 1.e-10;
+        const float muMin = 1.e-10;
         mPileupCorrectionTVX.push_back(muTVX > muMin ? muTVX / (1 - std::exp(-muTVX)) : 1);
         mPileupCorrectionTCE.push_back(muTCE > muMin ? muTCE / (1 - std::exp(-muTCE)) : 1);
         mPileupCorrectionZNC.push_back(muZNC > muMin ? muZNC / (1 - std::exp(-muZNC)) : 1);
