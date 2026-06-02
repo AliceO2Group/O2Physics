@@ -31,11 +31,13 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TList.h>
+#include <TMath.h>
 #include <TObject.h>
 #include <TString.h>
 #include <TSystem.h>
 
-#include <cstdint>
+#include <RtypesCore.h>
+
 #include <cstring>
 #include <string>
 #include <vector>

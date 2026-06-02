@@ -21,9 +21,7 @@
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 

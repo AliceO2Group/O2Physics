@@ -47,7 +47,9 @@
 #include <TProfile.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>
