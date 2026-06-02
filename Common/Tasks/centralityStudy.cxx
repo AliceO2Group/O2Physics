@@ -53,21 +53,20 @@ struct centralityStudy {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::map<std::string, HistPtr> histPointers;
   std::string histPath;
-  Service<o2::ccdb::BasicCCDBManager> mCcdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher mRateFetcher;
   int mRunNumber;
   uint64_t startOfRunTimestamp;
 
   // vertex Z equalization
-  TList* hCalibObjects;
-  TProfile* hVtxZFV0A;
-  TProfile* hVtxZFT0A;
-  TProfile* hVtxZFT0C;
-  TProfile* hVtxZNTracks;
-  TProfile* hVtxZNGlobals;
-  TProfile* hVtxZMFT;
-  TProfile* hVtxZFDDA;
-  TProfile* hVtxZFDDC;
+  TProfile* hVtxZFV0A = nullptr;
+  TProfile* hVtxZFT0A = nullptr;
+  TProfile* hVtxZFT0C = nullptr;
+  TProfile* hVtxZNTracks = nullptr;
+  TProfile* hVtxZNGlobals = nullptr;
+  TProfile* hVtxZMFT = nullptr;
+  TProfile* hVtxZFDDA = nullptr;
+  TProfile* hVtxZFDDC = nullptr;
 
   // calibration histograms
   TH1* hCentralityFV0A = nullptr;
@@ -93,15 +92,15 @@ struct centralityStudy {
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
 
   struct : ConfigurableGroup {
-    std::string prefix = "ccdb";
+    std::string prefix = "ccdbSettings";
     Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
-    Configurable<std::string> pathCentrality{"pathCentrality", "Centrality/Estimators", "path to centrality calibration"};
+    Configurable<std::string> pathCentrality{"pathCentrality", "Centrality/Estimators", "path to centrality calibration if fetchCentralityCalibration is enabled"};
     Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
     Configurable<std::string> pathVertexZ{"pathVertexZ", "Users/d/ddobrigk/Centrality/Calibration", "Path to vertexZ profiles"};
     Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate: (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
     Configurable<bool> irCrashOnNull{"irCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
     Configurable<bool> fetchCentralityCalibration{"fetchCentralityCalibration", false, "Flag to fetch the centrality calibration within the task instead of the centrality table"};
-  } ccdb;
+  } ccdbSettings;
 
   // _______________________________________
   // Configurable group
@@ -151,7 +150,6 @@ struct centralityStudy {
     Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
     Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
-
   } bcsel;
 
   // _______________________________________
@@ -226,29 +224,10 @@ struct centralityStudy {
 
   void init(InitContext&)
   {
-    hCalibObjects = nullptr;
-    hVtxZFV0A = nullptr;
-    hVtxZFT0A = nullptr;
-    hVtxZFT0C = nullptr;
-    hVtxZNTracks = nullptr;
-    hVtxZNGlobals = nullptr;
-    hVtxZMFT = nullptr;
-    hVtxZFDDA = nullptr;
-    hVtxZFDDC = nullptr;
-
-    hCentralityFV0A = nullptr;
-    hCentralityFT0A = nullptr;
-    hCentralityFT0C = nullptr;
-    hCentralityFT0M = nullptr;
-    hCentralityFDDM = nullptr;
-    hCentralityNTPV = nullptr;
-    hCentralityNGlo = nullptr;
-    hCentralityMFT = nullptr;
-
-    mCcdb->setURL(ccdb.ccdbURL);
-    // mCcdb->setCaching(true);
-    // mCcdb->setLocalObjectValidityChecking();
-    mCcdb->setFatalWhenNull(false);
+    ccdb->setURL(ccdbSettings.ccdbURL);
+    // ccdb->setCaching(true);
+    // ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
       histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{20, -0.5f, +19.5f}});
@@ -324,7 +303,7 @@ struct centralityStudy {
         histos.add("hFT0COccupancyVsNGlobalTracksVsFT0C", "hFT0COccupancyVsNGlobalTracksVsFT0C", kTH3F, {axisFT0COccupancy, axisMultGlobalTracks, axisMultFT0C});
       }
 
-      if (doprocessCollisionsWithCentrality || ccdb.fetchCentralityCalibration) {
+      if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
         // in case requested: do vs centrality debugging
         histos.add("hCentrality", "hCentrality", kTH1F, {axisCentrality});
         histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
@@ -413,13 +392,13 @@ struct centralityStudy {
     LOGF(info, "Setting up for run: %i", mRunNumber);
 
     // only get object when switching runs
-    o2::parameters::GRPECSObject* grpo = mCcdb->getForRun<o2::parameters::GRPECSObject>(ccdb.pathGRPECSObject, mRunNumber);
+    o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(ccdbSettings.pathGRPECSObject, mRunNumber);
     startOfRunTimestamp = grpo->getTimeStart();
 
     if (applyVertexZEqualization.value) {
       // acquire vertex-Z equalization histograms if requested
       LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
-      hCalibObjects = mCcdb->getForRun<TList>(ccdb.pathVertexZ, mRunNumber);
+      TList* hCalibObjects = ccdb->getForRun<TList>(ccdbSettings.pathVertexZ, mRunNumber);
 
       hVtxZFV0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
       hVtxZFT0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
@@ -436,10 +415,9 @@ struct centralityStudy {
       }
     }
 
-    if (ccdb.fetchCentralityCalibration) {
+    if (ccdbSettings.fetchCentralityCalibration) {
       LOGF(info, "Acquiring centrality calibration for run %i", mRunNumber);
-      TList* hCentralityObjects = nullptr;
-      hCentralityObjects = mCcdb->getForRun<TList>(ccdb.pathCentrality, mRunNumber);
+      TList* hCentralityObjects = ccdb->getForRun<TList>(ccdbSettings.pathCentrality, mRunNumber);
       hCentralityFV0A = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFV0"));
       hCentralityFT0A = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0A"));
       hCentralityFT0C = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0C"));
@@ -450,7 +428,7 @@ struct centralityStudy {
       hCentralityMFT = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
 
       // won't capture null pointers -> explicitly check for those when attempting to evaluate
-      auto reportSuccess = [](TH1* hist, std::string name) {
+      auto reportSuccess = [](TH1* hist, const std::string& name) {
         if (!hist) {
           LOGF(info, "Calibration missing for %s", name);
         } else {
@@ -570,7 +548,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hFDDCVsFT0C", histos.add((histPath + "hFDDCVsFT0C").c_str(), "hFDDCVsFT0C", {kTH2F, {{axisMultFT0C, axisMultFDDC}}})});
     }
 
-    if (doprocessCollisionsWithCentrality || ccdb.fetchCentralityCalibration) {
+    if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
       // in case requested: do vs centrality debugging
       histPointers.insert({histPath + "hCentrality", histos.add((histPath + "hCentrality").c_str(), "hCentrality", {kTH1F, {{axisCentrality}}})});
       histPointers.insert({histPath + "hNContribsVsCentrality", histos.add((histPath + "hNContribsVsCentrality").c_str(), "hNContribsVsCentrality", {kTH2F, {{axisCentrality, axisMultPVContributors}}})});
@@ -937,7 +915,7 @@ struct centralityStudy {
 
     // if the table has centrality information
     // process FT0C centrality plots
-    if (doprocessCollisionsWithCentrality || ccdb.fetchCentralityCalibration) {
+    if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
       histos.fill(HIST("hCentrality"), centFT0C);
       histos.fill(HIST("hNContribsVsCentrality"), centFT0C, collision.multPVTotalContributors());
       histos.fill(HIST("hNITSTPCTracksVsCentrality"), centFT0C, collision.multNTracksITSTPC());
@@ -973,9 +951,9 @@ struct centralityStudy {
       if (collision.has_multBC()) {
         auto multbc = collision.template multBC_as<aod::MultBCs>();
         const uint64_t bcTimestamp = multbc.timestamp();
-        const float interactionRate = mRateFetcher.fetch(mCcdb.service, bcTimestamp, mRunNumber, ccdb.irSource.value, ccdb.irCrashOnNull) / 1000.; // kHz
+        const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
-        if (doprocessCollisionsWithCentrality || ccdb.fetchCentralityCalibration) {
+        if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
           histos.fill(HIST("hInteractionRateVsCentrality"), centFT0C, interactionRate);
         }
         if (studies.doRunByRunHistograms) {
@@ -1125,8 +1103,8 @@ struct centralityStudy {
       histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scale.factorFV0A);
       histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scale.factorFV0AT0C);
 
-      uint64_t bcTimestamp = multbc.timestamp();
-      const float interactionRate = mRateFetcher.fetch(mCcdb.service, bcTimestamp, mRunNumber, ccdb.irSource.value, ccdb.irCrashOnNull) / 1000.; // kHz
+      const uint64_t bcTimestamp = multbc.timestamp();
+      const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
       histos.fill(HIST("hInteractionRate_BCs"), interactionRate);
 
       if (studies.do2DPlots) {
