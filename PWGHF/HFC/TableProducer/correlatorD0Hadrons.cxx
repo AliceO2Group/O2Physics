@@ -966,6 +966,14 @@ struct HfCorrelatorD0Hadrons {
           if (!particleAssoc.isPhysicalPrimary()) {
             continue;
           }
+
+          // Explicitly reject direct daughters of the current trigger D0/D0bar.
+          auto const motherIdxD0 = RecoDecay::getMother(mcParticles, particleAssoc, Pdg::kD0, true, nullptr, 1);
+          auto const motherIdxD0bar = RecoDecay::getMother(mcParticles, particleAssoc, -Pdg::kD0, true, nullptr, 1);
+          if (motherIdxD0 == particleTrigg.globalIndex() || motherIdxD0bar == particleTrigg.globalIndex()) {
+            continue;
+          }
+
           // ==============================soft pion removal================================
           registry.fill(HIST("hTrackCounter"), 1); // fill before soft pi removal
           // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
