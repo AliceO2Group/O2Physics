@@ -32,7 +32,7 @@ namespace timestamp
 {
 
 // timestamp configurables
-struct timestampConfigurables : o2::framework::ConfigurableGroup {
+struct TimestampConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "timestamp";
   o2::framework::Configurable<bool> verbose{"verbose", false, "verbose mode"};
   o2::framework::Configurable<bool> fatalOnInvalidTimestamp{"fatalOnInvalidTimestamp", false, "Generate fatal error for invalid timestamps"};
@@ -57,7 +57,7 @@ class TimestampModule
     orbitResetTimestamp = 0;
   };
 
-  o2::common::timestamp::timestampConfigurables timestampOpts;
+  o2::common::timestamp::TimestampConfigurables timestampOpts;
 
   // objects necessary during processing
   std::map<int, int64_t> mapRunToOrbitReset;                      /// Cache of orbit reset timestamps
