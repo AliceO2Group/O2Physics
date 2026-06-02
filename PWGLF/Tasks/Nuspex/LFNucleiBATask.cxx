@@ -2604,8 +2604,8 @@ struct lfNucleiBATask {
           }
           if (enablePtShiftPID && fShiftPtPID) {
             shiftPtPID = fShiftPtPID->Eval(2 * track.pt());
-            if (tritonPID && (track.pt() <= CfgPtShiftPID)) {
 
+            if (tritonPID && (track.pt() <= CfgPtShiftPID)) {
               hePt = track.pt() - shiftPtPID / 2.f;
               antihePt = track.pt() - shiftPtPID / 2.f;
             }
