@@ -41,10 +41,21 @@ enum class Track_Type : uint8_t {
 
 } // namespace pwgem::dilepton::ml
 
+namespace emmlevent
+{
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of mc collision
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);   //!
+} // namespace emmlevent
+
+DECLARE_SOA_TABLE(EMMLEvents, "AOD", "EMMLEVENT", //!
+                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::HadronicRate);
+// iterators
+using EMMLEvent = EMMLEvents::iterator;
+
 namespace emmltrack
 {
+DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);                      //! index to event table
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                   //!
-DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);               //!
 DECLARE_SOA_COLUMN(PIDLabel, pidlabel, uint8_t);                     //!
 DECLARE_SOA_COLUMN(TrackType, tracktype, uint8_t);                   //!
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
@@ -92,22 +103,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 
 // reconstructed track information
 DECLARE_SOA_TABLE(EMTracksForMLPID, "AOD", "EMTRACKMLPID", //!
-                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate,
-                  emmltrack::P, track::Tgl, emmltrack::Sign,
+                  o2::soa::Index<>, track::Signed1Pt, track::Tgl,
                   track::TPCNClsFindable, emmltrack::TPCNClsFound, emmltrack::TPCNClsCrossedRows, emmltrack::TPCNClsPID,
                   track::TPCChi2NCl, track::TPCInnerParam,
-                  track::TPCSignal,
-                  pidtofbeta::Beta,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, emmltrack::PIDLabel,
+                  track::ITSClusterSizes, emmltrack::PIDLabel,
 
                   // dynamic column
                   emmltrack::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emmltrack::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-DECLARE_SOA_TABLE(EMPIDsEl, "AOD", "EMPIDEL", pidtpc::TPCNSigmaEl, pidtof::TOFNSigmaEl); // Joinable with EMTracksForMLPID
-DECLARE_SOA_TABLE(EMPIDsPi, "AOD", "EMPIDPI", pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi); // Joinable with EMTracksForMLPID
-DECLARE_SOA_TABLE(EMPIDsKa, "AOD", "EMPIDKA", pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa); // Joinable with EMTracksForMLPID
-DECLARE_SOA_TABLE(EMPIDsPr, "AOD", "EMPIDPR", pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr); // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDs, "AOD", "EMPID", track::TPCSignal, pidtofbeta::Beta);                          // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsEl, "AOD", "EMPIDEL", pidtpc::TPCNSigmaEl, pidtof::TOFNSigmaEl);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsPi, "AOD", "EMPIDPI", pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsKa, "AOD", "EMPIDKA", pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsPr, "AOD", "EMPIDPR", pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsSub, "AOD", "EMPIDSUB", track::ITSChi2NCl, track::TOFChi2, track::DetectorMap); // Joinable with EMTracksForMLPID, separated from track table because they are not useful for ML PID.
 
 // iterators
 using EMTrackForMLPID = EMTracksForMLPID::iterator;
@@ -168,7 +178,7 @@ DECLARE_SOA_COLUMN(MultMFT, multMFT, uint16_t); //! number of MFTsa tracks per c
 } // namespace emmlfwdtrack
 
 DECLARE_SOA_TABLE(EMFwdTracksForML, "AOD", "EMFWDTRKML", //!
-                  o2::soa::Index<>, collision::PosZ, /*collision::NumContrib,*/ mult::MultFT0C, /*evsel::NumTracksInTimeRange,*/ evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate, emmlfwdtrack::MultMFT,
+                  o2::soa::Index<>, collision::PosZ, /*collision::NumContrib,*/ mult::MultFT0C, /*evsel::NumTracksInTimeRange,*/ evsel::SumAmpFT0CInTimeRange, emmlevent::HadronicRate, emmlfwdtrack::MultMFT,
 
                   emmlfwdtrack::Signed1PtMFTatMP, emmlfwdtrack::TglMFTatMP, emmlfwdtrack::PhiMFTatMP,
                   emmlfwdtrack::XMFTatMP, emmlfwdtrack::YMFTatMP,
@@ -194,19 +204,8 @@ DECLARE_SOA_TABLE(EMFwdTrackErrsForML, "AOD", "EMFWDTRKERRML", //! Joinable with
 using EMFwdTrackErrForML = EMFwdTrackErrsForML::iterator;
 
 // for SemiCharmTag at midrapidity, only electrons
-namespace emmlevent
-{
-DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of mc collision
-} // namespace emmlevent
-
-DECLARE_SOA_TABLE(EMMLEvents, "AOD", "EMMLEVENT", //!
-                  o2::soa::Index<>, collision::Chi2, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
-// iterators
-using EMMLEvent = EMMLEvents::iterator;
-
 namespace emmltrack
 {
-DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);                   //! index to event table
 DECLARE_SOA_COLUMN(IsMotherFromBeauty, isMotherFromBeauty, bool); //! is b quark included in decay history
 DECLARE_SOA_COLUMN(Signed1PtL, signedPtL, float);                 //! sign/pT of lepton
 DECLARE_SOA_COLUMN(EtaL, etaL, float);                            //! eta of lepton

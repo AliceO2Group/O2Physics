@@ -2557,7 +2557,7 @@ struct taggingHFE {
       } // end of main electron sample
 
       if (npos + nele > 0) { // fill eventTable only if at least 1 electron or positron exists.
-        eventTable(collision.chi2(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+        eventTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), 0);
       }
 
       electronIds.clear();
