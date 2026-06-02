@@ -38,7 +38,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, // is INEL > 0
                            [](int multPveta1) -> bool { return multPveta1 > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, // is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
-DECLARE_SOA_DYNAMIC_COLUMN(Selection_Bit, selection_bit, //! Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(Selection_Bit, selection_bit, // o2-linter: disable=name/o2-column
                            [](o2::aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
