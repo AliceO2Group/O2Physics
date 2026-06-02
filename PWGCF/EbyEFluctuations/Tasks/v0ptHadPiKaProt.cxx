@@ -942,11 +942,10 @@ struct V0ptHadPiKaProt {
     }
     int bin = hEffAllCharged->FindBin(candidate.pt());
     float eff = hEffAllCharged->GetBinContent(bin);
-    float ptweight = 1.0 / eff;
     if (!std::isfinite(ptweight) || ptweight <= 0) {
       return 1.0;
     }
-    return ptweight;
+    return eff;
   }
 
   template <typename T>
@@ -957,11 +956,10 @@ struct V0ptHadPiKaProt {
     }
     int bin = hEffPion->FindBin(candidate.pt());
     float eff = hEffPion->GetBinContent(bin);
-    float ptweight = 1.0 / eff;
     if (!std::isfinite(ptweight) || ptweight <= 0) {
       return 1.0;
     }
-    return ptweight;
+    return eff;
   }
 
   template <typename T>
@@ -972,11 +970,10 @@ struct V0ptHadPiKaProt {
     }
     int bin = hEffKaon->FindBin(candidate.pt());
     float eff = hEffKaon->GetBinContent(bin);
-    float ptweight = 1.0 / eff;
     if (!std::isfinite(ptweight) || ptweight <= 0) {
       return 1.0;
     }
-    return ptweight;
+    return eff;
   }
 
   template <typename T>
@@ -987,11 +984,10 @@ struct V0ptHadPiKaProt {
     }
     int bin = hEffProton->FindBin(candidate.pt());
     float eff = hEffProton->GetBinContent(bin);
-    float ptweight = 1.0 / eff;
     if (!std::isfinite(ptweight) || ptweight <= 0) {
       return 1.0;
     }
-    return ptweight;
+    return eff;
   }
 
   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions, MyMCTracks const& tracks)
