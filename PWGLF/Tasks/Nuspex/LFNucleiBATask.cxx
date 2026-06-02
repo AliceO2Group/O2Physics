@@ -15,7 +15,8 @@
 /// \brief  Analysis task for the measurement of the coalescence parameter B2/B3 in pp collisions for (anti)deuteron/(anti)helium-3
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
-///
+
+// o2-linter: disable=name/workflow-file
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
@@ -92,8 +93,8 @@ struct LFNucleiBATask {
   Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
-  Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency histos."};
-  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> enableTrackingEff{"enableTrackingEff", false, "Flag to enable tracking efficiency histos."};
+  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"}; // o2-linter: disable=name/configurable (fast fix)
 
   // Set the triggered events skimming scheme
   struct : ConfigurableGroup {
@@ -238,7 +239,7 @@ struct LFNucleiBATask {
 
   Configurable<bool> enablePtShiftPID{"enablePtShiftPID", true, "Flag to enable wrong PID in tracking pT correction shift"};
   Configurable<std::vector<float>> parShiftPtPID{"parShiftPtPID", {0.0f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f}, "Parameters for helium3-Pt wrong pid shift (if enabled)."};
-  Configurable<float> CfgPtShiftPID{"CfgPtShiftPID", 1.25f, "Default upper limit for PID pt-shift correction"};
+  Configurable<float> cfgPtShiftPID{"cfgPtShiftPID", 1.25f, "Default upper limit for PID pt-shift correction"};
 
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
 
@@ -2578,7 +2579,7 @@ struct LFNucleiBATask {
           }
           if (enablePtShiftPID && fShiftPtPID) {
             shiftPtPID = fShiftPtPID->Eval(2 * track.pt());
-            if (tritonPID && (track.pt() <= CfgPtShiftPID)) {
+            if (tritonPID && (track.pt() <= cfgPtShiftPID)) {
               hePt = track.pt() - shiftPtPID / 2.f;
               antihePt = track.pt() - shiftPtPID / 2.f;
             }
