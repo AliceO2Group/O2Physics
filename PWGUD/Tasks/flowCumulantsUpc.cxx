@@ -56,6 +56,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -80,6 +81,7 @@ struct FlowCumulantsUpc {
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum number of ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCChi2NCl, float, 4.0f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgNsubsamplerepeat, int, 20, "Number of repeats for each subsample")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRunbyRun, bool, false, "NUA weights are filled run-by-run")
@@ -148,6 +150,7 @@ struct FlowCumulantsUpc {
   int lastRunNumber = -1;
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
+  std::vector<int> subsampleindex;
 
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -158,6 +161,8 @@ struct FlowCumulantsUpc {
     const AxisSpec axisVertex{40, -20, 20, "Vtxz (cm)"};
     const AxisSpec axisPhi{60, 0.0, constants::math::TwoPI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
+    subsampleindex.resize(cfgNbootstrap);
+    std::iota(subsampleindex.begin(), subsampleindex.end(), 0);
 
     ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
@@ -766,7 +771,12 @@ struct FlowCumulantsUpc {
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      fillFC(corrconfigs.at(l_ind), independent, lRandom);
+      std::mt19937 g(static_cast<uint32_t>(lRandom * 4294967295u));
+      std::shuffle(subsampleindex.begin(), subsampleindex.end(), g);
+      for (int i = 0; i < cfgNsubsamplerepeat; i++) {
+        double rndmIndex = static_cast<double>(subsampleindex.at(i)) / static_cast<double>(cfgNbootstrap);
+        fillFC(corrconfigs.at(l_ind), independent, rndmIndex);
+      }
     }
   }
   PROCESS_SWITCH(FlowCumulantsUpc, processData, "processData", true);
