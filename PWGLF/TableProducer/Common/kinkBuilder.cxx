@@ -664,13 +664,9 @@ struct kinkBuilder {
   template<typename TColls, typename TTracks>
   void fillOutputsData(const TColls& collisions, const TTracks& tracks, const aod::AmbiguousTracks& ambiTracks, const aod::BCs& bcs) {
     kinkCandidates.clear();
-    // LOG(info) << "[kink] ";
-    // LOG(info) << "[kink] *****************************************";
-    // LOG(info) << "[kink] Processing " << tracks.size() << " tracks and " << collisions.size() << " collisions";
 
     buildSvPool(collisions, tracks, ambiTracks, bcs);
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
-    // LOG(info) << "[kink] Number of kink candidates in the pool: " << kinkPool.size();
     bool isAccepted = false;
     for (const auto& svCand : kinkPool) {
       buildKinkCand(svCand, tracks, isAccepted, collisions);
