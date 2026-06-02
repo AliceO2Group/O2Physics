@@ -165,7 +165,7 @@ struct flowDirectedFlowTask {
 
     histos.add("hpResCosAC", "cos(#Psi_{A}-#Psi_{C}) vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
     histos.add("hpDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
-	histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
+    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
     histos.add("hpQxAQxC", "QxA QxC", kTH2F, {{centAxis}, {resAxis}});
     histos.add("hpQyAQyC", "QyA QyC", kTH2F, {{centAxis}, {resAxis}});
     histos.add("hpQxAQyC", "QxA QyC", kTH2F, {{centAxis}, {resAxis}});
