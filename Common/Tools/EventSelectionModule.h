@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file EventSelectionModule.h
-/// \brief Event selection modeule
+/// \brief Event selection module
 /// \author ALICE
 
 #ifndef COMMON_TOOLS_EVENTSELECTIONMODULE_H_

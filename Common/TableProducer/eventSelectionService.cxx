@@ -44,7 +44,7 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
-struct eventselectionRun2 {
+struct EventselectionRun2 { // o2-linter: disable=name/workflow-file (exception due to metadata-driven topology)
   o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
@@ -103,7 +103,7 @@ struct eventselectionRun2 {
   }
 };
 
-struct eventselectionRun3 {
+struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception due to metadata-driven topology)
   o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
@@ -167,7 +167,7 @@ struct eventselectionRun3 {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=o2-workflow-options (metadata-driven topology selection)
 {
   // Parse the metadata for later too
   metadataInfo.initMetadata(cfgc);
@@ -185,18 +185,18 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     LOGF(warn, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
     LOGF(warn, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
     LOGF(warn, "You should instead make sure the metadata is read in correctly.");
-    return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
+    return WorkflowSpec{adaptAnalysisTask<EventselectionRun3>(cfgc)};
   } else {
     LOGF(info, "Metadata successfully read in. Is this Run 3? %i - will self-configure.", isRun3);
     if (isRun3) {
-      return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
+      return WorkflowSpec{adaptAnalysisTask<EventselectionRun3>(cfgc)};
     } else {
       LOGF(warn, "******************************************************************");
       LOGF(warn, " Event selection service self-configuring for Run 2.");
       LOGF(warn, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
       LOGF(warn, " If this fails, please use event-selection-service-run2 instead.");
       LOGF(warn, "******************************************************************");
-      return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
+      return WorkflowSpec{adaptAnalysisTask<EventselectionRun2>(cfgc)};
     }
   }
   throw std::runtime_error("Unsupported run type / problem when configuring event selection!");

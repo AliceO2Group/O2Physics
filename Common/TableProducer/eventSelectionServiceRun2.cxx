@@ -43,7 +43,7 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
-struct eventselectionRun2 {
+struct EventselectionRun2 {
   o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
@@ -102,7 +102,7 @@ struct eventselectionRun2 {
   }
 };
 
-struct eventselectionRun3 {
+struct EventselectionRun3 {
   o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
@@ -175,5 +175,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   LOGF(info, "To be improved once metadata enabling in defineDataProcessing is worked out.");
 
   // force Run 2 mode
-  return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<EventselectionRun2>(cfgc)};
 }
