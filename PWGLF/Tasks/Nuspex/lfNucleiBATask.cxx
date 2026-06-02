@@ -18,9 +18,12 @@
 <<<<<<< HEAD
 =======
 
+<<<<<<< HEAD:PWGLF/Tasks/Nuspex/LFNucleiBATask.cxx
 // o2-linter: disable=name/workflow-file
 >>>>>>> 5678d3143 (NucleiTask - Fix O2Lint errors)
 
+=======
+>>>>>>> a353f854f (NucleiTask - Files renamed):PWGLF/Tasks/Nuspex/lfNucleiBATask.cxx
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/mcCentrality.h"
