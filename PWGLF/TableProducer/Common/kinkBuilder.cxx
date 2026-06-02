@@ -16,9 +16,9 @@
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
-#include "Common/DataModel/Centrality.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -322,7 +322,7 @@ struct kinkBuilder {
     hSelKinkedTrackQA->GetXaxis()->SetBinLabel(11, "MothLastLayerRadiusCheck");
     hMothDaughSignsInit = qaRegistry.add<TH2>("hMothDaughSignsInit", "hMothDaughSignsInit; Sign Mother; Sign Daughter", {HistType::kTH2F, {{3, -1.5, 1.5}, {3, -1.5, 1.5}}});
     hMothDaughSignsFinal = qaRegistry.add<TH2>("hMothDaughSignsFinal", "hMothDaughSignsFinal; Sign Mother; Sign Daughter", {HistType::kTH2F, {{3, -1.5, 1.5}, {3, -1.5, 1.5}}});
-    hZDiff = qaRegistry.add<TH2>("hZDiff",   "hZDiff; #Delta z (#mu m);(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {zDiffBins, {4, -0.5, 3.5}});
+    hZDiff = qaRegistry.add<TH2>("hZDiff", "hZDiff; #Delta z (#mu m);(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {zDiffBins, {4, -0.5, 3.5}});
     hZDiff->GetYaxis()->SetBinLabel(1, "(+,+)");
     hZDiff->GetYaxis()->SetBinLabel(2, "(-,-)");
     hZDiff->GetYaxis()->SetBinLabel(3, "(+,-)");
@@ -355,12 +355,12 @@ struct kinkBuilder {
 
     if (doprocessMc || doprocessMcWCent) {
       if (skipBkgCands) {
-        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", "hRecCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays)-0.5}, absPtAxis}});
+        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", "hRecCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays) - 0.5}, absPtAxis}});
         hRecCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
         hRecCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
         hRecCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
       }
-      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays)-0.5}, absPtAxis}});
+      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays) - 0.5}, absPtAxis}});
       hGenCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
       hGenCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
       hGenCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
@@ -437,15 +437,15 @@ struct kinkBuilder {
     if (candidate.itsNClsInnerBarrel() != 0)
       return false;
     hSelDaugQA->Fill(4.f, isPositive);
-    
+
     if (candidate.itsNCls() >= 4)
       return false;
     hSelDaugQA->Fill(5.f, isPositive);
-    
+
     if (candidate.tpcNClsCrossedRows() <= 0.8 * candidate.tpcNClsFindable())
       return false;
     hSelDaugQA->Fill(6.f, isPositive);
-    
+
     if (candidate.tpcNClsFound() <= nTPCClusMinDaug)
       return false;
     hSelDaugQA->Fill(7.f, isPositive);
@@ -463,7 +463,7 @@ struct kinkBuilder {
     auto trackDaug = tracks.rawIteratorAt(svCand.tr1Idx);
 
     // Fill Selections QA histo
-    int chargeCombSvCand = 2*unlikeSignBkg + (trackMoth.sign() == -1 ? 1 : 0);
+    int chargeCombSvCand = 2 * unlikeSignBkg + (trackMoth.sign() == -1 ? 1 : 0);
     hSelKinkedTrackQA->Fill(0.f, chargeCombSvCand); // all candidates bin
     hMothDaughSignsInit->Fill(trackMoth.sign(), trackDaug.sign());
 
@@ -641,8 +641,9 @@ struct kinkBuilder {
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
-  template<typename TColls, typename TTracks, typename TAmbiTracks>
-  void buildSvPool(const TColls& collisions, const TTracks& tracks, const TAmbiTracks& ambiguousTracks, const aod::BCs& bcs) {
+  template <typename TColls, typename TTracks, typename TAmbiTracks>
+  void buildSvPool(const TColls& collisions, const TTracks& tracks, const TAmbiTracks& ambiguousTracks, const aod::BCs& bcs)
+  {
     svCreator.clearPools();
     svCreator.fillBC2Coll(collisions, bcs);
 
@@ -661,8 +662,9 @@ struct kinkBuilder {
     }
   }
 
-  template<typename TColls, typename TTracks>
-  void fillOutputsData(const TColls& collisions, const TTracks& tracks, const aod::AmbiguousTracks& ambiTracks, const aod::BCs& bcs) {
+  template <typename TColls, typename TTracks>
+  void fillOutputsData(const TColls& collisions, const TTracks& tracks, const aod::AmbiguousTracks& ambiTracks, const aod::BCs& bcs)
+  {
     kinkCandidates.clear();
 
     buildSvPool(collisions, tracks, ambiTracks, bcs);
@@ -703,15 +705,16 @@ struct kinkBuilder {
   }
   PROCESS_SWITCH(kinkBuilder, processDataWCentSel, "Data processing with centrality selection", false);
 
-  template<bool checkKinkDaugPdg, typename TMother>
-  int matchKinkDecay(const TMother& motherPart, const aod::McParticles& mcParticles) {
+  template <bool checkKinkDaugPdg, typename TMother>
+  int matchKinkDecay(const TMother& motherPart, const aod::McParticles& mcParticles)
+  {
     int pdgMother = motherPart.pdgCode();
     int8_t sign = 0;
     int pdgCodeNeutralDaug{-1}, pdgCodeChargedDaug{-1};
     std::array<int, 2> finState = {-1, -1};
     switch (std::abs(pdgMother)) {
       case PDG_t::kSigmaMinus: {
-        // Swap the sign of the neutral decay products in case of anti-particles 
+        // Swap the sign of the neutral decay products in case of anti-particles
         pdgCodeNeutralDaug = (pdgMother > 0) ? +PDG_t::kNeutron : -PDG_t::kNeutron;
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiMinus : +PDG_t::kPiPlus;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug}; // Both decay channels have the same neutral daughter
@@ -723,7 +726,7 @@ struct kinkBuilder {
       case PDG_t::kSigmaPlus: {
         // Swap the sign of the neutral decay products in case of anti-particles
         pdgCodeNeutralDaug = (pdgMother > 0) ? +PDG_t::kNeutron : -PDG_t::kNeutron;
-        pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiPlus  : +PDG_t::kPiMinus;
+        pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiPlus : +PDG_t::kPiMinus;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug};
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
           return kSigmaPlusToPiPlusNeutron;
@@ -746,8 +749,9 @@ struct kinkBuilder {
     return -1;
   }
 
-  template<typename TColls, typename TTracks>
-  void fillOutputsMc(const TColls& mcRecoCollisions, const TTracks& tracksMc, const aod::AmbiguousTracks& ambiTracksMc, const aod::BCs& bcs, const aod::McParticles& mcParticles) {
+  template <typename TColls, typename TTracks>
+  void fillOutputsMc(const TColls& mcRecoCollisions, const TTracks& tracksMc, const aod::AmbiguousTracks& ambiTracksMc, const aod::BCs& bcs, const aod::McParticles& mcParticles)
+  {
     kinkCandidates.clear();
 
     buildSvPool(mcRecoCollisions, tracksMc, ambiTracksMc, bcs);
@@ -828,7 +832,7 @@ struct kinkBuilder {
                  McRecoCollisions const& mcRecoCollisions,
                  aod::McParticles const& mcParticles,
                  TracksFullMc const& tracksMc,
-                 aod::AmbiguousTracks const& ambiTracksMc, 
+                 aod::AmbiguousTracks const& ambiTracksMc,
                  aod::BCs const& bcs)
   {
     fillOutputsMc(mcRecoCollisions, tracksMc, ambiTracksMc, bcs, mcParticles);
@@ -839,7 +843,7 @@ struct kinkBuilder {
                       McRecoCollisionsCentSel const& mcRecoCollisions,
                       aod::McParticles const& mcParticles,
                       TracksFullMc const& tracksMc,
-                      aod::AmbiguousTracks const& ambiTracksMc, 
+                      aod::AmbiguousTracks const& ambiTracksMc,
                       aod::BCs const& bcs)
   {
     fillOutputsMc(mcRecoCollisions, tracksMc, ambiTracksMc, bcs, mcParticles);
