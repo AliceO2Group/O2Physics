@@ -10,14 +10,12 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file LFTreeCreatorNuclei.cxx
+/// \file lfTreeCreatorNuclei.cxx
 /// \brief Writer of the nuclei candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
 ///
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch> and Francesca Bellini <fbellini@cern.ch>
-
-// o2-linter: disable=name/workflow-file (not a workout)
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"

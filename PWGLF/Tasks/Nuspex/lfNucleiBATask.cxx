@@ -10,13 +10,11 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file LFNucleiBATask.cxx
+/// \file lfNucleiBATask.cxx
 ///
 /// \brief  Analysis task for the measurement of the coalescence parameter B2/B3 in pp collisions for (anti)deuteron/(anti)helium-3
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
-
-// o2-linter: disable=name/workflow-file
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
@@ -67,7 +65,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct LFNucleiBATask {
+struct lfNucleiBATask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -2169,7 +2167,7 @@ struct LFNucleiBATask {
     }
     // To be optimised
     if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight) {
-      LOG(info) << "Histograms of LFNucleiBATask:";
+      LOG(info) << "Histograms of lfNucleiBATask:";
       histos.print();
       return;
     }
@@ -2308,7 +2306,7 @@ struct LFNucleiBATask {
       spectraGen.add("alpha/histGenPtantiAlSec", "generated particles", HistType::kTH1F, {ptAxis});
       spectraGen.add("alpha/histSecTransportPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
     }
-    LOG(info) << "Histograms of LFNucleiBATask:";
+    LOG(info) << "Histograms of lfNucleiBATask:";
     histos.print();
     if (doprocessMCGen)
       spectraGen.print();
@@ -6151,7 +6149,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processData, "process data", true);
+  PROCESS_SWITCH(lfNucleiBATask, processData, "process data", true);
 
   // Process function that runs on the original AO2D
   void processDataLfPid(EventCandidates::iterator const& event,
@@ -6160,7 +6158,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processDataLfPid, "process data with LF PID", false);
+  PROCESS_SWITCH(lfNucleiBATask, processDataLfPid, "process data with LF PID", false);
 
   // Process function that runs on the filtered data
   void processDataFiltered(o2::aod::LfNuclEvents::iterator const& event,
@@ -6171,7 +6169,7 @@ struct LFNucleiBATask {
     // Takes as input full AO2Ds
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
+  PROCESS_SWITCH(lfNucleiBATask, processDataFiltered, "process data on the filtered data", false);
 
   void processDataLight(o2::aod::LfNuclEvents::iterator const& event,
                         o2::aod::LfCandNucleusDummy const& tracks,
@@ -6181,7 +6179,7 @@ struct LFNucleiBATask {
     // Takes as input derived trees
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processDataLight, "process data on the derived trees", false);
+  PROCESS_SWITCH(lfNucleiBATask, processDataLight, "process data on the derived trees", false);
 
   /////////////
   // MC Reco //
@@ -6229,7 +6227,7 @@ struct LFNucleiBATask {
 
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles, mcCentFT0M);
   } // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCReco, "process mc reco", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCReco, "process mc reco", false);
 
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPid(EventCandidatesMC::iterator const& event,
@@ -6270,7 +6268,7 @@ struct LFNucleiBATask {
 
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles, mcCentFT0M);
   } // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPid, "process mc reco with LfPid", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoLfPid, "process mc reco with LfPid", false);
 
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPidEv(EventCandidatesMC const& collisions,
@@ -6382,7 +6380,7 @@ struct LFNucleiBATask {
     }
   }
   // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
 
   // Process function that runs on the filtered AO2D (for the MC)
   void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,
@@ -6391,7 +6389,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
 
   void processMCRecoFilteredLight(o2::aod::LfNuclEvents::iterator const& event,
                                   soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks,
@@ -6399,7 +6397,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
 
   ////////////
   // MC Gen //
@@ -6669,7 +6667,7 @@ struct LFNucleiBATask {
       }
     }
   } // Close processMCGen
-  PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
+  PROCESS_SWITCH(lfNucleiBATask, processMCGen, "process MC Generated", true);
 
   void processEvSgLossMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                          aod::McParticles const& mcParticles,
@@ -6755,7 +6753,7 @@ struct LFNucleiBATask {
       }
     }
   }
-  PROCESS_SWITCH(LFNucleiBATask, processEvSgLossMC, "process MC SignLoss", false);
+  PROCESS_SWITCH(lfNucleiBATask, processEvSgLossMC, "process MC SignLoss", false);
 
   //   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
   //                    aod::McParticles const& mcParticles)
@@ -6931,10 +6929,10 @@ struct LFNucleiBATask {
       }
     }
   }
-  PROCESS_SWITCH(LFNucleiBATask, processMCGenLosses, "process MCGen losses", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCGenLosses, "process MCGen losses", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<LFNucleiBATask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<lfNucleiBATask>(cfgc)};
 }
