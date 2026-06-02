@@ -61,6 +61,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -156,6 +157,7 @@ struct nucleiQC {
   std::shared_ptr<TH1> mHistTrackTunedTracks = mHistograms.get<TH1>(HIST("hTrackTunedTracks"));
 
   std::vector<int> mSpeciesToProcess;
+  std::array<bool, nuclei::Species::kNspecies> mFillSpecies{false};
   Produces<aod::NucleiTableRed> mNucleiTableRed;
   Produces<aod::NucleiTableExt> mNucleiTableExt;
 
@@ -169,6 +171,7 @@ struct nucleiQC {
   o2::dataformats::VertexBase mVtx;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
   std::array<nuclei::PidManager, static_cast<int>(nuclei::Species::kNspecies)> mPidManagers;
+  bool mAnyTrackTuner = false;
 
   void init(o2::framework::InitContext&)
   {
@@ -177,22 +180,24 @@ struct nucleiQC {
     mCcdb->setCaching(true);
     mCcdb->setLocalObjectValidityChecking();
     mCcdb->setFatalWhenNull(false);
-    nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCcdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+    // nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCcdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
     for (int iSel = 0; iSel < nuclei::evSel::kNevSels; iSel++) {
       mHistograms.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(iSel + 1, nuclei::eventSelectionLabels[iSel].c_str());
     }
 
     for (int iSpecies = 0; iSpecies < static_cast<int>(nuclei::Species::kNspecies); iSpecies++) {
-      if (cfgSpeciesToProcess->get(iSpecies) == 1)
+      if (cfgSpeciesToProcess->get(iSpecies) == 1) {
         mSpeciesToProcess.emplace_back(iSpecies);
+        mFillSpecies[iSpecies] = true;
+      }
     }
 
     static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
       constexpr int kSpeciesCt = decltype(iSpecies)::value;
       const int kSpeciesRt = kSpeciesCt;
 
-      if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), kSpeciesCt) == mSpeciesToProcess.end())
+      if (!mFillSpecies[kSpeciesCt])
         return;
 
       float tpcBetheBlochParams[6];
@@ -214,12 +219,12 @@ struct nucleiQC {
     });
 
     /// TrackTuner initialization
-    bool anyTrackTuner = false;
+    mAnyTrackTuner = false;
     for (int iSpecies = 0; iSpecies < static_cast<int>(nuclei::Species::kNspecies); iSpecies++) {
-      anyTrackTuner = anyTrackTuner || cfgUseTrackTuner->get(iSpecies);
+      mAnyTrackTuner = mAnyTrackTuner || cfgUseTrackTuner->get(iSpecies);
     }
 
-    if (anyTrackTuner) {
+    if (mAnyTrackTuner) {
       std::string outputStringParams = "";
       switch (cfgTrackTunerConfigSource) {
         case aod::track_tuner::InputString:
@@ -251,13 +256,17 @@ struct nucleiQC {
 
     o2::parameters::GRPMagField* grpmag = mCcdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
     o2::base::Propagator::initFieldFromGRP(grpmag);
-    o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
+    // o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
+    if (!o2::base::Propagator::Instance()->getMatLUT()) {
+      nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCcdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+      o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
+    }
     mBz = static_cast<float>(grpmag->getNominalL3Field());
     LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
 
-  template <int iSpecies, typename Ttrack, typename Tcollision>
-  bool trackSelection(const Ttrack& track, const Tcollision& collision)
+  template <int iSpecies, bool isMc, typename Ttrack>
+  bool trackSelection(const Ttrack& track)
   {
     mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNoCuts);
 
@@ -289,13 +298,24 @@ struct nucleiQC {
       return false;
     mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kItsChi2Cut);
 
-    const o2::math_utils::Point3D<float> collisionVertex{collision.posX(), collision.posY(), collision.posZ()};
     mDcaInfoCov.set(999, 999, 999, 999, 999);
     setTrackParCov(track, mTrackParCov);
     mTrackParCov.setPID(track.pidForTracking());
-    std::array<float, 2> dcaInfo;
-    o2::base::Propagator::Instance()->propagateToDCA(collisionVertex, mTrackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
-    if (std::abs(dcaInfo[0]) > cfgCutDCAxy || std::abs(dcaInfo[1]) > cfgCutDCAz)
+
+    if constexpr (isMc) {
+      if (track.has_mcParticle() && cfgUseTrackTuner->get(iSpecies)) {
+        const auto& particle = track.mcParticle();
+        mHistTrackTunedTracks->Fill(1.);
+        mTrackTuner.tuneTrackParams(particle, mTrackParCov, mMatCorr, &mDcaInfoCov, mHistTrackTunedTracks);
+      }
+    } else {
+      mMatCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
+    }
+
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, mMatCorr, &mDcaInfoCov);
+    mDcaInfo[0] = mDcaInfoCov.getY();
+    mDcaInfo[1] = mDcaInfoCov.getZ();
+    if (std::abs(mDcaInfo[0]) > cfgCutDCAxy || std::abs(mDcaInfo[1]) > cfgCutDCAz)
       return false;
     mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kDcaCuts);
 
@@ -365,9 +385,9 @@ struct nucleiQC {
   }
 
   template <typename Tparticle>
-  void fillCollisionFlag(const Tparticle& particle, nuclei::SlimCandidate& candidate, const std::vector<bool>& reconstructedCollision)
+  void fillCollisionFlag(const Tparticle& particle, nuclei::SlimCandidate& candidate, const std::unordered_set<int>& reconstructedCollision)
   {
-    if (reconstructedCollision[particle.mcCollisionId()]) {
+    if (reconstructedCollision.count(particle.mcCollisionId()) > 0) {
       candidate.flags |= nuclei::QcFlags::kQcHasReconstructedCollision;
     }
   }
@@ -397,31 +417,6 @@ struct nucleiQC {
   }
 
   template <const bool isMc, typename Tcollision, typename Ttrack>
-  void fillDcaInformation(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate, const aod::McParticles::iterator& particle)
-  {
-
-    mDcaInfoCov.set(999, 999, 999, 999, 999);
-    setTrackParCov(track, mTrackParCov);
-    mTrackParCov.setPID(track.pidForTracking());
-
-    if constexpr (isMc) {
-      if (track.has_mcParticle() && cfgUseTrackTuner->get(iSpecies)) {
-        mHistTrackTunedTracks->Fill(1.);
-        mTrackTuner.tuneTrackParams(particle, mTrackParCov, mMatCorr, &mDcaInfoCov, mHistTrackTunedTracks);
-      }
-    } else {
-      mMatCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
-    }
-
-    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, mMatCorr, &mDcaInfoCov);
-
-    candidate.DCAxy = mDcaInfoCov.getY();
-    candidate.DCAz = mDcaInfoCov.getZ();
-  }
-
-  template <const bool isMc, typename Tcollision, typename Ttrack>
   nuclei::SlimCandidate fillCandidate(const int iSpecies, Tcollision const& collision, Ttrack const& track)
   {
     if (!nuclei::checkSpeciesValidity(iSpecies))
@@ -434,8 +429,8 @@ struct nucleiQC {
                                        .clusterSizesITS = track.itsClusterSizes(),
                                        .TPCsignal = track.tpcSignal(),
                                        .beta = mPidManagers[iSpecies].getBetaTOF(track),
-                                       .DCAxy = 0.f,
-                                       .DCAz = 0.f,
+                                       .DCAxy = mDcaInfo[0], // set in the track selection function
+                                       .DCAz = mDcaInfo[1],  // set in the track selection function
                                        .flags = 0,
                                        .pdgCode = 0,
                                        .motherPdgCode = 0,
@@ -450,18 +445,14 @@ struct nucleiQC {
 
     fillNucleusFlagsPdgs(collision, track, candidate);
 
-    aod::McParticles::iterator particle;
-
     if constexpr (isMc) {
       if (track.has_mcParticle()) {
 
-        particle = track.mcParticle();
+        const auto& particle = track.mcParticle();
         fillNucleusFlagsPdgsMc(particle, candidate);
         fillNucleusGeneratedVariables(particle, candidate);
       }
     }
-
-    fillDcaInformation<isMc>(iSpecies, collision, track, candidate, particle);
 
     return candidate;
   }
@@ -510,12 +501,36 @@ struct nucleiQC {
     }
   }
 
-  void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles, const aod::McCollisions& mcCollisions)
+  void writeCandidate(const nuclei::SlimCandidate& candidate)
+  {
+    if (!cfgFillTable)
+      return;
+
+    mNucleiTableRed(
+      candidate.pt,
+      candidate.eta,
+      candidate.phi,
+      candidate.tpcInnerParam,
+      candidate.clusterSizesITS,
+      candidate.TPCsignal,
+      candidate.beta,
+      candidate.DCAxy,
+      candidate.DCAz,
+      candidate.flags,
+      candidate.ptGenerated,
+      candidate.mcProcess,
+      candidate.pdgCode,
+      candidate.motherPdgCode);
+    mNucleiTableExt(
+      candidate.nsigmaTpc,
+      candidate.nsigmaTof);
+  }
+
+  void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles, const aod::McCollisions& /*mcCollisions*/)
   {
     gRandom->SetSeed(67);
-    mNucleiCandidates.clear();
-    std::vector<bool> reconstructedMcParticles(mcParticles.size(), false);
-    std::vector<bool> reconstructedCollisions(mcCollisions.size(), false);
+    std::unordered_set<int> reconstructedMcParticles;
+    std::unordered_set<int> reconstructedCollisions;
 
     for (const auto& collision : collisions) {
 
@@ -525,13 +540,11 @@ struct nucleiQC {
       if (!nuclei::eventSelection(collision, mHistograms, cfgEventSelections, cfgCutVertex))
         continue;
       mHistograms.fill(HIST("hCentrality"), nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality));
-      reconstructedCollisions[collision.mcCollisionId()] = true;
+      reconstructedCollisions.insert(collision.mcCollisionId());
+      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
-      bool anyTrackTuner = false;
-      for (int iSpecies = 0; iSpecies < static_cast<int>(nuclei::Species::kNspecies); iSpecies++) {
-        anyTrackTuner = anyTrackTuner || cfgUseTrackTuner->get(iSpecies);
-      }
-      if (anyTrackTuner && mTrackTuner.autoDetectDcaCalib && !mTrackTuner.areGraphsConfigured) {
+      if (mAnyTrackTuner && mTrackTuner.autoDetectDcaCalib && !mTrackTuner.areGraphsConfigured) {
 
         mTrackTuner.setRunNumber(mRunNumber);
 
@@ -544,38 +557,41 @@ struct nucleiQC {
       auto tracksThisCollision = tracks.sliceBy(mTracksPerCollision, collision.globalIndex());
       for (const auto& track : tracksThisCollision) {
 
+        // selections shared among all species
+        if (!track.has_mcParticle())
+          continue;
+
+        if (track.mcParticleId() < -1 || track.mcParticleId() >= mcParticles.size())
+          continue;
+        const auto& particle = mcParticles.iteratorAt(track.mcParticleId());
+
+        if (cfgRapidityToggle && ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax))
+          continue;
+
+        if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
+          continue;
+
+        // species-specific selections and filling
         static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
           constexpr int kSpeciesCt = decltype(iSpecies)::value;
           const int kSpeciesRt = kSpeciesCt;
-
-          if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), kSpeciesRt) == mSpeciesToProcess.end())
+          if (!mFillSpecies[kSpeciesCt])
             return;
-
-          if (!track.has_mcParticle())
-            return;
-
-          if (track.mcParticleId() < -1 || track.mcParticleId() >= mcParticles.size())
-            return;
-          const auto& particle = mcParticles.iteratorAt(track.mcParticleId());
 
           if (cfgDoCheckPdgCode) {
             if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
               return;
           }
 
+          mDcaInfo = {-999.f, -999.f};
+
           if (cfgDownscalingFactor->get(kSpeciesRt) < 1.) {
             if ((gRandom->Uniform()) > cfgDownscalingFactor->get(kSpeciesRt))
               return;
           }
 
-          if (cfgRapidityToggle && ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax))
-            return;
-
-          if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
-            return;
-
           mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
-          if (!trackSelection<kSpeciesRt>(track, collision))
+          if (!trackSelection<kSpeciesRt, /*isMc*/ true>(track))
             return;
           mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
 
@@ -587,8 +603,8 @@ struct nucleiQC {
           candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
           fillCollisionFlag(particle, candidate, reconstructedCollisions);
 
-          mNucleiCandidates.emplace_back(candidate);
-          reconstructedMcParticles[particle.globalIndex()] = true;
+          writeCandidate(candidate);
+          reconstructedMcParticles.insert(particle.globalIndex());
 
           dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
           dispatchFillHistograms</*isGenerated*/ false>(kSpeciesRt, candidate);
@@ -600,15 +616,14 @@ struct nucleiQC {
     for (const auto& particle : mcParticles) {
 
       mcIndex++;
-
       int iSpecies = nuclei::getSpeciesFromPdg(particle.pdgCode());
-      if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), iSpecies) == mSpeciesToProcess.end())
+      if (!mFillSpecies[iSpecies])
+        continue;
+
+      if (reconstructedMcParticles.count(mcIndex) > 0)
         continue;
 
       if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
-        continue;
-
-      if (reconstructedMcParticles[mcIndex])
         continue;
 
       if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
@@ -626,33 +641,9 @@ struct nucleiQC {
       fillNucleusFlagsPdgsMc(particle, candidate);
       fillNucleusGeneratedVariables(particle, candidate);
 
-      mNucleiCandidates.emplace_back(candidate);
+      writeCandidate(candidate);
       mFilledMcParticleIds.emplace_back(particle.globalIndex());
       dispatchFillHistograms</*isGenerated*/ true>(iSpecies, candidate);
-    }
-
-    if (!cfgFillTable)
-      return;
-
-    for (const auto& candidate : mNucleiCandidates) {
-      mNucleiTableRed(
-        candidate.pt,
-        candidate.eta,
-        candidate.phi,
-        candidate.tpcInnerParam,
-        candidate.clusterSizesITS,
-        candidate.TPCsignal,
-        candidate.beta,
-        candidate.DCAxy,
-        candidate.DCAz,
-        candidate.flags,
-        candidate.ptGenerated,
-        candidate.mcProcess,
-        candidate.pdgCode,
-        candidate.motherPdgCode);
-      mNucleiTableExt(
-        candidate.nsigmaTpc,
-        candidate.nsigmaTof);
     }
   }
   PROCESS_SWITCH(nucleiQC, processMc, "Mc analysis", false);
