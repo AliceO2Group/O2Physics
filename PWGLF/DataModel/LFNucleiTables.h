@@ -15,12 +15,15 @@
 /// \author Rutuparna Rath <rutuparna.rath@cern.ch> and Giovanni Malfattore <giovanni.malfattore@cern.ch>
 ///
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
 #ifndef PWGLF_DATAMODEL_LFNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFNUCLEITABLES_H_
+
+#include "Common/CCDB/EventSelectionParams.h"
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -97,6 +100,7 @@ DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 // TPC and ITS QA
+DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t);
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, int16_t);
 DECLARE_SOA_COLUMN(TPCChi2Ncl, tpcChi2NCl, float);
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
@@ -168,6 +172,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::HasTRD,
                   full::TPCInnerParam,
                   full::Beta,
+                  full::PIDForTracking,
                   full::TPCSignal,
                   full::Pt,
                   full::Eta,
@@ -200,6 +205,7 @@ DECLARE_SOA_TABLE_VERSIONED(LfCandNucleusDummy, "AOD", "LFNUCL", 1,
                             full::HasTRD,
                             full::TPCInnerParam,
                             full::Beta,
+                            full::PIDForTracking,
                             full::TPCSignal,
                             full::Pt,
                             full::Eta,

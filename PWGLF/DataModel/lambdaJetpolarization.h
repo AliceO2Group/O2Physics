@@ -16,17 +16,10 @@
 #ifndef PWGLF_DATAMODEL_LAMBDAJETPOLARIZATION_H_
 #define PWGLF_DATAMODEL_LAMBDAJETPOLARIZATION_H_
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "TRandom.h"
-#include "Math/Vector4D.h"
-#include "Math/Boost.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <RtypesCore.h>
 
 namespace o2::aod
 {

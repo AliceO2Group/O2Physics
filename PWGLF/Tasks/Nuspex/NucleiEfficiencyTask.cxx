@@ -12,42 +12,29 @@
 // Authors: Rafael Manhart,
 // Date: 06.05.2024
 
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/DataModel/spectraTOF.h"
-#include "PWGLF/Utils/inelGt.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
-#include <TF1.h>
-#include <TLorentzVector.h>
+#include <TH1.h>
 #include <TMath.h>
-#include <TObjArray.h>
 
 #include <cmath>
 #include <string>
 #include <vector>
 
 using namespace o2;
-using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 

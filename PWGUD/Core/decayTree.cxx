@@ -11,10 +11,20 @@
 
 #include "decayTree.h"
 
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
+
+#include <TDatabasePDG.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include <sys/types.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>

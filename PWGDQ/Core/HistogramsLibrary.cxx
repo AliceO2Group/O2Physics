@@ -13,11 +13,25 @@
 //
 #include "PWGDQ/Core/HistogramsLibrary.h"
 
+#include "HistogramManager.h"
 #include "VarManager.h"
 
-#include "CommonConstants/MathConstants.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Logger.h>
+
+#include <TArrayD.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
+#include <cstring>
+#include <ostream>
 #include <vector>
 
 void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* histClass, const char* groupName, const char* subGroupName)
@@ -42,7 +56,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "TF_NMFTs", "Number of MFT tracks per TF", false, 1000, 0.0, 200000.0, VarManager::kTFNMFTs);
   }
   if (!groupStr.CompareTo("event")) {
-    if (!subGroupStr.Contains("generator")) {
+    if (!subGroupStr.Contains("generator") && !subGroupStr.Contains("pairing")) {
       hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
       hm->AddHistogram(histClass, "VtxZ_Run", "Vtx Z", true, 1, -0.5, 0.5, VarManager::kRunNo, 60, -15.0, 15.0, VarManager::kVtxZ, 1, 0, 1, VarManager::kNothing, "", "", "", VarManager::kNothing, VarManager::kNothing, false, true);
       hm->AddHistogram(histClass, "BC", "Event per BC", false, 3564, 0.0, 3564.0, VarManager::kBCOrbit);
@@ -82,15 +96,23 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("vtxpp")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "VtxNContrib_VtxNContribReal", "VtxNContrib_VtxNContribReal", false, 200, 0.0, 200.0, VarManager::kVtxNcontrib, 200, 0.0, 200.0, VarManager::kVtxNcontribReal);
+      hm->AddHistogram(histClass, "VtxNContribReal_kMultFT0C", "VtxNContribReal_kMultFT0C", false, 200, 0.0, 200.0, VarManager::kVtxNcontrib, 2500, 0.0, 25000, VarManager::kMultFT0C);
+      hm->AddHistogram(histClass, "VtxNContribReal_kMultFT0A", "VtxNContribReal_kMultFT0A", false, 200, 0.0, 200.0, VarManager::kVtxNcontrib, 2500, 0.0, 25000, VarManager::kMultFT0A);
     }
     if (subGroupStr.Contains("vtxPbPb")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 20000.0, VarManager::kVtxNcontrib);
     }
     if (subGroupStr.Contains("cent")) {
       hm->AddHistogram(histClass, "CentFT0C", "CentFT0C", false, 100, 0., 100., VarManager::kCentFT0C);
+      hm->AddHistogram(histClass, "CentFT0M", "CentFT0M", false, 100, 0., 100., VarManager::kCentFT0M);
+      hm->AddHistogram(histClass, "CentFT0M_VtxNContribReal", "CentFT0M_VtxNContribReal", false, 100, 0.0, 100.0, VarManager::kCentFT0M, 200, 0.0, 200.0, VarManager::kVtxNcontribReal);
       hm->AddHistogram(histClass, "CentFT0C_vtxZ", "CentFT0C vs Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ, 20, 0., 100., VarManager::kCentFT0C);
       hm->AddHistogram(histClass, "CentFT0C_MultTPC", "CentFT0C vs MultTPC", false, 100, 0., 100., VarManager::kCentFT0C, 100, 0., 50000., VarManager::kMultTPC);
       hm->AddHistogram(histClass, "CentFT0C_Run", "Cent FT0C", true, 1, -0.5, 0.5, VarManager::kRunNo, 100, 0., 100., VarManager::kCentFT0C, 1, 0, 1, VarManager::kNothing, "", "", "", VarManager::kNothing, VarManager::kNothing, false, true);
+    }
+    if (subGroupStr.Contains("randomplane")) {
+      hm->AddHistogram(histClass, "random plane angle", "random Psi", false, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kRandomPsi2);
     }
     if (subGroupStr.Contains("mult")) {
       if (subGroupStr.Contains("pp")) {
@@ -227,6 +249,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MCVtxZ_VtxZ", "Vtx Z (MC vs rec)", false, 75, -15.0, 15.0, VarManager::kVtxZ, 75, -15.0, 15.0, VarManager::kMCVtxZ);
       hm->AddHistogram(histClass, "MCVtxZ", "Vtx Z (MC)", false, 75, -15.0, 15.0, VarManager::kMCVtxZ);
       hm->AddHistogram(histClass, "MCImpPar_CentVZERO", "MC impact param vs CentVZERO", false, 50, 0.0, 100.0, VarManager::kCentVZERO, 20, 0.0, 20.0, VarManager::kMCEventImpParam);
+      hm->AddHistogram(histClass, "MCEventPlaneAngle", "MC event plane angle", false, 100, -TMath::Pi(), TMath::Pi(), VarManager::kMCEventPlaneAngle);
+      hm->AddHistogram(histClass, "kMCEventCentrFT0C_CentFT0C", "MC Centrality FT0C vs Centrality FT0C", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 100.0, VarManager::kMCEventCentrFT0C);
     }
     if (subGroupStr.Contains("generator")) {
       hm->AddHistogram(histClass, "MCVtxX", "Vtx X", false, 1000, -0.5, 0.5, VarManager::kMCVtxX);
@@ -234,8 +258,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MCVtxX_VtxY", "Vtx X vs Vtx Y", false, 200, -0.2, 0.2, VarManager::kMCVtxX, 200, -0.2, 0.2, VarManager::kMCVtxY);
       hm->AddHistogram(histClass, "MCVtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kMCVtxZ);
       hm->AddHistogram(histClass, "MCVtxZ_VtxX", "Vtx X vs Vtx Z", false, 60, -15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxX);
-      hm->AddHistogram(histClass, "MCVtxX_VtxY", "Vtx X vs Vtx Y", false, 200, 15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxY);
-      hm->AddHistogram(histClass, "MCImpPar", "MC impact param", false, 20, 0.0, 20.0, VarManager::kMCEventImpParam);
+      hm->AddHistogram(histClass, "MCVtxZ_VtxY", "Vtx Y vs Vtx Z", false, 200, 15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxY);
+      hm->AddHistogram(histClass, "MCImpPar", "MC impact param", false, 200, 0.0, 20.0, VarManager::kMCEventImpParam);
       hm->AddHistogram(histClass, "MCCentrFT0C", "MC Centrality FT0C", false, 100, 0.0, 100.0, VarManager::kMCEventCentrFT0C);
       hm->AddHistogram(histClass, "MultMCNParticlesEta05", "MultMCNParticlesEta05", false, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta05);
       hm->AddHistogram(histClass, "MultMCNParticlesEta08", "MultMCNParticlesEta08", false, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta08);
@@ -244,7 +268,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("subgen")) {
       hm->AddHistogram(histClass, "SubGenID", "SubGenerator ID", false, 11, -0.5, 10.5, VarManager::kMCEventSubGeneratorId);
     }
-    if (subGroupStr.Contains("qvector")) {
+    if (subGroupStr.Contains("central-qvector")) {
+      hm->AddHistogram(histClass, "Q2X0A_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ2X0A);
+      hm->AddHistogram(histClass, "Q2Y0A_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ2Y0A);
+      hm->AddHistogram(histClass, "Q2X0B_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ2X0B);
+      hm->AddHistogram(histClass, "Q2Y0B_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ2Y0B);
+      hm->AddHistogram(histClass, "Q2X0C_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ2X0C);
+      hm->AddHistogram(histClass, "Q2Y0C_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ2Y0C);
+
+      hm->AddHistogram(histClass, "Psi2A_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2A);
+      hm->AddHistogram(histClass, "Psi2B_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2B);
+      hm->AddHistogram(histClass, "Psi2C_CentFT0C", "", false, 100, 0.0, 100.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2C);
+    }
+    if (subGroupStr.Contains("all-qvector")) {
       int varZNA[3] = {VarManager::kQ1ZNAX, VarManager::kQ1ZNAY, VarManager::kCentFT0C};
       int varZNC[3] = {VarManager::kQ1ZNCX, VarManager::kQ1ZNCY, VarManager::kCentFT0C};
 
@@ -380,14 +416,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
     }
     if (subGroupStr.Contains("res")) {
-      hm->AddHistogram(histClass, "R2SP_TPCFT0A_CentV0M", "", true, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2SP_AB);
-      hm->AddHistogram(histClass, "R2SP_TPCFT0C_CentV0M", "", true, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2SP_AC);
-      hm->AddHistogram(histClass, "R2SP_FT0AFT0C_CentV0M", "", true, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2SP_BC);
-      hm->AddHistogram(histClass, "R3SP_CentV0M", "", true, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR3SP);
-      hm->AddHistogram(histClass, "R3EP_CentV0M", "", true, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR3EP);
-      hm->AddHistogram(histClass, "R2EP_TPCFT0A_CentV0M", "", false, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2EP_AB);
-      hm->AddHistogram(histClass, "R2EP_TPCFT0C_CentV0M", "", false, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2EP_AC);
-      hm->AddHistogram(histClass, "R2EP_FT0CFT0A_CentV0M", "", false, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2EP_BC);
       hm->AddHistogram(histClass, "R2SP_TPCFT0A_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_AB);
       hm->AddHistogram(histClass, "R2SP_TPCFT0C_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_AC);
       hm->AddHistogram(histClass, "R2SP_FT0AFT0C_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_BC);
@@ -430,6 +458,161 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("zdc")) {
       hm->AddHistogram(histClass, "energyCommonZNA_energyCommonZNC", "Common ZNA energy vs common ZNC energy", false, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNA, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNC);
       hm->AddHistogram(histClass, "energyCommonZNA_energyCommonZNC_lowRange", "Common ZNA energy vs common ZNC energy", false, 220, -2.0, 20.0, VarManager::kEnergyCommonZNA, 220, -2.0, 20.0, VarManager::kEnergyCommonZNC);
+    }
+    if (subGroupStr.Contains("merging")) {
+      // 1D histograms
+      hm->AddHistogram(histClass, "BimodalCoeffUnbinned", "Bimodal coefficient unbinned", false, 1001, 0.0, 1.001, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalCoeffBinned", "Bimodal coefficient binned", false, 1001, 0.0, 1.001, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalCoeffBinnedTrim1", "Bimodal coefficient binned, trim 1", false, 1001, 0.0, 1.001, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalCoeffBinnedTrim2", "Bimodal coefficient binned, trim 2", false, 1001, 0.0, 1.001, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalCoeffBinnedTrim3", "Bimodal coefficient binned, trim 3", false, 1001, 0.0, 1.001, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "DCAzMean", "DCAz per event mean", false, 3000, -15.0, 15.0, VarManager::kDCAzMean);
+      hm->AddHistogram(histClass, "DCAzMeanTrimmed1", "DCAz per event mean, trim 1", false, 3000, -15.0, 15.0, VarManager::kDCAzMeanBinnedTrimmed1);
+      hm->AddHistogram(histClass, "DCAzMeanTrimmed2", "DCAz per event mean, trim 2", false, 3000, -15.0, 15.0, VarManager::kDCAzMeanBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzMeanTrimmed3", "DCAz per event mean, trim 3", false, 3000, -15.0, 15.0, VarManager::kDCAzMeanBinnedTrimmed3);
+      hm->AddHistogram(histClass, "DCAzRMS", "DCAz per event RMS", false, 3000, 0.0, 15.0, VarManager::kDCAzRMS);
+      hm->AddHistogram(histClass, "DCAzRMSTrimmed1", "DCAz per event RMS, trim 1", false, 3000, 0.0, 15.0, VarManager::kDCAzRMSBinnedTrimmed1);
+      hm->AddHistogram(histClass, "DCAzRMSTrimmed2", "DCAz per event RMS, trim 2", false, 3000, 0.0, 15.0, VarManager::kDCAzRMSBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzRMSTrimmed3", "DCAz per event RMS, trim 3", false, 3000, 0.0, 15.0, VarManager::kDCAzRMSBinnedTrimmed3);
+      hm->AddHistogram(histClass, "DCAzSkewness", "DCAz per event skewness", false, 1000, 0.0, 100.0, VarManager::kDCAzSkewness);
+      hm->AddHistogram(histClass, "DCAzKurtosis", "DCAz per event kurtosis", false, 1001, 0.0, 1.001, VarManager::kDCAzKurtosis);
+      hm->AddHistogram(histClass, "NPeaks", "Number of peaks in DCAz distribution per event", false, 100, 0.0, 100.0, VarManager::kDCAzNPeaks);
+      hm->AddHistogram(histClass, "NPeaksTrimmed1", "Number of peaks in DCAz distribution per event, trim 1", false, 100, 0.0, 100.0, VarManager::kDCAzNPeaksTrimmed1);
+      hm->AddHistogram(histClass, "NPeaksTrimmed2", "Number of peaks in DCAz distribution per event, trim 2", false, 100, 0.0, 100.0, VarManager::kDCAzNPeaksTrimmed2);
+      hm->AddHistogram(histClass, "NPeaksTrimmed3", "Number of peaks in DCAz distribution per event, trim 3", false, 100, 0.0, 100.0, VarManager::kDCAzNPeaksTrimmed3);
+      hm->AddHistogram(histClass, "FracAbove100um", "Fraction of tracks with DCAz > 100 um", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove100um);
+      hm->AddHistogram(histClass, "FracAbove200um", "Fraction of tracks with DCAz > 200 um", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove200um);
+      hm->AddHistogram(histClass, "FracAbove500um", "Fraction of tracks with DCAz > 500 um", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
+      hm->AddHistogram(histClass, "FracAbove1mm", "Fraction of tracks with DCAz > 1 mm", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove1mm);
+      hm->AddHistogram(histClass, "FracAbove2mm", "Fraction of tracks with DCAz > 2 mm", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove2mm);
+      hm->AddHistogram(histClass, "FracAbove5mm", "Fraction of tracks with DCAz > 5 mm", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+      hm->AddHistogram(histClass, "FracAbove10mm", "Fraction of tracks with DCAz > 10 mm", false, 1000, 0.0, 1.0, VarManager::kDCAzFracAbove10mm);
+      // 2D histograms
+      // bimodality coefficients vs each other
+      hm->AddHistogram(histClass, "BimodalityUnbinned_BimodalityBinned", "Bimodality unbinned vs binned", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_BimodalityBinnedTrim1", "Bimodality unbinned vs binned, trim 1", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_BimodalityBinnedTrim2", "Bimodality unbinned vs binned, trim 2", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_BimodalityBinnedTrim3", "Bimodality unbinned vs binned, trim 3", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityBinned_BimodalityBinnedTrim1", "Bimodality binned vs binned, trim 1", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinned_BimodalityBinnedTrim2", "Bimodality binned vs binned, trim 2", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinned_BimodalityBinnedTrim3", "Bimodality binned vs binned, trim 3", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_BimodalityBinnedTrim2", "Bimodality binned, trim 1 vs binned, trim 2", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_BimodalityBinnedTrim3", "Bimodality binned, trim 1 vs binned, trim 3", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_BimodalityBinnedTrim3", "Bimodality binned, trim 2 vs binned, trim 3", false, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      // bimodality coefficients vs DCAz mean and RMS
+      hm->AddHistogram(histClass, "BimodalityUnbinned_DCAzMean", "Bimodality unbinned vs DCAz mean", false, 400, -2.0, 2.0, VarManager::kDCAzMean, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_DCAzMean", "Bimodality binned vs DCAz mean", false, 400, -2.0, 2.0, VarManager::kDCAzMean, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_DCAzMeanTrimmed1", "Bimodality binned, trim 1 vs DCAz mean", false, 400, -2.0, 2.0, VarManager::kDCAzMeanBinnedTrimmed1, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_DCAzMeanTrimmed2", "Bimodality binned, trim 2 vs DCAz mean", false, 400, -2.0, 2.0, VarManager::kDCAzMeanBinnedTrimmed2, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_DCAzMeanTrimmed3", "Bimodality binned, trim 3 vs DCAz mean", false, 400, -2.0, 2.0, VarManager::kDCAzMeanBinnedTrimmed3, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_DCAzRMS", "Bimodality unbinned vs DCAz RMS", false, 400, 0.0, 2.0, VarManager::kDCAzRMS, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_DCAzRMS", "Bimodality binned vs DCAz RMS", false, 400, 0.0, 2.0, VarManager::kDCAzRMS, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_DCAzRMSTrimmed1", "Bimodality binned, trim 1 vs DCAz RMS", false, 400, 0.0, 2.0, VarManager::kDCAzRMSBinnedTrimmed1, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_DCAzRMSTrimmed2", "Bimodality binned, trim 2 vs DCAz RMS", false, 400, 0.0, 2.0, VarManager::kDCAzRMSBinnedTrimmed2, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_DCAzRMSTrimmed3", "Bimodality binned, trim 3 vs DCAz RMS", false, 400, 0.0, 2.0, VarManager::kDCAzRMSBinnedTrimmed3, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      // bimodality coefficients vs number of peaks
+      hm->AddHistogram(histClass, "BimodalityUnbinned_NPeaks", "Bimodality unbinned vs number of peaks", false, 50, 0.0, 50.0, VarManager::kDCAzNPeaks, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_NPeaks", "Bimodality binned vs number of peaks", false, 50, 0.0, 50.0, VarManager::kDCAzNPeaks, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_NPeaks", "Bimodality binned, trim 1 vs number of peaks", false, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed1, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_NPeaks", "Bimodality binned, trim 2 vs number of peaks", false, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed2, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_NPeaks", "Bimodality binned, trim 3 vs number of peaks", false, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed3, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      // bimodality coefficients vs fraction of tracks above certain DCAz thresholds
+      hm->AddHistogram(histClass, "BimodalityUnbinned_FracAbove100um", "Bimodality unbinned vs fraction of tracks with DCAz > 100 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove100um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_FracAbove100um", "Bimodality binned vs fraction of tracks with DCAz > 100 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove100um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_FracAbove100um", "Bimodality binned, trim 1 vs fraction of tracks with DCAz > 100 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove100um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_FracAbove100um", "Bimodality binned, trim 2 vs fraction of tracks with DCAz > 100 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove100um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_FracAbove100um", "Bimodality binned, trim 3 vs fraction of tracks with DCAz > 100 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove100um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_FracAbove500um", "Bimodality unbinned vs fraction of tracks with DCAz > 500 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_FracAbove500um", "Bimodality binned vs fraction of tracks with DCAz > 500 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_FracAbove500um", "Bimodality binned, trim 1 vs fraction of tracks with DCAz > 500 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_FracAbove500um", "Bimodality binned, trim 2 vs fraction of tracks with DCAz > 500 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_FracAbove500um", "Bimodality binned, trim 3 vs fraction of tracks with DCAz > 500 um", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_FracAbove2mm", "Bimodality unbinned vs fraction of tracks with DCAz > 2 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove2mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_FracAbove2mm", "Bimodality binned vs fraction of tracks with DCAz > 2 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove2mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_FracAbove2mm", "Bimodality binned, trim 1 vs fraction of tracks with DCAz > 2 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove2mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_FracAbove2mm", "Bimodality binned, trim 2 vs fraction of tracks with DCAz > 2 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove2mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_FracAbove2mm", "Bimodality binned, trim 3 vs fraction of tracks with DCAz > 2 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove2mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "BimodalityUnbinned_FracAbove10mm", "Bimodality unbinned vs fraction of tracks with DCAz > 10 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove10mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_FracAbove10mm", "Bimodality binned vs fraction of tracks with DCAz > 10 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove10mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_FracAbove10mm", "Bimodality binned, trim 1 vs fraction of tracks with DCAz > 10 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove10mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_FracAbove10mm", "Bimodality binned, trim 2 vs fraction of tracks with DCAz > 10 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove10mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_FracAbove10mm", "Bimodality binned, trim 3 vs fraction of tracks with DCAz > 10 mm", false, 100, 0.0, 1.0, VarManager::kDCAzFracAbove10mm, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+
+      // All the event merging vs centrality FT0C
+      hm->AddHistogram(histClass, "BimodalityUnbinned_CentFT0C", "Bimodality unbinned vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinned_CentFT0C", "Bimodality binned vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinned);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim1_CentFT0C", "Bimodality binned, trim 1 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim2_CentFT0C", "Bimodality binned, trim 2 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrim3_CentFT0C", "Bimodality binned, trim 3 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3);
+      hm->AddHistogram(histClass, "DCAzMean_CentFT0C", "DCAz per event mean vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, -2.0, 2.0, VarManager::kDCAzMean);
+      hm->AddHistogram(histClass, "DCAzMeanTrimmed1_CentFT0C", "DCAz per event mean, trim 1 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, -2.0, 2.0, VarManager::kDCAzMeanBinnedTrimmed1);
+      hm->AddHistogram(histClass, "DCAzMeanTrimmed2_CentFT0C", "DCAz per event mean, trim 2 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, -2.0, 2.0, VarManager::kDCAzMeanBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzMeanTrimmed3_CentFT0C", "DCAz per event mean, trim 3 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, -2.0, 2.0, VarManager::kDCAzMeanBinnedTrimmed3);
+      hm->AddHistogram(histClass, "DCAzRMS_CentFT0C", "DCAz per event RMS vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, 0.0, 2.0, VarManager::kDCAzRMS);
+      hm->AddHistogram(histClass, "DCAzRMSTrimmed1_CentFT0C", "DCAz per event RMS, trim 1 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, 0.0, 2.0, VarManager::kDCAzRMSBinnedTrimmed1);
+      hm->AddHistogram(histClass, "DCAzRMSTrimmed2_CentFT0C", "DCAz per event RMS, trim 2 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, 0.0, 2.0, VarManager::kDCAzRMSBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzRMSTrimmed3_CentFT0C", "DCAz per event RMS, trim 3 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 400, 0.0, 2.0, VarManager::kDCAzRMSBinnedTrimmed3);
+      hm->AddHistogram(histClass, "DCAzSkewness_CentFT0C", "DCAz per event skewness vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 100.0, VarManager::kDCAzSkewness);
+      hm->AddHistogram(histClass, "DCAzKurtosis_CentFT0C", "DCAz per event kurtosis vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 1001, 0.0, 1.001, VarManager::kDCAzKurtosis);
+      hm->AddHistogram(histClass, "NPeaks_CentFT0C", "Number of peaks in DCAz distribution per event vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 100.0, VarManager::kDCAzNPeaks);
+      hm->AddHistogram(histClass, "NPeaksTrimmed1_CentFT0C", "Number of peaks in DCAz distribution per event, trim 1 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 100.0, VarManager::kDCAzNPeaksTrimmed1);
+      hm->AddHistogram(histClass, "NPeaksTrimmed2_CentFT0C", "Number of peaks in DCAz distribution per event, trim 2 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 100.0, VarManager::kDCAzNPeaksTrimmed2);
+      hm->AddHistogram(histClass, "NPeaksTrimmed3_CentFT0C", "Number of peaks in DCAz distribution per event, trim 3 vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 100.0, VarManager::kDCAzNPeaksTrimmed3);
+      hm->AddHistogram(histClass, "FracAbove100um_CentFT0C", "Fraction of tracks with DCAz > 100 um vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove100um);
+      hm->AddHistogram(histClass, "FracAbove200um_CentFT0C", "Fraction of tracks with DCAz > 200 um vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove200um);
+      hm->AddHistogram(histClass, "FracAbove500um_CentFT0C", "Fraction of tracks with DCAz > 500 um vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
+      hm->AddHistogram(histClass, "FracAbove1mm_CentFT0C", "Fraction of tracks with DCAz > 1 mm vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove1mm);
+      hm->AddHistogram(histClass, "FracAbove2mm_CentFT0C", "Fraction of tracks with DCAz > 2 mm vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove2mm);
+      hm->AddHistogram(histClass, "FracAbove5mm_CentFT0C", "Fraction of tracks with DCAz > 5 mm vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+      hm->AddHistogram(histClass, "FracAbove10mm_CentFT0C", "Fraction of tracks with DCAz > 10 mm vs centrality", false, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 1.0, VarManager::kDCAzFracAbove10mm);
+      // histograms vs number of tracks with ITS
+      hm->AddHistogram(histClass, "BimodalityUnbinned_NTracksITS", "Bimodality unbinned vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed1_NTracksITS", "Bimodality binned, trimmed 1, vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed2_NTracksITS", "Bimodality binned, trimmed 2, vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzMean_NTracksITS", "DCAz mean vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzMean);
+      hm->AddHistogram(histClass, "DCAzRMS_NTracksITS", "DCAz RMS vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzRMS);
+      hm->AddHistogram(histClass, "NPeaksTrimmed1_NTracksITS", "Number of peaks in DCAz distribution per event, trim 1, vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed1);
+      hm->AddHistogram(histClass, "NPeaksTrimmed2_NTracksITS", "Number of peaks in DCAz distribution per event, trim 2, vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed2);
+      hm->AddHistogram(histClass, "FracAbove500um_NTracksITS", "Fraction of tracks with DCAz > 500 um vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
+      hm->AddHistogram(histClass, "FracAbove5mm_NTracksITS", "Fraction of tracks with DCAz > 5 mm vs number of tracks with ITS", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasITS, 100, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+      // histograms vs number of tracks with TPC
+      hm->AddHistogram(histClass, "BimodalityUnbinned_NTracksTPC", "Bimodality unbinned vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed1_NTracksTPC", "Bimodality binned, trimmed 1, vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed2_NTracksTPC", "Bimodality binned, trimmed 2, vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzMean_NTracksTPC", "DCAz mean vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzMean);
+      hm->AddHistogram(histClass, "DCAzRMS_NTracksTPC", "DCAz RMS vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzRMS);
+      hm->AddHistogram(histClass, "NPeaksTrimmed1_NTracksTPC", "Number of peaks in DCAz distribution per event, trim 1, vs number of tracks with TPC", false, 100, 0.0, 1000.0, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed1);
+      hm->AddHistogram(histClass, "NPeaksTrimmed2_NTracksTPC", "Number of peaks in DCAz distribution per event, trim 2, vs number of tracks with TPC", false, 100, 0.0, 1000.0, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed2);
+      hm->AddHistogram(histClass, "FracAbove500um_NTracksTPC", "Fraction of tracks with DCAz > 500 um vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
+      hm->AddHistogram(histClass, "FracAbove5mm_NTracksTPC", "Fraction of tracks with DCAz > 5 mm vs number of tracks with TPC", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTPC, 100, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+      // histograms vs number of tracks with TOF
+      hm->AddHistogram(histClass, "BimodalityUnbinned_NTracksTOF", "Bimodality unbinned vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed1_NTracksTOF", "Bimodality binned, trimmed 1, vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed2_NTracksTOF", "Bimodality binned, trimmed 2, vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzMean_NTracksTOF", "DCAz mean vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzMean);
+      hm->AddHistogram(histClass, "DCAzRMS_NTracksTOF", "DCAz RMS vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzRMS);
+      hm->AddHistogram(histClass, "NPeaksTrimmed1_NTracksTOF", "Number of peaks in DCAz distribution per event, trim 1, vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed1);
+      hm->AddHistogram(histClass, "NPeaksTrimmed2_NTracksTOF", "Number of peaks in DCAz distribution per event, trim 2, vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed2);
+      hm->AddHistogram(histClass, "FracAbove500um_NTracksTOF", "Fraction of tracks with DCAz > 500 um vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
+      hm->AddHistogram(histClass, "FracAbove5mm_NTracksTOF", "Fraction of tracks with DCAz > 5 mm vs number of tracks with TOF", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTOF, 100, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+      // histograms vs number of tracks with TRD
+      hm->AddHistogram(histClass, "BimodalityUnbinned_NTracksTRD", "Bimodality unbinned vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficient);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed1_NTracksTRD", "Bimodality binned, trimmed 1, vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1);
+      hm->AddHistogram(histClass, "BimodalityBinnedTrimmed2_NTracksTRD", "Bimodality binned, trimmed 2, vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2);
+      hm->AddHistogram(histClass, "DCAzMean_NTracksTRD", "DCAz mean vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzMean);
+      hm->AddHistogram(histClass, "DCAzRMS_NTracksTRD", "DCAz RMS vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzRMS);
+      hm->AddHistogram(histClass, "NPeaksTrimmed1_NTracksTRD", "Number of peaks in DCAz distribution per event, trim 1, vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed1);
+      hm->AddHistogram(histClass, "NPeaksTrimmed2_NTracksTRD", "Number of peaks in DCAz distribution per event, trim 2, vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed2);
+      hm->AddHistogram(histClass, "FracAbove500um_NTracksTRD", "Fraction of tracks with DCAz > 500 um vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
+      hm->AddHistogram(histClass, "FracAbove5mm_NTracksTRD", "Fraction of tracks with DCAz > 5 mm vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+    }
+    if (subGroupStr.Contains("pairing")) {
+      if (subGroupStr.Contains("sameevent")) {
+        hm->AddHistogram(histClass, "NPairsPerEvent", "Number of track pairs per event", false, 100, 0.0, 100.0, VarManager::kNPairsPerEvent);
+      }
+      if (subGroupStr.Contains("mixedevent")) {
+        hm->AddHistogram(histClass, "NPairsPerEvent", "Number of track pairs per event", false, 500, 0.0, 500.0, VarManager::kNPairsPerEvent);
+      }
     }
   } // end "event"
 
@@ -888,6 +1071,46 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
     }
+    if (subGroupStr.Contains("alice3tracks")) {
+      hm->AddHistogram(histClass, "IsReconstructed", "IsReconstructed", false, 2, 0.5, 1.5, VarManager::kIsReconstructed);
+      hm->AddHistogram(histClass, "nSiliconHits", "Num silicon hits", false, 12, 0.0, 12.0, VarManager::kNSiliconHits);
+      hm->AddHistogram(histClass, "Pt_vs_PtMC", "pT vs MC pT", false, 200, 0.0, 100.0, VarManager::kPt, 200, 0.0, 20.0, VarManager::kMCPt);
+      hm->AddHistogram(histClass, "Eta_vs_EtaMC", "#eta vs MC #eta", false, 150, -4.0, 4.0, VarManager::kEta, 150, -4.0, 4.0, VarManager::kMCEta);
+      hm->AddHistogram(histClass, "Phi_vs_PhiMC", "#varphi vs MC #varphi", false, 50, 0.0, 2. * o2::constants::math::PI, VarManager::kPhi, 50, 0.0, 2. * o2::constants::math::PI, VarManager::kMCPhi);
+      hm->AddHistogram(histClass, "Eta_DCAxy", "#eta vs DCA_{xy}", false, 80, -4.0, 4.0, VarManager::kEta, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
+      hm->AddHistogram(histClass, "Eta_DCAz", "#eta vs DCA_{z}", false, 80, -4.0, 4.0, VarManager::kEta, 800, -4.0, 4.0, VarManager::kTrackDCAz);
+    }
+    if (subGroupStr.Contains("resolutions")) {
+      hm->AddHistogram(histClass, "PtMC_vs_DeltaPt", "MC pT vs DeltaPt", false, 200, 0.0, 100.0, VarManager::kMCPt, 2000, -1.0, 1.0, VarManager::kDeltaPt);
+      hm->AddHistogram(histClass, "Pt_vs_DeltaPt", "pT vs pTRes", false, 200, 0.0, 100.0, VarManager::kPt, 2000, -1.0, 1.0, VarManager::kDeltaPt);
+      hm->AddHistogram(histClass, "EtaMC_vs_DeltaPt", "MC Eta vs DeltaPt", false, 200, -6.0, 6.0, VarManager::kMCEta, 2000, -1.0, 1.0, VarManager::kDeltaPt);
+      hm->AddHistogram(histClass, "Eta_vs_DeltaPt", "MC Eta vs DeltaPt", false, 200, -6.0, 6.0, VarManager::kEta, 2000, -1.0, 1.0, VarManager::kDeltaPt);
+      hm->AddHistogram(histClass, "PtMC_vs_Res", "MC pT vs DeltaPt", false, 200, 0.0, 100.0, VarManager::kMCPt, 2000, -1.0, 1.0, VarManager::kPtResolution);
+      hm->AddHistogram(histClass, "Pt_vs_Res", "pT vs pTRes", false, 200, 0.0, 100.0, VarManager::kPt, 2000, -1.0, 1.0, VarManager::kPtResolution);
+      hm->AddHistogram(histClass, "EtaMC_vs_Res", "MC Eta vs pTRes", false, 200, -6.0, 6.0, VarManager::kMCEta, 2000, -1.0, 1.0, VarManager::kPtResolution);
+      hm->AddHistogram(histClass, "Eta_vs_Res", "MC Eta vs pTRes", false, 200, -6.0, 6.0, VarManager::kEta, 2000, -1.0, 1.0, VarManager::kPtResolution);
+      hm->AddHistogram(histClass, "PtRes", "pT Resolution", false, 2000, -1.0, 1.0, VarManager::kPtResolution);
+      hm->AddHistogram(histClass, "EtaMC_vs_EtaRes", "MC eta vs EtaRes", false, 200, -6.0, 6.0, VarManager::kMCEta, 2000, -1.0, 1.0, VarManager::kEtaResolution);
+    }
+    if (subGroupStr.Contains("alice3tofpid")) {
+      hm->AddHistogram(histClass, "iTOFbeta_p", "iTOF #beta vs p", false, 100, 0.0, 10.0, VarManager::kP, 320, 0.0, 2.0, VarManager::kiTOFBeta);
+      hm->AddHistogram(histClass, "iTOFnSigEle_p", "iTOF n-#sigma(e) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kInnerTOFnSigmaEl);
+      hm->AddHistogram(histClass, "iTOFnSigPi_p", "iTOF n-#sigma(#pi) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kInnerTOFnSigmaPi);
+      hm->AddHistogram(histClass, "iTOFnSigKa_p", "iTOF n-#sigma(K) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kInnerTOFnSigmaKa);
+      hm->AddHistogram(histClass, "iTOFnSigPr_p", "iTOF n-#sigma(p) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kInnerTOFnSigmaPr);
+
+      hm->AddHistogram(histClass, "oTOFbeta_p", "oTOF #beta vs p", false, 100, 0.0, 10.0, VarManager::kP, 320, 0.0, 2.0, VarManager::koTOFBeta);
+      hm->AddHistogram(histClass, "oTOFnSigEl_p", "oTOF n-#sigma(e) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kOuterTOFnSigmaEl);
+      hm->AddHistogram(histClass, "oTOFnSigPi_p", "oTOF n-#sigma(#pi) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kOuterTOFnSigmaPi);
+      hm->AddHistogram(histClass, "oTOFnSigKa_p", "oTOF n-#sigma(K) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kOuterTOFnSigmaKa);
+      hm->AddHistogram(histClass, "oTOFnSigPr_p", "oTOF n-#sigma(p) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kOuterTOFnSigmaPr);
+    }
+    if (subGroupStr.Contains("alice3richpid")) {
+      hm->AddHistogram(histClass, "RICHnSigEl_p", "RICH n-#sigma(e) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kRICHnSigmaEl);
+      hm->AddHistogram(histClass, "RICHnSigPi_p", "RICH n-#sigma(#pi) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kRICHnSigmaPi);
+      hm->AddHistogram(histClass, "RICHnSigKa_p", "RICH n-#sigma(K) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kRICHnSigmaKa);
+      hm->AddHistogram(histClass, "RICHnSigPr_p", "RICH n-#sigma(p) vs p", false, 100, 0.0, 10.0, VarManager::kP, 200, -10.0, 10.0, VarManager::kRICHnSigmaPr);
+    }
     if (subGroupStr.Contains("tpcpidvstofpid")) {
       hm->AddHistogram(histClass, "tpcNSigmaKa_tofNSigmaKa", "", false, 200, -10., 10., VarManager::kTPCnSigmaKa, 200, -10., 10., VarManager::kTOFnSigmaKa);
       hm->AddHistogram(histClass, "tpcNSigmaPi_tofNSigmaPi", "", false, 200, -10., 10., VarManager::kTPCnSigmaPi, 200, -10., 10., VarManager::kTOFnSigmaPi);
@@ -943,13 +1166,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kMCEta, 200, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kMCPhi);
     if (subGroupStr.Contains("polarization")) {
-      int varspTHE[4] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE, VarManager::kMCPhiTildeHE};
-      int varspTCS[4] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS, VarManager::kMCPhiTildeCS};
-      int bins[4] = {20, 20, 20, 20};
-      double xmin[4] = {0., -1., 0., 0.};
-      double xmax[4] = {20., 1., 2. * o2::constants::math::PI, 2. * o2::constants::math::PI};
-      hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE_phiTildeHE", "", 4, varspTHE, bins, xmin, xmax, 0, -1, kFALSE);
-      hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS_phiTildeCS", "", 4, varspTCS, bins, xmin, xmax, 0, -1, kFALSE);
+      if (subGroupStr.Contains("pp")) {
+        int varspTHE[4] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE, VarManager::kMCPhiTildeHE};
+        int varspTCS[4] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS, VarManager::kMCPhiTildeCS};
+        int bins[4] = {20, 20, 20, 20};
+        double xmin[4] = {0., -1., 0., 0.};
+        double xmax[4] = {20., 1., 2. * o2::constants::math::PI, 2. * o2::constants::math::PI};
+        hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE_phiTildeHE", "", 4, varspTHE, bins, xmin, xmax, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS_phiTildeCS", "", 4, varspTCS, bins, xmin, xmax, 0, -1, kFALSE);
+      }
+      if (subGroupStr.Contains("pbpb")) {
+        hm->AddHistogram(histClass, "CosThetaStarRandom", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarRandom);
+        hm->AddHistogram(histClass, "Pt_Cent_CosThetaStarRandom", "", false, 20, 0.0, 20.0, VarManager::kMCPt, 9, 0., 90., VarManager::kMCEventCentrFT0C, 20, -1.0, 1.0, VarManager::kCosThetaStarRandom);
+        hm->AddHistogram(histClass, "Cos2ThetaStarRandom_Mass", "", true, 50, 2.0, 4.0, VarManager::kMCMass, 100, -1.0, 1.0, VarManager::kCos2ThetaStarRandom);
+        hm->AddHistogram(histClass, "CosThetaStar", "", false, 100, -1.0, 1.0, VarManager::kMCCosThetaStar);
+      }
     }
   }
   if (!groupStr.CompareTo("mctruth_quad")) {
@@ -971,35 +1202,30 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "YMC", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
     hm->AddHistogram(histClass, "CentFT0CMC", "MC Cent. FT0C", false, 18, 0., 90., VarManager::kMCEventCentrFT0C);
     hm->AddHistogram(histClass, "PtMC_YMC", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
-    hm->AddHistogram(histClass, "PtMC_YMC_CentFT0CMC", "MC pT vs MC y vs MC Cent. FT0C", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY, 18, 0., 90., VarManager::kMCEventCentrFT0C);
-    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "PtMC_YMC_CentFT0CMC", "MC pT vs MC y vs MC Cent. FT0C", false, 300, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY, 20, 0., 100., VarManager::kMCEventCentrFT0C);
+    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 320, -2.0, 2.0, VarManager::kMCEta, 400, 0.0, 40.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
     hm->AddHistogram(histClass, "Weight", "", false, 50, 0.0, 5.0, VarManager::kMCParticleWeight);
     hm->AddHistogram(histClass, "MCImpPar_CentFT0CMC", "MC impact param vs MC Cent. FT0C", false, 20, 0.0, 20.0, VarManager::kMCEventImpParam, 100, 0.0, 100.0, VarManager::kMCEventCentrFT0C);
   }
+  if (!groupStr.CompareTo("mctruth_mult")) {
+    hm->AddHistogram(histClass, "PtMC_MultEta05", "MC pT vs mult |#eta| < 0.5", false, 200, 0.0, 20.0, VarManager::kMCPt, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta05);
+    hm->AddHistogram(histClass, "PtMC_MultEta08", "MC pT vs mult |#eta| < 0.8", false, 200, 0.0, 20.0, VarManager::kMCPt, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta08);
+    hm->AddHistogram(histClass, "PtMC_MultEta10", "MC pT vs mult |#eta| < 1.0", false, 200, 0.0, 20.0, VarManager::kMCPt, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta10);
+    hm->AddHistogram(histClass, "EtaMC_MultEta05", "MC Eta vs mult |#eta| < 0.5", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta05);
+    hm->AddHistogram(histClass, "EtaMC_MultEta08", "MC Eta vs mult |#eta| < 0.8", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta08);
+    hm->AddHistogram(histClass, "EtaMC_MultEta10", "MC Eta vs mult |#eta| < 1.0", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta10);
+  }
 
   if (!groupStr.CompareTo("energy-correlator-gen")) {
-    hm->AddHistogram(histClass, "MCCostheta", "Cos#theta", false, 40, -1.0, 1.0, VarManager::kMCCosTheta, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_before);
-    hm->AddHistogram(histClass, "MCHadronPdgCode", "MCHadronPdgCode", false, 6000, -3000, 3000, VarManager::kMCHadronPdgCode);
-    hm->AddHistogram(histClass, "MCMotherPdgCode", "MCMotherPdgCode", false, 6000, -3000, 3000, VarManager::kMCMotherPdgCode);
-    hm->AddHistogram(histClass, "MCPdgCode", "MCPdgCode", false, 1000, -1000, 1000, VarManager::kMCPdgCode);
-    hm->AddHistogram(histClass, "Coschi", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight);
-    hm->AddHistogram(histClass, "Pt_Hadron", "", false, 120, 0.0, 30.0, VarManager::kMCHadronPt);
-    hm->AddHistogram(histClass, "Eta_Hadron", "", false, 120, -2.0, 2.0, VarManager::kMCHadronEta);
-    hm->AddHistogram(histClass, "Phi_Hadron", "", false, 120, -2.0, 2.0, VarManager::kMCHadronPhi);
-    hm->AddHistogram(histClass, "DeltaEta", "", false, 20, -2.0, 2.0, VarManager::kMCdeltaeta);
-    hm->AddHistogram(histClass, "DeltaPhi", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi);
-    hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kMCdeltaeta, 50, -8.0, 8.0, VarManager::kMCdeltaphi);
-    // for bkg
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_trans", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_trans);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_toward", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_toward);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_away", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_away);
-
-    hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_trans, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_trans);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_toward, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_toward);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_away, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_away);
+    double coschiBins[26];
+    for (int i = 0; i < 26; i++) {
+      coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
+    }
+    hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kMCCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight);
   }
+
   if (!groupStr.CompareTo("polarization-pseudoproper-gen")) {
     int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCVertexingTauxyProjected};
     int varspTCS[3] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
@@ -1030,6 +1256,29 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_MultFDDA", "Mass vs MultFDDA", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFDDA);
       hm->AddHistogram(histClass, "Mass_MultFDDC", "Mass vs MultFDDC", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFDDC);
     }
+    if (subGroupStr.Contains("mass_mult_pv")) {
+      double multAnalysisBins[4] = {0.0, 4.0, 8.0, 1000.0};
+
+      double multAnalsisMassBins[201] = {0.0};
+      for (int i = 0; i <= 200; i++) {
+        multAnalsisMassBins[i] = 2.0 + i * 0.015;
+      }
+
+      double multAnalysisPVBins[151] = {0.0};
+      for (int i = 0; i <= 150; i++) {
+        multAnalysisPVBins[i] = i * 1.0;
+      }
+
+      double multAnalysisFV0ABins[1001] = {0.0};
+      for (int i = 0; i <= 1000; i++) {
+        multAnalysisFV0ABins[i] = i * 1.0;
+      }
+
+      hm->AddHistogram(histClass, "Mass_VtxNcontribReal_Pt", "Mass vs VtxNcontribReal vs Pt", false, 200, multAnalsisMassBins, VarManager::kMass, 150, multAnalysisPVBins, VarManager::kVtxNcontribReal, 3, multAnalysisBins, VarManager::kPt);
+      hm->AddHistogram(histClass, "Mass_MultFV0A_Pt", "Mass vs MultFV0A vs Pt", false, 200, multAnalsisMassBins, VarManager::kMass, 1000, multAnalysisFV0ABins, VarManager::kMultFV0A, 3, multAnalysisBins, VarManager::kPt);
+      hm->AddHistogram(histClass, "Mass_MultFT0A_Pt", "Mass vs MultFT0A vs Pt", false, 200, multAnalsisMassBins, VarManager::kMass, 1000, multAnalysisFV0ABins, VarManager::kMultFT0A, 3, multAnalysisBins, VarManager::kPt);
+      hm->AddHistogram(histClass, "Mass_MultFT0C_Pt", "Mass vs MultFT0C vs Pt", false, 200, multAnalsisMassBins, VarManager::kMass, 1000, multAnalysisFV0ABins, VarManager::kMultFT0C, 3, multAnalysisBins, VarManager::kPt);
+    }
     if (subGroupStr.Contains("barrel")) {
       hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Mass_HighRange", "", false, 375, 0.0, 15.0, VarManager::kMass);
@@ -1047,7 +1296,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         ptBins[50 + i] = 0.5 + i * 0.5;
       }
       hm->AddHistogram(histClass, "Mass_PtFine", "", false, 75, massBins, VarManager::kMass, 69, ptBins, VarManager::kPt);
-      hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 40, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta_Pt", "", false, 320, -2.0, 2.0, VarManager::kEta, 400, 0.0, 40.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Y_Pt", "", false, 40, -2.0, 2.0, VarManager::kRap, 40, 0.0, 20.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 500, 0.0, 5.0, VarManager::kMass);
       if (subGroupStr.Contains("energy-correlator")) {
@@ -1063,6 +1312,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal", "Mass vs VtxNcontribReal", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kVtxNcontribReal);
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal_VtxZ", "Mass vs VtxNcontribReal vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kVtxNcontribReal, 20, -10.0, 10.0, VarManager::kVtxZ);
         hm->AddHistogram(histClass, "VtxZ_VtxNcontribReal", "VtxZ vs VtxNcontribReal", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kVtxNcontribReal);
+      }
+      if (subGroupStr.Contains("alice3barrel")) {
+        double pTBins[21] = {
+          0.1, 0.5, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0,
+          4.0, 5.0, 6.5, 8.0, 10.0, 12.0, 15.0, 20.0,
+          30.0, 40.0, 60.0, 80.0, 100.0};
+
+        double massBins[501];
+        for (int i = 0; i < 501; i++) {
+          massBins[i] = 0.01 * (i);
+        }
+        hm->AddHistogram(histClass, "Mass_PtLong", "", false, 500, massBins, VarManager::kMass, 20, pTBins, VarManager::kPt);
       }
       if (subGroupStr.Contains("dielectron-polarization-he-pbpb")) {
         int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
@@ -1100,9 +1361,20 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         }
       }
       if (subGroupStr.Contains("globalpolarization")) {
-        hm->AddHistogram(histClass, "CosThetaStarTPC", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarTPC);
-        hm->AddHistogram(histClass, "CosThetaStarFT0A", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarFT0A);
-        hm->AddHistogram(histClass, "CosThetaStarFT0C", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarFT0C);
+        hm->AddHistogram(histClass, "CosThetaStarRandom", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarRandom);
+        hm->AddHistogram(histClass, "Cos2ThetaStarRandom_Mass", "", true, 50, 2.0, 4.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos2ThetaStarRandom);
+        if (subGroupStr.Contains("tpc")) {
+          hm->AddHistogram(histClass, "CosThetaStarTPC", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarTPC);
+        }
+        if (subGroupStr.Contains("ft0")) {
+          hm->AddHistogram(histClass, "CosThetaStarFT0A", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarFT0A);
+          hm->AddHistogram(histClass, "CosThetaStarFT0C", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarFT0C);
+          hm->AddHistogram(histClass, "Cos2ThetaStarFT0C_Mass", "", true, 50, 2.0, 4.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos2ThetaStarFT0C);
+        }
+        if (subGroupStr.Contains("mc")) {
+          hm->AddHistogram(histClass, "EventPlaneAngle", "", false, 100, -TMath::Pi(), TMath::Pi(), VarManager::kMCEventPlaneAngle);
+          hm->AddHistogram(histClass, "CosThetaStarMC", "", false, 100, -1.0, 1.0, VarManager::kMCCosThetaStar);
+        }
       }
       if (subGroupStr.Contains("upsilon")) {
         hm->AddHistogram(histClass, "MassUpsilon_Pt", "", false, 500, 7.0, 12.0, VarManager::kMass, 400, 0.0, 40.0, VarManager::kPt);
@@ -1381,27 +1653,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("upsilon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
-        int varsrapHE[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int binspT[4] = {100, 20, 20, 20};
-        int binsy[4] = {100, 10, 20, 20};
-        double xminpT[4] = {1., 0., -1., -3.14};
-        double xmaxpT[4] = {15., 20., 1., +3.14};
-        double xminy[4] = {1., 2.5, -1., -3.14};
-        double xmaxy[4] = {15., 4.0, 1., +3.14};
+        double xminpT[4] = {1., 0., -1., 0.};
+        double xmaxpT[4] = {15., 20., 1., 2. * o2::constants::math::PI};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_cosThetaHE_phiHE", "", 4, varsrapHE, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("upsilon-polarization-cs")) {
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int varsrapCS[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[4] = {100, 20, 20, 20};
-        int binsy[4] = {100, 10, 20, 20};
-        double xminpT[4] = {1., 0., -1., -3.14};
-        double xmaxpT[4] = {15., 20., 1., +3.14};
-        double xminy[4] = {1., 2.5, -1., -3.14};
-        double xmaxy[4] = {15., 4.0, 1., +3.14};
+        double xminpT[4] = {1., 0., -1., 0.};
+        double xmaxpT[4] = {15., 20., 1., 2. * o2::constants::math::PI};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_cosThetaCS_phiCS", "", 4, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp")) {
         int varspTVP[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosPhiVP, VarManager::kPhiVP};
@@ -1542,6 +1804,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_QuadDCAabsXY", "", false, 250, 0.0, 5.0, VarManager::kMass, 900, 0.0, 3, VarManager::kQuadDCAabsXY);
         hm->AddHistogram(histClass, "Mass_Lxyz", "", false, 250, 0.0, 5.0, VarManager::kMass, 1000, 0.0, 5, VarManager::kVertexingLxyz);
         hm->AddHistogram(histClass, "Mass_OpeningAngle", "", false, 250, 0.0, 5.0, VarManager::kMass, 800, 0, 0.8, VarManager::kOpeningAngle);
+      }
+      if (subGroupStr.Contains("flow-pos-neg-dimuon")) {
+        int varV2POS[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2POS, VarManager::kCos2DeltaPhiPOS};
+        int varV2NEG[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2NEG, VarManager::kCos2DeltaPhiNEG};
+
+        int bins[6] = {250, 60, 6, 18, 200, 40};
+        double minBins[6] = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
+        double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2POS", "", 6, varV2POS, bins, minBins, maxBins, 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2NEG", "", 6, varV2NEG, bins, minBins, maxBins, 0, -1, kTRUE);
       }
       if (subGroupStr.Contains("flow-dimuon-high-mass")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2, VarManager::kCos2DeltaPhi};
@@ -1709,6 +1981,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("correlation-emu")) {
       hm->AddHistogram(histClass, "DeltaPhiPair2_DeltaEtaPair2", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2, 350, 1.5, 5.0, VarManager::kDeltaEtaPair2);
       hm->AddHistogram(histClass, "DeltaPhiPair2_Pt", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2, 200, 0.0, 20.0, VarManager::kPt);
+      // 4D correlation map: (Delta phi_pair, Delta eta_pair, p_T^{e}, p_T^{mu}). Per-track pT axes use kPt1/kPt2,
+      // which FillPair populates for SE and FillPairME (patched in this PR) populates for ME. Stored as THnSparse so
+      // running with many MC-matched hist classes (track cut x muon cut x signal x QA variant) does not blow the
+      // 1 GB TBufferFile limit during the final ROOT serialization.
+      int varsEmu4D[4] = {VarManager::kDeltaPhiPair2, VarManager::kDeltaEtaPair2, VarManager::kPt1, VarManager::kPt2};
+      int binsEmu4D[4] = {60, 35, 20, 20};
+      double xminEmu4D[4] = {-o2::constants::math::PIHalf, 1.5, 0.0, 0.0};
+      double xmaxEmu4D[4] = {1.5 * o2::constants::math::PI, 5.0, 20.0, 20.0};
+      hm->AddHistogram(histClass, "DeltaPhiPair2_DeltaEtaPair2_PtE_PtMu", "", 4, varsEmu4D, binsEmu4D, xminEmu4D, xmaxEmu4D, nullptr, -1, kTRUE);
     }
     if (subGroupStr.Contains("dielectrons")) {
       if (subGroupStr.Contains("prefilter")) {
@@ -1948,29 +2229,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
       }
 
-      double deltaetaBins[21];
-      for (int i = 0; i < 21; i++) {
-        deltaetaBins[i] = -2.0 + 0.2 * i;
-      }
-
-      hm->AddHistogram(histClass, "dileptonmass", "", false, 125, 2.5, 3.5, VarManager::kdileptonmass);
+      hm->AddHistogram(histClass, "Coschi_unfolding", "", false, 25, coschiBins, VarManager::kMCCosChi_rec, 25, coschiBins, VarManager::kMCCosChi_gen);
       hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
-      hm->AddHistogram(histClass, "Pt_Hadron", ";P_{T}", false, 120, 0.0, 30.0, VarManager::kPtDau);
-      hm->AddHistogram(histClass, "Coschi_wo", "", false, 25, coschiBins, VarManager::kCosChi);
-      hm->AddHistogram(histClass, "Eta_Hadron", ";#eta", false, 120, -2.0, 2.0, VarManager::kEtaDau);
-      hm->AddHistogram(histClass, "Phi_Hadron", ";#phi", false, 120, -8, 8, VarManager::kPhiDau);
-      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
-      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi);
-      hm->AddHistogram(histClass, "Coschi_DeltaEta", "", false, 25, coschiBins, VarManager::kCosChi, 20, deltaetaBins, VarManager::kDeltaEta, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
-      hm->AddHistogram(histClass, "Coschi_wo_DeltaEta", "", false, 25, coschiBins, VarManager::kCosChi, 20, deltaetaBins, VarManager::kDeltaEta);
-      // for bkg
-      hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_trans, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kWeight_randomPhi_trans);
-      hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_toward, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kWeight_randomPhi_toward);
-      hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_away, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kWeight_randomPhi_away);
-
-      hm->AddHistogram(histClass, "Coschi_wo_randomPhi_trans", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_trans);
-      hm->AddHistogram(histClass, "Coschi_wo_randomPhi_toward", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_toward);
-      hm->AddHistogram(histClass, "Coschi_wo_randomPhi_away", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_away);
+      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kPtDau);
     }
   }
 
@@ -2069,7 +2330,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "PhiMC", "MC #phi", false, 50, -6.3, 6.3, VarManager::kMCPhi);
     hm->AddHistogram(histClass, "YMC", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
     hm->AddHistogram(histClass, "PtMC_YMC", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
-    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 320, -2.0, 2.0, VarManager::kMCEta, 400, 0.0, 40.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
     hm->AddHistogram(histClass, "LzMC", "", false, 1000, 0.0, 2.0, VarManager::kMCVertexingLz);
@@ -2121,6 +2382,40 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Photon", "", false, 500, 0.0, 0.1, VarManager::kMassDau);
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMassDau, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
+  }
+
+  // specific group/subgroups for trigger
+  if (!groupStr.CompareTo("software-trigger")) {
+    if (subGroupStr.Contains("vtxpp")) {
+      hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
+      hm->AddHistogram(histClass, "VtxX", "Vtx X", false, 200, -0.1, 0.1, VarManager::kVtxX);
+      hm->AddHistogram(histClass, "VtxY", "Vtx Y", false, 200, -0.1, 0.1, VarManager::kVtxY);
+      hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+    }
+    if (subGroupStr.Contains("muon")) {
+      hm->AddHistogram(histClass, "Pt", "p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta", "#eta distribution", false, 30, -5.0, -2.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 180, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "Chi2", "", false, 100, 0.0, 200.0, VarManager::kMuonChi2);
+      hm->AddHistogram(histClass, "Chi2MCHMID", "", false, 100, 0.0, 200.0, VarManager::kMuonChi2MatchMCHMID);
+      hm->AddHistogram(histClass, "Chi2MCHMFT", "", false, 100, 0.0, 200.0, VarManager::kMuonChi2MatchMCHMFT);
+      hm->AddHistogram(histClass, "Chi2MatchScoreMCHMFT", "", false, 100, 0.0, 200.0, VarManager::kMuonMatchScoreMCHMFT);
+      hm->AddHistogram(histClass, "MuonDcaX_vs_phi", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAx, 18, -o2::constants::math::PI, o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "MuonDcaY_vs_phi", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAy, 18, -o2::constants::math::PI, o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "MuonDcaX_vs_eta", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAx, 30, -5.0, -2.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "MuonDcaY_vs_eta", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAy, 30, -5.0, -2.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "pdca", "", false, 100, 0.0, 1000., VarManager::kMuonPDca);
+      hm->AddHistogram(histClass, "RAtAbsorberEnd", "", false, 100, 0.0, 200., VarManager::kMuonRAtAbsorberEnd);
+    }
+    if (subGroupStr.Contains("track-barrel")) {
+      hm->AddHistogram(histClass, "Pt", "p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta", "#eta distribution", false, 24, -1.2, 1.2, VarManager::kEta);
+      hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 180, 0., 2. * o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "ITSncls", "Number of cluster in ITS", false, 8, -0.5, 7.5, VarManager::kITSncls);
+      hm->AddHistogram(histClass, "TPCncls", "Number of cluster in TPC", false, 160, -0.5, 159.5, VarManager::kTPCncls);
+      hm->AddHistogram(histClass, "TPCdedx_pIN", "TPC dE/dx vs pIN", false, 100, 0.0, 20.0, VarManager::kPin, 150, 0.0, 150., VarManager::kTPCsignal);
+      hm->AddHistogram(histClass, "TPCnSigEle_pIN", "TPC n-#sigma(e) vs pIN", false, 100, 0.0, 20.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaEl);
+    }
   }
 }
 
@@ -2337,7 +2632,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         str += json[i];
       }
     }
-    LOG(fatal) << "**** Parsing error is somewhere here: " << str.Data() << endl;
+    LOG(fatal) << "**** Parsing error is somewhere here: " << str.Data() << std::endl;
     return;
   }
 

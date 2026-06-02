@@ -21,8 +21,10 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Logger.h>
 
+#include <TGraph.h>
+#include <TString.h>
+
 #include <string>
-#include <vector>
 
 namespace o2::fastsim
 {

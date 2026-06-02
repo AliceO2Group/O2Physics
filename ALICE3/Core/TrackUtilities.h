@@ -18,10 +18,13 @@
 #ifndef ALICE3_CORE_TRACKUTILITIES_H_
 #define ALICE3_CORE_TRACKUTILITIES_H_
 
-#include "ReconstructionDataFormats/Track.h"
+#include "ALICE3/Core/OTFParticle.h"
 
-#include "TLorentzVector.h"
+#include <ReconstructionDataFormats/Track.h>
 
+#include <TLorentzVector.h>
+
+#include <cmath>
 #include <vector>
 
 namespace o2::upgrade
@@ -58,6 +61,20 @@ void convertTLorentzVectorToO2Track(int pdgCode,
   convertTLorentzVectorToO2Track(charge, particle, productionVertex, o2track);
 }
 
+/// Function to convert a OTFParticle into a perfect Track
+/// \param particle the particle to convert (OTFParticle)
+/// \param o2track the address of the resulting TrackParCov
+/// \param pdg the pdg service
+template <typename PdgService>
+void convertOTFParticleToO2Track(const OTFParticle& particle,
+                                 o2::track::TrackParCov& o2track,
+                                 const PdgService& pdg)
+{
+  static TLorentzVector tlv;
+  tlv.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), particle.e());
+  convertTLorentzVectorToO2Track(particle.pdgCode(), tlv, {particle.vx(), particle.vy(), particle.vz()}, o2track, pdg);
+}
+
 /// Function to convert a McParticle into a perfect Track
 /// \param particle the particle to convert (mcParticle)
 /// \param o2track the address of the resulting TrackParCov
@@ -84,6 +101,17 @@ o2::track::TrackParCov convertMCParticleToO2Track(McParticleType& particle,
   convertMCParticleToO2Track(particle, o2track, pdg);
   return o2track;
 }
+
+/// returns velocity in centimeters per picoseconds
+/// \param momentum the momentum of the track
+/// \param mass the mass of the particle
+float computeParticleVelocity(float momentum, float mass);
+
+/// function to calculate track length of this track up to a certain radius
+/// \param track the input track (TrackParCov)
+/// \param radius the radius of the layer you're calculating the length to
+/// \param magneticField the magnetic field to use when propagating
+float computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField);
 
 } // namespace o2::upgrade
 

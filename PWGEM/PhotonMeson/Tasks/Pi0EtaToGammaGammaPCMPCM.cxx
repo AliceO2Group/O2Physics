@@ -13,6 +13,7 @@
 /// \brief This code loops over photons and makes pairs for neutral mesons analyses for PCM-PCM.
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
+#include "PWGEM/PhotonMeson/Core/MaterialBudgetWeights.h"
 #include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
@@ -26,7 +27,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyV0Photons = o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>;
+using MyV0Photons = o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

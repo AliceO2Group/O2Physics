@@ -64,7 +64,7 @@ struct HfTaskB0 {
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
 
   // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
 

@@ -11,12 +11,12 @@ If you have O2Physics compilation you do not need to fulfill these dependencies 
 
 ## How to run
 ### As a ROOT macro
-The `runMassFitter.C` can be compiled as ROOT macro.
+The `runMassFitter.C` can be executed as ROOT macro.
 ```bash
 cd path-to-o2physics-src/PWGHF/D2H/Macros
 source path-to-root-install/bin/thisroot.sh
 export ROOT_INCLUDE_PATH=$ROOT_INCLUDE_PATH:path-to-json-include
-root -l -x -b -q "HFInvMassFitter.cxx" "runMassFitter.C(\"config_massfitter.json\")"
+root -l -b -q -e ".L HFInvMassFitter.cxx" -x "runMassFitter.C(\"config_massfitter.json\")"
 ```
 If you have O2Physics compilation and enter into its environment there is no need to set environment variables (skip lines 2-3 above).
 

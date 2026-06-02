@@ -14,10 +14,20 @@
 // This code produces a table with an index between mc collision and rec. collision.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::aod;
@@ -49,7 +59,7 @@ struct associateMCcollision {
   void runMC(TMCCollisions const& mcCollisions, TCollisions const& collisions, TPreslice const& perMCCollision)
   {
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       auto rec_colls_per_mccoll = collisions.sliceBy(perMCCollision, mcCollision.globalIndex());
       fRegistry.fill(HIST("hReccollsPerMCcoll"), rec_colls_per_mccoll.size());
       uint32_t maxNumContrib = 0;

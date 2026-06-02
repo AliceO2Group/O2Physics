@@ -238,8 +238,7 @@ struct HfCandidateCreatorBToJpsiReduced {
           registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
           registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-          // propagate Jpsi daugthers and K to the B+ vertex
-          df3.propagateTracksToVertex();
+          // get JPsi daughters and K tracks (propagated to the B+ vertex if propagateToPCA==true)
           // track.getPxPyPzGlo(pVec) modifies pVec of track
           df3.getTrack(0).getPxPyPzGlo(pVecDauPos);   // momentum of positive Jpsi daughter at the B+ vertex
           df3.getTrack(1).getPxPyPzGlo(pVecDauNeg);   // momentum of negative Jpsi daughter at the B+ vertex
@@ -259,7 +258,7 @@ struct HfCandidateCreatorBToJpsiReduced {
           trackParCovLf0.propagateToDCA(primaryVertex, bz, &dcaKaon);
 
           // get uncertainty of the decay length
-          double phi, theta;
+          double phi{}, theta{};
           // getPointDirection modifies phi and theta
           getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBplus, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
@@ -309,8 +308,7 @@ struct HfCandidateCreatorBToJpsiReduced {
             registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
             registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-            // propagate Jpsi and phi to the Bs vertex
-            df4.propagateTracksToVertex();
+            // get JPsi daughters and K tracks (propagated to the Bs vertex if propagateToPCA==true)
             // track.getPxPyPzGlo(pVec) modifies pVec of track
             df4.getTrack(0).getPxPyPzGlo(pVecDauPos);   // momentum of Jpsi at the B+ vertex
             df4.getTrack(1).getPxPyPzGlo(pVecDauNeg);   // momentum of Jpsi at the B+ vertex
@@ -332,7 +330,7 @@ struct HfCandidateCreatorBToJpsiReduced {
             trackParCovLf1.propagateToDCA(primaryVertex, bz, &dcaTrackLf1);
 
             // get uncertainty of the decay length
-            double phi, theta;
+            double phi{}, theta{};
             // getPointDirection modifies phi and theta
             getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBs, phi, theta);
             auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));

@@ -14,41 +14,51 @@
 /// \author Florian Jonas <florian.jonas@cern.ch>, UC Berkeley/LBNL
 /// \since 02.08.2024
 
-// C++ system headers first
-#include <TPDGCode.h>
-
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-// Framework and other headers after
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/GammaJetAnalysisTree.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/filterTables.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TVector2.h"
+#include <TH1.h>
+#include <TKDTree.h>
+#include <TPDGCode.h>
+#include <TString.h>
+#include <TVector2.h>
+
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <bitset>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 // \struct GammaJetTreeProducer
 /// \brief Task to produce a tree for gamma-jet analysis, including photons (and information of isolation) and charged and full jets
@@ -62,20 +72,19 @@ using namespace o2::framework::expressions;
 using emcClusters = o2::soa::Join<o2::aod::JClusters, o2::aod::JClusterTracks>;
 using emcMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters, o2::aod::JClusterTracks>;
 
-#include "Framework/runDataProcessing.h"
-
 struct GammaJetTreeProducer {
   // analysis tree
   // charged jets
   // photon candidates
-  Produces<aod::GjChargedJets> chargedJetsTable;   // detector level jets
-  Produces<aod::GjEvents> eventsTable;             // rec events
-  Produces<aod::GjGammas> gammasTable;             // detector level clusters
-  Produces<aod::GjMCEvents> mcEventsTable;         // mc collisions information
-  Produces<aod::GjMCParticles> mcParticlesTable;   // gen level particles (photons and pi0)
-  Produces<aod::GjGammaMCInfos> gammaMCInfosTable; // detector level clusters MC information
-  Produces<aod::GjChJetMCInfos> chJetMCInfosTable; // detector level charged jets MC information
-  Produces<aod::GjMCJets> mcJetsTable;             // gen level jets
+  Produces<aod::GjChargedJets> chargedJetsTable;           // detector level jets
+  Produces<aod::GjEvents> eventsTable;                     // rec events
+  Produces<aod::GjGammas> gammasTable;                     // detector level clusters
+  Produces<aod::GjMCEvents> mcEventsTable;                 // mc collisions information
+  Produces<aod::GjMCParticles> mcParticlesTable;           // gen level particles (photons and pi0)
+  Produces<aod::GjGammaMCInfos> gammaMCInfosTable;         // detector level clusters MC information
+  Produces<aod::GjChJetMCInfos> chJetMCInfosTable;         // detector level charged jets MC information
+  Produces<aod::GjMCJets> mcJetsTable;                     // gen level jets
+  Produces<aod::GjJetSubstructures> jetSubstructuresTable; // jet substructure observables
 
   HistogramRegistry mHistograms{"GammaJetTreeProducerHisto"};
 
@@ -89,8 +98,8 @@ struct GammaJetTreeProducer {
   Configurable<double> mVertexCut{"vertexCut", 10.0, "apply z-vertex cut with value in cm"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
-  Configurable<std::string>
-    trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_calo", "RCT label"};
   Configurable<float> trackMinPt{"trackMinPt", 0.15, "minimum track pT cut"};
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> isoR{"isoR", 0.4, "isolation cone radius"};
@@ -98,7 +107,7 @@ struct GammaJetTreeProducer {
   Configurable<float> trackMatchingEoverP{"trackMatchingEoverP", 2.0, "closest track is required to have E/p < value"};
   Configurable<float> minClusterETrigger{"minClusterETrigger", 0.0, "minimum cluster energy to trigger"};
   Configurable<float> minMCGenPt{"minMCGenPt", 0.0, "minimum pt of mc gen particles to store"};
-
+  Configurable<bool> calculateJetSubstructure{"calculateJetSubstructure", false, "calculate jet substructure"};
   int mRunNumber = 0;
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -113,11 +122,28 @@ struct GammaJetTreeProducer {
   std::vector<float> trackEta;
   std::vector<float> trackPhi;
   std::vector<float> trackPt;
+  std::vector<int> trackSourceIndex;
   std::vector<float> mcParticleEta;
   std::vector<float> mcParticlePhi;
   std::vector<float> mcParticlePt;
+  std::vector<int> mcParticleSourceIndex;
   TKDTree<int, float>* trackTree = nullptr;
   TKDTree<int, float>* mcParticleTree = nullptr;
+
+  // for substructure calculation
+  std::vector<fastjet::PseudoJet> jetConstituents;
+  std::vector<fastjet::PseudoJet> jetReclustered;
+  JetFinder jetReclusterer;
+  std::vector<float> energyMotherVec;
+  std::vector<float> ptLeadingVec;
+  std::vector<float> ptSubLeadingVec;
+  std::vector<float> thetaVec;
+
+  // keeping track of the current collision index
+  // to determine if we need to rebuild the kdTree
+  // this makes loadorder more robust
+  int32_t curTrackTreeColIndex = -1;
+  int32_t curMcParticleTreeColIndex = -1;
 
   void init(InitContext const&)
   {
@@ -127,6 +153,11 @@ struct GammaJetTreeProducer {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+
+    // for substructure calculation
+    jetReclusterer.isReclustering = true;
+    jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
+    jetReclusterer.ghostRepeatN = 0;
 
     // create histograms
     LOG(info) << "Creating histograms";
@@ -223,24 +254,51 @@ struct GammaJetTreeProducer {
   /// \brief Builds the kd tree for the tracks or mc particles (used for fast isolation calculation)
   /// \param objects The objects to build the kd tree for (tracks or mc particles)
   template <typename T>
-  void buildKdTree(const T& objects)
+  void buildKdTree(const auto& collision, const T& objects)
   {
-    trackEta.clear();
-    trackPhi.clear();
-    trackPt.clear();
-    mcParticleEta.clear();
-    mcParticlePhi.clear();
-    mcParticlePt.clear();
+    // check if we need to rebuild the kdTree
+    if constexpr (std::is_same_v<typename std::decay_t<T>, aod::JetTracks>) {
+      if (curTrackTreeColIndex == collision.globalIndex()) {
+        return;
+      }
+      curTrackTreeColIndex = collision.globalIndex();
+    } else if constexpr (std::is_same_v<typename std::decay_t<T>, aod::JetParticles>) {
+      if (curMcParticleTreeColIndex == collision.globalIndex()) {
+        return;
+      }
+      curMcParticleTreeColIndex = collision.globalIndex();
+    }
 
     // if the track type is aod::JetTracks, we need to build the kd tree for the tracks
     if constexpr (std::is_same_v<typename std::decay_t<T>, aod::JetTracks>) {
+      trackEta.clear();
+      trackPhi.clear();
+      trackPt.clear();
+      trackSourceIndex.clear();
+      const float maxMatchingDistance = std::max(static_cast<float>(isoR), static_cast<float>(perpConeJetR));
+      const float additionalMargin = 0.05f;
       for (const auto& track : objects) {
         if (!isTrackSelected(track)) {
           continue;
         }
+        const float phi = RecoDecay::constrainAngle(track.phi(), 0.0);
+        const int originalIndex = static_cast<int>(trackPt.size());
         trackEta.push_back(track.eta());
-        trackPhi.push_back(track.phi());
+        trackPhi.push_back(phi);
         trackPt.push_back(track.pt());
+        trackSourceIndex.push_back(originalIndex);
+        if (phi <= (maxMatchingDistance + additionalMargin)) {
+          trackEta.push_back(track.eta());
+          trackPhi.push_back(phi + o2::constants::math::TwoPI);
+          trackPt.push_back(track.pt());
+          trackSourceIndex.push_back(originalIndex);
+        }
+        if (phi >= (o2::constants::math::TwoPI - (maxMatchingDistance + additionalMargin))) {
+          trackEta.push_back(track.eta());
+          trackPhi.push_back(phi - o2::constants::math::TwoPI);
+          trackPt.push_back(track.pt());
+          trackSourceIndex.push_back(originalIndex);
+        }
       }
       if (trackEta.size() > 0) {
         delete trackTree;
@@ -248,10 +306,20 @@ struct GammaJetTreeProducer {
         trackTree->SetData(0, trackEta.data());
         trackTree->SetData(1, trackPhi.data());
         trackTree->Build();
+      } else {
+        // Keep tree state consistent with the current event content.
+        delete trackTree;
+        trackTree = nullptr;
       }
     }
     // if the track type is aod::JetParticles, we need to build the kd tree for the mc particles
     if constexpr (std::is_same_v<typename std::decay_t<T>, aod::JetParticles>) {
+      mcParticleEta.clear();
+      mcParticlePhi.clear();
+      mcParticlePt.clear();
+      mcParticleSourceIndex.clear();
+      const float maxMatchingDistance = std::max(static_cast<float>(isoR), static_cast<float>(perpConeJetR));
+      const float additionalMargin = 0.05f;
       for (const auto& particle : objects) {
         if (!particle.isPhysicalPrimary()) {
           continue;
@@ -262,9 +330,24 @@ struct GammaJetTreeProducer {
         if (particle.pt() < trackMinPt) {
           continue;
         }
+        const float phi = RecoDecay::constrainAngle(particle.phi(), 0.0);
+        const int originalIndex = static_cast<int>(mcParticlePt.size());
         mcParticleEta.push_back(particle.eta());
-        mcParticlePhi.push_back(particle.phi());
+        mcParticlePhi.push_back(phi);
         mcParticlePt.push_back(particle.pt());
+        mcParticleSourceIndex.push_back(originalIndex);
+        if (phi <= (maxMatchingDistance + additionalMargin)) {
+          mcParticleEta.push_back(particle.eta());
+          mcParticlePhi.push_back(phi + o2::constants::math::TwoPI);
+          mcParticlePt.push_back(particle.pt());
+          mcParticleSourceIndex.push_back(originalIndex);
+        }
+        if (phi >= (o2::constants::math::TwoPI - (maxMatchingDistance + additionalMargin))) {
+          mcParticleEta.push_back(particle.eta());
+          mcParticlePhi.push_back(phi - o2::constants::math::TwoPI);
+          mcParticlePt.push_back(particle.pt());
+          mcParticleSourceIndex.push_back(originalIndex);
+        }
       }
       if (mcParticleEta.size() > 0) {
         delete mcParticleTree;
@@ -272,6 +355,10 @@ struct GammaJetTreeProducer {
         mcParticleTree->SetData(0, mcParticleEta.data());
         mcParticleTree->SetData(1, mcParticlePhi.data());
         mcParticleTree->Build();
+      } else {
+        // Keep tree state consistent with the current event content.
+        delete mcParticleTree;
+        mcParticleTree = nullptr;
       }
     }
   }
@@ -310,7 +397,7 @@ struct GammaJetTreeProducer {
   {
     mHistograms.fill(HIST("eventQA"), 0);
 
-    if (collision.posZ() > mVertexCut) {
+    if (std::abs(collision.posZ()) > mVertexCut) {
       return false;
     }
     mHistograms.fill(HIST("eventQA"), 1);
@@ -345,6 +432,33 @@ struct GammaJetTreeProducer {
     return std::abs(pdg->GetParticle(particle.pdgCode())->Charge()) >= 1.;
   }
 
+  /// \brief Sums pt values once per unique source index from KD-tree query indices
+  /// \param indices KD-tree result indices
+  /// \param sourceIndexMap Maps KD-tree entry index to original object index
+  /// \param ptValues pt values of original objects
+  /// \param uniqueSourceIndices Set used to deduplicate source indices
+  /// \return Sum of unique pt values for the given indices
+  double sumUniquePtFromIndices(const std::vector<int>& indices,
+                                const std::vector<int>& sourceIndexMap,
+                                const std::vector<float>& ptValues,
+                                std::unordered_set<int>& uniqueSourceIndices)
+  {
+    double ptSum = 0;
+    for (const auto& index : indices) {
+      if (index < 0 || static_cast<size_t>(index) >= sourceIndexMap.size()) {
+        continue;
+      }
+      const int sourceIndex = sourceIndexMap[index];
+      if (sourceIndex < 0 || static_cast<size_t>(sourceIndex) >= ptValues.size()) {
+        continue;
+      }
+      if (uniqueSourceIndices.insert(sourceIndex).second) {
+        ptSum += ptValues[sourceIndex];
+      }
+    }
+    return ptSum;
+  }
+
   /// \brief Calculates the charged particle isolation in a cone of given size using a pre-built kd tree
   /// \param particle The particle to calculate the isolation for
   /// \param radius The cone radius
@@ -354,15 +468,14 @@ struct GammaJetTreeProducer {
   double ch_iso_in_cone(const T& particle, float radius = 0.4, bool mcGenIso = false)
   {
     double iso = 0;
-    float point[2] = {particle.eta(), particle.phi()};
+    float point[2] = {particle.eta(), RecoDecay::constrainAngle(particle.phi(), 0.0)};
     std::vector<int> indices;
+    std::unordered_set<int> uniqueSourceIndices;
 
     if (!mcGenIso) {
       if (trackTree) {
         trackTree->FindInRange(point, radius, indices);
-        for (const auto& index : indices) {
-          iso += trackPt[index];
-        }
+        iso += sumUniquePtFromIndices(indices, trackSourceIndex, trackPt, uniqueSourceIndices);
       } else {
         LOG(error) << "Track tree not found";
         return 0;
@@ -370,9 +483,7 @@ struct GammaJetTreeProducer {
     } else {
       if (mcParticleTree) {
         mcParticleTree->FindInRange(point, radius, indices);
-        for (const auto& index : indices) {
-          iso += mcParticlePt[index];
-        }
+        iso += sumUniquePtFromIndices(indices, mcParticleSourceIndex, mcParticlePt, uniqueSourceIndices);
       } else {
         LOG(error) << "MC particle tree not found";
         return 0;
@@ -395,14 +506,16 @@ struct GammaJetTreeProducer {
     double cPhi = TVector2::Phi_0_2pi(object.phi());
 
     // rotate cone left by 90 degrees
-    float cPhiLeft = cPhi - o2::constants::math::PIHalf;
-    float cPhiRight = cPhi + o2::constants::math::PIHalf;
+    float cPhiLeft = RecoDecay::constrainAngle(cPhi - o2::constants::math::PIHalf, 0.0);
+    float cPhiRight = RecoDecay::constrainAngle(cPhi + o2::constants::math::PIHalf, 0.0);
 
     float pointLeft[2] = {object.eta(), cPhiLeft};
     float pointRight[2] = {object.eta(), cPhiRight};
 
     std::vector<int> indicesLeft;
     std::vector<int> indicesRight;
+    std::unordered_set<int> uniqueSourceIndicesLeft;
+    std::unordered_set<int> uniqueSourceIndicesRight;
 
     if (!mcGenIso) {
       if (trackTree) {
@@ -413,12 +526,8 @@ struct GammaJetTreeProducer {
         return 0;
       }
 
-      for (const auto& index : indicesLeft) {
-        ptSumLeft += trackPt[index];
-      }
-      for (const auto& index : indicesRight) {
-        ptSumRight += trackPt[index];
-      }
+      ptSumLeft += sumUniquePtFromIndices(indicesLeft, trackSourceIndex, trackPt, uniqueSourceIndicesLeft);
+      ptSumRight += sumUniquePtFromIndices(indicesRight, trackSourceIndex, trackPt, uniqueSourceIndicesRight);
     } else {
       if (mcParticleTree) {
         mcParticleTree->FindInRange(pointLeft, radius, indicesLeft);
@@ -427,12 +536,8 @@ struct GammaJetTreeProducer {
         LOG(error) << "MC particle tree not found";
         return 0;
       }
-      for (const auto& index : indicesLeft) {
-        ptSumLeft += mcParticlePt[index];
-      }
-      for (const auto& index : indicesRight) {
-        ptSumRight += mcParticlePt[index];
-      }
+      ptSumLeft += sumUniquePtFromIndices(indicesLeft, mcParticleSourceIndex, mcParticlePt, uniqueSourceIndicesLeft);
+      ptSumRight += sumUniquePtFromIndices(indicesRight, mcParticleSourceIndex, mcParticlePt, uniqueSourceIndicesRight);
     }
 
     float rho = (ptSumLeft + ptSumRight) / (o2::constants::math::TwoPI * radius * radius);
@@ -454,6 +559,46 @@ struct GammaJetTreeProducer {
     }
   }
 
+  /// \brief Prints the mother chain of a given MC particle.
+  /// \param particle The particle to print the mother chain for
+  template <typename T>
+  void printMotherChain(const T& particle) const
+  {
+    T current = particle;
+    int depth = 0;
+    bool continueTracing = true;
+    while (continueTracing) {
+      LOG(info) << "Level " << depth
+                << " | PDG: " << current.pdgCode()
+                << " | E: " << current.energy()
+                << " | pt: " << current.pt()
+                << " | eta: " << current.eta()
+                << " | phi: " << current.phi()
+                << " | genStatusCode: " << current.getGenStatusCode()
+                << " | globalIndex: " << current.globalIndex();
+      auto mothers = current.template mothers_as<aod::JMcParticles>();
+      if (mothers.size() == 0) {
+        break;
+      }
+      // Handle case with potentially duplicate mothers
+      int selectedMother = -1;
+      if (mothers.size() == 1) {
+        selectedMother = 0;
+      } else if (mothers.size() == 2 &&
+                 mothers[0].globalIndex() == mothers[1].globalIndex() &&
+                 mothers[0].pdgCode() == mothers[1].pdgCode() &&
+                 mothers[0].getGenStatusCode() == mothers[1].getGenStatusCode()) {
+        selectedMother = 0;
+      }
+      if (selectedMother == -1) {
+        LOG(info) << "Branching in mother chain or unclear mothers, stopping trace.";
+        break;
+      }
+      current = mothers[selectedMother];
+      ++depth;
+    }
+  }
+
   /// \brief Finds the top-most copy of a particle in the decay chain (following carbon copies)
   /// \param particle The particle to start from
   /// \return The top-most copy of the particle
@@ -464,10 +609,36 @@ struct GammaJetTreeProducer {
     T currentParticle = particle;
     int pdgCode = particle.pdgCode();
     auto mothers = particle.template mothers_as<aod::JMcParticles>();
-    while (iUp > 0 && mothers.size() == 1 && mothers[0].globalIndex() > 0 && mothers[0].pdgCode() == pdgCode) {
-      iUp = mothers[0].globalIndex();
-      currentParticle = mothers[0];
+    // sometimes the particle will have two identical mothers, not sure why, but we need to cover this case
+    // if there are two mothers, but they are not identical, we will stop
+    bool twoMothersIdentical = false;
+    int selectedMother = -1;
+    if (mothers.size() == 1) {
+      selectedMother = 0;
+    } else if (mothers.size() == 2) {
+      twoMothersIdentical = (mothers[0].globalIndex() == mothers[1].globalIndex() &&
+                             mothers[0].pdgCode() == mothers[1].pdgCode() &&
+                             mothers[0].getGenStatusCode() == mothers[1].getGenStatusCode());
+      if (twoMothersIdentical) {
+        selectedMother = 0;
+      }
+    }
+    while (iUp > 0 && selectedMother >= 0 && mothers[selectedMother].globalIndex() > 0 && mothers[selectedMother].pdgCode() == pdgCode) {
+      iUp = mothers[selectedMother].globalIndex();
+      currentParticle = mothers[selectedMother];
       mothers = currentParticle.template mothers_as<aod::JMcParticles>();
+      selectedMother = -1;
+      twoMothersIdentical = false;
+      if (mothers.size() == 1) {
+        selectedMother = 0;
+      } else if (mothers.size() == 2) {
+        twoMothersIdentical = (mothers[0].globalIndex() == mothers[1].globalIndex() &&
+                               mothers[0].pdgCode() == mothers[1].pdgCode() &&
+                               mothers[0].getGenStatusCode() == mothers[1].getGenStatusCode());
+        if (twoMothersIdentical) {
+          selectedMother = 0;
+        }
+      }
     }
     return currentParticle;
   }
@@ -849,7 +1020,7 @@ struct GammaJetTreeProducer {
             // check that mother has exactly two daughters which are e+ and e-
             if (daughters.size() == 2) {
               LOG(debug) << "Got the daughters";
-              if ((daughters.iteratorAt(0).pdgCode() == PDG_t::kElectron && daughters.iteratorAt(1).pdgCode() == PDG_t::kPositron) || (daughters.iteratorAt(0).pdgCode() == -PDG_t::kPositron && daughters.iteratorAt(1).pdgCode() == PDG_t::kElectron)) {
+              if ((daughters.iteratorAt(0).pdgCode() == PDG_t::kElectron && daughters.iteratorAt(1).pdgCode() == PDG_t::kPositron) || (daughters.iteratorAt(0).pdgCode() == PDG_t::kPositron && daughters.iteratorAt(1).pdgCode() == PDG_t::kElectron)) {
                 SETBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kConvertedPhoton));
                 LOG(debug) << "Cluster is a converted photon";
               }
@@ -892,10 +1063,10 @@ struct GammaJetTreeProducer {
     int nRecCollisions = 0;
     mHistograms.fill(HIST("mcCollisionsWithRecCollisions"), 0);
     for (auto const& collision : collisions) {
-      if (collision.posZ() > mVertexCut) {
+      if (std::abs(collision.posZ()) > mVertexCut) {
         continue;
       }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, true, rctLabel)) {
         continue;
       }
       if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -933,7 +1104,7 @@ struct GammaJetTreeProducer {
   /// \brief Processes data events in data fill event table
   /// \param collision The collision to process
   /// \param clusters The EMCAL clusters in the event
-  void processEventData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, emcClusters const& clusters)
+  void processEventData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, emcClusters const& clusters)
   {
     if (!isEventAccepted(collision, clusters)) {
       return;
@@ -950,7 +1121,7 @@ struct GammaJetTreeProducer {
   /// \param collision The collision to process
   /// \param clusters The EMCAL clusters in the event
   /// \param mcCollisions The MC collisions collection
-  void processEventMC(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs, JMcCollisionLbs>::iterator const& collision, emcClusters const& clusters, MCCol const&)
+  void processEventMC(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, emcClusters const& clusters, MCCol const&)
   {
     if (!isEventAccepted(collision, clusters)) {
       return;
@@ -999,7 +1170,7 @@ struct GammaJetTreeProducer {
   /// \param clusters The EMCAL clusters to process
   /// \param tracks The tracks collection
   /// \param emctracks The EMCAL tracks collection from track matching
-  void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, emcClusters const& clusters, aod::JetTracks const& tracks, aod::JEMCTracks const& emctracks)
+  void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, emcClusters const& clusters, aod::JetTracks const& tracks, aod::JEMCTracks const& emctracks)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1010,7 +1181,7 @@ struct GammaJetTreeProducer {
     runTrackQA(collision, tracks);
 
     // build kd tree for tracks and mc particles
-    buildKdTree(tracks);
+    buildKdTree(collision, tracks);
 
     // loop over clusters
     for (const auto& cluster : clusters) {
@@ -1059,7 +1230,7 @@ struct GammaJetTreeProducer {
   /// \param collision The collision to process
   /// \param mcClusters The MC clusters to process
   /// \param mcParticles The MC particles collection
-  void processClustersMCInfo(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, emcMCClusters const& mcClusters, aod::JMcParticles const& mcParticles)
+  void processClustersMCInfo(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, emcMCClusters const& mcClusters, aod::JMcParticles const& mcParticles)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1143,20 +1314,85 @@ struct GammaJetTreeProducer {
     mHistograms.fill(HIST("chjetPt"), jet.pt());
   }
 
+  /// \brief Fills the substructure table with z and theta values for each splitting in the jet
+  /// \param jetGlobalIndex The global index of the stored jet in the GjChargedJets table
+  /// \param jet The jet to process
+  /// \param tracks The tracks collection
+  template <typename T, typename U>
+  void fillSubstructureTable(int32_t storedColIndex, T const& jet, U const& /*tracks*/)
+  {
+    // adjust settings according to the jet radius
+    jetReclusterer.jetR = jet.r() / 100.0;
+    // clear vectors
+    energyMotherVec.clear();
+    ptLeadingVec.clear();
+    ptSubLeadingVec.clear();
+    thetaVec.clear();
+    jetReclustered.clear();
+    jetConstituents.clear();
+
+    if (jet.pt() < jetPtMin) {
+      return;
+    }
+    for (const auto& jetConstituent : jet.template tracks_as<U>()) {
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+    }
+
+    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
+    jetReclustered = sorted_by_pt(jetReclustered);
+
+    if (jetReclustered.size() == 0) {
+      return;
+    }
+
+    fastjet::PseudoJet daughterSubJet = jetReclustered[0];
+    fastjet::PseudoJet parentSubJet1;
+    fastjet::PseudoJet parentSubJet2;
+
+    // Iterate through the Cambridge/Aachen tree and store all z, theta pairs
+    while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
+      if (parentSubJet1.perp() < parentSubJet2.perp()) {
+        std::swap(parentSubJet1, parentSubJet2);
+      }
+
+      energyMotherVec.push_back(daughterSubJet.e());
+      ptLeadingVec.push_back(parentSubJet1.pt());
+      ptSubLeadingVec.push_back(parentSubJet2.pt());
+      thetaVec.push_back(parentSubJet1.delta_R(parentSubJet2));
+
+      // Continue with harder parent
+      daughterSubJet = parentSubJet1;
+    }
+
+    // Fill one row per jet with all splittings stored as vectors
+    // Pass the jet's global index to associate this substructure entry with the jet
+    jetSubstructuresTable(storedColIndex, energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
+  }
+
   Filter jetCuts = aod::jet::pt > jetPtMin;
   /// \brief Processes charged jets and fills jet table
   /// \param collision The collision to process
   /// \param chargedJets The charged jets to process
   /// \param tracks The tracks collection
-  void processChargedJetsData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const& tracks)
+  void processChargedJetsData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const& tracks)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
     if (storedColIndex == -1)
       return;
+
+    // build kd tree for tracks (needed for perpendicular cone rho calculation)
+    buildKdTree(collision, tracks);
+
     // loop over charged jets
     for (const auto& jet : chargedJets) {
+      // Fill jet table and get the stored jet's global index
       fillChargedJetTable(storedColIndex, jet, tracks);
+
+      // Fill substructure table if enabled and jet was stored
+      if (calculateJetSubstructure) {
+        fillSubstructureTable(storedColIndex, jet, tracks);
+      }
     }
   }
   PROCESS_SWITCH(GammaJetTreeProducer, processChargedJetsData, "Process charged jets", true);
@@ -1165,7 +1401,7 @@ struct GammaJetTreeProducer {
   /// \brief Processes MC particles and fills MC particle table
   /// \param collision The collision to process
   /// \param mcgenparticles The MC particles to process
-  void processMCParticles(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs, JMcCollisionLbs>::iterator const& collision, aod::JetParticles const& mcgenparticles, MCCol const&)
+  void processMCParticles(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1180,7 +1416,7 @@ struct GammaJetTreeProducer {
     auto particlesPerMcCollision = mcgenparticles.sliceBy(ParticlesPerMCCollisions, collision.mcCollisionId());
 
     // build kd tree for mc particles
-    buildKdTree(particlesPerMcCollision);
+    buildKdTree(collision, particlesPerMcCollision);
 
     // Now we want to store every pi0 and every prompt photon that we find on generator level
     for (const auto& particle : particlesPerMcCollision) {
@@ -1200,10 +1436,20 @@ struct GammaJetTreeProducer {
       if (particle.pdgCode() != PDG_t::kPi0 && particle.pdgCode() != PDG_t::kGamma) {
         continue;
       }
+
       // check the origin of the particle
       uint16_t origin = getMCParticleOrigin(particle);
       double mcIsolation = ch_iso_in_cone(particle, isoR, true);
       mcParticlesTable(storedColIndex, particle.energy(), particle.eta(), particle.phi(), particle.pt(), particle.pdgCode(), mcIsolation, origin);
+
+      // DEBUGGING for photons. If it is a photon, print the origin and then print the chain
+      // leaving this in here
+      // if (particle.pdgCode() == PDG_t::kGamma) {
+      //   LOG(info) << "Particle PDG: " << particle.pdgCode() << " isPhysicalPrimary: " << particle.isPhysicalPrimary() << " getGenStatusCode: " << particle.getGenStatusCode();
+      //   LOG(info) << "Origin: " << "kPromptPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPromptPhoton))) << "), kDirectPromptPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDirectPromptPhoton))) << "), kFragmentationPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kFragmentationPhoton))) << "), kDecayPhoton (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhoton))) << "), kDecayPhotonPi0 (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonPi0))) << "), kDecayPhotonEta (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonEta))) << "), kDecayPhotonOther (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonOther))) << "), kPi0 (" << (origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPi0))) << ")";
+      //   LOG(info) << "Mother chain: ";
+      //   printMotherChain(particle);
+      // }
 
       // fill mc gen trigger particle histograms
       mHistograms.fill(HIST("mcGenTrigger_E"), particle.energy());
@@ -1238,13 +1484,14 @@ struct GammaJetTreeProducer {
   }
   PROCESS_SWITCH(GammaJetTreeProducer, processMCParticles, "Process MC particles", false);
 
-  // NOTE: It is important that this function runs after the processMCParticles function (where the isolation tree is built )
+  // NOTE: The KD tree is now built lazily in each function that needs it, so execution order is no longer critical
   Preslice<aod::ChargedMCParticleLevelJets> PJetsPerMCCollisions = aod::jmcparticle::mcCollisionId;
   /// \brief Processes MC particle level charged jets and fills MC jet table
   /// \param collision The collision to process
   /// \param chargedJets The MC particle level charged jets to process
+  /// \param mcgenparticles The MC particles collection
   /// \param mcCollisions The MC collisions collection
-  void processChargedJetsMCP(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs, JMcCollisionLbs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& chargedJets, MCCol const&)
+  void processChargedJetsMCP(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& chargedJets, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1254,6 +1501,11 @@ struct GammaJetTreeProducer {
     if (!collision.has_mcCollision()) {
       return;
     }
+
+    // build kd tree for mc particles (needed for perpendicular cone rho calculation)
+    auto particlesPerMcCollision = mcgenparticles.sliceBy(ParticlesPerMCCollisions, collision.mcCollisionId());
+    buildKdTree(collision, particlesPerMcCollision);
+
     int localIndex = 0;
     auto pjetsPerMcCollision = chargedJets.sliceBy(PJetsPerMCCollisions, collision.mcCollisionId());
     for (const auto& pjet : pjetsPerMcCollision) {
@@ -1275,15 +1527,25 @@ struct GammaJetTreeProducer {
   /// \param chargedJets The MC detector level charged jets to process
   /// \param tracks The tracks collection
   /// \param pjets The MC particle level jets collection (just loaded to have subscription to the table)
-  void processChargedJetsMCD(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& chargedJets, aod::JetTracks const& tracks, JetMCPTable const& /*pjets*/)
+  void processChargedJetsMCD(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& chargedJets, aod::JetTracks const& tracks, JetMCPTable const& /*pjets*/)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
     if (storedColIndex == -1)
       return;
+
+    // build kd tree for tracks (needed for perpendicular cone rho calculation)
+    buildKdTree(collision, tracks);
+
     // loop over charged jets
     for (const auto& jet : chargedJets) {
+      // Fill jet table and get the stored jet's global index
       fillChargedJetTable(storedColIndex, jet, tracks);
+
+      // Fill substructure table if enabled and jet was stored
+      if (calculateJetSubstructure) {
+        fillSubstructureTable(storedColIndex, jet, tracks);
+      }
 
       // Fill Matching information
       int iLocalIndexGeo = -1;

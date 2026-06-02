@@ -17,9 +17,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/Zorro.h"
-#include "Common/Core/ZorroSummary.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
@@ -27,24 +26,24 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TMath.h>
 
-#include <fairlogger/Logger.h>
-
-#include <iostream>
+#include <cstdint>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -438,7 +437,7 @@ struct heptaquarktable {
     if (keepEventDoubleHQ && numberPhi > 1 && numberLambda > 0 && (hqresonance.size() == hqresonanced1.size()) && (hqresonance.size() == hqresonanced2.size())) {
       histos.fill(HIST("hEventstat"), 2.5);
       /////////// Fill collision table///////////////
-      redHQEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), centrality, numberPhi, numberLambda);
+      redHQEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), centrality, numberPhi, numberLambda);
       auto indexEvent = redHQEvents.lastIndex();
       //// Fill track table for HQ//////////////////
       for (auto if1 = hqresonance.begin(); if1 != hqresonance.end(); ++if1) {

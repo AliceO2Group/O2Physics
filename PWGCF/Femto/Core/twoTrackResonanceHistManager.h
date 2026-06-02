@@ -20,10 +20,14 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TPDGCode.h>
 
 #include <array>
 #include <map>
@@ -75,20 +79,20 @@ struct ConfKstar0Binning : o2::framework::ConfigurableGroup {
 #undef TWOTRACKRESONANCE_DEFAULT_BINNING
 
 constexpr std::array<histmanager::HistInfo<TwoTrackResonanceHist>, kTwoTrackResonanceHistLast> HistTable = {
-  {{kPt, o2::framework::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
-   {kEta, o2::framework::kTH1F, "hEta", "Pseudorapdity; #eta; Entries"},
-   {kPhi, o2::framework::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
-   {kMass, o2::framework::kTH1F, "hMass", "Invariant mass; m (GeV/#it{c}^{2}); Entries"},
-   {kSign, o2::framework::kTH1F, "hSign", "Sign (-1 -> antiparticle, 0 -> self conjugate, +1 -> particle); sign; Entries"},
-   {kPtVsEta, o2::framework::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
-   {kPtVsPhi, o2::framework::kTH2F, "hPtVsPhi", "p_{T} vs #varphi;p_{T} (GeV/#it{c});#varphi"},
-   {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
-   {kPtVsMass, o2::framework::kTH2F, "hPtVsMass", "p_{T} vs invariant mass; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})"}}};
+  {{kPt, o2::framework::HistType::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
+   {kEta, o2::framework::HistType::kTH1F, "hEta", "Pseudorapdity; #eta; Entries"},
+   {kPhi, o2::framework::HistType::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
+   {kMass, o2::framework::HistType::kTH1F, "hMass", "Invariant mass; m (GeV/#it{c}^{2}); Entries"},
+   {kSign, o2::framework::HistType::kTH1F, "hSign", "Sign (-1 -> antiparticle, 0 -> self conjugate, +1 -> particle); sign; Entries"},
+   {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
+   {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi;p_{T} (GeV/#it{c});#varphi"},
+   {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
+   {kPtVsMass, o2::framework::HistType::kTH2F, "hPtVsMass", "p_{T} vs invariant mass; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})"}}};
 
 template <typename T>
-std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
+std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>>{
+  return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},
@@ -99,7 +103,7 @@ std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackRe
 template <typename T>
 auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>>{
+  return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},
@@ -115,7 +119,7 @@ constexpr char PrefixRho[] = "Rho0/";
 constexpr char PrefixPhi[] = "Phi/";
 constexpr char PrefixKstar[] = "Kstar0/";
 
-constexpr std::string_view AnalysisDir = "Kinematics/";
+constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 
 template <const char* resoPrefix,

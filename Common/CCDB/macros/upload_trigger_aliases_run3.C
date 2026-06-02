@@ -9,13 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "DataFormatsCTP/Configuration.h"
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TObjArray.h"
-#include "TriggerAliases.h"
-#include "TTree.h"
-#include "TString.h"
+#include "Common/CCDB/TriggerAliases.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <Framework/Logger.h>
+
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
 #include <fstream>
 #include <map>
 #include <string>
@@ -30,7 +35,7 @@ void createDefaultAliases(map<int, TString>& mAliases)
   mAliases[kTVXinTRD] = "CMTVX-B-NOPF-TRD,minbias_TVX";
   mAliases[kTVXinEMC] = "C0TVX-B-NOPF-EMC,minbias_TVX_L0,CMTVXTSC-B-NOPF-EMC,CMTVXTCE-B-NOPF-EMC";
   mAliases[kTVXinPHOS] = "C0TVX-B-NOPF-PHSCPV,minbias_TVX_L0,CMTVXTSC-B-NOPF-PHSCPV,CMTVXTSC-B-NOPF-PHSCPV";
-  mAliases[kTVXinHMP] = "C0TVX-B-NOPF-HMP,minbias_TVX_L0,CMTVXTSC-B-NOPF-HMP";
+  mAliases[kTVXinHMP] = "C0TVX-B-NOPF-HMP,minbias_TVX_L0,CMTVXTSC-B-NOPF-HMP,CMTVX-B-NOPF-HMP";
   mAliases[kPHOS] = "CTVXPH0-B-NOPF-PHSCPV,mb_PH0_TVX,CPH0SC-B-NOPF-PHSCPV,CPH0CE-B-NOPF-PHSCPV";
 }
 

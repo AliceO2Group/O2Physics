@@ -9,12 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TString.h"
+#include "Common/CCDB/EventSelectionParams.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
 #include <map>
 #include <string>
-#include "EventSelectionParams.h"
+
 using std::map;
 using std::string;
 
@@ -84,14 +91,14 @@ void upload_event_selection_params()
   n++;
   period[n] = "lhc15f_isolated_bunches";
   par[n] = new EventSelectionParams(0);
-  par[n]->DisableOutOfBunchPileupCuts();
+  par[n]->disableOutOfBunchPileupCuts();
   runFirst[n] = 225000;
   runLast[n] = 225719;
 
   n++;
   period[n] = "lhc15f_isolated_bunches2";
   par[n] = new EventSelectionParams(0);
-  par[n]->DisableOutOfBunchPileupCuts();
+  par[n]->disableOutOfBunchPileupCuts();
   runFirst[n] = 226062;
   runLast[n] = 226500;
 
@@ -100,12 +107,12 @@ void upload_event_selection_params()
   par[n] = new EventSelectionParams(0);
   runFirst[n] = 225753;
   runLast[n] = 225768;
-  par[n]->SetOnVsOfParams(-372.579114, 9.415265, -6.65857, 0.546801);
+  par[n]->setOnVsOfParams(-372.579114, 9.415265, -6.65857, 0.546801);
 
   n++;
   period[n] = "lhc15f_50ns_trains2_missing_V0C3";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-372.579114, 9.415265, -6.65857, 0.546801);
+  par[n]->setOnVsOfParams(-372.579114, 9.415265, -6.65857, 0.546801);
   par[n]->fV0CasymA = 0;
   par[n]->fV0CasymB = 0;
   runFirst[n] = 226530;
@@ -114,42 +121,42 @@ void upload_event_selection_params()
   n++;
   period[n] = "lhc15h";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-245.12, 6.86754, -6.65857, 0.546801);
+  par[n]->setOnVsOfParams(-245.12, 6.86754, -6.65857, 0.546801);
   runFirst[n] = 232914;
   runLast[n] = 233859;
 
   n++;
   period[n] = "lhc15h_isolated_bunches";
   par[n] = new EventSelectionParams(0);
-  par[n]->DisableOutOfBunchPileupCuts();
+  par[n]->disableOutOfBunchPileupCuts();
   runFirst[n] = 233912;
   runLast[n] = 234050;
 
   n++;
   period[n] = "lhc15i";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-223.155660, 7.117266, -6.218793, 0.543201);
+  par[n]->setOnVsOfParams(-223.155660, 7.117266, -6.218793, 0.543201);
   runFirst[n] = 235196;
   runLast[n] = 236866;
 
   n++;
   period[n] = "lhc15j";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-222.631866, 7.431432, -6.610850, 0.587165);
+  par[n]->setOnVsOfParams(-222.631866, 7.431432, -6.610850, 0.587165);
   runFirst[n] = 236892;
   runLast[n] = 238621;
 
   n++;
   period[n] = "lhc15l";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-198.639921, 7.454714, -5.018572, 0.585245);
+  par[n]->setOnVsOfParams(-198.639921, 7.454714, -5.018572, 0.585245);
   runFirst[n] = 239188;
   runLast[n] = 241544;
 
   n++;
   period[n] = "lhc15n";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-336.279729, 10.694535, -4.144493, 0.851104);
+  par[n]->setOnVsOfParams(-336.279729, 10.694535, -4.144493, 0.851104);
   runFirst[n] = 244340;
   runLast[n] = 244628;
 
@@ -176,7 +183,7 @@ void upload_event_selection_params()
   n++;
   period[n] = "lhc16do";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-65.42, 7.43, -5.62, 0.85);
+  par[n]->setOnVsOfParams(-65.42, 7.43, -5.62, 0.85);
   runFirst[n] = 252235;
   runLast[n] = 264035;
 
@@ -201,7 +208,7 @@ void upload_event_selection_params()
   n++;
   period[n] = "pp2017";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-70, 5.2, -3.0, 0.76);
+  par[n]->setOnVsOfParams(-70, 5.2, -3.0, 0.76);
   runFirst[n] = 270531;
   runLast[n] = 280140;
 
@@ -214,21 +221,21 @@ void upload_event_selection_params()
   n++;
   period[n] = "pp2017pqr";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-70, 5.2, -3.0, 0.76);
+  par[n]->setOnVsOfParams(-70, 5.2, -3.0, 0.76);
   runFirst[n] = 282008;
   runLast[n] = 282704;
 
   n++;
   period[n] = "lhc18b_isolated_bunches";
   par[n] = new EventSelectionParams(0);
-  par[n]->DisableOutOfBunchPileupCuts();
+  par[n]->disableOutOfBunchPileupCuts();
   runFirst[n] = 284706;
   runLast[n] = 285015;
 
   n++;
   period[n] = "lhc18b_trains";
   par[n] = new EventSelectionParams(0);
-  par[n]->SetOnVsOfParams(-65., 4.3, -5.62, 0.85);
+  par[n]->setOnVsOfParams(-65., 4.3, -5.62, 0.85);
   runFirst[n] = 285064;
   runLast[n] = 285203;
 

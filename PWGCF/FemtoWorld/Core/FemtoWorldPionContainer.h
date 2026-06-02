@@ -18,20 +18,18 @@
 #ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPIONCONTAINER_H_
 #define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPIONCONTAINER_H_
 
-#include <vector>
-#include <string>
-#include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 
-#include "Math/Vector4D.h"
-#include "TMath.h"
-#include "TDatabasePDG.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-#include "TLorentzVector.h"
-#include "CommonConstants/MathConstants.h"
-#include "TRandom.h"
+#include <TDatabasePDG.h>
+#include <TLorentzVector.h>
 
-using namespace o2::framework;
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace o2::analysis::femtoWorld
 {
@@ -77,7 +75,7 @@ class FemtoWorldPionContainer
   /// \param mInvBins invariant mass binning for the histograms
 
   template <typename T1, typename T2>
-  void init(HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins, T2& mInvBins)
+  void init(o2::framework::HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins, T2& mInvBins)
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -98,18 +96,18 @@ class FemtoWorldPionContainer
     framework::AxisSpec mInvAxis = {mInvBins, 0.0, 10.0};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]);
-    mHistogramRegistry->add((folderName + "relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    mHistogramRegistry->add((folderName + "relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    mHistogramRegistry->add((folderName + "kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    mHistogramRegistry->add((folderName + "MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    mHistogramRegistry->add((folderName + "PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "relPairDetaDphi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2D, {phiAxis, etaAxis});
-    mHistogramRegistry->add((folderName + "relPairInvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
+    mHistogramRegistry->add((folderName + "relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F, {kTAxis});
+    mHistogramRegistry->add((folderName + "relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, kTAxis});
+    mHistogramRegistry->add((folderName + "relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, mTAxis});
+    mHistogramRegistry->add((folderName + "relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", o2::framework::HistType::kTH2F, {{375, 0., 7.5}, multAxis});
+    mHistogramRegistry->add((folderName + "MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", o2::framework::HistType::kTH2F, {{375, 0., 7.5}, multAxis});
+    mHistogramRegistry->add((folderName + "PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", o2::framework::HistType::kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "relPairDetaDphi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", o2::framework::HistType::kTH2D, {phiAxis, etaAxis});
+    mHistogramRegistry->add((folderName + "relPairInvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", o2::framework::HistType::kTH1D, {mInvAxis});
   }
 
   /// Set the PDG codes of the two particles involved
@@ -170,7 +168,7 @@ class FemtoWorldPionContainer
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;                                                                                                                                                    ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                                                                                                                                     ///< For QA output
   static constexpr std::string_view mFolderSuffix[6] = {"SameEventPlusMinus/", "MixedEventPlusMinus/", "SameEventPlusPlus/", "MixedEventPlusPlus/", "SameEventMinusMinus/", "MixedEventMinusMinus/"}; ///< Folder naming for the output according to mEventType
   static constexpr femtoWorldPionContainer::Observable mFemtoObs = obs;                                                                                                                               ///< Femtoscopic observable to be computed (according to femtoWorldPionContainer::Observable)
   static constexpr int mEventType = eventType;                                                                                                                                                        ///< Type of the event (same/mixed, according to femtoWorldPionContainer::EventType)

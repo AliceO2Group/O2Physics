@@ -14,6 +14,7 @@
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
@@ -118,7 +119,7 @@ struct TaskFlowReso {
   SliceCache cache;
   EventPlaneHelper epHelper;
 
-  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
   using CollWithQvec = CollsWithQvecs::iterator;
 
   static constexpr std::size_t NQVecEntries = 6;
@@ -163,15 +164,22 @@ struct TaskFlowReso {
       registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", HistType::kTProfile, {thnAxisCent});
-      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0a} #bullet Q_{TPCtot}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFV0aFT0c", "hSpResoFV0aFT0c; centrality; Q_{FV0a} #bullet Q_{FT0c}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFV0aFT0a", "hSpResoFV0aFT0a; centrality; Q_{FV0a} #bullet Q_{FT0a}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFV0aTPCpos", "hSpResoFV0aTPCpos; centrality; Q_{FV0a} #bullet Q_{TPCpos}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFV0aTPCneg", "hSpResoFV0aTPCneg; centrality; Q_{FV0a} #bullet Q_{TPCneg}", HistType::kTProfile, {thnAxisCent});
       registry.add("spReso/hSpResoFV0aTPCtot", "hSpResoFV0aTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}", HistType::kTProfile, {thnAxisCent});
+
+      // auto correlations
+      registry.add("spReso/hSpResoFT0cFT0c", "hSpResoFT0cFT0c; centrality; Q_{FT0c} #bullet Q_{FT0c}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFT0aFT0a", "hSpResoFT0aFT0a; centrality; Q_{FT0a} #bullet Q_{FT0a}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFT0mFT0m", "hSpResoFT0mFT0m; centrality; Q_{FT0m} #bullet Q_{FT0m}", HistType::kTProfile, {thnAxisCent});
+      registry.add("spReso/hSpResoFV0aFV0a", "hSpResoFV0aFV0a; centrality; Q_{FV0a} #bullet Q_{FV0a}", HistType::kTProfile, {thnAxisCent});
     }
 
     if (saveEpResoHisto.value) {
@@ -450,9 +458,15 @@ struct TaskFlowReso {
       registry.fill(HIST("spReso/hSpResoFT0mTPCtot"), centrality, xQVecFT0m * xQVecBTot + yQVecFT0m * yQVecBTot);
       registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecBPos * xQVecBNeg + yQVecBPos * yQVecBNeg);
       registry.fill(HIST("spReso/hSpResoFV0aFT0c"), centrality, xQVecFV0a * xQVecFT0c + yQVecFV0a * yQVecFT0c);
+      registry.fill(HIST("spReso/hSpResoFV0aFT0a"), centrality, xQVecFV0a * xQVecFT0a + yQVecFV0a * yQVecFT0a);
       registry.fill(HIST("spReso/hSpResoFV0aTPCpos"), centrality, xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
       registry.fill(HIST("spReso/hSpResoFV0aTPCneg"), centrality, xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
       registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot);
+      // auto-correlations for forward detectors, this is needed for combining subevents!
+      registry.fill(HIST("spReso/hSpResoFT0cFT0c"), centrality, xQVecFT0c * xQVecFT0c + yQVecFT0c * yQVecFT0c);
+      registry.fill(HIST("spReso/hSpResoFT0aFT0a"), centrality, xQVecFT0a * xQVecFT0a + yQVecFT0a * yQVecFT0a);
+      registry.fill(HIST("spReso/hSpResoFT0mFT0m"), centrality, xQVecFT0m * xQVecFT0m + yQVecFT0m * yQVecFT0m);
+      registry.fill(HIST("spReso/hSpResoFV0aFV0a"), centrality, xQVecFV0a * xQVecFV0a + yQVecFV0a * yQVecFV0a);
     }
 
     if (saveEpResoHisto) {
@@ -465,8 +479,8 @@ struct TaskFlowReso {
       float epFV0a = epHelper.GetEventPlane(xQVecFV0a, yQVecFV0a, harmonic);
 
       registry.fill(HIST("hEventPlaneAngleFT0M"), centrality, epFT0m);
-      registry.fill(HIST("hEventPlaneAngleFT0A"), centrality, epFT0c);
-      registry.fill(HIST("hEventPlaneAngleFT0C"), centrality, epFT0a);
+      registry.fill(HIST("hEventPlaneAngleFT0A"), centrality, epFT0a);
+      registry.fill(HIST("hEventPlaneAngleFT0C"), centrality, epFT0c);
       registry.fill(HIST("hEventPlaneAngleTPCpos"), centrality, epBPoss);
       registry.fill(HIST("hEventPlaneAngleTPCneg"), centrality, epBNegs);
       registry.fill(HIST("hEventPlaneAngleFV0A"), centrality, epFV0a);
