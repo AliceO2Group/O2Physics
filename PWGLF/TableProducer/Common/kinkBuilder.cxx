@@ -454,7 +454,7 @@ struct kinkBuilder {
   }
 
   template <class TSVCand, class TTracks, class TColls>
-  void buildKinkCand(const TSVCand& svCand, const TTracks& tracks, bool& isAccepted, const TColls& collisions)
+  void buildKinkCand(const TSVCand& svCand, const TTracks& tracks, bool& isAccepted, const TColls&)
   {
     isAccepted = false;
     kinkCandidate kinkCand;
@@ -828,8 +828,7 @@ struct kinkBuilder {
     }
   }
 
-  void processMc(aod::McCollisions const& mcGenCollisions,
-                 McRecoCollisions const& mcRecoCollisions,
+  void processMc(McRecoCollisions const& mcRecoCollisions,
                  aod::McParticles const& mcParticles,
                  TracksFullMc const& tracksMc,
                  aod::AmbiguousTracks const& ambiTracksMc,
@@ -839,8 +838,7 @@ struct kinkBuilder {
   }
   PROCESS_SWITCH(kinkBuilder, processMc, "MC processing", false);
 
-  void processMcWCent(aod::McCollisions const& mcGenCollisions,
-                      McRecoCollisionsCentSel const& mcRecoCollisions,
+  void processMcWCent(McRecoCollisionsCentSel const& mcRecoCollisions,
                       aod::McParticles const& mcParticles,
                       TracksFullMc const& tracksMc,
                       aod::AmbiguousTracks const& ambiTracksMc,
