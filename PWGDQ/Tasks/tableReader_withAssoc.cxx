@@ -1280,6 +1280,10 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
   Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
+  
+  //option for TR pair fill
+  Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
+  Configurable<int> fConfigNRotations{"cfgNRotations", 20, "Number of rotations for track rotation method"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -2133,6 +2137,7 @@ struct AnalysisSameEventPairing {
 
         // edit
         // rotation 20 times
+      if (fConfigTRPairs) {
         if constexpr (TPairType == VarManager::kDecayToEE) {
           twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
 
@@ -2179,7 +2184,7 @@ struct AnalysisSameEventPairing {
                 }
               }
               if (sign1 * sign2 < 0) {
-                for (int i = 0; i < 20; i++) {
+                for (int i = 0; i < fConfigNRotations.value; i++) {
                   VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2);
                   if constexpr (TPairType == VarManager::kDecayToEE) {
                     fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
@@ -2192,6 +2197,7 @@ struct AnalysisSameEventPairing {
             }
           }
         }
+      }
         // end
       } // end loop over pairs of track associations
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
