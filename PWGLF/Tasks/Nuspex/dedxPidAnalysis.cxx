@@ -68,11 +68,11 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedT
 static constexpr int NCentHists{10};
 std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
 std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
-std::array<std::shared_ptr<TH3>, NCentHists+1> hDedxVspTMomentumVsCent{};
-std::array<std::shared_ptr<TH2>, NCentHists+1> hMomentumVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists+1> hMomentumVsEtaNeg{};
-std::array<std::shared_ptr<TH2>, NCentHists+1> hpTVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists+1>  hpTVsEtaNeg{};
+std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
 
 struct DedxPidAnalysis {
 
@@ -200,11 +200,11 @@ struct DedxPidAnalysis {
   Configurable<float> etaMin{"etaMin", -0.8f, "etaMin"};
   Configurable<float> etaMax{"etaMax", +0.8f, "etaMax"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
-    Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 3.0, "nSigma DCAxy selection"};
-    Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
-    Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
-    Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCA_xy p2 parameter"};
-       Configurable<float> nSigmaDCAz{"nSigmaDCAz", 3.0, "nSigma DCAz selection"};
+  Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 3.0, "nSigma DCAxy selection"};
+  Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
+  Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
+  Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCA_xy p2 parameter"};
+  Configurable<float> nSigmaDCAz{"nSigmaDCAz", 3.0, "nSigma DCAz selection"};
   Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   // v0 cuts
   Configurable<float> v0cospaMin{"v0cospaMin", 0.999f, "Minimum V0 CosPA"};
@@ -250,12 +250,12 @@ struct DedxPidAnalysis {
   static constexpr std::string_view DedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
   static constexpr std::string_view DedxvsMomentumvsCentPos[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Pos", "dEdx_vs_Momentum_Cent1_5_Pos", "dEdx_vs_Momentum_Cent5_10_Pos", "dEdx_vs_Momentum_Cent10_15_Pos", "dEdx_vs_Momentum_Cent15_20_Pos", "dEdx_vs_Momentum_Cent20_30_Pos", "dEdx_vs_Momentum_Cent30_40_Pos", "dEdx_vs_Momentum_Cent40_50_Pos", "dEdx_vs_Momentum_Cent50_70_Pos", "dEdx_vs_Momentum_Cent70_100_Pos"};
   static constexpr std::string_view DedxvsMomentumvsCentNeg[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Neg", "dEdx_vs_Momentum_Cent1_5_Neg", "dEdx_vs_Momentum_Cent5_10_Neg", "dEdx_vs_Momentum_Cent10_15_Neg", "dEdx_vs_Momentum_Cent15_20_Neg", "dEdx_vs_Momentum_Cent20_30_Neg", "dEdx_vs_Momentum_Cent30_40_Neg", "dEdx_vs_Momentum_Cent40_50_Neg", "dEdx_vs_Momentum_Cent50_70_Neg", "dEdx_vs_Momentum_Cent70_100_Neg"};
-    static constexpr std::string_view DedxvspTMomentumvsCent[CentralityClasses+1] = {"dEdx_vs_pTMomentum_Cent0_1", "dEdx_vs_pTMomentum_Cent1_5", "dEdx_vs_pTMomentum_Cent5_10", "dEdx_vs_pTMomentum_Cent10_15", "dEdx_vs_pTMomentum_Cent15_20", "dEdx_vs_pTMomentum_Cent20_30", "dEdx_vs_pTMomentum_Cent30_40", "dEdx_vs_pTMomentum_Cent40_50", "dEdx_vs_pTMomentum_Cent50_70", "dEdx_vs_pTMomentum_Cent70_100","dEdx_vs_pTMomentum_all_Pos"};
-    // Fine binnind
-    static constexpr std::string_view CentpPos[CentralityClasses+1] = {"p_vs_eta_Cent0_1_Pos", "p_vs_eta_Cent1_5_Pos", "p_vs_eta_Cent5_10_Pos", "p_vs_eta_Cent10_15_Pos", "p_vs_eta_Cent15_20_Pos", "p_vs_eta_Cent20_30_Pos", "p_vs_eta_Cent30_40_Pos", "p_vs_eta_Cent40_50_Pos", "p_vs_eta_Cent50_70_Pos", "p_vs_eta_Cent70_100_Pos","p_vs_eta_MB_Pos"};
-    static constexpr std::string_view CentpNeg[CentralityClasses+1] = {"p_vs_eta_Cent0_1_Neg", "p_vs_eta_Cent1_5_Neg", "p_vs_eta_Cent5_10_Neg", "p_vs_eta_Cent10_15_Neg", "p_vs_eta_Cent15_20_Neg", "p_vs_eta_Cent20_30_Neg", "p_vs_eta_Cent30_40_Neg", "p_vs_eta_Cent40_50_Neg", "p_vs_eta_Cent50_70_Neg", "p_vs_eta_Cent70_100_Neg","p_vs_eta_MB_Neg"};
-    static constexpr std::string_view CentpTPos[CentralityClasses+1] = {"pT_vs_eta_Cent0_1_Pos", "pT_vs_eta_Cent1_5_Pos", "pT_vs_eta_Cent5_10_Pos", "pT_vs_eta_Cent10_15_Pos", "pT_vs_eta_Cent15_20_Pos", "pT_vs_eta_Cent20_30_Pos", "pT_vs_eta_Cent30_40_Pos", "pT_vs_eta_Cent40_50_Pos", "pT_vs_eta_Cent50_70_Pos", "pT_vs_eta_Cent70_100_Pos","pT_vs_eta_MB_Pos"};
-    static constexpr std::string_view CentpTNeg[CentralityClasses+1] = {"pT_vs_eta_Cent0_1_Neg", "pT_vs_eta_Cent1_5_Neg", "pT_vs_eta_Cent5_10_Neg", "pT_vs_eta_Cent10_15_Neg", "pT_vs_eta_Cent15_20_Neg", "pT_vs_eta_Cent20_30_Neg", "pT_vs_eta_Cent30_40_Neg", "pT_vs_eta_Cent40_50_Neg", "pT_vs_eta_Cent50_70_Neg", "pT_vs_eta_Cent70_100_Neg","pT_vs_eta_MB_Neg"};
+  static constexpr std::string_view DedxvspTMomentumvsCent[CentralityClasses + 1] = {"dEdx_vs_pTMomentum_Cent0_1", "dEdx_vs_pTMomentum_Cent1_5", "dEdx_vs_pTMomentum_Cent5_10", "dEdx_vs_pTMomentum_Cent10_15", "dEdx_vs_pTMomentum_Cent15_20", "dEdx_vs_pTMomentum_Cent20_30", "dEdx_vs_pTMomentum_Cent30_40", "dEdx_vs_pTMomentum_Cent40_50", "dEdx_vs_pTMomentum_Cent50_70", "dEdx_vs_pTMomentum_Cent70_100", "dEdx_vs_pTMomentum_all_Pos"};
+  // Fine binnind
+  static constexpr std::string_view CentpPos[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Pos", "p_vs_eta_Cent1_5_Pos", "p_vs_eta_Cent5_10_Pos", "p_vs_eta_Cent10_15_Pos", "p_vs_eta_Cent15_20_Pos", "p_vs_eta_Cent20_30_Pos", "p_vs_eta_Cent30_40_Pos", "p_vs_eta_Cent40_50_Pos", "p_vs_eta_Cent50_70_Pos", "p_vs_eta_Cent70_100_Pos", "p_vs_eta_MB_Pos"};
+  static constexpr std::string_view CentpNeg[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Neg", "p_vs_eta_Cent1_5_Neg", "p_vs_eta_Cent5_10_Neg", "p_vs_eta_Cent10_15_Neg", "p_vs_eta_Cent15_20_Neg", "p_vs_eta_Cent20_30_Neg", "p_vs_eta_Cent30_40_Neg", "p_vs_eta_Cent40_50_Neg", "p_vs_eta_Cent50_70_Neg", "p_vs_eta_Cent70_100_Neg", "p_vs_eta_MB_Neg"};
+  static constexpr std::string_view CentpTPos[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Pos", "pT_vs_eta_Cent1_5_Pos", "pT_vs_eta_Cent5_10_Pos", "pT_vs_eta_Cent10_15_Pos", "pT_vs_eta_Cent15_20_Pos", "pT_vs_eta_Cent20_30_Pos", "pT_vs_eta_Cent30_40_Pos", "pT_vs_eta_Cent40_50_Pos", "pT_vs_eta_Cent50_70_Pos", "pT_vs_eta_Cent70_100_Pos", "pT_vs_eta_MB_Pos"};
+  static constexpr std::string_view CentpTNeg[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Neg", "pT_vs_eta_Cent1_5_Neg", "pT_vs_eta_Cent5_10_Neg", "pT_vs_eta_Cent10_15_Neg", "pT_vs_eta_Cent15_20_Neg", "pT_vs_eta_Cent20_30_Neg", "pT_vs_eta_Cent30_40_Neg", "pT_vs_eta_Cent40_50_Neg", "pT_vs_eta_Cent50_70_Neg", "pT_vs_eta_Cent70_100_Neg", "pT_vs_eta_MB_Neg"};
   // Ncl TPC
   static constexpr std::string_view NclTPCDedxMomentumNegBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_8_Before"};
   static constexpr std::string_view NclTPCDedxMomentumPosBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_8_Before"};
@@ -291,16 +291,14 @@ struct DedxPidAnalysis {
     selectedTracks.SetMaxChi2PerClusterTPC(maxChi2TPC);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2});
     selectedTracks.SetMaxChi2PerClusterITS(maxChi2ITS);
-    //selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
-    //selectedTracks.SetMaxDcaZ(maxDCAz);
+    // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
+    // selectedTracks.SetMaxDcaZ(maxDCAz);
     selectedTracks.SetRequireGoldenChi2(true);
 
     return selectedTracks;
   }
-    
 
   TrackSelection mySelectionPrim;
-
 
   void init(InitContext const&)
   {
@@ -368,8 +366,8 @@ struct DedxPidAnalysis {
     AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
     AxisSpec pAxisTrack = {binP, "#it{p} (GeV/c)"};
     AxisSpec centAxis{centBins, "Undefined multiplicity estimator"};
-    AxisSpec pFineAxis{pFineBins,  "#it{p} (GeV/c)"};
-    AxisSpec pTFineAxis{pFineBins,  "#it{p}_{T} (GeV/c)"};
+    AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
+    AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
     switch (multiplicityEstimator) {
       case MultSelectionMode::NoMultiplicity: // No multiplicity
         LOGF(info, "No multiplicity estimator applied");
@@ -451,7 +449,6 @@ struct DedxPidAnalysis {
         "hdEdx_vs_eta_vs_p_Pos_TOF", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
 
-
     } else {
       // MIP for pions
       registryDeDx.add(
@@ -500,38 +497,38 @@ struct DedxPidAnalysis {
         hDedxVsMomentumVsCentPos[i] = registryDeDx.add<TH3>(DedxvsMomentumvsCentPos[i].data(), "dE/dx", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
         hDedxVsMomentumVsCentNeg[i] = registryDeDx.add<TH3>(DedxvsMomentumvsCentNeg[i].data(), "dE/dx", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
       }
-        
-        for (int i = 0; i < CentralityClasses+1; ++i) {
-            hDedxVspTMomentumVsCent[i] = registryDeDx.add<TH3>(DedxvspTMomentumvsCent[i].data(), "dE/dx", HistType::kTH3F, {{ptAxis}, {dedxAxis}, {etaAxis}});
-            hMomentumVsEtaPos[i] = registryDeDx.add<TH2>(CentpPos[i].data(), "p vs eta",  HistType::kTH2F, {{etaAxis}, {pFineAxis}});
-            hMomentumVsEtaNeg[i] = registryDeDx.add<TH2>(CentpNeg[i].data(), "p vs eta",  HistType::kTH2F, {{etaAxis}, {pFineAxis}});
-            hpTVsEtaPos[i]       = registryDeDx.add<TH2>(CentpTPos[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
-            hpTVsEtaNeg[i]       = registryDeDx.add<TH2>(CentpTNeg[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
-        }
-        
-        // Invariant Mass
-        registryDeDx.add("hMassK0s", "Invariant mass K0s;m_{#pi#pi} (GeV/c^{2});Counts",
-                          HistType::kTH1F, {{200, 0.4, 0.6}});
-        registryDeDx.add("hMassLambda", "Invariant mass #Lambda;m_{p#pi} (GeV/c^{2});Counts",
-                          HistType::kTH1F, {{200, 1.08, 1.16}});
-        registryDeDx.add("hMassAntiLambda", "Invariant mass #bar{#Lambda};m_{#bar{p}#pi} (GeV/c^{2});Counts",
-                          HistType::kTH1F, {{200, 1.08, 1.16}});
-        registryDeDx.add("hMassGamma", "Invariant mass #gamma;m_{ee} (GeV/c^{2});Counts",
-                          HistType::kTH1F, {{200, 0.0, 0.1}});
 
-        // Armenteros-Podolanski plot
-        registryDeDx.add("hArmenterosAll", "Armenteros-Podolanski (all V0s);#alpha;q_{T} (GeV/c)",
-                          HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
+      for (int i = 0; i < CentralityClasses + 1; ++i) {
+        hDedxVspTMomentumVsCent[i] = registryDeDx.add<TH3>(DedxvspTMomentumvsCent[i].data(), "dE/dx", HistType::kTH3F, {{ptAxis}, {dedxAxis}, {etaAxis}});
+        hMomentumVsEtaPos[i] = registryDeDx.add<TH2>(CentpPos[i].data(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+        hMomentumVsEtaNeg[i] = registryDeDx.add<TH2>(CentpNeg[i].data(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+        hpTVsEtaPos[i] = registryDeDx.add<TH2>(CentpTPos[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
+        hpTVsEtaNeg[i] = registryDeDx.add<TH2>(CentpTNeg[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
+      }
 
-        // Armenteros-Podolanski plot by particle
-        registryDeDx.add("hArmenterosK0s", "Armenteros-Podolanski K0s;#alpha;q_{T} (GeV/c)",
-                          HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
-        registryDeDx.add("hArmenterosLambda", "Armenteros-Podolanski #Lambda;#alpha;q_{T} (GeV/c)",
-                          HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
-        registryDeDx.add("hArmenterosAntiLambda", "Armenteros-Podolanski #bar{#Lambda};#alpha;q_{T} (GeV/c)",
-                          HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
-        registryDeDx.add("hArmenterosGamma", "Armenteros-Podolanski #gamma;#alpha;q_{T} (GeV/c)",
-                          HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
+      // Invariant Mass
+      registryDeDx.add("hMassK0s", "Invariant mass K0s;m_{#pi#pi} (GeV/c^{2});Counts",
+                       HistType::kTH1F, {{200, 0.4, 0.6}});
+      registryDeDx.add("hMassLambda", "Invariant mass #Lambda;m_{p#pi} (GeV/c^{2});Counts",
+                       HistType::kTH1F, {{200, 1.08, 1.16}});
+      registryDeDx.add("hMassAntiLambda", "Invariant mass #bar{#Lambda};m_{#bar{p}#pi} (GeV/c^{2});Counts",
+                       HistType::kTH1F, {{200, 1.08, 1.16}});
+      registryDeDx.add("hMassGamma", "Invariant mass #gamma;m_{ee} (GeV/c^{2});Counts",
+                       HistType::kTH1F, {{200, 0.0, 0.1}});
+
+      // Armenteros-Podolanski plot
+      registryDeDx.add("hArmenterosAll", "Armenteros-Podolanski (all V0s);#alpha;q_{T} (GeV/c)",
+                       HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
+
+      // Armenteros-Podolanski plot by particle
+      registryDeDx.add("hArmenterosK0s", "Armenteros-Podolanski K0s;#alpha;q_{T} (GeV/c)",
+                       HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
+      registryDeDx.add("hArmenterosLambda", "Armenteros-Podolanski #Lambda;#alpha;q_{T} (GeV/c)",
+                       HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
+      registryDeDx.add("hArmenterosAntiLambda", "Armenteros-Podolanski #bar{#Lambda};#alpha;q_{T} (GeV/c)",
+                       HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
+      registryDeDx.add("hArmenterosGamma", "Armenteros-Podolanski #gamma;#alpha;q_{T} (GeV/c)",
+                       HistType::kTH2F, {{200, -1, 1}, {200, 0, 0.3}});
     }
 
     registryDeDx.add(
@@ -711,24 +708,23 @@ struct DedxPidAnalysis {
     // Tracks vs p
     registryDeDx.add("Tracks_vs_pT_all", "pT All", HistType::kTH1F, {{ptAxis}});
     registryDeDx.add("Tracks_vs_pT_all_cuts", "pT All + cuts", HistType::kTH1F, {{ptAxis}});
-      
-      //NCluster distributions
-      registryDeDx.add("hTPCClustersBefore", "N clusters TPC found Before", HistType::kTH1F, {{200, 0, 200, "N_{cl,found, Before}"}});
-      registryDeDx.add("hTPCClustersAfter", "N clusters TPC found After", HistType::kTH1F, {{200, 0, 200, "N_{cl,found, After}"}});
-      
-      registryDeDx.add("hTPCPIDBefore", "N clusters TPC PID Before", HistType::kTH1F, {{200, 0, 200, "N_{cl,PID, Before}"}});
-      registryDeDx.add("hTPCPIDAfter", "N clusters TPC PID After", HistType::kTH1F, {{200, 0, 200, "N_{cl,PID, After}"}});
-      
-      //DCA cut
-      registryDeDx.add("hDCAxyVsPt_before", "DCAxy vs pT before cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
-      HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
-registryDeDx.add("hDCAzVsPt_before", "DCAz vs pT before cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
-      HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
-registryDeDx.add("hDCAxyVsPt_after", "DCAxy vs pT after cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
-      HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
-registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
-      HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
-            
+
+    // NCluster distributions
+    registryDeDx.add("hTPCClustersBefore", "N clusters TPC found Before", HistType::kTH1F, {{200, 0, 200, "N_{cl,found, Before}"}});
+    registryDeDx.add("hTPCClustersAfter", "N clusters TPC found After", HistType::kTH1F, {{200, 0, 200, "N_{cl,found, After}"}});
+
+    registryDeDx.add("hTPCPIDBefore", "N clusters TPC PID Before", HistType::kTH1F, {{200, 0, 200, "N_{cl,PID, Before}"}});
+    registryDeDx.add("hTPCPIDAfter", "N clusters TPC PID After", HistType::kTH1F, {{200, 0, 200, "N_{cl,PID, After}"}});
+
+    // DCA cut
+    registryDeDx.add("hDCAxyVsPt_before", "DCAxy vs pT before cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+    registryDeDx.add("hDCAzVsPt_before", "DCAz vs pT before cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+    registryDeDx.add("hDCAxyVsPt_after", "DCAxy vs pT after cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+    registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
 
     // Event Counter
     registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
@@ -788,7 +784,7 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
     xSec->SetBinLabel(V0TypeGamma, "V0TypeGamma");
     xSec->SetBinLabel(V0RapidityGamma, "V0RapidityGamma");
     xSec->SetBinLabel(MassCutGamma, "MassCutGamma");
-      
+
     mySelectionPrim = myTrackSelection();
   }
 
@@ -808,20 +804,20 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
 
     return true;
   }
-    //DCA xy cut
-    template <typename T1>
-    bool passesDCAxyCut(const T1& track) const
-    {
-        const float maxDcaXY = nSigmaDCAxy.value * (dcaXYp0.value + dcaXYp1.value / std::pow(track.pt(), dcaXYp2.value))/3.0;
-        return std::abs(track.dcaXY()) < maxDcaXY;
-    }
-    //DCA z cut
-    template <typename T1>
-    bool passesDCAzCut(const T1& track) const
-    {
-        const float maxiDcaZ = nSigmaDCAz.value * (maxDCAz.value)/3.0;
-        return std::abs(track.dcaZ()) < maxiDcaZ;
-    }
+  // DCA xy cut
+  template <typename T1>
+  bool passesDCAxyCut(const T1& track) const
+  {
+    const float maxDcaXY = nSigmaDCAxy.value * (dcaXYp0.value + dcaXYp1.value / std::pow(track.pt(), dcaXYp2.value)) / 3.0;
+    return std::abs(track.dcaXY()) < maxDcaXY;
+  }
+  // DCA z cut
+  template <typename T1>
+  bool passesDCAzCut(const T1& track) const
+  {
+    const float maxiDcaZ = nSigmaDCAz.value * (maxDCAz.value) / 3.0;
+    return std::abs(track.dcaZ()) < maxiDcaZ;
+  }
   // Momentum
   template <typename T1>
   float getMomentum(const T1& track)
@@ -888,7 +884,7 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
       if (std::abs(sigman) > nsigmaMax)
         return false;
     }
-      
+
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionK0s);
 
@@ -1544,7 +1540,7 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
     }
 
     if (nINELSelectionMode == NoSelINEL) {
-        registryDeDx.fill(HIST("evsel"), EvCutLabel::INELgt);
+      registryDeDx.fill(HIST("evsel"), EvCutLabel::INELgt);
     } else if (nINELSelectionMode == SelINELgt0) {
       if (!collision.isInelGt0())
         return;
@@ -1573,27 +1569,27 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
     for (const auto& trk : tracks) {
       registryDeDx.fill(HIST("trackselAll"), TrkPriCutLabel::AllPri);
 
-        // Ncl distribution before cuts
-            registryDeDx.fill(HIST("hTPCClustersBefore"), trk.tpcNClsFound());
-        registryDeDx.fill(HIST("hTPCPIDBefore"), trk.tpcNClsPID());
-          
+      // Ncl distribution before cuts
+      registryDeDx.fill(HIST("hTPCClustersBefore"), trk.tpcNClsFound());
+      registryDeDx.fill(HIST("hTPCPIDBefore"), trk.tpcNClsPID());
+
       // track Selection wo DCA
       if (!mySelectionPrim.IsSelected(trk))
         continue;
-        
-        // Before DCA cuts
-        registryDeDx.fill(HIST("hDCAxyVsPt_before"), trk.pt(), trk.dcaXY());
-        registryDeDx.fill(HIST("hDCAzVsPt_before"),  trk.pt(), trk.dcaZ());
-        
-        // DCA cuts
-        if (!passesDCAxyCut(trk))
-          continue;
-        if (!passesDCAzCut(trk))
-          continue;
-        
-        // After DCA cuts
-        registryDeDx.fill(HIST("hDCAxyVsPt_after"), trk.pt(), trk.dcaXY());
-        registryDeDx.fill(HIST("hDCAzVsPt_after"),  trk.pt(), trk.dcaZ());
+
+      // Before DCA cuts
+      registryDeDx.fill(HIST("hDCAxyVsPt_before"), trk.pt(), trk.dcaXY());
+      registryDeDx.fill(HIST("hDCAzVsPt_before"), trk.pt(), trk.dcaZ());
+
+      // DCA cuts
+      if (!passesDCAxyCut(trk))
+        continue;
+      if (!passesDCAzCut(trk))
+        continue;
+
+      // After DCA cuts
+      registryDeDx.fill(HIST("hDCAxyVsPt_after"), trk.pt(), trk.dcaXY());
+      registryDeDx.fill(HIST("hDCAzVsPt_after"), trk.pt(), trk.dcaZ());
 
       registryDeDx.fill(HIST("trackselAll"), TrkPriCutLabel::SelectionPrim);
       // For pt
@@ -1627,10 +1623,10 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
       registryDeDx.fill(HIST("heta_vs_NclFound_TPC_After_Primary"), trk.eta(), trk.tpcNClsFound());
       // For pt + cuts
       registryDeDx.fill(HIST("Tracks_vs_pT_all_cuts"), trk.pt());
-        
-        // Ncl distribution After all cuts
-        registryDeDx.fill(HIST("hTPCClustersAfter"), trk.tpcNClsFound());
-        registryDeDx.fill(HIST("hTPCPIDAfter"), trk.tpcNClsPID());
+
+      // Ncl distribution After all cuts
+      registryDeDx.fill(HIST("hTPCClustersAfter"), trk.tpcNClsFound());
+      registryDeDx.fill(HIST("hTPCPIDAfter"), trk.tpcNClsPID());
 
       float signedP = trk.sign() * getMomentum(trk);
       float signedpT = trk.sign() * trk.pt();
@@ -1722,22 +1718,22 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
               registryDeDx.fill(HIST(DedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Pos"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentPos[centIndex]->Fill(signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
-                hDedxVspTMomentumVsCent[centIndex]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
-                hDedxVspTMomentumVsCent[10]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
-                hMomentumVsEtaPos[centIndex]->Fill(trk.eta(), signedP);
-                hMomentumVsEtaPos[10]->Fill(trk.eta(), signedP);
-                hpTVsEtaPos[centIndex]->Fill(trk.eta(), signedpT);
-                hpTVsEtaPos[10]->Fill(trk.eta(), signedpT);
+              hDedxVspTMomentumVsCent[centIndex]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
+              hDedxVspTMomentumVsCent[10]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
+              hMomentumVsEtaPos[centIndex]->Fill(trk.eta(), signedP);
+              hMomentumVsEtaPos[10]->Fill(trk.eta(), signedP);
+              hpTVsEtaPos[centIndex]->Fill(trk.eta(), signedpT);
+              hpTVsEtaPos[10]->Fill(trk.eta(), signedpT);
             } else {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Neg"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentNeg[centIndex]->Fill(std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
-                hDedxVspTMomentumVsCent[centIndex]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
-                hDedxVspTMomentumVsCent[10]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
-                hMomentumVsEtaNeg[centIndex]->Fill(trk.eta(), std::abs(signedP));
-                hMomentumVsEtaNeg[10]->Fill(trk.eta(), std::abs(signedP));
-                hpTVsEtaNeg[centIndex]->Fill(trk.eta(), std::abs(signedpT));
-                hpTVsEtaNeg[10]->Fill(trk.eta(), std::abs(signedpT));
+              hDedxVspTMomentumVsCent[centIndex]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
+              hDedxVspTMomentumVsCent[10]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
+              hMomentumVsEtaNeg[centIndex]->Fill(trk.eta(), std::abs(signedP));
+              hMomentumVsEtaNeg[10]->Fill(trk.eta(), std::abs(signedP));
+              hpTVsEtaNeg[centIndex]->Fill(trk.eta(), std::abs(signedpT));
+              hpTVsEtaNeg[10]->Fill(trk.eta(), std::abs(signedpT));
             }
           }
         }
@@ -1830,9 +1826,9 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
         float signedPneg = negTrack.sign() * getMomentum(negTrack);
 
         fillHist = true;
-          
-          // Armenteros for all V0
-          registryDeDx.fill(HIST("hArmenterosAll"), v0.alpha(), v0.qtarm());
+
+        // Armenteros for all V0
+        registryDeDx.fill(HIST("hArmenterosAll"), v0.alpha(), v0.qtarm());
 
         // K0s Selection
         if (passedK0Selection(v0, negTrack, posTrack, collision)) {
@@ -1840,8 +1836,8 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
           registryDeDx.fill(HIST("heta_vs_NclPID_TPC_After_PionsK0s"), negTrack.eta(), negTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_PionsK0s"), posTrack.p(), posTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_PionsK0s"), negTrack.p(), negTrack.tpcNClsPID());
-            registryDeDx.fill(HIST("hMassK0s"), v0.mK0Short());
-                registryDeDx.fill(HIST("hArmenterosK0s"), v0.alpha(), v0.qtarm());
+          registryDeDx.fill(HIST("hMassK0s"), v0.mK0Short());
+          registryDeDx.fill(HIST("hArmenterosK0s"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
@@ -1858,8 +1854,8 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
           registryDeDx.fill(HIST("heta_vs_NclPID_TPC_After_PionsLambda"), negTrack.eta(), negTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_ProtonsLambda"), posTrack.p(), posTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_PionsLambda"), negTrack.p(), negTrack.tpcNClsPID());
-            registryDeDx.fill(HIST("hMassLambda"), v0.mLambda());
-              registryDeDx.fill(HIST("hArmenterosLambda"), v0.alpha(), v0.qtarm());
+          registryDeDx.fill(HIST("hMassLambda"), v0.mLambda());
+          registryDeDx.fill(HIST("hArmenterosLambda"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
@@ -1876,8 +1872,8 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
           registryDeDx.fill(HIST("heta_vs_NclPID_TPC_After_ProtonsLambda"), negTrack.eta(), negTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_PionsLambda"), posTrack.p(), posTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_ProtonsLambda"), negTrack.p(), negTrack.tpcNClsPID());
-            registryDeDx.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
-               registryDeDx.fill(HIST("hArmenterosAntiLambda"), v0.alpha(), v0.qtarm());
+          registryDeDx.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
+          registryDeDx.fill(HIST("hArmenterosAntiLambda"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
@@ -1894,8 +1890,8 @@ registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA
           registryDeDx.fill(HIST("heta_vs_NclPID_TPC_After_ElectronsGamma"), negTrack.eta(), negTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_ElectronsGamma"), posTrack.p(), posTrack.tpcNClsPID());
           registryDeDx.fill(HIST("hp_vs_NclPID_TPC_After_ElectronsGamma"), negTrack.p(), negTrack.tpcNClsPID());
-            registryDeDx.fill(HIST("hMassGamma"), v0.mGamma());
-            registryDeDx.fill(HIST("hArmenterosGamma"), v0.alpha(), v0.qtarm());
+          registryDeDx.fill(HIST("hMassGamma"), v0.mGamma());
+          registryDeDx.fill(HIST("hArmenterosGamma"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
