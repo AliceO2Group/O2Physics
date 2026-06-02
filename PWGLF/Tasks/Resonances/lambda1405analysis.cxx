@@ -76,21 +76,21 @@ struct lambda1405candidate {
   float sigmaAlphaAP = -1;    // Alpha of the Sigma
   float sigmaQtAP = -1;       // qT of the Sigma
   float kinkPt = -1;          // pT of the kink daughter
-  float kinkPiNSigTpc = -1; // Number of sigmas for the pion candidate from Sigma kink in Tpc
-  float kinkPiNSigTof = -1; // Number of sigmas for the pion candidate from Sigma kink in Tof
-  float kinkPrNSigTpc = -1; // Number of sigmas for the proton candidate from Sigma kink in Tpc
-  float kinkPrNSigTof = -1; // Number of sigmas for the proton candidate from Sigma kink in Tof
+  float kinkPiNSigTpc = -1;   // Number of sigmas for the pion candidate from Sigma kink in Tpc
+  float kinkPiNSigTof = -1;   // Number of sigmas for the pion candidate from Sigma kink in Tof
+  float kinkPrNSigTpc = -1;   // Number of sigmas for the proton candidate from Sigma kink in Tpc
+  float kinkPrNSigTof = -1;   // Number of sigmas for the proton candidate from Sigma kink in Tof
   float kinkDcaDauToPv = -1;  // DCA of the kink daughter to the primary vertex
   float sigmaRadius = -1;     // Radius of the Sigma decay vertex
 
   float piPt = -1;        // pT of the pion daughter
   float bachPiNSigTpc = -1; // Number of sigmas for the pion candidate
   float bachPiNSigTof = -1; // Number of sigmas for the pion candidate using Tof
-  int kinkDauId = 0;      // Id of the pion from Sigma decay in MC
-  int sigmaId = 0;        // Id of the Sigma candidate in MC
-  int piId = 0;           // Id of the pion candidate in MC
+  int kinkDauId = 0;        // Id of the pion from Sigma decay in MC
+  int sigmaId = 0;          // Id of the Sigma candidate in MC
+  int piId = 0;             // Id of the pion candidate in MC
 
-  float scalarProd = -1;        // Scalar product for flow analysis
+  float scalarProd = -1; // Scalar product for flow analysis
 };
 
 struct lambda1405analysis {
@@ -470,7 +470,8 @@ struct lambda1405analysis {
   }
 
   template <typename TCand, typename TTrack>
-  void fillHistosSigma(const lambda1405candidate& lambda1405Cand, const TCand& sigmaCand, const TTrack& kinkDauTrack) {
+  void fillHistosSigma(const lambda1405candidate& lambda1405Cand, const TCand& sigmaCand, const TTrack& kinkDauTrack)
+  {
 
     if (sigmaCand.mothSign() > 0) {
       rSigmaPlus.fill(HIST("hSigmaPlusMass"), sigmaCand.mSigmaPlus());
@@ -606,18 +607,18 @@ struct lambda1405analysis {
     auto kinkDauMom = std::array{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
     auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
     // Sigma properties
-    lambda1405Cand.sigmaId        = sigmaCand.globalIndex();
+    lambda1405Cand.sigmaId = sigmaCand.globalIndex();
     lambda1405Cand.sigmaMinusMass = sigmaCand.mSigmaMinus();
-    lambda1405Cand.sigmaPlusMass  = sigmaCand.mSigmaPlus();
-    lambda1405Cand.xiMinusMass    = sigmaCand.mXiMinus();
-    lambda1405Cand.sigmaSign      = sigmaCand.mothSign();
-    lambda1405Cand.sigmaAlphaAP   = alphaAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaQtAP      = qtAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaPt        = sigmaCand.ptMoth();
-    lambda1405Cand.sigmaRadius    = sigmaRad;
+    lambda1405Cand.sigmaPlusMass = sigmaCand.mSigmaPlus();
+    lambda1405Cand.xiMinusMass = sigmaCand.mXiMinus();
+    lambda1405Cand.sigmaSign = sigmaCand.mothSign();
+    lambda1405Cand.sigmaAlphaAP = alphaAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaQtAP = qtAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaPt = sigmaCand.ptMoth();
+    lambda1405Cand.sigmaRadius = sigmaRad;
     lambda1405Cand.kinkDcaDauToPv = sigmaCand.dcaDaugPv();
 
-    if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP->Eval(lambda1405Cand.sigmaAlphaAP) || 
+    if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP->Eval(lambda1405Cand.sigmaAlphaAP) ||
         lambda1405Cand.sigmaQtAP > funcMaxQtAlphaAP->Eval(lambda1405Cand.sigmaAlphaAP)) {
       return;
     }
@@ -628,8 +629,8 @@ struct lambda1405analysis {
     }
 
     // Kink daughter properties
-    lambda1405Cand.kinkDauId     = kinkDauTrack.globalIndex();
-    lambda1405Cand.kinkPt        = kinkDauTrack.pt();
+    lambda1405Cand.kinkDauId = kinkDauTrack.globalIndex();
+    lambda1405Cand.kinkPt = kinkDauTrack.pt();
     lambda1405Cand.kinkPiNSigTpc = kinkDauTrack.tpcNSigmaPi();
     lambda1405Cand.kinkPiNSigTof = kinkDauTrack.tofNSigmaPi();
     lambda1405Cand.kinkPrNSigTpc = kinkDauTrack.tpcNSigmaPr();
@@ -652,8 +653,8 @@ struct lambda1405analysis {
         continue;
       }
       rSelections.fill(HIST("hSelectionsBachPi"), 5); // PID sel
-      rSelections.fill(HIST("hSelectionsL1405"), 2); // Bach Pi selection
-      
+      rSelections.fill(HIST("hSelectionsL1405"), 2);  // Bach Pi selection
+
       auto piMom = std::array{piTrack.px(), piTrack.py(), piTrack.pz()};
       float invMass{-1.f};
       if (lambda1405Cand.isSigmaMinus) {
@@ -664,7 +665,7 @@ struct lambda1405analysis {
       if (invMass > cutUpperMass) {
         continue;
       }
-      rSelections.fill(HIST("hSelectionsL1405"), 3); // Upper mass selection 
+      rSelections.fill(HIST("hSelectionsL1405"), 3); // Upper mass selection
 
       // Daughter Pi properties
       lambda1405Cand.piId = piTrack.globalIndex();
@@ -686,20 +687,20 @@ struct lambda1405analysis {
       lambda1405Cand.scalarProd = -1;
 
       // Check correlations between transverse momenta of L1405, sigma and bachelor pi
-      if (std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) < funcMinSigmaPtVsL1405Pt->Eval(lambda1405Cand.pt()) || 
+      if (std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) < funcMinSigmaPtVsL1405Pt->Eval(lambda1405Cand.pt()) ||
           std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) > funcMaxSigmaPtVsL1405Pt->Eval(lambda1405Cand.pt())) {
         continue;
       }
-      rSelections.fill(HIST("hSelectionsL1405"), 4); // Accepted 
-      
-      if (piTrack.pt() < funcMinBachPiPtVsL1405Pt->Eval(lambda1405Cand.pt()) || 
-      piTrack.pt() > funcMaxBachPiPtVsL1405Pt->Eval(lambda1405Cand.pt())) {
+      rSelections.fill(HIST("hSelectionsL1405"), 4); // Accepted
+
+      if (piTrack.pt() < funcMinBachPiPtVsL1405Pt->Eval(lambda1405Cand.pt()) ||
+          piTrack.pt() > funcMaxBachPiPtVsL1405Pt->Eval(lambda1405Cand.pt())) {
         continue;
       }
-      rSelections.fill(HIST("hSelectionsL1405"), 5); // Accepted 
+      rSelections.fill(HIST("hSelectionsL1405"), 5); // Accepted
 
       fillHistosLambda1405(lambda1405Cand, piTrack);
-      rSelections.fill(HIST("hSelectionsL1405"), 6); // Accepted 
+      rSelections.fill(HIST("hSelectionsL1405"), 6); // Accepted
       selectedCandidates.push_back(lambda1405Cand);
     }
   }
@@ -724,9 +725,10 @@ struct lambda1405analysis {
     return isKinkFromSigma; // Return true if the kink comes from the Sigma
   }
 
-  template<typename TCollision, typename TCand, typename TTrack>
-  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& kinkDauTrack) {
-    if constexpr (requires{collision.centFT0C();}) {
+  template <typename TCollision, typename TCand, typename TTrack>
+  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& kinkDauTrack)
+  {
+    if constexpr (requires { collision.centFT0C(); }) {
       if (collision.centFT0C() < centralityMin || collision.centFT0C() > centralityMax) {
         LOG(info) << "Skipping collision due to centrality cut";
         return;
@@ -771,7 +773,7 @@ struct lambda1405analysis {
                           lambda1405Cand.kinkDcaDauToPv,
                           lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof);
         }
-        if constexpr (requires{collision.qvecFT0CRe();}) {
+        if constexpr (requires { collision.qvecFT0CRe(); }) {
           float const xQVec = collision.qvecFT0CRe();
           float const yQVec = collision.qvecFT0CIm();
           float const cos2Phi = std::cos(2 * lambda1405Cand.phi);
@@ -813,8 +815,9 @@ struct lambda1405analysis {
   }
   PROCESS_SWITCH(lambda1405analysis, processDataWCentQVecs, "Data processing with centrality and Q vectors info", false);
 
-  template<typename TMother>
-  int matchGenDecay(const TMother& motherPart, const aod::McParticles& mcParticles, std::array<int, 3>& daugsIdxs) {
+  template <typename TMother>
+  int matchGenDecay(const TMother& motherPart, const aod::McParticles& mcParticles, std::array<int, 3>& daugsIdxs)
+  {
     int pdgMother = motherPart.pdgCode();
     int8_t sign = 0;
 
@@ -825,7 +828,7 @@ struct lambda1405analysis {
     int decayChannel = -1;
 
     // Match L(1405) --> n pi- pi+ final state
-    if (pdgMother > 0) {    // Change sign of neutral decay products
+    if (pdgMother > 0) { // Change sign of neutral decay products
       finalState = {PDG_t::kNeutron, PDG_t::kPiMinus, PDG_t::kPiPlus};
     } else {
       finalState = {-PDG_t::kNeutron, PDG_t::kPiMinus, PDG_t::kPiPlus};
@@ -843,14 +846,14 @@ struct lambda1405analysis {
           decayChannel = kSigmaMinusPiToPiPiNeutron;
           daugsIdxs[1] = arrL1405Daugs[iProng];
         }
-        if (std::abs(daughI.pdgCode()) == PDG_t::kPiPlus) { 
+        if (std::abs(daughI.pdgCode()) == PDG_t::kPiPlus) {
           daugsIdxs[0] = arrL1405Daugs[iProng];
         }
       }
     }
 
     // Match L(1405) --> p pi0 pi+ final state, only possible for Sigma+
-    if (pdgMother > 0) {  // Change sign of neutral decay products
+    if (pdgMother > 0) { // Change sign of neutral decay products
       finalState = {PDG_t::kProton, PDG_t::kPi0, PDG_t::kPiMinus};
     } else {
       finalState = {PDG_t::kProton, -PDG_t::kPi0, PDG_t::kPiMinus};
@@ -884,10 +887,11 @@ struct lambda1405analysis {
     return decayChannel;
   }
 
-  template<typename TCollision, typename TTrack>
-  void fillOutputMc(const TCollision& collisions, const aod::KinkCands& sigmaCands, const aod::McTrackLabels& trackLabelsMC, const TTrack& tracks, const aod::McParticles& particlesMC) {
+  template <typename TCollision, typename TTrack>
+  void fillOutputMc(const TCollision& collisions, const aod::KinkCands& sigmaCands, const aod::McTrackLabels& trackLabelsMC, const TTrack& tracks, const aod::McParticles& particlesMC)
+  {
     for (const auto& collision : collisions) {
-      if constexpr (requires{collision.centFT0C();}) {
+      if constexpr (requires { collision.centFT0C(); }) {
         if (collision.centFT0C() < centralityMin || collision.centFT0C() > centralityMax) {
           return;
         }
@@ -903,7 +907,7 @@ struct lambda1405analysis {
         constructCollCandidates(sigmaCand, tracksPerCol, selectedCandidates);
         LOG(info) << "Selected " << selectedCandidates.size() << " Lambda(1405) candidates in this collision";
         for (const auto& lambda1405Cand : selectedCandidates) {
-          rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt());  // All reconstructed
+          rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
 
           // Do MC association
           auto mcLabPiKink = trackLabelsMC.rawIteratorAt(lambda1405Cand.kinkDauId);
@@ -912,7 +916,7 @@ struct lambda1405analysis {
           if (!mcLabSigma.has_mcParticle() || !mcLabPiKink.has_mcParticle() || !mcLabPi.has_mcParticle()) {
             continue; // Skip if no valid MC association
           }
-          rLambda1405.fill(HIST("hRecoL1405"), 1., lambda1405Cand.pt());   // All with associated MC particle
+          rLambda1405.fill(HIST("hRecoL1405"), 1., lambda1405Cand.pt()); // All with associated MC particle
 
           auto mcTrackKink = mcLabPiKink.mcParticle_as<aod::McParticles>();
           auto mcTrackSigma = mcLabSigma.mcParticle_as<aod::McParticles>();
@@ -925,17 +929,17 @@ struct lambda1405analysis {
           if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
             continue; // Skip if not a valid Sigma kink decay
           }
-          rLambda1405.fill(HIST("hRecoL1405"), 2., lambda1405Cand.pt());   // Has kink decay in MC
+          rLambda1405.fill(HIST("hRecoL1405"), 2., lambda1405Cand.pt()); // Has kink decay in MC
 
           if (std::abs(mcTrackPi.pdgCode()) != 211) {
             continue; // Skip if not a valid pion candidate
           }
-          rLambda1405.fill(HIST("hRecoL1405"), 3., lambda1405Cand.pt());   // Has bach pi
+          rLambda1405.fill(HIST("hRecoL1405"), 3., lambda1405Cand.pt()); // Has bach pi
 
           if (!mcTrackSigma.has_mothers() || !mcTrackPi.has_mothers()) {
             continue; // Skip if no mothers found
           }
-          rLambda1405.fill(HIST("hRecoL1405"), 4., lambda1405Cand.pt());   // Has mothers for Sigma and Pi
+          rLambda1405.fill(HIST("hRecoL1405"), 4., lambda1405Cand.pt()); // Has mothers for Sigma and Pi
 
           // check that labpi and labsigma have the same mother (a lambda1405 candidate)
           int lambda1405Id = -1;
@@ -950,7 +954,7 @@ struct lambda1405analysis {
           if (lambda1405Id == -1) {
             continue; // Skip if the Sigma and pion do not share the same lambda1405 candidate
           }
-          rLambda1405.fill(HIST("hRecoL1405"), 4., lambda1405Cand.pt());   // Has same mother
+          rLambda1405.fill(HIST("hRecoL1405"), 4., lambda1405Cand.pt()); // Has same mother
 
           auto lambda1405Mother = particlesMC.rawIteratorAt(lambda1405Id);
           float lambda1405Mass = std::sqrt(lambda1405Mother.e() * lambda1405Mother.e() - lambda1405Mother.p() * lambda1405Mother.p());
@@ -998,7 +1002,7 @@ struct lambda1405analysis {
       auto sigmaKinkDaug = particlesMC.rawIteratorAt(idxsSigmaKinkBachPi[2]);
       // Generated Armenteros-Podolanski variables
       float genSigmaAlphaAP = alphaAP({sigmaDaug.px(), sigmaDaug.py(), sigmaDaug.pz()}, {sigmaKinkDaug.px(), sigmaKinkDaug.py(), sigmaKinkDaug.pz()});
-      float genSigmaQtAP    = qtAP({sigmaDaug.px(), sigmaDaug.py(), sigmaDaug.pz()}, {sigmaKinkDaug.px(), sigmaKinkDaug.py(), sigmaKinkDaug.pz()});
+      float genSigmaQtAP = qtAP({sigmaDaug.px(), sigmaDaug.py(), sigmaDaug.pz()}, {sigmaKinkDaug.px(), sigmaKinkDaug.py(), sigmaKinkDaug.pz()});
       if (decayChannel == kSigmaMinusPiToPiPiNeutron) {
         rLambda1405.fill(HIST("h2GenSigmaMinusArmPod"), genSigmaAlphaAP, genSigmaQtAP);
         rLambda1405.fill(HIST("h2GenPtVsBachPtSigmaMinusPiToPiPiNeutron"), mcPart.pt(), bachPi.pt());
