@@ -18,9 +18,8 @@
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
-#include "ALICE3/DataModel/OTFMCParticle.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -32,19 +31,15 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TPDGCode.h>
-
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
-#include <map>
-#include <ostream>
-#include <span>
 #include <string>
 #include <vector>
 
@@ -71,12 +66,18 @@ static const std::vector<int> pdgCodes{PDG_t::kK0Short,
                                        PDG_t::kOmegaMinus,
                                        PDG_t::kOmegaPlusBar};
 
+namespace o2::aod
+{
+O2ORIGIN("TMP");
+}
+
 struct OnTheFlyDecayer {
-  Produces<aod::McPartWithDaus> tableMcParticlesWithDau;
+  Produces<aod::McCollisions_001> tableMcCollisions;
+  Produces<aod::StoredMcParticles_001> tableMcParticles;
+  Produces<aod::OTFDecayerBits> tableOTFDecayerBits;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
-  std::map<int, std::vector<o2::upgrade::OTFParticle>> mDecayDaughters;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
@@ -121,18 +122,18 @@ struct OnTheFlyDecayer {
   void decayParticles(const int start, const int stop)
   {
     int ndau = 0;
-    for (int i = start; i < stop; i++) {
+    for (int i = start; i < stop; ++i) {
       o2::upgrade::OTFParticle& particle = allParticles[i];
       if (particle.isFromMcParticles()) {
-        particle.setIsPrimary(true);
-        particle.setIsAlive(true);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsPrimary);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsAlive);
       }
 
       if (!canDecay(particle)) {
         continue;
       }
 
-      particle.setIsAlive(false);
+      particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
       std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
       const float decayRadius = decayer.getDecayRadius();
       const float trackVelocity = o2::upgrade::computeParticleVelocity(particle.p(), pdgDB->GetParticle(particle.pdgCode())->Mass());
@@ -154,8 +155,8 @@ struct OnTheFlyDecayer {
       for (o2::upgrade::OTFParticle daughter : decayStack) {
         daughter.setIndicesMother(i, i);
         daughter.setCollisionId(mCollisionId);
-        daughter.setIsAlive(true);
-        daughter.setIsPrimary(false);
+        daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
+        daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
         daughter.setProductionTime(trackTimeNS);
         allParticles.push_back(daughter);
         ndau++;
@@ -169,42 +170,54 @@ struct OnTheFlyDecayer {
     decayParticles(stop, stop + ndau);
   }
 
-  void process(aod::McCollision const& collision, aod::McParticles const& mcParticles)
+  void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>>::iterator const& collision, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
-    mCollisionId = collision.globalIndex();
     allParticles.clear();
 
+    // Reproduce collision table to have AOD origin
+    mCollisionId = collision.globalIndex();
+    tableMcCollisions(collision.bcId(),
+                      collision.generatorsID(),
+                      collision.posX(),
+                      collision.posY(),
+                      collision.posZ(),
+                      collision.t(),
+                      collision.weight(),
+                      collision.impactParameter(),
+                      collision.eventPlaneAngle());
+
     // First we copy the particles from the table into a vector that is extendable
-    for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
-      const auto& mcParticle = mcParticles.rawIteratorAt(index);
-      allParticles.push_back(o2::upgrade::OTFParticle{mcParticle});
+    for (const auto& particle : mcParticles) {
+      allParticles.emplace_back(o2::upgrade::OTFParticle{particle});
     }
 
     // Do all decays
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    for (int index{0}; index < static_cast<int>(allParticles.size()); ++index) {
-      const auto& otfParticle = allParticles[index];
-
+    for (const auto& otfParticle : allParticles) {
       if (otfParticle.hasNaN()) {
         histos.fill(HIST("hNaNBookkeeping"), 1);
       } else {
         histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      // todo: status codes
-      tableMcParticlesWithDau(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(),
-                              otfParticle.flags(), otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
-                              otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
-                              otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt(),
-                              otfParticle.phi(), otfParticle.eta(), otfParticle.pt(), otfParticle.p(), otfParticle.y(),
-                              otfParticle.isAlive(), otfParticle.isPrimary());
+      tableOTFDecayerBits(otfParticle.getBitsValue());
+      tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
+                       otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
+                       otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
+                       otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
     }
   }
 };
 
+struct OnTheFlyDecayerExtensionSpawner {
+  Spawns<aod::McParticles_001Extension> spawnMcParticlesExtensions;
+  void init(o2::framework::InitContext&) {}
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc),
+                      adaptAnalysisTask<OnTheFlyDecayerExtensionSpawner>(cfgc)};
 }

@@ -116,6 +116,9 @@ struct FlowFlucGfwPp {
   static constexpr int kMinTracksPerEtaSideForGapCorrelation = 2;
   static constexpr int kMinTracksPerEtaRegionForThreeSubevents = 2;
 
+  static constexpr int EllipticQVectorHarmonic = 2;
+  static constexpr int TriangularQVectorHarmonic = 3;
+
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgIsMC, bool, false, "Is MC event")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A, 4:NTPV, 5:NGlobals, 6:MFT")
@@ -165,7 +168,10 @@ struct FlowFlucGfwPp {
   O2_DEFINE_CONFIGURABLE(cfgNumQnBins, int, 10, "Number of qn bins");
   O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 100, "Maximum of centrality or multiplicity");
   O2_DEFINE_CONFIGURABLE(cfgEvtSelCent, bool, true, "Choose event selector as centrality(true) or multicplity(false)");
-  O2_DEFINE_CONFIGURABLE(cfgUseNegativeEtaHalfForq2, bool, true, "If true, use -eta half for q2 selection; otherwise use +eta half");
+  O2_DEFINE_CONFIGURABLE(cfgUseNegativeEtaHalfForq2, bool, true, "If true, use -eta half for qn selection; otherwise use +eta half");
+  O2_DEFINE_CONFIGURABLE(cfgQnSelectionHarmonic, int, 2, "Harmonic n used to build the reduced q_n vector for event shape selection, use 2 for q2 and 3 for q3");
+  O2_DEFINE_CONFIGURABLE(cfgQnHistMax, float, 6., "Upper range for q_n calibration histograms");
+  O2_DEFINE_CONFIGURABLE(cfgBypassQnSelection, bool, false, "Bypass q_n event shape selection and fill one integral q-bin");
   O2_DEFINE_CONFIGURABLE(cfgMinPtOnTPC, float, 0.2, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction");
   O2_DEFINE_CONFIGURABLE(cfgMaxPtOnTPC, float, 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction");
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8, "Maximum pseudorapidiy for charged track");
@@ -302,6 +308,11 @@ struct FlowFlucGfwPp {
   std::string getShapeSel() const
   {
     return "ese";
+  }
+
+  int getNQnOutputBins()
+  {
+    return static_cast<bool>(cfgBypassQnSelection) ? 1 : static_cast<int>(cfgNumQnBins);
   }
 
   // region indices for consistency flag
@@ -447,6 +458,17 @@ struct FlowFlucGfwPp {
     int ptbins = o2::analysis::gfwflowflucpp::ptbinning.size() - 1;
     fSecondAxis = (cfgTimeDependent) ? new TAxis(timeAxis.binEdges.size() - 1, &(timeAxis.binEdges[0])) : new TAxis(ptbins, &o2::analysis::gfwflowflucpp::ptbinning[0]);
 
+    if (static_cast<bool>(cfgBypassQnSelection)) {
+      LOGF(info, "Bypassing q_n event shape selection, all accepted events will be filled into the integral bin ese_0");
+      if (static_cast<int>(cfgNumQnBins) != 1) {
+        LOGF(warning, "cfgBypassQnSelection is on, cfgNumQnBins=%d will be ignored and only one output q-bin will be made", static_cast<int>(cfgNumQnBins));
+      }
+    } else {
+      LOGF(info, "Event-shape selector uses q_%d from the %s eta half",
+           static_cast<int>(cfgQnSelectionHarmonic),
+           static_cast<bool>(cfgUseNegativeEtaHalfForq2) ? "negative" : "positive");
+    }
+
     if (cfgQvecQA && (doprocessData || doprocessq2)) {
       // qVectorsTable-equivalent TPC-track QA for the in-task raw TPC Q-vector loop.
       AxisSpec qVecAxisPt = {40, 0.0, 4.0};
@@ -461,11 +483,24 @@ struct FlowFlucGfwPp {
     }
 
     if (doprocessq2) {
-      registry.add("mq2/eventcounter", "", HistType::kTH1F, {{10, 0, 10}});
-      registry.add("mq2/h2_cent_q2_etapos", ";Centrality;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{100, 0, 100}, {600, 0, 6}});
-      registry.add("mq2/h2_cent_q2_etaneg", ";Centrality;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, 6}});
-      registry.add("mq2/h2_mult_q2_etapos", ";Multiplicity;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, 6}});
-      registry.add("mq2/h2_mult_q2_etaneg", ";Multiplicity;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, 6}});
+      const int qnHarmonic = static_cast<int>(cfgQnSelectionHarmonic);
+      const double qnHistMax = static_cast<double>(cfgQnHistMax);
+
+      if (qnHarmonic == EllipticQVectorHarmonic) {
+        registry.add("mq2/eventcounter", "", HistType::kTH1F, {{10, 0, 10}});
+        registry.add("mq2/h2_cent_q2_etapos", ";Centrality;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq2/h2_cent_q2_etaneg", ";Centrality;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq2/h2_mult_q2_etapos", ";Multiplicity;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+        registry.add("mq2/h2_mult_q2_etaneg", ";Multiplicity;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+      }
+
+      if (qnHarmonic == TriangularQVectorHarmonic) {
+        registry.add("mq3/eventcounter", "", HistType::kTH1F, {{10, 0, 10}});
+        registry.add("mq3/h2_cent_q3_etapos", ";Centrality;#it{q}_{3}^{#eta pos};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq3/h2_cent_q3_etaneg", ";Centrality;#it{q}_{3}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq3/h2_mult_q3_etapos", ";Multiplicity;#it{q}_{3}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+        registry.add("mq3/h2_mult_q3_etaneg", ";Multiplicity;#it{q}_{3}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+      }
     }
 
     if (doprocessData) {
@@ -857,8 +892,9 @@ struct FlowFlucGfwPp {
   void addConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs)
   {
     const auto shapeSel = getShapeSel();
+    const int nQnOutputBins = getNQnOutputBins();
     for (auto it = configs.begin(); it != configs.end(); ++it) {
-      for (int jese = 0; jese < cfgNumQnBins; ++jese) {
+      for (int jese = 0; jese < nQnOutputBins; ++jese) {
         std::string name = Form("%s_%d_%s", shapeSel.c_str(), jese, it->Head.c_str());
         std::string title = it->Head + std::string("_ese");
         oba->Add(new TNamed(name.c_str(), title.c_str()));
@@ -1340,6 +1376,34 @@ struct FlowFlucGfwPp {
     return static_cast<double>(diff) / 3600000.0;
   }
 
+  void fillQnEventCounter(float count)
+  {
+    const int qnHarmonic = static_cast<int>(cfgQnSelectionHarmonic);
+
+    if (qnHarmonic == EllipticQVectorHarmonic) {
+      registry.fill(HIST("mq2/eventcounter"), count);
+    } else if (qnHarmonic == TriangularQVectorHarmonic) {
+      registry.fill(HIST("mq3/eventcounter"), count);
+    }
+  }
+
+  void fillQnCalibrationHistograms(float centrality, float multiplicity, float qnPos, float qnNeg)
+  {
+    const int qnHarmonic = static_cast<int>(cfgQnSelectionHarmonic);
+
+    if (qnHarmonic == EllipticQVectorHarmonic) {
+      registry.fill(HIST("mq2/h2_cent_q2_etapos"), centrality, qnPos);
+      registry.fill(HIST("mq2/h2_cent_q2_etaneg"), centrality, qnNeg);
+      registry.fill(HIST("mq2/h2_mult_q2_etapos"), multiplicity, qnPos);
+      registry.fill(HIST("mq2/h2_mult_q2_etaneg"), multiplicity, qnNeg);
+    } else if (qnHarmonic == TriangularQVectorHarmonic) {
+      registry.fill(HIST("mq3/h2_cent_q3_etapos"), centrality, qnPos);
+      registry.fill(HIST("mq3/h2_cent_q3_etaneg"), centrality, qnNeg);
+      registry.fill(HIST("mq3/h2_mult_q3_etapos"), multiplicity, qnPos);
+      registry.fill(HIST("mq3/h2_mult_q3_etaneg"), multiplicity, qnNeg);
+    }
+  }
+
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                            aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
                                            aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals,
@@ -1406,15 +1470,18 @@ struct FlowFlucGfwPp {
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, xaxis);
 
-    const auto qvecTPC = calcQVec(2, tracks, collision);
-    float qn = computeqnVec(qvecTPC, cfgUseNegativeEtaHalfForq2);
-    if (qn < 0)
-      return;
+    int qPtmp = 0;
+    if (!static_cast<bool>(cfgBypassQnSelection)) {
+      const auto qvecTPC = calcQVec(static_cast<int>(cfgQnSelectionHarmonic), tracks, collision);
+      float qn = computeqnVec(qvecTPC, cfgUseNegativeEtaHalfForq2);
+      if (qn < 0)
+        return;
 
-    int qPtmp = myqnBin(cfgEvtSelCent ? xaxis.centrality : xaxis.multiplicity,
-                        cfgCentMax, qn, qnBinSeparator, cfgNumQnBins);
-    if (qPtmp < 0)
-      return;
+      qPtmp = myqnBin(cfgEvtSelCent ? xaxis.centrality : xaxis.multiplicity,
+                      cfgCentMax, qn, qnBinSeparator, cfgNumQnBins);
+      if (qPtmp < 0)
+        return;
+    }
 
     processCollision<kReco>(collision, tracks, xaxis, run, qPtmp);
   }
@@ -1423,18 +1490,18 @@ struct FlowFlucGfwPp {
   void processq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     float count{0.5};
-    registry.fill(HIST("mq2/eventcounter"), count++);
+    fillQnEventCounter(count++);
     if (!collision.sel8()) {
       return;
     }
-    registry.fill(HIST("mq2/eventcounter"), count++);
+    fillQnEventCounter(count++);
     if (cfgDoOccupancySel) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < 0 || occupancy > cfgOccupancySelection) {
         return;
       }
     }
-    registry.fill(HIST("mq2/eventcounter"), count++);
+    fillQnEventCounter(count++);
 
     const XAxis xaxis{getCentrality(collision), collision.multNTracksPV(), -1.0};
     if (!eventSelected(collision, xaxis.multiplicity, xaxis.centrality, -1))
@@ -1442,7 +1509,7 @@ struct FlowFlucGfwPp {
 
     const auto centr = xaxis.centrality;
     const auto multi = xaxis.multiplicity;
-    const auto qvecTPC = calcQVec(2, tracks, collision);
+    const auto qvecTPC = calcQVec(static_cast<int>(cfgQnSelectionHarmonic), tracks, collision);
     const auto qvecPos = computeqnVec(qvecTPC, false);
     const auto qvecNeg = computeqnVec(qvecTPC, true);
 
@@ -1450,13 +1517,10 @@ struct FlowFlucGfwPp {
       return;
     }
 
-    registry.fill(HIST("mq2/eventcounter"), count++);
-    registry.fill(HIST("mq2/h2_cent_q2_etapos"), centr, qvecPos);
-    registry.fill(HIST("mq2/h2_cent_q2_etaneg"), centr, qvecNeg);
-    registry.fill(HIST("mq2/h2_mult_q2_etapos"), multi, qvecPos);
-    registry.fill(HIST("mq2/h2_mult_q2_etaneg"), multi, qvecNeg);
+    fillQnEventCounter(count++);
+    fillQnCalibrationHistograms(centr, multi, qvecPos, qvecNeg);
   }
-  PROCESS_SWITCH(FlowFlucGfwPp, processq2, "Process analysis for filling q-vectors", true);
+  PROCESS_SWITCH(FlowFlucGfwPp, processq2, "Process analysis for filling q_n-vector calibration histograms", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

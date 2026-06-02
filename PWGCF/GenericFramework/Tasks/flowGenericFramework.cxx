@@ -161,8 +161,10 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFractionWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for the spectral fraction");
   } cfgEventWeight;
-  O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
-  O2_DEFINE_CONFIGURABLE(cfgUsePIDEfficiencies, bool, false, "Use species dependent efficiencies")
+  struct : ConfigurableGroup{
+             O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::string, "", "CCDB path to efficiency object")
+               O2_DEFINE_CONFIGURABLE(cfgUsePIDEfficiencies, bool, false, "Use species dependent efficiencies")
+                 O2_DEFINE_CONFIGURABLE(cfgUse2DEfficiency, bool, false, "Toggle the use of 2D (pt, centrality) efficiency versus centrality integrated efficiency")} cfgEfficiency;
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt (GeV/c)");
@@ -175,7 +177,8 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
-    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0105 + 0.0350/(x^1.1))", "Functional form of pt-dependent 7 sigma DCAxy cut");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyPtDep, std::string, "(0.0105 + 0.0350/(x^1.1))", "Functional form of pt-dependent 7 sigma DCAxy cut");
+    O2_DEFINE_CONFIGURABLE(cfgDCAzPtDep, std::string, "(0.0105 + 0.0350/(x^1.1))", "Functional form of pt-dependent DCAz cut");
     O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
     O2_DEFINE_CONFIGURABLE(cfgNTPCCls, float, 50, "Cut on number of TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cfgNTPCXrows, float, 70, "Cut on number of TPC crossed rows");
@@ -259,8 +262,8 @@ struct FlowGenericFramework {
   o2::aod::ITSResponse itsResponse;
 
   struct Config {
-    TH1D* mEfficiency = nullptr;
-    std::vector<TH1D*> mPIDEfficiencies;
+    TH1* mEfficiency = nullptr;
+    std::vector<TH1*> mPIDEfficiencies;
     std::vector<GFWWeights*> mAcceptance;
     bool correctionsLoaded = false;
   } cfg;
@@ -451,8 +454,9 @@ struct FlowGenericFramework {
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
 
-  // Track selection - DCA xy function
+  // Track selection - DCA functions
   TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
 
   void init(InitContext const&)
   {
@@ -571,9 +575,14 @@ struct FlowGenericFramework {
         registryQA.add("MCGen/before/pt_gen", "", {HistType::kTH1D, {ptAxis}});
         registryQA.add("MCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
         registryQA.addClone("MCGen/before/", "MCGen/after/");
+        registry.add("MCGen/after/pt_centrality_K0_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         registry.add("MCGen/after/pt_centrality_K0_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         registry.add("MCGen/after/pt_centrality_Lambda_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_Lambda_proton_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_Lambda_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_ch_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         registry.add("MCGen/after/pt_centrality_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+        registry.add("MCGen/after/pt_centrality_kaon_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         registry.add("MCGen/after/pt_centrality_proton_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         if (doprocessOnTheFly)
           registryQA.add("MCGen/impactParameter", "", {HistType::kTH2D, {{bAxis, nchAxis}}});
@@ -599,9 +608,14 @@ struct FlowGenericFramework {
         registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaV0Daughters", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         if (doprocessMCReco) {
+          registry.add("trackQA/after/pt_centrality_K0", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
           registry.add("trackQA/after/pt_centrality_K0_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_Lambda", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
           registry.add("trackQA/after/pt_centrality_Lambda_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_ch", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_Lambda_proton", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
           registry.add("trackQA/after/pt_centrality_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
+          registry.add("trackQA/after/pt_centrality_kaon", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
           registry.add("trackQA/after/pt_centrality_proton", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         }
         if (!cfgFill.cfgFillRunByRunQA) {
@@ -780,9 +794,13 @@ struct FlowGenericFramework {
     fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
     fFCpt->initialiseSubevent(multAxis, cfgMpar, o2::analysis::gfw::etagapsPtPt.size(), cfgNbootstrap);
 
-    fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()), 0.001, 100);
+    fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxyPtDep->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgTrackCuts.cfgDCAxyNSigma / 7.);
-    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()));
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgTrackCuts.cfgDCAxyPtDep->c_str()));
+    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty()) {
+      fPtDepDCAz = new TF1("ptDepDCAz", Form("%s", cfgTrackCuts.cfgDCAzPtDep->c_str()), 0.001, 100);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("%s", cfgTrackCuts.cfgDCAzPtDep->c_str()));
+    }
 
     // Multiplicity correlation cuts
     if (cfgMultCut) {
@@ -979,20 +997,26 @@ struct FlowGenericFramework {
     // Run-by-run efficiencies are not supported at the moment
     if (cfg.correctionsLoaded)
       return;
-    if (!cfgEfficiency.value.empty()) {
-      if (!cfgUsePIDEfficiencies) {
-        cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+    if (!cfgEfficiency.cfgEfficiencyPath.value.empty()) {
+      if (!cfgEfficiency.cfgUsePIDEfficiencies) {
+        if (cfgEfficiency.cfgUse2DEfficiency)
+          cfg.mEfficiency = ccdb->getForTimeStamp<TH2D>(cfgEfficiency.cfgEfficiencyPath, timestamp);
+        else
+          cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency.cfgEfficiencyPath, timestamp);
         if (cfg.mEfficiency == nullptr) {
-          LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.value.c_str());
+          LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
         }
-        LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
+        LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.cfgEfficiencyPath.value.c_str(), (void*)cfg.mEfficiency);
       } else {
-        std::vector<std::string> species = {"ch", "pi", "ka", "pr"};
+        std::vector<std::string> species = {"ch", "pi", "ka", "pr", "k0", "lambda"};
         for (const auto& sp : species) {
-          cfg.mPIDEfficiencies.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency.value + "/" + sp, timestamp));
+          if (cfgEfficiency.cfgUse2DEfficiency)
+            cfg.mPIDEfficiencies.push_back(ccdb->getForTimeStamp<TH2D>(cfgEfficiency.cfgEfficiencyPath.value + "/" + sp, timestamp));
+          else
+            cfg.mPIDEfficiencies.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency.cfgEfficiencyPath.value + "/" + sp, timestamp));
           if (cfg.mPIDEfficiencies.back() == nullptr)
-            LOGF(fatal, "Could not load PID efficiency histograms from %s", cfgEfficiency.value + "/" + sp);
-          LOGF(info, "Loaded PID efficiency histogram from %s", cfgEfficiency.value + "/" + sp);
+            LOGF(fatal, "Could not load PID efficiency histograms from %s", cfgEfficiency.cfgEfficiencyPath.value + "/" + sp);
+          LOGF(info, "Loaded PID efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value + "/" + sp);
         }
       }
     }
@@ -1009,14 +1033,19 @@ struct FlowGenericFramework {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track, int pidIndex = 0)
-  { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr
+  double getEfficiency(TTrack track, const float& centrality, int pidIndex = 0)
+  { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr, 4 k0, 5 lambda
     double eff = 1.;
-    if (!cfgUsePIDEfficiencies) {
-      if (cfg.mEfficiency)
-        eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
+    if (!cfgEfficiency.cfgUsePIDEfficiencies) {
+      if (cfgEfficiency.cfgUse2DEfficiency)
+        eff = dynamic_cast<TH2D*>(cfg.mEfficiency)->GetBinContent(dynamic_cast<TH2D*>(cfg.mEfficiency)->FindBin(track.pt(), centrality));
+      else
+        eff = dynamic_cast<TH1D*>(cfg.mEfficiency)->GetBinContent(dynamic_cast<TH1D*>(cfg.mEfficiency)->FindBin(track.pt()));
     } else {
-      eff = cfg.mPIDEfficiencies[pidIndex]->GetBinContent(cfg.mPIDEfficiencies[pidIndex]->FindBin(track.pt()));
+      if (cfgEfficiency.cfgUse2DEfficiency)
+        eff = dynamic_cast<TH2D*>(cfg.mPIDEfficiencies[pidIndex])->GetBinContent(dynamic_cast<TH2D*>(cfg.mPIDEfficiencies[pidIndex])->FindBin(track.pt(), centrality));
+      else
+        eff = dynamic_cast<TH1D*>(cfg.mPIDEfficiencies[pidIndex])->GetBinContent(dynamic_cast<TH1D*>(cfg.mPIDEfficiencies[pidIndex])->FindBin(track.pt()));
     }
     if (eff == 0)
       return -1.;
@@ -1211,6 +1240,8 @@ struct FlowGenericFramework {
     }
     if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
       return false;
+    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ() > fPtDepDCAz->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
   }
 
@@ -1220,6 +1251,8 @@ struct FlowGenericFramework {
     // Renormalise to default cut
     const float defaultNsigma = 7;
     if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > defaultNsigma / cfgTrackCuts.cfgDCAxyNSigma * fPtDepDCAxy->Eval(track.pt())))
+      return false;
+    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ() > fPtDepDCAz->Eval(track.pt())))
       return false;
     int tpcNClsCrossedRowsDefault = 70;
     int tpcNClsFoundDefault = 50;
@@ -1504,7 +1537,7 @@ struct FlowGenericFramework {
     for (const auto& h : histosNpt)
       h->Reset("ICESM");
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, field, run, densitycorrections, acceptedTracks);
+      processTrack(track, vtxz, field, run, densitycorrections, centrality, acceptedTracks);
     }
     if (dt != Gen && cfgFill.cfgFillQA) {
       registryQA.fill(HIST("trackQA/after/Nch_corrected"), acceptedTracks.total);
@@ -1541,7 +1574,16 @@ struct FlowGenericFramework {
       for (const auto& v0 : v0s) {
         if (resoSwitchVals[UseParticle][K0]) {
           double weff = 1;
-          if (selectK0(collision, v0, tracks, centrality, weff)) {
+          if (selectK0(collision, v0, tracks, centrality)) {
+            if (cfgFill.cfgFillQA)
+              registryQA.fill(HIST("K0/hK0s"), 0.5, 1);
+            if (cfgEfficiency.cfgUsePIDEfficiencies) {
+              weff = getEfficiency(v0, centrality, 4);
+              if (weff < 0)
+                continue;
+              if (cfgFill.cfgFillQA)
+                registryQA.fill(HIST("K0/hK0s_corrected"), 0.5, weff);
+            }
             if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max)
               histosResoNpt[K0Sideband1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
             if (v0.mK0Short() > cfgPIDCuts.cfgK0SignalMin && v0.mK0Short() < cfgPIDCuts.cfgK0SignalMax)
@@ -1552,7 +1594,16 @@ struct FlowGenericFramework {
         }
         if (resoSwitchVals[UseParticle][Lambda]) {
           double weff = 1.;
-          if (selectLambda(collision, v0, tracks, centrality, weff)) {
+          if (selectLambda(collision, v0, tracks, centrality)) {
+            if (cfgFill.cfgFillQA)
+              registryQA.fill(HIST("Lambda/hLambdas"), 0.5, 1);
+            if (cfgEfficiency.cfgUsePIDEfficiencies) {
+              weff = getEfficiency(v0, centrality, 5);
+              if (weff < 0)
+                continue;
+              if (cfgFill.cfgFillQA)
+                registryQA.fill(HIST("Lambda/hLambdas_corrected"), 0.5, weff);
+            }
             if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand1Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand1Max)
               histosResoNpt[LambdaSideband1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
             if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax)
@@ -1564,6 +1615,8 @@ struct FlowGenericFramework {
       }
     } else {
       for (const auto& particle : tracks) {
+        if (!particle.isPhysicalPrimary())
+          continue;
         if (!particle.has_daughters())
           continue;
 
@@ -1573,10 +1626,14 @@ struct FlowGenericFramework {
         if (!isK0 && !isLambda)
           continue;
 
-        if (isK0)
+        if (isK0) {
           histosResoNpt[K0Signal]->Fill(particle.pt(), 1.0);
-        if (isLambda)
+          registry.fill(HIST("MCGen/after/pt_centrality_K0_gen"), particle.pt(), centrality);
+        }
+        if (isLambda) {
           histosResoNpt[LambdaSignal]->Fill(particle.pt(), 1.0);
+          registry.fill(HIST("MCGen/after/pt_centrality_Lambda_gen"), particle.pt(), centrality);
+        }
 
         // For efficiency
         for (const auto& d : particle.template daughters_as<aod::McParticles>()) {
@@ -1585,10 +1642,9 @@ struct FlowGenericFramework {
               registry.fill(HIST("MCGen/after/pt_centrality_K0_pion_gen"), d.pt(), centrality);
             if (isLambda)
               registry.fill(HIST("MCGen/after/pt_centrality_Lambda_pion_gen"), d.pt(), centrality);
-            registry.fill(HIST("MCGen/after/pt_centrality_pion_gen"), d.pt(), centrality);
           }
           if (std::abs(d.pdgCode()) == PDG_t::kProton)
-            registry.fill(HIST("MCGen/after/pt_centrality_proton_gen"), d.pt(), centrality);
+            registry.fill(HIST("MCGen/after/pt_centrality_Lambda_proton_gen"), d.pt(), centrality);
         }
       }
     }
@@ -1676,26 +1732,22 @@ struct FlowGenericFramework {
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int field, const int run, DensityCorr densitycorrections, AcceptedTracks& acceptedTracks)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int field, const int run, DensityCorr densitycorrections, const float& centrality, AcceptedTracks& acceptedTracks)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
         return;
-
       auto mcParticle = track.mcParticle();
       if (!mcParticle.isPhysicalPrimary())
         return;
       if (cfgFill.cfgFillQA)
         fillTrackQA<Reco, Before>(track, vtxz);
-
       if (mcParticle.eta() < o2::analysis::gfw::etalow || mcParticle.eta() > o2::analysis::gfw::etaup || mcParticle.pt() < o2::analysis::gfw::ptlow || mcParticle.pt() > o2::analysis::gfw::ptup)
         return;
-
       // Select tracks with nominal cuts always
       if (!nchSelected(track))
         return;
-
-      double weffCh = getEfficiency(track, 0);
+      double weffCh = getEfficiency(track, centrality, 0);
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         if (weffCh > 0)
           acceptedTracks.total += (cfgUseNchCorrection) ? weffCh : 1.0;
@@ -1704,17 +1756,23 @@ struct FlowGenericFramework {
 
       if (!trackSelected(track, field))
         return;
+      registry.fill(HIST("trackQA/after/pt_centrality_ch"), track.pt(), centrality);
 
       int pidIndex = 0;
-      if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+      if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
         pidIndex = PionID;
-      if (std::abs(mcParticle.pdgCode()) == kKPlus)
+        registry.fill(HIST("trackQA/after/pt_centrality_pion"), track.pt(), centrality);
+      }
+      if (std::abs(mcParticle.pdgCode()) == kKPlus) {
         pidIndex = KaonID;
-      if (std::abs(mcParticle.pdgCode()) == kProton)
+        registry.fill(HIST("trackQA/after/pt_centrality_kaon"), track.pt(), centrality);
+      }
+      if (std::abs(mcParticle.pdgCode()) == kProton) {
         pidIndex = ProtonID;
-
+        registry.fill(HIST("trackQA/after/pt_centrality_proton"), track.pt(), centrality);
+      }
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
-        double weff = getEfficiency(track, pidIndex);
+        double weff = getEfficiency(track, centrality, pidIndex);
 
         if (weffCh > 0)
           histosNpt[ChargedID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
@@ -1725,14 +1783,12 @@ struct FlowGenericFramework {
         if (pidIndex == ProtonID && weff > 0)
           histosNpt[ProtonID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
       }
-
       if (cfgFill.cfgFillWeights) {
         fillWeights(mcParticle, vtxz, 0, run);
       } else {
-        fillPtSums<Reco>(track, vtxz);
-        fillGFW<Reco>(mcParticle, vtxz, pidIndex, densitycorrections);
+        fillPtSums<Reco>(track, centrality, vtxz);
+        fillGFW<Reco>(mcParticle, centrality, vtxz, pidIndex, densitycorrections);
       }
-
       if (cfgFill.cfgFillQA) {
         fillTrackQA<Reco, After>(track, vtxz);
         if (cfgFill.cfgFillRunByRunQA) {
@@ -1748,13 +1804,21 @@ struct FlowGenericFramework {
         fillTrackQA<Gen, Before>(track, vtxz);
       if (track.eta() < o2::analysis::gfw::etalow || track.eta() > o2::analysis::gfw::etaup || track.pt() < o2::analysis::gfw::ptlow || track.pt() > o2::analysis::gfw::ptup)
         return;
+
+      registry.fill(HIST("MCGen/after/pt_centrality_ch_gen"), track.pt(), centrality);
       int pidIndex = 0;
-      if (std::abs(track.pdgCode()) == kPiPlus)
+      if (std::abs(track.pdgCode()) == kPiPlus) {
         pidIndex = PionID;
-      if (std::abs(track.pdgCode()) == kKPlus)
+        registry.fill(HIST("MCGen/after/pt_centrality_pion_gen"), track.pt(), centrality);
+      }
+      if (std::abs(track.pdgCode()) == kKPlus) {
         pidIndex = KaonID;
-      if (std::abs(track.pdgCode()) == kProton)
+        registry.fill(HIST("MCGen/after/pt_centrality_kaon_gen"), track.pt(), centrality);
+      }
+      if (std::abs(track.pdgCode()) == kProton) {
         pidIndex = ProtonID;
+        registry.fill(HIST("MCGen/after/pt_centrality_proton_gen"), track.pt(), centrality);
+      }
 
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         ++acceptedTracks.total;
@@ -1769,8 +1833,8 @@ struct FlowGenericFramework {
           histosNpt[ProtonID]->Fill(track.pt());
       }
 
-      fillPtSums<Gen>(track, vtxz);
-      fillGFW<Gen>(track, vtxz, pidIndex, densitycorrections);
+      fillPtSums<Gen>(track, centrality, vtxz);
+      fillGFW<Gen>(track, centrality, vtxz, pidIndex, densitycorrections);
       if (cfgFill.cfgFillQA)
         fillTrackQA<Gen, After>(track, vtxz);
 
@@ -1781,7 +1845,7 @@ struct FlowGenericFramework {
       if (!nchSelected(track))
         return;
 
-      double weffCh = getEfficiency(track, 0);
+      double weffCh = getEfficiency(track, centrality, 0);
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         if (weffCh > 0)
           acceptedTracks.total += (cfgUseNchCorrection) ? weffCh : 1.0;
@@ -1795,7 +1859,7 @@ struct FlowGenericFramework {
       int pidIndex = getNsigmaPID(track);
 
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
-        double weff = getEfficiency(track, pidIndex);
+        double weff = getEfficiency(track, centrality, pidIndex);
 
         if (weffCh > 0)
           histosNpt[ChargedID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
@@ -1810,8 +1874,8 @@ struct FlowGenericFramework {
       if (cfgFill.cfgFillWeights) {
         fillWeights(track, vtxz, pidIndex, run);
       } else {
-        fillPtSums<Reco>(track, vtxz);
-        fillGFW<Reco>(track, vtxz, pidIndex, densitycorrections);
+        fillPtSums<Reco>(track, centrality, vtxz);
+        fillGFW<Reco>(track, centrality, vtxz, pidIndex, densitycorrections);
       }
       if (cfgFill.cfgFillQA) {
         fillTrackQA<Reco, After>(track, vtxz);
@@ -1858,7 +1922,7 @@ struct FlowGenericFramework {
   }
 
   template <typename TCollision, typename TV0, typename TTracks>
-  bool selectK0(TCollision const& collision, TV0 const& v0, TTracks const&, const double& centrality, double& weff)
+  bool selectK0(TCollision const& collision, TV0 const& v0, TTracks const&, const double& centrality)
   {
     using V0TrackTable = std::decay_t<TTracks>;
 
@@ -1920,22 +1984,13 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("K0/PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("K0/PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registryQA.fill(HIST("K0/PiMinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaKa());
-      registryQA.fill(HIST("K0/hK0s"), 0.5, 1);
-      if (cfgUsePIDEfficiencies) {
-        double weffDaughter1 = getEfficiency(postrack, 1);
-        double weffDaughter2 = getEfficiency(negtrack, 1);
-        weff = weffDaughter1 * weffDaughter2;
-        if (weff > 0)
-          registryQA.fill(HIST("K0/hK0s_corrected"), 0.5, weff);
-      }
     }
 
     if (doprocessMCReco) {
       if (cfgFill.cfgFillQA) {
+        registry.fill(HIST("trackQA/after/pt_centrality_K0"), v0.pt(), centrality);
         registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), postrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_pion"), postrack.pt(), centrality);
         registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), negtrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_pion"), negtrack.pt(), centrality);
       }
     }
 
@@ -1943,7 +1998,7 @@ struct FlowGenericFramework {
   }
 
   template <typename TCollision, typename TV0, typename TTracks>
-  bool selectLambda(TCollision const& collision, TV0 const& v0, TTracks const&, const double& centrality, double& weff)
+  bool selectLambda(TCollision const& collision, TV0 const& v0, TTracks const&, const double& centrality)
   {
     using V0TrackTable = std::decay_t<TTracks>;
     bool isL = false;  // Is lambda candidate
@@ -2028,18 +2083,10 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("Lambda/PiMinusTPC_L"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PiMinusTOF_L"), negtrack.pt(), negtrack.tofNSigmaKa());
 
-      registryQA.fill(HIST("Lambda/hLambdas"), 0.5, 1);
-      if (cfgUsePIDEfficiencies) {
-        double weffDaughter1 = getEfficiency(postrack, 3);
-        double weffDaughter2 = getEfficiency(negtrack, 1);
-        weff = weffDaughter1 * weffDaughter2;
-        if (weff > 0)
-          registryQA.fill(HIST("Lambda/hLambdas_corrected"), 0.5, weff);
-      }
       if (doprocessMCReco) {
+        registry.fill(HIST("trackQA/after/pt_centrality_Lambda"), v0.pt(), centrality);
         registry.fill(HIST("trackQA/after/pt_centrality_Lambda_pion"), negtrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_pion"), negtrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_proton"), postrack.pt(), centrality);
+        registry.fill(HIST("trackQA/after/pt_centrality_Lambda_proton"), postrack.pt(), centrality);
       }
     }
     if (isAL && cfgFill.cfgFillQA) {
@@ -2051,18 +2098,10 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("Lambda/PrMinusTPC_AL"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PrMinusTOF_AL"), negtrack.pt(), negtrack.tofNSigmaKa());
 
-      registryQA.fill(HIST("Lambda/hLambdas"), 0.5, 1);
-      if (cfgUsePIDEfficiencies) {
-        double weffDaughter1 = getEfficiency(postrack, 1);
-        double weffDaughter2 = getEfficiency(negtrack, 3);
-        weff = weffDaughter1 * weffDaughter2;
-        if (weff > 0)
-          registryQA.fill(HIST("Lambda/hLambdas_corrected"), 0.5, weff);
-      }
       if (doprocessMCReco) {
+        registry.fill(HIST("trackQA/after/pt_centrality_Lambda"), v0.pt(), centrality);
         registry.fill(HIST("trackQA/after/pt_centrality_Lambda_pion"), postrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_pion"), postrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_proton"), negtrack.pt(), centrality);
+        registry.fill(HIST("trackQA/after/pt_centrality_Lambda_proton"), negtrack.pt(), centrality);
       }
     }
 
@@ -2070,10 +2109,10 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillPtSums(TTrack track, const double& vtxz)
+  inline void fillPtSums(TTrack track, const float& centrality, const double& vtxz)
   {
     double wacc = (dt == Gen) ? 1. : getAcceptance(track, vtxz, 0);
-    double weff = (dt == Gen) ? 1. : getEfficiency(track);
+    double weff = (dt == Gen) ? 1. : getEfficiency(track, centrality);
     if (weff < 0)
       return;
 
@@ -2098,7 +2137,7 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillGFW(TTrack track, const double& vtxz, int pid_index, DensityCorr densitycorrections)
+  inline void fillGFW(TTrack track, const float& centrality, const double& vtxz, int pid_index, DensityCorr densitycorrections)
   {
     if (cfgUsePID) { // Analysing POI flow with id'ed particles
       double ptmins[] = {o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoilow, 0.3, 0.5};
@@ -2129,7 +2168,7 @@ struct FlowGenericFramework {
       bool withinPtPOI = (track.pt() > o2::analysis::gfw::ptpoilow && track.pt() < o2::analysis::gfw::ptpoiup);
       if (!withinPtPOI && !withinPtRef)
         return;
-      double weff = (dt == Gen) ? 1. : getEfficiency(track, 0);
+      double weff = (dt == Gen) ? 1. : getEfficiency(track, centrality, 0);
       if (weff < 0)
         return;
       if (cfgUseDensityDependentCorrection && withinPtRef && dt != Gen) {

@@ -574,19 +574,13 @@ struct mftMchMatcher {
     return result;
   }
 
-  void processMC(MyEvents const& collisions,
-                 aod::BCsWithTimestamps const& bcs,
-                 MyMuonsMC const& muonTracks,
-                 MyMFTsMC const& mftTracks,
-                 MyMFTCovariances const& mftCovs,
-                 aod::McParticles const& /*mcParticles*/)
+  template <bool isMc, class TCOLLS, class TBCS, class TMUONS, class TMFTS, class TCOVS>
+  void fillTable(TCOLLS const& collisions,
+                 TBCS const& /*bcs*/,
+                 TMUONS const& muonTracks,
+                 TMFTS const& mftTracks,
+                 TCOVS const& mftCovs)
   {
-    if (bcs.size() > 0) {
-      auto bc = bcs.begin();
-      initCCDB(bc);
-      VarManager::SetMatchingPlane(fzMatching.value);
-    }
-
     registry.get<TH1>(HIST("acceptedEvents"))->Fill(0);
     // reject a randomly selected fraction of events
     if (fSamplingFraction < 1.0) {
@@ -600,7 +594,9 @@ struct mftMchMatcher {
     fillBestMuonMatches(muonTracks);
 
     std::vector<std::pair<int64_t, int64_t>> matchablePairs;
-    fillMatchablePairs(muonTracks, mftTracks, matchablePairs);
+    if constexpr (isMc) {
+      fillMatchablePairs(muonTracks, mftTracks, matchablePairs);
+    }
 
     mftCovIndexes.clear();
     for (auto& mftTrackCov : mftCovs) {
@@ -626,10 +622,10 @@ struct mftMchMatcher {
       }
 
       const auto& collision = collisions.rawIteratorAt(muon.collisionId());
-      auto bc_coll = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc_coll = collision.template bc_as<TBCS>();
 
-      auto muontrack = muon.template matchMCHTrack_as<MyMuonsMC>();
-      auto mfttrack = muon.template matchMFTTrack_as<MyMFTsMC>();
+      auto muontrack = muon.template matchMCHTrack_as<TMUONS>();
+      auto mfttrack = muon.template matchMFTTrack_as<TMFTS>();
       auto const& mfttrackcov = mftCovs.rawIteratorAt(mftCovIndexes[mfttrack.globalIndex()]);
 
       auto muonTime = muontrack.trackTime() + bc_coll.globalBC() * o2::constants::lhc::LHCBunchSpacingNS;
@@ -657,8 +653,20 @@ struct mftMchMatcher {
       bool IsAmbig = (muon.compatibleCollIds().size() != 1);
       int MFTMult = collision.mftNtracks();
 
-      auto matchType = getMatchType(muon, muonTracks, mftTracks, matchablePairs, isBestMatch);
+      auto matchType = kMatchTypeUndefined;
+      if constexpr (isMc) {
+        matchType = getMatchType(muon, muonTracks, mftTracks, matchablePairs, isBestMatch);
+      }
       bool isSignal = (matchType == kMatchTypeTrueLeading) || (matchType == kMatchTypeTrueNonLeading);
+
+      int mcMaskMuon = 0;
+      int mcMaskMft = 0;
+      int ncMaskGlob = 0;
+      if constexpr (isMc) {
+        mcMaskMuon = muontrack.mcMask();
+        mcMaskMft = mfttrack.mcMask();
+        ncMaskGlob = muon.mcMask();
+      }
 
       registry.get<TH1>(HIST("matchType"))->Fill(static_cast<int>(matchType));
 
@@ -719,15 +727,48 @@ struct mftMchMatcher {
         muon.fwdDcaY(),
         IsAmbig,
         MFTMult,
-        muontrack.mcMask(),
-        mfttrack.mcMask(),
-        muon.mcMask(),
+        mcMaskMuon,
+        mcMaskMft,
+        ncMaskGlob,
         static_cast<int>(matchType),
         isSignal);
     }
   }
 
+  void processMC(MyEvents const& collisions,
+                 aod::BCsWithTimestamps const& bcs,
+                 MyMuonsMC const& muonTracks,
+                 MyMFTsMC const& mftTracks,
+                 MyMFTCovariances const& mftCovs,
+                 aod::McParticles const& /*mcParticles*/)
+  {
+    if (bcs.size() > 0) {
+      auto bc = bcs.begin();
+      initCCDB(bc);
+      VarManager::SetMatchingPlane(fzMatching.value);
+    }
+
+    fillTable<true>(collisions, bcs, muonTracks, mftTracks, mftCovs);
+  }
+
   PROCESS_SWITCH(mftMchMatcher, processMC, "process_MC", true);
+
+  void processRD(MyEvents const& collisions,
+                 aod::BCsWithTimestamps const& bcs,
+                 MyMuonsWithCov const& muonTracks,
+                 MyMFTs const& mftTracks,
+                 MyMFTCovariances const& mftCovs)
+  {
+    if (bcs.size() > 0) {
+      auto bc = bcs.begin();
+      initCCDB(bc);
+      VarManager::SetMatchingPlane(fzMatching.value);
+    }
+
+    fillTable<false>(collisions, bcs, muonTracks, mftTracks, mftCovs);
+  }
+
+  PROCESS_SWITCH(mftMchMatcher, processRD, "process_RD", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
