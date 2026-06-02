@@ -569,16 +569,17 @@ class CollisionBuilder
     if (mProducedSphericities) {
       collisionProducts.producedSphericities(mCollisionSelection.getSphericity());
     }
+    if (mProducedMultiplicities) {
+      collisionProducts.producedMultiplicityEstimators(
+        col.multFT0A(),
+        col.multFT0C(),
+        col.multNTracksPVeta1(),
+        col.multNTracksPVetaHalf(),
+        col.trackOccupancyInTimeRange(),
+        col.ft0cOccupancyInTimeRange());
+    }
+
     // TODO: enable later for better QA
-    // if (mProducedMultiplicities) {
-    //   collisionProducts.producedMultiplicityEstimators(
-    //     col.multFT0A(),
-    //     col.multFT0C(),
-    //     col.multNTracksPVeta1(),
-    //     col.multNTracksPVetaHalf(),
-    //     col.trackOccupancyInTimeRange(),
-    //     col.ft0cOccupancyInTimeRange());
-    // }
     // if (mProducedCentralities) {
     //   collisionProducts.producedCentralityEstimators(
     //     col.centFT0A(),
