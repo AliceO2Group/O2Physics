@@ -16,6 +16,7 @@
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
+#include "Common/DataModel/Centrality.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 
@@ -60,7 +61,9 @@ using std::array;
 using VBracket = o2::math_utils::Bracket<int>;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using TracksFullMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::McTrackLabels>;
-using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs>;
+using McRecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>;
 
 enum KinkDecayType { kSigmaMinusToPiMinusNeutron = 0,
                      kSigmaPlusToPiPlusNeutron,
@@ -167,12 +170,14 @@ struct kinkBuilder {
   Configurable<bool> unlikeSignBkg{"unlikeSignBkg", false, "Use unlike sign background"};
   Configurable<bool> skipBkgCands{"skipBkgCands", true, "Skip bkg candidates in MC process"};
 
+  // Centrality selection
+  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality accepted in SP/EP computation (not applied in resolution process)"};
+  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
+
   // CCDB options
   Configurable<std::string> ccdbPath{"ccdbPath", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-
-  // PDG codes
 
   // histogram axes
   ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
@@ -183,6 +188,12 @@ struct kinkBuilder {
   ConfigurableAxis dcaMothToPVBins{"dcaMothToPVBins", {120, 0.f, 60.f}, "Binning for DCA of mother to PV"};
   ConfigurableAxis dcaDaugToPVBins{"dcaDaugToPVBins", {200, 0.f, 20.f}, "Binning for DCA of daughter to PV"};
   ConfigurableAxis mothDecRad2Bins{"mothDecRad2Bins", {100, 0, 100}, "Binning for mother decay radius squared"};
+
+  // Filter collisions with centrality information (for the process with centrality selection)
+  using CollisionsCentSel = soa::Filtered<CollisionsCent>;
+  using McRecoCollisionsCentSel = soa::Filtered<McRecoCollisionsCent>;
+
+  Filter filterCentrality = aod::cent::centFT0C >= centralityMin && aod::cent::centFT0C <= centralityMax;
 
   // std vector of candidates
   std::vector<kinkCandidate> kinkCandidates;
@@ -258,16 +269,16 @@ struct kinkBuilder {
       massAxis = AxisSpec{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
     }
 
-    h2DeDxDaugSel = qaRegistry.add<TH2>("h2DeDxDaugSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
-    h2KinkAnglePt = qaRegistry.add<TH2>("h2KinkAnglePt", "; p_{T} (GeV/#it{c}); #theta_{kink} (deg)", HistType::kTH2F, {ptAxis, kinkAngleAxis});
-    h2MothMassPt = qaRegistry.add<TH2>("h2MothMassPt", "; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, massAxis});
-    h2ClsMapPtMoth = qaRegistry.add<TH2>("h2ClsMapPtMoth", "; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
-    h2ClsMapPtDaug = qaRegistry.add<TH2>("h2ClsMapPtDaug", "; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
-    h2ItsClsMothBeforeSel = qaRegistry.add<TH2>("h2ItsClsMothBeforeSel", "; Tot Cls; IB clusters", HistType::kTH2F, {{8, -0.5, 7.5}, {4, -0.5, 3.5}});
-    h2ItsClsDaugBeforeSel = qaRegistry.add<TH2>("h2ItsClsDaugBeforeSel", "; Tot Cls; IB clusters", HistType::kTH2F, {{8, -0.5, 7.5}, {4, -0.5, 3.5}});
+    h2DeDxDaugSel = qaRegistry.add<TH2>("h2DeDxDaugSel", "h2DeDxDaugSel; p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    h2KinkAnglePt = qaRegistry.add<TH2>("h2KinkAnglePt", "h2KinkAnglePt; p_{T} (GeV/#it{c}); #theta_{kink} (deg)", HistType::kTH2F, {ptAxis, kinkAngleAxis});
+    h2MothMassPt = qaRegistry.add<TH2>("h2MothMassPt", "h2MothMassPt; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, massAxis});
+    h2ClsMapPtMoth = qaRegistry.add<TH2>("h2ClsMapPtMoth", "h2ClsMapPtMoth; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
+    h2ClsMapPtDaug = qaRegistry.add<TH2>("h2ClsMapPtDaug", "h2ClsMapPtDaug; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
+    h2ItsClsMothBeforeSel = qaRegistry.add<TH2>("h2ItsClsMothBeforeSel", "h2ItsClsMothBeforeSel; Tot Cls; IB clusters", HistType::kTH2F, {{8, -0.5, 7.5}, {4, -0.5, 3.5}});
+    h2ItsClsDaugBeforeSel = qaRegistry.add<TH2>("h2ItsClsDaugBeforeSel", "h2ItsClsDaugBeforeSel; Tot Cls; IB clusters", HistType::kTH2F, {{8, -0.5, 7.5}, {4, -0.5, 3.5}});
 
     // QA
-    hSelMotherQA = qaRegistry.add<TH2>("hSelMotherQA", ";;Q_{Mother}", {HistType::kTH2F, {{9, -0.5, 8.5}, {2, -0.5, 1.5}}});
+    hSelMotherQA = qaRegistry.add<TH2>("hSelMotherQA", "hSelMotherQA;;Q_{Mother}", {HistType::kTH2F, {{9, -0.5, 8.5}, {2, -0.5, 1.5}}});
     hSelMotherQA->GetYaxis()->SetBinLabel(1, "-");
     hSelMotherQA->GetYaxis()->SetBinLabel(2, "+");
     hSelMotherQA->GetXaxis()->SetBinLabel(1, "All");
@@ -281,7 +292,7 @@ struct kinkBuilder {
     hSelMotherQA->GetXaxis()->SetBinLabel(9, "Pt sel");
 
     // QA
-    hSelDaugQA = qaRegistry.add<TH2>("hSelDaugQA", ";;Q_{Daug}", {HistType::kTH2F, {{8, -0.5, 7.5}, {2, -0.5, 1.5}}});
+    hSelDaugQA = qaRegistry.add<TH2>("hSelDaugQA", "hSelDaugQA;;Q_{Daug}", {HistType::kTH2F, {{8, -0.5, 7.5}, {2, -0.5, 1.5}}});
     hSelDaugQA->GetYaxis()->SetBinLabel(1, "-");
     hSelDaugQA->GetYaxis()->SetBinLabel(2, "+");
     hSelDaugQA->GetXaxis()->SetBinLabel(1, "All");
@@ -293,7 +304,7 @@ struct kinkBuilder {
     hSelDaugQA->GetXaxis()->SetBinLabel(7, "TPC Crossed rows vs findable sel");
     hSelDaugQA->GetXaxis()->SetBinLabel(8, "TPC cls sel");
 
-    hSelKinkedTrackQA = qaRegistry.add<TH2>("hSelKinkedTrackQA", ";;(Q_{Mother}, Q_{Daughter})", {HistType::kTH2F, {{11, -0.5, 10.5}, {4, -0.5, 3.5}}});
+    hSelKinkedTrackQA = qaRegistry.add<TH2>("hSelKinkedTrackQA", "hSelKinkedTrackQA;;(Q_{Mother}, Q_{Daughter})", {HistType::kTH2F, {{11, -0.5, 10.5}, {4, -0.5, 3.5}}});
     hSelKinkedTrackQA->GetYaxis()->SetBinLabel(1, "(+,+)");
     hSelKinkedTrackQA->GetYaxis()->SetBinLabel(2, "(-,-)");
     hSelKinkedTrackQA->GetYaxis()->SetBinLabel(3, "(+,-)");
@@ -309,29 +320,29 @@ struct kinkBuilder {
     hSelKinkedTrackQA->GetXaxis()->SetBinLabel(9, "MothDecRad2InsideL4");
     hSelKinkedTrackQA->GetXaxis()->SetBinLabel(10, "MothDaugLastLayers");
     hSelKinkedTrackQA->GetXaxis()->SetBinLabel(11, "MothLastLayerRadiusCheck");
-    hMothDaughSignsInit = qaRegistry.add<TH2>("hMothDaughSignsInit", "; Sign Mother; Sign Daughter", {HistType::kTH2F, {{3, -1.5, 1.5}, {3, -1.5, 1.5}}});
-    hMothDaughSignsFinal = qaRegistry.add<TH2>("hMothDaughSignsFinal", "; Sign Mother; Sign Daughter", {HistType::kTH2F, {{3, -1.5, 1.5}, {3, -1.5, 1.5}}});
-    hZDiff = qaRegistry.add<TH2>("hZDiff",   "; #Delta z (#mu m);(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {zDiffBins, {4, -0.5, 3.5}});
+    hMothDaughSignsInit = qaRegistry.add<TH2>("hMothDaughSignsInit", "hMothDaughSignsInit; Sign Mother; Sign Daughter", {HistType::kTH2F, {{3, -1.5, 1.5}, {3, -1.5, 1.5}}});
+    hMothDaughSignsFinal = qaRegistry.add<TH2>("hMothDaughSignsFinal", "hMothDaughSignsFinal; Sign Mother; Sign Daughter", {HistType::kTH2F, {{3, -1.5, 1.5}, {3, -1.5, 1.5}}});
+    hZDiff = qaRegistry.add<TH2>("hZDiff",   "hZDiff; #Delta z (#mu m);(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {zDiffBins, {4, -0.5, 3.5}});
     hZDiff->GetYaxis()->SetBinLabel(1, "(+,+)");
     hZDiff->GetYaxis()->SetBinLabel(2, "(-,-)");
     hZDiff->GetYaxis()->SetBinLabel(3, "(+,-)");
     hZDiff->GetYaxis()->SetBinLabel(4, "(-,+)");
-    hPhiDiff = qaRegistry.add<TH2>("hPhiDiff", "; #Delta #phi (rad);(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {phiDiffBins, {4, -0.5, 3.5}});
+    hPhiDiff = qaRegistry.add<TH2>("hPhiDiff", "hPhiDiff; #Delta #phi (rad);(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {phiDiffBins, {4, -0.5, 3.5}});
     hPhiDiff->GetYaxis()->SetBinLabel(1, "(+,+)");
     hPhiDiff->GetYaxis()->SetBinLabel(2, "(-,-)");
     hPhiDiff->GetYaxis()->SetBinLabel(3, "(+,-)");
     hPhiDiff->GetYaxis()->SetBinLabel(4, "(-,+)");
-    hDCAMothToPV = qaRegistry.add<TH2>("hDCAMothToPV", "; DCA moth to PV;(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {dcaMothToPVBins, {4, -0.5, 3.5}});
+    hDCAMothToPV = qaRegistry.add<TH2>("hDCAMothToPV", "hDCAMothToPV; DCA moth to PV;(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {dcaMothToPVBins, {4, -0.5, 3.5}});
     hDCAMothToPV->GetYaxis()->SetBinLabel(1, "(+,+)");
     hDCAMothToPV->GetYaxis()->SetBinLabel(2, "(-,-)");
     hDCAMothToPV->GetYaxis()->SetBinLabel(3, "(+,-)");
     hDCAMothToPV->GetYaxis()->SetBinLabel(4, "(-,+)");
-    hDCADaugToPV = qaRegistry.add<TH2>("hDCADaugToPV", "; DCA daug to PV;(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {dcaDaugToPVBins, {4, -0.5, 3.5}});
+    hDCADaugToPV = qaRegistry.add<TH2>("hDCADaugToPV", "hDCADaugToPV; DCA daug to PV;(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {dcaDaugToPVBins, {4, -0.5, 3.5}});
     hDCADaugToPV->GetYaxis()->SetBinLabel(1, "(+,+)");
     hDCADaugToPV->GetYaxis()->SetBinLabel(2, "(-,-)");
     hDCADaugToPV->GetYaxis()->SetBinLabel(3, "(+,-)");
     hDCADaugToPV->GetYaxis()->SetBinLabel(4, "(-,+)");
-    hMothDecRad2 = qaRegistry.add<TH2>("hMothDecRad2", "; Mother Dec. Radius Squared (cm^{2});(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {mothDecRad2Bins, {4, -0.5, 3.5}});
+    hMothDecRad2 = qaRegistry.add<TH2>("hMothDecRad2", "hMothDecRad2; Mother Dec. Radius Squared (cm^{2});(Q_{Mother}, Q_{Daughter})", HistType::kTH2F, {mothDecRad2Bins, {4, -0.5, 3.5}});
     hMothDecRad2->GetYaxis()->SetBinLabel(1, "(+,+)");
     hMothDecRad2->GetYaxis()->SetBinLabel(2, "(-,-)");
     hMothDecRad2->GetYaxis()->SetBinLabel(3, "(+,-)");
@@ -342,23 +353,23 @@ struct kinkBuilder {
     }
     mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
 
-    if (doprocessMc) {
+    if (doprocessMc || doprocessMcWCent) {
       if (skipBkgCands) {
-        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", ";Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, kNMatchedDecays-0.5}, absPtAxis}});
+        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", "hRecCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays)-0.5}, absPtAxis}});
         hRecCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
         hRecCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
         hRecCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
       }
-      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", ";Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, kNMatchedDecays-0.5}, absPtAxis}});
+      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays)-0.5}, absPtAxis}});
       hGenCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
       hGenCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
       hGenCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
-      hRecPtKinkAngle[kSigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaMinusToPiMinusNeutron", ";Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hRecPtKinkAngle[kSigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPiPlusNeutron", ";Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hRecPtKinkAngle[kSigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToProtonPi0", ";Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[kSigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaMinusToPiMinusNeutron", ";Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[kSigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPiPlusNeutron", ";Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[kSigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToProtonPi0", ";Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[kSigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaMinusToPiMinusNeutron", "Rec Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[kSigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPiPlusNeutron", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[kSigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToProtonPi0", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[kSigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaMinusToPiMinusNeutron", "Gen Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[kSigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPiPlusNeutron", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[kSigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToProtonPi0", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
     }
   }
 
@@ -650,8 +661,8 @@ struct kinkBuilder {
     }
   }
 
-  void processData(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCs const& bcs)
-  {
+  template<typename TColls, typename TTracks>
+  void fillOutputsData(const TColls& collisions, const TTracks& tracks, const aod::AmbiguousTracks& ambiTracks, const aod::BCs& bcs) {
     kinkCandidates.clear();
     // LOG(info) << "[kink] ";
     // LOG(info) << "[kink] *****************************************";
@@ -683,7 +694,18 @@ struct kinkBuilder {
       }
     }
   }
-  PROCESS_SWITCH(kinkBuilder, processData, "Data processing", false);
+
+  void processData(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCs const& bcs)
+  {
+    fillOutputsData(collisions, tracks, ambiTracks, bcs);
+  }
+  PROCESS_SWITCH(kinkBuilder, processData, "Data processing", true);
+
+  void processDataWCentSel(CollisionsCentSel const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCs const& bcs)
+  {
+    fillOutputsData(collisions, tracks, ambiTracks, bcs);
+  }
+  PROCESS_SWITCH(kinkBuilder, processDataWCentSel, "Data processing with centrality selection", false);
 
   template<bool checkKinkDaugPdg, typename TMother>
   int matchKinkDecay(const TMother& motherPart, const aod::McParticles& mcParticles) {
@@ -697,13 +719,7 @@ struct kinkBuilder {
         pdgCodeNeutralDaug = (pdgMother > 0) ? +PDG_t::kNeutron : -PDG_t::kNeutron;
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiMinus : +PDG_t::kPiPlus;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug}; // Both decay channels have the same neutral daughter
-        // if constexpr (checkKinkDaugPdg) {
-        //   LOG(info) << "[kink] Matching Sigma- decay with daughter PDG " << pdgDaug << " and neutral daughter PDG " << pdgCodeNeutralDaug;
-        // }
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
-          // if constexpr (checkKinkDaugPdg) {
-          //   LOG(info) << "[kink] Matched Sigma- to pi- neutron decay";
-          // }
           return kSigmaMinusToPiMinusNeutron;
         }
         break;
@@ -713,13 +729,7 @@ struct kinkBuilder {
         pdgCodeNeutralDaug = (pdgMother > 0) ? +PDG_t::kNeutron : -PDG_t::kNeutron;
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiPlus  : +PDG_t::kPiMinus;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug};
-        // if constexpr (checkKinkDaugPdg) {
-        //   LOG(info) << "[kink] Matching Sigma+ decay with daughter PDG " << pdgDaug << " and neutral daughter PDG " << pdgCodeNeutralDaug;
-        // }
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
-          // if constexpr (checkKinkDaugPdg) {
-          //   LOG(info) << "[kink] Matched Sigma+ to pi+ neutron decay";
-          // }
           return kSigmaPlusToPiPlusNeutron;
         }
 
@@ -727,13 +737,7 @@ struct kinkBuilder {
         pdgCodeNeutralDaug = (pdgMother > 0) ? +PDG_t::kPi0 : -PDG_t::kPi0;
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kProton : -PDG_t::kProton;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug};
-        // if constexpr (checkKinkDaugPdg) {
-        //   LOG(info) << "[kink] Matching Sigma+ decay with daughter PDG " << pdgDaug << " and neutral daughter PDG " << pdgCodeNeutralDaug;
-        // }
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
-          // if constexpr (checkKinkDaugPdg) {
-          //   LOG(info) << "[kink] Matched Sigma+ to proton pi0 decay";
-          // }
           return kSigmaPlusToProtonPi0;
         }
         break;
@@ -746,28 +750,18 @@ struct kinkBuilder {
     return -1;
   }
 
-  void processMc(aod::McCollisions const& mcGenCollisions,
-                 McRecoCollisionsCent const& mcRecoCollisions,
-                 aod::McParticles const& mcParticles,
-                 TracksFullMc const& tracksMc,
-                 aod::AmbiguousTracks const& ambiTracksMc, 
-                 aod::BCs const& bcs)
-  {
+  template<typename TColls, typename TTracks>
+  void fillOutputsMc(const TColls& mcRecoCollisions, const TTracks& tracksMc, const aod::AmbiguousTracks& ambiTracksMc, const aod::BCs& bcs, const aod::McParticles& mcParticles) {
     kinkCandidates.clear();
-    // LOG(info) << "[kink] ";
-    // LOG(info) << "[kink] *****************************************";
-    // LOG(info) << "[kink] Processing " << tracksMc.size() << " tracks and " << mcRecoCollisions.size() << " collisions";
 
     buildSvPool(mcRecoCollisions, tracksMc, ambiTracksMc, bcs);
     auto& kinkPool = svCreator.getSVCandPool(mcRecoCollisions, !unlikeSignBkg);
-    // LOG(info) << "[kink] Number of kink candidates in the pool: " << kinkPool.size();
-    int countSameMother = 0;
     for (const auto& svCand : kinkPool) {
       // Perform matching of the kink candidate
       auto trackMoth = tracksMc.rawIteratorAt(svCand.tr0Idx);
-      auto genMothPart = trackMoth.mcParticle_as<aod::McParticles>();
+      auto genMothPart = trackMoth.template mcParticle_as<aod::McParticles>();
       auto trackDaug = tracksMc.rawIteratorAt(svCand.tr1Idx);
-      auto genDaugPart = trackDaug.mcParticle_as<aod::McParticles>();
+      auto genDaugPart = trackDaug.template mcParticle_as<aod::McParticles>();
       int decayChannel{-1};
       if (skipBkgCands) {
 
@@ -781,22 +775,7 @@ struct kinkBuilder {
         if (genDaugMothIdx != trackMoth.mcParticleId()) {
           continue; // Skip candidates where the daughter is not coming from the selected mother
         }
-        // LOG(info) << "[kink] ";
-        // LOG(info) << "[kink] -----------------";
-        // LOG(info) << "[kink] MC particle offset: " << mcParticles.offset();
-        // LOG(info) << "[kink] [Rec] Matching kink candidate with mother PDG " << genMothPart.pdgCode() << " and daughter PDG " << genDaugPart.pdgCode();
-        // LOG(info) << "[kink] Mother global index: " << trackMoth.globalIndex() << ", trackMoth.mcParticleId(): " << trackMoth.mcParticleId() << ", PDG code: " << genMothPart.pdgCode();
-        // for (const auto& mcMother : genDaugPart.mothers_as<aod::McParticles>()) {
-        //   LOG(info) << "[kink] Daughter's mother PDG: " << mcMother.pdgCode() << ", global index: " << mcMother.globalIndex();
-        // }
-        // std::vector<int> arrDaughIdxs = {};
-        // RecoDecay::getDaughters<true>(genMothPart, &arrDaughIdxs, std::array{0}, 1);
-        // for (auto iProng = 0u; iProng < arrDaughIdxs.size(); ++iProng) {
-        //   auto daughI = mcParticles.rawIteratorAt(arrDaughIdxs[iProng]);
-        //   LOG(info) << "[kink] Daughter PDG: " << daughI.pdgCode() << ", global index: " << daughI.globalIndex();
-        // }
         decayChannel = matchKinkDecay<true>(genMothPart, mcParticles);
-        // LOG(info) << "[kink] Decay channel matched: " << decayChannel;
         if (decayChannel < 0) {
           continue; // Skip candidates that do not match the decay channels of interest
         }
@@ -848,7 +827,28 @@ struct kinkBuilder {
       }
     }
   }
+
+  void processMc(aod::McCollisions const& mcGenCollisions,
+                 McRecoCollisions const& mcRecoCollisions,
+                 aod::McParticles const& mcParticles,
+                 TracksFullMc const& tracksMc,
+                 aod::AmbiguousTracks const& ambiTracksMc, 
+                 aod::BCs const& bcs)
+  {
+    fillOutputsMc(mcRecoCollisions, tracksMc, ambiTracksMc, bcs, mcParticles);
+  }
   PROCESS_SWITCH(kinkBuilder, processMc, "MC processing", false);
+
+  void processMcWCent(aod::McCollisions const& mcGenCollisions,
+                      McRecoCollisionsCentSel const& mcRecoCollisions,
+                      aod::McParticles const& mcParticles,
+                      TracksFullMc const& tracksMc,
+                      aod::AmbiguousTracks const& ambiTracksMc, 
+                      aod::BCs const& bcs)
+  {
+    fillOutputsMc(mcRecoCollisions, tracksMc, ambiTracksMc, bcs, mcParticles);
+  }
+  PROCESS_SWITCH(kinkBuilder, processMcWCent, "MC processing with centrality selection", false);
 };
 
 WorkflowSpec
