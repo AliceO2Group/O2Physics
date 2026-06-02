@@ -237,7 +237,11 @@ struct lfNucleiBATask {
 
   Configurable<bool> enablePtShiftPID{"enablePtShiftPID", true, "Flag to enable wrong PID in tracking pT correction shift"};
   Configurable<std::vector<float>> parShiftPtPID{"parShiftPtPID", {0.0f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f}, "Parameters for helium3-Pt wrong pid shift (if enabled)."};
+<<<<<<< HEAD
   Configurable<float> cfgPtShiftPID{"cfgPtShiftPID", 1.25f, "Default upper limit for PID pt-shift correction"};
+=======
+  Configurable<float> CfgPtShiftPID{"CfgPtShiftPID", 1.25f, "Default upper limit for PID pt-shift correction"};
+>>>>>>> 4b515a987 (NucleiTask - Fix O2Lint errors)
 
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
 
@@ -2577,7 +2581,11 @@ struct lfNucleiBATask {
           }
           if (enablePtShiftPID && fShiftPtPID) {
             shiftPtPID = fShiftPtPID->Eval(2 * track.pt());
+<<<<<<< HEAD
             if (tritonPID && (track.pt() <= cfgPtShiftPID)) {
+=======
+            if (tritonPID && (track.pt() <= CfgPtShiftPID)) {
+>>>>>>> 4b515a987 (NucleiTask - Fix O2Lint errors)
               hePt = track.pt() - shiftPtPID / 2.f;
               antihePt = track.pt() - shiftPtPID / 2.f;
             }
