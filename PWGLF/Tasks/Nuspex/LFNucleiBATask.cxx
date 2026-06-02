@@ -242,10 +242,10 @@ struct LFNucleiBATask {
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
 
   // ITS to TPC - Fake hit loop
-  static constexpr int kFakeLoop = 10; // Fixed O2Linter error
+  static constexpr int IntFakeLoop = 10; // Fixed O2Linter error
   // TPC low/high momentum range
-  static constexpr float kCfgTpcClasses[] = {0.5f, 0.1f};
-  static constexpr float kCfgKaonCut = 5.f;
+  static constexpr float CfgTpcClasses[] = {0.5f, 0.1f};
+  static constexpr float CfgKaonCut = 5.f;
 
   // PDG codes and masses used in this analysis
   static constexpr int PDGPion = PDG_t::kPiPlus;
@@ -263,7 +263,7 @@ struct LFNucleiBATask {
   static constexpr float MassAlphaVal = o2::constants::physics::MassAlpha;
 
   // PDG of Mothers
-  static constexpr int kPdgMotherList[] = {
+  static constexpr int PdgMotherList[] = {
     PDG_t::kPiPlus,
     PDG_t::kKPlus,
     PDG_t::kK0Short,
@@ -276,9 +276,9 @@ struct LFNucleiBATask {
     o2::constants::physics::Pdg::kHyperTriton,
     o2::constants::physics::Pdg::kAlpha};
 
-  static constexpr int kNumMotherList = sizeof(kPdgMotherList) / sizeof(kPdgMotherList[0]);
+  static constexpr int NumMotherList = sizeof(PdgMotherList) / sizeof(PdgMotherList[0]);
 
-  static constexpr const char* kMotherNames[kNumMotherList] = {
+  static constexpr const char* kMotherNames[NumMotherList] = {
     "#pi^{+}",
     "K^{+}",
     "K^{0}_{S}",
@@ -1084,7 +1084,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/proton/dca/before/hDCAxyVsPtProtonTrueMaterial", "DCAxy vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/proton/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/proton/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {150, 0.0, 15.0}});
+          histos.add<TH3>("tracks/proton/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {NumMotherList + 2, -1.5, static_cast<double>(NumMotherList) + 0.5}, {150, 0.0, 15.0}});
 
           std::shared_ptr<TH3> hTempPr = histos.get<TH3>(HIST("tracks/proton/dca/before/hMomTrueMaterial"));
           TH3* hPdgPr = hTempPr.get();
@@ -1096,7 +1096,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgPr = hPdgPr->GetYaxis();
           ayPdgPr->SetBinLabel(1, "undef.");
           ayPdgPr->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherList; i++) {
+          for (int i = 0; i < NumMotherList; i++) {
             ayPdgPr->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -1156,7 +1156,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/deuteron/dca/before/hDCAxyVsPtDeuteronTrueMaterial", "DCAxy vs Pt (d); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/deuteron/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {150, 0.0, 15.0}});
+          histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {NumMotherList + 2, -1.5, static_cast<double>(NumMotherList) + 0.5}, {150, 0.0, 15.0}});
 
           std::shared_ptr<TH3> hTempDe = histos.get<TH3>(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"));
           TH3* hPdgDe = hTempDe.get();
@@ -1168,7 +1168,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgDe = hPdgDe->GetYaxis();
           ayPdgDe->SetBinLabel(1, "undef.");
           ayPdgDe->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherList; i++) {
+          for (int i = 0; i < NumMotherList; i++) {
             ayPdgDe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -1330,7 +1330,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/helium/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {150, 0.0, 15.0}});
+          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {NumMotherList + 2, -1.5, static_cast<double>(NumMotherList) + 0.5}, {150, 0.0, 15.0}});
 
           // Fix for getting TH3 pointer
           std::shared_ptr<TH3> hTempHe = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
@@ -1343,7 +1343,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgHe = hPdgHe->GetYaxis();
           ayPdgHe->SetBinLabel(1, "undef.");
           ayPdgHe->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherList; i++) {
+          for (int i = 0; i < NumMotherList; i++) {
             ayPdgHe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -3431,7 +3431,7 @@ struct LFNucleiBATask {
           }
 
           genPt = track.mcParticle().pt();
-          for (int i = 0; i < kFakeLoop; i++) { // From ITS to TPC
+          for (int i = 0; i < IntFakeLoop; i++) { // From ITS to TPC
             if (track.mcMask() & 1 << i) {
               hasFakeHit = true;
               break;
@@ -3469,8 +3469,8 @@ struct LFNucleiBATask {
                         int motherSpeciesBin = -1;
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
-                          for (int j = 0; j < kNumMotherList; j++) {
-                            if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
+                          for (int j = 0; j < NumMotherList; j++) {
+                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
@@ -3566,8 +3566,8 @@ struct LFNucleiBATask {
                           int motherSpeciesBin = -1;
                           if (pdgMom != -1) {
                             motherSpeciesBin = 0;
-                            for (int j = 0; j < kNumMotherList; j++) {
-                              if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
+                            for (int j = 0; j < NumMotherList; j++) {
+                              if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
                                 motherSpeciesBin = j + 1;
                                 break;
                               }
@@ -3725,8 +3725,8 @@ struct LFNucleiBATask {
                         int motherSpeciesBin = -1;
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
-                          for (int j = 0; j < kNumMotherList; j++) {
-                            if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
+                          for (int j = 0; j < NumMotherList; j++) {
+                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
@@ -4176,26 +4176,26 @@ struct LFNucleiBATask {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtPos"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsTPCsignalPos"), track.tpcSignal(), track.tpcNClsCrossedRows());
 
-            if (track.tpcInnerParam() < kCfgTpcClasses[0]) {
+            if (track.tpcInnerParam() < CfgTpcClasses[0]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrLowPPos"), track.tpcNClsCrossedRows());
             }
-            if ((track.tpcInnerParam() >= kCfgTpcClasses[0]) && (track.tpcInnerParam() < kCfgTpcClasses[1])) {
+            if ((track.tpcInnerParam() >= CfgTpcClasses[0]) && (track.tpcInnerParam() < CfgTpcClasses[1])) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrMidPPos"), track.tpcNClsCrossedRows());
             }
-            if (track.tpcInnerParam() >= kCfgTpcClasses[1]) {
+            if (track.tpcInnerParam() >= CfgTpcClasses[1]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrHighPPos"), track.tpcNClsCrossedRows());
             }
           } else {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtNeg"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsTPCsignalNeg"), track.tpcSignal(), track.tpcNClsCrossedRows());
 
-            if (track.tpcInnerParam() < kCfgTpcClasses[0]) {
+            if (track.tpcInnerParam() < CfgTpcClasses[0]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrLowPNeg"), track.tpcNClsCrossedRows());
             }
-            if ((track.tpcInnerParam() >= kCfgTpcClasses[0]) && (track.tpcInnerParam() < kCfgTpcClasses[1])) {
+            if ((track.tpcInnerParam() >= CfgTpcClasses[0]) && (track.tpcInnerParam() < CfgTpcClasses[1])) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrMidPNeg"), track.tpcNClsCrossedRows());
             }
-            if (track.tpcInnerParam() >= kCfgTpcClasses[1]) {
+            if (track.tpcInnerParam() >= CfgTpcClasses[1]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrHighPNeg"), track.tpcNClsCrossedRows());
             }
           }
@@ -4208,7 +4208,7 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/eff/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
 
         if (filterOptions.enableFiltering) {
-          if (track.tpcNSigmaKa() < kCfgKaonCut)
+          if (track.tpcNSigmaKa() < CfgKaonCut)
             continue;
         }
 
@@ -5200,7 +5200,7 @@ struct LFNucleiBATask {
                         track.passedTPCRefit() &&
                         track.hasTPC();
 
-          for (int i = 0; i < kFakeLoop; i++) { // From ITS to TPC
+          for (int i = 0; i < IntFakeLoop; i++) { // From ITS to TPC
             if (track.mcMask() & 1 << i) {
               hasFakeHit = true;
               break;
@@ -6709,7 +6709,7 @@ struct LFNucleiBATask {
     for (const auto& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary())
         continue;
-      if (std::abs(mcPart.y()) >= kCfgTpcClasses[0])
+      if (std::abs(mcPart.y()) >= CfgTpcClasses[0])
         continue;
 
       const float pt = mcPart.pt();

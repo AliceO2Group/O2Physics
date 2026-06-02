@@ -94,7 +94,7 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
   Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
-  Configurable<bool> Tttrigger{"Tttrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+  Configurable<bool> TvxTrigger{"TvxTrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
   Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
   Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
 
@@ -115,10 +115,10 @@ struct LfTreeCreatorNuclei {
   Filter collisionFilter = (aod::collision::posZ < cfgHighCutVertex && aod::collision::posZ > cfgLowCutVertex);
 
   Filter etaFilter = (nabs(aod::track::eta) < cfgCutEta);
-  Filter trackFilter = (trackSelType.value == 0 && requireGlobalTrackWoDCAInFilter()) ||
-                       (trackSelType.value == 1 && requireGlobalTrackInFilter()) ||
-                       (trackSelType.value == 2) ||
-                       (trackSelType.value == 3);
+  Filter trackFilter = (trackSelType.value == 0 && requireGlobalTrackWoDCAInFilter()) || // o2-linter: disable=magic-number (filters)
+                       (trackSelType.value == 1 && requireGlobalTrackInFilter()) ||      // o2-linter: disable=magic-number (filters)
+                       (trackSelType.value == 2) ||                                      // o2-linter: disable=magic-number (filters)
+                       (trackSelType.value == 3);                                        // o2-linter: disable=magic-number (filters)
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
@@ -135,7 +135,7 @@ struct LfTreeCreatorNuclei {
   bool checkQuality(CollisionType const& /*collision*/, TrackType const& tracks)
   {
     bool out = kFALSE;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
 
       if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits) {
         continue;
@@ -214,7 +214,7 @@ struct LfTreeCreatorNuclei {
     if constexpr (isMC) {
       tableCandidateMC.reserve(tracks.size());
     }
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits) {
         continue;
       }
@@ -313,7 +313,7 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 0);
 
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        if (Tttrigger)
+        if (TvxTrigger)
           continue;
       } else {
         hEvents.fill(HIST("eventSelection"), 1);
@@ -349,7 +349,7 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 6);
 
       // Fill the norm. column with good events with |z| < 10 cm before skimming
-      if (collision.posZ() < 10 && collision.posZ() > -10) {
+      if (collision.posZ() < 10 && collision.posZ() > -10) { // o2-linter: disable=magic-number (10 cm vertex cut)
         hEvents.fill(HIST("eventSelection"), 7);
       }
 
@@ -371,7 +371,7 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 0);
 
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        if (Tttrigger)
+        if (TvxTrigger)
           continue;
       } else {
         hEvents.fill(HIST("eventSelection"), 1);

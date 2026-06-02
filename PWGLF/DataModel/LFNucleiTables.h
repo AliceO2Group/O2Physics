@@ -110,7 +110,7 @@ DECLARE_SOA_COLUMN(Beta, beta, float);
 // TPC and ITS QA
 DECLARE_SOA_COLUMN(PidForTracking, pidForTracking, uint8_t);
 DECLARE_SOA_COLUMN(ItsNCls, itsNCls, int16_t);
-DECLARE_SOA_COLUMN(TpcChi2Ncl, tpcChi2NCl, float);
+DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float);
 DECLARE_SOA_COLUMN(ItsChi2NCl, itsChi2NCl, float);
 DECLARE_SOA_COLUMN(TpcPassed, tpcPassed, bool);
 DECLARE_SOA_COLUMN(ItsPassed, itsPassed, bool);
@@ -160,14 +160,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofExpMom, tofExpMom,
                            [](bool /*b*/) -> float { return 0.f; });
 } // namespace dummy
 
-/*
-namespace fullMC
-{
-DECLARE_SOA_INDEX_COLUMN(LfNuclEvent, lfCandNucleusFullEvent);
-DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
-}
-*/
-
 DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   o2::soa::Index<>,
                   full::LfNuclEventId,
@@ -190,7 +182,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
-                  full::TpcChi2Ncl,
+                  full::TpcChi2NCl,
                   full::ItsChi2NCl,
                   track::ITSClusterMap,
                   full::IsPVContributor,
@@ -223,7 +215,7 @@ DECLARE_SOA_TABLE_VERSIONED(LfCandNucleusDummy, "AOD", "LFNUCL", 1,
                             track::TPCNClsFindable,
                             track::TPCNClsFindableMinusFound,
                             track::TPCNClsFindableMinusCrossedRows,
-                            full::TpcChi2Ncl,
+                            full::TpcChi2NCl,
                             full::ItsChi2NCl,
                             track::ITSClusterMap,
                             full::IsPVContributor,
