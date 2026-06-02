@@ -17,7 +17,7 @@
 ///
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch> and Francesca Bellini <fbellini@cern.ch>
 
-// o2-linter: disable=name/workflow-file
+// o2-linter: disable=name/workflow-file (not a workout)
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
