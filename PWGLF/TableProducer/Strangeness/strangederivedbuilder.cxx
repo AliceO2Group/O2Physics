@@ -573,30 +573,30 @@ struct strangederivedbuilder {
                                  collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
                                  collision.multPVTotalContributors() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
                                  collision.multNTracksGlobal() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                                 collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                                 collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                                 collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                                 collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                                 collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                                 collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                                 collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                                 collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                                 collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                                 collision.trackOccupancyInTimeRange(),
-                                 collision.ft0cOccupancyInTimeRange(),
-                                 // UPC info
-                                 gapSide,
-                                 totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
-                                 totalFDDAmplitudeA, totalFDDAmplitudeC,
-                                 energyCommonZNA, energyCommonZNC,
                                  // Collision flags
                                  collision.flags(),
                                  collision.alias_raw(),
                                  collision.rct_raw());
-          products.strangeEvSelExtras(timeZNA, timeZNC,                    // ZDC info
-                                      timeFDDA, timeFDDC,                  // FDD info
-                                      timeFV0A,                            // FV0A info
-                                      timeFT0A, timeFT0C, ft0TriggerMask); // FT0 info
+          products.strangeEvSelExtras(collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                      collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                      collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                      collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                      collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                      collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                      collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                      collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                      collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                      collision.trackOccupancyInTimeRange(),
+                                      collision.ft0cOccupancyInTimeRange(),
+                                      timeFDDA, timeFDDC,                 // FDD info
+                                      timeFV0A,                           // FV0A info
+                                      timeFT0A, timeFT0C, ft0TriggerMask, // FT0 info
+                                      // UPC info
+                                      gapSide,
+                                      totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
+                                      totalFDDAmplitudeA, totalFDDAmplitudeC,
+                                      timeZNA, timeZNC, // ZDC info
+                                      energyCommonZNA, energyCommonZNC);
         } else {                                                           // We are in Run 2
           products.strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
                                     collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
