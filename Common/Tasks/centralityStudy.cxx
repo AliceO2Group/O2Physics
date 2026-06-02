@@ -400,14 +400,14 @@ struct centralityStudy {
       LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
       TList* hCalibObjects = ccdb->getForRun<TList>(ccdbSettings.pathVertexZ, mRunNumber);
 
-      hVtxZFV0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
-      hVtxZFT0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
-      hVtxZFT0C = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
-      // hVtxZFDDA = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
-      // hVtxZFDDC = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
-      hVtxZNTracks = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
-      hVtxZNGlobals = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
-      hVtxZMFT = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
+      hVtxZFV0A = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
+      hVtxZFT0A = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
+      hVtxZFT0C = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
+      // hVtxZFDDA = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
+      // hVtxZFDDC = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
+      hVtxZNTracks = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
+      hVtxZNGlobals = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
+      hVtxZMFT = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
 
       // Capture error
       if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks || !hVtxZNGlobals || !hVtxZMFT) {
