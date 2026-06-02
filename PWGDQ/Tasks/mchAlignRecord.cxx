@@ -113,7 +113,7 @@ struct mchAlignRecordTask {
                                               "List of param mask for d.o.f to be fixed"};
   } fFixDetElem;
 
-  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   void init(InitContext& ic)
   {

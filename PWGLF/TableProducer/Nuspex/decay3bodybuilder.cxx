@@ -806,7 +806,7 @@ struct decay3bodyBuilder {
           if (!doStoreMcBkg) {
             continue; // if not storing MC background, skip candidates where at least one daughter is not matched to MC particle
           } else {
-            this3BodyMCInfo.motherLabel = -5; // at least one non-matched daughter
+            this3BodyMCInfo.motherLabel = -5; // at least one of the daughters not matched to MC particle
             // fill analysis table (only McVtx3BodyDatas is filled here)
             fillAnalysisTables();
           }
@@ -1200,10 +1200,11 @@ struct decay3bodyBuilder {
     // global mother ID: proton, pion, and deuteron have common mother and it's a hypertriton
 
     // first, check identity of MC daughters
-    if (std::abs(mcParticlePr.pdgCode()) != PDG_t::kProton || std::abs(mcParticleDe.pdgCode()) != o2::constants::physics::Pdg::kDeuteron || (std::abs(mcParticlePi.pdgCode()) != PDG_t::kPiPlus && std::abs(mcParticlePi.pdgCode()) != PDG_t::kMuonMinus)) {
-      return -4;
+    if (std::abs(mcParticlePr.pdgCode()) != PDG_t::kProton || (std::abs(mcParticlePi.pdgCode()) != PDG_t::kPiPlus && std::abs(mcParticlePi.pdgCode()) != PDG_t::kMuonMinus)) {
+      return -4; // at least one of the daughters has wrong identity (in this case it's either proton or pion wrong identity)
     }
-    // check if the pion track is a muon coming from a pi -> mu + vu decay, if yes, take the mother pi
+    // --> now the proton is a proton and the pion is either a pi+ or a muon
+    // check if the pion track is a muon coming from a pi -> mu + vu decay, if yes, take the mother pi, if not, fill as background
     auto mcParticlePiTmp = mcParticlePi;
     if (std::abs(mcParticlePiTmp.pdgCode()) == PDG_t::kMuonMinus) {
       bool isMuonReco = false;
@@ -1216,9 +1217,10 @@ struct decay3bodyBuilder {
       }
       // If the track is a muon but none of its mothers is a pi+, treat as wrong identity
       if (!isMuonReco) {
-        return -4;
+        return -4; // at least one of the daughters has wrong identity (in this case it's pion wrong identity)
       }
     }
+    // --> now proton and pion have correct identity
 
     // now first check if the proton and pion have the same mother and it is a Lambda
     for (const auto& motherPr : mcParticlePr.template mothers_as<aod::McParticles>()) {
@@ -1228,6 +1230,13 @@ struct decay3bodyBuilder {
         }
       }
     }
+    // --> now proton and pion have correct identity and are not from a common mother Lambda
+
+    // now check if deuteron has correct identity
+    if (std::abs(mcParticleDe.pdgCode()) != o2::constants::physics::Pdg::kDeuteron) {
+      return -4; // at least one daughter has wrong identity (in this case it's the deuteron)
+    }
+    // --> now the deuteron has correct identity
 
     // now check if all three daughters have the same mother
     int momID = -1;

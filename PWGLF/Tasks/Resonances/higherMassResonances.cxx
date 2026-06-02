@@ -177,8 +177,8 @@ struct HigherMassResonances {
     // Other cuts on Ks and glueball
     Configurable<bool> isapplyCompetingcut{"isapplyCompetingcut", false, "Competing cascade rejection cut"};
     Configurable<float> competingcascrejlambda{"competingcascrejlambda", 0.005, "rejecting competing cascade lambda"};
-    Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
-    Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
+    // Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
+    // Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
 
     // // Mass and pT axis as configurables
@@ -664,12 +664,12 @@ struct HigherMassResonances {
       return false;
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 1.5);
 
-    if (track.tpcNClsCrossedRows() < config.tpcCrossedrows)
-      return false;
+    // if (track.tpcNClsCrossedRows() < config.tpcCrossedrows)
+    //   return false;
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 2.5);
 
-    if (track.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls)
-      return false;
+    // if (track.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls)
+    //   return false;
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 3.5);
 
     if (tpcNClsF < config.confDaughTPCnclsMin) {
@@ -725,7 +725,7 @@ struct HigherMassResonances {
     return std::sqrt(d1 * d1 + d2 * d2);
   }
 
-  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
+  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>;
   using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
   // using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
   using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
@@ -743,16 +743,16 @@ struct HigherMassResonances {
       return false;
     }
 
-    if (posTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows || negTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows) {
-      return false;
-    }
+    // if (posTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows || negTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows) {
+    //   return false;
+    // }
 
     if (posTrackExtra.tpcNClsFound() < config.confDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < config.confDaughTPCnclsMin) {
       return false;
     }
-    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls || negTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls) {
-      return false;
-    }
+    // if (posTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls || negTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls) {
+    //   return false;
+    // }
 
     // check TPC PID
     if (((std::abs(posTrackExtra.tpcNSigmaPi()) > config.confDaughPIDCutTPC) || (std::abs(negTrackExtra.tpcNSigmaPi()) > config.confDaughPIDCutTPC))) {

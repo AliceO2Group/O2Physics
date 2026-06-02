@@ -166,6 +166,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
     ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
     ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
+    Configurable<bool> confIsDebug{"confIsDebug", true, "Fill additional histograms"};
   } twotracksconfigs;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
@@ -492,6 +493,11 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
+    if (twotracksconfigs.confIsDebug) {
+      qaRegistry.add("Tracks_one/hPtpcVsP", ";p GeV/c; (p_{TPC}-p)/p", kTH2F, {{800, 0, 4}, {400, -1, 1}});
+      qaRegistry.add("Tracks_two/hPtpcVsP", ";p GeV/c; (p_{TPC}-p)/p", kTH2F, {{800, 0, 4}, {400, -1, 1}});
+    }
+
     mass1 = pdg->Mass(trackonefilter.confPDGCodePartOne);
     mass2 = pdg->Mass(tracktwofilter.confPDGCodePartTwo);
 
@@ -582,6 +588,9 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
         trackHistoPartOne.fillQAMisIden<isMC, true>(part, trackonefilter.confPDGCodePartOne);
+        if (twotracksconfigs.confIsDebug) {
+          qaRegistry.fill(HIST("Tracks_one/hPtpcVsP"), part.p(), (part.tpcInnerParam() - part.p()) / part.p());
+        }
       }
     }
 
@@ -591,6 +600,9 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, true>(part);
+        if (twotracksconfigs.confIsDebug) {
+          qaRegistry.fill(HIST("Tracks_two/hPtpcVsP"), part.p(), (part.tpcInnerParam() - part.p()) / part.p());
+        }
       }
     }
 

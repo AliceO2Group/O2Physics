@@ -222,6 +222,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+using MyEventsMultExtraNoQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
@@ -265,6 +266,7 @@ constexpr static uint32_t gkEventFillMapWithCovZdcFit = VarManager::ObjTypes::Re
 constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra;
 // New fillmap
 constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::CollisionQvect;
+// constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkEventFillMapWithMultExtraZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithMultExtraZdcFit = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc | VarManager::ReducedFit;
 constexpr static uint32_t gkEventFillMapWithCovZdcFitMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedFit | VarManager::ReducedEventMultExtra;
@@ -336,7 +338,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -578,6 +580,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithMultExtra>(events);
     publishSelections<gkEventFillMapWithMultExtra>(events);
   }
+  void processSkimmedWithMultExtraNoQvector(MyEventsMultExtraNoQvector const& events)
+  {
+    runEventSelection<gkEventFillMapWithMultExtra>(events);
+    publishSelections<gkEventFillMapWithMultExtra>(events);
+  }
   void processSkimmedWithMultExtraZdc(MyEventsMultExtraZdc const& events)
   {
     runEventSelection<gkEventFillMapWithMultExtraZdc>(events);
@@ -615,6 +622,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedBasic, "Run event selection on DQ skimmed events with basic tables", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraNoQvector, "Run event selection on DQ skimmed events, with mult extra and without Q-vector", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
@@ -1389,8 +1397,8 @@ struct AnalysisSameEventPairing {
   {
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
-    fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow") || context.mOptions.get<bool>("processMixingMuonSkimmed");
-    fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed");
+    fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow");
+    fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmedFlow");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
     fEnableBarrelMuonMixingHistos = context.mOptions.get<bool>("processMixingElectronMuonSkimmed");
 
@@ -1793,19 +1801,23 @@ struct AnalysisSameEventPairing {
     uint32_t dileptonMcDecision = static_cast<uint32_t>(0); // placeholder, copy of the dqEfficiency.cxx one
     int sign1 = 0;
     int sign2 = 0;
-    dielectronList.reserve(1);
-    dimuonList.reserve(1);
-    dielectronsExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dimuonsExtraList.reserve(1);
-    dileptonInfoList.reserve(1);
-    dileptonFlowList.reserve(1);
+    // Reserve capacity for the output tables to avoid repeated reallocations
+    // inside the Arrow builders.  Unused capacity is virtual address space
+    // only — pages are not faulted in until written.
+    auto nAssocs = assocs.size();
+    dielectronList.reserve(nAssocs);
+    dimuonList.reserve(nAssocs);
+    dielectronsExtraList.reserve(nAssocs);
+    dielectronInfoList.reserve(nAssocs);
+    dimuonsExtraList.reserve(nAssocs);
+    dileptonInfoList.reserve(nAssocs);
+    dileptonFlowList.reserve(nAssocs);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
-      dimuonAllList.reserve(1);
+      dielectronAllList.reserve(nAssocs);
+      dimuonAllList.reserve(nAssocs);
     }
     if (fConfigOptions.polarTables.value) {
-      dileptonPolarList.reserve(1);
+      dileptonPolarList.reserve(nAssocs);
     }
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
@@ -2106,9 +2118,9 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
                 if (isAmbiExtra) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
                 }
               }
             } else {
@@ -2128,9 +2140,9 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
                   }
                 }
               } else {
@@ -2149,9 +2161,9 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                    fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
                   }
                 }
               }
@@ -2220,6 +2232,9 @@ struct AnalysisSameEventPairing {
             continue;
           VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
+            VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
+          }
+          if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
             VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
           }
           pairSign = t1.sign() + t2.sign();
@@ -2384,7 +2399,7 @@ struct AnalysisSameEventPairing {
     const auto& histNames = fTrackMuonHistNames;
     int nPairCuts = (fPairCuts.size() > 0) ? fPairCuts.size() : 1;
 
-    electronmuonList.reserve(1);
+    electronmuonList.reserve(assocs1.size());
 
     uint32_t twoTrackFilter = 0;
     int sign1 = 0;
@@ -2691,7 +2706,7 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
-  void processMixingMuonSkimmedFlow(soa::Filtered<MyEventsVtxCovSelectedQvectorWithHash>& events,
+  void processMixingMuonSkimmedFlow(soa::Filtered<MyEventsHashSelectedQvectorCentr>& events,
                                     soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameSideMixing<pairTypeMuMu, gkEventFillMapWithMultExtraWithQVector>(events, muonAssocs, muons, muonAssocsPerCollision);
@@ -3081,7 +3096,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/)
+  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
   {
     fPairCount.clear();
 
@@ -3094,8 +3109,8 @@ struct AnalysisAsymmetricPairing {
 
     int sign1 = 0;
     int sign2 = 0;
-    ditrackList.reserve(1);
-    ditrackExtraList.reserve(1);
+    ditrackList.reserve(assocs.size());
+    ditrackExtraList.reserve(assocs.size());
 
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 

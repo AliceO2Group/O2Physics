@@ -42,6 +42,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH3.h>
 #include <THnSparse.h>
 #include <TMath.h>
 #include <TRandom3.h>

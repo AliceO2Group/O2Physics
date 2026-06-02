@@ -132,7 +132,7 @@ struct JetMatching {
 
 struct AntinucleiInJets {
 
-  // Random engine
+  // Random engine (Mersenne Twister)
   std::mt19937 rng;
   std::uniform_int_distribution<int> generateRandomNr{0, 1};
 
@@ -171,8 +171,7 @@ struct AntinucleiInJets {
   Configurable<double> ptLeadingMin{"ptLeadingMin", 5.0, "pt Leading Min"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
-  Configurable<bool> applyAreaCut{"applyAreaCut", true, "apply area cut"};
-  Configurable<double> maxNormalizedJetArea{"maxNormalizedJetArea", 1.0, "area cut"};
+  Configurable<bool> applyAreaCut{"applyAreaCut", false, "apply area cut A > f * pi R^2"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
   Configurable<int> nSyst{"nSyst", 50, "number of systematic variations"};
   Configurable<int> nSubsamples{"nSubsamples", 50, "number of subsamples"};
@@ -1296,25 +1295,21 @@ struct AntinucleiInJets {
         continue;
 
       // Apply area cut if required
-      double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-      if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
-        continue;
-      if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
+      if (applyAreaCut && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
         continue;
       isAtLeastOneJetSelected = true;
 
+      // Fill histograms with jet effective area / piR^2 for normalization
+      registryData.fill(HIST("jetEffectiveAreaOverPiR2"), jet.area() / (PI * rJet * rJet));
+      registryData.fill(HIST("jetArea"), jet.area());
+
       // Perpendicular cones
-      double coneRadius = std::sqrt(jet.area() / PI);
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
       TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
       if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
         continue;
       }
-
-      // Fill histogram with jet effective area / piR^2
-      registryData.fill(HIST("jetEffectiveAreaOverPiR2"), jet.area() / (PI * rJet * rJet));
-      registryData.fill(HIST("jetArea"), jet.area());
 
       // Get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -1427,14 +1422,8 @@ struct AntinucleiInJets {
         double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-        // Determine the maximum allowed distance from UE axes for particle selection
-        double maxConeRadius = coneRadius;
-        if (applyAreaCut) {
-          maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
-        }
-
         // Reject tracks that lie outside the maxConeRadius from both UE axes
-        if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
+        if (deltaRUe1 > rJet && deltaRUe2 > rJet)
           continue;
 
         // Define variables
@@ -1590,8 +1579,7 @@ struct AntinucleiInJets {
         continue;
 
       // Apply area cut if required
-      double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-      if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+      if (applyAreaCut && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
         continue;
       isAtLeastOneJetSelected = true;
     }
@@ -1672,7 +1660,6 @@ struct AntinucleiInJets {
       // Jet properties and perpendicular cone
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-      double coneRadius = std::sqrt(jet.area() / PI);
       TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
       if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
@@ -1704,7 +1691,7 @@ struct AntinucleiInJets {
         double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
         double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-        if (deltaRUe1 > coneRadius && deltaRUe2 > coneRadius)
+        if (deltaRUe1 > rJet && deltaRUe2 > rJet)
           continue;
 
         ptPerp = ptPerp + track.pt();
@@ -2136,10 +2123,7 @@ struct AntinucleiInJets {
           continue;
 
         // Apply area cut if required
-        double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
-          continue;
-        if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
+        if (applyAreaCut && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -2181,7 +2165,6 @@ struct AntinucleiInJets {
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        double coneRadius = std::sqrt(jet.area() / PI);
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
@@ -2199,14 +2182,8 @@ struct AntinucleiInJets {
           double deltaPhiUe2 = getDeltaPhi(protonVec.Phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          // Determine the maximum allowed distance from UE axes for particle selection
-          double maxConeRadius = coneRadius;
-          if (applyAreaCut) {
-            maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
-          }
-
           // Reject tracks that lie outside the maxConeRadius from both UE axes
-          if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
+          if (deltaRUe1 > rJet && deltaRUe2 > rJet)
             continue;
 
           // Fill normalization histogram
@@ -2393,10 +2370,7 @@ struct AntinucleiInJets {
           continue;
 
         // Apply area cut if required
-        double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
-          continue;
-        if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
+        if (applyAreaCut && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -2404,7 +2378,6 @@ struct AntinucleiInJets {
         registryMC.fill(HIST("recJets"), 0.5);
 
         // Set up two perpendicular cone axes for underlying event estimation
-        double coneRadius = std::sqrt(jet.area() / PI);
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
@@ -2550,14 +2523,8 @@ struct AntinucleiInJets {
           double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          // Determine the maximum allowed distance from UE axes for particle selection
-          double maxConeRadius = coneRadius;
-          if (applyAreaCut) {
-            maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
-          }
-
           // Reject tracks that lie outside the maxConeRadius from both UE axes
-          if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
+          if (deltaRUe1 > rJet && deltaRUe2 > rJet)
             continue;
 
           // Particle identification using the ITS cluster size
@@ -3753,8 +3720,7 @@ struct AntinucleiInJets {
           continue;
 
         // Apply area cut if required
-        double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+        if (applyAreaCut && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -3769,7 +3735,6 @@ struct AntinucleiInJets {
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-        double coneRadius = std::sqrt(jet.area() / PI);
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
         getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
@@ -3791,14 +3756,8 @@ struct AntinucleiInJets {
           double deltaPhiUe2 = getDeltaPhi(chParticle.phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          // Determine the maximum allowed distance from UE axes for particle selection
-          double maxConeRadius = coneRadius;
-          if (applyAreaCut) {
-            maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
-          }
-
           // Reject tracks that lie outside the maxConeRadius from both UE axes
-          if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
+          if (deltaRUe1 > rJet && deltaRUe2 > rJet)
             continue;
 
           // Fill histograms for UE
@@ -4121,7 +4080,7 @@ struct AntinucleiInJets {
           continue;
 
         // Apply area cut if required
-        if (applyAreaCut && (jetRec.area() / (PI * rJet * rJet)) > maxNormalizedJetArea)
+        if (applyAreaCut && (jetRec.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
 
         // Clear jet-pair container
@@ -4134,7 +4093,7 @@ struct AntinucleiInJets {
             continue;
 
           // Apply area cut if required
-          if (applyAreaCut && (jetGen.area() / (PI * rJet * rJet)) > maxNormalizedJetArea)
+          if (applyAreaCut && (jetGen.area() < cfgAreaFrac * PI * rJet * rJet))
             continue;
 
           double deltaEta = jetGen.eta() - jetRec.eta();
