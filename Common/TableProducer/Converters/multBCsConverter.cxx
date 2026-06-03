@@ -44,9 +44,8 @@ struct MultBCsConverter {
         multbc.multZEM2(),
         multbc.multZPA(),
         multbc.multZPC(),
-        DummyValue, // dummy amplitude for FV0A Outer
-        DummyValue  // dummy amplitude for FT0A Outer
-      );
+        DummyValue,  // dummy amplitude for FV0A Outer
+        DummyValue); // dummy amplitude for FT0A Outer
 
       multBcSel(
         multbc.selection_raw(),
