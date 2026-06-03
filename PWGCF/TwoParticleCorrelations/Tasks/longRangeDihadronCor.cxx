@@ -221,7 +221,7 @@ struct LongRangeDihadronCor {
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
-  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgGeneral.cfgEtaTpcCut || ((aod::mcparticle::eta > cfgGeneral.cfgMinEtaFt0Cut) && (aod::mcparticle::eta < cfgGeneral.cfgMaxEtaFt0Cut))) && (aod::mcparticle::pt > cfgGeneral.cfgCutPtMin) && (aod::mcparticle::pt < cfgGeneral.cfgCutPtMax);
+  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgGeneral.cfgEtaTpcCut || ((aod::mcparticle::eta > cfgGeneral.cfgMinEtaFt0Cut) && (aod::mcparticle::eta < cfgGeneral.cfgMaxEtaFt0Cut)));
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
   // Filter for MCcollisions
@@ -1149,6 +1149,9 @@ struct LongRangeDihadronCor {
       if (corType == kFT0C && cfgGeneral.cfgUseFt0Structure && !ft0cCollisionCourse(track1.eta(), track1.phi(), posZ)) {
         continue;
       }
+      if (track1.pt() < cfgGeneral.cfgCutPtMin || track1.pt() > cfgGeneral.cfgCutPtMax) {
+        continue;
+      }
       if (corType == kFT0A && !cfgGeneral.cfgUseFt0Structure) {
         if (std::abs(track1.eta()) < tpcEtaAcceptance)
           continue;
@@ -1184,20 +1187,20 @@ struct LongRangeDihadronCor {
         // fill the right sparse and histograms
         if (system == SameEvent) {
           if (corType == kFT0C) {
-            sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track2.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+            sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           }
           if (corType == kFT0A) {
-            sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track2.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+            sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           }
         } else if (system == MixedEvent) {
           if (corType == kFT0C) {
-            mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track2.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+            mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           }
           if (corType == kFT0A) {
-            mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track2.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+            mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           }
         }
