@@ -31,6 +31,8 @@ struct MultBCsConverter {
   static constexpr int DummyRct = 0;
   void process(soa::Join<aod::MultBCs_000, aod::MultBcSel_000> const& multBCs)
   {
+    multBC.reserve(multBCs.size());
+    multBcSel.reserve(multBCs.size());
     for (const auto& multbc : multBCs) {
       multBC(
         multbc.multFT0A(),
