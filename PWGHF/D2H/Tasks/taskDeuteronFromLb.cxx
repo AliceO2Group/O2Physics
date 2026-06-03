@@ -74,6 +74,10 @@ struct HfTaskDeuteronFromLb {
   Configurable<float> cfgDCAmin{"cfgDCAmin", 0.05f, "Minimum DCA for deuteron PID"};
   Configurable<float> cfgDCAmax{"cfgDCAmax", 1000.0f, "Maximum DCA for deuteron PID"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5f, "Rapidity cut"};
+  ConfigurableAxis ptAxis{"ptAxis", {100, 0., 10.f}, "p_{T} GeV/c"};
+  ConfigurableAxis nSigmaAxis{"nSigmaAxis", {200, -10.f, 10.f}, "nSigma"};
+  ConfigurableAxis dcaXyAxis{"dcaXyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
+  ConfigurableAxis dcaZAxis{"dcaZAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
   // PDG codes
   Configurable<int> pdgCodeMother{"pdgCodeMother", -5122, "PDG code of the mother particle (default: anti-Lambda_b)"};
   Configurable<int> pdgCodeDaughter{"pdgCodeDaughter", -1000010020, "PDG code of the daughter particle (default: anti-deuteron)"};
