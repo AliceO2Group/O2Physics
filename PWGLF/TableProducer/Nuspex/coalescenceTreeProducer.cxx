@@ -95,7 +95,7 @@ struct CoalescenceTreeProducer {
   Long64_t nMatterCandidatesPerEvent = 0;     // Number of matter candidates per event
   Long64_t nAntimatterCandidatesPerEvent = 0; // Number of antimatter candidates per event
   Long64_t idB1 = 0, idB2 = 0, idB3 = 0;      // Constituent identifiers
-  int pdgB1 = 0, pdgB2 = 0, pdgB3 = 0;       // Constituent PDG codes
+  int pdgB1 = 0, pdgB2 = 0, pdgB3 = 0;        // Constituent PDG codes
 
   // Constituent space-time coordinates and momentum components
   float xB1 = 0.f, yB1 = 0.f, zB1 = 0.f, tB1 = 0.f, pxB1 = 0.f, pyB1 = 0.f, pzB1 = 0.f;
@@ -276,7 +276,7 @@ struct CoalescenceTreeProducer {
         if (std::abs(particle.pdgCode()) == PDG_t::kLambda0) {
           lambdas.push_back({particle.globalIndex(), particle.pdgCode(), particle.vx(), particle.vy(), particle.vz(), particle.vt(), particle.px(), particle.py(), particle.pz()});
         }
-      }// end of loop over MC particles
+      } // end of loop over MC particles
 
       // Reject events that do not contain at least one proton, one neutron, and one lambda
       if (protons.empty() || neutrons.empty() || lambdas.empty())
@@ -371,7 +371,7 @@ struct CoalescenceTreeProducer {
           }
         }
       }
-    }// end of loop over mc collisions
+    } // end of loop over mc collisions
   }
   PROCESS_SWITCH(CoalescenceTreeProducer, processHypertriton, "process hypertriton", true);
 };
