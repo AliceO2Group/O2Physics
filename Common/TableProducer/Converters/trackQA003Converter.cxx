@@ -25,6 +25,7 @@ struct TrackQAConverter003 {
 
   void process000(aod::TracksQA_000 const& tracksQA_000)
   {
+    tracksQA_003.reserve(tracksQA_000.size());
     for (const auto& trackQA : tracksQA_000) {
       tracksQA_003(
         trackQA.trackId(),
@@ -60,6 +61,7 @@ struct TrackQAConverter003 {
 
   void process001(aod::TracksQA_001 const& tracksQA_001)
   {
+    tracksQA_003.reserve(tracksQA_001.size());
     for (const auto& trackQA : tracksQA_001) {
       tracksQA_003(
         trackQA.trackId(),
@@ -95,6 +97,7 @@ struct TrackQAConverter003 {
 
   void process002(aod::TracksQA_002 const& tracksQA_002)
   {
+    tracksQA_003.reserve(tracksQA_002.size());
     for (const auto& trackQA : tracksQA_002) {
       tracksQA_003(
         trackQA.trackId(),
