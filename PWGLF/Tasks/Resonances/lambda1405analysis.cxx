@@ -35,9 +35,13 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TF1.h>
+
 #include <array>
 #include <cmath>
 #include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
