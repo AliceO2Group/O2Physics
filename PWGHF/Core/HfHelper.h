@@ -174,16 +174,16 @@ struct HfHelper {
   template <typename T>
   static auto invMassBplusToJpsiK(const T& candidate, const bool useJpsiPdgMass)
   {
-    const std::array pVecMuPos{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
-    const std::array pVecMuNeg{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
-    const std::array pVecKa{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
+    auto const pVecMuPos = candidate.pVectorProng0();
+    auto const pVecMuNeg = candidate.pVectorProng1();
+    auto const pVecKa = candidate.pVectorProng2();
     if (useJpsiPdgMass) {
       return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), pVecKa},
                           std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus});
-    } else {
-      return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecKa},
-                          std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
     }
+    // Do not use PDG mass for J/psi
+    return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecKa},
+                        std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
@@ -695,23 +695,25 @@ struct HfHelper {
   template <typename T>
   static auto invMassBsToJpsiPhi(const T& candidate, const bool useJpsiPdgMass, const bool usePhiPdgMass)
   {
-    const std::array pVecMuPos{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
-    const std::array pVecMuNeg{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
-    const std::array pVecKaPos{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
-    const std::array pVecKaNeg{candidate.pxProng3(), candidate.pyProng3(), candidate.pzProng3()};
+    auto const pVecMuPos = candidate.pVectorProng0();
+    auto const pVecMuNeg = candidate.pVectorProng1();
+    auto const pVecKaPos = candidate.pVectorProng2();
+    auto const pVecKaNeg = candidate.pVectorProng3();
     if (useJpsiPdgMass && usePhiPdgMass) {
       return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), RecoDecay::pVec(pVecKaPos, pVecKaNeg)},
                           std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassPhi});
-    } else if (useJpsiPdgMass && !usePhiPdgMass) {
+    }
+    if (useJpsiPdgMass && !usePhiPdgMass) {
       return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), pVecKaPos, pVecKaNeg},
                           std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
-    } else if (!useJpsiPdgMass && usePhiPdgMass) {
+    }
+    if (!useJpsiPdgMass && usePhiPdgMass) {
       return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, RecoDecay::pVec(pVecKaPos, pVecKaNeg)},
                           std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPhi});
-    } else {
-      return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecKaPos, pVecKaNeg},
-                          std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     }
+    // Do not use PDG mass for either J/psi or phi
+    return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecKaPos, pVecKaNeg},
+                        std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
@@ -937,9 +939,9 @@ struct HfHelper {
   {
     auto ptCandBp = candBp.pt();
     auto mCandBp = invMassBplusToJpsiK(candBp, useJpsiPdgMass);
-    std::array<float, 3> const pVecMu0 = {candBp.pxProng0(), candBp.pyProng0(), candBp.pzProng0()};
-    std::array<float, 3> const pVecMu1 = {candBp.pxProng1(), candBp.pyProng1(), candBp.pzProng1()};
-    std::array<float, 3> const pVecKa = {candBp.pxProng2(), candBp.pyProng2(), candBp.pzProng2()};
+    auto const pVecMu0 = candBp.pVectorProng0();
+    auto const pVecMu1 = candBp.pVectorProng1();
+    auto const pVecKa = candBp.pVectorProng2();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptKa = RecoDecay::pt(pVecKa);
     auto candJpsi = candBp.jpsi();
@@ -1127,10 +1129,10 @@ struct HfHelper {
   {
     auto ptCandBs = candBs.pt();
     auto mCandBs = invMassBsToJpsiPhi(candBs, useJpsiPdgMass, usePhiPdgMass);
-    std::array<float, 3> const pVecMu0 = {candBs.pxProng0(), candBs.pyProng0(), candBs.pzProng0()};
-    std::array<float, 3> const pVecMu1 = {candBs.pxProng1(), candBs.pyProng1(), candBs.pzProng1()};
-    std::array<float, 3> const pVecKa0 = {candBs.pxProng2(), candBs.pyProng2(), candBs.pzProng2()};
-    std::array<float, 3> const pVecKa1 = {candBs.pxProng3(), candBs.pyProng3(), candBs.pzProng3()};
+    auto const pVecMu0 = candBs.pVectorProng0();
+    auto const pVecMu1 = candBs.pVectorProng1();
+    auto const pVecKa0 = candBs.pVectorProng2();
+    auto const pVecKa1 = candBs.pVectorProng3();
     auto mCandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptKa0 = RecoDecay::pt(pVecKa0);

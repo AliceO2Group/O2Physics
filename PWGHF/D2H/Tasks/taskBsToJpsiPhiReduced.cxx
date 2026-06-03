@@ -374,10 +374,10 @@ struct HfTaskBsToJpsiPhiReduced {
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa0 = candidate.template prong0Phi_as<aod::HfRedBach0Tracks>();
     auto candKa1 = candidate.template prong1Phi_as<aod::HfRedBach1Tracks>();
-    std::array<float, 3> const pVecMu0 = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
-    std::array<float, 3> const pVecMu1 = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
-    std::array<float, 3> const pVecKa0 = {candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
-    std::array<float, 3> const pVecKa1 = {candidate.pxProng3(), candidate.pyProng3(), candidate.pzProng3()};
+    auto const pVecMu0 = candidate.pVectorProng0();
+    auto const pVecMu1 = candidate.pVectorProng1();
+    auto const pVecKa0 = candidate.pVectorProng2();
+    auto const pVecKa1 = candidate.pVectorProng3();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptPhi = RecoDecay::pt(pVecKa0, pVecKa1);
     auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});

@@ -343,8 +343,8 @@ struct HfTaskBplusToJpsiKReduced {
     auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate, useJpsiPdgMass);
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
-    std::array<float, 3> const pVecMu0 = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
-    std::array<float, 3> const pVecMu1 = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
+    auto const pVecMu0 = candidate.pVectorProng0();
+    auto const pVecMu1 = candidate.pVectorProng1();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     uint8_t statusBplus = 0;
