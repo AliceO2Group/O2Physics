@@ -161,12 +161,12 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> downscaling_pion_midP{"downscaling_pion_midP", 0.1, "down scaling factor to store pion at intermediate p"};
 
   Configurable<float> downscaling_electron_lowP{"downscaling_electron_lowP", 0.005, "down scaling factor to store electron at low p"};
-  Configurable<float> downscaling_pion_lowP{"downscaling_pion_lowP", 0.001, "down scaling factor to store pion at low p"};
+  Configurable<float> downscaling_pion_lowP{"downscaling_pion_lowP", 0.01, "down scaling factor to store pion at low p"};
   Configurable<float> downscaling_kaon_lowP{"downscaling_kaon_lowP", 1.1, "down scaling factor to store kaon at low p"};
   Configurable<float> downscaling_proton_lowP{"downscaling_proton_lowP", 0.002, "down scaling factor to store proton at low p"};
 
   Configurable<float> mid_p_for_downscaling_electron{"mid_p_for_downscaling_electron", 0.8, "intermediate p to apply down scaling factor to store electron"};
-  Configurable<float> mid_p_for_downscaling_pion{"mid_p_for_downscaling_pion", 0.2, "intermediate p to apply down scaling factor to store pion"};
+  Configurable<float> mid_p_for_downscaling_pion{"mid_p_for_downscaling_pion", 0.25, "intermediate p to apply down scaling factor to store pion"};
 
   Configurable<float> max_p_for_downscaling_electron{"max_p_for_downscaling_electron", 2.0, "max p to apply down scaling factor to store electron"};
   Configurable<float> max_p_for_downscaling_pion{"max_p_for_downscaling_pion", 0.4, "max p to apply down scaling factor to store pion"};
@@ -182,7 +182,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
     Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
-    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
