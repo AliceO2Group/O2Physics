@@ -159,10 +159,10 @@ struct Kstar892LightIon {
     Configurable<float> cfgFakeTrackCutKa{"cfgFakeTrackCutKa", 0.3, "Cut based on momentum difference in global and TPC tracks for kaons"};
     Configurable<float> cfgFakeTrackCutPi{"cfgFakeTrackCutPi", 0.3, "Cut based on momentum difference in global and TPC tracks for pions"};
 
-    Configurable<float> pionMIDpTlow{"pionMIDpTlow", 1.0, "Low pT cut for pion in MID"};
-    Configurable<float> pionMIDpThigh{"pionMIDpThigh", 2.5, "High pT cut for pion in MID"};
-    Configurable<float> kaonMIDpTlow{"kaonMIDpTlow", 0.7, "Low pT cut for kaon in MID"};
-    Configurable<float> kaonMIDpThigh{"kaonMIDpThigh", 2.5, "High pT cut for kaon in MID"};
+    Configurable<float> pionMIDpTLow{"pionMIDpTLow", 1.0, "Low pT cut for pion in MID"};
+    Configurable<float> pionMIDpTHigh{"pionMIDpTHigh", 2.5, "High pT cut for pion in MID"};
+    Configurable<float> kaonMIDpTLow{"kaonMIDpTLow", 0.7, "Low pT cut for kaon in MID"};
+    Configurable<float> kaonMIDpTHigh{"kaonMIDpTHigh", 2.5, "High pT cut for kaon in MID"};
 
     // Fixed variables
     float lowPtCutPID = 0.5;
@@ -217,7 +217,7 @@ struct Kstar892LightIon {
 
   int noOfDaughters = 2;
 
-  double pionPIDpTlow = 1.0, pionPIDpThigh = 2.5, kaonPIDpTlow = 0.7, kaonPIDpThigh = 2.5;
+  double pionPIDpTLow = 1.0, pionPIDpTHigh = 2.5, kaonPIDpTLow = 0.7, kaonPIDpTHigh = 2.5;
 
   TRandom* rn = new TRandom();
 
@@ -731,7 +731,7 @@ struct Kstar892LightIon {
   bool selectionPIDpTdepTOF(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
-      if (candidate.pt() < pionPIDpTlow || candidate.pt() > pionPIDpThigh) {
+      if (candidate.pt() < pionPIDpTLow || candidate.pt() > pionPIDpTHigh) {
         if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
           return true;
         }
@@ -747,7 +747,7 @@ struct Kstar892LightIon {
         }
       }
     } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() < kaonPIDpTlow || candidate.pt() > kaonPIDpThigh) {
+      if (candidate.pt() < kaonPIDpTLow || candidate.pt() > kaonPIDpTHigh) {
         if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
           return true;
         }
@@ -811,11 +811,11 @@ struct Kstar892LightIon {
   bool selectionMIDpTdep(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= selectionConfig.pionMIDpTlow && candidate.pt() < selectionConfig.pionMIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
+      if (candidate.pt() >= selectionConfig.pionMIDpTLow && candidate.pt() < selectionConfig.pionMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
         return true;
       }
     } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= selectionConfig.kaonMIDpTlow && candidate.pt() < selectionConfig.kaonMIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
+      if (candidate.pt() >= selectionConfig.kaonMIDpTLow && candidate.pt() < selectionConfig.kaonMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
         return true;
       }
     }
@@ -826,11 +826,11 @@ struct Kstar892LightIon {
   bool selectionMIDPtDepComp(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= selectionConfig.pionMIDpTlow && candidate.pt() < selectionConfig.pionMIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
+      if (candidate.pt() >= selectionConfig.pionMIDpTLow && candidate.pt() < selectionConfig.pionMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
         return true;
       }
     } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= selectionConfig.kaonMIDpTlow && candidate.pt() < selectionConfig.kaonMIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
+      if (candidate.pt() >= selectionConfig.kaonMIDpTLow && candidate.pt() < selectionConfig.kaonMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
         return true;
       }
     }
