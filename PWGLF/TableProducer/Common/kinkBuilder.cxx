@@ -65,10 +65,10 @@ using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs>;
 using McRecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>;
 
-enum KinkDecayType { kSigmaMinusToPiMinusNeutron = 0,
-                     kSigmaPlusToPiPlusNeutron,
-                     kSigmaPlusToProtonPi0,
-                     kNMatchedDecays };
+enum KinkDecayType { SigmaMinusToPiMinusNeutron = 0,
+                     SigmaPlusToPiPlusNeutron,
+                     SigmaPlusToProtonPi0,
+                     NMatchedDecays };
 
 namespace
 {
@@ -97,8 +97,8 @@ std::shared_ptr<TH2> hDCADaugToPV;
 std::shared_ptr<TH2> hMothDecRad2;
 std::shared_ptr<TH2> hGenCandidates;
 std::shared_ptr<TH2> hRecCandidates;
-std::array<std::shared_ptr<TH2>, kNMatchedDecays> hGenPtKinkAngle;
-std::array<std::shared_ptr<TH2>, kNMatchedDecays> hRecPtKinkAngle;
+std::array<std::shared_ptr<TH2>, NMatchedDecays> hGenPtKinkAngle;
+std::array<std::shared_ptr<TH2>, NMatchedDecays> hRecPtKinkAngle;
 } // namespace
 
 struct kinkCandidate {
@@ -362,21 +362,21 @@ struct kinkBuilder {
 
     if (doprocessMc || doprocessMcWCent) {
       if (skipBkgCands) {
-        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", "hRecCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays) - 0.5}, absPtAxis}});
+        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", "hRecCandidates;Counts;", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
         hRecCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
         hRecCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
         hRecCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
       }
-      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;", {HistType::kTH2F, {{kNMatchedDecays, -0.5, static_cast<float>(kNMatchedDecays) - 0.5}, absPtAxis}});
+      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
       hGenCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
       hGenCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
       hGenCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
-      hRecPtKinkAngle[kSigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaMinusToPiMinusNeutron", "Rec Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hRecPtKinkAngle[kSigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPiPlusNeutron", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hRecPtKinkAngle[kSigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToProtonPi0", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[kSigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaMinusToPiMinusNeutron", "Gen Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[kSigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPiPlusNeutron", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[kSigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToProtonPi0", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[SigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaMinusToPiMinusNeutron", "Rec Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[SigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPiPlusNeutron", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[SigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToProtonPi0", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[SigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaMinusToPiMinusNeutron", "Gen Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[SigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPiPlusNeutron", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[SigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToProtonPi0", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
     }
   }
 
@@ -727,7 +727,7 @@ struct kinkBuilder {
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiMinus : +PDG_t::kPiPlus;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug}; // Both decay channels have the same neutral daughter
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
-          return kSigmaMinusToPiMinusNeutron;
+          return SigmaMinusToPiMinusNeutron;
         }
         break;
       }
@@ -737,7 +737,7 @@ struct kinkBuilder {
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kPiPlus : +PDG_t::kPiMinus;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug};
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
-          return kSigmaPlusToPiPlusNeutron;
+          return SigmaPlusToPiPlusNeutron;
         }
 
         // Swap the sign of the neutral decay products in case of anti-particles
@@ -745,7 +745,7 @@ struct kinkBuilder {
         pdgCodeChargedDaug = (pdgMother > 0) ? +PDG_t::kProton : -PDG_t::kProton;
         finState = {pdgCodeChargedDaug, pdgCodeNeutralDaug};
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, motherPart, pdgMother, finState, true, &sign, DepthMcMatchMax)) {
-          return kSigmaPlusToProtonPi0;
+          return SigmaPlusToProtonPi0;
         }
         break;
       }
