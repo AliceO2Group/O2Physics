@@ -1207,6 +1207,11 @@ struct HigherMassResonances {
         }
       }
     }
+    int sizeofv0indexes = v0indexes.size();
+    rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
+    if (config.isselectTWOKsOnly && sizeofv0indexes == config.noOfDaughters && allConditionsMet) {
+      fillInvMass(mother, multiplicity, daughter1, daughter2, false);
+    }
     v0indexes.clear();
   }
   PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
@@ -1258,7 +1263,6 @@ struct HigherMassResonances {
     hglue.fill(HIST("EpResRefARefB"), multiplicity, resDenom);
 
     std::vector<int> v0indexes;
-    bool allConditionsMet = 0;
 
     for (const auto& [v1, v2] : combinations(CombinationsFullIndexPolicy(V0s, V0s))) {
 
@@ -1320,7 +1324,6 @@ struct HigherMassResonances {
         continue;
       }
         
-      allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
       daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
@@ -1369,11 +1372,6 @@ struct HigherMassResonances {
           }
         }
       }
-    }
-    int sizeofv0indexes = v0indexes.size();
-    rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
-    if (config.isselectTWOKsOnly && sizeofv0indexes == config.noOfDaughters && allConditionsMet) {
-      fillInvMass(mother, multiplicity, daughter1, daughter2, false);
     }
     v0indexes.clear();
   }
