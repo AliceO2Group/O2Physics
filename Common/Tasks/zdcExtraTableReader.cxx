@@ -32,13 +32,14 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <THn.h>
 #include <TList.h>
 #include <TMath.h>
 #include <TProfile3D.h>
+
+#include <Rtypes.h>
 
 #include <memory>
 #include <string>
@@ -247,9 +248,9 @@ struct ZdcExtraTableReader {
 
   Configurable<bool> ifBeamSpotCorrection{"ifBeamSpotCorrection", true, "Beam spot correction"};
 
-  Configurable<bool> ifSel8{"ifSel8", true, "Event selection: sel8"};
-  Configurable<bool> ifVtxZle10{"ifVtxZle10", true, "Event selection: zVtx < 10 cm"};
-  Configurable<bool> ifOccupancyCut{"ifOccupancyCut", false, "Event selection: occupancy cut"};
+  Configurable<bool> ifSel8{"ifSel8", true, "Event selection: Sel8"};
+  Configurable<bool> ifZVtxCut{"ifZVtxCut", true, "Event selection: zVtx cut set in producer (tipically < 10 cm)"};
+  Configurable<bool> ifOccupancyCut{"ifOccupancyCut", false, "Event selection: occupancy cut set in producer"};
   Configurable<bool> ifNoSameBunchPileup{"ifNoSameBunchPileup", false, "Event selection: no same bunch pileup"};
   Configurable<bool> ifIsGoodZvtxFT0vsPV{"ifIsGoodZvtxFT0vsPV", false, "Event selection: good Zvtx FT0 vs PV"};
   Configurable<bool> ifNoCollInTimeRangeStandard{"ifNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
@@ -293,6 +294,34 @@ struct ZdcExtraTableReader {
     TH1* hMeanQyVyZNA{nullptr};
     TH1* hMeanQxVyZNC{nullptr};
     TH1* hMeanQyVyZNC{nullptr};
+    
+    // Destructor to handle cleanup automatically
+    ~CalibStepData() {
+      delete hMeanQxZNA;
+      delete hMeanQyZNA;
+      delete hMeanQxZNC;
+      delete hMeanQyZNC;
+
+      delete hMeanQxCentZNA;
+      delete hMeanQyCentZNA;
+      delete hMeanQxCentZNC;
+      delete hMeanQyCentZNC;
+
+      delete hMeanQxVzZNA;
+      delete hMeanQyVzZNA;
+      delete hMeanQxVzZNC;
+      delete hMeanQyVzZNC;
+
+      delete hMeanQxVxZNA;
+      delete hMeanQyVxZNA;
+      delete hMeanQxVxZNC;
+      delete hMeanQyVxZNC;
+
+      delete hMeanQxVyZNA;
+      delete hMeanQyVyZNA;
+      delete hMeanQxVyZNC;
+      delete hMeanQyVyZNC;
+    }
   };
 
   // Cache container: Vector index = Step index (0-based, so step 1 is at index 0)
@@ -306,22 +335,19 @@ struct ZdcExtraTableReader {
   TProfile3D* mShiftProfileZNA{nullptr};
   TProfile3D* mShiftProfileZNC{nullptr};
 
-  HistogramRegistry histos{
-    "histos",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{"histos"};
 
-  enum EvSelBits { // TO DO: move to a common header file
-    evSel_zvtx,
-    evSel_sel8,
-    evSel_occupancy,
-    evSel_kNoSameBunchPileup,
-    evSel_kIsGoodZvtxFT0vsPV,
-    evSel_kNoCollInTimeRangeStandard,
-    evSel_kIsVertexITSTPC,
-    evSel_kIsGoodITSLayersAll,
-    evSel_allEvents,
-    nEventSelections
+  enum EvSelBits { // same bits as in zdcExtraTableProducer.cxx 
+    ZVtxCut,
+    Sel8,
+    OccupancyCut,
+    NoSameBunchPileup,
+    IsGoodZvtxFT0vsPV,
+    NoCollInTimeRangeStandard,
+    IsVertexITSTPC,
+    IsGoodITSLayersAll,
+    AllEvents,
+    NEventSelections
   };
 
   int mCurrentRunNumber{-1};
@@ -344,50 +370,18 @@ struct ZdcExtraTableReader {
 
   void clearCache()
   {
-    if (hMeanVx) {
-      delete hMeanVx;
-      hMeanVx = nullptr;
-    }
-    if (hMeanVy) {
-      delete hMeanVy;
-      hMeanVy = nullptr;
-    }
+    delete hMeanVx;
+    hMeanVx = nullptr;
+    
+    delete hMeanVy;
+    hMeanVy = nullptr;
 
-    for (const auto& step : mCalibCache) {
-      delete step.hMeanQxZNA;
-      delete step.hMeanQyZNA;
-      delete step.hMeanQxZNC;
-      delete step.hMeanQyZNC;
-
-      delete step.hMeanQxCentZNA;
-      delete step.hMeanQyCentZNA;
-      delete step.hMeanQxCentZNC;
-      delete step.hMeanQyCentZNC;
-
-      delete step.hMeanQxVzZNA;
-      delete step.hMeanQyVzZNA;
-      delete step.hMeanQxVzZNC;
-      delete step.hMeanQyVzZNC;
-
-      delete step.hMeanQxVxZNA;
-      delete step.hMeanQyVxZNA;
-      delete step.hMeanQxVxZNC;
-      delete step.hMeanQyVxZNC;
-
-      delete step.hMeanQxVyZNA;
-      delete step.hMeanQyVyZNA;
-      delete step.hMeanQxVyZNC;
-      delete step.hMeanQyVyZNC;
-
-      if (mShiftProfileZNA) {
-        delete mShiftProfileZNA;
-        mShiftProfileZNA = nullptr;
-      }
-      if (mShiftProfileZNC) {
-        delete mShiftProfileZNC;
-        mShiftProfileZNC = nullptr;
-      }
-    }
+    delete mShiftProfileZNA;
+    mShiftProfileZNA = nullptr;
+    
+    delete mShiftProfileZNC;
+    mShiftProfileZNC = nullptr;
+    
     mCalibCache.clear();
   }
 
@@ -398,7 +392,7 @@ struct ZdcExtraTableReader {
     }
     mCurrentRunNumber = mRunNumber;
 
-    if (gEventCounter.find(mRunNumber) == gEventCounter.end()) {
+    if (!gEventCounter.contains(mRunNumber)) {
       // if new run, initialize histograms
 
       const AxisSpec axisCounter{1, 0, +1, ""};
@@ -421,16 +415,16 @@ struct ZdcExtraTableReader {
 
       const AxisSpec axisTime = {90, 0, 90, "Time (minutes)"}; // 90 minutes
 
-      gEventCounter[mRunNumber] = histos.add<TH1>(Form("%i/eventCounter", mRunNumber), "Number of Event; ; #Events Passed Cut", kTH1D, {{nEventSelections, 0, nEventSelections}}).get();
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
+      gEventCounter[mRunNumber] = histos.add<TH1>(Form("%i/eventCounter", mRunNumber), "Number of Event; ; #Events Passed Cut", kTH1D, {{NEventSelections, 0, NEventSelections}}).get();
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(AllEvents + 1, "allEvents");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(ZVtxCut + 1, "zVtxCut");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(Sel8 + 1, "Sel8");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(OccupancyCut + 1, "occupancyCut");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(NoSameBunchPileup + 1, "NoSameBunchPileup");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(IsGoodZvtxFT0vsPV + 1, "isGoodZvtxFT0vsPV");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(NoCollInTimeRangeStandard + 1, "noCollInTimeRangeStandard");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(IsVertexITSTPC + 1, "isVertexITSTPC");
+      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(IsGoodITSLayersAll + 1, "isGoodITSLayersAll");
 
       gCentroidZNA[mRunNumber] = histos.add<TH2>(Form("%i/CentroidZNA", mRunNumber), "ZNA Centroid; Q_{X}; Q_{Y}", kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}).get();
       gCentroidZNC[mRunNumber] = histos.add<TH2>(Form("%i/CentroidZNC", mRunNumber), "ZNC Centroid; Q_{X}; Q_{Y}", kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}).get();
@@ -551,7 +545,7 @@ struct ZdcExtraTableReader {
     // Vertex Calibration
     if (ifBeamSpotCorrection) {
       std::string folder = Form("%s/step0", qRecenteringCcdb.value.c_str());
-      TList* lst = ccdb->getForRun<TList>(folder, run);
+      auto* lst = ccdb->getForRun<TList>(folder, run);
       if (lst) {
         hMeanVx = safeClone<TH1>(lst->FindObject("hMeanVx"));
         hMeanVy = safeClone<TH1>(lst->FindObject("hMeanVy"));
@@ -567,7 +561,7 @@ struct ZdcExtraTableReader {
 
       // Load 5D (Base)
       std::string folderBase = Form("%s/step%d_base", qRecenteringCcdb.value.c_str(), step);
-      TList* lstBase = ccdb->getForRun<TList>(folderBase, run);
+      auto* lstBase = ccdb->getForRun<TList>(folderBase, run);
       if (lstBase) {
         mCalibCache[stepIdx].hMeanQxZNA = safeClone<THn>(lstBase->FindObject("hMeanQxZNA"));
         mCalibCache[stepIdx].hMeanQyZNA = safeClone<THn>(lstBase->FindObject("hMeanQyZNA"));
@@ -578,7 +572,7 @@ struct ZdcExtraTableReader {
       // Load 1D (Refine)
       if ((step != calibrationStep) || ifFineCalibration) {
         std::string folderRefine = Form("%s/step%d_refine", qRecenteringCcdb.value.c_str(), step);
-        TList* lstRefine = ccdb->getForRun<TList>(folderRefine, run);
+        auto* lstRefine = ccdb->getForRun<TList>(folderRefine, run);
         if (lstRefine) {
           mCalibCache[stepIdx].hMeanQxCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxCentZNA"));
           mCalibCache[stepIdx].hMeanQyCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyCentZNA"));
@@ -611,15 +605,18 @@ struct ZdcExtraTableReader {
       // Attempt to fetch TList from CCDB
       auto* lst = ccdb->getForRun<TList>(folder, run);
 
-      if (lst) {
+      if (!lst) {
+        LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folder.c_str());
+        return; 
+      }
+
         // Important: Object names must match exactly what was saved
         mShiftProfileZNA = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNA"));
         mShiftProfileZNC = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNC"));
 
         if (mShiftProfileZNA) {
           mShiftProfileZNA->SetDirectory(nullptr); // Detach from file
-          LOGF(info, "  >> ShiftProfileZNA found! Entries: %.0f, Mean: %f",
-               mShiftProfileZNA->GetEntries(), mShiftProfileZNA->GetMean());
+        //  LOGF(info, "  >> ShiftProfileZNA found! Entries: %.0f, Mean: %f", mShiftProfileZNA->GetEntries(), mShiftProfileZNA->GetMean());
         } else {
           LOGF(error, "  >> ShiftProfileZNA NOT found in TList! Content follows:");
           lst->Print();
@@ -627,14 +624,11 @@ struct ZdcExtraTableReader {
 
         if (mShiftProfileZNC) {
           mShiftProfileZNC->SetDirectory(nullptr);
-          LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", mShiftProfileZNC->GetEntries());
+         // LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", mShiftProfileZNC->GetEntries());
         } else {
           LOGF(error, "  >> ShiftProfileZNC NOT found in TList!");
         }
 
-      } else {
-        LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folder.c_str());
-      }
     }
   } // end of loadCalibrations()
 
@@ -659,39 +653,39 @@ struct ZdcExtraTableReader {
 
     // Apply event selection
 
-    if (ifSel8 && !(zdc.selectionBits() & (1 << evSel_sel8))) {
+    if (ifSel8 && !TESTBIT(zdc.selectionBits(), Sel8)) {
       return;
     }
-    if (ifVtxZle10 && !(zdc.selectionBits() & (1 << evSel_zvtx))) {
+    if (ifZVtxCut && !TESTBIT(zdc.selectionBits(), ZVtxCut)) {
       return;
     }
-    if (ifOccupancyCut && !(zdc.selectionBits() & (1 << evSel_occupancy))) {
+    if (ifOccupancyCut && !TESTBIT(zdc.selectionBits(), OccupancyCut)) {
       return;
     }
-    if (ifNoSameBunchPileup && !(zdc.selectionBits() & (1 << evSel_kNoSameBunchPileup))) {
+    if (ifNoSameBunchPileup && !TESTBIT(zdc.selectionBits(), NoSameBunchPileup)) {
       return;
     }
-    if (ifIsGoodZvtxFT0vsPV && !(zdc.selectionBits() & (1 << evSel_kIsGoodZvtxFT0vsPV))) {
+    if (ifIsGoodZvtxFT0vsPV && !TESTBIT(zdc.selectionBits(), IsGoodZvtxFT0vsPV)) {
       return;
     }
-    if (ifNoCollInTimeRangeStandard && !(zdc.selectionBits() & (1 << evSel_kNoCollInTimeRangeStandard))) {
+    if (ifNoCollInTimeRangeStandard && !TESTBIT(zdc.selectionBits(), NoCollInTimeRangeStandard)) {
       return;
     }
-    if (ifIsVertexITSTPC && !(zdc.selectionBits() & (1 << evSel_kIsVertexITSTPC))) {
+    if (ifIsVertexITSTPC && !TESTBIT(zdc.selectionBits(), IsVertexITSTPC)) {
       return;
     }
-    if (ifIsGoodITSLayersAll && !(zdc.selectionBits() & (1 << evSel_kIsGoodITSLayersAll))) {
+    if (ifIsGoodITSLayersAll && !TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll)) {
       return;
     }
 
-    //  LOGF(info, "zvtx       = %d", (zdc.selectionBits() & (1 << evSel_zvtx)) > 0);
-    //  LOGF(info, "sel8       = %d", (zdc.selectionBits() & (1 << evSel_sel8)) > 0);
-    //  LOGF(info, "occupancy  = %d", (zdc.selectionBits() & (1 << evSel_occupancy)) > 0);
-    //  LOGF(info, "noSameBC   = %d", (zdc.selectionBits() & (1 << evSel_kNoSameBunchPileup)) > 0);
-    //  LOGF(info, "FT0vsPV    = %d", (zdc.selectionBits() & (1 << evSel_kIsGoodZvtxFT0vsPV)) > 0);
-    //  LOGF(info, "noCollTR   = %d", (zdc.selectionBits() & (1 << evSel_kNoCollInTimeRangeStandard)) > 0);
-    //  LOGF(info, "vtxITSTPC  = %d", (zdc.selectionBits() & (1 << evSel_kIsVertexITSTPC)) > 0);
-    //  LOGF(info, "ITS layers = %d", (zdc.selectionBits() & (1 << evSel_kIsGoodITSLayersAll)) > 0);
+    //  LOGF(info, "zvtx       = %d", TESTBIT(zdc.selectionBits(), ZVtxCut));
+    //  LOGF(info, "Sel8       = %d", TESTBIT(zdc.selectionBits(), Sel8));
+    //  LOGF(info, "occupancy  = %d", TESTBIT(zdc.selectionBits(), OccupancyCut));
+    //  LOGF(info, "noSameBC   = %d", TESTBIT(zdc.selectionBits(), NoSameBunchPileup));
+    //  LOGF(info, "FT0vsPV    = %d", TESTBIT(zdc.selectionBits(), IsGoodZvtxFT0vsPV));
+    //  LOGF(info, "noCollTR   = %d", TESTBIT(zdc.selectionBits(), NoCollInTimeRangeStandard));
+    //  LOGF(info, "vtxITSTPC  = %d", TESTBIT(zdc.selectionBits(), IsVertexITSTPC));
+    //  LOGF(info, "ITS layers = %d", TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll));
 
     const int mRunNumber = zdc.runNumber();
 
@@ -700,7 +694,7 @@ struct ZdcExtraTableReader {
     // Convert timestamp to hours from run start (approximate)
     // Store first timestamp of run to calculate relative time
     static std::unordered_map<int, uint64_t> runStartTime;
-    if (runStartTime.find(mRunNumber) == runStartTime.end()) {
+    if (!runStartTime.contains(mRunNumber)) {
       runStartTime[mRunNumber] = timestamp;
     }
 
@@ -715,11 +709,11 @@ struct ZdcExtraTableReader {
 
     histos.fill(HIST("eventCounter"), 0.5);
 
-    gCurrentEventCounter->Fill(evSel_allEvents);
+    gCurrentEventCounter->Fill(AllEvents);
 
     // Fill histogram for all bits that passed
-    for (int bit = 0; bit < nEventSelections + 1; bit++) {
-      if (zdc.selectionBits() & (1 << bit)) {
+    for (int bit = 0; bit < NEventSelections + 1; bit++) {
+      if (TESTBIT(zdc.selectionBits(), bit)) {
         gCurrentEventCounter->Fill(bit);
       }
     }
