@@ -61,8 +61,7 @@ struct MultBCsConverter {
         multbc.multTriggerMask(),
         multbc.multCollidingBC(),
         multbc.multTVX(),
-        multbc.multFV0OrA()
-      );
+        multbc.multFV0OrA());
     }
   }
 };

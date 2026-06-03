@@ -104,7 +104,6 @@ DECLARE_SOA_COLUMN(FT0TriggerMask, ft0TriggerMask, uint8_t); //!
 DECLARE_SOA_COLUMN(MultFV0AOuter, multFV0AOuter, float);     //! FV0 without innermost ring
 DECLARE_SOA_COLUMN(MultFT0AOuter, multFT0AOuter, float);     //! FT0A without innermost ring
 
-
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
@@ -287,43 +286,41 @@ DECLARE_SOA_TABLE(MultBCs_000, "AOD", "MULTBC", //!
                   bc::Flags);
 
 DECLARE_SOA_TABLE_VERSIONED(MultBCs_001, "AOD", "MULTBC", 1, //!
-                  mult::MultFT0A,
-                  mult::MultFT0C,
-                  mult::MultFV0A,
-                  mult::MultFDDA,
-                  mult::MultFDDC,
-                  mult::MultZNA,
-                  mult::MultZNC,
-                  mult::MultZEM1,
-                  mult::MultZEM2,
-                  mult::MultZPA,
-                  mult::MultZPC,
-                  mult::MultFV0AOuter,
-                  mult::MultFT0AOuter);
+                            mult::MultFT0A,
+                            mult::MultFT0C,
+                            mult::MultFV0A,
+                            mult::MultFDDA,
+                            mult::MultFDDC,
+                            mult::MultZNA,
+                            mult::MultZNC,
+                            mult::MultZEM1,
+                            mult::MultZEM2,
+                            mult::MultZPA,
+                            mult::MultZPC,
+                            mult::MultFV0AOuter,
+                            mult::MultFT0AOuter);
 
 DECLARE_SOA_TABLE(MultBcSel_000, "AOD", "MULTBCSEL", //! BC selection bits joinable with multBCs
                   evsel::Selection);
 
 DECLARE_SOA_TABLE_VERSIONED(MultBcSel_001, "AOD", "MULTBCSEL", 1, //! BC selection bits joinable with multBCs
-                  evsel::Selection,
-                  evsel::Rct,
-                  bc::Flags,
-                  timestamp::Timestamp,
-                  mult::MultFT0PosZ,
-                  mult::MultFT0PosZValid,
-                  mult::MultV0triggerBits,
-                  mult::MultT0triggerBits,
-                  mult::MultFDDtriggerBits,
-                  mult::MultTriggerMask,
-                  mult::MultCollidingBC,
-                  mult::MultTVX,
-                  mult::MultFV0OrA
-                );
+                            evsel::Selection,
+                            evsel::Rct,
+                            bc::Flags,
+                            timestamp::Timestamp,
+                            mult::MultFT0PosZ,
+                            mult::MultFT0PosZValid,
+                            mult::MultV0triggerBits,
+                            mult::MultT0triggerBits,
+                            mult::MultFDDtriggerBits,
+                            mult::MultTriggerMask,
+                            mult::MultCollidingBC,
+                            mult::MultTVX,
+                            mult::MultFV0OrA);
 
 using MultBCs = MultBCs_001;
 using MultBcSel = MultBcSel_001;
 using MultBC = MultBCs::iterator;
-
 
 // crosslinks
 namespace mult
