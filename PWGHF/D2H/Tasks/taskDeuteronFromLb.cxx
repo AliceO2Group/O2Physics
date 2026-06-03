@@ -55,6 +55,8 @@ struct HfTaskDeuteronFromLb {
   Zorro zorro;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
+  Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
+
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
   Configurable<std::string> cfgSkimming{"cfgSkimming", "fH2fromLb", "Configurable for skimming"};
@@ -88,8 +90,6 @@ struct HfTaskDeuteronFromLb {
   using MCTrackCandidates = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels>;
   using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
-
-  Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
 
   ConfigurableAxis ptAxis{"ptAxis", {100, 0., 10.f}, "p_{T} GeV/c"};
   ConfigurableAxis nSigmaAxis{"nSigmaAxis", {200, -10.f, 10.f}, "nSigma"};
@@ -223,11 +223,11 @@ struct HfTaskDeuteronFromLb {
         }
 
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
-        const bool isTOFDe_min = std::abs(track.tofNSigmaDe()) > cfgTofNsigmaMin;
-        const bool isTOFDe_max = std::abs(track.tofNSigmaDe()) < cfgTofNsigmaMax;
+        const bool isTofDeMin = std::abs(track.tofNSigmaDe()) > cfgTofNsigmaMin;
+        const bool isTofDeMax = std::abs(track.tofNSigmaDe()) < cfgTofNsigmaMax;
 
         if (track.pt() < ptThresholdPid) {
-          if (isTPCDe && isTOFDe_max) {
+          if (isTPCDe && isTofDeMax) {
             QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
             QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
             QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
@@ -236,7 +236,7 @@ struct HfTaskDeuteronFromLb {
             QAHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
           }
         } else {
-          if (isTPCDe && isTOFDe_min && isTOFDe_max) {
+          if (isTPCDe && isTofDeMin && isTofDeMax) {
             QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
             QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
             QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
