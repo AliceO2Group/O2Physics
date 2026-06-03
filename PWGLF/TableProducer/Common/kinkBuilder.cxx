@@ -161,6 +161,7 @@ struct kinkBuilder {
   int nItsOuterBarrelLayers = 4;
   int nItsTotalLayers = 7;
   int nCoords = 7;
+  int itsChi2NClMax = 36;
 
   // constants
   float radToDeg = o2::constants::math::Rad2Deg;
@@ -410,7 +411,7 @@ struct kinkBuilder {
       return false;
     hSelMotherQA->Fill(6.f, isPositive);
 
-    if (candidate.itsChi2NCl() >= 36)
+    if (candidate.itsChi2NCl() >= itsChi2NClMax)
       return false;
     hSelMotherQA->Fill(7.f, isPositive);
 
