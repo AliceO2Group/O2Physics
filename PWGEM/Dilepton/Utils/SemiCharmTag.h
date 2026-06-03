@@ -37,6 +37,8 @@ struct LHPair { // struct to store electron-hadron pair information
   float mass{-999.f};
   float pt{-999.f};
   float p{-999.f};
+  float deta{-999.f};
+  float dphi{-999.f};
   float dca2legs{-999.f};
   float chi2PCA{-999.f};
   float cospa{-999.f};
@@ -173,7 +175,8 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   pair.mass = v12.M();
   pair.pt = v12.Pt();
   pair.p = v12.P();
-
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                               // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI / 2, 1U); // lepton - hadron
   pair.isOK = true;
   return pair;
 }
@@ -299,6 +302,8 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   pair.mass = v12.M();
   pair.pt = v12.Pt();
   pair.p = v12.P();
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                               // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI / 2, 1U); // lepton - hadron
   pair.isOK = true;
 
   return pair;
@@ -429,6 +434,8 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   pair.mass = v12.M();
   pair.pt = v12.Pt();
   pair.p = v12.P();
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                               // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI / 2, 1U); // lepton - hadron
   pair.isOK = true;
 
   return pair;

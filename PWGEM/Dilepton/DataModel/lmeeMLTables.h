@@ -260,6 +260,8 @@ DECLARE_SOA_COLUMN(CascadeType, cascadeType, uint8_t); //! cascade type, 0 = XiM
 DECLARE_SOA_COLUMN(MassLH, massLH, float); //! invariant mass of LH assuming kaon
 DECLARE_SOA_COLUMN(PtLH, ptLH, float);     //! pt of LH
 DECLARE_SOA_COLUMN(PLH, pLH, float);       //! p of LH
+DECLARE_SOA_COLUMN(DEtaLH, dEtaLH, float); //! deta between LH at SV
+DECLARE_SOA_COLUMN(DPhiLH, dPhiLH, float); //! dphi between LH at SV
 
 DECLARE_SOA_COLUMN(PtSVL, ptSVL, float); //! pT of lepton at SV
 // DECLARE_SOA_COLUMN(PlSVL, plSVL, float); //! pL of lepton at SV
@@ -305,7 +307,7 @@ DECLARE_SOA_TABLE(EMMLLTPairs, "AOD", "EMMLLTPAIR", //!
                   // pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
                   pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
                   // pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr,
-                  emmllhpair::MassLH, emmllhpair::PLH,
+                  emmllhpair::MassLH, emmllhpair::PLH, emmllhpair::DEtaLH, emmllhpair::DPhiLH,
                   // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
                   emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
@@ -319,7 +321,7 @@ DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
                   emmllhpair::PtH, emmllhpair::RapidityV0,
                   emmllhpair::V0CPA, emmllhpair::V0CPAXY, emmllhpair::V0CPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
-                  emmllhpair::MassLH, emmllhpair::PLH,
+                  emmllhpair::MassLH, emmllhpair::PLH, emmllhpair::DEtaLH, emmllhpair::DPhiLH,
                   // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
                   emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
@@ -333,7 +335,7 @@ DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCPAIR", //!
                   emmllhpair::Signed1PtH, emmllhpair::RapidityC,
                   emmllhpair::CascCPA, emmllhpair::CascCPAXY, emmllhpair::CascCPARZ,
                   emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
-                  emmllhpair::MassLH, emmllhpair::PLH,
+                  emmllhpair::MassLH, emmllhpair::PLH, emmllhpair::DEtaLH, emmllhpair::DPhiLH,
                   // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
                   emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
                   emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
