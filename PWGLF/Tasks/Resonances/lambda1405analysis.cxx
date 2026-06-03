@@ -106,8 +106,8 @@ struct lambda1405analysis {
   HistogramRegistry rSigmaPlus{"sigmaPlus", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rSelections{"selections", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Configurable for event selection
-  Configurable<float> cutzvertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> cutEtaDaught{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
+  Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
   Configurable<float> cutDCAtoPvSigma{"cutDCAtoPvSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
   Configurable<float> cutDCAtoPvPiFromSigma{"cutDCAtoPvPiFromSigma", 2., "Min DCA to primary vertex for pion from Sigma candidates (cm)"};
 
@@ -135,15 +135,10 @@ struct lambda1405analysis {
   Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Lambda(1405) candidates"};
-  Configurable<bool> doLSBkg{"doLikeSignBkg", false, "Use like-sign background"};
+  Configurable<bool> doLikeSignBkg{"doLikeSignBkg", false, "Use like-sign background"};
   Configurable<bool> useTof{"useTof", false, "Use Tof for PId for pion candidates"};
 
-  TF1* funcMinQtAlphaAP = nullptr;
-  TF1* funcMaxQtAlphaAP = nullptr;
-  TF1* funcMinBachPiPtVsL1405Pt = nullptr;
-  TF1* funcMaxBachPiPtVsL1405Pt = nullptr;
-  TF1* funcMinSigmaPtVsL1405Pt = nullptr;
-  TF1* funcMaxSigmaPtVsL1405Pt = nullptr;
+  TF1 funcMinQtAlphaAP, funcMaxQtAlphaAP, funcMinBachPiPtVsL1405Pt, funcMaxBachPiPtVsL1405Pt, funcMinSigmaPtVsL1405Pt, funcMaxSigmaPtVsL1405Pt;
 
   using CollisionsCentSel = soa::Filtered<CollisionsFullWCentQVecs>;
   using McRecoCollisionsCentSel = soa::Filtered<CollisionsFullMcWCent>;
@@ -342,17 +337,17 @@ struct lambda1405analysis {
     }
 
     // Functional selections
-    funcMinQtAlphaAP = new TF1("funcMinQtAlphaAP", Form("%s", cutSigmaQtAPMin.value.data()), -1, 1);
+    funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", cutSigmaQtAPMin.value.data()), -1, 1);
     LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", cutSigmaQtAPMin.value.data()));
-    funcMaxQtAlphaAP = new TF1("funcMaxQtAlphaAP", Form("%s", cutSigmaQtAPMax.value.data()), -1, 1);
+    funcMinQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", cutSigmaQtAPMax.value.data()), -1, 1);
     LOGF(info, "funcMaxQtAlphaAP: %s", Form("%s", cutSigmaQtAPMax.value.data()));
-    funcMinBachPiPtVsL1405Pt = new TF1("funcMinBachPiPtVsL1405Pt", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
+    funcMinQtAlphaAP = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMinBachPiPtVsL1405Pt: %s", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()));
-    funcMaxBachPiPtVsL1405Pt = new TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
+    funcMinQtAlphaAP = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMaxBachPiPtVsL1405Pt: %s", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()));
-    funcMinSigmaPtVsL1405Pt = new TF1("funcMinSigmaPtVsL1405Pt", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
+    funcMinQtAlphaAP = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMinSigmaPtVsL1405Pt: %s", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()));
-    funcMaxSigmaPtVsL1405Pt = new TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
+    funcMinQtAlphaAP = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMaxSigmaPtVsL1405Pt: %s", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()));
   }
 
@@ -385,7 +380,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 3); // Tpc clusters
 
-    if (std::abs(std::abs(candidate.eta()) > cutEtaDaught)) {
+    if (std::abs(candidate.eta()) > cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 4); // Eta selection
@@ -408,7 +403,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 2); // Tpc clusters
 
-    if (std::abs(std::abs(candidate.eta()) > cutEtaDaught)) {
+    if (std::abs(candidate.eta()) > cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 3); // Eta selection
@@ -446,7 +441,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 2); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaught) {
+    if (std::abs(candidate.eta()) > cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 3); // eta selection
@@ -618,8 +613,8 @@ struct lambda1405analysis {
     lambda1405Cand.sigmaRadius = sigmaRad;
     lambda1405Cand.kinkDcaDauToPv = sigmaCand.dcaDaugPv();
 
-    if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP->Eval(lambda1405Cand.sigmaAlphaAP) ||
-        lambda1405Cand.sigmaQtAP > funcMaxQtAlphaAP->Eval(lambda1405Cand.sigmaAlphaAP)) {
+    if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP) ||
+        lambda1405Cand.sigmaQtAP > funcMaxQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP)) {
       return;
     }
     if (sigmaCand.mothSign() < 0) {
@@ -643,7 +638,7 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hSelectionsBachPi"), 0); // All bachelors
 
       bool isUnlikeSign = (piTrack.sign() != sigmaCand.mothSign());
-      bool acceptPair = doLSBkg ? !isUnlikeSign : isUnlikeSign;
+      bool acceptPair = doLikeSignBkg ? !isUnlikeSign : isUnlikeSign;
       if (!acceptPair) {
         continue;
       }
@@ -687,14 +682,14 @@ struct lambda1405analysis {
       lambda1405Cand.scalarProd = -1;
 
       // Check correlations between transverse momenta of L1405, sigma and bachelor pi
-      if (std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) < funcMinSigmaPtVsL1405Pt->Eval(lambda1405Cand.pt()) ||
-          std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) > funcMaxSigmaPtVsL1405Pt->Eval(lambda1405Cand.pt())) {
+      if (std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) < funcMinSigmaPtVsL1405Pt.Eval(lambda1405Cand.pt()) ||
+          std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) > funcMaxSigmaPtVsL1405Pt.Eval(lambda1405Cand.pt())) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 4); // Accepted
 
-      if (piTrack.pt() < funcMinBachPiPtVsL1405Pt->Eval(lambda1405Cand.pt()) ||
-          piTrack.pt() > funcMaxBachPiPtVsL1405Pt->Eval(lambda1405Cand.pt())) {
+      if (piTrack.pt() < funcMinBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt()) ||
+          piTrack.pt() > funcMaxBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt())) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 5); // Accepted
@@ -734,7 +729,7 @@ struct lambda1405analysis {
         return;
       }
     }
-    if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
+    if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
       return;
     }
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
@@ -896,7 +891,7 @@ struct lambda1405analysis {
           return;
         }
       }
-      if (std::abs(collision.posZ()) > cutzvertex) { // || !collision.sel8()) {
+      if (std::abs(collision.posZ()) > cutZVertex) { // || !collision.sel8()) {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
@@ -931,7 +926,7 @@ struct lambda1405analysis {
           }
           rLambda1405.fill(HIST("hRecoL1405"), 2., lambda1405Cand.pt()); // Has kink decay in MC
 
-          if (std::abs(mcTrackPi.pdgCode()) != 211) {
+          if (std::abs(mcTrackPi.pdgCode()) != PDG_t::kPiPlus) {
             continue; // Skip if not a valid pion candidate
           }
           rLambda1405.fill(HIST("hRecoL1405"), 3., lambda1405Cand.pt()); // Has bach pi

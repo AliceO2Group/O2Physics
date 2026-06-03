@@ -157,6 +157,10 @@ struct kinkBuilder {
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::base::MatLayerCylSet* lut = nullptr;
+  int nItsInnerBarrelLayers = 3;
+  int nItsOuterBarrelLayers = 4;
+  int nItsTotalLayers = 7;
+  int nCoords = 7;
 
   // constants
   float radToDeg = o2::constants::math::Rad2Deg;
@@ -348,9 +352,11 @@ struct kinkBuilder {
     hMothDecRad2->GetYaxis()->SetBinLabel(3, "(+,-)");
     hMothDecRad2->GetYaxis()->SetBinLabel(4, "(-,+)");
 
-    for (int i = 0; i < 5; i++) {
-      mBBparamsDaug[i] = cfgBetheBlochParams->get("Daughter", Form("p%i", i));
-    }
+    mBBparamsDaug[0] = cfgBetheBlochParams->get("Daughter", Form("p%i", 0));
+    mBBparamsDaug[1] = cfgBetheBlochParams->get("Daughter", Form("p%i", 1));
+    mBBparamsDaug[2] = cfgBetheBlochParams->get("Daughter", Form("p%i", 2));
+    mBBparamsDaug[3] = cfgBetheBlochParams->get("Daughter", Form("p%i", 3));
+    mBBparamsDaug[4] = cfgBetheBlochParams->get("Daughter", Form("p%i", 4));
     mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
 
     if (doprocessMc || doprocessMcWCent) {
@@ -396,11 +402,11 @@ struct kinkBuilder {
     hSelMotherQA->Fill(4.f, isPositive);
 
     h2ItsClsMothBeforeSel->Fill(candidate.itsNCls(), candidate.itsNClsInnerBarrel());
-    if (candidate.itsNCls() >= 6)
+    if (candidate.itsNCls() >= nItsTotalLayers-1)
       return false;
     hSelMotherQA->Fill(5.f, isPositive);
 
-    if (candidate.itsNClsInnerBarrel() != 3)
+    if (candidate.itsNClsInnerBarrel() != nItsInnerBarrelLayers)
       return false;
     hSelMotherQA->Fill(6.f, isPositive);
 
@@ -438,7 +444,7 @@ struct kinkBuilder {
       return false;
     hSelDaugQA->Fill(4.f, isPositive);
 
-    if (candidate.itsNCls() >= 4)
+    if (candidate.itsNCls() >= nItsOuterBarrelLayers)
       return false;
     hSelDaugQA->Fill(5.f, isPositive);
 
@@ -546,20 +552,21 @@ struct kinkBuilder {
     // cut on decay radius to 17 cm
     float decRad2 = kinkCand.decVtx[0] * kinkCand.decVtx[0] + kinkCand.decVtx[1] * kinkCand.decVtx[1];
     hMothDecRad2->Fill(decRad2, chargeCombSvCand);
-    if (doSVRadiusCut && decRad2 < LayerRadii[3] * LayerRadii[3]) {
+    int idxFirstOuterBarrelLayer = nItsInnerBarrelLayers;
+    if (doSVRadiusCut && decRad2 < LayerRadii[idxFirstOuterBarrelLayer] * LayerRadii[idxFirstOuterBarrelLayer]) {
       return;
     }
     hSelKinkedTrackQA->Fill(8.f, chargeCombSvCand); // MothDecRad2InsideL4 cut bin
 
     // get last layer hitted by the mother and the first layer hitted by the daughter
     int lastLayerMoth = 0, firstLayerDaug = 0;
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < nItsTotalLayers; i++) {
       if (trackMoth.itsClusterMap() & (1 << i)) {
         lastLayerMoth = i;
       }
     }
 
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < nItsTotalLayers; i++) {
       if (trackDaug.itsClusterMap() & (1 << i)) {
         firstLayerDaug = i;
         break;
@@ -576,13 +583,13 @@ struct kinkBuilder {
     }
     hSelKinkedTrackQA->Fill(10.f, chargeCombSvCand); // MothLastLayerRadiusCheck cut bin
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < nCoords; i++) {
       kinkCand.decVtx[i] -= kinkCand.primVtx[i];
     }
 
     propMothTrack.getPxPyPzGlo(kinkCand.momMoth);
     propDaugTrack.getPxPyPzGlo(kinkCand.momDaug);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < nCoords; i++) {
       kinkCand.momMoth[i] *= charge;
       kinkCand.momDaug[i] *= charge;
     }
@@ -592,7 +599,7 @@ struct kinkBuilder {
     kinkCand.kinkAngle = std::acos(spKink / (pMoth * pDaug));
 
     std::array<float, 3> neutDauMom{0.f, 0.f, 0.f};
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < nCoords; i++) {
       neutDauMom[i] = kinkCand.momMoth[i] - kinkCand.momDaug[i];
     }
 
