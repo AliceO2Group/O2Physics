@@ -30,6 +30,7 @@
 #include <TProfile.h>
 
 #include <cstdlib>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
