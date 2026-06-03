@@ -27,8 +27,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h" //
 #include "Common/DataModel/PIDResponseTPC.h" //
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -448,7 +448,7 @@ struct HigherMassResonances {
       hglue.add("EpDet", "", {HistType::kTH2F, {axisCentQA, axisEvtPlQA}});
       hglue.add("EpRefA", "", {HistType::kTH2F, {axisCentQA, axisEvtPlQA}});
       hglue.add("EpRefB", "", {HistType::kTH2F, {axisCentQA, axisEvtPlQA}});
-      
+
       hglue.add("EpResDetRefA", "", {HistType::kTH2F, {axisCentQA, axisEvtResPlQA}});
       hglue.add("EpResDetRefB", "", {HistType::kTH2F, {axisCentQA, axisEvtResPlQA}});
       hglue.add("EpResRefARefB", "", {HistType::kTH2F, {axisCentQA, axisEvtResPlQA}});
@@ -1311,43 +1311,43 @@ struct HigherMassResonances {
 
       double deltaRDaugherPos = std::sqrt(TVector2::Phi_mpi_pi(postrack1.phi() - negtrack1.phi()) * TVector2::Phi_mpi_pi(postrack1.phi() - negtrack1.phi()) + (postrack1.eta() - negtrack1.eta()) * (postrack1.eta() - negtrack1.eta()));
       double deltaRDaugherNeg = std::sqrt(TVector2::Phi_mpi_pi(postrack2.phi() - negtrack2.phi()) * TVector2::Phi_mpi_pi(postrack2.phi() - negtrack2.phi()) + (postrack2.eta() - negtrack2.eta()) * (postrack2.eta() - negtrack2.eta()));
-      
+
       if (config.qAv0) {
         rKzeroShort.fill(HIST("hDauDeltaR"), deltaRDaugherPos, deltaRDaugherNeg);
       }
-      
+
       if (deltaRDaugherPos < config.deltaRDaugherCut || deltaRDaugherNeg < config.deltaRDaugherCut) {
         continue;
       }
-      
+
       if (config.isApplyEtaCutK0s && (v1.eta() < config.confDaughEta || v2.eta() < config.confDaughEta)) {
         continue;
       }
-        
+
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
       daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
-  
+
       const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (config.qAv0) {
         rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short(), deltaMass);
       }
-  
+
       if (!config.qAOptimisation) {
         if (deltaMass > config.cMaxDeltaM) {
           continue;
         }
       }
-  
+
       const double ptCorr = (mother.Pt() - daughter1.Pt() != 0.) ? daughter1.Pt() / (mother.Pt() - daughter1.Pt()) : 0.;
       if (config.qAv0) {
         rKzeroShort.fill(HIST("hK0sPtCorrelation"), ptCorr);
       }
-  
+
       double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) * TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) + (v1.eta() - v2.eta()) * (v1.eta() - v2.eta()));
-    
+
       if (!config.qAOptimisation) {
         if (deltaRvalue < config.deltaRK0sCut) {
           continue;
