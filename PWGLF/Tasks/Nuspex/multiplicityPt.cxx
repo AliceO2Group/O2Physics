@@ -69,6 +69,7 @@ struct MultiplicityPt {
   static constexpr int MultBinMax = 200;
   static constexpr int RecMultBinMax = 100;
   static constexpr int ParticlesType = 4;
+  static constexpr int ResponseMatrixTypes = 7;
 
   enum INELCutSelection : int {
     INEL = 0,
@@ -116,6 +117,9 @@ struct MultiplicityPt {
   // Histogram names for V0s dE/dx analysis
   static constexpr std::string_view DedxvsMomentumPos[ParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view DedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
+
+  static constexpr std::string_view EtavspvspTPosPart[ResponseMatrixTypes] = {"heta_vs_pt_vs_p_all_Pos", "heta_vs_pt_vs_p_all_Pos_Pri", "heta_vs_pt_vs_p_all_Pos_Pri_MC", "heta_vs_pt_vs_p_all_Pos_Pri_MC_Part", "heta_vs_pt_vs_p_Pi_Pos", "heta_vs_pt_vs_p_K_Pos", "heta_vs_pt_vs_p_Pr_Pos"};
+  static constexpr std::string_view EtavspvspTNegPart[ResponseMatrixTypes] = {"heta_vs_pt_vs_p_all_Neg", "heta_vs_pt_vs_p_all_Neg_Pri", "heta_vs_pt_vs_p_all_Neg_Pri_MC", "heta_vs_pt_vs_p_all_Neg_Pri_MC_Part", "heta_vs_pt_vs_p_Pi_Neg", "heta_vs_pt_vs_p_K_Neg", "heta_vs_pt_vs_p_Pr_Neg"};
   // Particle fractions histograms
   static constexpr std::string_view ParticleFractionsVsMomentumPos[ParticlesType + 1] = {"hFractionVsMomentum_Pion_Pos", "hFractionVsMomentum_Kaon_Pos", "hFractionVsMomentum_Proton_Pos", "hFractionVsMomentum_Electron_Pos", "hFractionVsMomentum_Muon_Pos"};
 
@@ -482,6 +486,15 @@ void MultiplicityPt::init(InitContext const&)
            "dE/dx vs Momentum Negative", HistType::kTH3F,
            {{pAxis}, {dedxAxis}, {etaAxis}});
   }
+  // pt vs p
+  for (int i = 0; i < ResponseMatrixTypes; ++i) {
+    ue.add(("ResponseMatrix/" + std::string(EtavspvspTPosPart[i])).c_str(),
+           "eta vs pT vs p Positive", HistType::kTH3F,
+           {{etaAxis}, {ptAxis}, {pAxis}});
+    ue.add(("ResponseMatrix/" + std::string(EtavspvspTNegPart[i])).c_str(),
+           "eta vs pT vs p Negative", HistType::kTH3F,
+           {{etaAxis}, {ptAxis}, {pAxis}});
+  }
 
   // ===== Particle Fractions as function of p and pT =====
   ue.add("ParticleFractions/hTotalCountsVsMomentumPos", "Total counts vs momentum;#it{p} (GeV/#it{c});Counts", HistType::kTH2D, {{etaAxis}, {pAxis}});
@@ -499,13 +512,6 @@ void MultiplicityPt::init(InitContext const&)
     ue.add(("ParticleFractions/" + std::string(ParticleFractionsVsPtNeg[i])).c_str(),
            "Particle fraction vs pT", HistType::kTH2D, {{etaAxis}, {ptAxis}});
   }
-  // pt vs p
-  ue.add(
-    "heta_vs_pt_vs_p_all_Neg", "eta_vs_pT_vs_p", HistType::kTH3F,
-    {{etaAxis}, {ptAxis}, {pAxis}});
-  ue.add(
-    "heta_vs_pt_vs_p_all_Pos", "eta_vs_pT_vs_p", HistType::kTH3F,
-    {{etaAxis}, {ptAxis}, {pAxis}});
 
   LOG(info) << "=== Initialization complete ===";
 }
@@ -754,24 +760,41 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       // dedx for all particles
       if (charge > 0) {
         ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
-        ue.fill(HIST("heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
+        ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
       } else {
         ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
-        ue.fill(HIST("heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
+        ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
+      }
+
+      if (track.mcParticle().isPhysicalPrimary()) {
+        if (charge > 0) {
+          ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri"), eta, track.pt(), momentum);
+        } else {
+          ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri"), eta, track.pt(), momentum);
+        }
       }
 
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle();
         int pdgCode = std::abs(particle.pdgCode());
+        if (particle.isPhysicalPrimary()) {
+          if (charge > 0) {
+            ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri_MC"), eta, track.pt(), momentum);
+          } else {
+            ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri_MC"), eta, track.pt(), momentum);
+          }
+        }
         if (pdgCode == PDG_t::kPiPlus || pdgCode == PDG_t::kKPlus || pdgCode == PDG_t::kProton || pdgCode == PDG_t::kElectron || pdgCode == PDG_t::kMuonPlus) {
           if (particle.isPhysicalPrimary()) {
             // Fill total counts for fractions
             if (charge > 0) {
               ue.fill(HIST("ParticleFractions/hTotalCountsVsMomentumPos"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hTotalCountsVsPtPos"), eta, track.pt());
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri_MC_Part"), eta, track.pt(), momentum);
             } else {
               ue.fill(HIST("ParticleFractions/hTotalCountsVsMomentumNeg"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hTotalCountsVsPtNeg"), eta, track.pt());
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri_MC_Part"), eta, track.pt(), momentum);
             }
           }
         }
@@ -785,10 +808,12 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
               ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Pion_Pos"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hFractionVsPt_Pion_Pos"), eta, track.pt());
               ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pi_v0_Pos"), momentum, tpcSignal, eta);
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_Pi_Pos"), eta, track.pt(), momentum);
             } else {
               ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Pion_Neg"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hFractionVsPt_Pion_Neg"), eta, track.pt());
               ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pi_v0_Neg"), momentum, tpcSignal, eta);
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_Pi_Neg"), eta, track.pt(), momentum);
             }
 
           } else {
@@ -802,9 +827,11 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
             if (charge > 0) {
               ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Kaon_Pos"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hFractionVsPt_Kaon_Pos"), eta, track.pt());
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_K_Pos"), eta, track.pt(), momentum);
             } else {
               ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Kaon_Neg"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hFractionVsPt_Kaon_Neg"), eta, track.pt());
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_K_Neg"), eta, track.pt(), momentum);
             }
           } else {
             ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
@@ -818,10 +845,12 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
               ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Proton_Pos"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hFractionVsPt_Proton_Pos"), eta, track.pt());
               ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pr_v0_Pos"), momentum, tpcSignal, eta);
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_Pr_Pos"), eta, track.pt(), momentum);
             } else {
               ue.fill(HIST("ParticleFractions/hFractionVsMomentum_Proton_Neg"), eta, momentum);
               ue.fill(HIST("ParticleFractions/hFractionVsPt_Proton_Neg"), eta, track.pt());
               ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_Pr_v0_Neg"), momentum, tpcSignal, eta);
+              ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_Pr_Neg"), eta, track.pt(), momentum);
             }
           } else {
             ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
