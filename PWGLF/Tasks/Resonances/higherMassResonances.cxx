@@ -1207,11 +1207,6 @@ struct HigherMassResonances {
         }
       }
     }
-    int sizeofv0indexes = v0indexes.size();
-    rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
-    if (config.isselectTWOKsOnly && sizeofv0indexes == config.noOfDaughters && allConditionsMet) {
-      fillInvMass(mother, multiplicity, daughter1, daughter2, false);
-    }
     v0indexes.clear();
   }
   PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
