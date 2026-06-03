@@ -402,7 +402,7 @@ struct kinkBuilder {
     hSelMotherQA->Fill(4.f, isPositive);
 
     h2ItsClsMothBeforeSel->Fill(candidate.itsNCls(), candidate.itsNClsInnerBarrel());
-    if (candidate.itsNCls() >= nItsTotalLayers-1)
+    if (candidate.itsNCls() >= nItsTotalLayers - 1)
       return false;
     hSelMotherQA->Fill(5.f, isPositive);
 
