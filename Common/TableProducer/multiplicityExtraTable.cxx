@@ -276,8 +276,7 @@ struct MultiplicityExtraTable {
         tru(multZPA),
         tru(multZPC),
         tru(multFV0AOuter),
-        tru(multFT0AOuter)
-      );
+        tru(multFT0AOuter));
 
       multBcSel(
         bc.selection_raw(),
@@ -292,8 +291,7 @@ struct MultiplicityExtraTable {
         multBCTriggerMask,
         collidingBC,
         Tvx,
-        isFV0OrA
-      );
+        isFV0OrA);
     }
   }
 
