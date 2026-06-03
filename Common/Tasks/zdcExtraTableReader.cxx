@@ -294,9 +294,10 @@ struct ZdcExtraTableReader {
     TH1* hMeanQyVyZNA{nullptr};
     TH1* hMeanQxVyZNC{nullptr};
     TH1* hMeanQyVyZNC{nullptr};
-    
+
     // Destructor to handle cleanup automatically
-    ~CalibStepData() {
+    ~CalibStepData()
+    {
       delete hMeanQxZNA;
       delete hMeanQyZNA;
       delete hMeanQxZNC;
@@ -337,7 +338,7 @@ struct ZdcExtraTableReader {
 
   HistogramRegistry histos{"histos"};
 
-  enum EvSelBits { // same bits as in zdcExtraTableProducer.cxx 
+  enum EvSelBits { // same bits as in zdcExtraTableProducer.cxx
     ZVtxCut,
     Sel8,
     OccupancyCut,
@@ -372,16 +373,16 @@ struct ZdcExtraTableReader {
   {
     delete hMeanVx;
     hMeanVx = nullptr;
-    
+
     delete hMeanVy;
     hMeanVy = nullptr;
 
     delete mShiftProfileZNA;
     mShiftProfileZNA = nullptr;
-    
+
     delete mShiftProfileZNC;
     mShiftProfileZNC = nullptr;
-    
+
     mCalibCache.clear();
   }
 
@@ -607,28 +608,27 @@ struct ZdcExtraTableReader {
 
       if (!lst) {
         LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folder.c_str());
-        return; 
+        return;
       }
 
-        // Important: Object names must match exactly what was saved
-        mShiftProfileZNA = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNA"));
-        mShiftProfileZNC = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNC"));
+      // Important: Object names must match exactly what was saved
+      mShiftProfileZNA = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNA"));
+      mShiftProfileZNC = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNC"));
 
-        if (mShiftProfileZNA) {
-          mShiftProfileZNA->SetDirectory(nullptr); // Detach from file
+      if (mShiftProfileZNA) {
+        mShiftProfileZNA->SetDirectory(nullptr); // Detach from file
         //  LOGF(info, "  >> ShiftProfileZNA found! Entries: %.0f, Mean: %f", mShiftProfileZNA->GetEntries(), mShiftProfileZNA->GetMean());
-        } else {
-          LOGF(error, "  >> ShiftProfileZNA NOT found in TList! Content follows:");
-          lst->Print();
-        }
+      } else {
+        LOGF(error, "  >> ShiftProfileZNA NOT found in TList! Content follows:");
+        lst->Print();
+      }
 
-        if (mShiftProfileZNC) {
-          mShiftProfileZNC->SetDirectory(nullptr);
-         // LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", mShiftProfileZNC->GetEntries());
-        } else {
-          LOGF(error, "  >> ShiftProfileZNC NOT found in TList!");
-        }
-
+      if (mShiftProfileZNC) {
+        mShiftProfileZNC->SetDirectory(nullptr);
+        // LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", mShiftProfileZNC->GetEntries());
+      } else {
+        LOGF(error, "  >> ShiftProfileZNC NOT found in TList!");
+      }
     }
   } // end of loadCalibrations()
 
