@@ -157,19 +157,21 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> downscaling_kaon_highP{"downscaling_kaon_highP", 1.1, "down scaling factor to store kaon at high p"};
   Configurable<float> downscaling_proton_highP{"downscaling_proton_highP", 1.1, "down scaling factor to store proton at high p"};
 
-  Configurable<float> downscaling_electron_midP{"downscaling_electron_midP", 0.1, "down scaling factor to store electron at intermediate p"};
+  Configurable<float> downscaling_electron_midP{"downscaling_electron_midP", 0.05, "down scaling factor to store electron at intermediate p"};
+  Configurable<float> downscaling_pion_midP{"downscaling_pion_midP", 0.1, "down scaling factor to store pion at intermediate p"};
 
-  Configurable<float> downscaling_electron_lowP{"downscaling_electron_lowP", 0.01, "down scaling factor to store electron at low p"};
-  Configurable<float> downscaling_pion_lowP{"downscaling_pion_lowP", 0.01, "down scaling factor to store pion at low p"};
+  Configurable<float> downscaling_electron_lowP{"downscaling_electron_lowP", 0.005, "down scaling factor to store electron at low p"};
+  Configurable<float> downscaling_pion_lowP{"downscaling_pion_lowP", 0.001, "down scaling factor to store pion at low p"};
   Configurable<float> downscaling_kaon_lowP{"downscaling_kaon_lowP", 1.1, "down scaling factor to store kaon at low p"};
-  Configurable<float> downscaling_proton_lowP{"downscaling_proton_lowP", 0.01, "down scaling factor to store proton at low p"};
+  Configurable<float> downscaling_proton_lowP{"downscaling_proton_lowP", 0.002, "down scaling factor to store proton at low p"};
 
   Configurable<float> mid_p_for_downscaling_electron{"mid_p_for_downscaling_electron", 0.8, "intermediate p to apply down scaling factor to store electron"};
+  Configurable<float> mid_p_for_downscaling_pion{"mid_p_for_downscaling_pion", 0.2, "intermediate p to apply down scaling factor to store pion"};
 
   Configurable<float> max_p_for_downscaling_electron{"max_p_for_downscaling_electron", 2.0, "max p to apply down scaling factor to store electron"};
-  Configurable<float> max_p_for_downscaling_pion{"max_p_for_downscaling_pion", 2.0, "max p to apply down scaling factor to store pion"};
+  Configurable<float> max_p_for_downscaling_pion{"max_p_for_downscaling_pion", 0.4, "max p to apply down scaling factor to store pion"};
   Configurable<float> max_p_for_downscaling_kaon{"max_p_for_downscaling_kaon", 0.0, "max p to apply down scaling factor to store kaon"};
-  Configurable<float> max_p_for_downscaling_proton{"max_p_for_downscaling_proton", 2.0, "max p to apply down scaling factor to store proton"};
+  Configurable<float> max_p_for_downscaling_proton{"max_p_for_downscaling_proton", 1e+10, "max p to apply down scaling factor to store proton"};
   Configurable<bool> store_ele_band_only{"store_ele_band_only", true, "flag to store tracks around electron band only to reduce output size"};
   Configurable<bool> reject_v0leg_with_itsib{"reject_v0leg_with_itsib", true, "flag to reject v0 leg with ITSib hits"};
 
@@ -675,8 +677,12 @@ struct TreeCreatorElectronMLDDA {
         }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion)) {
-      if (track.tpcInnerParam() < max_p_for_downscaling_pion) {
+      if (track.tpcInnerParam() < mid_p_for_downscaling_pion) {
         if (dist01(engine) > downscaling_pion_lowP) {
+          return;
+        }
+      } else if (track.tpcInnerParam() < max_p_for_downscaling_pion) {
+        if (dist01(engine) > downscaling_pion_midP) {
           return;
         }
       } else {
