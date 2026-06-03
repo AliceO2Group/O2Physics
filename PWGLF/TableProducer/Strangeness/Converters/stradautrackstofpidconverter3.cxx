@@ -33,6 +33,7 @@ struct stradautrackstofpidconverter3 {
   void process(aod::DauTrackTOFPIDs_001 const& dauTracks, aod::StraEvTimes_000 const& straEvTimes_000)
   {
     // create new TOFPIDs
+    dautracktofpids.reserve(dauTracks.size());
     for (const auto& dauTrack : dauTracks) {
       dautracktofpids(
         -1,
@@ -43,6 +44,7 @@ struct stradautrackstofpidconverter3 {
         dauTrack.length(),
         0.0f);
     }
+    straEvTimes.reserve(straEvTimes_000.size());
     for (const auto& value : straEvTimes_000) {
       straEvTimes(value.eventTime(), 999.0f /*dummy event time error for TOF*/);
     }
