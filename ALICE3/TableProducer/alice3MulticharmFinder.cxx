@@ -23,40 +23,44 @@
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
-#include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
-#include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "DetectorsVertexing/PVertexerHelpers.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexerHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TPDGCode.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <iterator>
 #include <map>
+#include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace o2;

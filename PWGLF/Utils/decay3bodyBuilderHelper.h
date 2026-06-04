@@ -12,31 +12,31 @@
 #ifndef PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_
 #define PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsVertexing/SVertexHypothesis.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/Track.h"
-
-#include <array>
-#include <cmath>
-#include <cstdlib>
-
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
-/// includes KFParticle
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsVertexing/SVertexHypothesis.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <stdexcept>
 
 namespace o2
 {

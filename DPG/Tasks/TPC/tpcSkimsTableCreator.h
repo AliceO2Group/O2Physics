@@ -20,7 +20,6 @@
 #ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/OccupancyTables.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -32,6 +31,7 @@ namespace o2::aod
 {
 namespace tpcskims
 {
+DECLARE_SOA_COLUMN(IsGoodRct, isGoodRct, bool);
 DECLARE_SOA_COLUMN(InvDeDxExpTPC, invDeDxExpTPC, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(BetaGamma, betaGamma, float);
@@ -59,7 +59,8 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
 } // namespace tpcskims
 
 #define TPCSKIMS_COLUMNS_BASE      \
-  o2::aod::track::TPCSignal,       \
+  tpcskims::IsGoodRct,             \
+    o2::aod::track::TPCSignal,     \
     tpcskims::InvDeDxExpTPC,       \
     o2::aod::track::TPCInnerParam, \
     o2::aod::track::Tgl,           \

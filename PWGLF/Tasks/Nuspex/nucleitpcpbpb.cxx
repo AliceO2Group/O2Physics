@@ -15,34 +15,47 @@
 ///
 /// \author Jaideep Tanwar <jaideep.tanwar@cern.ch>, Panjab University
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
-#include <Math/Vector4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PtEtaPhiM4D.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TMCProcess.h>
 #include <TRandom3.h>
+#include <TString.h>
 
-#include <limits>
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 using namespace o2;
@@ -318,6 +331,8 @@ struct NucleitpcPbPb {
 
       // NEW: Add DCAxy vs pT histograms for MC
       histomc.add("DCAxy_vs_pT_transport", "DCA_{xy} vs p_{T} (Transport);p_{T} (GeV/c);DCA_{xy} (cm)",
+                  {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
+      histomc.add("DCAxy_vs_pT_primary", "DCA_{xy} vs p_{T} (primary);p_{T} (GeV/c);DCA_{xy} (cm)",
                   {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
       histomc.add("DCAxy_vs_pT_weakdecay", "DCA_{xy} vs p_{T}  (Weak Decay);p_{T} (GeV/c);DCA_{xy} (cm)",
                   {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
@@ -1104,6 +1119,9 @@ struct NucleitpcPbPb {
 
               if (pdg == particlePdgCodes.at(i)) { // He3
                 histomc.fill(HIST("DCAxy_vs_pT_total"), ptDCA, track.dcaXY(), collision.centFT0C());
+                if (matchedMCParticle.isPhysicalPrimary()) {
+                  histomc.fill(HIST("DCAxy_vs_pT_primary"), ptDCA, track.dcaXY(), collision.centFT0C());
+                }
                 if (decayType == 2) { // Transport/Material
                   histomc.fill(HIST("DCAxy_vs_pT_transport"), ptDCA, track.dcaXY(), collision.centFT0C());
                 } else if (decayType == 1) { // Weak decay (including HF)

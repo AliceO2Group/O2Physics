@@ -16,7 +16,6 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 
 #include <Rtypes.h>

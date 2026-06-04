@@ -60,6 +60,7 @@
 
 #include <TH1.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 
 #include <array>
 #include <chrono>
@@ -390,7 +391,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       if (std::abs(nSigmaCombKa) >= kaonPidSel.nSigmaCombKaTightMax) {
         isTrackKaonPidMethod2 = false;
       }
-      if (std::abs(nSigmaCombPi) >= kaonPidSel.nSigmaCombPiMax) {
+      if (std::abs(nSigmaCombPi) <= kaonPidSel.nSigmaCombPiMax) {
         isTrackKaonPidMethod2 = false;
       }
     }

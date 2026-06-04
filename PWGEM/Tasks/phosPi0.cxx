@@ -14,31 +14,35 @@
 /// \author Dmitri Peresunko <Dmitri.Peresunko@cern.ch>
 ///
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/CaloClusters.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "PHOSBase/Geometry.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <cstdlib>
-#include <map>
+#include <deque>
 #include <memory>
 #include <string>
 #include <utility>

@@ -16,9 +16,9 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +31,7 @@ struct eventConverter3 {
 
   void process(aod::EMEvents_002 const& collisions)
   {
+    event_003.reserve(collisions.size());
     for (const auto& collision : collisions) {
       event_003(
         collision.globalIndex(),

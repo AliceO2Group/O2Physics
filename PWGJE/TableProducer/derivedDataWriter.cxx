@@ -28,9 +28,9 @@
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataProcessorSpec.h>
 #include <Framework/InitContext.h>

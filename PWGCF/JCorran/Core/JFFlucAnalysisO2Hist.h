@@ -16,7 +16,12 @@
 
 #include "JFFlucAnalysis.h"
 
-#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+
+#include <TString.h>
+
+#include <cstdint>
 
 class JFFlucAnalysisO2Hist : public JFFlucAnalysis
 {

@@ -13,19 +13,16 @@
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
 
-#include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/SGTrackSelector.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/SGTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TVector3.h"
-#include <TH1F.h>
-#include <TH2F.h>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;

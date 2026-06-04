@@ -24,14 +24,16 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTOF/ParameterContainers.h"
-#include "Framework/DataTypes.h"
-#include "Framework/PID.h"
-#include "Framework/Plugins.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/PID.h>
+#include <Framework/Plugins.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <cmath>
+#include <cstdint>
 #include <string>
 
 namespace o2::pid::tof
@@ -47,14 +49,14 @@ struct TOFResponseImpl {
   /// \note This function should be called in the init function of each task that uses the TOF response
   /// \note The parameters are loaded from the CCDB and stored in the static variable `parameters`
   /// \note The metadata information is also initialized in this function
-  void initSetup(o2::ccdb::BasicCCDBManager* ccdb, o2::framework::InitContext& initContext);
+  void initSetup(o2::ccdb::BasicCCDBManager* ccdb, o2::framework::InitContext& initContext, const std::string task = "tof-signal");
 
   /// Initialize the TOF response parameters in the init function of each task
   /// \param ccdb Service pointer to the CCDB manager
   template <typename T>
-  void initSetup(T ccdb, o2::framework::InitContext& initContext)
+  void initSetup(T ccdb, o2::framework::InitContext& initContext, const std::string task = "tof-signal")
   {
-    initSetup(ccdb.operator->(), initContext);
+    initSetup(ccdb.operator->(), initContext, task);
   }
 
   /// Initialize the TOF response parameters in the process function of each task, should be called only at least once per run
@@ -188,7 +190,7 @@ struct TOFResponseImpl {
   template <typename VType>
   void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
   {
-    if (!getTaskOptionValue(initContext, task, name, v, false)) {
+    if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }

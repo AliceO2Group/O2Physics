@@ -19,9 +19,10 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 #include <vector>
 
@@ -34,6 +35,7 @@ struct stradautracksconverter {
   void process(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
     // prepare arrays with the relevant information
+    dautracktofpids.reserve(dauTracks.size());
     std::vector<float> lLengths(dauTracks.size(), 1.e+6), lTOFSignals(dauTracks.size(), -1e+3f), lTOFEvTimes(dauTracks.size(), -1e+3f);
     for (const auto& v0 : v0s) {
       lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV();

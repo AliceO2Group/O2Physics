@@ -16,9 +16,9 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +31,7 @@ struct qvec2Converter0 {
 
   void process(aod::EMEventsQvec_001 const& collisions)
   {
+    qvec2_000.reserve(collisions.size());
     for (const auto& collision : collisions) {
       qvec2_000(
         collision.q2xft0m(), collision.q2yft0m(),

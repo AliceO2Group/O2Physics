@@ -16,8 +16,6 @@
 /// \author Hanseo Park <hanseo.park@cern.ch>
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
-#include "MlResponse.h"
-
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/Core/MlResponseHfTagging.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -25,12 +23,13 @@
 #include "PWGJE/DataModel/JetTagging.h"
 
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -42,6 +41,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 
 #include <onnxruntime_cxx_api.h>
 
@@ -732,13 +732,15 @@ struct JetTaggerHFTask {
   PROCESS_SWITCH(JetTaggerHFTask, processFillTables, "Fill Tables for tagging decision, jet probability, and ML score on charged jets", false);
 };
 
-using JetTaggerhfDataCharged = JetTaggerHFTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertex3ProngIndices, aod::DataSecondaryVertex3Prongs, aod::ChargedJetTags>;
-using JetTaggerhfMCDCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertex3ProngIndices, aod::MCDSecondaryVertex3Prongs, aod::ChargedMCDetectorLevelJetTags>;
+using JetTaggerhfDataCharged = JetTaggerHFTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertexNProngIndices, aod::DataSecondaryVertexNProngs, aod::ChargedJetTags>;
+using JetTaggerhfMcdCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertexNProngIndices, aod::MCDSecondaryVertexNProngs, aod::ChargedMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-data-charged"}), // o2-linter: disable=name/o2-task
-    adaptAnalysisTask<JetTaggerhfMCDCharged>(cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-mcd-charged"})};  // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<JetTaggerhfDataCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetTaggerhfMcdCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
 }

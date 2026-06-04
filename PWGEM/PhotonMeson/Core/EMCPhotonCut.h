@@ -19,17 +19,24 @@
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
+#include <TH2.h>
 #include <TNamed.h>
+
+#include <sys/types.h>
 
 #include <Rtypes.h>
 
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 template <typename T>
@@ -156,17 +163,17 @@ class EMCPhotonCut : public TNamed
       const o2::framework::AxisSpec thAxisTime{300, -150, +150, "#it{t}_{cls} (ns)"};
       const o2::framework::AxisSpec thAxisEoverP{400, 0, 10., "#it{E}_{cls}/#it{p}_{track} (#it{c})"};
 
-      fRegistry->add("QA/Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::kTH1D, {thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::kTH1D, {thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
-      fRegistry->add("QA/Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
-      fRegistry->add("QA/Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisNCell, thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisM02, thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisTime, thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::HistType::kTH1D, {thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::HistType::kTH1D, {thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::HistType::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
+      fRegistry->add("QA/Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisNCell, thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisM02, thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisTime, thAxisClusterEnergy}, true);
 
       fRegistry->addClone("QA/Cluster/before/", "QA/Cluster/after/");
 
-      auto hClusterQualityCuts = fRegistry->add<TH2>("QA/Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, thAxisClusterEnergy}, true);
+      auto hClusterQualityCuts = fRegistry->add<TH2>("QA/Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::HistType::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, thAxisClusterEnergy}, true);
       hClusterQualityCuts->GetXaxis()->SetBinLabel(1, "In");
       hClusterQualityCuts->GetXaxis()->SetBinLabel(2, "Definition");
       hClusterQualityCuts->GetXaxis()->SetBinLabel(3, "Energy");
@@ -178,12 +185,12 @@ class EMCPhotonCut : public TNamed
       hClusterQualityCuts->GetXaxis()->SetBinLabel(9, "Exotic");
       hClusterQualityCuts->GetXaxis()->SetBinLabel(10, "Out");
 
-      fRegistry->add("QA/Cluster/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-      fRegistry->add("QA/Cluster/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
+      fRegistry->add("QA/Cluster/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
+      fRegistry->add("QA/Cluster/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
     }
   }
 
@@ -280,7 +287,7 @@ class EMCPhotonCut : public TNamed
   /// \param cluster cluster table to check
   /// \param matchedTracks matched primary tracks table
   /// \param matchedSecondaries matched secondary tracks table
-  /// \param fRegistry HistogramRegistry pointer of the main task
+  /// \param fRegistry  o2::framework::HistogramRegistry pointer of the main task
   void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     if (clusters.size() <= 0) {

@@ -24,33 +24,25 @@
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/Propagator.h>
-#include <DetectorsVertexing/PVertexer.h>
-#include <DetectorsVertexing/PVertexerHelpers.h>
-#include <Field/MagneticField.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <SimulationDataFormat/InteractionSampler.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TGenPhaseSpace.h>
-#include <TGeoGlobalMagField.h>
-#include <TPDGCode.h>
-#include <TRandom3.h>
+#include <Rtypes.h>
 
-#include <RtypesCore.h>
-
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;

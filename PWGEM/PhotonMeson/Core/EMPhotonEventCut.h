@@ -19,9 +19,9 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "TNamed.h"
+#include <TNamed.h>
 
-using namespace std;
+#include <Rtypes.h>
 
 class EMPhotonEventCut : public TNamed
 {

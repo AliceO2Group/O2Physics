@@ -30,42 +30,41 @@
 /// \since  May 22, 2024
 ///
 
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
-#include "ALICE3/Core/FastTracker.h"
+#include "GeometryContainer.h"
+
+#include "ALICE3/Core/FlatTrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <CommonConstants/GeomConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <CommonUtils/NameConf.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
+#include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TPDGCode.h>
 #include <TRandom3.h>
-#include <TString.h>
 #include <TVector3.h>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -133,7 +132,7 @@ struct OnTheFlyRichPid {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
+  std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -297,7 +296,7 @@ struct OnTheFlyRichPid {
 
     if (flagRICHLoadDelphesLUTs) {
       for (int icfg = 0; icfg < nGeometries; ++icfg) {
-        mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+        mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
         mSmearer[icfg]->setCcdbManager(ccdb.operator->());
         std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
         for (const auto& entry : globalConfiguration) {

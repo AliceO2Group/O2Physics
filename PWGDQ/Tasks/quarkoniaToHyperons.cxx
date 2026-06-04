@@ -34,44 +34,46 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UPCHelpers.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "Math/Vector3D.h"
-#include <Math/Vector4D.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
+#include <Math/Vector3Dfwd.h>
+#include <TH1.h>
+#include <TMath.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
+#include <TVector3.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -376,7 +378,7 @@ struct QuarkoniaToHyperons {
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // For manual sliceBy
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   enum Selection : uint64_t { selCosPA = 0,
                               selRadius,
@@ -933,7 +935,7 @@ struct QuarkoniaToHyperons {
     histos.print();
   }
 
-  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator or so
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber() || (ccdbConfigurations.useCustomRunNumber && mRunNumber == ccdbConfigurations.customRunNumber)) {
@@ -2495,7 +2497,7 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
   {
     // Custom grouping
     v0sGrouped.clear();
@@ -2672,7 +2674,7 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     // Custom grouping
     v0sGrouped.clear();

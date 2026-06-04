@@ -20,49 +20,50 @@
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
-#include "Common/Core/PID/PIDTOFParamService.h"
-#include "Common/Core/TableHelper.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TGeoGlobalMagField.h"
-#include <TH1F.h>
-#include <TH3F.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <THashList.h>
 #include <TList.h>
-#include <TObjString.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
+#include <RtypesCore.h>
+
 #include <algorithm>
-#include <iostream>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using std::string;
 
 using namespace o2;
@@ -104,6 +105,8 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "electronSelection1_ionut", "Comma separated list of barrel track cuts for electrons"};
     Configurable<std::string> fConfigTrackCutsJSON{"cfgTrackCutsJSON", "", "Additional track cuts in JSON"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Track histograms"};
+    Configurable<std::string> fConfigMCRecTrackSignals{"cfgMCRecTrackSignals", "", "Comma separated list of MC signals (reconstructed)"};
+    Configurable<std::string> fConfigMCRecTrackSignalsJSON{"cfgMCRecTrackSignalsJSON", "", "Additional list of MC signals (reconstructed) via JSON"};
     Configurable<bool> fConfigTrackQA{"cfgTrackQA", false, "If true, fill Track QA histograms"};
   } fConfigTrackOptions;
 
@@ -127,11 +130,15 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigAddDileptonHadronHistogram{"cfgAddDileptonHadronHistogram", "", "Dilepton-hadron histograms"};
     Configurable<std::string> fConfigMCRecSignals{"cfgMCRecDileptonHadronSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> fConfigMCGenSignals{"cfgMCGenDileptonHadronSignals", "", "Comma separated list of MC signals (generated)"};
+    Configurable<std::string> fConfigMCGenPairSignals{"cfgMCGenDileptonHadronPairSignals", "", "Comma separated list of MC pair signals (generated)"};
     Configurable<std::string> fConfigMCRecSignalsJSON{"cfgMCRecDileptonHadronSignalsJSON", "", "Additional list of MC signals (reconstructed) via JSON"};
     Configurable<std::string> fConfigMCGenSignalsJSON{"cfgMCGenDileptonHadronSignalsJSON", "", "Comma separated list of MC signals (generated) via JSON"};
+    Configurable<std::string> fConfigMCGenPairSignalsJSON{"cfgMCGenDileptonHadronPairSignalsJSON", "", "Comma separated list of MC pair signals (generated) via JSON"};
     Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
     Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 0.1f, "minimum pt for the hadron"};
-    Configurable<bool> fConfigContainlepton{"cfgContainlepton", false, "If true, require the hadron to contain the lepton in its decay tree for the energy correlator study"};
+    Configurable<bool> fConfigUsePionMass{"cfgUsePionMass", false, "If true, use pion mass for the hadron in the energy correlator study"};
+    Configurable<bool> fConfigApplyEfficiency{"cfgApplyEfficiency", false, "If true, apply efficiency correction for the energy correlator study"};
+    Configurable<bool> fConfigApplyEfficiencyME{"cfgApplyEfficiencyME", false, "If true, apply efficiency correction for the energy correlator study"};
   } fConfigDileptonHadronOptions;
 
   // Histogram configurables
@@ -140,7 +147,7 @@ struct AnalysisEnergyCorrelator {
   // CCDB configurables
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "CCDB timestamp"};
-
+  Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "Users/y/yalin/pptest/test2", "Path of the efficiency corrections"};
   // Member variables
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
@@ -152,13 +159,16 @@ struct AnalysisEnergyCorrelator {
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fHadronCutNames;
   std::vector<TString> fHistNamesReco;
+  std::vector<TString> fHistNamesMCMatched;
 
   std::map<int, std::vector<TString>> fTrackHistNames;
   std::map<int, std::vector<TString>> fBarrelHistNamesMCmatched;
   std::map<int64_t, bool> fSelMap;
 
-  std::vector<MCSignal*> fRecMCSignals; // MC signals for reconstructed pairs
+  std::vector<MCSignal*> fRecMCTrackSignals; // MC signals for reconstructed tracks
+  std::vector<MCSignal*> fRecMCSignals;      // MC signals for reconstructed pairs
   std::vector<MCSignal*> fGenMCSignals;
+  std::vector<MCSignal*> fGenMCPairSignals;
   std::vector<MCSignal*> fRecMCTripleSignals; // MC signals for reconstructed triples
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -169,6 +179,13 @@ struct AnalysisEnergyCorrelator {
 
   using MixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   std::unique_ptr<MixingBinning> fMixingBinning;
+
+  TH2F* hAcceptance_rec;
+  TH2F* hAcceptance_gen;
+  TH2F* hEfficiency_dilepton;
+  TH2F* hEfficiency_hadron;
+  TH1F* hMasswindow;
+  TH2F* hReweighthadron;
 
   void init(o2::framework::InitContext& context)
   {
@@ -223,6 +240,7 @@ struct AnalysisEnergyCorrelator {
       for (auto& t : addTrackCuts) {
         fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         fTrackCutNames.push_back(t->GetName());
+        trackCutStr += Form(",%s", t->GetName());
       }
     }
 
@@ -295,6 +313,7 @@ struct AnalysisEnergyCorrelator {
       for (auto& t : addHadronCuts) {
         fHadronCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         fHadronCutNames.push_back(t->GetName());
+        hadronCutStr += Form(",%s", t->GetName());
       }
     }
 
@@ -321,6 +340,51 @@ struct AnalysisEnergyCorrelator {
       }
     }
 
+    // Add histogram classes for each specified MCsignal at the generator level
+    // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
+    TString sigpairGenNamesStr = fConfigDileptonHadronOptions.fConfigMCGenPairSignals.value;
+    std::unique_ptr<TObjArray> objGenPairSigArray(sigpairGenNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objGenPairSigArray->GetEntries(); isig++) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenPairSigArray->At(isig)->GetName());
+      if (sig) {
+        fGenMCPairSignals.push_back(sig);
+      }
+    }
+
+    // Add the MCSignals from the JSON config
+    TString addMCSignalsPairGenStr = fConfigDileptonHadronOptions.fConfigMCGenPairSignalsJSON.value;
+    if (addMCSignalsPairGenStr != "") {
+      std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsPairGenStr.Data());
+      for (auto& mcIt : addMCSignals) {
+        if (mcIt->GetNProngs() != 2) { // NOTE: only 2 prong signals
+          continue;
+        }
+        fGenMCPairSignals.push_back(mcIt);
+      }
+    }
+
+    // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
+    TString sigRecTrackNamesStr = fConfigTrackOptions.fConfigMCRecTrackSignals.value;
+    std::unique_ptr<TObjArray> objRecTrackSigArray(sigRecTrackNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objRecTrackSigArray->GetEntries(); isig++) {
+      MCSignal* sig_RecTrack = o2::aod::dqmcsignals::GetMCSignal(objRecTrackSigArray->At(isig)->GetName());
+      if (sig_RecTrack) {
+        fRecMCTrackSignals.push_back(sig_RecTrack);
+      }
+    }
+
+    // Add the MCSignals from the JSON config
+    TString addRecTrackSignalsGenStr = fConfigTrackOptions.fConfigMCRecTrackSignalsJSON.value;
+    if (addRecTrackSignalsGenStr != "") {
+      std::vector<MCSignal*> addMCRecTrackSignals = dqmcsignals::GetMCSignalsFromJSON(addRecTrackSignalsGenStr.Data());
+      for (auto& mcIt : addMCRecTrackSignals) {
+        if (mcIt->GetNProngs() > 2) { // NOTE: only 2 prong signals
+          continue;
+        }
+        fRecMCTrackSignals.push_back(mcIt);
+      }
+    }
+
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
 
     fHistMan = new HistogramManager("analysisHistos", "", VarManager::kNVars);
@@ -341,6 +405,11 @@ struct AnalysisEnergyCorrelator {
         TString nameStr = Form("AssocsBarrel_%s", cut->GetName());
         fHistNamesReco.push_back(nameStr);
         histClasses += Form("%s;", nameStr.Data());
+        for (auto& sig : fRecMCTrackSignals) {
+          TString nameStr2 = Form("AssocsBarrelMatched_%s_%s", cut->GetName(), sig->GetName());
+          fHistNamesMCMatched.push_back(nameStr2);
+          histClasses += Form("%s;", nameStr2.Data());
+        }
       }
       DefineHistograms(fHistMan, histClasses.Data(), fConfigTrackOptions.fConfigAddTrackHistogram.value.data());
     }
@@ -397,6 +466,14 @@ struct AnalysisEnergyCorrelator {
       if (sig->GetNProngs() == 1) {
         if (isMCGen_energycorrelators) {
           DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
+        }
+      }
+    }
+
+    for (auto& sig : fGenMCPairSignals) {
+      LOG(info) << "Defining histograms for pair signal: " << sig->GetNProngs();
+      if (sig->GetNProngs() == 2) {
+        if (isMCGen_energycorrelators) {
           DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelators_%s", sig->GetName()), "");
           DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelators_Pion_%s", sig->GetName()), "");
         }
@@ -418,14 +495,43 @@ struct AnalysisEnergyCorrelator {
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
   }
 
+  void initAccFromCCDB(uint64_t timestamp)
+  {
+    TList* listAccs = fCCDB->getForTimeStamp<TList>(fConfigAccCCDBPath, timestamp);
+    if (!listAccs) {
+      LOG(fatal) << "Problem getting TList object with efficiencies!";
+    }
+    hEfficiency_dilepton = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_dilepton"));
+    hEfficiency_hadron = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_hadron"));
+    hAcceptance_rec = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_rec"));
+    hAcceptance_gen = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_gen"));
+    hMasswindow = static_cast<TH1F*>(listAccs->FindObject("hMasswindow"));
+    hReweighthadron = static_cast<TH2F*>(listAccs->FindObject("hReweighthadron"));
+    if (!hAcceptance_rec || !hAcceptance_gen || !hEfficiency_dilepton || !hEfficiency_hadron || !hMasswindow || !hReweighthadron) {
+      LOG(fatal) << "Problem getting histograms from the TList object with efficiencies!";
+    }
+  }
+
+  float GetSafeInterpolationWeight(TH2* hEff, float x, float y)
+  {
+    if (!hEff)
+      return 1.0;
+    float minX = hEff->GetXaxis()->GetBinCenter(1);
+    float maxX = hEff->GetXaxis()->GetBinCenter(hEff->GetXaxis()->GetNbins());
+
+    float minY = hEff->GetYaxis()->GetBinCenter(1);
+    float maxY = hEff->GetYaxis()->GetBinCenter(hEff->GetYaxis()->GetNbins());
+
+    float safeX = std::max(minX, std::min(x, maxX));
+    float safeY = std::max(minY, std::min(y, maxY));
+
+    return hEff->Interpolate(safeX, safeY);
+  }
+
   template <bool MixedEvent, uint32_t TTrackFillMap, typename TTrack1, typename TTrack2, typename THadron, typename TEvent>
   void runDileptonHadron(TTrack1 const& track1, TTrack2 const& track2, int iEleCut,
                          THadron const& hadron, TEvent const& event, aod::McParticles const& /*mcParticles*/)
   {
-    VarManager::ResetValues(0, VarManager::kNVars); // reset variables before filling
-    VarManager::FillEvent<gkEventFillMapWithMults>(event);
-    VarManager::FillTrack<gkTrackFillMapWithCov>(hadron);
-    VarManager::FillTrackCollision<gkTrackFillMapWithCov>(hadron, event);
 
     // Check that hadron is not one of the dilepton legs
     if (hadron.globalIndex() == track1.globalIndex() || hadron.globalIndex() == track2.globalIndex()) {
@@ -445,12 +551,55 @@ struct AnalysisEnergyCorrelator {
         mcDecision |= (static_cast<uint32_t>(1) << isig);
       }
     }
-
     auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
+
+    float Effweight_rec = 1.0f;
+    float Accweight_gen = 1.0f;
+    if (fConfigDileptonHadronOptions.fConfigApplyEfficiency) {
+      float dilepton_pt = VarManager::fgValues[VarManager::kPt];
+      float dilepton_eta = VarManager::fgValues[VarManager::kEta];
+      float dilepton_phi = VarManager::fgValues[VarManager::kPhi];
+      float dilepton_rap = VarManager::fgValues[VarManager::kRap];
+      float hadron_eta = hadron.eta();
+      float hadron_phi = hadron.phi();
+      float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
+      Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+      Accweight_gen = GetSafeInterpolationWeight(hAcceptance_gen, dilepton_eta - hadron_eta, deltaphi);
+      float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton_rap, dilepton_pt);
+      float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, hadron_eta, hadron.pt());
+      float Masswindow = hMasswindow->Interpolate(dilepton_pt);
+      float Reweighthadron = 1.0f;
+      if (std::abs(hadronMC.pdgCode()) == PDG_t::kPiPlus) {
+        int bin = hReweighthadron->FindBin(0, hadron.pt());
+        Reweighthadron = hReweighthadron->GetBinContent(bin);
+      } else if (std::abs(hadronMC.pdgCode()) == PDG_t::kProton) {
+        int bin = hReweighthadron->FindBin(1, hadron.pt());
+        Reweighthadron = hReweighthadron->GetBinContent(bin);
+      } else if (std::abs(hadronMC.pdgCode()) == PDG_t::kKPlus) {
+        int bin = hReweighthadron->FindBin(2, hadron.pt());
+        Reweighthadron = hReweighthadron->GetBinContent(bin);
+      }
+      Accweight_gen = Accweight_gen * Effdilepton * Effhadron * Reweighthadron;
+      if (fConfigDileptonHadronOptions.fConfigApplyEfficiencyME) {
+        Effweight_rec = Effdilepton * Effhadron * Masswindow * Reweighthadron; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
+      } else {
+        Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow * Reweighthadron; // apply acceptance and efficiency correction for the real pairs
+      }
+    }
+
+    VarManager::ResetValues(0, VarManager::kNVars); // reset variables before filling
+    VarManager::FillEvent<gkEventFillMapWithMults>(event);
+    VarManager::FillTrack<gkTrackFillMapWithCov>(hadron);
+    VarManager::FillTrackCollision<gkTrackFillMapWithCov>(hadron, event);
+
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
-    VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
-    VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues);
+    VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
+    if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen, fTransRange[0], fTransRange[1]);
+    } else {
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen, fTransRange[0], fTransRange[1]);
+    }
 
     int iHadronCut = 0;
     for (auto hCut = fHadronCuts.begin(); hCut != fHadronCuts.end(); hCut++, iHadronCut++) {
@@ -537,6 +686,7 @@ struct AnalysisEnergyCorrelator {
     // CCDB initialization
     if (fCurrentRun != bcs.begin().runNumber()) {
       fCurrentRun = bcs.begin().runNumber();
+      initAccFromCCDB(bcs.begin().timestamp());
     }
 
     if (fConfigEventOptions.fConfigEventQA) {
@@ -594,6 +744,17 @@ struct AnalysisEnergyCorrelator {
           fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", VarManager::fgValues);
         }
 
+        uint32_t mcDecision = static_cast<uint32_t>(0);
+        // run MC matching for this pair
+        int isig = 0;
+        mcDecision = 0;
+        for (auto sig = fRecMCTrackSignals.begin(); sig != fRecMCTrackSignals.end(); sig++, isig++) {
+          if (t1.has_mcParticle()) {
+            if ((*sig)->CheckSignal(true, t1.mcParticle())) {
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
+            }
+          }
+        }
         // Apply electron cuts and fill histograms
         int iCut1 = 0;
         for (auto cut1 = fTrackCuts.begin(); cut1 != fTrackCuts.end(); cut1++, iCut1++) {
@@ -601,10 +762,14 @@ struct AnalysisEnergyCorrelator {
             filter1 |= (static_cast<uint32_t>(1) << iCut1);
             if (fConfigTrackOptions.fConfigTrackQA) {
               fHistMan->FillHistClass(fHistNamesReco[iCut1], VarManager::fgValues);
+              for (size_t isig = 0; isig < fRecMCTrackSignals.size(); isig++) { // loop over MC signals
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  fHistMan->FillHistClass(fHistNamesMCMatched[iCut1 * fRecMCTrackSignals.size() + isig], VarManager::fgValues); // matched signal
+                }
+              }
             }
           }
         }
-
         // Check opposite charge with t2
         for (auto& a2 : groupedAssocs) {
           auto t2 = a2.template track_as<MyBarrelTracksWithCov>();
@@ -671,7 +836,7 @@ struct AnalysisEnergyCorrelator {
   }
 
   Filter eventFilter = nabs(aod::collision::posZ) < fConfigEventOptions.fConfigEventfilterVtz && aod::evsel::sel8 == true;
-  void processBarrelMixedEvent(soa::Filtered<MyEvents>& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& /*mcCollisions*/, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
+  void processBarrelMixedEvent(soa::Filtered<MyEvents> const& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& /*mcCollisions*/, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       return;
@@ -680,6 +845,7 @@ struct AnalysisEnergyCorrelator {
     // CCDB initialization
     if (fCurrentRun != bcs.begin().runNumber()) {
       fCurrentRun = bcs.begin().runNumber();
+      initAccFromCCDB(bcs.begin().timestamp());
     }
 
     fSelMap.clear();
@@ -797,13 +963,13 @@ struct AnalysisEnergyCorrelator {
     groupedMCTracks1.bindInternalIndicesTo(&mcTracks);
     groupedMCTracks2.bindInternalIndicesTo(&mcTracks);
     for (auto& t1 : groupedMCTracks1) {
-      auto t1_raw = groupedMCTracks1.rawIteratorAt(t1.globalIndex());
+      auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, t1_raw)) {
           if (t1.mcCollisionId() != event1.mcCollisionId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
             continue;
           }
-          VarManager::FillTrackMC(groupedMCTracks1, t1_raw);
+          VarManager::FillTrackMC(mcTracks, t1_raw);
           if (!MixedEvent && !PionMass) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
           }
@@ -816,11 +982,8 @@ struct AnalysisEnergyCorrelator {
         continue;
       // for the energy correlators
       for (auto& t2 : groupedMCTracks2) {
-        auto t2_raw = groupedMCTracks2.rawIteratorAt(t2.globalIndex());
+        auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
         if (t2.mcCollisionId() != event2.mcCollisionId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
-          continue;
-        }
-        if (!t2_raw.isPhysicalPrimary()) {
           continue;
         }
         if (t2_raw.has_mothers()) {
@@ -829,19 +992,35 @@ struct AnalysisEnergyCorrelator {
             continue;
           }
         }
-        if (fConfigDileptonHadronOptions.fConfigContainlepton && std::abs(t2_raw.pdgCode()) != PDG_t::kPiPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kKPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kProton && std::abs(t2_raw.pdgCode()) != PDG_t::kElectron && std::abs(t2_raw.pdgCode()) != PDG_t::kMuonMinus) {
-          continue;
-        }
-        if (!fConfigDileptonHadronOptions.fConfigContainlepton && std::abs(t2_raw.pdgCode()) != PDG_t::kPiPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kKPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kProton) {
-          continue;
-        }
         if (t2_raw.pt() < fConfigDileptonHadronOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigDileptonHadronOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
         }
+        float acceptance = 1.0f;
+        if (fConfigDileptonHadronOptions.fConfigApplyEfficiency) {
+          float dilepton_eta = t1_raw.eta();
+          float dilepton_phi = t1_raw.phi();
+          float hadron_eta = t2_raw.eta();
+          float hadron_phi = t2_raw.phi();
+          float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
+          acceptance = hAcceptance_gen->Interpolate(dilepton_eta - hadron_eta, deltaphi);
+          float Reweighthadron = 1.0f;
+          if (std::abs(t2_raw.pdgCode()) == PDG_t::kPiPlus) {
+            int bin = hReweighthadron->FindBin(0, t2_raw.pt());
+            Reweighthadron = hReweighthadron->GetBinContent(bin);
+          } else if (std::abs(t2_raw.pdgCode()) == PDG_t::kProton) {
+            int bin = hReweighthadron->FindBin(1, t2_raw.pt());
+            Reweighthadron = hReweighthadron->GetBinContent(bin);
+          } else if (std::abs(t2_raw.pdgCode()) == PDG_t::kKPlus) {
+            int bin = hReweighthadron->FindBin(2, t2_raw.pt());
+            Reweighthadron = hReweighthadron->GetBinContent(bin);
+          }
+          acceptance = acceptance * Reweighthadron;
+        }
         std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
-        VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues, fTransRange[0], fTransRange[1]);
-        for (auto& sig : fGenMCSignals) {
-          if (sig->CheckSignal(true, t1_raw)) {
+        VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues, fTransRange[0], fTransRange[1], 1. / acceptance);
+        for (auto& sig : fGenMCPairSignals) {
+
+          if (sig->CheckSignal(true, t1_raw, t2_raw)) {
             if (!MixedEvent && !PionMass) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
             }
@@ -860,8 +1039,8 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelators(soa::Filtered<MyEvents>& events,
-                                     McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+  void processMCGenEnergyCorrelators(soa::Filtered<MyEvents> const& events,
+                                     McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -881,13 +1060,17 @@ struct AnalysisEnergyCorrelator {
       std::vector<int> fSavelessevents = fConfigDileptonHadronOptions.fConfigSavelessevents.value;
       if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
+      }
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
       }
       runEnergyCorrelators<false, false, VarManager::kJpsiHadronMass>(event, event, mcTracks);
     }
   }
 
-  void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEvents>& events,
-                                       McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+  void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEvents> const& events,
+                                       McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -912,12 +1095,16 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event1.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
+      }
       runEnergyCorrelators<true, false, VarManager::kJpsiHadronMass>(event1, event2, mcTracks);
     }
   }
 
-  void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEvents>& events,
-                                         McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+  void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEvents> const& events,
+                                         McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -938,12 +1125,16 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
+      }
       runEnergyCorrelators<false, true, VarManager::kJpsiPionMass>(event, event, mcTracks);
     }
   }
 
-  void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEvents>& events,
-                                           McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+  void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEvents> const& events,
+                                           McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -967,6 +1158,10 @@ struct AnalysisEnergyCorrelator {
       std::vector<int> fSavelessevents = fConfigDileptonHadronOptions.fConfigSavelessevents.value;
       if (fSavelessevents[0] > 1 && event1.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
+      }
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
       }
       runEnergyCorrelators<true, true, VarManager::kJpsiPionMass>(event1, event2, mcTracks);
     }

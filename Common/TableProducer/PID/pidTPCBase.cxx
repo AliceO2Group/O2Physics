@@ -51,7 +51,7 @@ struct PidMultiplicity {
   {
     LOG(info) << "Initializing PID Mult Task";
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "PIDMults");
+    enableTable = o2::common::core::isTableRequiredInWorkflow(initContext, "PIDMults");
     if (enableTable) {
       LOG(info) << "Table TPC PID Multiplicity enabled!";
     }

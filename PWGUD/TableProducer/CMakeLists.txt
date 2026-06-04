@@ -18,7 +18,7 @@ o2physics_add_dpl_workflow(dg-cand-producer
 
 o2physics_add_dpl_workflow(sgcand-producer
                            SOURCES SGCandProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::AnalysisCCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::AnalysisCCDB O2Physics::FITCutParHolder
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dgbccand-producer
@@ -66,7 +66,17 @@ o2physics_add_dpl_workflow(upc-cand-producer-muon
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(true-gap-producer
+                           SOURCES trueGapProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-cand-producer-global-muon
         SOURCES upcCandProducerGlobalMuon.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
+        COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-cand-producer-semi-fwd
+        SOURCES upcCandProducerSemiFwd.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
         COMPONENT_NAME Analysis)

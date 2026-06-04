@@ -254,7 +254,7 @@ DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(Weight, weight, float); //! Weight of the event (e.g. for JJ MCs). Set to 1 for data and non-weighted MCs.
 } // namespace emevent
 
-DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or aod::Collisions
+DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or o2::aod::Collisions
 using EMEventNgPCM = EMEventsNgPCM::iterator;
 
 DECLARE_SOA_TABLE(EMEventsWeight, "AOD", "EMEVENTWEIGHT", //! table contanint the weight for eache event (for JJ MCs), joinable to EMEvents

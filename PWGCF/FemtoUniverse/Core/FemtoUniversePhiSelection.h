@@ -22,15 +22,23 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
 
+#include <array>
+#include <cstddef>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femto_universe
@@ -75,7 +83,7 @@ class FemtoUniversePhiSelection
   template <o2::aod::femtouniverseparticle::ParticleType part,
             o2::aod::femtouniverseparticle::ParticleType daugh,
             typename CutContainerType>
-  void init(HistogramRegistry* registry);
+  void init(o2::framework::HistogramRegistry* registry);
 
   template <typename C, typename V, typename T>
   bool isSelectedMinimal(C const& col, V const& phi, T const& posTrack,
@@ -276,7 +284,7 @@ class FemtoUniversePhiSelection
 template <o2::aod::femtouniverseparticle::ParticleType part,
           o2::aod::femtouniverseparticle::ParticleType daugh,
           typename CutContainerType>
-void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
+void FemtoUniversePhiSelection::init(o2::framework::HistogramRegistry* registry)
 {
 
   if (registry) {
@@ -284,10 +292,10 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
-    AxisSpec massAxisPhi = {6000, 0.9f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f,
-                                   "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisPhi = {6000, 0.9f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f,
+                                                  "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
 
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
@@ -300,13 +308,13 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
       o2::aod::femtouniverseparticle::ParticleTypeName[part]);
     /// \todo initialize histograms for children tracks of phis
     mHistogramRegistry->add((folderName + "/hPt").c_str(),
-                            "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F,
+                            "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F,
                             {{1000, 0, 10}});
     mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries",
-                            kTH1F, {{1000, -1, 1}});
+                            o2::framework::HistType::kTH1F, {{1000, -1, 1}});
     mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries",
-                            kTH1F, {{1000, 0, o2::constants::math::TwoPI}});
-    mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", kTH1F,
+                            o2::framework::HistType::kTH1F, {{1000, 0, o2::constants::math::TwoPI}});
+    mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", o2::framework::HistType::kTH1F,
                             {massAxisPhi});
 
     posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kPhiChild,
@@ -318,28 +326,28 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
                        aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
 
-    // mHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", kTH1F,
+    // mHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", o2::framework::HistType::kTH1F,
     //                         {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaInvMassCut",
-    //                         "Invariant mass cut", kTH1F, {massAxisLambda});
+    //                         "Invariant mass cut", o2::framework::HistType::kTH1F, {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMin", "Minimum Pt cut",
-    //                         kTH1F, {massAxisLambda});
+    //                         o2::framework::HistType::kTH1F, {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMax", "Maximum Pt cut",
-    //                         kTH1F, {massAxisLambda});
+    //                         o2::framework::HistType::kTH1F, {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaEtaMax", "Maximum Eta cut",
-    //                         kTH1F, {massAxisLambda});
+    //                         o2::framework::HistType::kTH1F, {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaDCAPhiDaugh",
-    //                         "Phi-daughters DCA cut", kTH1F, {massAxisLambda});
-    // mHistogramRegistry->add("LambdaQA/hInvMassLambdaCPA", "CPA cut", kTH1F,
+    //                         "Phi-daughters DCA cut", o2::framework::HistType::kTH1F, {massAxisLambda});
+    // mHistogramRegistry->add("LambdaQA/hInvMassLambdaCPA", "CPA cut", o2::framework::HistType::kTH1F,
     //                         {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaTranRadMin",
-    //                         "Minimum transverse radius cut", kTH1F,
+    //                         "Minimum transverse radius cut", o2::framework::HistType::kTH1F,
     //                         {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaTranRadMax",
-    //                         "Maximum transverse radius cut", kTH1F,
+    //                         "Maximum transverse radius cut", o2::framework::HistType::kTH1F,
     //                         {massAxisLambda});
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaDecVtxMax",
-    //                         "Maximum distance on  decay vertex cut", kTH1F,
+    //                         "Maximum distance on  decay vertex cut", o2::framework::HistType::kTH1F,
     //                         {massAxisLambda});
   }
   /// check whether the most open cuts are fulfilled - most of this should have

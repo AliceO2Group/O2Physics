@@ -13,35 +13,57 @@
 /// \brief a task to study matching MFT-[MCH-MID] in MC
 /// \author daiki.sekihata@cern.ch
 
-#include "TableHelper.h"
+#include "PWGEM/Dilepton/Utils/MlResponseFwdTrack.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Tools/ML/MlResponse.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "TGeoGlobalMagField.h"
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
 
-#include <format>
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::soa;
@@ -96,6 +118,18 @@ struct matchingMFT {
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   Configurable<bool> cfgApplyPreselectionInBestMatch{"cfgApplyPreselectionInBestMatch", false, "flag to apply preselection in find best match function"};
 
+  // configuration for matching with ML
+  Configurable<bool> useMLmatching{"useMLmatching", false, "Flag to use ML for matching between MFT and MCH-MID"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
+  Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
+  Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95, 0.95, 0.7, 0.7, 0.8, 0.8, 0.7, 0.7}, "ML cuts per bin"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"multFT0C", "ptMCHMID", "rSigned1Pt", "dEta", "dPhi", "dX", "dY", "chi2MatchMCHMFT"}, "Names of ML model input features"};
+  Configurable<std::string> nameBinningFeature{"nameBinningFeature", "multFT0C", "Names of ML model binning feature"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
@@ -136,9 +170,27 @@ struct matchingMFT {
   } eventcuts;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  o2::analysis::MlResponseFwdTrack<float> mlResponseFwdTrack;
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
+
+  struct matchedCandidate {
+    float multFT0C{0};
+    float multMFT{0};
+    float ptMCHMID{0};
+    float rSigned1Pt{1e+10};
+    float dEta{1e+10};
+    float dPhi{1e+10};
+    float dX{1e+10};
+    float dY{1e+10};
+    float chi2MatchMCHMFT{1e+10};
+
+    float sigmaPhiMFT{1e+10};
+    float sigmaTglMFT{1e+10};
+    float sigmaPhiMCHMID{1e+10};
+    float sigmaTglMCHMID{1e+10};
+  };
 
   void init(o2::framework::InitContext&)
   {
@@ -154,6 +206,31 @@ struct matchingMFT {
     rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
     addHistograms();
+
+    if (useMLmatching) {
+      static constexpr int nClassesMl = 2;
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
+      const uint32_t nBinsMl = binsMl.value.size() - 1;
+      const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      double cutsMlArr[nBinsMl][nClassesMl];
+      for (uint32_t i = 0; i < nBinsMl; i++) {
+        cutsMlArr[i][0] = 0.0;
+        cutsMlArr[i][1] = cutsMl.value[i];
+      }
+      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      mlResponseFwdTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        mlResponseFwdTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, timestampCCDB.value);
+      } else {
+        mlResponseFwdTrack.setModelPathsLocal(onnxFileNames.value);
+      }
+      mlResponseFwdTrack.cacheInputFeaturesIndices(namesInputFeatures);
+      mlResponseFwdTrack.cacheBinningIndex(nameBinningFeature);
+      mlResponseFwdTrack.init(enableOptimizations.value);
+    } // end of ML configuration
   }
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -399,28 +476,6 @@ struct matchingMFT {
     }
     return (clmap > 0);
   }
-
-  // template <typename T>
-  // float meanClusterSizeMFT(T const& track)
-  // {
-  //   uint64_t mftClusterSizesAndTrackFlags = track.mftClusterSizesAndTrackFlags();
-  //   uint16_t clsSize = 0;
-  //   uint16_t n = 0;
-  //   for (unsigned int layer = 0; layer < 10; layer++) {
-  //     uint16_t size_per_layer = (mftClusterSizesAndTrackFlags >> (layer * 6)) & 0x3f;
-  //     clsSize += size_per_layer;
-  //     if (size_per_layer > 0) {
-  //       n++;
-  //     }
-  //     // LOGF(info, "track.globalIndex() = %d, layer = %d, size_per_layer = %d", track.globalIndex(), layer, size_per_layer);
-  //   }
-
-  //   if (n > 0) {
-  //     return static_cast<float>(clsSize) / static_cast<float>(n) * std::fabs(std::sin(std::atan(track.tgl())));
-  //   } else {
-  //     return 0.f;
-  //   }
-  // }
 
   template <typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack, typename TMFTrackCov>
   void getDxDyAtMatchingPlane(TCollision const& collision, TFwdTrack const& fwdtrack, TMFTrackCov const& mftCovs, float& dx, float& dy)
@@ -802,8 +857,8 @@ struct matchingMFT {
   std::vector<std::tuple<int, int, int>> vec_min_chi2MatchMCHMFT; // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> chi2MatchMCHMFT;
   // std::map<std::tuple<int, int, int>, bool> mapCorrectMatch;
 
-  template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
-  void findBestMatchPerMCHMID(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&)
+  template <bool withMFTCov = false, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
+  void findBestMatchPerMCHMID(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const& mfttracks, TMFTTracksCov const& mftCovs)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
       return;
@@ -811,6 +866,8 @@ struct matchingMFT {
     if (!fwdtrack.has_mcParticle()) {
       return;
     }
+
+    auto mfttracks_per_collision = mfttracks.sliceBy(perCollision_MFT, collision.globalIndex());
 
     std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
     float min_chi2MatchMCHMFT = 1e+10;
@@ -827,6 +884,9 @@ struct matchingMFT {
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     float pDCA = fwdtrack.p() * dcaXY_Matched;
+
+    o2::dataformats::GlobalFwdTrack muonAtMP = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToMatchingPlane, matchingZ, mBz, mZShift); // propagated to matching plane
+    float phiMCHMIDatMP = RecoDecay::constrainAngle(muonAtMP.getPhi(), 0, 1U);
 
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
@@ -869,6 +929,44 @@ struct matchingMFT {
         float dcaX = propmuonAtPV.getX() - collision.posX();
         float dcaY = propmuonAtPV.getY() - collision.posY();
         float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+
+        if constexpr (withMFTCov) {
+          if (useMLmatching) {
+            matchedCandidate candidate;
+            candidate.multFT0C = collision.multFT0C();
+            candidate.multMFT = static_cast<float>(mfttracks_per_collision.size());
+            candidate.chi2MatchMCHMFT = muon_tmp.chi2MatchMCHMFT();
+
+            auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+            o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwdShift(mfttrack, mZShift, mfttrackcov); // values at innermost update
+            mftsaAtMP.propagateToZhelix(matchingZ, mBz);                                                  // propagated to matching plane
+            float phiMFTatMP = RecoDecay::constrainAngle(mftsaAtMP.getPhi(), 0, 1U);
+
+            candidate.rSigned1Pt = mftsaAtMP.getInvQPt() / muonAtMP.getInvQPt();
+            candidate.dEta = mftsaAtMP.getEta() - muonAtMP.getEta();
+            candidate.dPhi = RecoDecay::constrainAngle(phiMFTatMP - phiMCHMIDatMP, -o2::constants::math::PIHalf, 1U);
+            candidate.dX = mftsaAtMP.getX() - muonAtMP.getX();
+            candidate.dY = mftsaAtMP.getY() - muonAtMP.getY();
+
+            candidate.sigmaTglMCHMID = std::sqrt(muonAtMP.getSigma2Tanl());
+            candidate.sigmaPhiMCHMID = std::sqrt(muonAtMP.getSigma2Phi());
+            candidate.sigmaTglMFT = std::sqrt(mftsaAtMP.getSigma2Tanl());
+            candidate.sigmaPhiMFT = std::sqrt(mftsaAtMP.getSigma2Phi());
+
+            std::vector<float> inputFeatures = mlResponseFwdTrack.getInputFeatures(candidate);
+            float binningFeature = mlResponseFwdTrack.getBinningFeature(candidate);
+            int pbin = lower_bound(binsMl.value.begin(), binsMl.value.end(), binningFeature) - binsMl.value.begin() - 1;
+            if (pbin < 0) {
+              pbin = 0;
+            } else if (static_cast<int>(binsMl.value.size()) - 2 < pbin) {
+              pbin = static_cast<int>(binsMl.value.size()) - 2;
+            }
+            float probaEl = mlResponseFwdTrack.getModelOutput(inputFeatures, pbin)[1]; // 0: wrong, 1:correct
+            if (probaEl < cutsMl.value[pbin]) {
+              continue;
+            }
+          }
+        }
 
         if (isPrimary) {
           if (isMatched) {
@@ -1077,7 +1175,7 @@ struct matchingMFT {
       initCCDB(bc);
       auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& fwdtrack : fwdtracks_per_coll) {
-        findBestMatchPerMCHMID(collision, fwdtrack, fwdtracks, mfttracks);
+        findBestMatchPerMCHMID<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -1135,7 +1233,7 @@ struct matchingMFT {
       auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
-        findBestMatchPerMCHMID(collision, fwdtrack, fwdtracks, mfttracks);
+        findBestMatchPerMCHMID<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -1198,7 +1296,7 @@ struct matchingMFT {
       auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
-        findBestMatchPerMCHMID(collision, fwdtrack, fwdtracks, mfttracks);
+        findBestMatchPerMCHMID<true>(collision, fwdtrack, fwdtracks, mfttracks, mftCovs);
       } // end of fwdtrack loop
     } // end of collision loop
 

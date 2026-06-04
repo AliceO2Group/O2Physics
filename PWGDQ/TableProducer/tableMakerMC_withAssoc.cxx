@@ -27,7 +27,8 @@
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
-#include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -37,24 +38,34 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "TGeoGlobalMagField.h"
-#include "TList.h"
+#include <THashList.h>
+#include <TList.h>
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -183,6 +194,7 @@ struct TableMakerMC {
   // RCT selection
   struct : ConfigurableGroup {
     Configurable<bool> fConfigUseRCT{"cfgUseRCT", false, "Enable event selection with RCT flags"};
+    Configurable<bool> fCheckZDC{"cfgCheckZDC", false, "Check ZDC quality in the RCT flag checker"};
     Configurable<std::string> fConfigRCTLabel{"cfgRCTLabel", "CBT", "RCT flag labels : CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
   } fConfigRCT;
 
@@ -443,7 +455,7 @@ struct TableMakerMC {
     }
 
     if (fConfigRCT.fConfigUseRCT.value) {
-      rctChecker.init(fConfigRCT.fConfigRCTLabel);
+      rctChecker.init(fConfigRCT.fConfigRCTLabel, fConfigRCT.fCheckZDC.value);
     }
   }
 
@@ -1029,12 +1041,6 @@ struct TableMakerMC {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
-        if (fConfigVariousOptions.fUseML.value) {
-          std::vector<float> output;
-          std::vector<float> inputML = matchingMlResponse.getInputFeaturesTest(muon);
-          matchingMlResponse.isSelectedMl(inputML, 0, output);
-          chi2 = output[0];
-        }
         if (mCandidates.find(muonID) == mCandidates.end()) {
           mCandidates[muonID] = {chi2, muon.globalIndex()};
         } else {
@@ -1066,7 +1072,7 @@ struct TableMakerMC {
           muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
         }
         std::vector<float> output;
-        std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, collision);
+        std::vector<float> inputML = matchingMlResponse.getInputFeatures(muon, mfttrack, muontrack, mftprop, muonprop, collision);
         matchingMlResponse.isSelectedMl(inputML, 0, output);
         float score = output[0];
         if (mCandidates.find(muonID) == mCandidates.end()) {

@@ -16,9 +16,9 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +31,7 @@ struct bcConverter1 {
 
   void process(aod::EMBCs_000 const& bcs)
   {
+    bc_001.reserve(bcs.size());
     for (const auto& bc : bcs) {
       bc_001(o2::aod::emevsel::reduceSelectionBit(bc), bc.rct_raw());
     } // end of bc loop

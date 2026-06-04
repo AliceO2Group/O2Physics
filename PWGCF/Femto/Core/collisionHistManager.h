@@ -19,9 +19,9 @@
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
 #include <array>
 #include <map>
@@ -51,9 +51,6 @@ enum ColHist {
   kCentVsMult,
   kCentVsSphericity,
   kMultVsSphericity,
-  // particle number correlation
-  kNpart1VsNpart2,
-  kNpart1VsNpart2VsNpart3,
   // mc
   kTrueCentVsCent,
   kTrueMultVsMult,
@@ -66,37 +63,32 @@ constexpr std::string_view McDir = "Collisions/MC/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
-    {kPosZ, o2::framework::kTH1F, "hPosZ", "Vertex Z; V_{Z} (cm); Entries"},
-    {kMult, o2::framework::kTH1F, "hMult", "Multiplicity; Multiplicity; Entries"},
-    {kCent, o2::framework::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
-    {kMagField, o2::framework::kTH1F, "hMagField", "Magnetic Field; B (kG); Entries"},
+    {kPosZ, o2::framework::HistType::kTH1F, "hPosZ", "Vertex Z; V_{Z} (cm); Entries"},
+    {kMult, o2::framework::HistType::kTH1F, "hMult", "Multiplicity; Multiplicity; Entries"},
+    {kCent, o2::framework::HistType::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
+    {kMagField, o2::framework::HistType::kTH1F, "hMagField", "Magnetic Field; B (kG); Entries"},
     // qa
-    {kPosX, o2::framework::kTH1F, "hPosX", "Vertex X; V_{X} (cm); Entries"},
-    {kPosY, o2::framework::kTH1F, "hPosY", "Vertex Y; V_{Y} (cm); Entries"},
-    {kPos, o2::framework::kTH1F, "hPos", "Primary vertex; V_{pos} (cm); Entries"},
-    {kSphericity, o2::framework::kTH1F, "hSphericity", "Sphericity; Sphericity; Entries"},
-    {kOccupancy, o2::framework::kTH1F, "hOccupancy", "Occupancy; Occupancy; Entries"},
+    {kPosX, o2::framework::HistType::kTH1F, "hPosX", "Vertex X; V_{X} (cm); Entries"},
+    {kPosY, o2::framework::HistType::kTH1F, "hPosY", "Vertex Y; V_{Y} (cm); Entries"},
+    {kPos, o2::framework::HistType::kTH1F, "hPos", "Primary vertex; V_{pos} (cm); Entries"},
+    {kSphericity, o2::framework::HistType::kTH1F, "hSphericity", "Sphericity; Sphericity; Entries"},
+    {kOccupancy, o2::framework::HistType::kTH1F, "hOccupancy", "Occupancy; Occupancy; Entries"},
     // 2d
-    {kPoszVsMult, o2::framework::kTH2F, "hPoszVsMult", "Vertex Z vs Multiplicity; V_{Z} (cm); Multiplicity"},
-    {kPoszVsCent, o2::framework::kTH2F, "hPoszVsCent", "Vertex Z vs Centrality; V_{Z} (cm); Centrality (%)"},
-    {kCentVsMult, o2::framework::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
-    {kMultVsSphericity, o2::framework::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
-    {kCentVsSphericity, o2::framework::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
-    // particle number correlation
-    {kNpart1VsNpart2, o2::framework::kTH2F, "hNpart1VsNpart2", "# particle 1 vs # particle 2; # particle 1; # particle 2"},
-    {kNpart1VsNpart2VsNpart3, o2::framework::kTHnSparseF, "hNpart1VsNpart2VsNpart3", "# particle 1 vs # particle 2 vs particle 3; # particle 1; # particle 2; # particle 3"},
+    {kPoszVsMult, o2::framework::HistType::kTH2F, "hPoszVsMult", "Vertex Z vs Multiplicity; V_{Z} (cm); Multiplicity"},
+    {kPoszVsCent, o2::framework::HistType::kTH2F, "hPoszVsCent", "Vertex Z vs Centrality; V_{Z} (cm); Centrality (%)"},
+    {kCentVsMult, o2::framework::HistType::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
+    {kMultVsSphericity, o2::framework::HistType::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
+    {kCentVsSphericity, o2::framework::HistType::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
     // mc
-    {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
-    {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
+    {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
+    {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
 
-#define COL_HIST_ANALYSIS_MAP(conf)                                          \
-  {kPosZ, {conf.vtxZ}},                                                      \
-    {kMult, {conf.mult}},                                                    \
-    {kCent, {conf.cent}},                                                    \
-    {kMagField, {conf.magField}},                                            \
-    {kNpart1VsNpart2, {conf.particleCorrelation, conf.particleCorrelation}}, \
-    {kNpart1VsNpart2VsNpart3, {conf.particleCorrelation, conf.particleCorrelation, conf.particleCorrelation}},
+#define COL_HIST_ANALYSIS_MAP(conf) \
+  {kPosZ, {conf.vtxZ}},             \
+    {kMult, {conf.mult}},           \
+    {kCent, {conf.cent}},           \
+    {kMagField, {conf.magField}},
 
 #define COL_HIST_QA_MAP(confAnalysis, confQa)                    \
   {kPosX, {confQa.vtxXY}},                                       \
@@ -156,9 +148,6 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mult{"mult", {200, 0, 200}, "Multiplicity binning"};
   o2::framework::ConfigurableAxis cent{"cent", {100, 0.0f, 100.0f}, "Centrality (multiplicity percentile) binning"};
   o2::framework::ConfigurableAxis magField{"magField", {11, -5.5, 5.5}, "Magnetic field binning"};
-  o2::framework::Configurable<bool> plotParticlePairCorrelation{"plotParticlePairCorrelation", false, "Plot particle number correlation for pairs"};
-  o2::framework::Configurable<bool> plotParticleTripletCorrelation{"plotParticleTripletCorrelation", false, "Plot particle number correlation for triplets"};
-  o2::framework::ConfigurableAxis particleCorrelation{"particleCorrelation", {6, -0.5f, 5.5f}, "Binning for particle number correlation of pairs/triplets"};
 };
 
 struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {
@@ -179,11 +168,9 @@ class CollisionHistManager
   template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs,
-            T const& ConfCollisionBinning)
+            T const& /*ConfCollisionBinning*/)
   {
     mHistogramRegistry = registry;
-    mPlotPairCorrelation = ConfCollisionBinning.plotParticlePairCorrelation.value;
-    mPlotTripletCorrelation = ConfCollisionBinning.plotParticleTripletCorrelation.value;
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(Specs);
     }
@@ -212,10 +199,10 @@ class CollisionHistManager
   }
 
   template <modes::Mode mode, typename T>
-  void fill(T const& col, int64_t nSlice1, int64_t nSlice2, int64_t nSlice3)
+  void fill(T const& col)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(col, nSlice1, nSlice2, nSlice3);
+      fillAnalysis(col);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       fillQa(col);
@@ -223,10 +210,10 @@ class CollisionHistManager
   }
 
   template <modes::Mode mode, typename T1, typename T2>
-  void fill(T1 const& col, T2 const& mcCols, int64_t nSlice1, int64_t nSlice2, int64_t nSlice3)
+  void fill(T1 const& col, T2 const& mcCols)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(col, nSlice1, nSlice2, nSlice3);
+      fillAnalysis(col);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       fillQa(col);
@@ -244,12 +231,6 @@ class CollisionHistManager
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMult, HistTable), getHistDesc(kMult, HistTable), getHistType(kMult, HistTable), {Specs.at(kMult)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kCent, HistTable), getHistDesc(kCent, HistTable), getHistType(kCent, HistTable), {Specs.at(kCent)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMagField, HistTable), getHistDesc(kMagField, HistTable), getHistType(kMagField, HistTable), {Specs.at(kMagField)});
-    if (mPlotPairCorrelation) {
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kNpart1VsNpart2, HistTable), getHistDesc(kNpart1VsNpart2, HistTable), getHistType(kNpart1VsNpart2, HistTable), {Specs.at(kNpart1VsNpart2)});
-    }
-    if (mPlotTripletCorrelation) {
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kNpart1VsNpart2VsNpart3, HistTable), getHistDesc(kNpart1VsNpart2VsNpart3, HistTable), getHistType(kNpart1VsNpart2VsNpart3, HistTable), {Specs.at(kNpart1VsNpart2VsNpart3)});
-    }
   }
 
   void initQa(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -277,18 +258,12 @@ class CollisionHistManager
   }
 
   template <typename T>
-  void fillAnalysis(T const& col, size_t nSlice1, size_t nSlice2, size_t nSlice3)
+  void fillAnalysis(T const& col)
   {
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
-    if (mPlotPairCorrelation) {
-      mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kNpart1VsNpart2, HistTable)), nSlice1, nSlice2);
-    }
-    if (mPlotTripletCorrelation) {
-      mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kNpart1VsNpart2VsNpart3, HistTable)), nSlice1, nSlice2, nSlice3);
-    }
   }
 
   template <typename T>
@@ -321,8 +296,6 @@ class CollisionHistManager
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlot2d = false;
-  bool mPlotPairCorrelation = false;
-  bool mPlotTripletCorrelation = false;
 }; // namespace femtounitedcolhistmanager
 }; // namespace colhistmanager
 }; // namespace o2::analysis::femto

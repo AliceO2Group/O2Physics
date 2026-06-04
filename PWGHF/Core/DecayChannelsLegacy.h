@@ -26,7 +26,8 @@ enum DecayType {
   OmegaczeroToXiPi,
   OmegaczeroToOmegaPi,
   OmegaczeroToOmegaK,
-  OmegaczeroToOmegaPiOneMu
+  OmegaczeroToOmegaPiOneMu,
+  XiczeroToOmegaK
 };
 } // namespace hf_cand_xic0_omegac0
 

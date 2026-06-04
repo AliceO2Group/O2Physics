@@ -15,10 +15,9 @@
 #ifndef PWGEM_DILEPTON_UTILS_MCUTILITIES_H_
 #define PWGEM_DILEPTON_UTILS_MCUTILITIES_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
-#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -81,6 +80,9 @@ bool isCharmonia(T const& track)
   if (std::abs(track.pdgCode()) < 100) {
     return false;
   }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
 
   std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
   int n = pdgStr.length();
@@ -96,11 +98,22 @@ bool isCharmonia(T const& track)
 template <typename T>
 bool isCharmMeson(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
   if (isCharmonia(track)) {
     return false;
   }
 
-  if (400 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 500) {
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 3, 3)); // excited states are included too.
+
+  if (400 < pdg3 && pdg3 < 500) {
     return true;
   } else {
     return false;
@@ -110,6 +123,18 @@ bool isCharmMeson(T const& track)
 template <typename T>
 bool isCharmBaryon(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 4101 || std::abs(track.pdgCode()) == 4103 || std::abs(track.pdgCode()) == 4201 || std::abs(track.pdgCode()) == 4203 || std::abs(track.pdgCode()) == 4301 || std::abs(track.pdgCode()) == 4303 || std::abs(track.pdgCode()) == 4403) {
+    return false;
+  }
+
   if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
     return true;
   } else {
@@ -121,6 +146,9 @@ template <typename T>
 bool isBottomonia(T const& track)
 {
   if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
     return false;
   }
 
@@ -138,11 +166,22 @@ bool isBottomonia(T const& track)
 template <typename T>
 bool isBeautyMeson(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
   if (isBottomonia(track)) {
     return false;
   }
 
-  if (500 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 600) {
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 3, 3)); // excited states are included too.
+
+  if (500 < pdg3 && pdg3 < 600) {
     return true;
   } else {
     return false;
@@ -152,6 +191,18 @@ bool isBeautyMeson(T const& track)
 template <typename T>
 bool isBeautyBaryon(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 5101 || std::abs(track.pdgCode()) == 5103 || std::abs(track.pdgCode()) == 5201 || std::abs(track.pdgCode()) == 5203 || std::abs(track.pdgCode()) == 5301 || std::abs(track.pdgCode()) == 5303 || std::abs(track.pdgCode()) == 5401 || std::abs(track.pdgCode()) == 5403 || std::abs(track.pdgCode()) == 5503) {
+    return false;
+  }
+
   if (5000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 6000) {
     return true;
   } else {
@@ -410,14 +461,14 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 
   int motherid = p.mothersIds()[0]; // first mother index
   auto mp_tmp = mcparticles.iteratorAt(motherid);
-  if (std::abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 2] == '5' && std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 3] == '5') && std::abs(mp_tmp.pdgCode()) % 2 == 1) {
+  if (isBottomonia(mp_tmp)) {
     return -999; // reject bottomonia
   }
 
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
-      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '5' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '5')) {
+      if (isBeautyMeson(mp) || isBeautyBaryon(mp)) {
         return motherid;
       }
       if (mp.has_mothers()) {
@@ -432,7 +483,6 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 
   return -999;
 }
-
 //_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles>
 int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
@@ -443,13 +493,13 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
 
   int motherid = p.mothersIds()[0]; // first mother index
   auto mp_tmp = mcparticles.iteratorAt(motherid);
-  if (std::abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 2] == '4' && std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 3] == '4') && std::abs(mp_tmp.pdgCode()) % 2 == 1) {
-    return -999; // reject bottomonia
+  if (isCharmonia(mp_tmp)) {
+    return -999; // reject charmonia
   }
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
-      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '4' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '4')) {
+      if (isCharmMeson(mp) || isCharmBaryon(mp)) {
         return motherid;
       }
       if (mp.has_mothers()) {

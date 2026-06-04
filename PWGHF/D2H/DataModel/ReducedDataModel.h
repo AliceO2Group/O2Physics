@@ -196,6 +196,7 @@ DECLARE_SOA_COLUMN(TpcNClsCrossedRowsProngMin, tpcNClsCrossedRowsProngMin, int);
 DECLARE_SOA_COLUMN(TpcChi2NClProngMax, tpcChi2NClProngMax, float);               //! maximum value of TPC chi2 for the decay daughter tracks
 DECLARE_SOA_COLUMN(PtProngMin, ptProngMin, float);                               //! minimum value of transverse momentum for the decay daughter tracks
 DECLARE_SOA_COLUMN(AbsEtaProngMin, absEtaProngMin, float);                       //! minimum value of absolute pseudorapidity for the decay daughter tracks
+DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t);                               //! particle type according to PID selection (pion, kaon, proton)
 
 // dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
@@ -1653,6 +1654,19 @@ DECLARE_SOA_TABLE(HfMcRecRedResos, "AOD", "HFMCRECREDRESO", //! Reconstruction-l
                   hf_reso_cand_reduced::InvMassGen,
                   hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
+
+//! Table with selected tracks for Hc analysis
+DECLARE_SOA_TABLE(HcSelTracks, "AOD", "HCSELTRACKS",
+                  o2::soa::Index<>,
+                  // Indices
+                  hf_track_index_reduced::TrackId,
+                  hf_track_index_reduced::HfRedCollisionId,
+                  // Static
+                  hf_track_vars_reduced::Px,
+                  hf_track_vars_reduced::Py,
+                  hf_track_vars_reduced::Pz,
+                  hf_track_vars_reduced::Sign,
+                  hf_track_vars_reduced::TrackType);
 } // namespace aod
 
 namespace soa

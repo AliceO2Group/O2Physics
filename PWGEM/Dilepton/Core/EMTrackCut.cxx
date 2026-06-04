@@ -15,7 +15,11 @@
 
 #include "PWGEM/Dilepton/Core/EMTrackCut.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
 
 ClassImp(EMTrackCut);
 
@@ -37,12 +41,6 @@ void EMTrackCut::SetTrackPhiRange(float minPhi, float maxPhi)
   mMaxTrackPhi = maxPhi;
   LOG(info) << "EMTrack Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi;
 }
-
-// void EMTrackCut::SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
-// {
-//   mMaxDcaXYPtDep = ptDepCut;
-//   LOG(info) << "EMTrack Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
-// }
 
 void EMTrackCut::SetTrackBit(uint16_t bit)
 {

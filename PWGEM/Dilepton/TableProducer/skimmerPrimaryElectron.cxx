@@ -19,35 +19,58 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
+#include <PID/PIDTOFParamService.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMath.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <math.h>
+
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+using namespace o2::common::core;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
@@ -145,7 +168,7 @@ struct skimmerPrimaryElectron {
   Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95, 0.95, 0.7, 0.7, 0.8, 0.8, 0.7, 0.7}, "ML cuts per bin"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"tpcInnerParam", "tpcNClsFound", "tpcChi2NCl", "tpcNSigmaEl", "tofNSigmaEl", "meanClusterSizeITSobCos"}, "Names of ML model input features"};
   Configurable<std::string> nameBinningFeature{"nameBinningFeature", "tpcInnerParam", "Names of ML model binning feature"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  // Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 
@@ -214,32 +237,6 @@ struct skimmerPrimaryElectron {
       fRegistry.add("Track/hProbElBDT", "probability to be e from BDT;p_{in} (GeV/c);BDT score;", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
       fRegistry.add("Track/hNe", "electron counts;N_{e} per collision", kTH1F, {{51, -0.5, 50.5}}, false);
     }
-
-    if (usePIDML) {
-      static constexpr int nClassesMl = 2;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
-      const uint32_t nBinsMl = binsMl.value.size() - 1;
-      const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      double cutsMlArr[nBinsMl][nClassesMl];
-      for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = 0.0;
-        cutsMlArr[i][1] = cutsMl.value[i];
-      }
-      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
-
-      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdburl);
-        mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, timestampCCDB.value);
-      } else {
-        mlResponseSingleTrack.setModelPathsLocal(onnxFileNames.value);
-      }
-      mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
-      mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
-      mlResponseSingleTrack.init(enableOptimizations.value);
-      mlResponseSingleTrack.useReassociatedTOF(useTOFNSigmaDeltaBC.value);
-    } // end of PID ML
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -296,6 +293,33 @@ struct skimmerPrimaryElectron {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
+
+    if (usePIDML) {
+      static constexpr int nClassesMl = 2;
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
+      const uint32_t nBinsMl = binsMl.value.size() - 1;
+      const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      double cutsMlArr[nBinsMl][nClassesMl];
+      for (uint32_t i = 0; i < nBinsMl; i++) {
+        cutsMlArr[i][0] = 0.0;
+        cutsMlArr[i][1] = cutsMl.value[i];
+      }
+      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, bc.timestamp());
+      } else {
+        mlResponseSingleTrack.setModelPathsLocal(onnxFileNames.value);
+      }
+      mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
+      mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
+      mlResponseSingleTrack.init(enableOptimizations.value);
+      mlResponseSingleTrack.useReassociatedTOF(useTOFNSigmaDeltaBC.value);
+    } // end of PID ML
+
     mRunNumber = bc.runNumber();
   }
 

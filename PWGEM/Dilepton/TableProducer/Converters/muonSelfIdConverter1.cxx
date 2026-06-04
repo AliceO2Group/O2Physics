@@ -16,9 +16,11 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +33,7 @@ struct muonSelfIdConverter1 {
 
   void process(aod::EMGlobalMuonSelfIds_000 const& muons)
   {
+    muon_001.reserve(muons.size());
     for (const auto& muon : muons) {
       muon_001(std::vector<int>{}, muon.globalMuonsWithSameMFTIds());
     } // end of muon loop

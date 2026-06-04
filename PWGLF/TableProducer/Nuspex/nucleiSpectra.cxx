@@ -23,10 +23,9 @@
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
 #include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Core/EventPlaneHelper.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
@@ -36,31 +35,51 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
-#include <Math/Vector4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PtEtaPhiM4D.h>
 #include <TDatabasePDG.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THn.h>
+#include <THnSparse.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h> // for PDG codes
 #include <TParticlePDG.h>
 #include <TRandom3.h>
 
+#include <fmt/format.h>
+
+#include <GPUROOTCartesianFwd.h>
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -256,6 +275,7 @@ enum EvGenSel : uint8_t {
   kGenTVX = 1 << 0,
   kGenZvtx = 1 << 1,
   kGenINELgt0 = 1 << 2,
+  kHasRecoEv = 1 << 3
 };
 
 } // namespace nuclei
@@ -347,6 +367,7 @@ struct nucleiSpectra {
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   Configurable<std::string> cfgTriggerList{"cfgTriggerList", "fHe", "Trigger List"};
+  Configurable<bool> cfgSelectTrgEv{"cfgSelectTrgEv", false, "If true, select events with active trigger list"};
 
   // running variables for track tuner
   o2::dataformats::DCA mDcaInfoCov;
@@ -362,7 +383,7 @@ struct nucleiSpectra {
 
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>;
 
-  // Collisions with chentrality
+  // Collisions with centrality
   using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>::iterator;
 
   // Flow analysis
@@ -613,8 +634,15 @@ struct nucleiSpectra {
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+
+    bool isTriggered = true;
+
+    // Using zorro for selecting only events with active trigger
     if (cfgSkimmedProcessing) {
-      zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+      isTriggered = zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+      if (cfgSelectTrgEv && !isTriggered) {
+        return;
+      }
     }
     gRandom->SetSeed(bc.timestamp());
 
@@ -929,7 +957,6 @@ struct nucleiSpectra {
   {
     nuclei::candidates.clear();
 
-    bool selectINELgt0 = cfgEventSelections->get(nuclei::evSel::kINELgt0);
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     std::vector<uint8_t> eventMask(mcCollisions.size(), 0);
 
@@ -971,10 +998,8 @@ struct nucleiSpectra {
         mask |= nuclei::kGenZvtx;
 
       // INEL > 0 selection
-      if (selectINELgt0) {
-        if (o2::pwglf::isINELgt0mc(slicedParticles, pdgDB)) {
-          mask |= nuclei::kGenINELgt0;
-        }
+      if (o2::pwglf::isINELgt0mc(slicedParticles, pdgDB)) {
+        mask |= nuclei::kGenINELgt0;
       }
 
       eventMask[c.globalIndex()] = mask;
@@ -987,6 +1012,10 @@ struct nucleiSpectra {
         continue;
       }
       goodCollisions[collision.mcCollisionId()] = true;
+      auto& mask = eventMask[collision.mcCollisionId()];
+      mask |= nuclei::kHasRecoEv;
+
+      GenEventMCSel(mask);
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       fillDataInfo(collision, slicedTracks);
     }

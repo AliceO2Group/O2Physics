@@ -15,27 +15,37 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
-#include "Common/Core/TableHelper.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
 
-#include "Math/Vector4D.h"
+#include <Rtypes.h>
 
+#include <cmath>
+#include <cstdint>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::soa;
@@ -260,7 +270,7 @@ struct skimmerPrimaryTrack {
     float pt = trackParCov.getPt();
     float eta = trackParCov.getEta();
     float phi = trackParCov.getPhi();
-    o2::math_utils::bringTo02Pi(phi);
+    phi = RecoDecay::constrainAngle(phi, 0, 1U);
     uint16_t trackBit = 0;
 
     // As minimal cuts, following cuts are applied. The cut values are hardcoded on the purpose for consistent bit operation.
@@ -273,49 +283,50 @@ struct skimmerPrimaryTrack {
     // Ncr/Nf ratio in TPC > 0.8
 
     if (track.itsNCls() >= 5) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS5);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNclsITS5));
     }
     if (track.itsNCls() >= 6) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS6);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNclsITS6));
     }
 
     if (track.tpcNClsCrossedRows() >= 70) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC70);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNcrTPC70));
     }
     if (track.tpcNClsCrossedRows() >= 90) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC90);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNcrTPC90));
     }
     if (track.tpcNClsFound() >= 50) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC50);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNclsTPC50));
     }
     if (track.tpcNClsFound() >= 70) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC70);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNclsTPC70));
     }
     if (track.tpcNClsFound() >= 90) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC90);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kNclsTPC90));
     }
     if (track.tpcChi2NCl() < 4.f) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC4);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kChi2TPC4));
     }
     if (track.tpcChi2NCl() < 3.f) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC3);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kChi2TPC3));
     }
+
     if (track.tpcFractionSharedCls() < 0.7) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kFracSharedTPC07));
     }
 
     if (std::fabs(dcaZ) < 0.5) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz05cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kDCAz05cm));
     }
     if (std::fabs(dcaZ) < 0.3) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz03cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kDCAz03cm));
     }
 
     if (std::fabs(dcaXY) < 0.5) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy05cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kDCAxy05cm));
     }
     if (std::fabs(dcaXY) < 0.3) {
-      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackBit::kDCAxy03cm));
     }
 
     emprimarytracks(/*collision.globalIndex(),*/ /*track.globalIndex(),*/ track.sign() / pt, eta, phi, trackBit);

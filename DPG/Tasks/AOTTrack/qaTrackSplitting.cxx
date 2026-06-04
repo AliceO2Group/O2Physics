@@ -15,12 +15,27 @@
 /// \brief  Task to analyse the numbers of particles reconstructed more than once
 ///
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/EventSelection.h"
+#include "TrackSelection.h"
+
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

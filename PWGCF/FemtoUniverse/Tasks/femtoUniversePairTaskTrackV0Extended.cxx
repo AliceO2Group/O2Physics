@@ -21,21 +21,44 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TFile.h>
 #include <TH1.h>
 #include <TPDGCode.h>
+#include <TRandom2.h>
 
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <experimental/type_traits>
 #include <memory>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -163,6 +186,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   Configurable<int> confEtaBins{"confEtaBins", 29, "Number of eta bins in deta dphi"};
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+  ConfigurableAxis confMotherPDGBins{"confMotherPDGBins", {8001, -4000, 4000}, "Binning for the mothers' PDG code in pair fractions histogram"};
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
@@ -173,10 +197,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
     Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+    Configurable<bool> confRandomizeCPR{"confRandomizeCPR", false, "Fill Dete-Dphi histograms in random order: v01, v02 or v02, v01 - does not apply to track-V0"};
+    ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+    ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
   } ConfCPR;
 
   // Efficiency
-  Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
+    Configurable<int64_t> confCCDBNoLaterThanTrack{"confCCDBNoLaterThanTrack", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> confCCDBNoLaterThanV0{"confCCDBNoLaterThanV0", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  } ccdbEffLoader;
 
   EffCorConfigurableGroup effCorConfGroup;
   EfficiencyCorrection effCorrection{&effCorConfGroup};
@@ -203,12 +234,28 @@ struct FemtoUniversePairTaskTrackV0Extended {
   std::unique_ptr<TH1> pEffHistp2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  TRandom2* randgen;
+
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
-    if (mom <= confmom || hasTOF == 0) {
+    if (mom <= confmom) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
-    } else {
+    } else if (hasTOF == 1) {
       return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
+    } else {
+      return false;
+    }
+  }
+
+  template <typename T>
+  bool isNSigmaCombinedBitmask(float mom, const T& part)
+  {
+    if (mom <= confmom) {
+      return ((part.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) != 0);
+    } else if ((part.pidCut() & 512u) != 0) {
+      return ((part.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) != 0);
+    } else {
+      return false;
     }
   }
 
@@ -330,7 +377,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     if (doprocessPairFractionsMCTruthV0 || doprocessPairFractionsMCTruth) {
-      registryMCtruth.add("mothersTruth/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+      registryMCtruth.add("mothersTruth/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {confMotherPDGBins, confMotherPDGBins}});
+      registryMCtruth.add("mothersTruth/mcProcess", "pair ; part1 VMC physics code; part2 VMC physics code", {HistType::kTH2F, {{50, 0, 50}, {50, 0, 50}}});
     }
 
     // MC reco
@@ -356,9 +404,24 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     if (doprocessPairFractions || doprocessPairFractionsV0) {
-      registryMCreco.add("mothersReco/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
-      registryMCreco.add("mothersReco/motherParticlePDGCheck", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+      registryMCreco.add("mothersReco/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {confMotherPDGBins, confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticlePDGCheck", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {confMotherPDGBins, confMotherPDGBins}});
     }
+
+    if (doprocessFractionsSingleReco) {
+      registryMCreco.add("mothersReco/motherParticleTrack", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticleTrackPDGCheck", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticleV0", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCreco.add("mothersReco/motherParticleV0PDGCheck", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+    }
+
+    if (doprocessFractionsSingleTruth) {
+      registryMCtruth.add("mothersTruth/motherParticleTrack", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCtruth.add("mothersTruth/mcProcessTrack", " ; VMC physics code", {HistType::kTH1F, {{50, 0, 50}}});
+      registryMCtruth.add("mothersTruth/motherParticleV0", "; mother PDG", {HistType::kTH1F, {confMotherPDGBins}});
+      registryMCtruth.add("mothersTruth/mcProcessV0", " ; VMC physics code", {HistType::kTH1F, {{50, 0, 50}}});
+    }
+
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     sameEventCont.setPDGCodes(ConfTrkSelection.confTrkPDGCodePartOne, ConfV0Selection.confV0PDGCodePartTwo);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
@@ -367,16 +430,16 @@ struct FemtoUniversePairTaskTrackV0Extended {
     pairCleaner.init(&qaRegistry);
     pairCleanerV0.init(&qaRegistry);
     if (ConfCPR.confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
-      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
     }
 
-    if (!confLocalEfficiency.value.empty()) {
-      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(confLocalEfficiency.value.c_str(), "read"));
+    if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {
+      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ccdbEffLoader.confLocalEfficiency.value.c_str(), "read"));
       if (!plocalEffFile || plocalEffFile.get()->IsZombie())
-        LOGF(fatal, "Could not load efficiency histogram from %s", confLocalEfficiency.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram from %s", ccdbEffLoader.confLocalEfficiency.value.c_str());
       if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
-        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons
         pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for track-V0.");
       } else if (doprocessSameEventV0 || doprocessSameEventV0Bitmask || doprocessMixedEventV0 || doprocessMixedEventV0Bitmask) {
@@ -389,15 +452,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
 
-      auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-      ccdb->setCreatedNotAfter(now);
+      ccdb->setCreatedNotAfter(std::max(ccdbEffLoader.confCCDBNoLaterThanTrack.value, ccdbEffLoader.confCCDBNoLaterThanV0.value));
       if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
-        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrPlus", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrMinus", now)); // note: works only for protons for now
-        pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); // note: works only for protons
+        pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", ccdbEffLoader.confCCDBNoLaterThanV0.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", ccdbEffLoader.confCCDBNoLaterThanV0.value));
         LOGF(info, "Loaded efficiency histograms for track-V0 from CCDB.");
       } else if (doprocessSameEventV0 || doprocessSameEventV0Bitmask || doprocessMixedEventV0 || doprocessMixedEventV0Bitmask) {
-        pEffHistp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
-        pEffHistp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        pEffHistp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", ccdbEffLoader.confCCDBNoLaterThanV0.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", ccdbEffLoader.confCCDBNoLaterThanV0.value));
+        pEffHistp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", ccdbEffLoader.confCCDBNoLaterThanV0.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", ccdbEffLoader.confCCDBNoLaterThanV0.value));
         LOGF(info, "Loaded efficiency histograms for V0-V0 from CCDB.");
       }
     }
@@ -482,12 +544,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
           trackHistoPartOneNeg.fillQA<false, false>(part);
         }
       } else {
-        if ((part.pidCut() & 512u) != 0) {
-          if ((part.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
-            continue;
-        } else if ((part.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
+        if (!isNSigmaCombinedBitmask(part.p(), part))
           continue;
-        }
         if (ConfTrkSelection.confChargePart1 > 0)
           trackHistoPartOnePos.fillQA<false, false>(part);
         if (ConfTrkSelection.confChargePart1 < 0)
@@ -505,12 +563,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
           continue;
       } else {
-        if ((p1.pidCut() & 512u) != 0) {
-          if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
-            continue;
-        } else if ((p1.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
+        if (!isNSigmaCombinedBitmask(p1.p(), p1))
           continue;
-        }
       }
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -664,7 +718,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       // track cleaning & checking for duplicate pairs
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-        // mark for rejection the cascade that shares a daughter with another cascade and has an invariant mass further from default value
+        // mark for rejection the v0 that shares a daughter with another v0 and has an invariant mass further from default value. Set confV0DuplCosPA as TRUE to do the same check with cosPA instead.
         if (!ConfV0Selection.confV0DuplCosPA) {
           if (std::abs(p1.mLambda() - v0InvMass[ConfV0Selection.confV0Type1]) < std::abs(p2.mLambda() - v0InvMass[ConfV0Selection.confV0Type2])) {
             v0Duplicates.insert(p2.globalIndex());
@@ -740,9 +794,23 @@ struct FemtoUniversePairTaskTrackV0Extended {
       }
 
       if (ConfCPR.confIsCPR.value) {
-        if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        double rand;
+        auto part1 = p1;
+        auto part2 = p2;
+
+        if (ConfCPR.confRandomizeCPR) {
+          randgen = new TRandom2(0);
+          rand = randgen->Rndm();
+
+          if (rand > 0.5) {
+            part1 = p2;
+            part2 = p1;
+          }
+          delete randgen;
+        }
+        if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(part1, part2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
-        } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(part1, part2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
         }
       }
@@ -966,12 +1034,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
           if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
             continue;
         } else {
-          if ((p1.pidCut() & 512u) != 0) {
-            if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
-              continue;
-          } else if ((p1.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
+          if (!isNSigmaCombinedBitmask(p1.p(), p1))
             continue;
-          }
         }
 
         const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
@@ -1118,9 +1182,23 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         }
         if (ConfCPR.confIsCPR.value) {
-          if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          double rand;
+          auto part1 = p1;
+          auto part2 = p2;
+
+          if (ConfCPR.confRandomizeCPR) {
+            randgen = new TRandom2(0);
+            rand = randgen->Rndm();
+
+            if (rand > 0.5) {
+              part1 = p2;
+              part2 = p1;
+            }
+            delete randgen;
+          }
+          if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(part1, part2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
-          } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(part1, part2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
         }
@@ -1446,7 +1524,21 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         }
         if (ConfCPR.confIsCPR.value) {
-          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          double rand;
+          auto part1 = p1;
+          auto part2 = p2;
+
+          if (ConfCPR.confRandomizeCPR) {
+            randgen = new TRandom2(0);
+            rand = randgen->Rndm();
+
+            if (rand > 0.5) {
+              part1 = p2;
+              part2 = p1;
+            }
+            delete randgen;
+          }
+          if (pairCloseRejectionV0.isClosePair(part1, part2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
         }
@@ -1464,6 +1556,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         if ((ConfV0Selection.confV0Type2 == 0 && mcParticle2.pdgMCTruth() != kLambda0) || (ConfV0Selection.confV0Type2 == 1 && mcParticle2.pdgMCTruth() != kLambda0Bar))
           continue;
+
         registryMCreco.fill(HIST("mothersReco/motherParticlePDGCheck"), p1.motherPDG(), p2.motherPDG());
       }
     };
@@ -1499,6 +1592,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
 
         registryMCtruth.fill(HIST("mothersTruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+        registryMCtruth.fill(HIST("mothersTruth/mcProcess"), p1.cut(), p2.cut());
       }
     };
 
@@ -1532,6 +1626,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
 
         registryMCtruth.fill(HIST("mothersTruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+        registryMCtruth.fill(HIST("mothersTruth/mcProcess"), p1.cut(), p2.cut());
       }
     };
 
@@ -1546,6 +1641,80 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMCTruthV0, "Process MC data to obtain pair fractions for V0V0 MC truth pairs", false);
+
+  void processFractionsSingleReco(FilteredFDCollision const& col, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
+  {
+    auto groupPartsOne = partsOneMCRecoFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCRecoFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    float v0DaughPtLowTable[3][2] = {{ConfV0Selection.confLPtChildProton, ConfV0Selection.confLPtChildPion}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildProton}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildPion}};
+    float v0DaughPtHighTable[3][2] = {{ConfV0Selection.confHPtChildProton, ConfV0Selection.confHPtChildPion}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildProton}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildPion}};
+
+    for (const auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type1))
+        continue;
+      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
+
+      if (posChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][0] || negChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][1] || posChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][0] || negChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][1]) {
+        continue;
+      }
+
+      if (!isParticleTPC(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
+        continue;
+
+      if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
+        continue;
+
+      registryMCreco.fill(HIST("mothersReco/motherParticleV0"), part.motherPDG());
+      auto mcPartId1 = part.fdMCParticleId();
+      if (mcPartId1 == -1)
+        continue;
+      const auto& mcParticle1 = mcparts.iteratorAt(mcPartId1);
+      if ((ConfV0Selection.confV0Type1 == 0 && mcParticle1.pdgMCTruth() != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && mcParticle1.pdgMCTruth() != kLambda0Bar))
+        continue;
+      registryMCreco.fill(HIST("mothersReco/motherParticleV0PDGCheck"), part.motherPDG());
+    }
+
+    for (const auto& part : groupPartsOne) {
+      const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+      const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+
+      if (!isNSigmaCombined(part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne], tofNSigmas[ConfTrkSelection.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
+        continue;
+      registryMCreco.fill(HIST("mothersReco/motherParticleTrack"), part.motherPDG());
+      auto mcPartId1 = part.fdMCParticleId();
+      if (mcPartId1 == -1)
+        continue;
+      const auto& mcParticle1 = mcparts.iteratorAt(mcPartId1);
+      if (mcParticle1.pdgMCTruth() != ConfTrkSelection.confTrkPDGCodePartOne)
+        continue;
+      registryMCreco.fill(HIST("mothersReco/motherParticleTrackPDGCheck"), part.motherPDG());
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processFractionsSingleReco, "Process MC data to obtain fractions for V0 and protons particles", false);
+
+  void processFractionsSingleTruth(FilteredFDCollision const& col, FemtoFullParticles const&)
+  {
+    auto groupPartsOne = partsOneMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    // MC truth
+    for (const auto& part : groupPartsOne) {
+      int pdgCode1 = static_cast<int>(part.pidCut());
+      if (pdgCode1 != ConfTrkSelection.confTrkPDGCodePartOne)
+        continue;
+      registryMCtruth.fill(HIST("mothersTruth/motherParticleTrack"), part.tempFitVar());
+      registryMCtruth.fill(HIST("mothersTruth/mcProcessTrack"), part.cut());
+    }
+    for (const auto& part : groupPartsTwo) {
+      int pdgCode2 = static_cast<int>(part.pidCut());
+      if (pdgCode2 != ConfV0Selection.confV0PDGCodePartTwo)
+        continue;
+      registryMCtruth.fill(HIST("mothersTruth/motherParticleV0"), part.tempFitVar());
+      registryMCtruth.fill(HIST("mothersTruth/mcProcessV0"), part.cut());
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processFractionsSingleTruth, "Process MC data to obtain fractions for V0 and protons particles", false);
 
   template <class PartType>
   void doMCReco(PartType const& parts, aod::FdMCParticles const& mcparts)
@@ -1633,12 +1802,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
               if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
                 continue;
             } else {
-              if ((part.pidCut() & 512u) != 0) {
-                if ((part.pidCut() & 64u) == 0) // 64 for proton combined
-                  continue;
-              } else if ((part.pidCut() & 1u) == 0) {
+              if (!isNSigmaCombinedBitmask(part.p(), part))
                 continue;
-              }
             }
             registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
@@ -1664,12 +1829,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
               if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
                 continue;
             } else {
-              if ((part.pidCut() & 512u) != 0) {
-                if ((part.pidCut() & 64u) == 0) // 64 for proton combined
-                  continue;
-              } else if ((part.pidCut() & 1u) == 0) {
+              if (!isNSigmaCombinedBitmask(part.p(), part))
                 continue;
-              }
             }
             registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());

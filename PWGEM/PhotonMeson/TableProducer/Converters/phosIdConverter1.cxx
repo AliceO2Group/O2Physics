@@ -11,9 +11,9 @@
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -26,6 +26,7 @@ struct phosIdConverter1 {
 
   void process(aod::PHOSEMEventIds_000 const& ids)
   {
+    id_001.reserve(ids.size());
     for (const auto& id : ids) {
       id_001(id.emeventId());
     } // end of id loop

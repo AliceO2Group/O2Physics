@@ -19,6 +19,7 @@
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
@@ -51,8 +52,6 @@
 #include <vector>
 
 #include <math.h>
-
-// NB: runDataProcessing.h must be included after customize!
 
 template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTableDataSub, typename CandidateTable, typename CandidateTableMCP, typename SubstructureTableData, typename RecoilTableData, typename SplittingsTableData, typename PairsTableData, typename SubstructureTableMCD, typename RecoilTableMCD, typename SplittingsTableMCD, typename PairsTableMCD, typename SubstructureTableMCP, typename RecoilTableMCP, typename SplittingsTableMCP, typename PairsTableMCP, typename SubstructureTableDataSub, typename SplittingsTableDataSub, typename PairsTableDataSub, typename TracksSub>
 struct JetSubstructureHFTask {

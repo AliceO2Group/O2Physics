@@ -16,11 +16,14 @@
 #include "GeometryContainer.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <map>
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

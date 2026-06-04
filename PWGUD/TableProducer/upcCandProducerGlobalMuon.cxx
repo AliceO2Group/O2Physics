@@ -16,25 +16,49 @@
 
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include "Common/Core/fwdtrackUtilities.h"
 
-#include "Math/SMatrix.h"
-#include "TGeoGlobalMagField.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include <algorithm>
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
+#include <TMath.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
+#include <numeric>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2::framework;
@@ -44,6 +68,7 @@ struct UpcCandProducerGlobalMuon {
   bool fDoMC{false};
 
   std::map<int32_t, int32_t> fNewPartIDs;
+  std::map<uint32_t, bool> fBestMuonMatch;
 
   Produces<o2::aod::UDMcCollisions> udMCCollisions;
   Produces<o2::aod::UDMcParticles> udMCParticles;
@@ -67,9 +92,17 @@ struct UpcCandProducerGlobalMuon {
 
   // NEW: MFT/Global track support configurables
   Configurable<bool> fEnableMFT{"fEnableMFT", true, "Enable MFT/global track processing"};
-  Configurable<float> fMinEtaMFT{"fMinEtaMFT", -3.6, "Minimum eta for MFT acceptance"};
-  Configurable<float> fMaxEtaMFT{"fMaxEtaMFT", -2.5, "Maximum eta for MFT acceptance"};
   Configurable<bool> fSaveMFTClusters{"fSaveMFTClusters", true, "Save MFT cluster information"};
+
+  // FwdDCAFitter configurables
+  Configurable<bool> fPropagateToPCA{"fPropagateToPCA", true, "Propagate tracks to PCA"};
+  Configurable<float> fMaxR{"fMaxR", 200.f, "Maximum radius for FwdDCAFitter (cm)"};
+  Configurable<float> fMinParamChange{"fMinParamChange", 1.0e-3, "Minimum parameter change for FwdDCAFitter convergence"};
+  Configurable<float> fMinRelChi2Change{"fMinRelChi2Change", 0.9, "Minimum relative chi2 change for FwdDCAFitter convergence"};
+  Configurable<bool> fUseAbsDCA{"fUseAbsDCA", true, "Use absolute DCA in FwdDCAFitter"};
+  Configurable<float> fMaxChi2MatchMCHMFT{"fMaxChi2MatchMCHMFT", 4.f, "Maximum chi2 for MCH-MFT matching quality filter"};
+  Configurable<int> fBcWindowMCHMFT{"fBcWindowMCHMFT", 20, "BC window for searching MCH-MFT tracks around MCH-MID-MFT anchors"};
+  Configurable<bool> fKeepBestMuonMatch{"fKeepBestMuonMatch", true, "Keep only the best MCH-MFT match per MCH track (lowest chi2)"};
 
   using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
 
@@ -80,10 +113,19 @@ struct UpcCandProducerGlobalMuon {
   o2::ccdb::CcdbApi fCCDBApi;
   o2::globaltracking::MatchGlobalFwd fMatching;
 
+  // FwdDCAFitter member
+  o2::vertexing::FwdDCAFitterN<2> fFwdFitter;
+
+  // Named constants (avoid magic numbers in expressions)
+  static constexpr double kBcTimeRoundingOffset = 1.;     // Offset used when rounding trackTime to BC units
+  static constexpr uint16_t kMinTracksForPair = 2;        // Minimum tracks required to compute a pair invariant mass
+  static constexpr uint16_t kMinTracksForCandidate = 1;   // Minimum contributors required to save a candidate
+  static constexpr int kUpperBoundaryToTrackTypeEnum = 2; // Make sure you use MFT tracks
+
   void init(InitContext&)
   {
     fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
-    if (fUpcCuts.getUseFwdCuts()) {
+    if (fUpcCuts.getUseFwdCuts() || fEnableMFT) {
       fCCDB->setURL("http://alice-ccdb.cern.ch");
       fCCDB->setCaching(true);
       fCCDB->setLocalObjectValidityChecking();
@@ -99,18 +141,26 @@ struct UpcCandProducerGlobalMuon {
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelChi2 + 1, "Chi2");
 
     // NEW: Add histograms for global track monitoring
-    if (fEnableMFT) {
-      const AxisSpec axisTrackType{5, -0.5, 4.5, "Track Type"};
-      histRegistry.add("hTrackTypes", "Track type distribution", kTH1F, {axisTrackType});
-      histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(1, "MuonStandalone");
-      histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(2, "MCHStandalone");
-      histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(3, "GlobalMuon");
-      histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(4, "GlobalFwd");
+    const AxisSpec axisTrackType{5, -0.5, 4.5, "Track Type"};
+    histRegistry.add("hTrackTypes", "Track type distribution", kTH1F, {axisTrackType});
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(1, "GlobalMuonTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(2, "GlobalMuonTrackOtherMatch");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(3, "GlobalForwardTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(4, "MuonStandaloneTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(5, "MCHStandaloneTrack");
 
-      const AxisSpec axisEta{100, -4.0, -2.0, "#eta"};
-      histRegistry.add("hEtaMFT", "MFT track eta", kTH1F, {axisEta});
-      histRegistry.add("hEtaGlobal", "Global track eta", kTH1F, {axisEta});
-    }
+    const AxisSpec axisEta{100, -4.0, -2.0, "#eta"};
+    histRegistry.add("hEtaGlobal", "Global track eta", kTH1F, {axisEta});
+
+    const AxisSpec axisChi2PCA{200, 0., 100., "#chi^{2}_{PCA}"};
+    histRegistry.add("hChi2PCA", "Chi2 at PCA from FwdDCAFitter", kTH1F, {axisChi2PCA});
+
+    const AxisSpec axisChi2Match{200, 0., 100., "#chi^{2}_{MCH-MFT}"};
+    histRegistry.add("hChi2MatchMCHMFT", "Chi2 of MCH-MFT matching (before cut)", kTH1F, {axisChi2Match});
+
+    const AxisSpec axisMass{500, 0., 10., "m_{inv} (GeV/c^{2})"};
+    histRegistry.add("hMassGlobalMuon", "Invariant mass from MCH-MID-MFT tracks only", kTH1F, {axisMass});
+    histRegistry.add("hMassGlobalMuonWithMCHMFT", "Invariant mass from MCH-MID-MFT + MCH-MFT tracks", kTH1F, {axisMass});
   }
 
   bool cut(const o2::dataformats::GlobalFwdTrack& pft, const ForwardTracks::iterator& fwdTrack)
@@ -342,23 +392,39 @@ struct UpcCandProducerGlobalMuon {
     return propmuon;
   }
 
-  bool addToFwdTable(int64_t candId, int64_t trackId, uint64_t gbc, float trackTime, ForwardTracks const& fwdTracks, const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
+  bool addToFwdTable(int64_t candId, int64_t trackId, uint64_t gbc, float trackTime,
+                     ForwardTracks const& fwdTracks, o2::aod::MFTTracks const& /*mftTracks*/,
+                     const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
     const auto& track = fwdTracks.iteratorAt(trackId);
     float px, py, pz;
     int sign;
 
-    // NEW: Fill track type histogram if MFT enabled
-    if (fEnableMFT) {
-      histRegistry.fill(HIST("hTrackTypes"), track.trackType());
-      if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack ||
-          track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack) {
-        histRegistry.fill(HIST("hEtaGlobal"), track.eta());
-      }
+    // Fill track type histogram
+    histRegistry.fill(HIST("hTrackTypes"), track.trackType());
+    if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack ||
+        track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack) {
+      histRegistry.fill(HIST("hEtaGlobal"), track.eta());
     }
 
     if (fUpcCuts.getUseFwdCuts()) {
-      auto pft = propagateToZero(track);
+      bool isGlobal = track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack ||
+                      track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack;
+      o2::dataformats::GlobalFwdTrack pft;
+      if (isGlobal && fEnableMFT) {
+        // Refit global muon: propagate MCH component to vertex, combine with MFT spatial info
+        auto mchTrack = track.matchMCHTrack_as<ForwardTracks>();
+        auto propMuon = propagateToZero(mchTrack);
+        auto mfttrack = track.matchMFTTrack_as<o2::aod::MFTTracks>();
+        using SMatrix5 = ROOT::Math::SVector<double, 5>;
+        using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+        SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+        SMatrix55 tcovs{};
+        o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+        pft = o2::aod::fwdtrackutils::refitGlobalMuonCov(propMuon, mft);
+      } else {
+        pft = propagateToZero(track);
+      }
       bool pass = cut(pft, track);
       if (!pass)
         return false;
@@ -417,11 +483,11 @@ struct UpcCandProducerGlobalMuon {
     }
 
     int newId = 0;
-    for (auto trackId : trackIds) {
+    for (const auto& trackId : trackIds) {
       auto it = clustersPerTrack.find(trackId);
       if (it != clustersPerTrack.end()) {
         const auto& clusters = it->second;
-        for (auto clsId : clusters) {
+        for (const auto& clsId : clusters) {
           const auto& clsInfo = fwdTrkCls.iteratorAt(clsId);
           udFwdTrkClusters(newId, clsInfo.x(), clsInfo.y(), clsInfo.z(), clsInfo.clInfo());
         }
@@ -430,13 +496,46 @@ struct UpcCandProducerGlobalMuon {
     }
   }
 
-  // NEW: Check if track is in MFT acceptance
-  bool isInMFTAcceptance(float eta)
+  // Convert forward track to TrackParCovFwd for the FwdDCAFitter
+  o2::track::TrackParCovFwd fwdToTrackPar(ForwardTracks::iterator const& track)
   {
-    return (eta > fMinEtaMFT && eta < fMaxEtaMFT);
+    using SMatrix5 = ROOT::Math::SVector<double, 5>;
+    using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+    SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+    std::vector<double> v1{track.cXX(), track.cXY(), track.cYY(), track.cPhiX(), track.cPhiY(),
+                           track.cPhiPhi(), track.cTglX(), track.cTglY(), track.cTglPhi(), track.cTglTgl(),
+                           track.c1PtX(), track.c1PtY(), track.c1PtPhi(), track.c1PtTgl(), track.c1Pt21Pt2()};
+    SMatrix55 tcovs(v1.begin(), v1.end());
+    return o2::track::TrackParCovFwd{track.z(), tpars, tcovs, track.chi2()};
+  }
+
+  // Select the best MCH-MFT match per MCH track based on lowest chi2MatchMCHMFT.
+  // Multiple global tracks can share the same MCH track with different MFT matches;
+  // this function keeps only the best one to reduce combinatorial background.
+  void selectBestMuonMatches(ForwardTracks const& fwdTracks)
+  {
+    fBestMuonMatch.clear();
+    std::unordered_map<int, std::pair<float, int>> mCandidates;
+    for (const auto& muon : fwdTracks) {
+      if (static_cast<int>(muon.trackType()) < kUpperBoundaryToTrackTypeEnum) {
+        auto muonID = muon.matchMCHTrackId();
+        auto chi2 = muon.chi2MatchMCHMFT();
+        if (mCandidates.find(muonID) == mCandidates.end()) {
+          mCandidates[muonID] = {chi2, muon.globalIndex()};
+        } else {
+          if (chi2 < mCandidates[muonID].first) {
+            mCandidates[muonID] = {chi2, muon.globalIndex()};
+          }
+        }
+      }
+    }
+    for (const auto& pairCand : mCandidates) {
+      fBestMuonMatch[pairCand.second.second] = true;
+    }
   }
 
   void createCandidates(ForwardTracks const& fwdTracks,
+                        o2::aod::MFTTracks const& mftTracks,
                         o2::aod::FwdTrkCls const& fwdTrkCls,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         o2::aod::BCs const& bcs,
@@ -451,7 +550,7 @@ struct UpcCandProducerGlobalMuon {
     using o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack;
 
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
-    if (fUpcCuts.getUseFwdCuts()) {
+    if (fUpcCuts.getUseFwdCuts() || fEnableMFT) {
       if (runNumber != fRun) {
         fRun = runNumber;
         std::map<std::string, std::string> metadata;
@@ -461,7 +560,22 @@ struct UpcCandProducerGlobalMuon {
         o2::base::Propagator::initFieldFromGRP(grpmag);
         if (!o2::base::GeometryManager::isGeometryLoaded())
           fCCDB->get<TGeoManager>("GLO/Config/GeometryAligned");
-        o2::mch::TrackExtrap::setField();
+        if (fUpcCuts.getUseFwdCuts()) {
+          o2::mch::TrackExtrap::setField();
+        }
+        // Initialize FwdDCAFitter with magnetic field
+        if (fEnableMFT) {
+          o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+          static constexpr double kCenterMFT[3] = {0, 0, -61.4};
+          float bz = field->getBz(kCenterMFT);
+          LOG(info) << "FwdDCAFitter magnetic field at MFT center: bZ = " << bz;
+          fFwdFitter.setBz(bz);
+          fFwdFitter.setPropagateToPCA(fPropagateToPCA);
+          fFwdFitter.setMaxR(fMaxR);
+          fFwdFitter.setMinParamChange(fMinParamChange);
+          fFwdFitter.setMinRelChi2Change(fMinRelChi2Change);
+          fFwdFitter.setUseAbsDCA(fUseAbsDCA);
+        }
       }
     }
 
@@ -506,9 +620,15 @@ struct UpcCandProducerGlobalMuon {
       vAmbFwdTrackIndexBCs[ambTr.globalIndex()] = ambTr.bcIds()[0];
     }
 
+    // Select best MCH-MFT match per MCH track before sorting into BC maps
+    if (fKeepBestMuonMatch) {
+      selectBestMuonMatches(fwdTracks);
+    }
+
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHMIDTrackIds;
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHTrackIds;
-    std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithGlobalTrackIds; // NEW: For global tracks
+    std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithGlobalMuonTrackIds; // MCH-MID-MFT (good timing from MID)
+    std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHMFTTrackIds;     // MCH-MFT only (poor timing)
 
     for (const auto& fwdTrack : fwdTracks) {
       auto trackType = fwdTrack.trackType();
@@ -520,28 +640,45 @@ struct UpcCandProducerGlobalMuon {
           trackType != GlobalForwardTrack)
         continue;
 
+      // For global tracks, skip if not the best match for this MCH track
+      if (fKeepBestMuonMatch && static_cast<int>(trackType) < kUpperBoundaryToTrackTypeEnum) {
+        if (fBestMuonMatch.find(fwdTrack.globalIndex()) == fBestMuonMatch.end()) {
+          continue;
+        }
+      }
+
       auto trackId = fwdTrack.globalIndex();
       int64_t indexBC = vAmbFwdTrackIndex[trackId] < 0 ? vColIndexBCs[fwdTrack.collisionId()] : vAmbFwdTrackIndexBCs[vAmbFwdTrackIndex[trackId]];
-      auto globalBC = vGlobalBCs[indexBC] + TMath::FloorNint(fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + 1.);
+      auto globalBC = vGlobalBCs[indexBC] + TMath::FloorNint(fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + kBcTimeRoundingOffset);
 
       if (trackType == MuonStandaloneTrack) { // MCH-MID
         mapGlobalBcsWithMCHMIDTrackIds[globalBC].push_back(trackId);
       } else if (trackType == MCHStandaloneTrack) { // MCH-only
         mapGlobalBcsWithMCHTrackIds[globalBC].push_back(trackId);
-      } else if (fEnableMFT && (trackType == GlobalMuonTrack || trackType == GlobalForwardTrack)) { // NEW: Global tracks
-        mapGlobalBcsWithGlobalTrackIds[globalBC].push_back(trackId);
+      } else if (trackType == GlobalMuonTrack) { // MCH-MID-MFT: good timing, used as anchor
+        histRegistry.fill(HIST("hChi2MatchMCHMFT"), fwdTrack.chi2MatchMCHMFT());
+        if (fwdTrack.chi2MatchMCHMFT() > 0 && fwdTrack.chi2MatchMCHMFT() < fMaxChi2MatchMCHMFT) {
+          mapGlobalBcsWithGlobalMuonTrackIds[globalBC].push_back(trackId);
+        }
+      } else if (trackType == GlobalForwardTrack) { // MCH-MFT: poor timing, matched to anchors
+        histRegistry.fill(HIST("hChi2MatchMCHMFT"), fwdTrack.chi2MatchMCHMFT());
+        if (fwdTrack.chi2MatchMCHMFT() > 0 && fwdTrack.chi2MatchMCHMFT() < fMaxChi2MatchMCHMFT) {
+          mapGlobalBcsWithMCHMFTTrackIds[globalBC].push_back(trackId);
+        }
       }
     }
 
-    std::vector<int64_t> selTrackIds{}; // NEW: For cluster saving
+    std::vector<int64_t> selTrackIds{}; // For cluster saving
 
     int32_t candId = 0;
 
-    // NEW: Process global tracks if MFT is enabled
-    if (fEnableMFT && !mapGlobalBcsWithGlobalTrackIds.empty()) {
-      for (const auto& gbc_globalids : mapGlobalBcsWithGlobalTrackIds) {
-        uint64_t globalBcGlobal = gbc_globalids.first;
-        auto itFv0Id = mapGlobalBcWithV0A.find(globalBcGlobal);
+    // Process global tracks: MCH-MID-MFT anchors + MCH-MFT in BC window
+    // MCH-MID-MFT tracks have good timing (from MID) and serve as anchors.
+    // MCH-MFT tracks have poor timing and are searched in a BC window around anchors.
+    if (!mapGlobalBcsWithGlobalMuonTrackIds.empty()) {
+      for (const auto& gbc_anchorids : mapGlobalBcsWithGlobalMuonTrackIds) {
+        uint64_t globalBcAnchor = gbc_anchorids.first;
+        auto itFv0Id = mapGlobalBcWithV0A.find(globalBcAnchor);
         if (itFv0Id != mapGlobalBcWithV0A.end()) {
           auto fv0Id = itFv0Id->second;
           const auto& fv0 = fv0s.iteratorAt(fv0Id);
@@ -552,55 +689,97 @@ struct UpcCandProducerGlobalMuon {
             continue;
         }
 
-        uint16_t numContrib = 0;
-        auto& vGlobalIds = gbc_globalids.second;
+        auto& vAnchorIds = gbc_anchorids.second; // MCH-MID-MFT tracks at this BC
 
-        // Check if we have global tracks (with MFT)
-        std::vector<int64_t> tracksToSave;
-        for (const auto& iglobal : vGlobalIds) {
-          const auto& trk = fwdTracks.iteratorAt(iglobal);
+        // Search MCH-MFT tracks in BC window around anchor (analogous to MCH-only matching)
+        std::map<int64_t, uint64_t> mapMchMftIdBc{};
+        getMchTrackIds(globalBcAnchor, mapGlobalBcsWithMCHMFTTrackIds, fBcWindowMCHMFT, mapMchMftIdBc);
 
-          // Check MFT acceptance and decide which track to use
-          if (isInMFTAcceptance(trk.eta())) {
-            // Inside MFT acceptance - use global track
-            tracksToSave.push_back(iglobal);
-            histRegistry.fill(HIST("hEtaMFT"), trk.eta());
-          } else {
-            // Outside MFT acceptance - look for MCH-MID counterpart
-            // Find the corresponding MCH-MID track at the same BC
-            auto itMid = mapGlobalBcsWithMCHMIDTrackIds.find(globalBcGlobal);
-            if (itMid != mapGlobalBcsWithMCHMIDTrackIds.end()) {
-              // Use MCH-MID track instead
-              if (!itMid->second.empty()) {
-                tracksToSave.push_back(itMid->second[0]);
-                itMid->second.erase(itMid->second.begin()); // Remove used track
-              }
-            }
+        // Collect all track IDs (anchors + matched MCH-MFT)
+        std::vector<int64_t> allTrackIds;
+        allTrackIds.reserve(vAnchorIds.size() + mapMchMftIdBc.size());
+        for (const auto& id : vAnchorIds)
+          allTrackIds.push_back(id);
+        for (const auto& [id, gbc] : mapMchMftIdBc)
+          allTrackIds.push_back(id);
+
+        // Step 1: Find secondary vertex using FwdDCAFitter on the first track pair
+        float bestVtxX = 0., bestVtxY = 0., bestVtxZ = 0.;
+
+        if (allTrackIds.size() >= kMinTracksForPair) {
+          const auto& trk1 = fwdTracks.iteratorAt(allTrackIds[0]);
+          const auto& trk2 = fwdTracks.iteratorAt(allTrackIds[1]);
+          auto pars1 = fwdToTrackPar(trk1);
+          auto pars2 = fwdToTrackPar(trk2);
+          int procCode = fFwdFitter.process(pars1, pars2);
+          if (procCode != 0) {
+            auto secondaryVertex = fFwdFitter.getPCACandidate();
+            auto chi2PCA = fFwdFitter.getChi2AtPCACandidate();
+            bestVtxX = secondaryVertex[0];
+            bestVtxY = secondaryVertex[1];
+            bestVtxZ = secondaryVertex[2];
+            histRegistry.fill(HIST("hChi2PCA"), chi2PCA);
           }
         }
 
-        // Write selected tracks
-        for (const auto& trkId : tracksToSave) {
-          if (!addToFwdTable(candId, trkId, globalBcGlobal, 0., fwdTracks, mcFwdTrackLabels))
+        // Step 2: Write anchor tracks (MCH-MID-MFT)
+        constexpr double kMuonMass = o2::constants::physics::MassMuon;
+        uint16_t numContrib = 0;
+        double sumPx = 0., sumPy = 0., sumPz = 0., sumE = 0.;
+        for (const auto& ianchor : vAnchorIds) {
+          if (!addToFwdTable(candId, ianchor, globalBcAnchor, 0., fwdTracks, mftTracks, mcFwdTrackLabels))
             continue;
+          const auto& trk = fwdTracks.iteratorAt(ianchor);
+          double p2 = trk.px() * trk.px() + trk.py() * trk.py() + trk.pz() * trk.pz();
+          sumPx += trk.px();
+          sumPy += trk.py();
+          sumPz += trk.pz();
+          sumE += std::sqrt(p2 + kMuonMass * kMuonMass);
           numContrib++;
-          selTrackIds.push_back(trkId);
+          selTrackIds.push_back(ianchor);
         }
 
-        if (numContrib < 1)
+        // Fill invariant mass from MCH-MID-MFT anchors only
+        uint16_t numContribAnch = numContrib;
+        if (numContribAnch >= kMinTracksForPair) {
+          double mass2 = sumE * sumE - sumPx * sumPx - sumPy * sumPy - sumPz * sumPz;
+          histRegistry.fill(HIST("hMassGlobalMuon"), mass2 > 0. ? std::sqrt(mass2) : 0.);
+        }
+
+        // Step 3: Write matched MCH-MFT tracks with adjusted track time
+        for (const auto& [imchMft, gbc] : mapMchMftIdBc) {
+          if (!addToFwdTable(candId, imchMft, gbc, (gbc - globalBcAnchor) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mftTracks, mcFwdTrackLabels))
+            continue;
+          const auto& trk = fwdTracks.iteratorAt(imchMft);
+          double p2 = trk.px() * trk.px() + trk.py() * trk.py() + trk.pz() * trk.pz();
+          sumPx += trk.px();
+          sumPy += trk.py();
+          sumPz += trk.pz();
+          sumE += std::sqrt(p2 + kMuonMass * kMuonMass);
+          numContrib++;
+          selTrackIds.push_back(imchMft);
+        }
+
+        // Fill invariant mass including MCH-MFT tracks (only if MCH-MFT tracks were added)
+        if (numContrib > numContribAnch && numContrib >= kMinTracksForPair) {
+          double mass2 = sumE * sumE - sumPx * sumPx - sumPy * sumPy - sumPz * sumPz;
+          histRegistry.fill(HIST("hMassGlobalMuonWithMCHMFT"), mass2 > 0. ? std::sqrt(mass2) : 0.);
+        }
+
+        if (numContrib < kMinTracksForCandidate)
           continue;
 
-        eventCandidates(globalBcGlobal, runNumber, 0., 0., 0., 0, numContrib, 0, 0);
+        eventCandidates(globalBcAnchor, runNumber, bestVtxX, bestVtxY, bestVtxZ, 0, numContrib, 0, 0);
         std::vector<float> amplitudesV0A{};
         std::vector<int8_t> relBCsV0A{};
         std::vector<float> amplitudesT0A{};
         std::vector<int8_t> relBCsT0A{};
         if (nFV0s > 0) {
-          getFV0Amplitudes(globalBcGlobal, fv0s, fBcWindowFITAmps, mapGlobalBcWithV0A, amplitudesV0A, relBCsV0A);
+          getFV0Amplitudes(globalBcAnchor, fv0s, fBcWindowFITAmps, mapGlobalBcWithV0A, amplitudesV0A, relBCsV0A);
         }
         eventCandidatesSelsFwd(0., 0., amplitudesT0A, relBCsT0A, amplitudesV0A, relBCsV0A);
         if (nZdcs > 0) {
-          auto itZDC = mapGlobalBcWithZdc.find(globalBcGlobal);
+          auto itZDC = mapGlobalBcWithZdc.find(globalBcAnchor);
           if (itZDC != mapGlobalBcWithZdc.end()) {
             const auto& zdc = zdcs.iteratorAt(itZDC->second);
             float timeZNA = zdc.timeZNA();
@@ -631,18 +810,18 @@ struct UpcCandProducerGlobalMuon {
       auto& vMuonIds = gbc_muids.second;
       // writing MCH-MID tracks
       for (const auto& imuon : vMuonIds) {
-        if (!addToFwdTable(candId, imuon, globalBcMid, 0., fwdTracks, mcFwdTrackLabels))
+        if (!addToFwdTable(candId, imuon, globalBcMid, 0., fwdTracks, mftTracks, mcFwdTrackLabels))
           continue;
         numContrib++;
         selTrackIds.push_back(imuon);
       }
-      if (numContrib < 1) // didn't save any MCH-MID tracks
+      if (numContrib < kMinTracksForCandidate) // didn't save any MCH-MID tracks
         continue;
       std::map<int64_t, uint64_t> mapMchIdBc{};
       getMchTrackIds(globalBcMid, mapGlobalBcsWithMCHTrackIds, fBcWindowMCH, mapMchIdBc);
       // writing MCH-only tracks
       for (const auto& [imch, gbc] : mapMchIdBc) {
-        if (!addToFwdTable(candId, imch, gbc, (gbc - globalBcMid) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mcFwdTrackLabels))
+        if (!addToFwdTable(candId, imch, gbc, (gbc - globalBcMid) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mftTracks, mcFwdTrackLabels))
           continue;
         numContrib++;
         selTrackIds.push_back(imch);
@@ -683,11 +862,13 @@ struct UpcCandProducerGlobalMuon {
     vAmbFwdTrackIndexBCs.clear();
     mapGlobalBcsWithMCHMIDTrackIds.clear();
     mapGlobalBcsWithMCHTrackIds.clear();
-    mapGlobalBcsWithGlobalTrackIds.clear(); // NEW
-    selTrackIds.clear();                    // NEW
+    mapGlobalBcsWithGlobalMuonTrackIds.clear();
+    mapGlobalBcsWithMCHMFTTrackIds.clear();
+    selTrackIds.clear();
   }
 
   void processFwd(ForwardTracks const& fwdTracks,
+                  o2::aod::MFTTracks const& mftTracks,
                   o2::aod::FwdTrkCls const& fwdTrkCls,
                   o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                   o2::aod::BCs const& bcs,
@@ -696,10 +877,11 @@ struct UpcCandProducerGlobalMuon {
                   o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
-    createCandidates(fwdTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, (o2::aod::McFwdTrackLabels*)nullptr);
+    createCandidates(fwdTracks, mftTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
   void processFwdMC(ForwardTracks const& fwdTracks,
+                    o2::aod::MFTTracks const& mftTracks,
                     o2::aod::FwdTrkCls const& fwdTrkCls,
                     o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                     o2::aod::BCs const& bcs,
@@ -712,7 +894,7 @@ struct UpcCandProducerGlobalMuon {
   {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles);
-    createCandidates(fwdTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, &mcFwdTrackLabels);
+    createCandidates(fwdTracks, mftTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, &mcFwdTrackLabels);
     fNewPartIDs.clear();
   }
 

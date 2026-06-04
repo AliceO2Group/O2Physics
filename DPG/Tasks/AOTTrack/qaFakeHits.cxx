@@ -16,19 +16,26 @@
 /// \brief  Task to analyze the fraction of the true and fake hits depending on where the fake hits are picked
 ///
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TH2.h>
+#include <TString.h>
+
+#include <array>
+#include <bitset>
+#include <memory>
 
 using namespace o2::framework;
 // Particle information

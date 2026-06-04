@@ -23,7 +23,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
