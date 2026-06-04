@@ -39,6 +39,8 @@
 #include <TPDGCode.h>
 #include <TVector3.h>
 
+#include <Rtypes.h>
+
 #include <cmath>
 #include <set>
 #include <string>
@@ -123,12 +125,12 @@ struct jetHadronsPid {
     registryData.add("n_events_raw", "All events", HistType::kTH1F, {{1, 0.5, 1.5, ""}});
 
     registryData.add("jet_pt", "Jet pT ", HistType::kTH1F, {{100, 0.0, 20.0, "#it{p}_{T}^{raw} (GeV/#it{c})"}});
-    registryData.add("jet_pt_subtracted", "Jet pT subtracted", HistType::kTH1F, {{200, 0.0, 200.0, "#it{p}_{T}^{sub} (GeV/#it{c})"}});
+    registryData.add("jet_pt_subtracted", "Jet pT subtracted", HistType::kTH1F, {{200, 0.0, 10.0, "#it{p}_{T}^{sub} (GeV/#it{c})"}});
     registryData.add("jet_pt_raw_vs_sub", "Raw vs sub jet pT", HistType::kTH2F, {{200, 0, 200}, {200, 0, 200}});
     registryData.add("jet_eta", "Jet eta", HistType::kTH1F, {{100, -1.0, 1.0, "#eta_{jet}"}});
     registryData.add("jet_phi", "Jet phi", HistType::kTH1F, {{100, 0.0, TwoPI, "#phi_{jet}"}});
     registryData.add("jet_area", "Jet area", HistType::kTH1F, {{100, 0.0, 1.5, "Area"}});
-    registryData.add("jet_n_constituents", "Jet multiplicity", HistType::kTH1I, {{100, 0, 100, "N_{constituents}"}});
+    registryData.add("jet_n_constituents", "Jet multiplicity", HistType::kTH1I, {{100, 0, 30, "N_{constituents}"}});
 
     registryData.add("pion_pure_tpc", "TPC Pion PID", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
     registryData.add("pion_pure_tof", "TOF Pion PID", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
@@ -234,12 +236,11 @@ struct jetHadronsPid {
   template <typename TrackIts>
   bool hasITSLayerHit(const TrackIts& track, int layer)
   {
-    int ibit = layer - 1;
-    return (track.itsClusterMap() & (1 << ibit)) != 0;
+    return TESTBIT(track.itsClusterMap(), layer - 1);
   }
 
-  template <typename PionTrack>
-  bool passedTrackSelection(const PionTrack& track)
+  template <typename TrackType>
+  bool passedTrackSelection(const TrackType& track)
   {
     if (requirePvContributor && !(track.isPVContributor()))
       return false;
@@ -258,6 +259,8 @@ struct jetHadronsPid {
     if (track.eta() < minEta || track.eta() > maxEta)
       return false;
     if (track.pt() < minPt || track.pt() > maxPt)
+      return false;
+    if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz)
       return false;
     return true;
   }
@@ -281,8 +284,6 @@ struct jetHadronsPid {
 
     for (auto const& track : globalTracks) {
       if (!passedTrackSelection(track))
-        continue;
-      if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz)
         continue;
 
       double pt = track.pt();
@@ -359,9 +360,7 @@ struct jetHadronsPid {
 
     double centralRho = collision.rho();
 
-    int baseCollId = collision.collisionId();
-
-    auto collTracks = globalTracks.sliceBy(tracksPerCollision, baseCollId);
+    auto collTracks = globalTracks.sliceBy(tracksPerCollision, collision.collisionId());
 
     for (auto const& jet : jets) {
 
@@ -391,9 +390,13 @@ struct jetHadronsPid {
       registryData.fill(HIST("jet_area"), jet.area());
       registryData.fill(HIST("jet_pt"), jet.pt());
 
+      const double MagnitudeThreshold = 1e-9;
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
       TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+
+      if (ueAxis1.Mag() < MagnitudeThreshold || ueAxis2.Mag() < MagnitudeThreshold)
+        continue;
 
       int constituentCount = 0;
       std::set<int> tracksInJetsSet;
@@ -405,8 +408,6 @@ struct jetHadronsPid {
         tracksInJetsSet.insert(track.index());
 
         if (!passedTrackSelection(track))
-          continue;
-        if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz)
           continue;
 
         double pt = track.pt();
@@ -462,9 +463,6 @@ struct jetHadronsPid {
       }
       registryData.fill(HIST("jet_n_constituents"), constituentCount);
 
-      if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0)
-        continue;
-
       int nTracksOut = 0;
 
       for (auto const& track : collTracks) {
@@ -475,8 +473,6 @@ struct jetHadronsPid {
         }
 
         if (!passedTrackSelection(track))
-          continue;
-        if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz)
           continue;
 
         double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
@@ -568,8 +564,6 @@ struct jetHadronsPid {
     for (auto const& track : tracks) {
 
       if (!passedTrackSelection(track))
-        continue;
-      if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz)
         continue;
 
       double pt = track.pt();
