@@ -292,13 +292,13 @@ struct HfCorrelatorXicHadronsSelection {
                           aod::V0Datas const& V0s)
   {
     bool isCandFound = false;
-    const int64_t v0CandidatesMin = 1;
+    const int64_t nCandidatesV0Min = 1;
 
     if (!eventSelV0(collision)) {
       candSel(isCandFound);
       return;
     }
-    if (V0s.size() < v0CandidatesMin) {
+    if (V0s.size() < nCandidatesV0Min) {
       candSel(isCandFound);
       return;
     }
