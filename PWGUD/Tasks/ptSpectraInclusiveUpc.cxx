@@ -56,8 +56,6 @@ struct PtSpectraInclusiveUpc {
   Configurable<int> nBinsDCAxy{"nBinsDCAxy", 100, "N bins in DCA_{xy} histos"};
   Configurable<bool> applyKineCutsInGen{"applyKineCutsInGen", false, "Apply kinematic cuts in the generated level"};
 
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  Preslice<o2::aod::McParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
   // define abbreviations
   using CCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using CC = CCs::iterator;
