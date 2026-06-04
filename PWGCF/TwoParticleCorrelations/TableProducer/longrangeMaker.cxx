@@ -83,7 +83,7 @@ using namespace o2::constants::math;
 auto static constexpr CintZero = 0;
 auto static constexpr KminFt0cCell = 96;
 auto static constexpr TotFt0Channels = 208;
-AxisSpec axisEvent{20, 0.5, 20.5, "#Event", "EventAxis"};
+AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 AxisSpec axisTrackSel{10, 0.5, 10.5, "#Track", "TrackAxis"};
 auto static constexpr KminCharge = 3.0f;
 static constexpr std::string_view species[] = {"Pi", "Ka", "Pr"};
@@ -112,9 +112,7 @@ struct LongrangeMaker {
     Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, "bestCollIndex"};
     Configurable<bool> isrejectFlangeEvent{"isrejectFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, "Enable NoCollInTimeRangeStandard cut"};
-    Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, "Enable NoCollInTimeRangeStrict cut"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
-    Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, "Enable NoCollInRofStrict cut"};
     Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
     Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
     Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
@@ -254,13 +252,11 @@ struct LongrangeMaker {
     x->SetBinLabel(6, "ApplyGoodZvtxFT0vsPV");
     x->SetBinLabel(7, "ApplyGoodITSLayersAll");
     x->SetBinLabel(8, "ApplyExtraCorrCut");
-    x->SetBinLabel(9, "ApplyNoCollInRofStandard");
-    x->SetBinLabel(10, "ApplyNoCollInRofStrict");
-    x->SetBinLabel(11, "ApplyNoCollInTimeRangeStandard");
-    x->SetBinLabel(12, "ApplyNoCollInTimeRangeStrict");
-    x->SetBinLabel(13, "ApplyNoHighMultCollInPrevRof");
-    x->SetBinLabel(14, "ApplyOccupancySelection");
-    x->SetBinLabel(15, "reject flange event");
+    x->SetBinLabel(9, "ApplyNoCollInTimeRangeStandard");
+    x->SetBinLabel(10, "ApplyNoCollInRofStandard");
+    x->SetBinLabel(11, "ApplyNoHighMultCollInPrevRof");
+    x->SetBinLabel(12, "ApplyOccupancySelection");
+    x->SetBinLabel(13, "reject flange event");
     histos.add("hSelectionResult", "hSelectionResult", kTH1I, {{5, -0.5, 4.5}});
 
     histos.add("hMftTrkSel", "hMftTrkSel", kTH1D, {axisTrackSel}, false);
@@ -429,7 +425,7 @@ struct LongrangeMaker {
           return;
         }
       }
-      histos.fill(HIST("EventHist"), 15);
+      histos.fill(HIST("EventHist"), 13);
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
         auto chanelid = ft0.channelA()[iCh];
         float ampl = ft0.amplitudeA()[iCh];
@@ -880,7 +876,7 @@ struct LongrangeMaker {
           continue;
         }
         // Fill midrapidity tracks
-        if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMult)
+        if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax)
           lrmidmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particle.flags());
         // Fill FT0 tracks
         if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
@@ -888,7 +884,7 @@ struct LongrangeMaker {
         if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
           lrft0cmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
         // Fill MFT tracks
-        if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax)
+        if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax && particle.pt() > cfgmfttrksel.cfgMftPtCutMin && particle.pt() < cfgmfttrksel.cfgMftPtCutMax)
           lrmftmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
       }
     }
@@ -909,7 +905,7 @@ struct LongrangeMaker {
         continue;
       }
       // Fill midrapidity tracks
-      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMult)
+      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax)
         lrmidmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particle.flags());
       // Fill FT0 tracks
       if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
@@ -917,7 +913,7 @@ struct LongrangeMaker {
       if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
         lrft0cmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
       // Fill MFT tracks
-      if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax)
+      if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax && particle.pt() > cfgmfttrksel.cfgMftPtCutMin && particle.pt() < cfgmfttrksel.cfgMftPtCutMax)
         lrmftmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
     }
   }
@@ -1092,30 +1088,22 @@ struct LongrangeMaker {
       return false;
     }
     histos.fill(HIST("EventHist"), 8);
-    if (cfgevtsel.isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-      return false;
-    }
-    histos.fill(HIST("EventHist"), 9);
-    if (cfgevtsel.isApplyNoCollInRofStrict && !col.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
-      return false;
-    }
-    histos.fill(HIST("EventHist"), 10);
     if (cfgevtsel.isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 11);
-    if (cfgevtsel.isApplyNoCollInTimeRangeStrict && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+    histos.fill(HIST("EventHist"), 9);
+    if (cfgevtsel.isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 12);
+    histos.fill(HIST("EventHist"), 10);
     if (cfgevtsel.isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 13);
+    histos.fill(HIST("EventHist"), 11);
     if (cfgevtsel.isApplyOccuSelection && (col.trackOccupancyInTimeRange() > cfgevtsel.cfgOccuCut)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 14);
+    histos.fill(HIST("EventHist"), 12);
     return true;
   }
 
