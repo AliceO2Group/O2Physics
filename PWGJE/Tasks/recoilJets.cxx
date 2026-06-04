@@ -1572,10 +1572,8 @@ struct RecoilJets {
   //=============================================================================
   // Event Activity QA analysis in raw OO data
   //=============================================================================
-  template <typename BC, typename Collision, typename ZDC>
+  template <typename BC, typename ZDC, typename Collision>
   void fillEventActivitySelectionQAHistograms(Collision const& collision,
-                                              BC const&,
-                                              ZDC const&,
                                               float weight = 1.)
   {
     int runNumber = collision.multRunNumber();
@@ -2159,10 +2157,9 @@ struct RecoilJets {
   //=============================================================================
   // Pt and Phi smearing of TT
   //=============================================================================
-  template <typename JColl, typename JTracks, typename JParticles>
+  template <typename JParticles, typename JColl, typename JTracks>
   void fillTTSmearingPtPhi(JColl const& collision,
                            JTracks const& tracks,
-                           JParticles const&,
                            float weight = 1.)
   {
     const auto ft0Metrics = getFT0Metrics(collision, ft0a.mean, ft0c.mean);
@@ -2217,7 +2214,7 @@ struct RecoilJets {
       return;
 
     // No filter on Particles, it can be outside of |eta| acceptance
-    auto particle = tracks.iteratorAt(chosenTTPos).mcParticle();
+    auto particle = tracks.iteratorAt(chosenTTPos).mcParticle_as<JParticles>();
     float particleEta = particle.eta();
     bool bPartWithinEta = std::fabs(particleEta) < trk.etaCut;
 
@@ -2544,14 +2541,14 @@ struct RecoilJets {
   // Event Activity QA analysis in raw OO
   //=============================================================================
   void processEventActivitySelectionQA(CollEvSelExtendedIt const& collision,
-                                       BCsRun3Tbl const& BCs,
-                                       aod::Zdcs const& ZDCs)
+                                       BCsRun3Tbl const&,
+                                       aod::Zdcs const&)
   {
     // Base flag for event selection
     if (!collision.sel8())
       return;
 
-    fillEventActivitySelectionQAHistograms(collision, BCs, ZDCs);
+    fillEventActivitySelectionQAHistograms<BCsRun3Tbl, aod::Zdcs>(collision);
   }
   PROCESS_SWITCH(RecoilJets, processEventActivitySelectionQA, "process function for EA QA purposes in raw OO collisions", false);
 
@@ -2637,14 +2634,14 @@ struct RecoilJets {
   //=============================================================================
   void processTTSmearingPtPhi(CollDetIt const& collision,
                               TrackMCLbsTbl const& tracksPerColl,
-                              aod::JetParticles const& particles)
+                              aod::JetParticles const&)
   {
 
     // Skip detector level collisions
     if (skipEvent(collision))
       return;
 
-    fillTTSmearingPtPhi(collision, tracksPerColl, particles);
+    fillTTSmearingPtPhi<aod::JetParticles>(collision, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processTTSmearingPtPhi, "process MC data (no weight; MB events) to estimate pT and phi smearing of TT", false);
 
@@ -2652,7 +2649,7 @@ struct RecoilJets {
   void processTTSmearingPtPhiWeighted(CollOutlierDetIt const& collision,
                                       aod::JetMcCollisions const&,
                                       TrackMCLbsTbl const& tracksPerColl,
-                                      aod::JetParticles const& particles)
+                                      aod::JetParticles const&)
   {
 
     // Skip detector level collisions
@@ -2660,7 +2657,7 @@ struct RecoilJets {
       return;
 
     auto weight = collision.mcCollision().weight();
-    fillTTSmearingPtPhi(collision, tracksPerColl, particles, weight);
+    fillTTSmearingPtPhi<aod::JetParticles>(collision, tracksPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processTTSmearingPtPhiWeighted, "process MC data (weighted JJ) to estimate pT and phi smearing of TT", false);
 
