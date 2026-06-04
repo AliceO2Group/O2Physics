@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file jetHadronsPid.cxx
+/// \file JetHadronsPid.cxx
 /// \brief Analysis of hadrons in jets
 /// \author Leonard Lorenc, WUT Warsaw, leonard.lorenc@cern.ch
 /// \author Aleksandra Mulewicz, WUT Warsaw, aleksandra.mulewicz@cern.ch
@@ -68,7 +68,7 @@ using HadronTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelect
                                  aod::pidTPCFullPr, aod::pidTOFFullPr,
                                  aod::McTrackLabels>;
 
-struct jetHadronsPid {
+struct JetHadronsPid {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -338,7 +338,7 @@ struct jetHadronsPid {
       }
     }
   }
-  PROCESS_SWITCH(jetHadronsPid, processPureTracks, "Pure Tracks Analysis", true);
+  PROCESS_SWITCH(JetHadronsPid, processPureTracks, "Pure Tracks Analysis", true);
 
   void processJets(JetEvents::iterator const& collision,
                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -540,7 +540,7 @@ struct jetHadronsPid {
       registryData.fill(HIST("tracks_n_in_ue"), nTracksOut);
     }
   }
-  PROCESS_SWITCH(jetHadronsPid, processJets, "Jets Analysis", true);
+  PROCESS_SWITCH(JetHadronsPid, processJets, "Jets Analysis", true);
 
   void processMC(StandardEvents::iterator const& collision, HadronTracksMC const& tracks, aod::McParticles const&)
   {
@@ -618,7 +618,7 @@ struct jetHadronsPid {
       }
     }
   }
-  PROCESS_SWITCH(jetHadronsPid, processMC, "Run on Monte Carlo", false);
+  PROCESS_SWITCH(JetHadronsPid, processMC, "Run on Monte Carlo", false);
 
   void processMCTruth(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -647,10 +647,10 @@ struct jetHadronsPid {
       }
     }
   }
-  PROCESS_SWITCH(jetHadronsPid, processMCTruth, "Run on Monte Carlo (Pure Truth)", false);
+  PROCESS_SWITCH(JetHadronsPid, processMCTruth, "Run on Monte Carlo (Pure Truth)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<jetHadronsPid>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<JetHadronsPid>(cfgc)};
 }
