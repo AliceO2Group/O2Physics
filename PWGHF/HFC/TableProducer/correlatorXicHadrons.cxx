@@ -102,12 +102,13 @@ enum class PDGChargeScale : size_t {
   Scale = 3u
 };
 
-namespace CorrParticleType {
-  enum Type : int8_t {
-    PhysicalPrimary = 0,
-    IdentifiedParticle = 1,
-    V0 = 2
-  };
+namespace CorrParticleType
+{
+enum Type : int8_t {
+  PhysicalPrimary = 0,
+  IdentifiedParticle = 1,
+  V0 = 2
+};
 }
 // ============================================================================
 // HELPER FUNCTIONS
@@ -203,8 +204,8 @@ struct HfCorrelatorXicHadronsSelection {
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-    if (isCandFound && isSel8 && isNosameBunchPileUp){
-          candSel(true);
+    if (isCandFound && isSel8 && isNosameBunchPileUp) {
+      candSel(true);
     }
   }
 
@@ -667,10 +668,10 @@ struct HfCorrelatorXicHadrons {
 
   template <bool IsMcRec, bool IsXicPlus, typename CollisionType, typename V0, typename TrackType, typename CandsXics>
   void doSameEventWithV0(CollisionType const& collision,
-    V0 const& v0s,
-    TrackType const& tracks,
-    CandsXics const& candidates,
-    aod::McParticles const* mcParticles = nullptr)
+                         V0 const& v0s,
+                         TrackType const& tracks,
+                         CandsXics const& candidates,
+                         aod::McParticles const* mcParticles = nullptr)
   {
     // Data-driven efficiency calculation for protons using Lambda
     if (cfgV0.cfgCalDataDrivenEffPr) {
@@ -899,8 +900,8 @@ struct HfCorrelatorXicHadrons {
 
       // Correlate Xic with all Lambda V0 in the same event
       for (const auto& v0 : v0s) {
-        auto const&  trackV0Pos = v0.template posTrack_as<TrackType>();
-        auto const&  trackV0Neg = v0.template negTrack_as<TrackType>();
+        auto const& trackV0Pos = v0.template posTrack_as<TrackType>();
+        auto const& trackV0Neg = v0.template negTrack_as<TrackType>();
 
         if (cfgV0.cfgIsCorrCollMatchV0 && ((v0.collisionId() != trackV0Pos.collisionId()) || (v0.collisionId() != trackV0Neg.collisionId()))) {
           continue;
