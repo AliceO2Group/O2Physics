@@ -168,7 +168,7 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Maximal DCAz for tracks")
     O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.1f, "Maximal DCAxy for tracks")
     // track quality selections for daughter track
-    O2_DEFINE_CONFIGURABLE(cfgMaxITSNCls, int, 5, "check minimum number of ITS clusters")
+    O2_DEFINE_CONFIGURABLE(cfgMaxITSNCls, int, 5, "check maximum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgMinITSNCls, int, 0, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgChITSNCls, int, 5, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgTPCNCls, int, 50, "check minimum number of TPC hits")
