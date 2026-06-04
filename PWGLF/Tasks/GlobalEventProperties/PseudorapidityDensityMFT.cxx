@@ -1572,11 +1572,13 @@ struct PseudorapidityDensityMFT {
       eventsInel.insert(collision.globalIndex());
     }
     if (usePerCollisionSampleGt0Cut && !hasPerCollisionSample) {
-      return;}
+      return;
+    }
     fillDataCut(DataCutBin::PerCollisionSampleGt0);
 
     if (useMidtracksAndPerCollisionSampleGt0Cut && !(hasMidtracks && hasPerCollisionSample)) {
-      return;}
+      return;
+    }
     // registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0));
     fillDataCut(DataCutBin::InelGt0);
 
@@ -1645,7 +1647,7 @@ struct PseudorapidityDensityMFT {
          ((phi <= PhiVetoLow) ||
           ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
           (phi >= PhiVetoHigh))) ||
-        (useDCAxyCut && dcaXyCut > maxDCAxy)|| (usePtCut && ptCut > cfgnPt);
+        (useDCAxyCut && dcaXyCut > maxDCAxy) || (usePtCut && ptCut > cfgnPt);
 
       if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
         const float dcaZCut = retrack.bestDCAZ();
