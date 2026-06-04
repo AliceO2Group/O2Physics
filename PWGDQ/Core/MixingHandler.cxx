@@ -134,7 +134,7 @@ int MixingHandler::FindEventCategory(float* values)
       return -1; // all variables must be inside limits
     }
     bin.push_back(binValue - 1);
-  } 
+  }
 
   // Hash the bin values to define a unique category
   // The hashing is done such that the original bin values can be retrieved from the category
