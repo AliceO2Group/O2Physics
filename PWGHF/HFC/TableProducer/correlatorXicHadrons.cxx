@@ -102,6 +102,13 @@ enum class PDGChargeScale : size_t {
   Scale = 3u
 };
 
+namespace CorrParticleType {
+  enum Type : int8_t {
+    PhysicalPrimary = 0,
+    IdentifiedParticle = 1,
+    V0 = 2
+  };
+}
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -406,7 +413,7 @@ struct HfCorrelatorXicHadrons {
     Configurable<bool> calEffEventWithCand{"calEffEventWithCand", true, "Calculate the efficiency of Xic candidate"};
     Configurable<float> eventFractionToAnalyze{"eventFractionToAnalyze", -1, "Fraction of events to analyze"};
     Configurable<int> particlePdg{"particlePdg", PDG_t::kProton, "PDG code of particle: kProton(2212), kPiPlus(211), kKPlus(321), kLambda0(3122)"};
-    Configurable<int8_t> corrParticle{"corrParticle", 1, "put '0' for physical primary, '1' for indivisual identified particle, '2' for V0s"};
+    Configurable<int8_t> corrParticle{"corrParticle", CorrParticleType::IdentifiedParticle, "0: physical primary, 1: individual identified particle, 2: V0s"};
   } cfgXicCand;
 
   struct : ConfigurableGroup {
@@ -1372,7 +1379,7 @@ struct HfCorrelatorXicHadrons {
         }
 
         if constexpr (!isV0) {
-          if (cfgXicCand.corrParticle != 2 && !assocParticle.isGlobalTrackWoDCA()) {
+          if (cfgXicCand.corrParticle != CorrParticleType::V0 && !assocParticle.isGlobalTrackWoDCA()) {
             continue;
           }
           if (cfgXicCand.pidTrkApplied) {
@@ -1493,15 +1500,15 @@ struct HfCorrelatorXicHadrons {
           continue;
         }
 
-        if (cfgXicCand.corrParticle == 1 && ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton))) {
+        if (cfgXicCand.corrParticle == CorrParticleType::IdentifiedParticle && ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton))) {
           continue;
         }
 
-        if (cfgXicCand.corrParticle == 2 && (std::abs(particleAssoc.pdgCode()) != cfgXicCand.particlePdg)) {
+        if (cfgXicCand.corrParticle == CorrParticleType::V0 && (std::abs(particleAssoc.pdgCode()) != cfgXicCand.particlePdg)) {
           continue;
         }
 
-        if (cfgXicCand.corrParticle == 1 && !particleAssoc.isPhysicalPrimary()) {
+        if (cfgXicCand.corrParticle == CorrParticleType::IdentifiedParticle && !particleAssoc.isPhysicalPrimary()) {
           continue;
         }
 
