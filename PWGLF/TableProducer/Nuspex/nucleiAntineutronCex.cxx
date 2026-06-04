@@ -20,7 +20,6 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -536,7 +535,7 @@ struct NucleiAntineutronCex {
           }
 
           // Reconstructed data
-          bool antipLayers_condition = false;
+          bool antipLayersCondition = false;
           bool antipHasTrack = false;
           double antipTrkPx = 0.;
           double antipTrkPy = 0.;
@@ -551,7 +550,7 @@ struct NucleiAntineutronCex {
           int8_t pTrkItsPidValid = 0;
           float pTrkTgl = 0.f;
 
-          bool pLayers_condition = false;
+          bool pLayersCondition = false;
           bool pHasTrack = false;
           double pTrkPx = 0.;
           double pTrkPy = 0.;
@@ -609,7 +608,7 @@ struct NucleiAntineutronCex {
               antipHasTrack = true;
               apItsMap = static_cast<uint16_t>(track.itsClusterMap());
               if (layerCondition)
-                antipLayers_condition = true;
+                antipLayersCondition = true;
               if (motherPdg == -kNeutron) {
                 histos.fill(HIST("apItsNsigmaPr"), antipTrkItsNSigmaPr);
                 histos.fill(HIST("apItsPidValid"), antipTrkItsPidValid);
@@ -637,7 +636,7 @@ struct NucleiAntineutronCex {
               pHasTrack = true;
               pItsMap = static_cast<uint16_t>(track.itsClusterMap());
               if (layerCondition)
-                pLayers_condition = true;
+                pLayersCondition = true;
               if (motherPdg == -kNeutron) {
                 histos.fill(HIST("pItsNsigmaPr"), pTrkItsNSigmaPr);
                 histos.fill(HIST("pItsPidValid"), pTrkItsPidValid);
@@ -715,7 +714,7 @@ struct NucleiAntineutronCex {
               if (motherPdg != -kNeutron)
                 histos.fill(HIST("cexbg_pairtrkVtxfitDcaPair"), dcaPair);
 
-              if (!(antipLayers_condition && pLayers_condition))
+              if (!(antipLayersCondition && pLayersCondition))
                 continue;
               double cexPairTrkP = total_trk_pVec.Mag();
               double cexPairTrkPt = total_trk_pVec.Pt();
