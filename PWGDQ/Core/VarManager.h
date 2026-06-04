@@ -1397,6 +1397,8 @@ class VarManager : public TObject
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <typename T>
+  static void FillPairMEAcrossTFs(T const& t1, T const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int candidateType, typename T1, typename T2, typename T3>
@@ -4213,6 +4215,24 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
+}
+
+template <typename T>
+void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1 = o2::constants::physics::MassElectron;
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt, t1.eta, t1.phi, m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt, t2.eta, t2.phi, m1);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kRap] = -v12.Rapidity();
 }
 
 template <int pairType, typename T1, typename T2>
