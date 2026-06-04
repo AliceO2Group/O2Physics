@@ -14,13 +14,11 @@
 /// \brief Task for q1-dependent directed flow and global polarization
 /// \since May 2026
 
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -28,7 +26,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -37,19 +34,14 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3Dfwd.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
-#include <THn.h>
-#include <TMath.h>
 #include <TProfile2D.h>
-#include <TRandom3.h>
 
 #include <algorithm>
 #include <chrono>
@@ -57,7 +49,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -164,7 +155,8 @@ struct flowDirectedFlowTask {
     histos.add("hQyCvscent", "Qy C vs centrality", kTH2F, {{centAxis}, {qAxis}});
 
     histos.add("hpResCosAC", "cos(#Psi_{A}-#Psi_{C}) vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
-    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
+    histos.add("hpDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
+    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
     histos.add("hpQxAQxC", "QxA QxC", kTH2F, {{centAxis}, {resAxis}});
     histos.add("hpQyAQyC", "QyA QyC", kTH2F, {{centAxis}, {resAxis}});
     histos.add("hpQxAQyC", "QxA QyC", kTH2F, {{centAxis}, {resAxis}});
@@ -394,7 +386,7 @@ struct flowDirectedFlowTask {
     if (acc <= 0.0 || !std::isfinite(acc)) {
       return 1.0;
     }
-    return 1.0 / acc;
+    return acc;
   }
 
   template <typename V0>
@@ -525,6 +517,7 @@ struct flowDirectedFlowTask {
     float resDot = dotAC / (magA * magC);
 
     histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC), q1);
+    histos.fill(HIST("hpDotAC"), centrality, dotAC, q1);
     histos.fill(HIST("hpResDotAC"), centrality, resDot, q1);
     histos.fill(HIST("hpQxAQxC"), centrality, qxA * qxC);
     histos.fill(HIST("hpQyAQyC"), centrality, qyA * qyC);

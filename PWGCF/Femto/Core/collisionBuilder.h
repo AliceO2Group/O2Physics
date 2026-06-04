@@ -578,14 +578,14 @@ class CollisionBuilder
         col.trackOccupancyInTimeRange(),
         col.ft0cOccupancyInTimeRange());
     }
-    if (mProducedCentralities) {
-      collisionProducts.producedCentralityEstimators(
-        col.centFT0A(),
-        col.centFT0C());
-    }
 
+    // TODO: enable later for better QA
+    // if (mProducedCentralities) {
+    //   collisionProducts.producedCentralityEstimators(
+    //     col.centFT0A(),
+    //     col.centFT0C());
+    // }
     // PbPb specific columns
-    // TODO: enable later update
     // if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
     //   if (mProduceQns) {
     //     collisionProducts.producedQns(utils::qn(col));

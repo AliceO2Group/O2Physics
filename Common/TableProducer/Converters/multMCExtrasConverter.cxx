@@ -23,6 +23,7 @@ struct MultMCExtrasConverter {
   Produces<aod::MultMCExtras_001> multMCExtras_001;
   void process(aod::MultMCExtras_000 const& multMCExtras_000)
   {
+    multMCExtras_001.reserve(multMCExtras_000.size());
     for (const auto& r : multMCExtras_000) {
       multMCExtras_001(r.multMCFT0A(), r.multMCFT0C(), 0, 0, 0,
                        r.multMCNParticlesEta05(),

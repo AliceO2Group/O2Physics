@@ -57,9 +57,9 @@ constexpr char PrefixTrack1V0DaughterMe[] = "CPR_Track1V0Dau/ME/";
 constexpr char PrefixTrack2V0DaughterMe[] = "CPR_Track2V0Dau/ME/";
 
 constexpr char PrefixTrack1CascadeBachelorSe[] = "CPR_Track1CascadeBachelor/SE/";
-constexpr char PrefixTrack2CascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
-constexpr char PrefixTrack1CascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
-constexpr char PrefixTrack2CascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
+constexpr char PrefixTrack2CascadeBachelorSe[] = "CPR_Track2CascadeBachelor/SE/";
+constexpr char PrefixTrack1CascadeBachelorMe[] = "CPR_Track1CascadeBachelor/ME/";
+constexpr char PrefixTrack2CascadeBachelorMe[] = "CPR_Track2CascadeBachelor/ME/";
 
 template <const char* prefixTrack1Track2,
           const char* prefixTrack2Track3,

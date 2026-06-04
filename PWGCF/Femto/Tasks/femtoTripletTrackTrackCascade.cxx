@@ -46,7 +46,6 @@
 using namespace o2::analysis::femto;
 
 struct FemtoTripletTrackTrackCascade {
-
   // setup tables
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
@@ -65,7 +64,6 @@ struct FemtoTripletTrackTrackCascade {
   using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FK0shortLabels>;
 
   o2::framework::SliceCache cache;
-
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
@@ -196,7 +194,6 @@ struct FemtoTripletTrackTrackCascade {
     if (processXi && processOmega) {
       LOG(fatal) << "Both xi-track and omega-track processing is enabled. Breaking...";
     }
-
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
@@ -223,7 +220,7 @@ struct FemtoTripletTrackTrackCascade {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
-      omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
+      bachelorHistSpec = trackhistmanager::makeTrackHistSpecMap(confBachelorBinning);
       posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
       tripletTrackTrackCascadeHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning);
@@ -278,7 +275,7 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiMixedEventMc, "Enable processing mixed event processing for tracks and xis with mc information", false);
 
-  void processOmegaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoOmegas const& /*omegas*/)
+  void processOmegaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoOmegas const& /*omega*/)
   {
     tripletTrackTrackOmegaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, omegaPartition, cache);
   }

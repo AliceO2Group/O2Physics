@@ -168,7 +168,8 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Maximal DCAz for tracks")
     O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.1f, "Maximal DCAxy for tracks")
     // track quality selections for daughter track
-    O2_DEFINE_CONFIGURABLE(cfgITSNCls, int, 3, "check minimum number of ITS clusters")
+    O2_DEFINE_CONFIGURABLE(cfgMaxITSNCls, int, 5, "check maximum number of ITS clusters")
+    O2_DEFINE_CONFIGURABLE(cfgMinITSNCls, int, 0, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgChITSNCls, int, 5, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgTPCNCls, int, 50, "check minimum number of TPC hits")
     O2_DEFINE_CONFIGURABLE(cfgTPCCrossedRows, int, 70, "check minimum number of TPC crossed rows")
@@ -1260,9 +1261,13 @@ struct FlowGfwOmegaXi {
         if (!isK0s && !isLambda && !isALambda)
           continue;
         // track quality check
-        if (v0posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        if (v0posdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
           continue;
-        if (v0negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        if (v0negdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+          continue;
+        if (v0posdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+          continue;
+        if (v0negdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
           continue;
         if (v0posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
@@ -1556,11 +1561,17 @@ struct FlowGfwOmegaXi {
         if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value)
           continue;
         // track quality check
-        if (bachelor.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        if (bachelor.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
           continue;
-        if (posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        if (posdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
           continue;
-        if (negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        if (negdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+          continue;
+        if (bachelor.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+          continue;
+        if (posdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+          continue;
+        if (negdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
           continue;
         if (bachelor.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
@@ -1999,11 +2010,17 @@ struct FlowGfwOmegaXi {
         }
       }
       // track quality check
-      if (bachelor.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+      if (bachelor.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
         continue;
-      if (posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+      if (posdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
         continue;
-      if (negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+      if (negdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+        continue;
+      if (bachelor.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+        continue;
+      if (posdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+        continue;
+      if (negdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
         continue;
       if (bachelor.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
@@ -2184,9 +2201,13 @@ struct FlowGfwOmegaXi {
         }
       }
       // // track quality check
-      if (v0posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+      if (v0posdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
         continue;
-      if (v0negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+      if (v0negdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+        continue;
+      if (v0posdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+        continue;
+      if (v0negdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
         continue;
       if (v0posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;

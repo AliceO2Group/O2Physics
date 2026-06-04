@@ -222,6 +222,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+using MyEventsMultExtraNoQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
@@ -337,7 +338,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -579,6 +580,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithMultExtra>(events);
     publishSelections<gkEventFillMapWithMultExtra>(events);
   }
+  void processSkimmedWithMultExtraNoQvector(MyEventsMultExtraNoQvector const& events)
+  {
+    runEventSelection<gkEventFillMapWithMultExtra>(events);
+    publishSelections<gkEventFillMapWithMultExtra>(events);
+  }
   void processSkimmedWithMultExtraZdc(MyEventsMultExtraZdc const& events)
   {
     runEventSelection<gkEventFillMapWithMultExtraZdc>(events);
@@ -616,6 +622,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedBasic, "Run event selection on DQ skimmed events with basic tables", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraNoQvector, "Run event selection on DQ skimmed events, with mult extra and without Q-vector", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
@@ -1306,6 +1313,9 @@ struct AnalysisSameEventPairing {
   } fConfigCuts;
 
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
+  Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
+  Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
+  Configurable<bool> fConfigRunMixingAcrossTFs{"cfgRunMixingAcrossTFs", false, "If true, run event mixing using the MixingHandler which accumulates events across multiple TFs"};
   // Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
@@ -1353,6 +1363,7 @@ struct AnalysisSameEventPairing {
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
 
   HistogramManager* fHistMan;
+  MixingHandler fMixingHandler;
 
   o2::analysis::DQMlResponse<float> fDQMlResponse;
   std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
@@ -1390,6 +1401,7 @@ struct AnalysisSameEventPairing {
   {
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
+    fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmedFlow");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
@@ -1618,6 +1630,25 @@ struct AnalysisSameEventPairing {
           }
         }
       }
+    }
+
+    if (fConfigRunMixingAcrossTFs) {
+      TString mixVarsString = fConfigMixingVariables.value;
+      TString mixVarsJsonString = fConfigMixingVariablesJson.value;
+      std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
+      if (objArray->GetEntries() > 0 || mixVarsJsonString != "") {
+        // fMixingHandler = new MixingHandler("mixingHandler", "mixing handler");
+        if (objArray->GetEntries() > 0) {
+          for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+            dqmixing::SetUpMixing(&fMixingHandler, objArray->At(iVar)->GetName());
+          }
+        }
+      }
+      if (mixVarsJsonString != "") {
+        dqmixing::SetUpMixingFromJSON(&fMixingHandler, mixVarsJsonString.Data());
+      }
+      fMixingHandler.SetPoolDepth(fConfigMixingDepth);
+      fMixingHandler.Init();
     }
 
     fCurrentRun = 0;
@@ -2181,6 +2212,95 @@ struct AnalysisSameEventPairing {
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
       if (fEnableBarrelHistos && fConfigQA) {
         fHistMan->FillHistClass("PairingSEQA", VarManager::fgValues);
+      }
+
+      if (fConfigRunMixingAcrossTFs) {
+        // run event mixing across TFs
+        // 1) create a MixingEvent and fill it with the relevant tracks
+        MixingHandler::MixingEvent mixingEvent;
+        uint32_t trackFilterForMixing = 0;
+        for (auto& assoc : groupedAssocs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            trackFilterForMixing = assoc.isBarrelSelected_raw() & assoc.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
+            if (!trackFilterForMixing) {
+              continue;
+            }
+            auto t1 = assoc.template reducedtrack_as<TTracks>();
+            MixingHandler::MixingTrack mixingTrack(t1.pt(), t1.eta(), t1.phi(), trackFilterForMixing);
+            if (t1.sign() > 0) {
+              mixingEvent.AddTrack1(mixingTrack);
+            } else {
+              mixingEvent.AddTrack2(mixingTrack);
+            }
+          }
+        }
+        // 2) run the mixing with the events in the pool corresponding to this event
+        auto& pool = fMixingHandler.GetPool(fMixingHandler.FindEventCategory(VarManager::fgValues));
+        for (auto& poolEvent : pool.GetEvents()) {
+          for (auto& t1 : mixingEvent.tracks1) {
+            // run +- pairing
+            for (auto& t2 : poolEvent.tracks2) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+            // run ++ pairing
+            for (auto& t2 : poolEvent.tracks1) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+          for (auto& t1 : mixingEvent.tracks2) {
+            // run -+ pairing
+            for (auto& t2 : poolEvent.tracks1) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+            // run -- pairing
+            for (auto& t2 : poolEvent.tracks2) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+        }
+        // 3) add the current event to the pool
+        pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth());
+        // pool.Print();
       }
     } // end loop over events
   }

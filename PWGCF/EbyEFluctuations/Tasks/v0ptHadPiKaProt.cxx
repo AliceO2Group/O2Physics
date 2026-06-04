@@ -935,7 +935,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename T>
-  float getEffAllCharged(const T& candidate)
+  float getEffWeightAllCharged(const T& candidate)
   {
     if (!cfgLoadPtEffWeights || !hEffAllCharged) {
       return 1.0;
@@ -950,7 +950,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename T>
-  float getEffPion(const T& candidate)
+  float getEffWeightPion(const T& candidate)
   {
     if (!cfgLoadPtEffWeights || !hEffPion) {
       return 1.0;
@@ -965,7 +965,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename T>
-  float getEffKaon(const T& candidate)
+  float getEffWeightKaon(const T& candidate)
   {
     if (!cfgLoadPtEffWeights || !hEffKaon) {
       return 1.0;
@@ -980,7 +980,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename T>
-  float getEffProton(const T& candidate)
+  float getEffWeightProton(const T& candidate)
   {
     if (!cfgLoadPtEffWeights || !hEffProton) {
       return 1.0;
@@ -1405,7 +1405,7 @@ struct V0ptHadPiKaProt {
 
       double effweight = 1.0;
       if (cfgLoadPtEffWeights) {
-        effweight = 1.0 / getEffAllCharged(track); // NUE weight
+        effweight = getEffWeightAllCharged(track); // NUE weight
       }
 
       // inclusive charged particles
@@ -1523,9 +1523,9 @@ struct V0ptHadPiKaProt {
       double effweightKaon = 1.0;
       double effweightProton = 1.0;
       if (cfgLoadPtEffWeights) {
-        effweightPion = 1.0 / getEffPion(track);     // NUE weight for pion
-        effweightKaon = 1.0 / getEffKaon(track);     // NUE weight for kaon
-        effweightProton = 1.0 / getEffProton(track); // NUE weight for proton
+        effweightPion = getEffWeightPion(track);     // NUE weight for pion
+        effweightKaon = getEffWeightKaon(track);     // NUE weight for kaon
+        effweightProton = getEffWeightProton(track); // NUE weight for proton
       }
 
       if (track.sign() != 0) {

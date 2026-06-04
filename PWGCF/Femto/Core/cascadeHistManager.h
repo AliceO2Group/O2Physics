@@ -290,7 +290,6 @@ class CascadeHistManager
   {
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCascadeSelection.pdgCodeAbs.value);
-
     int bachelorPdgCodeAbs = 0;
     int posDauPdgCodeAbs = 0;
     int negDauPdgCodeAbs = 0;
@@ -328,7 +327,6 @@ class CascadeHistManager
     } else {
       LOG(fatal) << "PDG code for Cascade has to be either Xi or Omega";
     }
-
     mBachelorManager.template init<mode>(registry, BachelorSpecs, absCharge, signBachelor, bachelorPdgCodeAbs);
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
