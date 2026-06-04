@@ -1009,7 +1009,7 @@ struct Chargedkstaranalysis {
             auto cosThetaStarRandomRot = randomVec.Dot(daughterRotCM.Vect()) / std::sqrt(daughterRotCM.Vect().Mag2());
 
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
-              fillKstarHist(true, multiplicity, motherRot, cosThetaStarRandom);
+              fillKstarHist(true, multiplicity, motherRot, cosThetaStarRandomRot);
             }
           }
         }
