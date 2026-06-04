@@ -189,7 +189,6 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgDoZResAndNumContribCut, bool, true, "check kNoTimeFrameBorder")
     O2_DEFINE_CONFIGURABLE(cfgDoMultPVCut, bool, true, "do multNTracksPV vs cent cut")
     O2_DEFINE_CONFIGURABLE(cfgMultPVCut, std::vector<float>, (std::vector<float>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}), "Used MultPVCut function parameter")
-    // O2_DEFINE_CONFIGURABLE(cfgMultPVCut, std::vector<float>, (std::vector<float>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}), "Used MultPVCut function parameter")
     O2_DEFINE_CONFIGURABLE(cfgDoV0AT0Acut, bool, true, "do V0A-T0A cut")
     O2_DEFINE_CONFIGURABLE(cfgCutminIR, float, -1, "cut min IR")
     O2_DEFINE_CONFIGURABLE(cfgCutmaxIR, float, -1, "cut max IR")
