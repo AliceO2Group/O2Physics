@@ -2627,7 +2627,6 @@ struct RecoilJets {
   // Pt and Phi smearing of TT
   //=============================================================================
   void processTTSmearingPtPhi(CollDetIt const& collision,
-                              aod::JetMcCollisions const&,
                               TrackMCLbsTbl const& tracksPerColl,
                               aod::JetParticles const& particles)
   {
