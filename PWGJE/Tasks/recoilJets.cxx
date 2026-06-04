@@ -900,6 +900,7 @@ struct RecoilJets {
       }
     }
 
+    // Smearing of trigger-track parameters
     if (doprocessTTSmearingPtPhi || doprocessTTSmearingPtPhiWeighted) {
       AxisSpec relPtSmearTT{120, -5., 1., "(#it{p}_{T, part} - #it{p}_{T, det}) / #it{p}_{T, part}"};
       AxisSpec smearPhi{80, -0.2, 0.2, "#it{#varphi}_{part} - #it{#varphi}_{det}"};
@@ -2397,13 +2398,15 @@ struct RecoilJets {
     if (skipEvent(collision) || !collision.has_mcCollision())
       return;
 
-    auto mcCollisionId = collision.mcCollisionId();
-    auto detLevelCollRho = collision.rho();
-
     auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
+    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+      return;
+
+    auto detLevelCollRho = collision.rho();
     auto partLevelCollRho = mcColl.rho();
 
     // Slice for mc part level jets associated to a given mcCollisionId
+    auto mcCollisionId = collision.mcCollisionId();
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho);
@@ -2421,13 +2424,15 @@ struct RecoilJets {
     if (skipEvent(collision) || !collision.has_mcCollision())
       return;
 
-    auto mcCollisionId = collision.mcCollisionId();
-    auto detLevelCollRho = collision.rho();
-
     auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
+    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+      return;
+
+    auto detLevelCollRho = collision.rho();
     auto partLevelCollRho = mcColl.rho();
 
     // Slice for mc part level jets associated to a given mcCollisionId
+    auto mcCollisionId = collision.mcCollisionId();
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoPtHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho);
@@ -2445,14 +2450,16 @@ struct RecoilJets {
     if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
       return;
 
-    auto mcCollisionId = collision.mcCollisionId();
-    auto detLevelCollRho = collision.rho();
-
     auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
+    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+      return;
+
+    auto detLevelCollRho = collision.rho();
     auto partLevelCollRho = mcColl.rho();
     auto weight = mcColl.weight();
 
     // Slice for mc part level jets associated to a given mcCollisionId
+    auto mcCollisionId = collision.mcCollisionId();
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho, weight);
@@ -2470,14 +2477,16 @@ struct RecoilJets {
     if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
       return;
 
-    auto mcCollisionId = collision.mcCollisionId();
-    auto detLevelCollRho = collision.rho();
-
     auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
+    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+      return;
+
+    auto detLevelCollRho = collision.rho();
     auto partLevelCollRho = mcColl.rho();
     auto weight = mcColl.weight();
 
     // Slice for mc part level jets associated to a given mcCollisionId
+    auto mcCollisionId = collision.mcCollisionId();
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoPtHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho, weight);
@@ -2632,7 +2641,7 @@ struct RecoilJets {
   {
 
     // Skip detector level collisions
-    if (skipEvent(collision) || !collision.has_mcCollision())
+    if (skipEvent(collision))
       return;
 
     fillTTSmearingPtPhi(collision, tracksPerColl, particles);
