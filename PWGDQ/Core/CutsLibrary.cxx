@@ -4676,6 +4676,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("acceptance_PbPb5360_y08")) {
+    cut->AddCut(VarManager::kMCY, -0.8, 0.8);
+    cut->AddCut(VarManager::kMCP1, 1.0, 1000.0);
+    cut->AddCut(VarManager::kMCP2, 1.0, 1000.0);
+    cut->AddCut(VarManager::kMCEta1, -0.8, 0.8);
+    cut->AddCut(VarManager::kMCEta2, -0.8, 0.8);
+    return cut;
+  }
+
   // ---------------------------------------------------
   // MC generated particle acceptance cuts
 
