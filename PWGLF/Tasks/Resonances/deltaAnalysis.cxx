@@ -13,6 +13,7 @@
 /// \brief  Delta(1232) resonance analysis via proton-pion invariant mass reconstruction with advance PID and background rejection cuts
 /// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
