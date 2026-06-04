@@ -2294,7 +2294,7 @@ struct AnalysisSameEventPairing {
         }
         // 3) add the current event to the pool
         pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth());
-        pool.Print();
+        //pool.Print();
       }
     } // end loop over events
   }
