@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file JetHadronsPid.cxx
+/// \file jetHadronsPid.cxx
 /// \brief Analysis of hadrons in jets
 /// \author Leonard Lorenc, WUT Warsaw, leonard.lorenc@cern.ch
 /// \author Aleksandra Mulewicz, WUT Warsaw, aleksandra.mulewicz@cern.ch
@@ -390,12 +390,12 @@ struct JetHadronsPid {
       registryData.fill(HIST("jet_area"), jet.area());
       registryData.fill(HIST("jet_pt"), jet.pt());
 
-      const double MagnitudeThreshold = 1e-9;
+      const double magnitudeThreshold = 1e-9;
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
       TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
 
-      if (ueAxis1.Mag() < MagnitudeThreshold || ueAxis2.Mag() < MagnitudeThreshold)
+      if (ueAxis1.Mag() < magnitudeThreshold || ueAxis2.Mag() < magnitudeThreshold)
         continue;
 
       int constituentCount = 0;
