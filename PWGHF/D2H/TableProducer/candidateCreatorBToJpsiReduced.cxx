@@ -343,9 +343,9 @@ struct HfCandidateCreatorBToJpsiReduced {
                                errorDecayLength, errorDecayLengthXY,
                                chi2PCA,
                                pVecDauPos[0], pVecDauPos[1], pVecDauPos[2],
-                               pVecDauNeg[0], pVecDauNeg[1], pVecDauPos[2],
+                               pVecDauNeg[0], pVecDauNeg[1], pVecDauNeg[2],
                                pVecTrackLf0[0], pVecTrackLf0[1], pVecTrackLf0[2],
-                               pVecTrackLf1[0], pVecTrackLf1[1], pVecTrackLf0[2],
+                               pVecTrackLf1[0], pVecTrackLf1[1], pVecTrackLf1[2],
                                dcaDauPos.getY(), dcaDauNeg.getY(), dcaTrackLf0.getY(), dcaTrackLf1.getY(),
                                std::sqrt(dcaDauPos.getSigmaY2()), std::sqrt(dcaDauNeg.getSigmaY2()), std::sqrt(dcaTrackLf0.getSigmaY2()), std::sqrt(dcaTrackLf1.getSigmaY2()));
             rowCandidateBsProngs(candJpsi.globalIndex(), trackLf0.globalIndex(), trackLf1.globalIndex());
