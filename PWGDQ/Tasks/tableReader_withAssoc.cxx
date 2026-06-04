@@ -1630,7 +1630,7 @@ struct AnalysisSameEventPairing {
       TString mixVarsJsonString = fConfigMixingVariablesJson.value;
       std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
       if (objArray->GetEntries() > 0 || mixVarsJsonString != "") {
-        //fMixingHandler = new MixingHandler("mixingHandler", "mixing handler");
+        // fMixingHandler = new MixingHandler("mixingHandler", "mixing handler");
         if (objArray->GetEntries() > 0) {
           for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
             dqmixing::SetUpMixing(&fMixingHandler, objArray->At(iVar)->GetName());
@@ -1643,7 +1643,6 @@ struct AnalysisSameEventPairing {
       fMixingHandler.SetPoolDepth(fConfigMixingDepth);
       fMixingHandler.Init();
     }
-  
 
     fCurrentRun = 0;
 
@@ -2294,7 +2293,7 @@ struct AnalysisSameEventPairing {
         }
         // 3) add the current event to the pool
         pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth());
-        //pool.Print();
+        // pool.Print();
       }
     } // end loop over events
   }
