@@ -114,14 +114,6 @@ enum {
   kRecTrkTypeend
 };
 
-static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
-  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-  TrackSelectionFlags::kITSHits;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
-  TrackSelectionFlags::kTPCNCls |
-  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-  TrackSelectionFlags::kTPCChi2NDF;
-
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
@@ -193,9 +185,9 @@ struct PtmultCorr {
   Configurable<bool> isApplyOccuCut{"isApplyOccuCut", false, "Enable occupancy selection"};
 
   // Secondary estimation related configurables
-  Configurable<bool> applyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
-  Configurable<bool> applyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
-  Configurable<bool> applyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
 
   void init(InitContext const&)
   {
@@ -406,7 +398,6 @@ struct PtmultCorr {
         }
       }
     }
-    // ITS-only tracks: quality already ensured by the framework-level fTrackSelectionITS filter
 
     // --- optional phi cut (applied to all track types) ---
     histos.fill(HIST("PhiVsEtaHistNoCut"), track.phi(), track.eta());
