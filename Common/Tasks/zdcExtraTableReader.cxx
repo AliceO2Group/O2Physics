@@ -212,9 +212,7 @@ struct ZdcExtraTableReader {
   Configurable<float> tdcZnMax{"tdcZnMax", 2.5, "Max ZN TDC cut"};
   Configurable<bool> plotPMs{"plotPMs", false, "Flag to plot individual PMs"};
 
-  Configurable<int> qxyNbins{"qxyNbins", 100, "Number of bins in QxQy histograms"};
-  Configurable<float> qxyMin{"qxyMin", -2.0f, "Lower edge for QxQy histograms"};
-  Configurable<float> qxyMax{"qxyMax", 2.0f, "Upper edge for QxQy histograms"};
+  ConfigurableAxis qxyAxis{"qxyAxis", {100, -2.0f, 2.0f}, ""};
 
   Configurable<int> vxNbins{"vxNbins", 50, "Bins in Vx"};
   Configurable<float> vxMin{"vxMin", -0.1f, "Vx lower edge"};
@@ -404,10 +402,10 @@ struct ZdcExtraTableReader {
       const AxisSpec axisVy5D = {qNbins5D, vyMin, vyMax, "V_{y} (cm)"};
       const AxisSpec axisVz5D = {qNbins5D, vzMin, vzMax, "V_{z} (cm)"};
 
-      const AxisSpec axisQx = {qxyNbins, qxyMin, qxyMax, "Q_{x}"};
-      const AxisSpec axisQy = {qxyNbins, qxyMin, qxyMax, "Q_{y}"};
+      const AxisSpec axisQx{qxyAxis, "Q_{x}"};
+      const AxisSpec axisQy{qxyAxis, "Q_{y}"};
+      const AxisSpec axisQxQy = {qxyAxis, ""};
 
-      const AxisSpec axisQxQy = {qxyNbins, qxyMin, qxyMax, ""};
       const AxisSpec axisPhi = {phiNbins, -1.0f * o2::constants::math::PI, 1.0f * o2::constants::math::PI, "#phi"};
 
       const AxisSpec axisTime = {90, 0, 90, "Time (minutes)"}; // 90 minutes
