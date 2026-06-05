@@ -69,6 +69,10 @@ static constexpr int NCentHists{10};
 std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
 std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
 std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
 
 struct DedxPidAnalysis {
 
@@ -247,6 +251,11 @@ struct DedxPidAnalysis {
   static constexpr std::string_view DedxvsMomentumvsCentPos[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Pos", "dEdx_vs_Momentum_Cent1_5_Pos", "dEdx_vs_Momentum_Cent5_10_Pos", "dEdx_vs_Momentum_Cent10_15_Pos", "dEdx_vs_Momentum_Cent15_20_Pos", "dEdx_vs_Momentum_Cent20_30_Pos", "dEdx_vs_Momentum_Cent30_40_Pos", "dEdx_vs_Momentum_Cent40_50_Pos", "dEdx_vs_Momentum_Cent50_70_Pos", "dEdx_vs_Momentum_Cent70_100_Pos"};
   static constexpr std::string_view DedxvsMomentumvsCentNeg[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Neg", "dEdx_vs_Momentum_Cent1_5_Neg", "dEdx_vs_Momentum_Cent5_10_Neg", "dEdx_vs_Momentum_Cent10_15_Neg", "dEdx_vs_Momentum_Cent15_20_Neg", "dEdx_vs_Momentum_Cent20_30_Neg", "dEdx_vs_Momentum_Cent30_40_Neg", "dEdx_vs_Momentum_Cent40_50_Neg", "dEdx_vs_Momentum_Cent50_70_Neg", "dEdx_vs_Momentum_Cent70_100_Neg"};
   static constexpr std::string_view DedxvspTMomentumvsCent[CentralityClasses + 1] = {"dEdx_vs_pTMomentum_Cent0_1", "dEdx_vs_pTMomentum_Cent1_5", "dEdx_vs_pTMomentum_Cent5_10", "dEdx_vs_pTMomentum_Cent10_15", "dEdx_vs_pTMomentum_Cent15_20", "dEdx_vs_pTMomentum_Cent20_30", "dEdx_vs_pTMomentum_Cent30_40", "dEdx_vs_pTMomentum_Cent40_50", "dEdx_vs_pTMomentum_Cent50_70", "dEdx_vs_pTMomentum_Cent70_100", "dEdx_vs_pTMomentum_all_Pos"};
+  // Fine binnind
+  static constexpr std::string_view CentpPos[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Pos", "p_vs_eta_Cent1_5_Pos", "p_vs_eta_Cent5_10_Pos", "p_vs_eta_Cent10_15_Pos", "p_vs_eta_Cent15_20_Pos", "p_vs_eta_Cent20_30_Pos", "p_vs_eta_Cent30_40_Pos", "p_vs_eta_Cent40_50_Pos", "p_vs_eta_Cent50_70_Pos", "p_vs_eta_Cent70_100_Pos", "p_vs_eta_MB_Pos"};
+  static constexpr std::string_view CentpNeg[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Neg", "p_vs_eta_Cent1_5_Neg", "p_vs_eta_Cent5_10_Neg", "p_vs_eta_Cent10_15_Neg", "p_vs_eta_Cent15_20_Neg", "p_vs_eta_Cent20_30_Neg", "p_vs_eta_Cent30_40_Neg", "p_vs_eta_Cent40_50_Neg", "p_vs_eta_Cent50_70_Neg", "p_vs_eta_Cent70_100_Neg", "p_vs_eta_MB_Neg"};
+  static constexpr std::string_view CentpTPos[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Pos", "pT_vs_eta_Cent1_5_Pos", "pT_vs_eta_Cent5_10_Pos", "pT_vs_eta_Cent10_15_Pos", "pT_vs_eta_Cent15_20_Pos", "pT_vs_eta_Cent20_30_Pos", "pT_vs_eta_Cent30_40_Pos", "pT_vs_eta_Cent40_50_Pos", "pT_vs_eta_Cent50_70_Pos", "pT_vs_eta_Cent70_100_Pos", "pT_vs_eta_MB_Pos"};
+  static constexpr std::string_view CentpTNeg[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Neg", "pT_vs_eta_Cent1_5_Neg", "pT_vs_eta_Cent5_10_Neg", "pT_vs_eta_Cent10_15_Neg", "pT_vs_eta_Cent15_20_Neg", "pT_vs_eta_Cent20_30_Neg", "pT_vs_eta_Cent30_40_Neg", "pT_vs_eta_Cent40_50_Neg", "pT_vs_eta_Cent50_70_Neg", "pT_vs_eta_Cent70_100_Neg", "pT_vs_eta_MB_Neg"};
   // Ncl TPC
   static constexpr std::string_view NclTPCDedxMomentumNegBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_8_Before"};
   static constexpr std::string_view NclTPCDedxMomentumPosBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_8_Before"};
@@ -263,6 +272,7 @@ struct DedxPidAnalysis {
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
   ConfigurableAxis centBins{"centBins", {100, 0, 100}, "Binning for centralidad"};
+  ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum"};
 
   // phi cut fits
   TF1* fphiCutHigh = nullptr;
@@ -351,11 +361,13 @@ struct DedxPidAnalysis {
     LOGF(info, "Centrality clases between %.1f - %.1f", CentClasses[0], CentClasses[10]);
 
     AxisSpec dedxAxis{100, 0.0, 100.0, "dE/dx (a. u.)"};
-    AxisSpec ptAxis = {binP, "pT (GeV/c)"};
+    AxisSpec ptAxis = {binP, "#it{p}_{T}  (GeV/c)"};
     AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
     AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
     AxisSpec pAxisTrack = {binP, "#it{p} (GeV/c)"};
     AxisSpec centAxis{centBins, "Undefined multiplicity estimator"};
+    AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
+    AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
     switch (multiplicityEstimator) {
       case MultSelectionMode::NoMultiplicity: // No multiplicity
         LOGF(info, "No multiplicity estimator applied");
@@ -488,6 +500,10 @@ struct DedxPidAnalysis {
 
       for (int i = 0; i < CentralityClasses + 1; ++i) {
         hDedxVspTMomentumVsCent[i] = registryDeDx.add<TH3>(DedxvspTMomentumvsCent[i].data(), "dE/dx", HistType::kTH3F, {{ptAxis}, {dedxAxis}, {etaAxis}});
+        hMomentumVsEtaPos[i] = registryDeDx.add<TH2>(CentpPos[i].data(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+        hMomentumVsEtaNeg[i] = registryDeDx.add<TH2>(CentpNeg[i].data(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+        hpTVsEtaPos[i] = registryDeDx.add<TH2>(CentpTPos[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
+        hpTVsEtaNeg[i] = registryDeDx.add<TH2>(CentpTNeg[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
       }
 
       // Invariant Mass
@@ -1704,12 +1720,20 @@ struct DedxPidAnalysis {
               hDedxVsMomentumVsCentPos[centIndex]->Fill(signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
               hDedxVspTMomentumVsCent[centIndex]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
               hDedxVspTMomentumVsCent[10]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
+              hMomentumVsEtaPos[centIndex]->Fill(trk.eta(), signedP);
+              hMomentumVsEtaPos[10]->Fill(trk.eta(), signedP);
+              hpTVsEtaPos[centIndex]->Fill(trk.eta(), signedpT);
+              hpTVsEtaPos[10]->Fill(trk.eta(), signedpT);
             } else {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Neg"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentNeg[centIndex]->Fill(std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               hDedxVspTMomentumVsCent[centIndex]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               hDedxVspTMomentumVsCent[10]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
+              hMomentumVsEtaNeg[centIndex]->Fill(trk.eta(), std::abs(signedP));
+              hMomentumVsEtaNeg[10]->Fill(trk.eta(), std::abs(signedP));
+              hpTVsEtaNeg[centIndex]->Fill(trk.eta(), std::abs(signedpT));
+              hpTVsEtaNeg[10]->Fill(trk.eta(), std::abs(signedpT));
             }
           }
         }

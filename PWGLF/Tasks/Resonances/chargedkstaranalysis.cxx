@@ -116,10 +116,10 @@ struct Chargedkstaranalysis {
     Configurable<bool> activateProductionFrame{"activateProductionFrame", false, "Activate the THnSparse with cosThStar w.r.t. production axis"};
     Configurable<bool> activateBeamAxisFrame{"activateBeamAxisFrame", false, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
     Configurable<bool> activateRandomFrame{"activateRandomFrame", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
-    Configurable<int> cRotations{"cRotations", 5, "Number of random rotations in the rotational background"};
-    Configurable<bool> cBoostKShot{"cBoostKShot", true, "Boost the Kshot in Charged Kstar frame of reference"};
+    Configurable<int> cRotations{"cRotations", 4, "Number of random rotations in the rotational background"};
+    Configurable<bool> cCosWithKShot{"cCosWithKShot", true, "Measure the angle with Kshort in Charged Kstar frame of reference"};
     // Other cuts on Ks
-    Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+    Configurable<int> rotationalCut{"rotationalCut", 6, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
 
     // fixed variables
     float rapidityMotherData = 0.5;
@@ -807,7 +807,7 @@ struct Chargedkstaranalysis {
     ROOT::Math::PxPyPzMVector fourVecDauCM, daughterRot, motherRot, daughterRotCM;
     ROOT::Math::XYZVectorF beam1CM, beam2CM, zAxisCS, yAxisCS, xAxisCS;
     ROOT::Math::XYZVectorF v1CM, zaxisHE, yaxisHE, xaxisHE;
-    ROOT::Math::XYZVector randomVec, beamVec, normalVec;
+    ROOT::Math::XYZVector randomVec, beamVec, normalVec, normalVecRot, randomVecRot;
     float theta2;
     // //polarization calculations
     // zBeam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
@@ -857,13 +857,20 @@ struct Chargedkstaranalysis {
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
 
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
-
+              motherRot = daughterRot + daughter2;
+            }
             ROOT::Math::Boost boost2{motherRot.BoostToCM()};
-            daughterRotCM = boost2(daughterRot);
+            if (helicityCfgs.cCosWithKShot)
+              daughterRotCM = boost2(daughter1);
+            else
+              daughterRotCM = boost2(daughterRot);
 
             auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
             auto phiHelicityRot = std::atan2(yaxisHE.Dot(daughterRotCM.Vect().Unit()), xaxisHE.Dot(daughterRotCM.Vect().Unit()));
@@ -883,9 +890,15 @@ struct Chargedkstaranalysis {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
 
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
 
-            motherRot = daughterRot + daughter2;
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
 
             ROOT::Math::Boost boost2{motherRot.BoostToCM()};
             daughterRotCM = boost2(daughterRot);
@@ -910,11 +923,26 @@ struct Chargedkstaranalysis {
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
+
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
+            ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+            if (helicityCfgs.cCosWithKShot)
+              daughterRotCM = boost2(daughter1);
+            else
+              daughterRotCM = boost2(daughterRot);
+
+            normalVecRot = ROOT::Math::XYZVector(motherRot.Py(), -motherRot.Px(), 0.f);
+            auto cosThetaProductionRot = normalVecRot.Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(normalVecRot.Mag2()));
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
-              fillKstarHist(true, multiplicity, motherRot, cosThetaProduction);
+              fillKstarHist(true, multiplicity, motherRot, cosThetaProductionRot);
             }
           }
         }
@@ -929,9 +957,17 @@ struct Chargedkstaranalysis {
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
+
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
+
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
               fillKstarHist(true, multiplicity, motherRot, cosThetaStarBeam);
             }
@@ -950,12 +986,30 @@ struct Chargedkstaranalysis {
         }
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
+            auto phiRandomRot = gRandom->Uniform(0.f, constants::math::TwoPI);
+            auto thetaRandomRot = gRandom->Uniform(0.f, constants::math::PI);
+            randomVecRot = ROOT::Math::XYZVector(std::sin(thetaRandomRot) * std::cos(phiRandomRot), std::sin(thetaRandomRot) * std::sin(phiRandomRot), std::cos(thetaRandomRot));
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
+
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
+
+            ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+            if (helicityCfgs.cCosWithKShot)
+              daughterRotCM = boost2(daughter1);
+            else
+              daughterRotCM = boost2(daughterRot);
+            auto cosThetaStarRandomRot = randomVecRot.Dot(daughterRotCM.Vect()) / std::sqrt(daughterRotCM.Vect().Mag2());
+
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
-              fillKstarHist(true, multiplicity, motherRot, cosThetaStarRandom);
+              fillKstarHist(true, multiplicity, motherRot, cosThetaStarRandomRot);
             }
           }
         }
@@ -1152,7 +1206,7 @@ struct Chargedkstaranalysis {
             histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           }
 
-          if (helicityCfgs.cBoostKShot) {
+          if (helicityCfgs.cCosWithKShot) {
             fillInvMass(lResoKstar, collision.centFT0M(), lResoSecondary, lDecayDaughter_bach, IsMix);
           } else {
             fillInvMass(lResoKstar, collision.centFT0M(), lDecayDaughter_bach, lResoSecondary, IsMix);
@@ -1361,7 +1415,7 @@ struct Chargedkstaranalysis {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
-      if (helicityCfgs.cBoostKShot) {
+      if (helicityCfgs.cCosWithKShot) {
         fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
       } else {
         fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
@@ -1453,7 +1507,7 @@ struct Chargedkstaranalysis {
         }
 
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
-        if (helicityCfgs.cBoostKShot) {
+        if (helicityCfgs.cCosWithKShot) {
           fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
         } else {
           fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);

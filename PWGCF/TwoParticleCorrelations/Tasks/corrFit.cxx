@@ -71,6 +71,12 @@ struct CorrFit {
   O2_DEFINE_CONFIGURABLE(cfgUseTransverseMomentum, bool, false, "Use transverse momentum for correlation container")
   O2_DEFINE_CONFIGURABLE(cfgQaCheck, bool, true, "Enable QA histograms for event selection")
   O2_DEFINE_CONFIGURABLE(cfgStrictTrackCounter, bool, false, "Strict track counter for multiplicity correlation cut, counts only tracks that pass all cuts and are used in the correlation")
+  O2_DEFINE_CONFIGURABLE(cfgRefpTt, bool, false, "Apply upper pT cut on reference tracks")
+  O2_DEFINE_CONFIGURABLE(cfgRefpTMax, float, 3.0f, "maximum pT for reference tracks if cfgRefpTt is true")
+  O2_DEFINE_CONFIGURABLE(cfgMinMultForCorrelations, int, 0, "minimum multiplicity for correlations")
+  O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
+  O2_DEFINE_CONFIGURABLE(cfgRefMultiplicity, bool, false, "Use multiplicity of reference tracks for multiplicity correlation cut instead of Nch")
+
   struct : ConfigurableGroup{
              O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
                O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
@@ -116,8 +122,10 @@ struct CorrFit {
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to multiplicity dependent efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgLocalEfficiencyNch, bool, false, "Use local multiplicity dependent efficiency object");
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
 
   struct : ConfigurableGroup {
@@ -167,7 +175,7 @@ struct CorrFit {
   ConfigurableAxis axisDeltaEtaTpcFt0a{"axisDeltaEtaTpcFt0a", {32, -5.8, -2.6}, "delta eta axis, -5.8~-2.6 for TPC-FT0A,"};
   ConfigurableAxis axisDeltaEtaTpcFt0c{"axisDeltaEtaTpcFt0c", {32, 1.2, 4.2}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
   ConfigurableAxis axisDeltaEtaFt0aFt0c{"axisDeltaEtaFt0aFt0c", {32, -1.5, 3.0}, "delta eta axis"};
-  ConfigurableAxis axisDeltaEtaTpcTpc{"axisDeltaEtaTpcTpc", {32, -0.8, 0.8}, "delta eta axis for TPC-TPC"};
+  ConfigurableAxis axisDeltaEtaTpcTpc{"axisDeltaEtaTpcTpc", {32, -1.6, 1.6}, "delta eta axis for TPC-TPC"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
@@ -200,6 +208,7 @@ struct CorrFit {
 
   // Corrections
   TH3D* mEfficiency = nullptr;
+  TH1D* mEfficiencyNch = nullptr;
   TH1D* mCentralityWeight = nullptr;
   bool correctionsLoaded = false;
 
@@ -288,6 +297,9 @@ struct CorrFit {
         registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
         registry.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, axisFit}});
       }
+      if (cfgQaCheck) {
+        registry.add("Nch_corrected", "N_{ch} corrected", {HistType::kTH1D, {axisMult}});
+      }
     }
 
     if (doprocessSameTpcFt0a) {
@@ -353,7 +365,7 @@ struct CorrFit {
                                          {axisPtTrigger, "p_{T} (GeV/c)"},
                                          {axisMult, "N_{ch}"},
                                          {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                         {axisDeltaEtaTpcFt0a, "#Delta#eta"}}; // use the same delta eta axis for TPC-TPC correlation
+                                         {axisDeltaEtaTpcTpc, "#Delta#eta"}}; // use the same delta eta axis for TPC-TPC correlation
 
     if (doprocessSameTpcFt0a) {
       sameTpcFt0a.setObject(new CorrelationContainer("sameEvent_TPC_FT0A", "sameEvent_TPC_FT0A", corrAxisTpcFt0a, effAxis, userAxis));
@@ -673,9 +685,10 @@ struct CorrFit {
       return;
     }
     if (cfgEfficiency.value.empty() == false) {
-      if (cfgLocalEfficiency > 0) {
+      if (cfgLocalEfficiency) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiency.value.c_str(), "READ");
         mEfficiency = reinterpret_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
+
       } else {
         mEfficiency = ccdb->getForTimeStamp<TH3D>(cfgEfficiency, timestamp);
       }
@@ -683,6 +696,19 @@ struct CorrFit {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+    if (cfgEfficiencyNch.value.empty() == false) {
+      if (cfgLocalEfficiencyNch) {
+        TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyNch.value.c_str(), "READ");
+        mEfficiencyNch = reinterpret_cast<TH1D*>(fEfficiencyTrigger->Get("ccdb_object"));
+
+      } else {
+        mEfficiencyNch = ccdb->getForTimeStamp<TH1D>(cfgEfficiencyNch, timestamp);
+      }
+      if (!mEfficiencyNch) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyNch.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiencyNch.value.c_str(), (void*)mEfficiencyNch);
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
@@ -694,20 +720,39 @@ struct CorrFit {
     correctionsLoaded = true;
   }
 
-  bool getEfficiencyCorrection(float& weight_nue, float eta, float pt, float posZ)
+  bool getEfficiencyCorrection_Nch(float& weight_Nch, float pt)
+  {
+    float eff_Nch = 1.;
+    if (mEfficiencyNch) {
+
+      int ptBin = mEfficiencyNch->FindBin(pt);
+      eff_Nch = mEfficiencyNch->GetBinContent(ptBin);
+
+    } else {
+      eff_Nch = 1.0;
+    }
+    if (eff_Nch == 0)
+      return false;
+    weight_Nch = 1. / eff_Nch;
+    return true;
+  }
+
+  bool getEfficiencyCorrection(float& weight, float pt, float eta, float vertex)
   {
     float eff = 1.;
     if (mEfficiency) {
-      int etaBin = mEfficiency->GetXaxis()->FindBin(eta);
+
+      int etaBin = mEfficiency->GetXaxis()->FindBin(eta); // use the eta bin corresponding to eta=0 for the trigger particle efficiency
       int ptBin = mEfficiency->GetYaxis()->FindBin(pt);
-      int zBin = mEfficiency->GetZaxis()->FindBin(posZ);
-      eff = mEfficiency->GetBinContent(etaBin, ptBin, zBin);
+      int vertexBin = mEfficiency->GetZaxis()->FindBin(vertex); // use the vertex bin corresponding to z=0 for the trigger particle efficiency
+      eff = mEfficiency->GetBinContent(etaBin, ptBin, vertexBin);
+
     } else {
       eff = 1.0;
     }
     if (eff == 0)
       return false;
-    weight_nue = 1. / eff;
+    weight = 1. / eff;
     return true;
   }
 
@@ -727,16 +772,24 @@ struct CorrFit {
   }
 
   template <typename TTracks>
-  void trackCounter(TTracks tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void trackCounter(TTracks tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
-    int mult = 0;
+    double nTracksCorrected = 0;
+    float weight_Nch = 1.0f;
     for (auto const& track : tracks) {
 
-      if (!trackSelected(track))
+      if (cfgRefMultiplicity) {
+        if (track.pt() > cfgRefpTMax)
+          continue;
+      }
+
+      if (!getEfficiencyCorrection_Nch(weight_Nch, track.pt())) {
         continue;
-      mult++;
+      }
+
+      nTracksCorrected += weight_Nch;
     }
-    multiplicity = mult;
+    multiplicity = nTracksCorrected;
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
@@ -757,7 +810,7 @@ struct CorrFit {
           continue;
       }
 
-      if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
+      if (!getEfficiencyCorrection(triggerWeight, track1.pt(), track1.eta(), posZ))
         continue;
 
       if (system == SameEvent) {
@@ -828,13 +881,15 @@ struct CorrFit {
 
     float weff1 = 1.0;
     float zvtx = collision.posZ();
+    registry.fill(HIST("zVtx"), zvtx);
+    registry.fill(HIST("Nch"), tracks.size());
 
     for (auto const& track1 : tracks) {
 
       if (!trackSelected(track1)) {
         continue;
       }
-      if (!getEfficiencyCorrection(weff1, track1.eta(), track1.pt(), zvtx)) {
+      if (!getEfficiencyCorrection_Nch(weff1, track1.pt())) {
         continue;
       }
 
@@ -903,18 +958,15 @@ struct CorrFit {
 
     float triggerWeight = 1.0f;
 
+    float associateWeight = 1.0f;
+
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
       if (!trackSelected(track1))
         continue;
 
-      if (cfgSystematics.cfgSystematicsVariation) {
-        if (!trackSelectedSystematics(track1))
-          continue;
-      }
-
-      if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
+      if (!getEfficiencyCorrection_Nch(triggerWeight, track1.pt()))
         continue;
 
       if (system == SameEvent) {
@@ -926,6 +978,14 @@ struct CorrFit {
         if (!trackSelected(track2))
           continue;
 
+        if (!getEfficiencyCorrection_Nch(associateWeight, track2.pt()))
+          continue;
+
+        if (cfgRefpTt) {
+          if (track2.pt() > cfgRefpTMax) {
+            continue;
+          }
+        }
         if (track1.pt() <= track2.pt())
           continue; // skip if the trigger pt is less than the associate pt
 
@@ -957,16 +1017,16 @@ struct CorrFit {
         // fill the right sparse and histograms
         if (system == SameEvent) {
 
-          sameTPC->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta);
+          sameTPC->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, triggerWeight * associateWeight);
           if (cfgQaCheck) {
-            registry.fill(HIST("deltaEta_deltaPhi_same_TPC"), deltaPhi, deltaEta);
+            registry.fill(HIST("deltaEta_deltaPhi_same_TPC"), deltaPhi, deltaEta, triggerWeight * associateWeight);
           }
         } else if (system == MixedEvent) {
 
-          mixedTPC->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta);
+          mixedTPC->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, triggerWeight * associateWeight);
 
           if (cfgQaCheck) {
-            registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC"), deltaPhi, deltaEta);
+            registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC"), deltaPhi, deltaEta, triggerWeight * associateWeight);
           }
         }
       }
@@ -1004,10 +1064,18 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    int multiplicity = tracks.size();
+    double multiplicity = tracks.size();
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
+    }
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch_corrected"), multiplicity);
+    }
+
+    if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
+      return;
     }
 
     const auto& ft0 = collision.foundFT0();
@@ -1054,10 +1122,14 @@ struct CorrFit {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      int multiplicity = tracks1.size();
+      double multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
+      }
+
+      if (cfgQaCheck) {
+        registry.fill(HIST("Nch_corrected"), multiplicity);
       }
 
       const auto& ft0 = collision2.foundFT0();
@@ -1095,10 +1167,14 @@ struct CorrFit {
 
     const auto& ft0 = collision.foundFT0();
 
-    int multiplicity = tracks.size();
+    double multiplicity = tracks.size();
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
+    }
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch_corrected"), multiplicity);
     }
 
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, multiplicity, kFT0C, 1.0f);
@@ -1144,10 +1220,14 @@ struct CorrFit {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      int multiplicity = tracks1.size();
+      double multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks, multiplicity);
+      }
+
+      if (cfgQaCheck) {
+        registry.fill(HIST("Nch_corrected"), multiplicity);
       }
 
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, multiplicity, kFT0C, eventWeight);
@@ -1187,10 +1267,14 @@ struct CorrFit {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
-    int multiplicity = tracks.size();
+    double multiplicity = tracks.size();
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
+    }
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch_corrected"), multiplicity);
     }
 
     fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, ft0, collision.posZ(), SameEvent, multiplicity, eventWeight);
@@ -1238,12 +1322,15 @@ struct CorrFit {
       const auto& ft0Col1 = collision1.foundFT0();
       const auto& ft0Col2 = collision2.foundFT0();
 
-      int multiplicity = tracks1.size();
+      double multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
       }
 
+      if (cfgQaCheck) {
+        registry.fill(HIST("Nch_corrected"), multiplicity);
+      }
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
 
       fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0Col1, ft0Col2, collision1.posZ(), MixedEvent, multiplicity, eventWeight);
@@ -1269,13 +1356,18 @@ struct CorrFit {
       return;
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
+    loadCorrection(bc.timestamp());
 
     fillYield(collision, tracks);
 
-    int multiplicity = tracks.size();
+    double multiplicity = tracks.size();
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
+    }
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch_corrected"), multiplicity);
     }
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, multiplicity, getMagneticField(bc.timestamp()));
@@ -1312,8 +1404,9 @@ struct CorrFit {
         continue;
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      loadCorrection(collision1.bc_as<aod::BCsWithTimestamps>().timestamp());
 
-      int multiplicity = tracks1.size();
+      double multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);

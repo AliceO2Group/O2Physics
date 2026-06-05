@@ -27,9 +27,11 @@ ClassImp(MixingHandler);
 
 //_________________________________________________________________________
 MixingHandler::MixingHandler() : TNamed(),
-                                 fIsInitialized(kFALSE),
+                                 fIsInitialized(false),
                                  fVariableLimits(),
-                                 fVariables()
+                                 fVariables(),
+                                 fPoolDepth(0),
+                                 fPools()
 {
   //
   // default constructor
@@ -38,9 +40,11 @@ MixingHandler::MixingHandler() : TNamed(),
 
 //_________________________________________________________________________
 MixingHandler::MixingHandler(const char* name, const char* title) : TNamed(name, title),
-                                                                    fIsInitialized(kFALSE),
+                                                                    fIsInitialized(false),
                                                                     fVariableLimits(),
-                                                                    fVariables()
+                                                                    fVariables(),
+                                                                    fPoolDepth(0),
+                                                                    fPools()
 {
   //
   // Named constructor
@@ -56,29 +60,13 @@ MixingHandler::~MixingHandler()
 }
 
 //_________________________________________________________________________
-void MixingHandler::AddMixingVariable(int var, int nBins, float* binLims)
+void MixingHandler::AddMixingVariable(int var, std::vector<float> binLims)
 {
-  //
-  // add a mixing variable
-  //
-  fVariables.push_back(var);
-  TArrayF varBins;
-  varBins.Set(nBins, binLims);
-  fVariableLimits.push_back(varBins);
-  VarManager::SetUseVariable(var);
+  fVariables[var] = fVariableLimits.size();
+  fVariableLimits.push_back(binLims);
 }
 
-//_________________________________________________________________________
-void MixingHandler::AddMixingVariable(int var, int nBins, std::vector<float> binLims)
-{
-
-  float* bins = new float[nBins];
-  for (int i = 0; i < nBins; ++i) {
-    bins[i] = binLims[i];
-  }
-  AddMixingVariable(var, nBins, bins);
-}
-
+/*
 //_________________________________________________________________________
 int MixingHandler::GetMixingVariable(VarManager::Variables var)
 {
@@ -90,7 +78,9 @@ int MixingHandler::GetMixingVariable(VarManager::Variables var)
   }
   return -1;
 }
+*/
 
+/*
 //_________________________________________________________________________
 std::vector<float> MixingHandler::GetMixingVariableLimits(VarManager::Variables var)
 {
@@ -105,21 +95,21 @@ std::vector<float> MixingHandler::GetMixingVariableLimits(VarManager::Variables 
     }
   }
   return binLimits;
-}
+}*/
 
 //_________________________________________________________________________
 void MixingHandler::Init()
 {
-  //
-  // Initialization of pools
-  //       The correct event category will be retrieved using the function FindEventCategory()
-  //
-  int size = 1;
-  for (auto v : fVariableLimits) {
-    size *= (v.GetSize() - 1);
+  // loop over all variables and create a mixing pool for each category defined by the binning of the variables
+  int nCategories = 1;
+  for (auto& var : fVariables) {
+    nCategories *= (fVariableLimits[var.second].size() - 1);
   }
-  (void)size;
-  fIsInitialized = kTRUE;
+  // add elements in the map for each category (the key is the category and the value is an empty pool)
+  for (int i = 0; i < nCategories; i++) {
+    fPools[i] = MixingPool();
+  }
+  fIsInitialized = true;
 }
 
 //_________________________________________________________________________
@@ -135,16 +125,21 @@ int MixingHandler::FindEventCategory(float* values)
     Init();
   }
 
+  // loop over the variables and find out in which bin the value of the variable for the event is located
   std::vector<int> bin;
-  int iVar = 0;
-  for (auto v = fVariableLimits.begin(); v != fVariableLimits.end(); v++, iVar++) {
-    int binValue = TMath::BinarySearch((*v).GetSize(), (*v).GetArray(), values[fVariables[iVar]]);
-    bin.push_back(binValue);
-    if (bin[iVar] == -1 || bin[iVar] == (*v).GetSize() - 1) {
+  for (auto [var, pos] : fVariables) {
+    // check that the value is within limits, if not return -1 to exclude the event from mixing
+    size_t binValue = std::distance(fVariableLimits[pos].begin(), std::upper_bound(fVariableLimits[pos].begin(), fVariableLimits[pos].end(), values[var]));
+    if (binValue == 0 || binValue == fVariableLimits[pos].size()) {
       return -1; // all variables must be inside limits
     }
+    bin.push_back(binValue - 1);
   }
 
+  // Hash the bin values to define a unique category
+  // The hashing is done such that the original bin values can be retrieved from the category
+  // For example, for 3 variables with n1, n2, n3 bins respectively, the category for bin values (b1, b2, b3) would be:
+  // category = b1*(n2*n3) + b2*(n3) + b3
   int category = 0;
   int tempCategory = 1;
   int iv1 = 0;
@@ -156,7 +151,7 @@ int MixingHandler::FindEventCategory(float* values)
       if (iv2 == iv1) {
         tempCategory *= bin[iv2];
       } else {
-        tempCategory *= (fVariableLimits[iv2].GetSize() - 1);
+        tempCategory *= (fVariableLimits[iv2].size() - 1);
       }
     }
     category += tempCategory;
@@ -175,19 +170,14 @@ int MixingHandler::GetBinFromCategory(VarManager::Variables var, int category) c
   }
 
   // Search for the position of the variable "var" in the internal variable list of the handler
-  int tempVar = 0;
-  for (auto v = fVariables.begin(); v != fVariables.end(); v++, tempVar++) {
-    if (*v == var) {
-      break;
-    }
-  }
+  int ivar = fVariables.at(var);
 
   // extract the bin position in variable "var" from the category
   int norm = 1;
-  for (int i = fVariables.size() - 1; i > tempVar; --i) {
-    norm *= (fVariableLimits[i].GetSize() - 1);
+  for (int i = fVariables.size() - 1; i > ivar; --i) {
+    norm *= (fVariableLimits[i].size() - 1);
   }
   int truncatedCategory = category - (category % norm);
   truncatedCategory /= norm;
-  return truncatedCategory % (fVariableLimits[tempVar].GetSize() - 1);
+  return truncatedCategory % (fVariableLimits[ivar].size() - 1);
 }

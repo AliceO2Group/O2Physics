@@ -31,6 +31,7 @@ struct eventMultConverter1 {
 
   void process(aod::EMEventsMult_000 const& collisions)
   {
+    mult_001.reserve(collisions.size());
     for (const auto& collision : collisions) {
       mult_001(
         collision.multFT0A(),

@@ -90,6 +90,8 @@ using namespace o2::aod::rctsel;
 
 auto static constexpr CminCharge = 3.f;
 auto static constexpr CintZero = 0;
+auto static constexpr CintOne = 1;
+auto static constexpr CintTwo = 2;
 auto static constexpr Czero = 0.f;
 auto static constexpr Cninety = 90.f;
 auto static constexpr ConeHeighty = 180.f;
@@ -98,7 +100,7 @@ auto static constexpr CmaxAccFT0A = 4.9f;
 auto static constexpr CminAccFT0C = -3.3f;
 auto static constexpr CmaxAccFT0C = -2.1f;
 
-constexpr int CevtSel = 15;
+constexpr int CevtSel = 16;
 constexpr int CtrkSel = 7;
 constexpr int CtrkTrkBestSel = 6;
 constexpr int CambTrkType = 7;
@@ -120,6 +122,7 @@ enum class EvtSel {
   evtNoCollInRofStrict,
   evtNoCollInRofStandard,
   evtNoHighMultCollInPrevRof,
+  evtGoodITSLayersAll,
   evtBelowMinOccup,
   evtAboveMaxOccup,
   evtRCTFlagChecker,
@@ -428,6 +431,7 @@ struct DndetaMFTPbPb {
     Configurable<bool> requireNoCollInRofStrict{"requireNoCollInRofStrict", true, "requireNoCollInRofStrict"};
     Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "requireNoCollInRofStandard"};
     Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", false, "requireNoHighMultCollInPrevRof"};
+    Configurable<bool> requireGoodITSLayersAll{"requireGoodITSLayersAll", true, "requireGoodITSLayersAll"};
     Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
     Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
     Configurable<uint> occupancyEstimator{"occupancyEstimator", 1, "Occupancy estimator: 1 = trackOccupancyInTimeRange, 2 = ft0cOccupancyInTimeRange"};
@@ -577,6 +581,7 @@ struct DndetaMFTPbPb {
     labelEvtSel[static_cast<int>(EvtSel::evtNoCollInRofStrict)] = "kNoCollInRofStrict";
     labelEvtSel[static_cast<int>(EvtSel::evtNoCollInRofStandard)] = "kNoCollInRofStandard";
     labelEvtSel[static_cast<int>(EvtSel::evtNoHighMultCollInPrevRof)] = "kNoHighMultCollInPrevRof";
+    labelEvtSel[static_cast<int>(EvtSel::evtGoodITSLayersAll)] = "kIsGoodITSLayersAll";
     labelEvtSel[static_cast<int>(EvtSel::evtBelowMinOccup)] = "Below min occup.";
     labelEvtSel[static_cast<int>(EvtSel::evtAboveMaxOccup)] = "Above max occup.";
     labelEvtSel[static_cast<int>(EvtSel::evtRCTFlagChecker)] = "RCT Flag Checker";
@@ -2240,6 +2245,12 @@ struct DndetaMFTPbPb {
     }
     if constexpr (fillHis) {
       registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoHighMultCollInPrevRof));
+    }
+    if (eventCuts.requireGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtGoodITSLayersAll));
     }
     if (eventCuts.minOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) <
@@ -4960,9 +4971,9 @@ struct DndetaMFTPbPb {
 
                 if (gConf.cfgDCAtype == 0) {
                   dcaInfo[0] = dcaInfOrig[0];
-                } else if (gConf.cfgDCAtype == 1) {
+                } else if (gConf.cfgDCAtype == CintOne) {
                   dcaInfo[0] = dcaInfOrig[1];
-                } else if (gConf.cfgDCAtype == 2) {
+                } else if (gConf.cfgDCAtype == CintTwo) {
                   dcaInfo[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
                 }
                 dcaInfo[1] = dcaInfOrig[2];
