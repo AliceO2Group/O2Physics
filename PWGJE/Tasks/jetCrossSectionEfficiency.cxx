@@ -262,10 +262,10 @@ struct JetCrossSectionEfficiency {
   }
 
   void processCrossSectionEfficiency(aod::JetMcCollisions::iterator const& mccollision,
-                                                  soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                                                  soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
-                                                  aod::JetParticles const&,
-                                                  aod::JBCs const&)
+                                     soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+                                     soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
+                                     aod::JetParticles const&,
+                                     aod::JBCs const&)
   {
     if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
