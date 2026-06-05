@@ -193,9 +193,9 @@ struct PtmultCorr {
   Configurable<bool> isApplyOccuCut{"isApplyOccuCut", false, "Enable occupancy selection"};
 
   // Secondary estimation related configurables
-  Configurable<bool> isApplyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
-  Configurable<bool> isApplyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
-  Configurable<bool> isApplyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
+  Configurable<bool> applyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
+  Configurable<bool> applyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
+  Configurable<bool> applyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
 
   void init(InitContext const&)
   {
