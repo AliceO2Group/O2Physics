@@ -20,16 +20,15 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
-
 
 struct straevselextrasconverter {
   Produces<aod::StraEvSelExtras_001> straEvSelExtras_001;
@@ -37,7 +36,7 @@ struct straevselextrasconverter {
   void init(InitContext&)
   {
     LOGF(info, "Initializing now: cross-checking correctness...");
-    if (doprocessAll + doprocessStraEvSelsOnly  > 1) {
+    if (doprocessAll + doprocessStraEvSelsOnly > 1) {
       LOGF(fatal, "You have enabled more than one process function. Please check your configuration! Aborting now.");
     }
   }
@@ -91,20 +90,20 @@ struct straevselextrasconverter {
                           values.multAllTracksITSTPC(),
                           values.trackOccupancyInTimeRange(),
                           values.ft0cOccupancyInTimeRange(),
-                          -999.,  // dummy timeFDDA,
-                          -999.,  // dummy timeFDDC,
-                          -999.,  // dummy timeFV0A,
-                          -999.,  // dummy timeFT0A,
-                          -999.,  // dummy timeFT0C,
-                          0,      // dummy triggerMaskFT0,
+                          -999., // dummy timeFDDA,
+                          -999., // dummy timeFDDC,
+                          -999., // dummy timeFV0A,
+                          -999., // dummy timeFT0A,
+                          -999., // dummy timeFT0C,
+                          0,     // dummy triggerMaskFT0,
                           values.gapSide(),
                           values.totalFT0AmplitudeA(),
                           values.totalFT0AmplitudeC(),
                           values.totalFV0AmplitudeA(),
                           values.totalFDDAmplitudeA(),
                           values.totalFDDAmplitudeC(),
-                          -999.,  // dummy timeZNA,
-                          -999.,  // dummy timeZNC,
+                          -999., // dummy timeZNA,
+                          -999., // dummy timeZNC,
                           values.energyCommonZNA(),
                           values.energyCommonZNC());
     }
