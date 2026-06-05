@@ -8,6 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file straevselextrasconverter.cxx
+/// \brief Converts straevselsextrasconverter1 converts StraEvSelExtras_000 into StraEvSelExtras_001
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
+//
+//__________________________________________________
+//
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -21,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 
-// Converts straevselsextrasconverter1 converts StraEvSelExtras_000 into StraEvSelExtras_001
+
 struct straevselextrasconverter {
   Produces<aod::StraEvSelExtras_001> straEvSelExtras_001;
 
@@ -36,7 +45,7 @@ struct straevselextrasconverter {
   void processAll(soa::Join<aod::StraEvSels_005, aod::StraEvSelExtras_000> const& straEvSels_005)
   {
     straEvSelExtras_001.reserve(straEvSels_005.size());
-    for (auto& values : straEvSels_005) {
+    for (const auto& values : straEvSels_005) {
       straEvSelExtras_001(values.multZNA(),
                           values.multZNC(),
                           values.multZEM1(),
@@ -70,7 +79,7 @@ struct straevselextrasconverter {
   void processStraEvSelsOnly(aod::StraEvSels_005 const& straEvSels_005)
   {
     straEvSelExtras_001.reserve(straEvSels_005.size());
-    for (auto& values : straEvSels_005) {
+    for (const auto& values : straEvSels_005) {
       straEvSelExtras_001(values.multZNA(),
                           values.multZNC(),
                           values.multZEM1(),
