@@ -157,6 +157,7 @@ class MlResponse
       const int numInputNodes = mModels[counterModel].getNumInputNodes();
       if (numInputNodes != numCachedIndices) {
         LOG(fatal) << "Number of input nodes in the model " << path << " is different from the number of input features indices (" << numInputNodes << " vs " << numCachedIndices << ")";
+        return;
       }
       ++counterModel;
     }
