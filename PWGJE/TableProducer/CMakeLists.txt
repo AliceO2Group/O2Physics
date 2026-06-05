@@ -110,3 +110,8 @@ o2physics_add_dpl_workflow(slim-tables-producer
                     SOURCES slimTablesProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(table-diff-wake
+                    SOURCES tableDiffWake.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
