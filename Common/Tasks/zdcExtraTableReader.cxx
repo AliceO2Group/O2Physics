@@ -165,11 +165,11 @@ TProfile3D* gCurrentShiftProfileZNC;
 
 } // namespace
 
+// Helper for 4D recentering maps
 double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
 {
   if (!h) {
-    // LOGF(error, "[MeanQ] Null THn pointer");
-    return 0.0;
+    LOGF(fatal, "[MeanQ] Null THn pointer");
   }
 
   TAxis* axCent = h->GetAxis(0);
@@ -178,8 +178,7 @@ double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
   TAxis* axVz = h->GetAxis(3);
 
   if (!axCent || !axVx || !axVy || !axVz) {
-    LOGF(error, "[MeanQ] One of THn axes is null");
-    return 0.0;
+    LOGF(fatal, "[MeanQ] One of THn axes is null");
   }
 
   int binCent = axCent->FindFixBin(cent);
@@ -188,17 +187,16 @@ double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
   int binVz = axVz->FindFixBin(vz);
 
   int idx[4] = {binCent, binVx, binVy, binVz};
-  double meanQ = h->GetBinContent(idx);
+  return h->GetBinContent(idx);
 
-  return meanQ;
 }
 
-// Helper for 1D recentering maps: returns mean Q for coordinate x.
-// If histogram is missing or bin out of range, returns 0.0.
+// Helper for 1D recentering maps: returns mean Q for coordinate x
+// If bin out of range, returns 0.0
 double getMeanQ1D(TH1* h, double x)
 {
   if (!h) {
-    return 0.0;
+    LOGF(fatal, "[MeanQ1D] Null TH1 pointer");
   }
   int bin = h->FindFixBin(x);
   if (bin < 1 || bin > h->GetNbinsX()) {
@@ -211,9 +209,9 @@ struct ZdcExtraTableReader {
 
   Configurable<int> nBinsZN{"nBinsZN", 2000, "n bins for ZN histograms"};
   Configurable<float> maxZN{"maxZN", 399.5, "Max ZN signal"};
-  Configurable<bool> tdcCut{"tdcCut", true, "Flag for TDC cut"};
-  Configurable<float> tdcZNmincut{"tdcZNmincut", -2.5, "Min ZN TDC cut"};
-  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 2.5, "Max ZN TDC cut"};
+  Configurable<bool> applyTdcCut{"applyTdcCut", true, "Flag for TDC cut"};
+  Configurable<float> tdcZnMin{"tdcZnMin", -2.5, "Min ZN TDC cut"};
+  Configurable<float> tdcZnMax{"tdcZnMax", 2.5, "Max ZN TDC cut"};
   Configurable<bool> plotPMs{"plotPMs", false, "Flag to plot individual PMs"};
 
   Configurable<int> qxyNbins{"qxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -238,28 +236,28 @@ struct ZdcExtraTableReader {
 
   Configurable<int> phiNbins{"phiNbins", 60, "Bins in phi"};
 
-  Configurable<int> nTowersFired{"nTowersFired", 2, "Minimum number of towers fired for Q-vector determination"};
+  Configurable<int> minNTowersFired{"minNTowersFired", 2, "Minimum number of towers fired for Q-vector determination"};
 
   Configurable<int> qNbins5D{"qNbins5D", 4, "Bins in each dimension for 5D histograms"};
   Configurable<bool> plot5D{"plot5D", false, "Flag to plot 5D histograms"};
 
   Configurable<int> calibrationStep{"calibrationStep", 1, "Calibration step"};
-  Configurable<bool> ifFineCalibration{"ifFineCalibration", false, "Calibration: base  or refine"};
+  Configurable<bool> isFineCalibrationStep{"isFineCalibrationStep", false, "Calibration: base  or refine"};
 
-  Configurable<bool> ifBeamSpotCorrection{"ifBeamSpotCorrection", true, "Beam spot correction"};
+  Configurable<bool> applyBeamSpotCorrection{"applyBeamSpotCorrection", true, "Beam spot correction"};
 
-  Configurable<bool> ifSel8{"ifSel8", true, "Event selection: Sel8"};
-  Configurable<bool> ifZVtxCut{"ifZVtxCut", true, "Event selection: zVtx cut set in producer (tipically < 10 cm)"};
-  Configurable<bool> ifOccupancyCut{"ifOccupancyCut", false, "Event selection: occupancy cut set in producer"};
-  Configurable<bool> ifNoSameBunchPileup{"ifNoSameBunchPileup", false, "Event selection: no same bunch pileup"};
-  Configurable<bool> ifIsGoodZvtxFT0vsPV{"ifIsGoodZvtxFT0vsPV", false, "Event selection: good Zvtx FT0 vs PV"};
-  Configurable<bool> ifNoCollInTimeRangeStandard{"ifNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
-  Configurable<bool> ifIsVertexITSTPC{"ifIsVertexITSTPC", false, "Event selection: vertex ITS TPC"};
-  Configurable<bool> ifIsGoodITSLayersAll{"ifIsGoodITSLayersAll", false, "Event selection: good ITS layers all"};
+  Configurable<bool> applySel8{"applySel8", true, "Event selection: Sel8"};
+  Configurable<bool> applyZVtxCut{"applyZVtxCut", true, "Event selection: zVtx cut set in producer (tipically < 10 cm)"};
+  Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Event selection: occupancy cut set in producer"};
+  Configurable<bool> selectNoSameBunchPileupEvents{"selectNoSameBunchPileupEvents", false, "Event selection: no same bunch pileup"};
+  Configurable<bool> selectGoodZvtxFT0vsPV{"selectGoodZvtxFT0vsPV", false, "Event selection: good Zvtx FT0 vs PV"};
+  Configurable<bool> applyNoCollInTimeRangeStandard{"applyNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
+  Configurable<bool> selectVertexITSTPC{"selectVertexITSTPC", false, "Event selection: vertex ITS TPC"};
+  Configurable<bool> selectGoodITSLayersAll{"selectGoodITSLayersAll", false, "Event selection: good ITS layers all"};
 
-  Configurable<bool> ifShiftCorrection{"ifShiftCorrection", false, "Apply shift correction (Read from CCDB)"};
-  Configurable<bool> fillShiftHistos{"fillShiftHistos", true, "Fill shift profiles (Write to output)"};
-  Configurable<int> nShift{"nShift", 10, "Number of harmonics"};
+  Configurable<bool> applyShiftCorrection{"applyShiftCorrection", false, "Apply shift correction (Read from CCDB)"};
+  Configurable<bool> fillShiftHistos{"fillShiftHistos", false, "Fill shift profiles (Write to output)"};
+  Configurable<int> nHarmonics{"nHarmonics", 10, "Number of harmonics"};
 
   Configurable<std::string> qRecenteringCcdb{"qRecenteringCcdb", "Users/u/udmitrie/ZDC/LHC24ar_apass2", "Recentering maps containing step folder"};
 
@@ -326,15 +324,15 @@ struct ZdcExtraTableReader {
   };
 
   // Cache container: Vector index = Step index (0-based, so step 1 is at index 0)
-  std::vector<CalibStepData> mCalibCache;
+  std::vector<CalibStepData> calibCache;
 
   // Vertex correction cache
   TH1* hMeanVx{nullptr};
   TH1* hMeanVy{nullptr};
 
   // Phase shift correction cache
-  TProfile3D* mShiftProfileZNA{nullptr};
-  TProfile3D* mShiftProfileZNC{nullptr};
+  TProfile3D* shiftProfileZNA{nullptr};
+  TProfile3D* shiftProfileZNC{nullptr};
 
   HistogramRegistry histos{"histos"};
 
@@ -351,7 +349,7 @@ struct ZdcExtraTableReader {
     NEventSelections
   };
 
-  int mCurrentRunNumber{-1};
+  int currentRunNumber{-1};
 
   // Helper to safely clone a histogram and detach from file
   template <typename T>
@@ -377,23 +375,23 @@ struct ZdcExtraTableReader {
     delete hMeanVy;
     hMeanVy = nullptr;
 
-    delete mShiftProfileZNA;
-    mShiftProfileZNA = nullptr;
+    delete shiftProfileZNA;
+    shiftProfileZNA = nullptr;
 
-    delete mShiftProfileZNC;
-    mShiftProfileZNC = nullptr;
+    delete shiftProfileZNC;
+    shiftProfileZNC = nullptr;
 
-    mCalibCache.clear();
+    calibCache.clear();
   }
 
-  void initHistos(const int& mRunNumber)
+  void initHistos(const int& runNumber)
   {
-    if (mRunNumber == mCurrentRunNumber) {
+    if (runNumber == currentRunNumber) {
       return;
     }
-    mCurrentRunNumber = mRunNumber;
+    currentRunNumber = runNumber;
 
-    if (!gEventCounter.contains(mRunNumber)) {
+    if (!gEventCounter.contains(runNumber)) {
       // if new run, initialize histograms
 
       const AxisSpec axisCounter{1, 0, +1, ""};
@@ -416,126 +414,126 @@ struct ZdcExtraTableReader {
 
       const AxisSpec axisTime = {90, 0, 90, "Time (minutes)"}; // 90 minutes
 
-      gEventCounter[mRunNumber] = histos.add<TH1>(Form("%i/eventCounter", mRunNumber), "Number of Event; ; #Events Passed Cut", kTH1D, {{NEventSelections, 0, NEventSelections}}).get();
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(AllEvents + 1, "allEvents");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(ZVtxCut + 1, "zVtxCut");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(Sel8 + 1, "Sel8");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(OccupancyCut + 1, "occupancyCut");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(NoSameBunchPileup + 1, "NoSameBunchPileup");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(IsGoodZvtxFT0vsPV + 1, "isGoodZvtxFT0vsPV");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(NoCollInTimeRangeStandard + 1, "noCollInTimeRangeStandard");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(IsVertexITSTPC + 1, "isVertexITSTPC");
-      gEventCounter[mRunNumber]->GetXaxis()->SetBinLabel(IsGoodITSLayersAll + 1, "isGoodITSLayersAll");
+      gEventCounter[runNumber] = histos.add<TH1>(Form("%i/eventCounter", runNumber), "Number of Event; ; #Events Passed Cut", kTH1D, {{NEventSelections, 0, NEventSelections}}).get();
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(AllEvents + 1, "allEvents");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(ZVtxCut + 1, "zVtxCut");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(Sel8 + 1, "Sel8");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(OccupancyCut + 1, "occupancyCut");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(NoSameBunchPileup + 1, "NoSameBunchPileup");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(IsGoodZvtxFT0vsPV + 1, "isGoodZvtxFT0vsPV");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(NoCollInTimeRangeStandard + 1, "noCollInTimeRangeStandard");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(IsVertexITSTPC + 1, "isVertexITSTPC");
+      gEventCounter[runNumber]->GetXaxis()->SetBinLabel(IsGoodITSLayersAll + 1, "isGoodITSLayersAll");
 
-      gCentroidZNA[mRunNumber] = histos.add<TH2>(Form("%i/CentroidZNA", mRunNumber), "ZNA Centroid; Q_{X}; Q_{Y}", kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}).get();
-      gCentroidZNC[mRunNumber] = histos.add<TH2>(Form("%i/CentroidZNC", mRunNumber), "ZNC Centroid; Q_{X}; Q_{Y}", kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}).get();
-      gPmcZNA[mRunNumber] = histos.add<TH1>(Form("%i/pmcZNA", mRunNumber), "; E_{PMC}^{ZNA} (TeV);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm1ZNA[mRunNumber] = histos.add<TH1>(Form("%i/pm1ZNA", mRunNumber), "; E_{PM1}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm2ZNA[mRunNumber] = histos.add<TH1>(Form("%i/pm2ZNA", mRunNumber), "; E_{PM2}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm3ZNA[mRunNumber] = histos.add<TH1>(Form("%i/pm3ZNA", mRunNumber), "; E_{PM3}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm4ZNA[mRunNumber] = histos.add<TH1>(Form("%i/pm4ZNA", mRunNumber), "; E_{PM4}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gSumZNA[mRunNumber] = histos.add<TH1>(Form("%i/sumZNA", mRunNumber), "; E_{sum PMs}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPmcZNC[mRunNumber] = histos.add<TH1>(Form("%i/pmcZNC", mRunNumber), "; E_{PMC}^{ZNC} (TeV);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm1ZNC[mRunNumber] = histos.add<TH1>(Form("%i/pm1ZNC", mRunNumber), "; E_{PM1}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm2ZNC[mRunNumber] = histos.add<TH1>(Form("%i/pm2ZNC", mRunNumber), "; E_{PM2}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm3ZNC[mRunNumber] = histos.add<TH1>(Form("%i/pm3ZNC", mRunNumber), "; E_{PM3}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gPm4ZNC[mRunNumber] = histos.add<TH1>(Form("%i/pm4ZNC", mRunNumber), "; E_{PM4}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gSumZNC[mRunNumber] = histos.add<TH1>(Form("%i/sumZNC", mRunNumber), "; E_{sum PMs}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
-      gQxVsCentZNA[mRunNumber] = histos.add<TH2>(Form("%i/QxVsCentZNA", mRunNumber), "Q_{x}^{ZNA} vs Centrality", kTH2F, {axisCent, axisQx}).get();
-      gQyVsCentZNA[mRunNumber] = histos.add<TH2>(Form("%i/QyVsCentZNA", mRunNumber), "Q_{y}^{ZNA} vs Centrality", kTH2F, {axisCent, axisQy}).get();
-      gQxVsVxZNA[mRunNumber] = histos.add<TH2>(Form("%i/QxVsVxZNA", mRunNumber), "Q_{x}^{ZNA} vs V_{x}; V_{x} (cm); Q_{x}", kTH2F, {axisVx, axisQx}).get();
-      gQyVsVxZNA[mRunNumber] = histos.add<TH2>(Form("%i/QyVsVxZNA", mRunNumber), "Q_{y}^{ZNA} vs V_{x}; V_{x} (cm); Q_{y}", kTH2F, {axisVx, axisQy}).get();
-      gQxVsVyZNA[mRunNumber] = histos.add<TH2>(Form("%i/QxVsVyZNA", mRunNumber), "Q_{x}^{ZNA} vs V_{y}; V_{y} (cm); Q_{x}", kTH2F, {axisVy, axisQx}).get();
-      gQyVsVyZNA[mRunNumber] = histos.add<TH2>(Form("%i/QyVsVyZNA", mRunNumber), "Q_{y}^{ZNA} vs V_{y}; V_{y} (cm); Q_{y}", kTH2F, {axisVy, axisQy}).get();
-      gQxVsVzZNA[mRunNumber] = histos.add<TH2>(Form("%i/QxVsVzZNA", mRunNumber), "Q_{x}^{ZNA} vs V_{z}; V_{z} (cm); Q_{x}", kTH2F, {axisVz, axisQx}).get();
-      gQyVsVzZNA[mRunNumber] = histos.add<TH2>(Form("%i/QyVsVzZNA", mRunNumber), "Q_{y}^{ZNA} vs V_{z}; V_{z} (cm); Q_{y}", kTH2F, {axisVz, axisQy}).get();
-      gQxVsCentZNC[mRunNumber] = histos.add<TH2>(Form("%i/QxVsCentZNC", mRunNumber), "Q_{x}^{ZNC} vs Centrality; Centrality (%); Q_{x}", kTH2F, {axisCent, axisQx}).get();
-      gQyVsCentZNC[mRunNumber] = histos.add<TH2>(Form("%i/QyVsCentZNC", mRunNumber), "Q_{y}^{ZNC} vs Centrality; Centrality (%); Q_{y}", kTH2F, {axisCent, axisQy}).get();
-      gQxVsVxZNC[mRunNumber] = histos.add<TH2>(Form("%i/QxVsVxZNC", mRunNumber), "Q_{x}^{ZNC} vs V_{x}; V_{x} (cm); Q_{x}", kTH2F, {axisVx, axisQx}).get();
-      gQyVsVxZNC[mRunNumber] = histos.add<TH2>(Form("%i/QyVsVxZNC", mRunNumber), "Q_{y}^{ZNC} vs V_{x}; V_{x} (cm); Q_{y}", kTH2F, {axisVx, axisQy}).get();
-      gQxVsVyZNC[mRunNumber] = histos.add<TH2>(Form("%i/QxVsVyZNC", mRunNumber), "Q_{x}^{ZNC} vs V_{y}; V_{y} (cm); Q_{x}", kTH2F, {axisVy, axisQx}).get();
-      gQyVsVyZNC[mRunNumber] = histos.add<TH2>(Form("%i/QyVsVyZNC", mRunNumber), "Q_{y}^{ZNC} vs V_{y}; V_{y} (cm); Q_{y}", kTH2F, {axisVy, axisQy}).get();
-      gQxVsVzZNC[mRunNumber] = histos.add<TH2>(Form("%i/QxVsVzZNC", mRunNumber), "Q_{x}^{ZNC} vs V_{z}; V_{z} (cm); Q_{x}", kTH2F, {axisVz, axisQx}).get();
-      gQyVsVzZNC[mRunNumber] = histos.add<TH2>(Form("%i/QyVsVzZNC", mRunNumber), "Q_{y}^{ZNC} vs V_{z}; V_{z} (cm); Q_{y}", kTH2F, {axisVz, axisQy}).get();
-      gQxQyVsCent[mRunNumber] = histos.add<TH2>(Form("%i/QxQyVsCent", mRunNumber), "Q_{x}^{ZNC}Q_{y}^{ZNC} vs Centrality; Centrality (%); Q_{x}^{ZNA}Q_{y}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
-      gQyQxVsCent[mRunNumber] = histos.add<TH2>(Form("%i/QyQxVsCent", mRunNumber), "Q_{y}^{ZNC}Q_{x}^{ZNC} vs Centrality; Centrality (%); Q_{y}^{ZNA}Q_{x}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
-      gQxQxVsCent[mRunNumber] = histos.add<TH2>(Form("%i/QxQxVsCent", mRunNumber), "Q_{x}^{ZNC}Q_{x}^{ZNC} vs Centrality; Centrality (%); Q_{x}^{ZNA}Q_{x}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
-      gQyQyVsCent[mRunNumber] = histos.add<TH2>(Form("%i/QyQyVsCent", mRunNumber), "Q_{y}^{ZNC}Q_{y}^{ZNC} vs Centrality; Centrality (%); Q_{y}^{ZNA}Q_{y}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
+      gCentroidZNA[runNumber] = histos.add<TH2>(Form("%i/CentroidZNA", runNumber), "ZNA Centroid; Q_{X}; Q_{Y}", kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}).get();
+      gCentroidZNC[runNumber] = histos.add<TH2>(Form("%i/CentroidZNC", runNumber), "ZNC Centroid; Q_{X}; Q_{Y}", kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}).get();
+      gPmcZNA[runNumber] = histos.add<TH1>(Form("%i/pmcZNA", runNumber), "; E_{PMC}^{ZNA} (TeV);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm1ZNA[runNumber] = histos.add<TH1>(Form("%i/pm1ZNA", runNumber), "; E_{PM1}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm2ZNA[runNumber] = histos.add<TH1>(Form("%i/pm2ZNA", runNumber), "; E_{PM2}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm3ZNA[runNumber] = histos.add<TH1>(Form("%i/pm3ZNA", runNumber), "; E_{PM3}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm4ZNA[runNumber] = histos.add<TH1>(Form("%i/pm4ZNA", runNumber), "; E_{PM4}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gSumZNA[runNumber] = histos.add<TH1>(Form("%i/sumZNA", runNumber), "; E_{sum PMs}^{ZNA} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPmcZNC[runNumber] = histos.add<TH1>(Form("%i/pmcZNC", runNumber), "; E_{PMC}^{ZNC} (TeV);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm1ZNC[runNumber] = histos.add<TH1>(Form("%i/pm1ZNC", runNumber), "; E_{PM1}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm2ZNC[runNumber] = histos.add<TH1>(Form("%i/pm2ZNC", runNumber), "; E_{PM2}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm3ZNC[runNumber] = histos.add<TH1>(Form("%i/pm3ZNC", runNumber), "; E_{PM3}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gPm4ZNC[runNumber] = histos.add<TH1>(Form("%i/pm4ZNC", runNumber), "; E_{PM4}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gSumZNC[runNumber] = histos.add<TH1>(Form("%i/sumZNC", runNumber), "; E_{sum PMs}^{ZNC} (a.u.);", kTH1F, {{nBinsZN, -0.5, maxZN}}).get();
+      gQxVsCentZNA[runNumber] = histos.add<TH2>(Form("%i/QxVsCentZNA", runNumber), "Q_{x}^{ZNA} vs Centrality", kTH2F, {axisCent, axisQx}).get();
+      gQyVsCentZNA[runNumber] = histos.add<TH2>(Form("%i/QyVsCentZNA", runNumber), "Q_{y}^{ZNA} vs Centrality", kTH2F, {axisCent, axisQy}).get();
+      gQxVsVxZNA[runNumber] = histos.add<TH2>(Form("%i/QxVsVxZNA", runNumber), "Q_{x}^{ZNA} vs V_{x}; V_{x} (cm); Q_{x}", kTH2F, {axisVx, axisQx}).get();
+      gQyVsVxZNA[runNumber] = histos.add<TH2>(Form("%i/QyVsVxZNA", runNumber), "Q_{y}^{ZNA} vs V_{x}; V_{x} (cm); Q_{y}", kTH2F, {axisVx, axisQy}).get();
+      gQxVsVyZNA[runNumber] = histos.add<TH2>(Form("%i/QxVsVyZNA", runNumber), "Q_{x}^{ZNA} vs V_{y}; V_{y} (cm); Q_{x}", kTH2F, {axisVy, axisQx}).get();
+      gQyVsVyZNA[runNumber] = histos.add<TH2>(Form("%i/QyVsVyZNA", runNumber), "Q_{y}^{ZNA} vs V_{y}; V_{y} (cm); Q_{y}", kTH2F, {axisVy, axisQy}).get();
+      gQxVsVzZNA[runNumber] = histos.add<TH2>(Form("%i/QxVsVzZNA", runNumber), "Q_{x}^{ZNA} vs V_{z}; V_{z} (cm); Q_{x}", kTH2F, {axisVz, axisQx}).get();
+      gQyVsVzZNA[runNumber] = histos.add<TH2>(Form("%i/QyVsVzZNA", runNumber), "Q_{y}^{ZNA} vs V_{z}; V_{z} (cm); Q_{y}", kTH2F, {axisVz, axisQy}).get();
+      gQxVsCentZNC[runNumber] = histos.add<TH2>(Form("%i/QxVsCentZNC", runNumber), "Q_{x}^{ZNC} vs Centrality; Centrality (%); Q_{x}", kTH2F, {axisCent, axisQx}).get();
+      gQyVsCentZNC[runNumber] = histos.add<TH2>(Form("%i/QyVsCentZNC", runNumber), "Q_{y}^{ZNC} vs Centrality; Centrality (%); Q_{y}", kTH2F, {axisCent, axisQy}).get();
+      gQxVsVxZNC[runNumber] = histos.add<TH2>(Form("%i/QxVsVxZNC", runNumber), "Q_{x}^{ZNC} vs V_{x}; V_{x} (cm); Q_{x}", kTH2F, {axisVx, axisQx}).get();
+      gQyVsVxZNC[runNumber] = histos.add<TH2>(Form("%i/QyVsVxZNC", runNumber), "Q_{y}^{ZNC} vs V_{x}; V_{x} (cm); Q_{y}", kTH2F, {axisVx, axisQy}).get();
+      gQxVsVyZNC[runNumber] = histos.add<TH2>(Form("%i/QxVsVyZNC", runNumber), "Q_{x}^{ZNC} vs V_{y}; V_{y} (cm); Q_{x}", kTH2F, {axisVy, axisQx}).get();
+      gQyVsVyZNC[runNumber] = histos.add<TH2>(Form("%i/QyVsVyZNC", runNumber), "Q_{y}^{ZNC} vs V_{y}; V_{y} (cm); Q_{y}", kTH2F, {axisVy, axisQy}).get();
+      gQxVsVzZNC[runNumber] = histos.add<TH2>(Form("%i/QxVsVzZNC", runNumber), "Q_{x}^{ZNC} vs V_{z}; V_{z} (cm); Q_{x}", kTH2F, {axisVz, axisQx}).get();
+      gQyVsVzZNC[runNumber] = histos.add<TH2>(Form("%i/QyVsVzZNC", runNumber), "Q_{y}^{ZNC} vs V_{z}; V_{z} (cm); Q_{y}", kTH2F, {axisVz, axisQy}).get();
+      gQxQyVsCent[runNumber] = histos.add<TH2>(Form("%i/QxQyVsCent", runNumber), "Q_{x}^{ZNC}Q_{y}^{ZNC} vs Centrality; Centrality (%); Q_{x}^{ZNA}Q_{y}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
+      gQyQxVsCent[runNumber] = histos.add<TH2>(Form("%i/QyQxVsCent", runNumber), "Q_{y}^{ZNC}Q_{x}^{ZNC} vs Centrality; Centrality (%); Q_{y}^{ZNA}Q_{x}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
+      gQxQxVsCent[runNumber] = histos.add<TH2>(Form("%i/QxQxVsCent", runNumber), "Q_{x}^{ZNC}Q_{x}^{ZNC} vs Centrality; Centrality (%); Q_{x}^{ZNA}Q_{x}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
+      gQyQyVsCent[runNumber] = histos.add<TH2>(Form("%i/QyQyVsCent", runNumber), "Q_{y}^{ZNC}Q_{y}^{ZNC} vs Centrality; Centrality (%); Q_{y}^{ZNA}Q_{y}^{ZNC}", kTH2F, {axisCent, {50, -1.5, 1.5}}).get();
 
-      gQx5DZNA[mRunNumber] = histos.add<THn>(Form("%i/Qx5DZNA", mRunNumber), "Qx recenter map ZNA", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQx}, true).get();
-      gQy5DZNA[mRunNumber] = histos.add<THn>(Form("%i/Qy5DZNA", mRunNumber), "Qy recenter map ZNA", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQy}, true).get();
-      gQx5DZNC[mRunNumber] = histos.add<THn>(Form("%i/Qx5DZNC", mRunNumber), "Qx recenter map ZNC", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQx}, true).get();
-      gQy5DZNC[mRunNumber] = histos.add<THn>(Form("%i/Qy5DZNC", mRunNumber), "Qy recenter map ZNC", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQy}, true).get();
+      gQx5DZNA[runNumber] = histos.add<THn>(Form("%i/Qx5DZNA", runNumber), "Qx recenter map ZNA", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQx}, true).get();
+      gQy5DZNA[runNumber] = histos.add<THn>(Form("%i/Qy5DZNA", runNumber), "Qy recenter map ZNA", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQy}, true).get();
+      gQx5DZNC[runNumber] = histos.add<THn>(Form("%i/Qx5DZNC", runNumber), "Qx recenter map ZNC", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQx}, true).get();
+      gQy5DZNC[runNumber] = histos.add<THn>(Form("%i/Qy5DZNC", runNumber), "Qy recenter map ZNC", kTHnF, {axisCent5D, axisVx5D, axisVy5D, axisVz5D, axisQy}, true).get();
 
-      gPsiZNA[mRunNumber] = histos.add<TH1>(Form("%i/PsiZNA", mRunNumber), ";#Phi_{ZNA} (rad)", kTH1F, {axisPhi}).get();
-      gPsiZNC[mRunNumber] = histos.add<TH1>(Form("%i/PsiZNC", mRunNumber), ";#Phi_{ZNC} (rad)", kTH1F, {axisPhi}).get();
+      gPsiZNA[runNumber] = histos.add<TH1>(Form("%i/PsiZNA", runNumber), ";#Phi_{ZNA} (rad)", kTH1F, {axisPhi}).get();
+      gPsiZNC[runNumber] = histos.add<TH1>(Form("%i/PsiZNC", runNumber), ";#Phi_{ZNC} (rad)", kTH1F, {axisPhi}).get();
 
-      gVx[mRunNumber] = histos.add<TH1>(Form("%i/Vx", mRunNumber), "V_{x} distribution; V_{x} (cm); Entries", kTH1F, {axisVx}).get();
-      gVy[mRunNumber] = histos.add<TH1>(Form("%i/Vy", mRunNumber), "V_{y} distribution; V_{y} (cm); Entries", kTH1F, {axisVy}).get();
+      gVx[runNumber] = histos.add<TH1>(Form("%i/Vx", runNumber), "V_{x} distribution; V_{x} (cm); Entries", kTH1F, {axisVx}).get();
+      gVy[runNumber] = histos.add<TH1>(Form("%i/Vy", runNumber), "V_{y} distribution; V_{y} (cm); Entries", kTH1F, {axisVy}).get();
 
-      gQxVsTimeZNA[mRunNumber] = histos.add<TH2>(Form("%i/QxVsTimeZNA", mRunNumber), "Q_{x}^{ZNA} vs Time; Time (minutes); Q_{x}", kTH2F, {axisTime, axisQx}).get();
-      gQyVsTimeZNA[mRunNumber] = histos.add<TH2>(Form("%i/QyVsTimeZNA", mRunNumber), "Q_{y}^{ZNA} vs Time; Time (minutes); Q_{y}", kTH2F, {axisTime, axisQy}).get();
-      gQxVsTimeZNC[mRunNumber] = histos.add<TH2>(Form("%i/QxVsTimeZNC", mRunNumber), "Q_{x}^{ZNC} vs Time; Time (minutes); Q_{x}", kTH2F, {axisTime, axisQx}).get();
-      gQyVsTimeZNC[mRunNumber] = histos.add<TH2>(Form("%i/QyVsTimeZNC", mRunNumber), "Q_{y}^{ZNC} vs Time; Time (minutes); Q_{y}", kTH2F, {axisTime, axisQy}).get();
+      gQxVsTimeZNA[runNumber] = histos.add<TH2>(Form("%i/QxVsTimeZNA", runNumber), "Q_{x}^{ZNA} vs Time; Time (minutes); Q_{x}", kTH2F, {axisTime, axisQx}).get();
+      gQyVsTimeZNA[runNumber] = histos.add<TH2>(Form("%i/QyVsTimeZNA", runNumber), "Q_{y}^{ZNA} vs Time; Time (minutes); Q_{y}", kTH2F, {axisTime, axisQy}).get();
+      gQxVsTimeZNC[runNumber] = histos.add<TH2>(Form("%i/QxVsTimeZNC", runNumber), "Q_{x}^{ZNC} vs Time; Time (minutes); Q_{x}", kTH2F, {axisTime, axisQx}).get();
+      gQyVsTimeZNC[runNumber] = histos.add<TH2>(Form("%i/QyVsTimeZNC", runNumber), "Q_{y}^{ZNC} vs Time; Time (minutes); Q_{y}", kTH2F, {axisTime, axisQy}).get();
 
-      gShiftProfileZNA[mRunNumber] = histos.add<TProfile3D>(Form("%i/ShiftProfileZNA", mRunNumber), "ZNA Shift Coeffs;Cent;Type;Harmonic", kTProfile3D, {axisCent, {2, 0, 2}, {nShift, 0, static_cast<double>(nShift)}}).get();
-      gShiftProfileZNC[mRunNumber] = histos.add<TProfile3D>(Form("%i/ShiftProfileZNC", mRunNumber), "ZNC Shift Coeffs;Cent;Type;Harmonic", kTProfile3D, {axisCent, {2, 0, 2}, {nShift, 0, static_cast<double>(nShift)}}).get();
+      gShiftProfileZNA[runNumber] = histos.add<TProfile3D>(Form("%i/ShiftProfileZNA", runNumber), "ZNA Shift Coeffs;Cent;Type;Harmonic", kTProfile3D, {axisCent, {2, 0, 2}, {nHarmonics, 0, static_cast<double>(nHarmonics)}}).get();
+      gShiftProfileZNC[runNumber] = histos.add<TProfile3D>(Form("%i/ShiftProfileZNC", runNumber), "ZNC Shift Coeffs;Cent;Type;Harmonic", kTProfile3D, {axisCent, {2, 0, 2}, {nHarmonics, 0, static_cast<double>(nHarmonics)}}).get();
     }
 
-    gCurrentEventCounter = gEventCounter[mCurrentRunNumber];
-    gCurrentCentroidZNA = gCentroidZNA[mCurrentRunNumber];
-    gCurrentCentroidZNC = gCentroidZNC[mCurrentRunNumber];
-    gCurrentPmcZNA = gPmcZNA[mCurrentRunNumber];
-    gCurrentPm1ZNA = gPm1ZNA[mCurrentRunNumber];
-    gCurrentPm2ZNA = gPm2ZNA[mCurrentRunNumber];
-    gCurrentPm3ZNA = gPm3ZNA[mCurrentRunNumber];
-    gCurrentPm4ZNA = gPm4ZNA[mCurrentRunNumber];
-    gCurrentSumZNA = gSumZNA[mCurrentRunNumber];
-    gCurrentPmcZNC = gPmcZNC[mCurrentRunNumber];
-    gCurrentPm1ZNC = gPm1ZNC[mCurrentRunNumber];
-    gCurrentPm2ZNC = gPm2ZNC[mCurrentRunNumber];
-    gCurrentPm3ZNC = gPm3ZNC[mCurrentRunNumber];
-    gCurrentPm4ZNC = gPm4ZNC[mCurrentRunNumber];
-    gCurrentSumZNC = gSumZNC[mCurrentRunNumber];
-    gCurrentQxVsCentZNA = gQxVsCentZNA[mCurrentRunNumber];
-    gCurrentQyVsCentZNA = gQyVsCentZNA[mCurrentRunNumber];
-    gCurrentQxVsVxZNA = gQxVsVxZNA[mCurrentRunNumber];
-    gCurrentQyVsVxZNA = gQyVsVxZNA[mCurrentRunNumber];
-    gCurrentQxVsVyZNA = gQxVsVyZNA[mCurrentRunNumber];
-    gCurrentQyVsVyZNA = gQyVsVyZNA[mCurrentRunNumber];
-    gCurrentQxVsVzZNA = gQxVsVzZNA[mCurrentRunNumber];
-    gCurrentQyVsVzZNA = gQyVsVzZNA[mCurrentRunNumber];
-    gCurrentQxVsCentZNC = gQxVsCentZNC[mCurrentRunNumber];
-    gCurrentQyVsCentZNC = gQyVsCentZNC[mCurrentRunNumber];
-    gCurrentQxVsVxZNC = gQxVsVxZNC[mCurrentRunNumber];
-    gCurrentQyVsVxZNC = gQyVsVxZNC[mCurrentRunNumber];
-    gCurrentQxVsVyZNC = gQxVsVyZNC[mCurrentRunNumber];
-    gCurrentQyVsVyZNC = gQyVsVyZNC[mCurrentRunNumber];
-    gCurrentQxVsVzZNC = gQxVsVzZNC[mCurrentRunNumber];
-    gCurrentQyVsVzZNC = gQyVsVzZNC[mCurrentRunNumber];
-    gCurrentQxQyVsCent = gQxQyVsCent[mCurrentRunNumber];
-    gCurrentQyQxVsCent = gQyQxVsCent[mCurrentRunNumber];
-    gCurrentQxQxVsCent = gQxQxVsCent[mCurrentRunNumber];
-    gCurrentQyQyVsCent = gQyQyVsCent[mCurrentRunNumber];
+    gCurrentEventCounter = gEventCounter[currentRunNumber];
+    gCurrentCentroidZNA = gCentroidZNA[currentRunNumber];
+    gCurrentCentroidZNC = gCentroidZNC[currentRunNumber];
+    gCurrentPmcZNA = gPmcZNA[currentRunNumber];
+    gCurrentPm1ZNA = gPm1ZNA[currentRunNumber];
+    gCurrentPm2ZNA = gPm2ZNA[currentRunNumber];
+    gCurrentPm3ZNA = gPm3ZNA[currentRunNumber];
+    gCurrentPm4ZNA = gPm4ZNA[currentRunNumber];
+    gCurrentSumZNA = gSumZNA[currentRunNumber];
+    gCurrentPmcZNC = gPmcZNC[currentRunNumber];
+    gCurrentPm1ZNC = gPm1ZNC[currentRunNumber];
+    gCurrentPm2ZNC = gPm2ZNC[currentRunNumber];
+    gCurrentPm3ZNC = gPm3ZNC[currentRunNumber];
+    gCurrentPm4ZNC = gPm4ZNC[currentRunNumber];
+    gCurrentSumZNC = gSumZNC[currentRunNumber];
+    gCurrentQxVsCentZNA = gQxVsCentZNA[currentRunNumber];
+    gCurrentQyVsCentZNA = gQyVsCentZNA[currentRunNumber];
+    gCurrentQxVsVxZNA = gQxVsVxZNA[currentRunNumber];
+    gCurrentQyVsVxZNA = gQyVsVxZNA[currentRunNumber];
+    gCurrentQxVsVyZNA = gQxVsVyZNA[currentRunNumber];
+    gCurrentQyVsVyZNA = gQyVsVyZNA[currentRunNumber];
+    gCurrentQxVsVzZNA = gQxVsVzZNA[currentRunNumber];
+    gCurrentQyVsVzZNA = gQyVsVzZNA[currentRunNumber];
+    gCurrentQxVsCentZNC = gQxVsCentZNC[currentRunNumber];
+    gCurrentQyVsCentZNC = gQyVsCentZNC[currentRunNumber];
+    gCurrentQxVsVxZNC = gQxVsVxZNC[currentRunNumber];
+    gCurrentQyVsVxZNC = gQyVsVxZNC[currentRunNumber];
+    gCurrentQxVsVyZNC = gQxVsVyZNC[currentRunNumber];
+    gCurrentQyVsVyZNC = gQyVsVyZNC[currentRunNumber];
+    gCurrentQxVsVzZNC = gQxVsVzZNC[currentRunNumber];
+    gCurrentQyVsVzZNC = gQyVsVzZNC[currentRunNumber];
+    gCurrentQxQyVsCent = gQxQyVsCent[currentRunNumber];
+    gCurrentQyQxVsCent = gQyQxVsCent[currentRunNumber];
+    gCurrentQxQxVsCent = gQxQxVsCent[currentRunNumber];
+    gCurrentQyQyVsCent = gQyQyVsCent[currentRunNumber];
 
-    gCurrentQxZNA = gQx5DZNA[mCurrentRunNumber];
-    gCurrentQyZNA = gQy5DZNA[mCurrentRunNumber];
-    gCurrentQxZNC = gQx5DZNC[mCurrentRunNumber];
-    gCurrentQyZNC = gQy5DZNC[mCurrentRunNumber];
+    gCurrentQxZNA = gQx5DZNA[currentRunNumber];
+    gCurrentQyZNA = gQy5DZNA[currentRunNumber];
+    gCurrentQxZNC = gQx5DZNC[currentRunNumber];
+    gCurrentQyZNC = gQy5DZNC[currentRunNumber];
 
-    gCurrentPsiZNA = gPsiZNA[mCurrentRunNumber];
-    gCurrentPsiZNC = gPsiZNC[mCurrentRunNumber];
+    gCurrentPsiZNA = gPsiZNA[currentRunNumber];
+    gCurrentPsiZNC = gPsiZNC[currentRunNumber];
 
-    gCurrentVx = gVx[mCurrentRunNumber];
-    gCurrentVy = gVy[mCurrentRunNumber];
+    gCurrentVx = gVx[currentRunNumber];
+    gCurrentVy = gVy[currentRunNumber];
 
-    gCurrentQxVsTimeZNA = gQxVsTimeZNA[mCurrentRunNumber];
-    gCurrentQyVsTimeZNA = gQyVsTimeZNA[mCurrentRunNumber];
-    gCurrentQxVsTimeZNC = gQxVsTimeZNC[mCurrentRunNumber];
-    gCurrentQyVsTimeZNC = gQyVsTimeZNC[mCurrentRunNumber];
+    gCurrentQxVsTimeZNA = gQxVsTimeZNA[currentRunNumber];
+    gCurrentQyVsTimeZNA = gQyVsTimeZNA[currentRunNumber];
+    gCurrentQxVsTimeZNC = gQxVsTimeZNC[currentRunNumber];
+    gCurrentQyVsTimeZNC = gQyVsTimeZNC[currentRunNumber];
 
-    gCurrentShiftProfileZNA = gShiftProfileZNA[mCurrentRunNumber];
-    gCurrentShiftProfileZNC = gShiftProfileZNC[mCurrentRunNumber];
+    gCurrentShiftProfileZNA = gShiftProfileZNA[currentRunNumber];
+    gCurrentShiftProfileZNC = gShiftProfileZNC[currentRunNumber];
   }
 
   // Optimized method to load ALL calibrations for the new run at once
@@ -544,18 +542,21 @@ struct ZdcExtraTableReader {
     clearCache();
 
     // Vertex Calibration
-    if (ifBeamSpotCorrection) {
+    if (applyBeamSpotCorrection) {
       std::string folder = Form("%s/step0", qRecenteringCcdb.value.c_str());
       auto* lst = ccdb->getForRun<TList>(folder, run);
       if (lst) {
         hMeanVx = safeClone<TH1>(lst->FindObject("hMeanVx"));
         hMeanVy = safeClone<TH1>(lst->FindObject("hMeanVy"));
+      } else
+      {
+        LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folder.c_str());
       }
     }
 
     // Step Calibrations
     std::size_t targetSteps = (calibrationStep > 0) ? static_cast<std::size_t>(calibrationStep.value) : 0;
-    mCalibCache.resize(targetSteps);
+    calibCache.resize(targetSteps);
 
     for (std::size_t stepIdx = 0; stepIdx < targetSteps; ++stepIdx) {
       int step = static_cast<int>(stepIdx + 1);
@@ -563,43 +564,52 @@ struct ZdcExtraTableReader {
       // Load 5D (Base)
       std::string folderBase = Form("%s/step%d_base", qRecenteringCcdb.value.c_str(), step);
       auto* lstBase = ccdb->getForRun<TList>(folderBase, run);
-      if (lstBase) {
-        mCalibCache[stepIdx].hMeanQxZNA = safeClone<THn>(lstBase->FindObject("hMeanQxZNA"));
-        mCalibCache[stepIdx].hMeanQyZNA = safeClone<THn>(lstBase->FindObject("hMeanQyZNA"));
-        mCalibCache[stepIdx].hMeanQxZNC = safeClone<THn>(lstBase->FindObject("hMeanQxZNC"));
-        mCalibCache[stepIdx].hMeanQyZNC = safeClone<THn>(lstBase->FindObject("hMeanQyZNC"));
+
+      if (!lstBase) {
+        LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folderBase.c_str());
+        continue;
       }
 
+      calibCache[stepIdx].hMeanQxZNA = safeClone<THn>(lstBase->FindObject("hMeanQxZNA"));
+      calibCache[stepIdx].hMeanQyZNA = safeClone<THn>(lstBase->FindObject("hMeanQyZNA"));
+      calibCache[stepIdx].hMeanQxZNC = safeClone<THn>(lstBase->FindObject("hMeanQxZNC"));
+      calibCache[stepIdx].hMeanQyZNC = safeClone<THn>(lstBase->FindObject("hMeanQyZNC"));
+      
+
       // Load 1D (Refine)
-      if ((step != calibrationStep) || ifFineCalibration) {
+      if ((step != calibrationStep) || isFineCalibrationStep) {
         std::string folderRefine = Form("%s/step%d_refine", qRecenteringCcdb.value.c_str(), step);
         auto* lstRefine = ccdb->getForRun<TList>(folderRefine, run);
-        if (lstRefine) {
-          mCalibCache[stepIdx].hMeanQxCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxCentZNA"));
-          mCalibCache[stepIdx].hMeanQyCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyCentZNA"));
-          mCalibCache[stepIdx].hMeanQxCentZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxCentZNC"));
-          mCalibCache[stepIdx].hMeanQyCentZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyCentZNC"));
 
-          mCalibCache[stepIdx].hMeanQxVzZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxVzZNA"));
-          mCalibCache[stepIdx].hMeanQyVzZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyVzZNA"));
-          mCalibCache[stepIdx].hMeanQxVzZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxVzZNC"));
-          mCalibCache[stepIdx].hMeanQyVzZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyVzZNC"));
-
-          mCalibCache[stepIdx].hMeanQxVxZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxVxZNA"));
-          mCalibCache[stepIdx].hMeanQyVxZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyVxZNA"));
-          mCalibCache[stepIdx].hMeanQxVxZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxVxZNC"));
-          mCalibCache[stepIdx].hMeanQyVxZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyVxZNC"));
-
-          mCalibCache[stepIdx].hMeanQxVyZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxVyZNA"));
-          mCalibCache[stepIdx].hMeanQyVyZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyVyZNA"));
-          mCalibCache[stepIdx].hMeanQxVyZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxVyZNC"));
-          mCalibCache[stepIdx].hMeanQyVyZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyVyZNC"));
+        if (!lstRefine) {
+          LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folderRefine.c_str());
+          continue;
         }
+
+        calibCache[stepIdx].hMeanQxCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxCentZNA"));
+        calibCache[stepIdx].hMeanQyCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyCentZNA"));
+        calibCache[stepIdx].hMeanQxCentZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxCentZNC"));
+        calibCache[stepIdx].hMeanQyCentZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyCentZNC"));
+
+        calibCache[stepIdx].hMeanQxVzZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxVzZNA"));
+        calibCache[stepIdx].hMeanQyVzZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyVzZNA"));
+        calibCache[stepIdx].hMeanQxVzZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxVzZNC"));
+        calibCache[stepIdx].hMeanQyVzZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyVzZNC"));
+
+        calibCache[stepIdx].hMeanQxVxZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxVxZNA"));
+        calibCache[stepIdx].hMeanQyVxZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyVxZNA"));
+        calibCache[stepIdx].hMeanQxVxZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxVxZNC"));
+        calibCache[stepIdx].hMeanQyVxZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyVxZNC"));
+
+        calibCache[stepIdx].hMeanQxVyZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxVyZNA"));
+        calibCache[stepIdx].hMeanQyVyZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQyVyZNA"));
+        calibCache[stepIdx].hMeanQxVyZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQxVyZNC"));
+        calibCache[stepIdx].hMeanQyVyZNC = safeClone<TH1>(lstRefine->FindObject("hMeanQyVyZNC"));
       }
     } // end of step loop
 
-    if (ifShiftCorrection) {
-      std::string folder = Form("%s/psiShift", qRecenteringCcdb.value.c_str());
+    if (applyShiftCorrection) {
+      std::string folder = Form("%s/psiHarm", qRecenteringCcdb.value.c_str());
 
       LOGF(info, "ZDC Analysis: Loading Shift Correction from %s for run %d", folder.c_str(), run);
 
@@ -612,20 +622,20 @@ struct ZdcExtraTableReader {
       }
 
       // Important: Object names must match exactly what was saved
-      mShiftProfileZNA = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNA"));
-      mShiftProfileZNC = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNC"));
+      shiftProfileZNA = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNA"));
+      shiftProfileZNC = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNC"));
 
-      if (mShiftProfileZNA) {
-        mShiftProfileZNA->SetDirectory(nullptr); // Detach from file
-        //  LOGF(info, "  >> ShiftProfileZNA found! Entries: %.0f, Mean: %f", mShiftProfileZNA->GetEntries(), mShiftProfileZNA->GetMean());
+      if (shiftProfileZNA) {
+        shiftProfileZNA->SetDirectory(nullptr); // Detach from file
+        //  LOGF(info, "  >> ShiftProfileZNA found! Entries: %.0f, Mean: %f", shiftProfileZNA->GetEntries(), shiftProfileZNA->GetMean());
       } else {
         LOGF(error, "  >> ShiftProfileZNA NOT found in TList! Content follows:");
         lst->Print();
       }
 
-      if (mShiftProfileZNC) {
-        mShiftProfileZNC->SetDirectory(nullptr);
-        // LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", mShiftProfileZNC->GetEntries());
+      if (shiftProfileZNC) {
+        shiftProfileZNC->SetDirectory(nullptr);
+        // LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", shiftProfileZNC->GetEntries());
       } else {
         LOGF(error, "  >> ShiftProfileZNC NOT found in TList!");
       }
@@ -653,28 +663,28 @@ struct ZdcExtraTableReader {
 
     // Apply event selection
 
-    if (ifSel8 && !TESTBIT(zdc.selectionBits(), Sel8)) {
+    if (applySel8 && !TESTBIT(zdc.selectionBits(), Sel8)) {
       return;
     }
-    if (ifZVtxCut && !TESTBIT(zdc.selectionBits(), ZVtxCut)) {
+    if (applyZVtxCut && !TESTBIT(zdc.selectionBits(), ZVtxCut)) {
       return;
     }
-    if (ifOccupancyCut && !TESTBIT(zdc.selectionBits(), OccupancyCut)) {
+    if (applyOccupancyCut && !TESTBIT(zdc.selectionBits(), OccupancyCut)) {
       return;
     }
-    if (ifNoSameBunchPileup && !TESTBIT(zdc.selectionBits(), NoSameBunchPileup)) {
+    if (selectNoSameBunchPileupEvents && !TESTBIT(zdc.selectionBits(), NoSameBunchPileup)) {
       return;
     }
-    if (ifIsGoodZvtxFT0vsPV && !TESTBIT(zdc.selectionBits(), IsGoodZvtxFT0vsPV)) {
+    if (selectGoodZvtxFT0vsPV && !TESTBIT(zdc.selectionBits(), IsGoodZvtxFT0vsPV)) {
       return;
     }
-    if (ifNoCollInTimeRangeStandard && !TESTBIT(zdc.selectionBits(), NoCollInTimeRangeStandard)) {
+    if (applyNoCollInTimeRangeStandard && !TESTBIT(zdc.selectionBits(), NoCollInTimeRangeStandard)) {
       return;
     }
-    if (ifIsVertexITSTPC && !TESTBIT(zdc.selectionBits(), IsVertexITSTPC)) {
+    if (selectVertexITSTPC && !TESTBIT(zdc.selectionBits(), IsVertexITSTPC)) {
       return;
     }
-    if (ifIsGoodITSLayersAll && !TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll)) {
+    if (selectGoodITSLayersAll && !TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll)) {
       return;
     }
 
@@ -687,24 +697,24 @@ struct ZdcExtraTableReader {
     //  LOGF(info, "vtxITSTPC  = %d", TESTBIT(zdc.selectionBits(), IsVertexITSTPC));
     //  LOGF(info, "ITS layers = %d", TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll));
 
-    const int mRunNumber = zdc.runNumber();
+    const int runNumber = zdc.runNumber();
 
     const uint64_t timestamp = zdc.timestamp(); // in milliseconds
 
     // Convert timestamp to hours from run start (approximate)
     // Store first timestamp of run to calculate relative time
     static std::unordered_map<int, uint64_t> runStartTime;
-    if (!runStartTime.contains(mRunNumber)) {
-      runStartTime[mRunNumber] = timestamp;
+    if (!runStartTime.contains(runNumber)) {
+      runStartTime[runNumber] = timestamp;
     }
 
-    double timeInMinutes = (timestamp - runStartTime[mRunNumber]) / 60000.0; // ms -> minutes
+    double timeInMinutes = (timestamp - runStartTime[runNumber]) / 60000.0; // ms -> minutes
 
     // Initialization block if Run Number changes
-    if (mRunNumber != mCurrentRunNumber) {
-      initHistos(mRunNumber);       // Init output histograms
-      loadCalibrations(mRunNumber); // Load all steps from CCDB once
-      mCurrentRunNumber = mRunNumber;
+    if (runNumber != currentRunNumber) {
+      initHistos(runNumber);       // Init output histograms
+      loadCalibrations(runNumber); // Load all steps from CCDB once
+      currentRunNumber = runNumber;
     }
 
     histos.fill(HIST("eventCounter"), 0.5);
@@ -723,11 +733,11 @@ struct ZdcExtraTableReader {
     double tdcZNC = zdc.zncTdc();
     double tdcZNA = zdc.znaTdc();
 
-    if (tdcCut) { // TDC window is set
-      if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
+    if (applyTdcCut) { // TDC window is set
+      if ((tdcZNC >= tdcZnMin) && (tdcZNC <= tdcZnMax)) {
         isZNChit = true;
       }
-      if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut)) {
+      if ((tdcZNA >= tdcZnMin) && (tdcZNA <= tdcZnMax)) {
         isZNAhit = true;
       }
     } else { // if no window on TDC is set
@@ -748,14 +758,14 @@ struct ZdcExtraTableReader {
     if (isZNAhit) {
       int activeTowersZNA = (zdc.znaTow1() > 0.) + (zdc.znaTow2() > 0.) + (zdc.znaTow3() > 0.) + (zdc.znaTow4() > 0.);
       float znaSum = zdc.znaTow1() + zdc.znaTow2() + zdc.znaTow3() + zdc.znaTow4();
-      if (activeTowersZNA >= nTowersFired && znaSum > 0 && zdc.znaQx() < QvectorMaxValue)
+      if (activeTowersZNA >= minNTowersFired && znaSum > 0 && zdc.znaQx() < QvectorMaxValue)
         isZNASpDeterminable = true;
     }
 
     if (isZNChit) {
       int activeTowersZNC = (zdc.zncTow1() > 0.) + (zdc.zncTow2() > 0.) + (zdc.zncTow3() > 0.) + (zdc.zncTow4() > 0.);
       float zncSum = zdc.zncTow1() + zdc.zncTow2() + zdc.zncTow3() + zdc.zncTow4();
-      if (activeTowersZNC >= nTowersFired && zncSum > 0 && zdc.zncQx() < QvectorMaxValue)
+      if (activeTowersZNC >= minNTowersFired && zncSum > 0 && zdc.zncQx() < QvectorMaxValue)
         isZNCSpDeterminable = true;
     }
 
@@ -795,7 +805,7 @@ struct ZdcExtraTableReader {
     //   double vx_corrected = vx;
     // double vy_corrected = vy;
 
-    if (ifBeamSpotCorrection) {
+    if (applyBeamSpotCorrection) {
       // Use cached vertex pointers
       if (hMeanVx && hMeanVy) {
         vx -= hMeanVx->GetBinContent(1);
@@ -816,10 +826,10 @@ struct ZdcExtraTableReader {
 
         int cacheIdx = step - 1;
         // Check if index is valid within cached vector
-        if (cacheIdx >= static_cast<int>(mCalibCache.size()))
+        if (cacheIdx >= static_cast<int>(calibCache.size()))
           continue;
 
-        const auto& calib = mCalibCache[cacheIdx];
+        const auto& calib = calibCache[cacheIdx];
 
         // Apply 5D Base calibration
         if (calib.hMeanQxZNA && calib.hMeanQyZNA) {
@@ -827,7 +837,7 @@ struct ZdcExtraTableReader {
           qyZNArec -= getMeanQFromMap(calib.hMeanQyZNA, cent, vx, vy, vz);
         }
 
-        if ((step != calibrationStep) || ifFineCalibration) {
+        if ((step != calibrationStep) || isFineCalibrationStep) {
           // Apply 1D Refine calibration
           qxZNArec -= getMeanQ1D(calib.hMeanQxCentZNA, cent);
           qyZNArec -= getMeanQ1D(calib.hMeanQyCentZNA, cent);
@@ -871,27 +881,27 @@ struct ZdcExtraTableReader {
 
       // Apply Correction (Read Mode)
       // Checks if correction is enabled AND if the map from CCDB was loaded successfully
-      if (ifShiftCorrection && mShiftProfileZNA) {
+      if (applyShiftCorrection && shiftProfileZNA) {
         double deltaPsi = 0.0;
 
         // Loop over harmonics (usually 1 to 10)
-        for (int ishift = 1; ishift <= nShift; ishift++) {
+        for (int iHarm = 1; iHarm <= nHarmonics; iHarm++) {
           // Retrieve coefficients from TProfile3D
           // Axis mapping:
           // X: Centrality
           // Y: Type (0.5 for Sin, 1.5 for Cos)
-          // Z: Harmonic index (ishift - 0.5 maps to bin 1, 2, etc.)
+          // Z: Harmonic index (iHarm - 0.5 maps to bin 1, 2, etc.)
 
-          int binSin = mShiftProfileZNA->FindFixBin(cent, 0.5, static_cast<double>(ishift) - 0.5);
-          int binCos = mShiftProfileZNA->FindFixBin(cent, 1.5, static_cast<double>(ishift) - 0.5);
+          int binSin = shiftProfileZNA->FindFixBin(cent, 0.5, static_cast<double>(iHarm) - 0.5);
+          int binCos = shiftProfileZNA->FindFixBin(cent, 1.5, static_cast<double>(iHarm) - 0.5);
 
-          double coeffSin = mShiftProfileZNA->GetBinContent(binSin);
-          double coeffCos = mShiftProfileZNA->GetBinContent(binCos);
+          double coeffSin = shiftProfileZNA->GetBinContent(binSin);
+          double coeffCos = shiftProfileZNA->GetBinContent(binCos);
 
           // Fourier flattening formula:
           // DeltaPsi = sum( (2/k) * ( <cos>*sin(k*psi) - <sin>*cos(k*psi) ) )
           // Note: signs depend on definition, this matches the standard correction logic
-          deltaPsi += (2.0 / ishift) * (-coeffSin * TMath::Cos(ishift * psiZNA) + coeffCos * TMath::Sin(ishift * psiZNA));
+          deltaPsi += (2.0 / iHarm) * (-coeffSin * TMath::Cos(iHarm * psiZNA) + coeffCos * TMath::Sin(iHarm * psiZNA));
         }
 
         // DEBUG: Print only if shift is actually happening for first few events
@@ -914,11 +924,11 @@ struct ZdcExtraTableReader {
       // Fill Shift Profiles (Write Mode)
       // Used to generate calibration for the next step or to verify correction (QA)
       if (fillShiftHistos && gCurrentShiftProfileZNA) {
-        for (int ishift = 1; ishift <= nShift; ishift++) {
+        for (int iHarm = 1; iHarm <= nHarmonics; iHarm++) {
           // Fill Sin component (Y = 0.5)
-          gCurrentShiftProfileZNA->Fill(cent, 0.5, static_cast<double>(ishift) - 0.5, TMath::Sin(ishift * psiZNA));
+          gCurrentShiftProfileZNA->Fill(cent, 0.5, static_cast<double>(iHarm) - 0.5, TMath::Sin(iHarm * psiZNA));
           // Fill Cos component (Y = 1.5)
-          gCurrentShiftProfileZNA->Fill(cent, 1.5, static_cast<double>(ishift) - 0.5, TMath::Cos(ishift * psiZNA));
+          gCurrentShiftProfileZNA->Fill(cent, 1.5, static_cast<double>(iHarm) - 0.5, TMath::Cos(iHarm * psiZNA));
         }
       }
 
@@ -940,12 +950,12 @@ struct ZdcExtraTableReader {
       for (int step = 1; step <= calibrationStep; step++) {
 
         int cacheIdx = step - 1;
-        if (cacheIdx >= static_cast<int>(mCalibCache.size()))
+        if (cacheIdx >= static_cast<int>(calibCache.size()))
           continue;
 
         //     LOGF(info, "Go to step = %d", step);
 
-        const auto& calib = mCalibCache[cacheIdx];
+        const auto& calib = calibCache[cacheIdx];
 
         // Apply 5D Base calibration
         if (calib.hMeanQxZNC && calib.hMeanQyZNC) {
@@ -956,7 +966,7 @@ struct ZdcExtraTableReader {
           //  LOGF(info, "Qx after base calibration step %d = %f", step, qxZNCrec);
         }
 
-        if ((step != calibrationStep) || ifFineCalibration) {
+        if ((step != calibrationStep) || isFineCalibrationStep) {
 
           // Apply 1D Refine calibration
           qxZNCrec -= getMeanQ1D(calib.hMeanQxCentZNC, cent);
@@ -1005,27 +1015,27 @@ struct ZdcExtraTableReader {
 
       // Apply Correction (Read Mode)
       // Checks if correction is enabled AND if the map from CCDB was loaded successfully
-      if (ifShiftCorrection && mShiftProfileZNC) {
+      if (applyShiftCorrection && shiftProfileZNC) {
         double deltaPsi = 0.0;
 
         // Loop over harmonics (usually 1 to 10)
-        for (int ishift = 1; ishift <= nShift; ishift++) {
+        for (int iHarm = 1; iHarm <= nHarmonics; iHarm++) {
           // Retrieve coefficients from TProfile3D
           // Axis mapping:
           // X: Centrality
           // Y: Type (0.5 for Sin, 1.5 for Cos)
-          // Z: Harmonic index (ishift - 0.5 maps to bin 1, 2, etc.)
+          // Z: Harmonic index (iHarm - 0.5 maps to bin 1, 2, etc.)
 
-          int binSin = mShiftProfileZNC->FindFixBin(cent, 0.5, static_cast<double>(ishift) - 0.5);
-          int binCos = mShiftProfileZNC->FindFixBin(cent, 1.5, static_cast<double>(ishift) - 0.5);
+          int binSin = shiftProfileZNC->FindFixBin(cent, 0.5, static_cast<double>(iHarm) - 0.5);
+          int binCos = shiftProfileZNC->FindFixBin(cent, 1.5, static_cast<double>(iHarm) - 0.5);
 
-          double coeffSin = mShiftProfileZNC->GetBinContent(binSin);
-          double coeffCos = mShiftProfileZNC->GetBinContent(binCos);
+          double coeffSin = shiftProfileZNC->GetBinContent(binSin);
+          double coeffCos = shiftProfileZNC->GetBinContent(binCos);
 
           // Fourier flattening formula:
           // DeltaPsi = sum( (2/k) * ( <cos>*sin(k*psi) - <sin>*cos(k*psi) ) )
           // Note: signs depend on definition, this matches the standard correction logic
-          deltaPsi += (2.0 / ishift) * (-coeffSin * TMath::Cos(ishift * psiZNC) + coeffCos * TMath::Sin(ishift * psiZNC));
+          deltaPsi += (2.0 / iHarm) * (-coeffSin * TMath::Cos(iHarm * psiZNC) + coeffCos * TMath::Sin(iHarm * psiZNC));
         }
 
         // Apply the calculated shift
@@ -1038,11 +1048,11 @@ struct ZdcExtraTableReader {
       // Fill Shift Profiles (Write Mode)
       // Used to generate calibration for the next step or to verify correction (QA)
       if (fillShiftHistos && gCurrentShiftProfileZNC) {
-        for (int ishift = 1; ishift <= nShift; ishift++) {
+        for (int iHarm = 1; iHarm <= nHarmonics; iHarm++) {
           // Fill Sin component (Y = 0.5)
-          gCurrentShiftProfileZNC->Fill(cent, 0.5, static_cast<double>(ishift) - 0.5, TMath::Sin(ishift * psiZNC));
+          gCurrentShiftProfileZNC->Fill(cent, 0.5, static_cast<double>(iHarm) - 0.5, TMath::Sin(iHarm * psiZNC));
           // Fill Cos component (Y = 1.5)
-          gCurrentShiftProfileZNC->Fill(cent, 1.5, static_cast<double>(ishift) - 0.5, TMath::Cos(ishift * psiZNC));
+          gCurrentShiftProfileZNC->Fill(cent, 1.5, static_cast<double>(iHarm) - 0.5, TMath::Cos(iHarm * psiZNC));
         }
       }
 
