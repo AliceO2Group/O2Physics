@@ -13,6 +13,7 @@
 /// \brief  Delta(1232) resonance analysis via proton-pion invariant mass reconstruction with advance PID and background rejection cuts
 /// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -78,6 +79,10 @@ struct DeltaAnalysis {
 
   // FIX name/configurable: single space between type and name; member name == JSON key; lowerCamelCase
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted |z-vertex| range [cm]"};
+
+  Configurable<bool> cfgUseNoSameBunchPileupCut{"cfgUseNoSameBunchPileupCut", false, "Apply kNoSameBunchPileup event selection"};
+
+  Configurable<bool> cfgUseGoodZvtxFT0vsPVCut{"cfgUseGoodZvtxFT0vsPVCut", false, "Apply kIsGoodZvtxFT0vsPV event selection"};
   Configurable<bool> applyOccupancyInTimeRangeCut{"applyOccupancyInTimeRangeCut", false, "Apply occupancy-in-time-range cut"};
   Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", 0, "Minimum track occupancy in time range"};
   Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 9999, "Maximum track occupancy in time range"};
@@ -103,6 +108,7 @@ struct DeltaAnalysis {
   Configurable<bool> requirePrimaryTrack{"requirePrimaryTrack", true, "Require isPrimaryTrack flag"};
   Configurable<bool> requireGlobalTrackNoDCA{"requireGlobalTrackNoDCA", true, "Require isGlobalTrackWoDCA flag"};
   Configurable<bool> requirePVContributor{"requirePVContributor", true, "Require PV-contributor flag"};
+  Configurable<float> cfgLowPtTofNsigmaCut{"cfgLowPtTofNsigmaCut", 3.0f, "Low pt nSigma TOF cut for selecting pions and protons"};
 
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 0.1f, "Maximum |DCAz| for all tracks [cm]"};
   Configurable<std::vector<float>> protonDCAPtBinEdges{"protonDCAPtBinEdges", {0.0f, 0.5f, 1.0f, 2.0f, 1000.f}, "Proton pT bin edges for DCAxy cut [GeV/c]"};
@@ -113,6 +119,7 @@ struct DeltaAnalysis {
   Configurable<bool> useTPCOnlyPID{"useTPCOnlyPID", false, "Use TPC-only PID (ignore TOF even if present)"};
   Configurable<bool> requireTOFForProton{"requireTOFForProton", false, "Require TOF signal for proton candidates"};
   Configurable<bool> requireTOFForPion{"requireTOFForPion", false, "Require TOF signal for pion candidates"};
+  Configurable<bool> applyTOFCutWhenAvailableBelowThreshold{"applyTOFCutWhenAvailableBelowThreshold", false, "Apply TOF PID only when TOF information exists below momentum threshold"};
 
   Configurable<float> minProtonMomentum{"minProtonMomentum", 0.f, "Minimum proton momentum for TOF PID [GeV/c]"};
   Configurable<float> minTPCNSigmaProton{"minTPCNSigmaProton", -6.0f, "Minimum (lower bound) TPC nSigma for proton"};
@@ -198,7 +205,7 @@ struct DeltaAnalysis {
     mPionMaxDCAxy = pionMaxDCAxyPerPtBin.value;
 
     const AxisSpec ptAxis{200, 0., 10., "p_{T} (GeV/c)"};
-    const AxisSpec massAxis{numberOfInvMassBins, 0.8, 1.8, "M_{inv} (GeV/#it{c}^{2})"};
+    const AxisSpec massAxis{numberOfInvMassBins, 1.0, 8.0, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{cfgCentAxis, "Centrality (%)"};
     const AxisSpec vtxAxis{cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{cfgRapAxis, "Rapidity y"};
@@ -367,6 +374,7 @@ struct DeltaAnalysis {
     }
   }
 
+  // passesEventSelection with optional EventSelection cuts
   template <typename CollisionType>
   bool passesEventSelection(CollisionType const& collision)
   {
@@ -382,6 +390,16 @@ struct DeltaAnalysis {
     const float cent = getCentrality(collision);
     if (cent < cfgCentMin || cent > cfgCentMax)
       return false;
+
+    if (cfgUseNoSameBunchPileupCut &&
+        !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+
+    if (cfgUseGoodZvtxFT0vsPVCut &&
+        !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
     return true;
   }
 
@@ -480,19 +498,32 @@ struct DeltaAnalysis {
           tofPassed = true;
         }
       }
+      // ── Part 2: low-momentum region with TOF available ──────────────────
       if (totalMomentum < minProtonMomentum && tpcNSigPr < static_cast<float>(maxTPCNSigmaProton)) {
         tpcPassed = true;
-        tofPassed = true;
+        if (applyTOFCutWhenAvailableBelowThreshold) {
+          // TOF is available (track.hasTOF() is true in this branch): require TOF nSigma
+          tofPassed = (tofNSigPr < cfgLowPtTofNsigmaCut);
+        } else {
+          tofPassed = true;
+        }
       }
     } else {
-      tofPassed = true;
-      if (track.tpcNSigmaPr() < minTPCNSigmaProton)
-        return false;
-      for (int i = 0; i < nTPCBins - 1; ++i) {
-        if (totalMomentum >= mProtonTPCMomBins[i] && totalMomentum < mProtonTPCMomBins[i + 1] &&
-            tpcNSigPr < mProtonTPCNSigCuts[i] && tpcNSigPi > tpcNSigmaVetoThreshold) {
-          tpcPassed = true;
-          break;
+      // No TOF available (or useTPCOnlyPID == true)
+      if (totalMomentum < minProtonMomentum && tpcNSigPr < static_cast<float>(maxTPCNSigmaProton)) {
+        // ── Part 2: low-momentum, no TOF → TPC-only regardless of configurable ──
+        tpcPassed = true;
+        tofPassed = true;
+      } else {
+        tofPassed = true;
+        if (track.tpcNSigmaPr() < minTPCNSigmaProton)
+          return false;
+        for (int i = 0; i < nTPCBins - 1; ++i) {
+          if (totalMomentum >= mProtonTPCMomBins[i] && totalMomentum < mProtonTPCMomBins[i + 1] &&
+              tpcNSigPr < mProtonTPCNSigCuts[i] && tpcNSigPi > tpcNSigmaVetoThreshold) {
+            tpcPassed = true;
+            break;
+          }
         }
       }
     }
@@ -535,19 +566,32 @@ struct DeltaAnalysis {
           tofPassed = true;
         }
       }
+      // ── Part 2: low-momentum region with TOF available ──────────────────
       if (totalMomentum < minPionMomentum && tpcNSigPi < static_cast<float>(maxTPCNSigmaPion)) {
         tpcPassed = true;
-        tofPassed = true;
+        if (applyTOFCutWhenAvailableBelowThreshold) {
+          // TOF is available (track.hasTOF() is true in this branch): require TOF nSigma
+          tofPassed = (tofNSigPi < cfgLowPtTofNsigmaCut);
+        } else {
+          tofPassed = true;
+        }
       }
     } else {
-      tofPassed = true;
-      if (track.tpcNSigmaPi() < minTPCNSigmaPion)
-        return false;
-      for (int i = 0; i < nTPCBins - 1; ++i) {
-        if (totalMomentum >= mPionTPCMomBins[i] && totalMomentum < mPionTPCMomBins[i + 1] &&
-            tpcNSigPi < mPionTPCNSigCuts[i] && tpcNSigPr > tpcNSigmaVetoThreshold) {
-          tpcPassed = true;
-          break;
+      // No TOF available (or useTPCOnlyPID == true)
+      if (totalMomentum < minPionMomentum && tpcNSigPi < static_cast<float>(maxTPCNSigmaPion)) {
+        // ── Part 2: low-momentum, no TOF → TPC-only regardless of configurable ──
+        tpcPassed = true;
+        tofPassed = true;
+      } else {
+        tofPassed = true;
+        if (track.tpcNSigmaPi() < minTPCNSigmaPion)
+          return false;
+        for (int i = 0; i < nTPCBins - 1; ++i) {
+          if (totalMomentum >= mPionTPCMomBins[i] && totalMomentum < mPionTPCMomBins[i + 1] &&
+              tpcNSigPi < mPionTPCNSigCuts[i] && tpcNSigPr > tpcNSigmaVetoThreshold) {
+            tpcPassed = true;
+            break;
+          }
         }
       }
     }
@@ -961,7 +1005,7 @@ struct DeltaAnalysis {
     constexpr float kGenCentrality = 1.f;
 
     for (auto const& collision : collisions) {
-      if (!collision.sel8() || std::abs(collision.posZ()) > cfgCutVertex)
+      if (!passesEventSelection(collision))
         continue;
       const float centrality = getCentrality(collision);
       histos.fill(HIST("Event/hNcontributor"), collision.numContrib());
