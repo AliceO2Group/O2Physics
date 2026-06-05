@@ -1476,19 +1476,22 @@ struct AnalysisSameEventPairing {
               // change define histname
               Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
-              Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName()),
-              Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName())};
-            histNames += Form("%s;%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data(), names[3].Data());
+              Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
             names.push_back(Form("PairsBarrelSEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
             names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
             names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            histNames += Form("%s;%s;%s;%s;", names[4].Data(), names[5].Data(), names[6].Data(), names[7].Data());
+            histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+            if (fConfigTRPairs) {
+              names.push_back(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;", names[6].Data(), names[7].Data());
+            }
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[8].Data(), names[9].Data(), names[10].Data());
+              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 8 : 6)].Data(), names[(fConfigTRPairs ? 9 : 7)].Data(), names[(fConfigTRPairs ? 10 : 8)].Data());
             }
             fTrackHistNames[icut] = names;
 
