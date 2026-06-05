@@ -117,6 +117,7 @@ struct LongrangeMaker {
     Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, "Enable NoCollInRofStrict cut"};
     Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
     Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
+    Configurable<bool> isApplyMultNTracksPV{"isApplyMultNTracksPV", false, "Multiplicity based on MultNTracksPV"};
     Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
     Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
     Configurable<bool> isApplyOccuSelection{"isApplyOccuSelection", false, "Enable occupancy selection"};
@@ -1140,6 +1141,9 @@ struct LongrangeMaker {
   float selColCent(CheckColCent const& col)
   {
     auto cent = -1;
+    if (cfgevtsel.isApplyMultNTracksPV) {
+      cent = col.multNTracksPV();
+    }
     if (cfgevtsel.isApplyCentFT0C) {
       cent = col.centFT0C();
     }
