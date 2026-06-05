@@ -207,6 +207,24 @@ float getPullR(T1 const& mftprop, T2 const& mchprop)
 }
 
 template <typename T1, typename T2>
+float getPullPt(T1 const& mftprop, T2 const& mchprop)
+{
+  double invPtMFT = std::abs(mftprop.getInvQPt());
+  double ptMFT = (invPtMFT != 0) ? 1.0 / invPtMFT : 0;
+  double invPtErr2MFT = mftprop.getCovariances()(4, 4);
+  double ptErr2MFT = invPtErr2MFT * ptMFT * ptMFT * ptMFT * ptMFT;
+
+  double invPtMCH = std::abs(mchprop.getInvQPt());
+  double ptMCH = (invPtMCH != 0) ? 1.0 / invPtMCH : 0;
+  double invPtErr2MCH = mchprop.getCovariances()(4, 4);
+  double ptErr2MCH = invPtErr2MCH * ptMCH * ptMCH * ptMCH * ptMCH;
+
+  float delta = ptMCH - ptMFT;
+  float err = std::sqrt(ptErr2MCH + ptErr2MFT);
+  return (err > 0 ? delta / err : 0);
+}
+
+template <typename T1, typename T2>
 float getDeltaDirection(T1 const& mftprop, T2 const& mchprop)
 {
   double cos2 = std::cos(mchprop.getPhi()) * std::cos(mftprop.getPhi());
@@ -317,7 +335,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_FEATURE(pullPhi, getPull(mftprop.getPhi(), mftprop.getCovariances()(2, 2), mchprop.getPhi(), mchprop.getCovariances()(2, 2)));
       CHECK_AND_FILL_FEATURE(pullTgl, getPull(mftprop.getTgl(), mftprop.getCovariances()(3, 3), mchprop.getTgl(), mchprop.getCovariances()(3, 3)));
       /*dummy value*/ CHECK_AND_FILL_FEATURE(pullEta, 0);
-      /*dummy value*/ CHECK_AND_FILL_FEATURE(pullPt, 0);
+      CHECK_AND_FILL_FEATURE(pullPt, getPullPt(mftprop, mchprop));
       CHECK_AND_FILL_FEATURE(pullR, getPullR(mftprop, mchprop));
       // primary vertex parameters
       CHECK_AND_FILL_FEATURE(posX, collision.posX());
@@ -342,7 +360,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_FEATURE(chi2MCHMFT, muon.chi2MatchMCHMFT());
       CHECK_AND_FILL_FEATURE(chi2GlobMUON, muon.chi2());
       CHECK_AND_FILL_FEATURE_OPTIONAL(dcaX, muon, fwdDcaX);
-      CHECK_AND_FILL_FEATURE_OPTIONAL(dcaY, muon, fwdDcaX);
+      CHECK_AND_FILL_FEATURE_OPTIONAL(dcaY, muon, fwdDcaY);
       CHECK_AND_FILL_FEATURE_OPTIONAL(isAmbig, muon, compatibleCollIds, (muon.compatibleCollIds().size() == 1) ? 0 : 1);
     }
     return inputFeature;
