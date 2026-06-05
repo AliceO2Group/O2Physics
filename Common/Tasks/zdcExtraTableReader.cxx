@@ -36,7 +36,6 @@
 #include <TH2.h>
 #include <THn.h>
 #include <TList.h>
-#include <TMath.h>
 #include <TProfile3D.h>
 
 #include <Rtypes.h>
@@ -874,7 +873,7 @@ struct ZdcExtraTableReader {
       }
 
       //  Calculate raw/recentered angle
-      double psiZNA = TMath::ATan2(qyZNArec, qxZNArec);
+      double psiZNA = std::atan2(qyZNArec, qxZNArec);
 
       // Apply Correction (Read Mode)
       // Checks if correction is enabled AND if the map from CCDB was loaded successfully
@@ -898,7 +897,7 @@ struct ZdcExtraTableReader {
           // Fourier flattening formula:
           // DeltaPsi = sum( (2/k) * ( <cos>*sin(k*psi) - <sin>*cos(k*psi) ) )
           // Note: signs depend on definition, this matches the standard correction logic
-          deltaPsi += (2.0 / iHarm) * (-coeffSin * TMath::Cos(iHarm * psiZNA) + coeffCos * TMath::Sin(iHarm * psiZNA));
+          deltaPsi += (2.0 / iHarm) * (-coeffSin * std::cos(iHarm * psiZNA) + coeffCos * std::sin(iHarm * psiZNA));
         }
 
         // DEBUG: Print only if shift is actually happening for first few events
@@ -923,9 +922,9 @@ struct ZdcExtraTableReader {
       if (fillShiftHistos && gCurrentShiftProfileZNA) {
         for (int iHarm = 1; iHarm <= nHarmonics; iHarm++) {
           // Fill Sin component (Y = 0.5)
-          gCurrentShiftProfileZNA->Fill(cent, 0.5, static_cast<double>(iHarm) - 0.5, TMath::Sin(iHarm * psiZNA));
+          gCurrentShiftProfileZNA->Fill(cent, 0.5, static_cast<double>(iHarm) - 0.5, std::sin(iHarm * psiZNA));
           // Fill Cos component (Y = 1.5)
-          gCurrentShiftProfileZNA->Fill(cent, 1.5, static_cast<double>(iHarm) - 0.5, TMath::Cos(iHarm * psiZNA));
+          gCurrentShiftProfileZNA->Fill(cent, 1.5, static_cast<double>(iHarm) - 0.5, std::cos(iHarm * psiZNA));
         }
       }
 
@@ -1008,7 +1007,7 @@ struct ZdcExtraTableReader {
       }
 
       //  Calculate raw/recentered angle
-      double psiZNC = TMath::ATan2(qyZNCrec, qxZNCrec);
+      double psiZNC = std::atan2(qyZNCrec, qxZNCrec);
 
       // Apply Correction (Read Mode)
       // Checks if correction is enabled AND if the map from CCDB was loaded successfully
@@ -1032,7 +1031,7 @@ struct ZdcExtraTableReader {
           // Fourier flattening formula:
           // DeltaPsi = sum( (2/k) * ( <cos>*sin(k*psi) - <sin>*cos(k*psi) ) )
           // Note: signs depend on definition, this matches the standard correction logic
-          deltaPsi += (2.0 / iHarm) * (-coeffSin * TMath::Cos(iHarm * psiZNC) + coeffCos * TMath::Sin(iHarm * psiZNC));
+          deltaPsi += (2.0 / iHarm) * (-coeffSin * std::cos(iHarm * psiZNC) + coeffCos * std::sin(iHarm * psiZNC));
         }
 
         // Apply the calculated shift
@@ -1047,9 +1046,9 @@ struct ZdcExtraTableReader {
       if (fillShiftHistos && gCurrentShiftProfileZNC) {
         for (int iHarm = 1; iHarm <= nHarmonics; iHarm++) {
           // Fill Sin component (Y = 0.5)
-          gCurrentShiftProfileZNC->Fill(cent, 0.5, static_cast<double>(iHarm) - 0.5, TMath::Sin(iHarm * psiZNC));
+          gCurrentShiftProfileZNC->Fill(cent, 0.5, static_cast<double>(iHarm) - 0.5, std::sin(iHarm * psiZNC));
           // Fill Cos component (Y = 1.5)
-          gCurrentShiftProfileZNC->Fill(cent, 1.5, static_cast<double>(iHarm) - 0.5, TMath::Cos(iHarm * psiZNC));
+          gCurrentShiftProfileZNC->Fill(cent, 1.5, static_cast<double>(iHarm) - 0.5, std::cos(iHarm * psiZNC));
         }
       }
 
