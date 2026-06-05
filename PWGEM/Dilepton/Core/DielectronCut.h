@@ -448,7 +448,7 @@ class DielectronCut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DielectronCuts::kDCAsigma:
-        return std::array<float, 3>{std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track)), std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaXYinSigma(track)), std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(track))}[mDCAType] < mMaxDcaSigma;
+        return (std::array<float, 3>{std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track)), std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaXYinSigma(track)), std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(track))}[mDCAType]) < mMaxDcaSigma;
 
       case DielectronCuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
