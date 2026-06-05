@@ -279,10 +279,8 @@ struct prefilterDielectron {
     fDielectronCut.SetPairYRange(-1e+10, +1e+10);
     fDielectronCut.SetPairDCARange(0.f, 1e+10); // in sigma
     fDielectronCut.ApplyPhiV(false);
-    fDielectronCut.ApplyPrefilter(false);
     fDielectronCut.SetMindEtadPhi(false, false, 1.f, 1.f);
     fDielectronCut.SetPairOpAng(0.f, 3.2f);
-    fDielectronCut.SetRequireDifferentSides(false);
 
     // for track
     fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, dielectroncuts.cfg_max_pt_track);
