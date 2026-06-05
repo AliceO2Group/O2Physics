@@ -1322,6 +1322,10 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
   Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
 
+  // option for TR pair fill
+  Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
+  Configurable<int> fConfigNRotations{"cfgNRotations", 20, "Number of rotations for track rotation method"};
+
   struct : ConfigurableGroup {
     Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -1515,6 +1519,7 @@ struct AnalysisSameEventPairing {
 
           if (fEnableBarrelHistos) {
             names = {
+              // change define histname
               Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
@@ -1523,11 +1528,16 @@ struct AnalysisSameEventPairing {
             names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
             names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
             histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+            if (fConfigTRPairs) {
+              names.push_back(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;", names[6].Data(), names[7].Data());
+            }
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
+              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 8 : 6)].Data(), names[(fConfigTRPairs ? 9 : 7)].Data(), names[(fConfigTRPairs ? 10 : 8)].Data());
             }
             fTrackHistNames[icut] = names;
 
@@ -2208,6 +2218,71 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
+
+        // edit
+        // rotation 20 times
+        if (fConfigTRPairs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
+
+            if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
+              continue;
+            }
+
+            auto t1 = a1.template reducedtrack_as<TTracks>();
+            auto t2 = a2.template reducedtrack_as<TTracks>();
+            sign1 = t1.sign();
+            sign2 = t2.sign();
+            if (t1.barrelAmbiguityInBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 28);
+            }
+            if (t2.barrelAmbiguityInBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 29);
+            }
+            if (t1.barrelAmbiguityOutOfBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 30);
+            }
+            if (t2.barrelAmbiguityOutOfBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 31);
+            }
+
+            for (int icut = 0; icut < ncuts; icut++) {
+              if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+                isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+                isUnambiguous = !(isAmbiInBunch || isAmbiOutOfBunch);
+                isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
+                isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  if (isLeg1Ambi && isLeg2Ambi) {
+                    std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
+                    if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
+                      if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
+                        isAmbiExtra = true;
+                      } else {
+                        fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
+                      }
+                    } else {
+                      fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
+                    }
+                  }
+                }
+                if (sign1 * sign2 < 0) {
+                  for (int i = 0; i < fConfigNRotations.value; i++) {
+                    VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2);
+                    if constexpr (TPairType == VarManager::kDecayToEE) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                      if (isAmbiExtra) {
+                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        // end
       } // end loop over pairs of track associations
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
       if (fEnableBarrelHistos && fConfigQA) {
