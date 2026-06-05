@@ -188,7 +188,6 @@ double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
 
   int idx[4] = {binCent, binVx, binVy, binVz};
   return h->GetBinContent(idx);
-
 }
 
 // Helper for 1D recentering maps: returns mean Q for coordinate x
@@ -548,8 +547,7 @@ struct ZdcExtraTableReader {
       if (lst) {
         hMeanVx = safeClone<TH1>(lst->FindObject("hMeanVx"));
         hMeanVy = safeClone<TH1>(lst->FindObject("hMeanVy"));
-      } else
-      {
+      } else {
         LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folder.c_str());
       }
     }
@@ -574,7 +572,6 @@ struct ZdcExtraTableReader {
       calibCache[stepIdx].hMeanQyZNA = safeClone<THn>(lstBase->FindObject("hMeanQyZNA"));
       calibCache[stepIdx].hMeanQxZNC = safeClone<THn>(lstBase->FindObject("hMeanQxZNC"));
       calibCache[stepIdx].hMeanQyZNC = safeClone<THn>(lstBase->FindObject("hMeanQyZNC"));
-      
 
       // Load 1D (Refine)
       if ((step != calibrationStep) || isFineCalibrationStep) {
