@@ -198,7 +198,7 @@ struct CoalescenceTreeProducer {
     if (std::abs(p4Candidate.Rapidity()) > yMax) {
       return false;
     }
-      
+
     // Boost to the candidate rest frame
     auto betaCandidate = p4Candidate.BoostToCM();
     ROOT::Math::Boost boostToRest(betaCandidate);
