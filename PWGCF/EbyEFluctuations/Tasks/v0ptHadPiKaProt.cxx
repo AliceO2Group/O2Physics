@@ -451,6 +451,7 @@ struct V0ptHadPiKaProt {
       subSample[i].resize(20);
       subSampleV02[i].resize(9);
       subSampleV02weighted[i].resize(9);
+      subSampleV02weightedOption3[i].resize(9);
     }
     for (int i = 0; i < cfgNSubsample; i++) {
       subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
