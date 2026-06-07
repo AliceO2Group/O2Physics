@@ -95,17 +95,17 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
   // *) Define configurables:
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"}; // example for built-in type (float, string, etc.)
-  Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};                   // example for an array
-  Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {100, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
-  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {100, 0., 100.}, "nCentrBins, centrMin, centrMax"};
-  Configurable<std::vector<float>> cfXBins{"cfXBins", {1000, -100., 100.}, "nXBins, xMin, xMax"};
-  Configurable<std::vector<float>> cfYBins{"cfYBins", {1000, -100., 100.}, "nYBins, yMin, yMax"};
-  Configurable<std::vector<float>> cfZBins{"cfZBins", {1000, -100., 100.}, "nZBins, zMin, zMax"};
-  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {50, 0, 3e3}, "nMultBins, multMin, multMax"};
-  Configurable<std::vector<float>> cfTPCnclsBins{"cfTPCnclsBins", {100, 0., 1000.}, "ntpcnclsBins, tpnclsMin, tpcnclsMax"};
-  Configurable<std::vector<float>> cfDCAxyBins{"cfDCAxyBins", {1000, -20., 20.}, "ndcaxyBins, dcaxyMin, dcaxyMax"};
-  Configurable<std::vector<float>> cfDCAzBins{"cfDCAzBins", {1000, -10., 10.}, "ndcazBins, dcazMin, dcazMax"};
-  Configurable<std::vector<float>> cfNcontrBins{"cfNcontrBins", {100, 0., 1000}, "nNContrBins, NContrMin, NContrMax"};
+  Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 8.}, "nPtBins, ptMin, ptMax"};                     // example for an array
+  Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {360, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
+  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {100, 0., 80.}, "nCentrBins, centrMin, centrMax"};
+  Configurable<std::vector<float>> cfXBins{"cfXBins", {1000, -0.04, -0.01}, "nXBins, xMin, xMax"};
+  Configurable<std::vector<float>> cfYBins{"cfYBins", {1000, -0.01, 0.006}, "nYBins, yMin, yMax"};
+  Configurable<std::vector<float>> cfZBins{"cfZBins", {1000, -20., 20.}, "nZBins, zMin, zMax"};
+  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {50, 0, 2e4}, "nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfTPCnclsBins{"cfTPCnclsBins", {100, 0., 200.}, "ntpcnclsBins, tpnclsMin, tpcnclsMax"};
+  Configurable<std::vector<float>> cfDCAxyBins{"cfDCAxyBins", {1000, -0.5, 0.5}, "ndcaxyBins, dcaxyMin, dcaxyMax"};
+  Configurable<std::vector<float>> cfDCAzBins{"cfDCAzBins", {1000, -3., 3.}, "ndcazBins, dcazMin, dcazMax"};
+  Configurable<std::vector<float>> cfNcontrBins{"cfNcontrBins", {100, 0., 10000.}, "nNContrBins, NContrMin, NContrMax"};
 
   Configurable<std::string> cfCent{"cfCent", "FT0C", "centrality estimator"};
   Configurable<std::string> cfMult{"cfMult", "TPC", "multiplicity"};
@@ -115,7 +115,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
 
-  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/test04", "path to external ROOT file which holds all particle weights"};
+  Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
+  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile01", "path to external ROOT file which holds all particle weights"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -150,6 +151,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   struct QA {
     TList* fQAList = NULL;
     TH2F* fQA = NULL;
+    TH2F* fQAM_NC = NULL;
   } qa;
 
   static constexpr int maxHarmonic = 7;
@@ -162,6 +164,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TProfile* pfour42_centr = NULL;
     TComplex Qvector[maxHarmonic];
   } cor;
+
+  struct PhiHist {
+    TList* fPhiHistList = NULL;
+    std::unordered_map<int, TH1F*> histMap;
+  } phih;
 
   TObject* GetObjectFromList(TList* list, const char* objectName)
   {
@@ -384,7 +391,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     }
     // Print current run number:
     // LOGF(info, "Run number: %d", collision.bc().runNumber());
-
+    int currentRun = collision.bc().runNumber();
+    auto it = phih.histMap.find(currentRun);
     float zrec = 0., zsim = 0., centr = 0, M = 0.;
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
@@ -414,6 +422,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       else if (cfMult.value == "NTracksPV")
         M = collision.multNTracksPV();
       event.fHistMult[eRec]->Fill(M);
+      qa.fQAM_NC->Fill(M, collision.numContrib());
 
       if constexpr (rs == eRecAndSim) {
         auto mccollision = collision.mcCollision();
@@ -440,7 +449,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     }
 
     // before loop over particles
-    float phi = 0;
+    float phi = 0, weight = 0;
     for (int ih = 0; ih < maxHarmonic; ih++) {
       cor.Qvector[ih] = TComplex(0., 0.);
     }
@@ -456,11 +465,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         event.fEventHistograms[ePt][eRec][0]->Fill(track.pt());
         ptrec = track.pt();
         phi = track.phi();
+        if (it != phih.histMap.end()) {
+          it->second->Fill(phi);
+        }
         pc.fHistPhi[eRec]->Fill(track.phi());
         pc.fHistCharge[eRec]->Fill(track.sign());
         pc.fHistTPCncls[eRec]->Fill(track.tpcNClsFindable());
         pc.fHistTracksdcaXY[eRec]->Fill(track.dcaXY());
         pc.fHistTracksdcaZ[eRec]->Fill(track.dcaZ());
+
+        weight = 1.; // pc.histWeights->GetBinContent(phi);
 
         // ... and corresponding MC truth simulated:
         // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -494,7 +508,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
       // analysis in the loop over particle
       for (int ih = 0; ih < maxHarmonic; ih++) {
-        cor.Qvector[ih] += TComplex(TMath::Cos(ih * phi), TMath::Sin(ih * phi));
+        cor.Qvector[ih] += TComplex(weight * TMath::Cos(ih * phi), weight * TMath::Sin(ih * phi));
       }
     } // end of for (auto track: tracks)
     // calculate correlations
@@ -551,6 +565,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     cor.fCorrelationVariablesList->SetOwner(true);
     fBaseList->Add(cor.fCorrelationVariablesList);
 
+    phih.fPhiHistList = new TList();
+    phih.fPhiHistList->SetName("PhiHistograms");
+    phih.fPhiHistList->SetOwner(true);
+    fBaseList->Add(phih.fPhiHistList);
+
     // *) Book pt distribution with binning defined through configurables in the json file:
     vector<float> l_pt_bins = cfPtBins.value; // define local array and initialize it from an array set in the configurables
     vector<float> l_phi_bins = cfPhiBins.value;
@@ -563,6 +582,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     vector<float> l_dcaxy_bins = cfDCAxyBins.value;
     vector<float> l_dcaz_bins = cfDCAzBins.value;
     vector<float> l_ncontr_bins = cfNcontrBins.value;
+    vector<int> targetRuns = cfRuns.value;
     int nBins = static_cast<int>(l_pt_bins[0]);
     int nBinsphi = static_cast<int>(l_phi_bins[0]);
     int nBinscentr = static_cast<int>(l_centr_bins[0]);
@@ -695,9 +715,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
     }
 
-    qa.fQA = new TH2F("QA", "quality assurance", nBinscentr, mincentr, maxcentr, nBinscentr, mincentr, maxcentr);
+    qa.fQA = new TH2F("QA_centr", "quality assurance of centrality", nBinscentr, mincentr, maxcentr, nBinscentr, mincentr, maxcentr);
+    qa.fQAM_NC = new TH2F("QAM_NC", "quality assurance of mult vs. NContributors", nBinsmult, minmult, maxmult, nBinsncontr, minncontr, maxncontr);
     if (cfQA) {
       qa.fQAList->Add(qa.fQA);
+      qa.fQAList->Add(qa.fQAM_NC);
     }
 
     // float quantiles[10] = {0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
@@ -722,6 +744,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     cor.fCorrelationVariablesList->Add(cor.pv42_centr);
     cor.fCorrelationVariablesList->Add(cor.pfour32_centr);
     cor.fCorrelationVariablesList->Add(cor.pfour42_centr);
+
+    // init of phi hist for different runs
+    for (const int& run : targetRuns) {
+      std::string histName = "hphi_run_" + std::to_string(run);
+      std::string histTitle = "Phi dis for Run " + std::to_string(run);
+
+      TH1F* h = new TH1F(histName.c_str(), histTitle.c_str(), nBinsphi, minphi, maxphi);
+      phih.fPhiHistList->Add(h);
+      phih.histMap[run] = h;
+    }
 
   } // end of void init(InitContext&) {
 
