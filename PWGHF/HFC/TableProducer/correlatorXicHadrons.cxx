@@ -73,34 +73,25 @@ using namespace o2::analysis::hf_correlations;
 // ENUMS FOR MAGIC NUMBERS - REPLACES MAGIC NUMBERS WITH TYPED CONSTANTS
 // ============================================================================
 
-/// Enum for candidate types (Xic0 vs XicPlus)
-enum class CandidateTypeXic : int8_t {
-  Xic0 = 0,
-  XicPlus = 1
-};
-
 /// Enum for particle types (particle vs antiparticle)
-enum class ParticleType : int8_t {
+enum ParticleType : int8_t {
   Particle = 1,
   AntiParticle = -1
 };
 
 /// Enum for V0 lambda types
-enum class V0LambdaType : int8_t {
+enum V0LambdaType : int8_t {
+  NotLambda = 0,
   Lambda = 1,
   AntiLambda = -1
 };
 
 /// Enum for decay daughters count
-enum class XicDecayDaughtersCount : size_t {
+enum XicDecayDaughtersCount : size_t {
   Xic0DaughtersCount = 4u,
   XicPlusDaughtersCount = 5u
 };
 
-/// Enum for PDG charge scale factor
-enum class PDGChargeScale : size_t {
-  Scale = 3u
-};
 
 namespace corr_particle_type
 {
@@ -912,7 +903,7 @@ struct HfCorrelatorXicHadrons {
           if (isSelectedV0Daughter(trackV0Pos, kProton) && isSelectedV0Daughter(trackV0Neg, kPiPlus)) {
 
             if (selXicCand) {
-              fillCorrelationTable<IsMcRec, static_cast<int>(V0LambdaType::Lambda)>(cfgXicCand.fillTrkPID, v0, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
+              fillCorrelationTable<IsMcRec, V0LambdaType::Lambda>(cfgXicCand.fillTrkPID, v0, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
             }
 
             if (countCand == 1) {
@@ -930,7 +921,7 @@ struct HfCorrelatorXicHadrons {
           if (isSelectedV0Daughter(trackV0Neg, kProton) && isSelectedV0Daughter(trackV0Pos, kPiPlus)) {
 
             if (selXicCand) {
-              fillCorrelationTable<IsMcRec, static_cast<int>(V0LambdaType::AntiLambda)>(cfgXicCand.fillTrkPID, v0, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
+              fillCorrelationTable<IsMcRec, V0LambdaType::AntiLambda>(cfgXicCand.fillTrkPID, v0, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
             }
 
             if (countCand == 1) {
@@ -988,8 +979,8 @@ struct HfCorrelatorXicHadrons {
     }
   }
 
-  template <bool IsMcRec, int LambdaType, typename AssocType, typename McPart>
-  void fillCorrelationTable(bool trkPidFill, AssocType const& assoc, float const& candPt, float const& candEta, float const& candPhi,
+  template <bool IsMcRec, V0LambdaType LambdaType, typename AssocType, typename McPart>
+  void fillCorrelationTable(bool trkPidFill, AssocType const& assoc, float const candPt, float const candEta, float const candPhi,
                             const std::vector<float>& outMl, int binPool, int8_t correlStatus,
                             double yCand, double candMass, McPart const& mcParticles)
   {
@@ -1002,17 +993,17 @@ struct HfCorrelatorXicHadrons {
     int signAssoc = 0;
     auto pVec1 = RecoDecayPtEtaPhi::pVector(candPt, candEta, candPhi);
     double massPart2 = -999.0;
-    std::array<float, 3> pVec2{assoc.px(), assoc.py(), assoc.pz()};
+    std::array pVec2{assoc.px(), assoc.py(), assoc.pz()};
     std::array moms{pVec1, pVec2};
 
-    if constexpr (LambdaType == static_cast<int>(V0LambdaType::Lambda)) { // Lambda
+    if constexpr (LambdaType == V0LambdaType::Lambda) { // Lambda
       massPart2 = assoc.mLambda();
       entryPairedV0InvMass(assoc.mLambda());
-      signAssoc = static_cast<int>(V0LambdaType::Lambda);
+      signAssoc = V0LambdaType::Lambda;
       yAssoc = assoc.yLambda();
-    } else if constexpr (LambdaType == static_cast<int>(V0LambdaType::AntiLambda)) { // AntiLambda
+    } else if constexpr (LambdaType == V0LambdaType::AntiLambda) { // AntiLambda
       massPart2 = assoc.mAntiLambda();
-      signAssoc = static_cast<int>(V0LambdaType::AntiLambda);
+      signAssoc = V0LambdaType::AntiLambda;
       yAssoc = assoc.yLambda();
       entryPairedV0InvMass(assoc.mLambda());
     } else { // Regular track
@@ -1040,7 +1031,7 @@ struct HfCorrelatorXicHadrons {
     entryCandHadronMlInfo(outMl[0], outMl[1]);
     entryCandHadronRecoInfo(candMass, false);
 
-    if constexpr (LambdaType == 0) { // Regular track
+    if constexpr (LambdaType == V0LambdaType::NotLambda) { // Regular track
       entryTrackRecoInfo(assoc.dcaXY(), assoc.dcaZ(), assoc.tpcNClsCrossedRows());
       if (trkPidFill) {
         entryCandHadronPairTrkPID(assoc.tpcNSigmaPr(), assoc.tpcNSigmaKa(), assoc.tpcNSigmaPi(), assoc.tofNSigmaPr(), assoc.tofNSigmaKa(), assoc.tofNSigmaPi());
@@ -1261,7 +1252,7 @@ struct HfCorrelatorXicHadrons {
         }
 
         if (selXicCand) {
-          fillCorrelationTable<IsMcRec, 0>(cfgXicCand.fillTrkPID, track, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
+          fillCorrelationTable<IsMcRec, V0LambdaType::NotLambda>(cfgXicCand.fillTrkPID, track, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
         }
 
         if (countCand == 1) {
@@ -1357,19 +1348,19 @@ struct HfCorrelatorXicHadrons {
           }
         } else {
 
-          auto trackV0Pos = assocParticle.template posTrack_as<TrackType>();
-          auto trackV0Neg = assocParticle.template negTrack_as<TrackType>();
+          auto const&  trackV0Pos = assocParticle.template posTrack_as<TrackType>();
+          auto const&  trackV0Neg = assocParticle.template negTrack_as<TrackType>();
 
           if (std::abs(o2::constants::physics::MassLambda - assocParticle.mLambda()) < cfgV0.cfgHypMassWindow) {
             if (isSelectedV0Daughter(trackV0Pos, kProton) && isSelectedV0Daughter(trackV0Neg, kPiPlus)) {
 
-              fillCorrelationTable<IsMcRec, static_cast<int>(V0LambdaType::Lambda)>(cfgXicCand.fillTrkPID, assocParticle, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
+              fillCorrelationTable<IsMcRec, V0LambdaType::Lambda>(cfgXicCand.fillTrkPID, assocParticle, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
             }
           }
 
           if (std::abs(o2::constants::physics::MassLambda - assocParticle.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
             if (isSelectedV0Daughter(trackV0Neg, kProton) && isSelectedV0Daughter(trackV0Pos, kPiPlus)) {
-              fillCorrelationTable<IsMcRec, static_cast<int>(V0LambdaType::AntiLambda)>(cfgXicCand.fillTrkPID, assocParticle, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
+              fillCorrelationTable<IsMcRec, V0LambdaType::AntiLambda>(cfgXicCand.fillTrkPID, assocParticle, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
             }
           }
         }
@@ -1411,9 +1402,9 @@ struct HfCorrelatorXicHadrons {
       }
 
       if (particle.pdgCode() > 0) {
-        candSign = static_cast<int8_t>(ParticleType::Particle);
+        candSign = ParticleType::Particle;
       } else {
-        candSign = static_cast<int8_t>(ParticleType::AntiParticle);
+        candSign = ParticleType::AntiParticle;
       }
 
       double const massCand = (std::abs(particle.pdgCode()) == kXiC0) ? o2::constants::physics::MassXiC0 : o2::constants::physics::MassXiCPlus;
@@ -1429,8 +1420,6 @@ struct HfCorrelatorXicHadrons {
       registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -PIHalf));
       registry.fill(HIST("hYMcGen"), yCand);
 
-      // int8_t chargeCand = pdg->GetParticle(particle.pdgCode())->Charge() / PDGChargeScale;
-      // float xicType = getXicTypeMC(particle);
 
       isPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
       isNonPrompt = particle.originMcGen() == RecoDecay::OriginType::NonPrompt;
@@ -1448,7 +1437,7 @@ struct HfCorrelatorXicHadrons {
 
       std::vector<int> listDaughters{};
       listDaughters.clear();
-      const std::size_t nDaughtersExpected = static_cast<std::size_t>((IsXicPlus) ? XicDecayDaughtersCount::XicPlusDaughtersCount : XicDecayDaughtersCount::Xic0DaughtersCount);
+      const std::size_t nDaughtersExpected = IsXicPlus ? XicDecayDaughtersCount::XicPlusDaughtersCount : XicDecayDaughtersCount::Xic0DaughtersCount;
 
       int counterDaughters = 0;
       std::vector<int> prongsId(nDaughtersExpected);
@@ -1752,9 +1741,9 @@ struct HfCorrelatorXicHadrons {
         // float xicType = getXicTypeMC(candidate);
         int8_t candSign = 0;
         if (candidate.pdgCode() > 0) {
-          candSign = static_cast<int8_t>(ParticleType::Particle);
+          candSign = ParticleType::Particle;
         } else {
-          candSign = static_cast<int8_t>(ParticleType::AntiParticle);
+          candSign = ParticleType::AntiParticle;
         }
 
         int8_t const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge();
