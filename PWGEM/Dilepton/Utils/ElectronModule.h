@@ -123,8 +123,8 @@ struct electronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
-  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95, 0.95, 0.7, 0.7, 0.8, 0.8, 0.7, 0.7}, "ML cuts per bin"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.7, 0.8, 0.8, 0.7, 0.7, 0.7}, "ML cuts per bin"};
   o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"tpcInnerParam", "tpcNClsFound", "tpcChi2NCl", "tpcNSigmaEl", "tofNSigmaEl", "meanClusterSizeITSobCosTgl"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "tpcInnerParam", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
@@ -162,8 +162,8 @@ struct electronPFCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
 
   // configuration for PID ML
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
-  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.65, 0.65, 0.75, 0.75, 0.65, 0.65}, "ML cuts per bin"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.85, 0.85, 0.85, 0.65, 0.75, 0.75, 0.65, 0.65, 0.65}, "ML cuts per bin"};
 
   // for pair
   o2::framework::Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
