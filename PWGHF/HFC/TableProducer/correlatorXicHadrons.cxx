@@ -92,7 +92,6 @@ enum XicDecayDaughtersCount : size_t {
   XicPlusDaughtersCount = 5u
 };
 
-
 namespace corr_particle_type
 {
 enum Type : int8_t {
@@ -1348,8 +1347,8 @@ struct HfCorrelatorXicHadrons {
           }
         } else {
 
-          auto const&  trackV0Pos = assocParticle.template posTrack_as<TrackType>();
-          auto const&  trackV0Neg = assocParticle.template negTrack_as<TrackType>();
+          auto const& trackV0Pos = assocParticle.template posTrack_as<TrackType>();
+          auto const& trackV0Neg = assocParticle.template negTrack_as<TrackType>();
 
           if (std::abs(o2::constants::physics::MassLambda - assocParticle.mLambda()) < cfgV0.cfgHypMassWindow) {
             if (isSelectedV0Daughter(trackV0Pos, kProton) && isSelectedV0Daughter(trackV0Neg, kPiPlus)) {
@@ -1419,7 +1418,6 @@ struct HfCorrelatorXicHadrons {
       registry.fill(HIST("hEtaMcGen"), particle.eta());
       registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -PIHalf));
       registry.fill(HIST("hYMcGen"), yCand);
-
 
       isPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
       isNonPrompt = particle.originMcGen() == RecoDecay::OriginType::NonPrompt;
