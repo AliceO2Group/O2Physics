@@ -27,7 +27,8 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
-#include <DataFormatsITSMFT/DPLAlpideParam.h>
+// #include <DataFormatsITSMFT/DPLAlpideParam.h>
+#include <ITSMFTBase/DPLAlpideParam.h>
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
