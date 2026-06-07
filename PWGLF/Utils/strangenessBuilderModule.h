@@ -2158,7 +2158,7 @@ class BuilderModule
             if (bachelorParticle.pdgCode() == PDG_t::kPiPlus) { // pi+, look for antiproton in negative prong
               if (negTrack.has_mcParticle()) {
                 auto baryonParticle = negTrack.template mcParticle_as<aod::McParticles>();
-                if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == PDG_t::Bar) {
+                if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == PDG_t::kProtonBar) {
                   for (const auto& baryonMother : baryonParticle.template mothers_as<aod::McParticles>()) {
                     for (const auto& pionMother : bachelorParticle.template mothers_as<aod::McParticles>()) {
                       if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == PDG_t::kLambda0Bar) {
@@ -2172,7 +2172,7 @@ class BuilderModule
             if (bachelorParticle.pdgCode() == PDG_t::kPiMinus) { // pi-, look for proton in positive prong
               if (posTrack.has_mcParticle()) {
                 auto baryonParticle = posTrack.template mcParticle_as<aod::McParticles>();
-                if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == PDG_t::) {
+                if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == PDG_t::kProton) {
                   for (const auto& baryonMother : baryonParticle.template mothers_as<aod::McParticles>()) {
                     for (const auto& pionMother : bachelorParticle.template mothers_as<aod::McParticles>()) {
                       if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == PDG_t::kLambda0) {
