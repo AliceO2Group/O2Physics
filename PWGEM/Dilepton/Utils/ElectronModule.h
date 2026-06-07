@@ -541,9 +541,9 @@ class ElectronModule
     registry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
     registry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    registry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    registry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    registry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // registry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // registry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // registry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
     registry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
     registry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
@@ -592,7 +592,6 @@ class ElectronModule
     registry.add("SCT/Cascade/hMassXi_misid", "#Xi mass;m_{#Lambda#pi} (GeV/c^{2})", o2::framework::HistType::kTH1F, {{100, 1.27, 1.37}}, false);
     registry.add("SCT/Cascade/hMassOmega_misid", "#Omega mass;m_{#LambdaK} (GeV/c^{2})", o2::framework::HistType::kTH1F, {{100, 1.62, 1.72}}, false);
 
-    registry.add("SCT/eT/hImpactParameter", "eH impact parameter;IP in XY (cm);IP in Z (cm);", o2::framework::HistType::kTH2F, {{200, -1, 1}, {200, -1, 1}}, false);
     registry.add("SCT/eT/hDecayLength", "eH decay length;L_{xy} (cm);L_{z} (cm);", o2::framework::HistType::kTH2F, {{100, 0, 1}, {200, -1, 1}}, false);
     registry.add("SCT/eT/hCosPA", "eH cosPA;cosine of pointing angle", o2::framework::HistType::kTH1F, {{200, -1, 1}}, false);
     registry.add("SCT/eT/hDCA2legs", "dca between e and hadron;dca between 2legs (cm)", o2::framework::HistType::kTH1F, {{100, 0, 1}}, false);
@@ -630,16 +629,15 @@ class ElectronModule
             if (track.hasTOF() && track.has_collision()) { // TTCA may use orphan tracks.
               auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
               fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Electron>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Pion>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Kaon>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Proton>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Pion>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Kaon>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Proton>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
               fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
-              ;
             } else {
               fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-              fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-              fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-              fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+              // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+              // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+              // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
               fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
             }
           } // end of track loop
@@ -654,9 +652,9 @@ class ElectronModule
               continue;
             }
             fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-            fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-            fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-            fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+            // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           }
         } // end of track loop
@@ -671,9 +669,9 @@ class ElectronModule
               continue;
             }
             fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-            fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-            fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-            fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+            // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           } // end of track loop
         } // end of collision loop
@@ -685,9 +683,9 @@ class ElectronModule
               continue;
             }
             fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-            fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-            fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-            fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+            // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           }
         } // end of track loop
@@ -1052,9 +1050,9 @@ class ElectronModule
     float phi = RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U);
 
     float tofNSigmaEl = fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaPi = fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaKa = fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaPr = fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaPi = fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaKa = fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaPr = fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     float beta = fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     float probaEl = fMapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())];
 
@@ -1150,9 +1148,9 @@ class ElectronModule
     registry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
     registry.fill(HIST("Track/hTOFbeta"), trackParCov.getP(), beta);
     registry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), tofNSigmaEl);
-    registry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), tofNSigmaPi);
-    registry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), tofNSigmaKa);
-    registry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), tofNSigmaPr);
+    // registry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), tofNSigmaPi);
+    // registry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), tofNSigmaKa);
+    // registry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), tofNSigmaPr);
     registry.fill(HIST("Track/hMeanClusterSizeITS"), trackParCov.getP(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl())));
     registry.fill(HIST("Track/hMeanClusterSizeITSib"), trackParCov.getP(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(trackParCov.getTgl())));
     registry.fill(HIST("Track/hMeanClusterSizeITSob"), trackParCov.getP(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(trackParCov.getTgl())));
@@ -1661,7 +1659,6 @@ class ElectronModule
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, hadronParCov, 2.f, matCorr, &mDcaInfoCov);
 
           auto eTpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(dfeT, collision, electron, hadron, o2::track::PID::Electron, hadron.pidForTracking());
-          registry.fill(HIST("SCT/eT/hImpactParameter"), eTpair.impParXY, eTpair.impParZ);
           registry.fill(HIST("SCT/eT/hDecayLength"), eTpair.lxy, eTpair.lz);
           registry.fill(HIST("SCT/eT/hCosPA"), eTpair.cospa);
           registry.fill(HIST("SCT/eT/hDCA2legs"), eTpair.dca2legs);
@@ -1714,7 +1711,6 @@ class ElectronModule
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
           auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::K0);
-          registry.fill(HIST("SCT/eV0/hImpactParameter"), eV0pair.impParXY, eV0pair.impParZ);
           registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
           registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
           registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
@@ -1766,7 +1762,6 @@ class ElectronModule
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
             auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
-            registry.fill(HIST("SCT/eV0/hImpactParameter"), eV0pair.impParXY, eV0pair.impParZ);
             registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
             registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
             registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
@@ -1818,7 +1813,6 @@ class ElectronModule
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
             auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
             registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
             registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
             registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -1870,7 +1864,6 @@ class ElectronModule
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
             auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
             registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
             registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
             registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -1922,7 +1915,6 @@ class ElectronModule
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
             auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
-            registry.fill(HIST("SCT/eV0/hImpactParameter"), eV0pair.impParXY, eV0pair.impParZ);
             registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
             registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
             registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
@@ -1974,7 +1966,6 @@ class ElectronModule
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
             auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
             registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
             registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
             registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -2026,7 +2017,6 @@ class ElectronModule
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
             auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
             registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
             registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
             registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -2095,6 +2085,9 @@ class ElectronModule
       looseElectronIds.clear();
       looseElectronIds.shrink_to_fit();
       multiMapTracksPerCollision.clear();
+
+      fMapProbaEl.clear();
+
     } // end of collision loop
     clear();
   }
@@ -2137,9 +2130,9 @@ class ElectronModule
     // this should be called at the end of DF.
     fMapProbaEl.clear();
     fMapTOFNsigmaElReassociated.clear();
-    fMapTOFNsigmaPiReassociated.clear();
-    fMapTOFNsigmaKaReassociated.clear();
-    fMapTOFNsigmaPrReassociated.clear();
+    // fMapTOFNsigmaPiReassociated.clear();
+    // fMapTOFNsigmaKaReassociated.clear();
+    // fMapTOFNsigmaPrReassociated.clear();
     fMapTOFBetaReassociated.clear();
   }
 
@@ -2201,9 +2194,9 @@ class ElectronModule
 
   std::map<std::pair<int, int>, float> fMapProbaEl;                 // map pair(collisionId, trackId) -> probaEl
   std::map<std::pair<int, int>, float> fMapTOFNsigmaElReassociated; // map pair(collisionId, trackId) -> tof n sigma el
-  std::map<std::pair<int, int>, float> fMapTOFNsigmaPiReassociated; // map pair(collisionId, trackId) -> tof n sigma pi
-  std::map<std::pair<int, int>, float> fMapTOFNsigmaKaReassociated; // map pair(collisionId, trackId) -> tof n sigma ka
-  std::map<std::pair<int, int>, float> fMapTOFNsigmaPrReassociated; // map pair(collisionId, trackId) -> tof n sigma pr
+  // std::map<std::pair<int, int>, float> fMapTOFNsigmaPiReassociated; // map pair(collisionId, trackId) -> tof n sigma pi
+  // std::map<std::pair<int, int>, float> fMapTOFNsigmaKaReassociated; // map pair(collisionId, trackId) -> tof n sigma ka
+  // std::map<std::pair<int, int>, float> fMapTOFNsigmaPrReassociated; // map pair(collisionId, trackId) -> tof n sigma pr
   std::map<std::pair<int, int>, float> fMapTOFBetaReassociated;     // map pair(collisionId, trackId) -> tof beta
 
   int mRunNumber{0};
