@@ -36,13 +36,13 @@ struct stradautrackstofpidconverter3 {
     dautracktofpids.reserve(dauTracks.size());
     for (const auto& dauTrack : dauTracks) {
       dautracktofpids(
-        -1,
-        -1,
+        dauTrack.straCollisionId(),
+        dauTrack.dauTrackExtraId(),
         dauTrack.tofSignal(),
         dauTrack.tofEvTime(),
         999.0f, /*dummy event time error for TOF*/
         dauTrack.length(),
-        0.0f);
+        dauTrack.tofExpMom());
     }
     straEvTimes.reserve(straEvTimes_000.size());
     for (const auto& value : straEvTimes_000) {
