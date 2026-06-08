@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
