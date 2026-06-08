@@ -26,6 +26,8 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -39,6 +41,7 @@
 
 #include <THnSparse.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <numeric>
 #include <string>
