@@ -104,7 +104,7 @@ DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, float);        //! Number of TP
 DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, float);        //! Number of TPC signas for kaon
 DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, float);        //! Number of ITS signas
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! Candidates falg
-DECLARE_SOA_COLUMN(CandidateSign, candidateSign, int8_t); //! Candidates sign
+DECLARE_SOA_COLUMN(CandidateSign, candidateSign, int8_t);       //! Candidates sign
 DECLARE_SOA_COLUMN(Cent, cent, float);                          //! Centrality
 DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);                          //! Vertex Z
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                  //! Global index for the collisionAdd commentMore actions
@@ -133,8 +133,7 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::NSigmaTofDe,
                   full::CandidateSelFlag,
                   full::Cent,
-                  full::CandidateSign
-                  );
+                  full::CandidateSign);
 
 // full table for local Rotation & Event Mixing
 DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
