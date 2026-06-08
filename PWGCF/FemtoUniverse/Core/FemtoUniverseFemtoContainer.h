@@ -243,7 +243,7 @@ class FemtoUniverseFemtoContainer
           const float mTMC = FemtoUniverseMath::getmT(p1.fdMCParticle(), mass1, p2.fdMCParticle(), mass2);
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == std::abs(kPDGOne) && std::abs(part2.fdMCParticle().pdgMCTruth()) == std::abs(kPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            if (!onlyPrimaryMC || part1.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary && part2.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary) {
+            if (!onlyPrimaryMC || (part1.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary && part2.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary)) {
               setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, p1.fdMCParticle(), p1.fdMCParticle(), mult, use3dplots);
               setPairMC(femtoObsMC, femtoObs, mT, mult);
             }
