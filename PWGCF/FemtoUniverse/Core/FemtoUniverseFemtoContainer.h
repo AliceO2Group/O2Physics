@@ -27,6 +27,7 @@
 #include <Framework/HistogramSpec.h>
 
 #include <TDatabasePDG.h>
+#include <TRandom2.h>
 
 #include <string>
 #include <string_view>
@@ -205,29 +206,47 @@ class FemtoUniverseFemtoContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots)
+  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool onlyPrimaryMC = false, bool randomizePair = false, double randValue = 0.5)
   {
     float femtoObs, femtoObsMC;
+    auto p1 = part1;
+    auto p2 = part2;
+
+    auto mass1 = kMassOne;
+    auto mass2 = kMassTwo;
+    if (randomizePair) {
+      TRandom2* randgen = new TRandom2(0);
+      double rand = randgen->Rndm();
+      if (rand > randValue) {
+        p1 = part2;
+        p2 = part1;
+        mass1 = kMassTwo;
+        mass2 = kMassOne;
+      }
+      delete randgen;
+    }
     // Calculate femto observable and the mT with reconstructed information
     if constexpr (kFemtoObs == femto_universe_femto_container::Observable::kstar) {
-      femtoObs = FemtoUniverseMath::getkstar(part1, kMassOne, part2, kMassTwo);
+      femtoObs = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
     }
-    const float mT = FemtoUniverseMath::getmT(part1, kMassOne, part2, kMassTwo);
+    const float mT = FemtoUniverseMath::getmT(p1, mass1, p2, mass2);
 
     if (kHistogramRegistry) {
-      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots);
+      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, p1, p2, mult, use3dplots);
 
       if constexpr (isMC) {
-        if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
+        if (p1.has_fdMCParticle() && p1.has_fdMCParticle()) {
           // calculate the femto observable and the mT with MC truth information
           if constexpr (kFemtoObs == femto_universe_femto_container::Observable::kstar) {
-            femtoObsMC = FemtoUniverseMath::getkstar(part1.fdMCParticle(), kMassOne, part2.fdMCParticle(), kMassTwo);
+            femtoObsMC = FemtoUniverseMath::getkstar(p1.fdMCParticle(), mass1, p2.fdMCParticle(), mass2);
           }
-          const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), kMassOne, part2.fdMCParticle(), kMassTwo);
+          const float mTMC = FemtoUniverseMath::getmT(p1.fdMCParticle(), mass1, p2.fdMCParticle(), mass2);
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == std::abs(kPDGOne) && std::abs(part2.fdMCParticle().pdgMCTruth()) == std::abs(kPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots);
-            setPairMC(femtoObsMC, femtoObs, mT, mult);
+            if (!onlyPrimaryMC || part1.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary && part2.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary) {
+              setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, p1.fdMCParticle(), p1.fdMCParticle(), mult, use3dplots);
+              setPairMC(femtoObsMC, femtoObs, mT, mult);
+            }
           } else {
             kHistogramRegistry->fill(HIST(kFolderSuffix[kEventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }

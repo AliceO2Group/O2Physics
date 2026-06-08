@@ -190,7 +190,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fillMultNumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                      int maxl, int multval, float ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF)
+                      int maxl, int multval, float ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF, bool randomizePair = false, double randValue = 0.5)
   {
     int multbinval;
     int absmultval = multval;
@@ -207,7 +207,7 @@ class PairSHCentMultKt
       return;
     }
     // std::cout<<"multbinval "<<multbinval<<std::endl;
-    fillkTNumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isIdenLCMS, isqinvfill, isWeight, isIdenPRF);
+    fillkTNumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isIdenLCMS, isqinvfill, isWeight, isIdenPRF, randomizePair, randValue);
   }
 
   /// Templated function to access different kT directory and call addEventPair
@@ -219,7 +219,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fillkTNumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int maxl, int multval, float ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF)
+                    int maxl, int multval, float ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF, bool randomizePair = false, double randValue = 0.5)
   {
     int ktbinval = -1;
     if (ktval >= ktBins[0] && ktval < ktBins[1]) {
@@ -239,16 +239,16 @@ class PairSHCentMultKt
     } else {
       return;
     }
-    addEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isIdenLCMS, isqinvfill, isWeight, isIdenPRF);
+    addEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isIdenLCMS, isqinvfill, isWeight, isIdenPRF, randomizePair, randValue);
   }
 
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
-  void setPionPairMass()
+  void setPDGCodes(const int pdg1, const int pdg2)
   {
-    mMassOne = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
-    mMassTwo = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
+    mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
+    mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
   }
 
   /// To compute the bin value for cavariance matrix
@@ -272,16 +272,31 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void addEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int /*maxl*/, int multval, int ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF)
+                    int /*maxl*/, int multval, int ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF, bool randomizePair = false, double randValue = 0.5)
   {
     int fMultBin = multval;
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(kMaxJM);
     std::vector<double> f3d;
-    setPionPairMass();
 
-    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
-                                         isIdenLCMS, isWeight, isIdenPRF);
+    auto p1 = part1;
+    auto p2 = part2;
+    auto mass1 = mMassOne;
+    auto mass2 = mMassTwo;
+    if (randomizePair) {
+      TRandom2* randgen = new TRandom2(0);
+      double rand = randgen->Rndm();
+
+      if (rand > randValue) {
+        p1 = part2;
+        p2 = part1;
+        mass1 = mMassTwo;
+        mass2 = mMassOne;
+      }
+      delete randgen;
+    }
+
+    f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, isIdenLCMS, isWeight, isIdenPRF);
     double varout = 0.0;
     double varside = 0.0;
     double varlong = 0.0;
