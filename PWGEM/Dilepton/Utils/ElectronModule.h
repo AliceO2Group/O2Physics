@@ -697,16 +697,16 @@ class ElectronModule
   void fillMapMLPID(TCollision const& collision, TTrack const& track)
   {
     if (fElectronCut.usePIDML) {
+      if (!isElectron_TOFif(track, collision, fElectronCut)) { // minimal n sigma cut is taken from the main electron cut.
+        return;
+      }
+
       o2::dataformats::DCA mDcaInfoCov;
       mDcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       trackParCov.setPID(o2::track::PID::Electron);
       bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
       if (!isPropOK) {
-        return;
-      }
-
-      if (!isElectron_TOFif(track, collision, fElectronCut)) { // minimal n sigma cut is taken from the main electron cut.
         return;
       }
 
@@ -726,7 +726,7 @@ class ElectronModule
       }
       candidate.meanClusterSizeITSobCosTgl = static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(trackParCov.getTgl()));
 
-      std::vector<float> inputFeatures = mlResponsePID.getInputFeatures(candidate);
+      auto inputFeatures = mlResponsePID.getInputFeatures(candidate);
       float binningFeature = mlResponsePID.getBinningFeature(candidate);
 
       int pbin = lower_bound(fElectronCut.binsMl.value.begin(), fElectronCut.binsMl.value.end(), binningFeature) - fElectronCut.binsMl.value.begin() - 1;
@@ -1671,7 +1671,7 @@ class ElectronModule
             candidate.signedMassLH = electron.sign() * hadron.sign() * eTpair.mass;
             candidate.tpcNSigmaKa = hadron.tpcNSigmaKa();
 
-            std::vector<float> inputFeatures = mlResponseSCTeT.getInputFeatures(candidate);
+            auto inputFeatures = mlResponseSCTeT.getInputFeatures(candidate);
             float binningFeature = mlResponseSCTeT.getBinningFeature(candidate);
 
             int pbin = lower_bound(fConfigDFeT.binsMl.value.begin(), fConfigDFeT.binsMl.value.end(), binningFeature) - fConfigDFeT.binsMl.value.begin() - 1;
@@ -1721,7 +1721,7 @@ class ElectronModule
             candidate.ptL = trackParCov.getPt();
             candidate.massH = o2::constants::physics::MassK0Short;
 
-            std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
+            auto inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
             float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
 
             int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
@@ -1772,7 +1772,7 @@ class ElectronModule
               candidate.ptL = trackParCov.getPt();
               candidate.massH = o2::constants::physics::MassLambda;
 
-              std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
+              auto inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
 
               int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
@@ -1823,7 +1823,7 @@ class ElectronModule
               candidate.ptL = trackParCov.getPt();
               candidate.massH = o2::constants::physics::MassXiMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+              auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
               int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
@@ -1874,7 +1874,7 @@ class ElectronModule
               candidate.ptL = trackParCov.getPt();
               candidate.massH = o2::constants::physics::MassOmegaMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+              auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
               int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
@@ -1925,7 +1925,7 @@ class ElectronModule
               candidate.ptL = trackParCov.getPt();
               candidate.massH = o2::constants::physics::MassLambda;
 
-              std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
+              auto inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
 
               int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
@@ -1976,7 +1976,7 @@ class ElectronModule
               candidate.ptL = trackParCov.getPt();
               candidate.massH = o2::constants::physics::MassXiMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+              auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
               int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
@@ -2027,7 +2027,7 @@ class ElectronModule
               candidate.ptL = trackParCov.getPt();
               candidate.massH = o2::constants::physics::MassOmegaMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+              auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
               float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
               int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
