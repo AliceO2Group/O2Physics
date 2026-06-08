@@ -4131,11 +4131,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               continue;
             }
 
-            // bachelor1 momentum is invariant across the inner (bachelor2) loop;
-            // pVector() is a dynamic column with no caching (it recomputes
-            // sin/cos on every call), so evaluate it once here instead of on
-            // every bachelor2 iteration.
-            const std::array<float, 3> pVecCharmBachelor1 = trackCharmBachelor1.pVector();
+            const auto pVecCharmBachelor1 = trackCharmBachelor1.pVector();
 
             // second loop over tracks
             for (auto trackIdCharmBachelor2 = trackIdCharmBachelor1 + 1; trackIdCharmBachelor2 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor2) {
