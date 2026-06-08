@@ -16,6 +16,8 @@
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
 
+// o2-linter: disable=name/workflow-file
+
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/mcCentrality.h"
