@@ -4131,6 +4131,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
               continue;
             }
 
+            const auto pVecCharmBachelor1 = trackCharmBachelor1.pVector();
+
             // second loop over tracks
             for (auto trackIdCharmBachelor2 = trackIdCharmBachelor1 + 1; trackIdCharmBachelor2 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor2) {
 
@@ -4154,7 +4156,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 continue;
               }
 
-              if (!isPreselectedCandidateXic(pVecCasc, trackCharmBachelor1.pVector(), trackCharmBachelor2.pVector())) {
+              if (!isPreselectedCandidateXic(pVecCasc, pVecCharmBachelor1, trackCharmBachelor2.pVector())) {
                 continue;
               }
 
