@@ -94,7 +94,7 @@ namespace testtrack
 // Track properties
 DECLARE_SOA_COLUMN(Colid, colid, int32_t); // Collision ID
 DECLARE_SOA_COLUMN(Charge, charge, int16_t);
-DECLARE_SOA_COLUMN(P, p, uint64_t );
+DECLARE_SOA_COLUMN(P, p, uint64_t);
 DECLARE_SOA_COLUMN(Dedx, dedx, uint16_t);
 DECLARE_SOA_COLUMN(Dcaxy, dcaxy, int16_t);
 DECLARE_SOA_COLUMN(Dcaz, dcaz, int16_t);
