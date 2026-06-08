@@ -444,6 +444,7 @@ struct JEPFlowAnalysis {
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+    ft0geom.calculateChannelCenter();
 
     detId = getdetId(cfgDetName);
     refAId = getdetId(cfgRefAName);

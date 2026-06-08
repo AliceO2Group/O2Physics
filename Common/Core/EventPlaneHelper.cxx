@@ -74,7 +74,6 @@ double EventPlaneHelper::GetPhiFT0(int chno, const o2::ft0::Geometry& ft0geom)
     offsetY = mOffsetFT0AY;
   }
 
-  ft0geom.calculateChannelCenter();
   auto chPos = ft0geom.getChannelCenter(chno);
 
   return TMath::ATan2(chPos.Y() + offsetY, chPos.X() + offsetX);
