@@ -16,6 +16,8 @@
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
 
+// o2-linter: disable=name/workflow-file
+
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -346,7 +348,7 @@ struct lfNucleiBATask {
     const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
     const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
-    if (doprocessData == true && doprocessMCReco == true) {
+    if (((doprocessData == true) || (doprocessDataLfPid == true)) && ((doprocessMCReco == true) || (doprocessMCRecoLfPid == true) || (doprocessMCGen == true))) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
     }
     if (doprocessEvSgLossMC) {
@@ -460,6 +462,11 @@ struct lfNucleiBATask {
         histoGen.get<TH2>(HIST("events/hMCGenRecoVsMult"))->GetXaxis()->SetBinLabel(1, "INEL");
         histoGen.get<TH2>(HIST("events/hMCGenRecoVsMult"))->GetXaxis()->SetBinLabel(2, "INELgt0");
 
+        histoGen.add("events/hMCRecoVsMult", "hMCRecoVsMult", HistType::kTH2D, {{3, 0.f, 3.f}, {binsPercentile}});
+        histoGen.get<TH2>(HIST("events/hMCRecoVsMult"))->GetXaxis()->SetBinLabel(1, "All");
+        histoGen.get<TH2>(HIST("events/hMCRecoVsMult"))->GetXaxis()->SetBinLabel(2, "Ev sel passed");
+        histoGen.get<TH2>(HIST("events/hMCRecoVsMult"))->GetXaxis()->SetBinLabel(3, "INELgt0");
+
         histoGen.add("helium/MCGen/ptGenVsMult_INEL_Prim_He", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
         histoGen.add("helium/MCGen/ptGenVsMult_INEL_Prim_antiHe", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
         histoGen.add("helium/MCGen/ptGenVsMult_INELgt0_Prim_He", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
@@ -486,7 +493,9 @@ struct lfNucleiBATask {
       debugHistos.add<TH1>("qa/h1VtxZ_Centrality", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
       if (enableCentrality) {
-        debugHistos.add<TH1>("event/hFT0M", "hFT0M", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+        debugHistos.add<TH1>("event/hFT0M", "hFT0M (INEL)", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+        debugHistos.add<TH1>("event/hFT0M_INELgt0", "hFT0M (INELgt0)", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+        debugHistos.add<TH1>("event/hFT0M_INELgt1", "hFT0M (INELgt1)", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
         debugHistos.add<TH1>("event/hFV0M", "hFV0M", HistType::kTH1F, {{binsPercentile, "Centrality FV0M"}});
       }
     }
@@ -1802,9 +1811,10 @@ struct lfNucleiBATask {
       } else {
         histos.add<TH2>("tracks/deuteron/h2DeuteronVspTNSigmaTPC", "NSigmaTPC(d) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
         histos.add<TH2>("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC", "NSigmaTPC(#bar{d}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
-        histos.add<TH2>("tracks/deuteron/h2DeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(d) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
-        histos.add<TH2>("tracks/deuteron/h2antiDeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(#bar{d}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
       }
+
+      histos.add<TH2>("tracks/deuteron/h2DeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(d) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
+      histos.add<TH2>("tracks/deuteron/h2antiDeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(#bar{d}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
     }
     if (enableTr) {
       histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaTPC", "NSigmaTPC(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
@@ -2166,11 +2176,13 @@ struct lfNucleiBATask {
       }
     }
     // To be optimised
-    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight) {
+    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight && !doprocessEvSgLossMC && !doprocessMCGenLosses) {
+      LOG(info) << "DATA mode ";
       LOG(info) << "Histograms of lfNucleiBATask:";
       histos.print();
       return;
     }
+    LOG(info) << " MC mode ";
     // MC histograms  -   all, primary, sec. from weak decay, sec. from material
     if (enableCentrality)
       spectraGen.add("histGenVetxZ", "PosZ generated events", HistType::kTH2F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}, {binsPercentile, "Centrality FT0M"}});
@@ -2306,10 +2318,12 @@ struct lfNucleiBATask {
       spectraGen.add("alpha/histGenPtantiAlSec", "generated particles", HistType::kTH1F, {ptAxis});
       spectraGen.add("alpha/histSecTransportPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
     }
+
+    LOG(info) << "MC Histograms defined";
+    // LOG(info) << "Histograms of lfNucleiBATask:";
     LOG(info) << "Histograms of lfNucleiBATask:";
     histos.print();
-    if (doprocessMCGen)
-      spectraGen.print();
+    spectraGen.print();
   }
 
   template <bool IsMC, bool IsFilteredData, typename CollisionType, typename TracksType, typename ParticleType>
@@ -2445,8 +2459,13 @@ struct lfNucleiBATask {
       histos.fill(HIST("event/h1VtxZ"), event.posZ(), centFT0M);
     else
       histos.fill(HIST("event/h1VtxZ"), event.posZ());
-    if (enableDebug && enableCentrality)
+    if (enableDebug && enableCentrality) {
       debugHistos.fill(HIST("event/hFT0M"), centFT0M);
+      if (event.isInelGt0())
+        debugHistos.fill(HIST("event/hFT0M_INELgt0"), centFT0M);
+      if (event.isInelGt1())
+        debugHistos.fill(HIST("event/hFT0M_INELgt1"), centFT0M);
+    }
 
     if constexpr (IsFilteredData) {
       if (enableCentrality)
@@ -4595,12 +4614,12 @@ struct lfNucleiBATask {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             break;
           case 1:
-            if (track.hasTRD()) {
+            if (track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             }
             break;
           case 2:
-            if (!track.hasTRD()) {
+            if (!track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             }
             break;
@@ -4620,12 +4639,12 @@ struct lfNucleiBATask {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             break;
           case 1:
-            if (track.hasTRD()) {
+            if (track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             }
             break;
           case 2:
-            if (!track.hasTRD()) {
+            if (!track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             }
             break;
@@ -6667,7 +6686,7 @@ struct lfNucleiBATask {
       }
     }
   } // Close processMCGen
-  PROCESS_SWITCH(lfNucleiBATask, processMCGen, "process MC Generated", true);
+  PROCESS_SWITCH(lfNucleiBATask, processMCGen, "process MC Generated", false);
 
   void processEvSgLossMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                          aod::McParticles const& mcParticles,
@@ -6755,9 +6774,6 @@ struct lfNucleiBATask {
   }
   PROCESS_SWITCH(lfNucleiBATask, processEvSgLossMC, "process MC SignLoss", false);
 
-  //   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-  //                    aod::McParticles const& mcParticles)
-
   // EVENT LOSS, SIGNAL LOSS and EFFICIENCY CHECKER process function
   void processMCGenLosses(
     soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
@@ -6831,6 +6847,8 @@ struct lfNucleiBATask {
 
       // Check event selection
       histoGen.fill(HIST("events/hMCReco"), 0.5);
+      if (enableCentrality)
+        histoGen.fill(HIST("events/hMCRecoVsMult"), 0.5, mcCollision.centFT0M());
       if (evselOptions.useTVXtrigger && !hasTVX)
         continue;
       if (evselOptions.removeTFBorder && !hasNoTFB)
@@ -6838,11 +6856,15 @@ struct lfNucleiBATask {
       if (evselOptions.removeITSROFBorder && !hasNoItsRofFB)
         continue;
       histoGen.fill(HIST("events/hMCReco"), 1.5);
+      if (enableCentrality)
+        histoGen.fill(HIST("events/hMCRecoVsMult"), 1.5, mcCollision.centFT0M());
 
       recoIdxINEL++;
 
       if (collision.isInelGt0() && isINELgt0true) {
         histoGen.fill(HIST("events/hMCReco"), 2.5);
+        if (enableCentrality)
+          histoGen.fill(HIST("events/hMCRecoVsMult"), 2.5, mcCollision.centFT0M());
         recoIdxINELgt0++;
       }
 
