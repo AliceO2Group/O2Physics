@@ -132,8 +132,8 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
                   full::CandidateSelFlag,
-                  full::Cent,
-                  full::CandidateSign);
+                  full::CandidateSign,
+                  full::Cent);
 
 // full table for local Rotation & Event Mixing
 DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
@@ -526,8 +526,8 @@ struct HfTaskCd {
             nSigmaItsDe,
             nSigmaTofDe,
             candFlag,
-            cent,
-            candSign);
+            candSign,
+            cent);
         }
 
         if (fillCandFullTree) {
