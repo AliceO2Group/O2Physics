@@ -53,6 +53,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -80,6 +81,7 @@ struct studyDCAFitter {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   // Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for wrongly found SV"};
 
   struct : ConfigurableGroup {
     std::string prefix = "electronCut";
@@ -153,6 +155,10 @@ struct studyDCAFitter {
     mRunNumber = 0;
     d_bz = 0;
 
+    std::random_device seed_gen;
+    engine = std::mt19937(seed_gen());
+    dist01 = std::uniform_real_distribution<float>(0.0f, 1.0f);
+
     addHistograms();
   }
 
@@ -166,6 +172,9 @@ struct studyDCAFitter {
   o2::vertexing::DCAFitterN<2> fitter;
   o2::dataformats::DCA mDcaInfoCov;
   o2::dataformats::VertexBase mVtx;
+
+  std::mt19937 engine;
+  std::uniform_real_distribution<float> dist01;
 
   template <typename TBC>
   void initCCDB(TBC const& bc)
@@ -411,11 +420,11 @@ struct studyDCAFitter {
     auto t1mc = t1.template mcParticle_as<aod::McParticles>();
     auto t2mc = t2.template mcParticle_as<aod::McParticles>();
 
-    int mcCommonMotherid = FindCommonMother(t1mc, t2mc, mcParticles);
+    int mcCommonMotherId = FindCommonMother(t1mc, t2mc, mcParticles);
     int hfee_type = IsHF(t1mc, t2mc, mcParticles);
 
-    if (mcCommonMotherid > -1) {
-      auto cmp = mcParticles.rawIteratorAt(mcCommonMotherid);
+    if (mcCommonMotherId > -1) {
+      auto cmp = mcParticles.rawIteratorAt(mcCommonMotherId);
       switch (std::abs(cmp.pdgCode())) {
         case 23:
           if constexpr (signType == 0) { // ULS
@@ -495,7 +504,6 @@ struct studyDCAFitter {
             fRegistry.fill(HIST("Pair/PV/b2c2e_b2e_diffb/lsmm/hs"), v12.M(), v12.Pt(), pair_dca);
           }
           break;
-
         default:
           break;
       } // end of switch for HFee
@@ -583,19 +591,22 @@ struct studyDCAFitter {
     float pteeAtSV = RecoDecay::sqrtSumOfSquares(pvecSum[0], pvecSum[1]);
     float yeeAtSV = RecoDecay::y(pvecSum, meeAtSV);
 
-    int pdgCodeCM = 0;
+    auto t1mc = t1.template mcParticle_as<aod::McParticles>(); // true lepton
+    auto t2mc = t2.template mcParticle_as<aod::McParticles>(); // true lepton
+    bool isCorrectCollision1 = t1mc.mcCollisionId() == collision.mcCollisionId();
+    bool isCorrectCollision2 = t2mc.mcCollisionId() == collision.mcCollisionId();
+    int pdgCodeMother1 = 0;
+    int pdgCodeMother2 = 0;
 
-    auto t1mc = t1.template mcParticle_as<aod::McParticles>();
-    auto t2mc = t2.template mcParticle_as<aod::McParticles>();
-
-    int mcCommonMotherid = FindCommonMother(t1mc, t2mc, mcParticles);
+    int mcCommonMotherId = FindCommonMother(t1mc, t2mc, mcParticles);
     int hfee_type = IsHF(t1mc, t2mc, mcParticles);
     bool keepSignal = false;
     uint8_t dileptonType = 0;
 
-    if (mcCommonMotherid > -1) {
-      auto cmp = mcParticles.rawIteratorAt(mcCommonMotherid);
-      pdgCodeCM = cmp.pdgCode();
+    if (mcCommonMotherId > -1) {
+      auto cmp = mcParticles.rawIteratorAt(mcCommonMotherId);
+      pdgCodeMother1 = cmp.pdgCode();
+      pdgCodeMother2 = cmp.pdgCode();
       switch (std::abs(cmp.pdgCode())) {
         case 23:
           keepSignal = true;
@@ -678,6 +689,10 @@ struct studyDCAFitter {
       } // end of switch for LF
     } else if (hfee_type > -1) {
       keepSignal = true;
+      auto t1mcMother = t1mc.template mothers_first_as<aod::McParticles>();
+      auto t2mcMother = t2mc.template mothers_first_as<aod::McParticles>();
+      pdgCodeMother1 = t1mcMother.pdgCode();
+      pdgCodeMother2 = t2mcMother.pdgCode();
       switch (hfee_type) {
         case static_cast<int>(EM_HFeeType::kCe_Ce):
           dileptonType = 3;
@@ -765,18 +780,26 @@ struct studyDCAFitter {
     } else {
       keepSignal = true;
       dileptonType = 0; // bkg
+      auto t1mcMother = t1mc.template mothers_first_as<aod::McParticles>();
+      auto t2mcMother = t2mc.template mothers_first_as<aod::McParticles>();
+      pdgCodeMother1 = t1mcMother.pdgCode();
+      pdgCodeMother2 = t2mcMother.pdgCode();
     }
 
     if (keepSignal) {
+      if (dileptonType == 0 && dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+        return;
+      }
+
       dileptonTable(eventTable.lastIndex() + 1,
-                    signed1Pt1, eta1, dcaXY1, dcaZ1, CYY1, CZY1, CZZ1,
-                    signed1Pt2, eta2, dcaXY2, dcaZ2, CYY2, CZY2, CZZ2,
+                    signed1Pt1, eta1, dcaXY1, dcaZ1, CYY1, CZY1, CZZ1, isCorrectCollision1, pdgCodeMother1,
+                    signed1Pt2, eta2, dcaXY2, dcaZ2, CYY2, CZY2, CZZ2, isCorrectCollision2, pdgCodeMother2,
                     meeAtSV, pteeAtSV, yeeAtSV,
                     chi2PCA,
                     cpa, cpaXY, cpaRZ,
                     lxy, lz, lxyz,
                     lxyErr, lzErr, lxyzErr,
-                    dileptonType, pdgCodeCM);
+                    dileptonType);
     }
   }
 
@@ -823,6 +846,11 @@ struct studyDCAFitter {
           continue;
         }
         if (std::abs(mctrack.pdgCode()) != 11) {
+          continue;
+        }
+
+        auto mcMother = mctrack.template mothers_first_as<aod::McParticles>();
+        if (std::abs(mcMother.pdgCode()) > 1e+9) {
           continue;
         }
         if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
