@@ -77,10 +77,10 @@ namespace testcol
 {
 // Event properties
 DECLARE_SOA_COLUMN(Gi, gi, int64_t);
-DECLARE_SOA_COLUMN(Rn, rn, int32_t);             // run number
+DECLARE_SOA_COLUMN(Rn, rn, int32_t);         // run number
 DECLARE_SOA_COLUMN(Cent, cent, float);       // FT0C centrality
-DECLARE_SOA_COLUMN(Mult, mult, int32_t);         // TPC multiplicity
-DECLARE_SOA_COLUMN(Occu, occu, int32_t);         // Occupancy ITS
+DECLARE_SOA_COLUMN(Mult, mult, int32_t);     // TPC multiplicity
+DECLARE_SOA_COLUMN(Occu, occu, int32_t);     // Occupancy ITS
 DECLARE_SOA_COLUMN(Occuft0, occuft0, float); // Occupancy FT0C amplitudes
 DECLARE_SOA_COLUMN(VertexX, vertexX, float);
 DECLARE_SOA_COLUMN(VertexY, vertexY, float);
