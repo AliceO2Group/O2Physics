@@ -164,7 +164,6 @@ struct JetDsSpecSubs {
     }
 
     float sum = 0.f;
-    
     for (auto const& trk : tracks) {
       const float dr = jetutilities::deltaR(jet, trk);
       sum += std::pow(trk.pt(), kappa) * std::pow(dr, alpha);
