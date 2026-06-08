@@ -137,7 +137,6 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
 
-  Configurable<bool> runJpsiToee{"runJpsiToee", false, "Run analysis for J/Psi to ee (debug)"};
   struct : o2::framework::ConfigurableGroup {
     // TPC PID
     Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -359,7 +358,7 @@ struct HfDataCreatorJpsiHadReduced {
   bool selectionTopol(const T1& candidate, const T2& trackPos, const T2& trackNeg)
   {
     auto candpT = candidate.pt();
-    auto candInvMass = runJpsiToee ? HfHelper::invMassJpsiToEE(candidate) : HfHelper::invMassJpsiToMuMu(candidate);
+    auto candInvMass = HfHelper::invMassJpsiToMuMu(candidate);
     auto pseudoPropDecLen = candidate.decayLengthXY() * candInvMass / candpT;
     auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
@@ -530,18 +529,10 @@ struct HfDataCreatorJpsiHadReduced {
     if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
       // B+ → J/Psi K+ → (µ+µ-) K+
       int indexRec = -1;
-      if (!runJpsiToee) {
-        indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{-kMuonMinus, +kMuonMinus, +kKPlus}, true, &sign, 3);
-      } else {
-        indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{-kElectron, +kElectron, +kKPlus}, true, &sign, 3);
-      }
+      indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{-kMuonMinus, +kMuonMinus, +kKPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // J/Psi → µ+µ-
-        if (!runJpsiToee) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kMuonMinus, +kMuonMinus}, true);
-        } else {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kElectron, +kElectron}, true);
-        }
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kMuonMinus, +kMuonMinus}, true);
         if (indexRec > -1) {
           flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
         } else {
@@ -560,18 +551,10 @@ struct HfDataCreatorJpsiHadReduced {
     } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
       // Bs → J/Psi phi → (µ+µ-) (K+K-)
       int indexRec = -1;
-      if (!runJpsiToee) {
-        indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kMuonMinus, +kMuonMinus, +kKPlus, -kKPlus}, true, &sign, 4);
-      } else {
-        indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kElectron, +kElectron, +kKPlus, -kKPlus}, true, &sign, 4);
-      }
+      indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kMuonMinus, +kMuonMinus, +kKPlus, -kKPlus}, true, &sign, 4);
       if (indexRec > -1) {
         // J/Psi → µ+µ-
-        if (!runJpsiToee) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 1);
-        } else {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kElectron, +kElectron}, true, &sign, 1);
-        }
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKK;
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kPhi, std::array{-kKPlus, +kKPlus}, true, &sign, 1);
@@ -639,15 +622,8 @@ struct HfDataCreatorJpsiHadReduced {
           // Match J/Psi -> µ+µ-
           auto candJpsiMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking J/Psi -> µ+µ-");
-          if (!runJpsiToee) {
-            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true)) {
-              flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
-            }
-          } else { // debug
-            // Printf("Checking J/Psi -> e+e-");
-            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true)) {
-              flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
-            }
+          if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true)) {
+            flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
           }
         }
 
@@ -680,9 +656,8 @@ struct HfDataCreatorJpsiHadReduced {
           auto candJpsiMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           auto candPhiMC = particlesMc.rawIteratorAt(particle.daughtersIds().back());
           // Printf("Checking J/Psi -> µ+µ- and phi -> K+K-");
-          if (runJpsiToee && RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true)) {
+          if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true)) {
             flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKK;
-          } else if (!runJpsiToee && RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true)) {
             flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKK;
           }
           // Check phi -> K+K-
@@ -776,7 +751,7 @@ struct HfDataCreatorJpsiHadReduced {
       // Apply the selections on the J/Psi candidates
       registry.fill(HIST("hSelectionsJpsi"), 1, candidate.pt());
 
-      if (!(candidate.hfflag() & (1 << (runJpsiToee ? aod::hf_cand_2prong::DecayType::JpsiToEE : aod::hf_cand_2prong::DecayType::JpsiToMuMu)))) {
+      if (!(candidate.hfflag() & (1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu))) {
         continue;
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoSkims, candidate.pt());
@@ -829,7 +804,7 @@ struct HfDataCreatorJpsiHadReduced {
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
       int const indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float const invMassJpsi = runJpsiToee ? HfHelper::invMassJpsiToEE(candidate) : HfHelper::invMassJpsiToMuMu(candidate);
+      float const invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
@@ -1053,11 +1028,7 @@ struct HfDataCreatorJpsiHadReduced {
       } // kaon loop
       if (fillHfCandJpsi) { // fill Jpsi table only once per Jpsi candidate
         double invMassJpsi{0.};
-        if (runJpsiToee) {
-          invMassJpsi = HfHelper::invMassJpsiToEE(candidate);
-        } else {
-          invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
-        }
+        invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
         hfJpsi(trackPos.globalIndex(), trackNeg.globalIndex(),
                indexHfReducedCollision,
                candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex(),
