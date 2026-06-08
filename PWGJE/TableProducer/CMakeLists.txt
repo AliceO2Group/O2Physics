@@ -14,27 +14,27 @@ add_subdirectory(Matching)
 if(FastJet_FOUND)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer
-                    SOURCES derivedDataProducer.cxx
+                    SOURCES jetDeriveddataProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils O2Physics::SGCutParHolder
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
-                    SOURCES derivedDataTriggerProducer.cxx
+                    SOURCES jetDeriveddataTriggerProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-selector
-                    SOURCES derivedDataSelector.cxx
+                    SOURCES jetDeriveddataSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-writer
-                    SOURCES derivedDataWriter.cxx
+                    SOURCES jetDeriveddataWriter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-luminosity-producer
-                    SOURCES luminosityProducer.cxx
+                    SOURCES jetLuminosityCalculator.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -44,12 +44,12 @@ o2physics_add_dpl_workflow(jet-luminosity-calculator
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-eventweight-mcd
-                    SOURCES jetEventWeightMCD.cxx
+                    SOURCES jetEventweightMcd.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-eventweight-mcp
-                    SOURCES jetEventWeightMCP.cxx
+                    SOURCES jetEventweightMcp.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -64,12 +64,12 @@ o2physics_add_dpl_workflow(jet-track-derived
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-hf-definition
-                    SOURCES heavyFlavourDefinition.cxx
+                    SOURCES jetHfDefinition.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-taggerhf
-                    SOURCES jetTaggerHF.cxx
+                    SOURCES jetTaggerhf.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
