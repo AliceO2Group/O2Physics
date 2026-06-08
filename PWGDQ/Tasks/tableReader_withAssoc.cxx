@@ -1399,7 +1399,7 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithCollQvectorCentrSkimmed");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow");
@@ -2762,11 +2762,11 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-  void processBarrelOnlyWithCollQvectorCentrSkimmed(MyEventsQvectorCentrSelected const& events,
+  void processBarrelOnlyWithQvectorCentrSkimmed(MyEventsQvectorCentrSelected const& events,
                                                      soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
-                                                     MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks)
+                                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
@@ -2850,7 +2850,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCovWithMultExtra, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with MultsExtra", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrSkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks, with Qvector from central framework", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollQvectorCentrSkimmed, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with Qvector from central framework", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrSkimmed, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with Qvector from central framework", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedFlow, "Run barrel only pairing, with skimmed tracks and with flow", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
