@@ -77,27 +77,27 @@ namespace testcol
 {
 // Event properties
 DECLARE_SOA_COLUMN(Gi, gi, int64_t);
-DECLARE_SOA_COLUMN(Rn, rn, int);             // run number
+DECLARE_SOA_COLUMN(Rn, rn, int32_t);             // run number
 DECLARE_SOA_COLUMN(Cent, cent, float);       // FT0C centrality
-DECLARE_SOA_COLUMN(Mult, mult, int);         // TPC multiplicity
-DECLARE_SOA_COLUMN(Occu, occu, int);         // Occupancy ITS
+DECLARE_SOA_COLUMN(Mult, mult, int32_t);         // TPC multiplicity
+DECLARE_SOA_COLUMN(Occu, occu, int32_t);         // Occupancy ITS
 DECLARE_SOA_COLUMN(Occuft0, occuft0, float); // Occupancy FT0C amplitudes
 DECLARE_SOA_COLUMN(VertexX, vertexX, float);
 DECLARE_SOA_COLUMN(VertexY, vertexY, float);
 DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);
-DECLARE_SOA_COLUMN(Psi2, psi2, short);
-DECLARE_SOA_COLUMN(Psi3, psi3, short);
+DECLARE_SOA_COLUMN(Psi2, psi2, int16_t);
+DECLARE_SOA_COLUMN(Psi3, psi3, int16_t);
 } // namespace testcol
 namespace testtrack
 {
 
 // Track properties
 DECLARE_SOA_COLUMN(Colid, colid, int32_t); // Collision ID
-DECLARE_SOA_COLUMN(Charge, charge, short);
-DECLARE_SOA_COLUMN(P, p, unsigned long);
-DECLARE_SOA_COLUMN(Dedx, dedx, unsigned short);
-DECLARE_SOA_COLUMN(Dcaxy, dcaxy, short);
-DECLARE_SOA_COLUMN(Dcaz, dcaz, short);
+DECLARE_SOA_COLUMN(Charge, charge, int16_t);
+DECLARE_SOA_COLUMN(P, p, uint64_t );
+DECLARE_SOA_COLUMN(Dedx, dedx, uint16_t);
+DECLARE_SOA_COLUMN(Dcaxy, dcaxy, int16_t);
+DECLARE_SOA_COLUMN(Dcaz, dcaz, int16_t);
 } // namespace testtrack
 DECLARE_SOA_TABLE(TableCol, "AOD", "TABLECOL",
                   testcol::Gi,
@@ -223,7 +223,7 @@ struct tableDiffWake {
       for (Int_t i_bit = 0; i_bit < 20; i_bit++) {
         if ((Particle_px & ((Long64_t)1 << i_bit)))
           Substitute_p |= (ULong64_t)1 << i_bit;
-      };
+      }
 
       Long64_t Particle_py = (track.py() * 6000);
       if (Particle_py < 0)
@@ -233,7 +233,7 @@ struct tableDiffWake {
       for (Int_t i_bit = 21; i_bit < 41; i_bit++) {
         if ((Particle_py & ((Long64_t)1 << (i_bit - 21))))
           Substitute_p |= (ULong64_t)1 << i_bit;
-      };
+      }
 
       Long64_t Particle_pz = (track.pz() * 6000);
       if (Particle_pz < 0)
@@ -243,7 +243,7 @@ struct tableDiffWake {
       for (Int_t i_bit = 42; i_bit < 62; i_bit++) {
         if ((Particle_pz & ((Long64_t)1 << (i_bit - 42))))
           Substitute_p |= (ULong64_t)1 << i_bit;
-      };
+      }
 
       // dEdx
       UShort_t Substitute_dEdx = (UShort_t)(track.tpcSignal() * 10);
