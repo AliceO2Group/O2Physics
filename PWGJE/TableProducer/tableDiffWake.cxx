@@ -16,16 +16,16 @@
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <Framework/AnalysisHelpers.h>
 // For centrality:
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 // For TPC Mult
 #include "Common/DataModel/Multiplicity.h"
 // For DCA and TrackSelection
@@ -42,7 +42,7 @@
 TRACK DATA
 -------------------------------------------------------------------------------------------
 BEFORE COMPRESSION                              AFTER COMPRESSION
-Name            Data Type       Size(b)         Name            Data Type       Size(b)     
+Name            Data Type       Size(b)         Name            Data Type       Size(b)
 ColID           int32_t         4               [same]
 Charge          short           2               [same]
 Px, Py, Pz      float           3x4             P               unsigned long   8
@@ -71,53 +71,54 @@ OVERALL COMPRESSION 40b->36b
 */
 
 //--------------------------------------------------------
-namespace o2::aod {
+namespace o2::aod
+{
 namespace testcol
 {
     // Event properties
-    DECLARE_SOA_COLUMN(GI, gi, int64_t);
-    DECLARE_SOA_COLUMN(RN, rn, int);                 // run number
+    DECLARE_SOA_COLUMN(Gi, gi, int64_t);
+    DECLARE_SOA_COLUMN(Rn, rn, int);                 // run number
     DECLARE_SOA_COLUMN(Cent, cent, float);           // FT0C centrality
     DECLARE_SOA_COLUMN(Mult, mult, int);             // TPC multiplicity
     DECLARE_SOA_COLUMN(Occu, occu, int);             // Occupancy ITS
-    DECLARE_SOA_COLUMN(OccuFT0, occuft0, float);       // Occupancy FT0C amplitudes
+    DECLARE_SOA_COLUMN(Occuft0, occuft0, float);       // Occupancy FT0C amplitudes
     DECLARE_SOA_COLUMN(VertexX, vertexX, float);
     DECLARE_SOA_COLUMN(VertexY, vertexY, float);
     DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);
     DECLARE_SOA_COLUMN(Psi2, psi2, short);
     DECLARE_SOA_COLUMN(Psi3, psi3, short);
-}
+} // namespace testcol
 namespace testtrack
 {
 
     // Track properties
-    DECLARE_SOA_COLUMN(ColID, colid, int32_t);        // Collision ID
+    DECLARE_SOA_COLUMN(Colid, colid, int32_t);        // Collision ID
     DECLARE_SOA_COLUMN(Charge, charge, short);
     DECLARE_SOA_COLUMN(P, p, unsigned long);
-    DECLARE_SOA_COLUMN(DEdx, dedx, unsigned short);
+    DECLARE_SOA_COLUMN(Dedx, dedx, unsigned short);
     DECLARE_SOA_COLUMN(DCAXY, dcaxy, short);
     DECLARE_SOA_COLUMN(DCAZ, dcaz, short);
-}
+} // namespace testtrack
 DECLARE_SOA_TABLE(TableCol, "AOD", "TABLECOL",
-                  testcol::GI,
-                  testcol::RN,
+                  testcol::Gi,
+                  testcol::Rn,
                   testcol::Cent,
                   testcol::Mult,
                   testcol::Occu,
-                  testcol::OccuFT0,
+                  testcol::Occuft0,
                   testcol::VertexX,
                   testcol::VertexY,
                   testcol::VertexZ,
                   testcol::Psi2,
                   testcol::Psi3);
 DECLARE_SOA_TABLE(TableTrack, "AOD", "TABLETRACK",
-                  testtrack::ColID,
+                  testtrack::Colid,
                   testtrack::Charge,
                   testtrack::P,
-                  testtrack::DEdx,
+                  testtrack::Dedx,
                   testtrack::DCAXY,
                   testtrack::DCAZ);
-}
+} // namespace o2::aod
 //--------------------------------------------------------
 using namespace o2;
 using namespace o2::framework;
@@ -126,9 +127,9 @@ struct tableDiffWake {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
-  Configurable<double>   pT_thresh{"pT_thresh",20.0,"pT threshold"};
-  Configurable<float>    cent_max{"cent_max",10,"centrality"};
-  Configurable<float>    z_vert_cut{"z_vert_cut",10.0,"z_vertex cut"};
+  Configurable<double> pT_thresh{"pT_thresh",20.0,"pT threshold"};
+  Configurable<float> cent_max{"cent_max",10,"centrality"};
+  Configurable<float> z_vert_cut{"z_vert_cut",10.0,"z_vertex cut"};
 
   Produces<o2::aod::TableCol> testcol;
   Produces<o2::aod::TableTrack> testtrack;
@@ -146,7 +147,7 @@ struct tableDiffWake {
 
   using bcs = aod::BCs;
   void process(soa::Join<aod::Collisions, aod::EvSels,aod::CentFT0Cs, aod::TPCMults, aod::QvectorFT0Cs>::iterator const& col,
-               soa::Join<aod::TracksIU,aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>  const& tracks,
+               soa::Join<aod::TracksIU,aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const& tracks,
                bcs const&)
   {
     // Event selection corresponds to sel8FullPbPb
@@ -182,29 +183,30 @@ struct tableDiffWake {
         break;
       }
       }
-      if(!eventHighpT) return;
-      //------------------------------------------------------------
-      // Translate values to less memory consuming values
-      Short_t Substitute_ep2 = (Short_t)(ep2*1000);
-      Short_t Substitute_ep3 = (Short_t)(ep3*1000);
+    if (!eventHighpT)
+        return;
+    //------------------------------------------------------------
+    // Translate values to less memory consuming values
+    Short_t Substitute_ep2 = (Short_t)(ep2*1000);
+    Short_t Substitute_ep3 = (Short_t)(ep3*1000);
 
-      testcol(col.globalIndex(),
-              run,
-              col.centFT0C(),
-              col.multTPC(),
-              col.trackOccupancyInTimeRange(),
-              col.ft0cOccupancyInTimeRange(),
-              col.posX(),
-              col.posY(),
-              col.posZ(),
-              Substitute_ep2,
-              Substitute_ep3);
+    testcol(col.globalIndex(),
+            run,
+            col.centFT0C(),
+            col.multTPC(),
+            col.trackOccupancyInTimeRange(),
+            col.ft0cOccupancyInTimeRange(),
+            col.posX(),
+            col.posY(),
+            col.posZ(),
+            Substitute_ep2,
+            Substitute_ep3);
 
-      for (auto& track : tracks) {
+    for (auto& track : tracks) {
 
         // Track cut
         if (!track.isGlobalTrack())
-          continue; // General track cuts
+            continue; // General track cuts
 
         histos.fill(HIST("etaHistogram"), track.eta());
         histos.fill(HIST("pTHistogram"), track.pt());
@@ -212,50 +214,59 @@ struct tableDiffWake {
         //------------ Translate values to less memory consuming values --------------------
         // Px, Py, Pz
         ULong64_t Substitute_p = 0;
+
         Long64_t Particle_px = (track.px() * 6000);
         if (Particle_px < 0)
-          Substitute_p |= (ULong64_t)1 << 20;
+            Substitute_p |= (ULong64_t)1 << 20;
         if (Particle_px < 0)
-          Particle_px = (-1) * Particle_px;
+            Particle_px = (-1) * Particle_px;
         for (Int_t i_bit = 0; i_bit < 20; i_bit++) {
-          if ((Particle_px & ((Long64_t)1 << i_bit)))
-            Substitute_p |= (ULong64_t)1 << i_bit;
+            if ((Particle_px & ((Long64_t)1 << i_bit)))
+                Substitute_p |= (ULong64_t)1 << i_bit;
         };
-          Long64_t Particle_py = (track.py()*6000);
-          if(Particle_py < 0)  Substitute_p |=(ULong64_t)1 << 41;
-          if(Particle_py < 0)  Particle_py = (-1)*Particle_py;
-          for(Int_t i_bit = 21; i_bit < 41 ;i_bit++)
-          {
-              if((Particle_py & ((Long64_t)1 <<  (i_bit-21))))  Substitute_p |= (ULong64_t)1 << i_bit;
-          };
-          Long64_t Particle_pz = (track.pz()*6000);
-          if(Particle_pz < 0)  Substitute_p |=(ULong64_t)1 << 62;
-          if(Particle_pz < 0)  Particle_pz = (-1)*Particle_pz;
-          for(Int_t i_bit = 42; i_bit < 62 ;i_bit++)
-          {
-              if((Particle_pz & ((Long64_t)1 <<  (i_bit-42))))  Substitute_p |= (ULong64_t)1 << i_bit;
-          };
 
-          //dEdx
-          UShort_t Substitute_dEdx = (UShort_t)(track.tpcSignal()*10);
+        Long64_t Particle_py = (track.py()*6000);
+        if(Particle_py < 0)
+            Substitute_p |=(ULong64_t)1 << 41;
+        if(Particle_py < 0)
+            Particle_py = (-1)*Particle_py;
+        for(Int_t i_bit = 21; i_bit < 41 ;i_bit++)
+        {
+            if((Particle_py & ((Long64_t)1 <<  (i_bit-21))))
+                Substitute_p |= (ULong64_t)1 << i_bit;
+        };
 
-          //DCA
-          Short_t Substitute_DCAXY = (Short_t)(track.dcaXY()*100);
-          Short_t Substitute_DCAZ = (Short_t)(track.dcaZ()*100);
+        Long64_t Particle_pz = (track.pz()*6000);
+        if(Particle_pz < 0)
+            Substitute_p |=(ULong64_t)1 << 62;
+        if(Particle_pz < 0)
+            Particle_pz = (-1)*Particle_pz;
+        for(Int_t i_bit = 42; i_bit < 62 ;i_bit++)
+        {
+            if((Particle_pz & ((Long64_t)1 <<  (i_bit-42))))
+                Substitute_p |= (ULong64_t)1 << i_bit;
+        };
 
-          //--------------- Fill track table ------------------
-          testtrack(track.collisionId(),
-                    track.sign(),
-                    Substitute_p,
-                    Substitute_dEdx,
-                    Substitute_DCAXY,
-                    Substitute_DCAZ);
-      }
+        //dEdx
+        UShort_t Substitute_dEdx = (UShort_t)(track.tpcSignal()*10);
+
+        //DCA
+        Short_t Substitute_DCAXY = (Short_t)(track.dcaXY()*100);
+        Short_t Substitute_DCAZ = (Short_t)(track.dcaZ()*100);
+
+        //--------------- Fill track table ------------------
+        testtrack(track.collisionId(),
+                  track.sign(),
+                  Substitute_p,
+                  Substitute_dEdx,
+                  Substitute_DCAXY,
+                  Substitute_DCAZ);
+    }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<tableDiffWake>(cfgc)};
+    return WorkflowSpec{
+        adaptAnalysisTask<tableDiffWake>(cfgc)};
 }
