@@ -141,31 +141,8 @@ struct HfDataCreatorJpsiHadReduced {
     // TPC PID
     Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
     Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
-    Configurable<double> nSigmaTpcElMax{"nSigmaTpcElMax", 4., "Electron nsigma cut on TPC only"};
-    Configurable<double> nSigmaTpcPiMin{"nSigmaTpcPiMin", 2.5, "Pion nsigma cut on TPC only"};
-    Configurable<double> nSigmaTpcPiMax{"nSigmaTpcPiMax", 99., "Pion nsigma cut on TPC only"};
-    Configurable<double> nSigmaTpcPrMin{"nSigmaTpcPrMin", -99., "Proton nsigma cut on TPC only"};
-    Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 99, "Proton nsigma cut on TPC only"};
-    Configurable<double> nSigmaTpcElCombinedMax{"nSigmaTpcElCombinedMax", 4., "Electron Nsigma cut on TPC combined with TOF"};
-    Configurable<double> nSigmaTpcPiCombinedMin{"nSigmaTpcPiCombinedMin", 2.5, "Pion Nsigma cut on TPC combined with TOF"};
-    Configurable<double> nSigmaTpcPiCombinedMax{"nSigmaTpcPiCombinedMax", 99., "Pion Nsigma cut on TPC combined with TOF"};
-    Configurable<double> nSigmaTpcPrCombinedMin{"nSigmaTpcPrCombinedMin", -99., "Proton Nsigma cut on TPC combined with TOF"};
-    Configurable<double> nSigmaTpcPrCombinedMax{"nSigmaTpcPrCombinedMax", 99, "Proton Nsigma cut on TPC combined with TOF"};
-    // TOF PID
-    Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-    Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
-    Configurable<double> nSigmaTofElMax{"nSigmaTofElMax", 4., "Electron nsigma cut on TPC only"};
-    Configurable<double> nSigmaTofPiMin{"nSigmaTofPiMin", -99, "Pion nsigma cut on TPC only"};
-    Configurable<double> nSigmaTofPiMax{"nSigmaTofPiMax", 99., "Pion nsigma cut on TPC only"};
-    Configurable<double> nSigmaTofPrMin{"nSigmaTofPrMin", -99, "Proton nsigma cut on TPC only"};
-    Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 99., "Proton nsigma cut on TPC only"};
-    Configurable<double> nSigmaTofElCombinedMax{"nSigmaTofElCombinedMax", 4., "Electron Nsigma cut on TOF combined with TPC"};
-    Configurable<double> nSigmaTofPiCombinedMin{"nSigmaTofPiCombinedMin", 2.5, "Pion Nsigma cut on TOF combined with TPC"};
-    Configurable<double> nSigmaTofPiCombinedMax{"nSigmaTofPiCombinedMax", 99., "Pion Nsigma cut on TOF combined with TPC"};
-    Configurable<double> nSigmaTofPrCombinedMin{"nSigmaTofPrCombinedMin", -99., "Proton Nsigma cut on TOF combined with TPC"};
-    Configurable<double> nSigmaTofPrCombinedMax{"nSigmaTofPrCombinedMax", 99, "Proton Nsigma cut on TOF combined with TPC"};
-    // AND logic for TOF+TPC PID (as in Run2)
-    Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", true, "Use AND logic for TPC and TOF PID"};
+    Configurable<double> nSigmaTpcElMinForVeto{"nSigmaTpcElMinForVeto", -1., "Electron nsigma cut on TPC only for veto (electrons within min and max are discarded)"};
+    Configurable<double> nSigmaTpcElMaxForVeto{"nSigmaTpcElMaxForVeto", 1., "Electron nsigma cut on TPC only for veto (electrons within min and max are discarded)"};
   } selectionsPid;
   Configurable<double> ptJpsiMin{"ptJpsiMin", 0., "Lower bound of J/Psi pT"};
   Configurable<double> ptJpsiMax{"ptJpsiMax", 50., "Upper bound of J/Psi pT"};
@@ -186,8 +163,6 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  TrackSelectorPi selectorPion;
-  TrackSelectorPr selectorProton;
   TrackSelectorEl selectorElectron;
 
   // CCDB service
@@ -224,26 +199,8 @@ struct HfDataCreatorJpsiHadReduced {
 
   void init(InitContext& initContext)
   {
-    selectorPion.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
-    selectorPion.setRangeNSigmaTpc(-selectionsPid.nSigmaTpcPiMax, selectionsPid.nSigmaTpcPiMax);
-    selectorPion.setRangeNSigmaTpcCondTof(-selectionsPid.nSigmaTpcPiCombinedMax, selectionsPid.nSigmaTpcPiCombinedMax);
-    selectorPion.setRangePtTof(selectionsPid.ptPidTofMin, selectionsPid.ptPidTofMax);
-    selectorPion.setRangeNSigmaTof(-selectionsPid.nSigmaTofPiMax, selectionsPid.nSigmaTofPiMax);
-    selectorPion.setRangeNSigmaTofCondTpc(-selectionsPid.nSigmaTofPiCombinedMax, selectionsPid.nSigmaTofPiCombinedMax);
-
-    selectorProton.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
-    selectorProton.setRangeNSigmaTpc(-selectionsPid.nSigmaTpcPrMax, selectionsPid.nSigmaTpcPrMax);
-    selectorProton.setRangeNSigmaTpcCondTof(-selectionsPid.nSigmaTpcPrCombinedMax, selectionsPid.nSigmaTpcPrCombinedMax);
-    selectorProton.setRangePtTof(selectionsPid.ptPidTofMin, selectionsPid.ptPidTofMax);
-    selectorProton.setRangeNSigmaTof(-selectionsPid.nSigmaTofPrMax, selectionsPid.nSigmaTofPrMax);
-    selectorProton.setRangeNSigmaTofCondTpc(-selectionsPid.nSigmaTofPrCombinedMax, selectionsPid.nSigmaTofPrCombinedMax);
-
     selectorElectron.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTpc(-selectionsPid.nSigmaTpcElMax, selectionsPid.nSigmaTpcElMax);
-    selectorElectron.setRangeNSigmaTpcCondTof(-selectionsPid.nSigmaTofElCombinedMax, selectionsPid.nSigmaTofElCombinedMax);
-    selectorElectron.setRangePtTof(selectionsPid.ptPidTofMin, selectionsPid.ptPidTofMax);
-    selectorElectron.setRangeNSigmaTof(-selectionsPid.nSigmaTofElMax, selectionsPid.nSigmaTofElMax);
-    selectorElectron.setRangeNSigmaTofCondTpc(-selectionsPid.nSigmaTofElCombinedMax, selectionsPid.nSigmaTofElCombinedMax);
+    selectorElectron.setRangeNSigmaTpc(selectionsPid.nSigmaTpcElMinForVeto, selectionsPid.nSigmaTpcElMaxForVeto);
 
     std::array<int, 4> doProcess = {doprocessJpsiKData, doprocessJpsiKMc, doprocessJpsiPhiData, doprocessJpsiPhiMc};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
@@ -443,23 +400,11 @@ struct HfDataCreatorJpsiHadReduced {
   template <typename T1>
   bool isSelectedJpsiDauPid(const T1& track)
   {
-    int pidPion = -1;
-    int pidProton = -1;
     int pidElectron = -1;
 
-    if (selectionsPid.usePidTpcAndTof) {
-      pidPion = selectorPion.statusTpcAndTof(track, track.tpcNSigmaPi(), track.tofNSigmaPi());
-      pidProton = selectorProton.statusTpcAndTof(track, track.tpcNSigmaPr(), track.tofNSigmaPr());
-      pidElectron = selectorElectron.statusTpcAndTof(track, track.tpcNSigmaEl(), track.tofNSigmaEl());
-    } else {
-      pidPion = selectorPion.statusTpcOrTof(track, track.tpcNSigmaPi(), track.tofNSigmaPi());
-      pidProton = selectorProton.statusTpcOrTof(track, track.tpcNSigmaPr(), track.tofNSigmaPr());
-      pidElectron = selectorElectron.statusTpcOrTof(track, track.tpcNSigmaEl(), track.tofNSigmaEl());
-    }
+    pidElectron = selectorElectron.statusTpc(track, track.tpcNSigmaEl());
 
-    if (pidPion == TrackSelectorPID::Rejected ||
-        pidProton == TrackSelectorPID::Rejected ||
-        pidElectron == TrackSelectorPID::Rejected) {
+    if (pidElectron == TrackSelectorPID::Accepted) {
       return false;
     }
     return true;
