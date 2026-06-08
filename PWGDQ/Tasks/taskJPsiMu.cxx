@@ -53,9 +53,7 @@ namespace o2::aod
 
 namespace dqanalysisflags
 {
-// DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8);                      //! Event decision
-// DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
 DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                       //! Muon track decisions (joinable to ReducedMuonsAssoc)
 }
 
@@ -64,16 +62,10 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuo
 } 
 
 // Declarations of various short names
-using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 
 using MyPairCandidatesSelected = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
-using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
-using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
-using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
-using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
+using MyMuonTracksSelected = soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>;
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -103,6 +95,9 @@ struct DqJPsiMuonCorrelations {
   float* fValuesMuon;
 
   HistogramRegistry registry{"registry"};
+  
+  // int nMuons;
+  // int nEvents;
 
   void init(o2::framework::InitContext&)
   {
@@ -114,7 +109,8 @@ struct DqJPsiMuonCorrelations {
     fValuesMuon = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
 
-    LOG(info) << "Initialized DqJPsiMuonCorrelations task" << std::endl;
+    // nMuons = 0;
+    // nEvents = 0;
   }
 
   // Template function to run pair - muon combinations
@@ -127,16 +123,40 @@ struct DqJPsiMuonCorrelations {
     VarManager::FillEvent<TEventFillMap>(event, fValuesMuon);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
 
-    if (dileptons.size() > 0) {
-      LOG(info) << "Dileptons in event: " << dileptons.size() << std::endl;
-    } else {
-      LOG(info) << "No dileptons in event" << std::endl;
+    if (!event.isEventSelected_bit(0)) {
+      return;
     }
+
+    // if (dileptons.size() > 0) {
+    //   LOG(info) << "Processing event " << event.globalIndex() << " with " << muons.size() << " muons and " << dileptons.size() << " dileptons" << std::endl;
+    //   LOG(info) << "Dilepton leg indexes: ";
+    //   for (auto& dilepton : dileptons) {
+    //     LOG(info) << dilepton.index0Id() << " and " << dilepton.index1Id() << " ";
+    //   }
+    //   LOG(info) << std::endl;
+    //   LOG(info) << "Muon indexes: ";
+    //   for (auto& muon : muons) {
+    //     LOG(info) << muon.reducedmuonId() << " ";
+    //   }
+    //   LOG(info) << std::endl;
+    // }
+
+    // for (auto& muon : muons) {
+    //   // VarManager::FillTrack<TMuonFillMap>(muon, fValuesMuon);
+    //   if (!muon.isMuonSelected_raw()) {
+    //     continue;
+    //   }
+    //   nMuons++;
+    //   LOG(info) << "Total number of muons processed: " << nMuons << std::endl;
+    // }
+    // nEvents++;
+    // LOG(info) << "Total number of events processed: " << nEvents << std::endl;
+
+
   }
 
   void processSkimmedDimuon(MyEventsSelected::iterator const& event, MyMuonTracksSelected const& muons, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
-    LOG(info) << "Processing event " << event.globalIndex() << " with " << muons.size() << " muons and " << dileptons.size() << " dileptons" << std::endl;
     runDileptonMuon<VarManager::kDecayToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, dileptons);
   }
   void processDummy(MyEvents&)
