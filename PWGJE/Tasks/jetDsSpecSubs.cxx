@@ -13,6 +13,16 @@
 /// \brief Ds-tagged jet analysis with substructure histogram outputs
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubstructure.h"
+
+#include "Common/Core/RecoDecay.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -23,24 +33,13 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include "Common/Core/RecoDecay.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include <cmath>
-#include <vector>
-#include <string>
-
+#include <Math/Vector4D.h>
 #include <TH1.h>
 #include <TVector3.h>
-#include <Math/Vector4D.h>
+
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -73,7 +72,7 @@ struct JetDsSpecSubs {
   int trackSelection = -1;
 
   // Filters
-  Filter jetCuts = aod::jet::pt > jetPtMin && aod::jet::r == nround(jetR.node() * 100.0f);
+  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
 
   //=============
@@ -108,31 +107,11 @@ struct JetDsSpecSubs {
       {"h_ds_jet_lambda12", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{200, 0., 1.}}}},
       {"h_ds_jet_mass", ";m_{jet};entries", {HistType::kTH1F, {{200, 0., 50.}}}},
 
-      {"hSparse_ds", ";m_{D_{S}};p_{T,D_{S}};p_{T,jet};z_{||};#DeltaR",
-       {HistType::kTHnSparseF,
-        {
-          {200, 1.7, 2.2},
-          {200, 0., 100.},
-          {200, 0., 100.},
-          {200, 0., 2.},
-          {200, 0., 1.}
-        }}},
+      {"hSparse_ds", ";m_{D_{S}};p_{T,D_{S}};p_{T,jet};z_{||};#DeltaR", {HistType::kTHnSparseF, {{200, 1.7, 2.2}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}}}},
 
-      {"h2_response_jet_pt", ";p_{T}^{det};p_{T}^{part}",
-       {HistType::kTH2F,
-        {
-          {200, 0., 100.},
-          {200, 0., 100.}
-        }}},
+      {"h2_response_jet_pt", ";p_{T}^{det};p_{T}^{part}", {HistType::kTH2F, {{200, 0., 100.}, {200, 0., 100.}}}},
 
-      {"h2_response_lambda11", ";#lambda_{1}^{1,det};#lambda_{1}^{1,part}",
-       {HistType::kTH2F,
-        {
-          {200, 0., 1.},
-          {200, 0., 1.}
-        }}}
-    }
-  };
+      {"h2_response_lambda11", ";#lambda_{1}^{1,det};#lambda_{1}^{1,part}", {HistType::kTH2F, {{200, 0., 1.}, {200, 0., 1.}}}}}};
 
   //========
   // INIT
@@ -153,7 +132,7 @@ struct JetDsSpecSubs {
   // Lambda compute
   //===============
 
-  template<typename JET, typename TRACKS>
+  template <typename JET, typename TRACKS>
   float computeLambda(JET const& jet,
                       TRACKS const& tracks,
                       float alpha,
@@ -181,7 +160,7 @@ struct JetDsSpecSubs {
   // Jet Mass compute
   //=================
 
-  template<typename TRACKS>
+  template <typename TRACKS>
   float computeJetMass(TRACKS const& tracks)
   {
     double sumPx = 0.0, sumPy = 0.0, sumPz = 0.0, sumE = 0.0;
@@ -239,7 +218,7 @@ struct JetDsSpecSubs {
   // DATA analysis
   //===============
 
-  template<typename JETS, typename CANDS>
+  template <typename JETS, typename CANDS>
   void analyseData(JETS const& jets,
                    CANDS const&)
   {
@@ -305,7 +284,7 @@ struct JetDsSpecSubs {
   // MCD analysis
   //==============
 
-  template<typename JETS>
+  template <typename JETS>
   void analyseMCD(JETS const& jets)
   {
     for (const auto& jet : jets) {
@@ -319,7 +298,7 @@ struct JetDsSpecSubs {
 
       const float mjet = computeJetMass(jetTracks);
 
-      TVector3 jetVector(jet.px(), jet.py(),jet.pz());
+      TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
       for (const auto& ds : jet.template candidates_as<DsCandidatesMCD>()) {
 
@@ -347,7 +326,7 @@ struct JetDsSpecSubs {
   // MC particle level
   //==================
 
-  template<typename JETS>
+  template <typename JETS>
   void analyseMCP(JETS const& jets)
   {
     for (const auto& jet : jets) {
