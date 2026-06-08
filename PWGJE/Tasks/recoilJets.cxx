@@ -198,6 +198,8 @@ struct RecoilJets {
 
     ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"}; // default values for raw data
     ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};
+
+    ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
   } hist;
 
   // Auxiliary variables
@@ -223,7 +225,8 @@ struct RecoilJets {
   std::vector<int> triggerMaskBits;
 
   Service<o2::framework::O2DatabasePDG> pdg;
-  Preslice<MatchedJetsPartToDetTbl> partJetsPerMcCollision = aod::jet::mcCollisionId;
+  Preslice<MatchedJetsPartToDetTbl> partJetsByMcCollision = aod::jet::mcCollisionId;
+  Preslice<aod::JetParticles> particlesByMcCollision = aod::jet::mcCollisionId;
 
   template <typename AxisObject>
   struct AxisDesc {
@@ -284,10 +287,10 @@ struct RecoilJets {
                                                                 {"FT0C", unscaledFT0C},
                                                                 {"FT0M", unscaledFT0M}}};
 
-    std::array<AxisDesc<ConfigurableAxis>, 2> arrConfigurableAxis = {{{"FT0C", hist.multFT0CThresh, nameFT0Caxis},
+    std::array<AxisDesc<ConfigurableAxis>, 2> arrConfigurableAxisEA = {{{"FT0C", hist.multFT0CThresh, nameFT0Caxis},
                                                                       {"FT0M", hist.multFT0MThresh, nameFT0Maxis}}};
 
-    std::array<AxisDesc<ConfigurableAxis>, 2> arrConfigurableAxisPartLevel = {{{"FT0C", hist.multFT0CThreshPartLevel, nameFT0Caxis},
+    std::array<AxisDesc<ConfigurableAxis>, 2> arrConfigurableAxisEAPartLevel = {{{"FT0C", hist.multFT0CThreshPartLevel, nameFT0Caxis},
                                                                                {"FT0M", hist.multFT0MThreshPartLevel, nameFT0Maxis}}};
 
     // Zero-degree calorimeter
@@ -329,7 +332,7 @@ struct RecoilJets {
       spectra.add("hJetArea_JetPt_Rho_TTRef", "Events w. TT_{Ref}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho}, hist.sumw2);
       spectra.add("hJetArea_JetPt_Rho_TTSig", "Events w. TT_{Sig}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho}, hist.sumw2);
 
-      for (const auto& eaAxis : arrConfigurableAxis) {
+      for (const auto& eaAxis : arrConfigurableAxisEA) {
         spectra.add(Form("hScaled%s_vertexZ", eaAxis.label),
                     "Z vertex of collisions",
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {60, -12., 12., "#it{z}_{vertex}"}}, hist.sumw2);
@@ -430,7 +433,7 @@ struct RecoilJets {
       spectra.add("hJetArea_JetPt_Rho_TTRef_Part", "Events w. TT_{Ref}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho}, hist.sumw2);
       spectra.add("hJetArea_JetPt_Rho_TTSig_Part", "Events w. TT_{Sig}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho}, hist.sumw2);
 
-      for (const auto& eaAxis : arrConfigurableAxisPartLevel) {
+      for (const auto& eaAxis : arrConfigurableAxisEAPartLevel) {
         spectra.add(Form("hScaled%s_vertexZMC", eaAxis.label),
                     "Z vertex of MC collision",
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {60, -12., 12., "#it{z}_{vertex}"}}, hist.sumw2);
@@ -665,9 +668,9 @@ struct RecoilJets {
                     kTH1F, {eaAxis.axis}, hist.sumw2);
       }
 
-      spectra.add("hScaleMultFT0A", "Scaled FTOA signal", kTH1F, {scaledFT0A}, hist.sumw2);
+      spectra.add("hScaledMultFT0A", "Scaled FTOA signal", kTH1F, {scaledFT0A}, hist.sumw2);
       for (const auto& eaAxis : arrAxisSpecScaledEA) {
-        spectra.add(Form("hScaleMult%s", eaAxis.label),
+        spectra.add(Form("hScaledMult%s", eaAxis.label),
                     Form("Scaled %s signal", eaAxis.label),
                     kTH1F, {eaAxis.axis}, hist.sumw2);
       }
@@ -697,24 +700,24 @@ struct RecoilJets {
                     kTH2F, {{arrAxisSpecUnscaledEA[i].axis}, {arrAxisSpecZDCNeutron[i].axis}}, hist.sumw2);
 
         if (i != 0) {
-          spectra.add(Form("hScaleMult%s_vs_%s", arrAxisSpecScaledEA[i - 1].label, arrAxisSpecZDCNeutron[i].label),
+          spectra.add(Form("hScaledMult%s_vs_%s", arrAxisSpecScaledEA[i - 1].label, arrAxisSpecZDCNeutron[i].label),
                       Form("Correlation of signals scaled %s vs %s", arrAxisSpecScaledEA[i - 1].label, arrAxisSpecZDCNeutron[i].label),
                       kTH2F, {{arrAxisSpecScaledEA[i - 1].axis}, {arrAxisSpecZDCNeutron[i].axis}}, hist.sumw2);
 
-          spectra.add(Form("hScaleMult%s_vs_%s", arrAxisSpecScaledEA[i - 1].label, arrAxisSpecZDCProton[i].label),
+          spectra.add(Form("hScaledMult%s_vs_%s", arrAxisSpecScaledEA[i - 1].label, arrAxisSpecZDCProton[i].label),
                       Form("Correlation of signals scaled %s vs %s", arrAxisSpecScaledEA[i - 1].label, arrAxisSpecZDCProton[i].label),
                       kTH2F, {{arrAxisSpecScaledEA[i - 1].axis}, {arrAxisSpecZDCProton[i].axis}}, hist.sumw2);
         } else {
-          spectra.add("hScaleMultFT0A_vs_ZNA", "Correlation of signals scaled FT0A vs ZNA", kTH2F, {{scaledFT0A}, {arrAxisSpecZDCNeutron[i].axis}}, hist.sumw2);
-          spectra.add("hScaleMultFT0A_vs_ZPA", "Correlation of signals scaled FT0A vs ZPA", kTH2F, {{scaledFT0A}, {arrAxisSpecZDCProton[i].axis}}, hist.sumw2);
+          spectra.add("hScaledMultFT0A_vs_ZNA", "Correlation of signals scaled FT0A vs ZNA", kTH2F, {{scaledFT0A}, {arrAxisSpecZDCNeutron[i].axis}}, hist.sumw2);
+          spectra.add("hScaledMultFT0A_vs_ZPA", "Correlation of signals scaled FT0A vs ZPA", kTH2F, {{scaledFT0A}, {arrAxisSpecZDCProton[i].axis}}, hist.sumw2);
         }
       }
 
-      spectra.add("hScaleMultFT0M_vs_ZNA_vs_ZNC",
+      spectra.add("hScaledMultFT0M_vs_ZNA_vs_ZNC",
                   "Correlation of signals FT0M^{*} vs ZNA vs ZNC",
                   kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZNA"}, {600, 0.0, 3000., "ZNC"}}, hist.sumw2);
 
-      spectra.add("hScaleMultFT0M_vs_ZPA_vs_ZPC",
+      spectra.add("hScaledMultFT0M_vs_ZPA_vs_ZPC",
                   "Correlation of signals FT0M^{*} vs ZPA vs ZPC",
                   kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZPA"}, {600, 0.0, 3000., "ZPC"}}, hist.sumw2);
     }
@@ -725,9 +728,9 @@ struct RecoilJets {
       spectra.add("hMultFT0CPartLevel", "# of primary particles within FTOC acceptance", kTH1F, {{2000, 0.0, 1000., "FT0C"}}, hist.sumw2);
       spectra.add("hMultFT0MPartLevel", "Total # of primary particles from FT0A & FTOC", kTH1F, {{4000, 0.0, 2000., "FT0M"}}, hist.sumw2);
 
-      spectra.add("hScaleMultFT0APartLevel", "Scaled # of primary particles within FTOA acceptance", kTH1F, {{scaledFT0A}}, hist.sumw2);
+      spectra.add("hScaledMultFT0APartLevel", "Scaled # of primary particles within FTOA acceptance", kTH1F, {{scaledFT0A}}, hist.sumw2);
       for (const auto& eaAxis : arrAxisSpecScaledEA) {
-        spectra.add(Form("hScaleMult%sPartLevel", eaAxis.label),
+        spectra.add(Form("hScaledMult%sPartLevel", eaAxis.label),
                     Form("Scaled # of primary particles within %s acceptance", eaAxis.label),
                     kTH1F, {{eaAxis.axis}}, hist.sumw2);
       }
@@ -914,15 +917,15 @@ struct RecoilJets {
       //====================================================================================
       // Signal TT
       for (const auto& eaAxis : arrAxisSpecScaledEA) {
-        spectra.add(Form("hScaleMult%s_PtSmearingTTSig", eaAxis.label),
+        spectra.add(Form("hScaledMult%s_PtSmearingTTSig", eaAxis.label),
                     Form("#it{p}_{T} smearing of TT_{Sig} vs %s", eaAxis.label),
                     kTH3F, {{eaAxis.axis}, {relPtSmearTT}, {partPtTTSig}}, hist.sumw2);
 
-        spectra.add(Form("hScaleMult%s_PhiSmearingTTSig", eaAxis.label),
+        spectra.add(Form("hScaledMult%s_PhiSmearingTTSig", eaAxis.label),
                     Form("#it{#varphi} smearing of TT_{Sig} vs %s", eaAxis.label),
                     kTH3F, {{eaAxis.axis}, {smearPhi}, {partPtTTSig}}, hist.sumw2);
 
-        spectra.add(Form("hScaleMult%s_EtaSmearingTTSig", eaAxis.label),
+        spectra.add(Form("hScaledMult%s_EtaSmearingTTSig", eaAxis.label),
                     Form("#it{#eta} smearing of TT_{Sig} vs %s", eaAxis.label),
                     kTH3F, {{eaAxis.axis}, {smearEta}, {partPtTTSig}}, hist.sumw2);
 
@@ -937,17 +940,62 @@ struct RecoilJets {
 
       // Reference TT
       for (const auto& eaAxis : arrAxisSpecScaledEA) {
-        spectra.add(Form("hScaleMult%s_PtSmearingTTRef", eaAxis.label),
+        spectra.add(Form("hScaledMult%s_PtSmearingTTRef", eaAxis.label),
                     Form("#it{p}_{T} smearing of TT_{Ref} vs %s", eaAxis.label),
                     kTH3F, {{eaAxis.axis}, {relPtSmearTT}, {partPtTTRef}}, hist.sumw2);
 
-        spectra.add(Form("hScaleMult%s_PhiSmearingTTRef", eaAxis.label),
+        spectra.add(Form("hScaledMult%s_PhiSmearingTTRef", eaAxis.label),
                     Form("#it{#varphi} smearing of TT_{Ref} vs %s", eaAxis.label),
                     kTH3F, {{eaAxis.axis}, {smearPhi}, {partPtTTRef}}, hist.sumw2);
 
-        spectra.add(Form("hScaleMult%s_EtaSmearingTTRef", eaAxis.label),
+        spectra.add(Form("hScaledMult%s_EtaSmearingTTRef", eaAxis.label),
                     Form("#it{#eta} smearing of TT_{Ref} vs %s", eaAxis.label),
                     kTH3F, {{eaAxis.axis}, {smearEta}, {partPtTTRef}}, hist.sumw2);
+      }
+    }
+
+    // Tracking efficiency as a function of EA / Centrality
+    if(doprocessTrackingEfficiency || doprocessTrackingEfficiencyWeighted)
+    {
+      for (const auto& eaAxis : arrConfigurableAxisEA)
+      {
+        // ------------------------------------------------------------------
+        // Denominator: all generated particles passing phase-space cuts
+        // ------------------------------------------------------------------
+        spectra.add(Form("hScaledMult%s_AllGeneratedParticlesPt", eaAxis.label),
+                    Form("Generated & selected particles; %s ; #it{p}_{T}^{part} (GeV/#it{c})", eaAxis.label),
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{part}"}}, hist.sumw2);
+
+
+        // ------------------------------------------------------------------
+        // Track has an associated MC particle,
+        // the particle belongs to the same MC collision,
+        // and the particle passes the generated-particle selection.
+        // ------------------------------------------------------------------
+        spectra.add(Form("hScaledMult%s_ResponseMatrixTrackEff", eaAxis.label),
+                    Form("Track eff.; %s; #it{p}_{T}^{rec}; #it{p}_{T}^{part}", eaAxis.label),
+                    kTH3F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec}"}, {hist.axisPtTrackEff, "#it{p}_{T}^{part}"}}, hist.sumw2);
+
+
+        // ------------------------------------------------------------------
+        // Fake reconstructed tracks
+
+        // Case 1: no associated MC particle
+        spectra.add(Form("hScaledMult%s_NoMcParticle", eaAxis.label),
+                    Form("Tracks without associated MC particle; %s; #it{p}_{T}^{rec} (GeV/#it{c})", eaAxis.label),
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec}"}}, hist.sumw2);
+
+
+        // Case 2: MC particle exists, but belongs to another MC collision
+        spectra.add(Form("hScaledMult%s_MismatchedMcCollisionTracks", eaAxis.label),
+                    Form("Tracks matched to particle from different MC collision; %s; #it{p}_{T}^{rec} (GeV/#it{c})", eaAxis.label),
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec}"}}, hist.sumw2);
+
+
+        // Case 3: same MC collision, but particle fails phase-space cuts
+        spectra.add(Form("hScaledMult%s_MatchedToRejectedTracks", eaAxis.label),
+                    Form("Tracks matched to rejected particle; %s; #it{p}_{T}^{rec} (GeV/#it{c})", eaAxis.label),
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec} (GeV/#it{c})"}}, hist.sumw2);
       }
     }
   }
@@ -1523,9 +1571,9 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0C"), multFT0C, weight);
     spectra.fill(HIST("hMultFT0M"), multFT0M, weight);
 
-    spectra.fill(HIST("hScaleMultFT0A"), scaledFT0A, weight);
-    spectra.fill(HIST("hScaleMultFT0C"), scaledFT0C, weight);
-    spectra.fill(HIST("hScaleMultFT0M"), scaledFT0M, weight);
+    spectra.fill(HIST("hScaledMultFT0A"), scaledFT0A, weight);
+    spectra.fill(HIST("hScaledMultFT0C"), scaledFT0C, weight);
+    spectra.fill(HIST("hScaledMultFT0M"), scaledFT0M, weight);
 
     spectra.fill(HIST("hMultZNA"), multZNA, weight);
     spectra.fill(HIST("hMultZNC"), multZNC, weight);
@@ -1543,16 +1591,16 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0C_vs_ZNC"), multFT0C, multZNC, weight);
     spectra.fill(HIST("hMultFT0M_vs_ZNM"), multFT0M, multZNM, weight);
 
-    spectra.fill(HIST("hScaleMultFT0A_vs_ZNA"), scaledFT0A, multZNA, weight);
-    spectra.fill(HIST("hScaleMultFT0C_vs_ZNC"), scaledFT0C, multZNC, weight);
-    spectra.fill(HIST("hScaleMultFT0M_vs_ZNM"), scaledFT0M, multZNM, weight);
+    spectra.fill(HIST("hScaledMultFT0A_vs_ZNA"), scaledFT0A, multZNA, weight);
+    spectra.fill(HIST("hScaledMultFT0C_vs_ZNC"), scaledFT0C, multZNC, weight);
+    spectra.fill(HIST("hScaledMultFT0M_vs_ZNM"), scaledFT0M, multZNM, weight);
 
-    spectra.fill(HIST("hScaleMultFT0A_vs_ZPA"), scaledFT0A, multZPA, weight);
-    spectra.fill(HIST("hScaleMultFT0C_vs_ZPC"), scaledFT0C, multZPC, weight);
-    spectra.fill(HIST("hScaleMultFT0M_vs_ZPM"), scaledFT0M, multZPM, weight);
+    spectra.fill(HIST("hScaledMultFT0A_vs_ZPA"), scaledFT0A, multZPA, weight);
+    spectra.fill(HIST("hScaledMultFT0C_vs_ZPC"), scaledFT0C, multZPC, weight);
+    spectra.fill(HIST("hScaledMultFT0M_vs_ZPM"), scaledFT0M, multZPM, weight);
 
-    spectra.fill(HIST("hScaleMultFT0M_vs_ZNA_vs_ZNC"), scaledFT0M, multZNA, multZNC, weight);
-    spectra.fill(HIST("hScaleMultFT0M_vs_ZPA_vs_ZPC"), scaledFT0M, multZPA, multZPC, weight);
+    spectra.fill(HIST("hScaledMultFT0M_vs_ZNA_vs_ZNC"), scaledFT0M, multZNA, multZNC, weight);
+    spectra.fill(HIST("hScaledMultFT0M_vs_ZPA_vs_ZPC"), scaledFT0M, multZPA, multZPC, weight);
   }
 
   template <typename JCollisionMC>
@@ -1564,9 +1612,9 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0CPartLevel"), ft0Metrics.multFT0C, weight);
     spectra.fill(HIST("hMultFT0MPartLevel"), ft0Metrics.multFT0M, weight);
 
-    spectra.fill(HIST("hScaleMultFT0APartLevel"), ft0Metrics.scaledFT0A, weight);
-    spectra.fill(HIST("hScaleMultFT0CPartLevel"), ft0Metrics.scaledFT0C, weight);
-    spectra.fill(HIST("hScaleMultFT0MPartLevel"), ft0Metrics.scaledFT0M, weight);
+    spectra.fill(HIST("hScaledMultFT0APartLevel"), ft0Metrics.scaledFT0A, weight);
+    spectra.fill(HIST("hScaledMultFT0CPartLevel"), ft0Metrics.scaledFT0C, weight);
+    spectra.fill(HIST("hScaledMultFT0MPartLevel"), ft0Metrics.scaledFT0M, weight);
   }
 
   //=============================================================================
@@ -2214,7 +2262,7 @@ struct RecoilJets {
       return;
 
     // No filter on Particles, it can be outside of |eta| acceptance
-    auto particle = tracks.iteratorAt(chosenTTPos).mcParticle_as<JParticles>();
+    auto particle = tracks.iteratorAt(chosenTTPos).template mcParticle_as<JParticles>();
     float particleEta = particle.eta();
     bool bPartWithinEta = std::fabs(particleEta) < trk.etaCut;
 
@@ -2255,23 +2303,102 @@ struct RecoilJets {
     float etaSmearing = particleEta - tracks.iteratorAt(chosenTTPos).eta();
 
     if (bSigEv) {
-      spectra.fill(HIST("hScaleMultFT0C_PtSmearingTTSig"), scaledFT0C, relPtSmearing, particlePt, weight);
-      spectra.fill(HIST("hScaleMultFT0M_PtSmearingTTSig"), scaledFT0M, relPtSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0C_PtSmearingTTSig"), scaledFT0C, relPtSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_PtSmearingTTSig"), scaledFT0M, relPtSmearing, particlePt, weight);
 
-      spectra.fill(HIST("hScaleMultFT0C_PhiSmearingTTSig"), scaledFT0C, phiSmearing, particlePt, weight);
-      spectra.fill(HIST("hScaleMultFT0M_PhiSmearingTTSig"), scaledFT0M, phiSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0C_PhiSmearingTTSig"), scaledFT0C, phiSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_PhiSmearingTTSig"), scaledFT0M, phiSmearing, particlePt, weight);
 
-      spectra.fill(HIST("hScaleMultFT0C_EtaSmearingTTSig"), scaledFT0C, etaSmearing, particlePt, weight);
-      spectra.fill(HIST("hScaleMultFT0M_EtaSmearingTTSig"), scaledFT0M, etaSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0C_EtaSmearingTTSig"), scaledFT0C, etaSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_EtaSmearingTTSig"), scaledFT0M, etaSmearing, particlePt, weight);
     } else {
-      spectra.fill(HIST("hScaleMultFT0C_PtSmearingTTRef"), scaledFT0C, relPtSmearing, particlePt, weight);
-      spectra.fill(HIST("hScaleMultFT0M_PtSmearingTTRef"), scaledFT0M, relPtSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0C_PtSmearingTTRef"), scaledFT0C, relPtSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_PtSmearingTTRef"), scaledFT0M, relPtSmearing, particlePt, weight);
 
-      spectra.fill(HIST("hScaleMultFT0C_PhiSmearingTTRef"), scaledFT0C, phiSmearing, particlePt, weight);
-      spectra.fill(HIST("hScaleMultFT0M_PhiSmearingTTRef"), scaledFT0M, phiSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0C_PhiSmearingTTRef"), scaledFT0C, phiSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_PhiSmearingTTRef"), scaledFT0M, phiSmearing, particlePt, weight);
 
-      spectra.fill(HIST("hScaleMultFT0C_EtaSmearingTTRef"), scaledFT0C, etaSmearing, particlePt, weight);
-      spectra.fill(HIST("hScaleMultFT0M_EtaSmearingTTRef"), scaledFT0M, etaSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0C_EtaSmearingTTRef"), scaledFT0C, etaSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_EtaSmearingTTRef"), scaledFT0M, etaSmearing, particlePt, weight);
+    }
+  }
+
+  //=============================================================================
+  // Track reconstruction efficiency as a function of EA / Centrality
+  //=============================================================================
+  template <typename JMcColl, typename JParticles, typename JColl, typename JTracks>
+  void fillTrackRecoEff(JColl const& collision,
+                        JTracks const& tracks,
+                        JParticles const& particles,
+                        float weight = 1.)
+  {
+    const auto ft0Metrics = getFT0Metrics(collision, ft0a.mean, ft0c.mean);
+    const auto scaledFT0C = ft0Metrics.scaledFT0C;
+    const auto scaledFT0M = ft0Metrics.scaledFT0M;
+    const auto mcCollisionId = collision.mcCollisionId();
+
+    // Numerator candidates: reconstructed tracks in this detector collision
+    for(const auto& trackPerColl : tracks)
+    {
+      if (skipTrack(trackPerColl))
+        continue;
+
+      auto trackPt = trackPerColl.pt();
+
+      // Case 1: no associated MC particle
+      if(!trackPerColl.has_mcParticle())
+      { 
+        spectra.fill(HIST("hScaledMultFT0C_NoMcParticle"), scaledFT0C, trackPt, weight);
+        spectra.fill(HIST("hScaledMultFT0M_NoMcParticle"), scaledFT0M, trackPt, weight);
+        continue;
+      }
+
+
+      // Case 2: MC particle exists, but belongs to another MC collision
+      auto particle = trackPerColl.mcParticle();
+      if(particle.mcCollisionId() != mcCollisionId)
+      {
+        spectra.fill(HIST("hScaledMultFT0C_MismatchedMcCollisionTracks"), scaledFT0C, trackPt, weight);
+        spectra.fill(HIST("hScaledMultFT0M_MismatchedMcCollisionTracks"), scaledFT0M, trackPt, weight);
+        continue;
+      }
+
+      
+      // Case 3: same MC collision, but particle fails phase-space cuts
+      float particleEta = particle.eta();
+      bool bKeepParticle = std::fabs(particleEta) < trk.etaCut && !skipParticle(particle);
+
+      if(!bKeepParticle)
+      {
+        spectra.fill(HIST("hScaledMultFT0C_MatchedToRejectedTracks"), scaledFT0C, trackPt, weight);
+        spectra.fill(HIST("hScaledMultFT0M_MatchedToRejectedTracks"), scaledFT0M, trackPt, weight);
+        continue;
+      }
+
+
+      // Track has an associated MC particle,
+      // the particle belongs to the same MC collision,
+      // and the particle passes the generated-particle selection.
+      float particlePt = particle.pt();
+      spectra.fill(HIST("hScaledMultFT0C_ResponseMatrixTrackEff"), scaledFT0C, trackPt, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_ResponseMatrixTrackEff"), scaledFT0M, trackPt, particlePt, weight);
+    }
+     
+
+    // Denominator: generated selected particles from the same MC collision
+    auto particlesInMcCollision = particles.sliceBy(particlesByMcCollision, mcCollisionId);
+
+    for(const auto& particleInMcCollision : particlesInMcCollision)
+    {
+      float particleEta = particleInMcCollision.eta();
+      float particlePt = particleInMcCollision.pt();
+      bool bKeepParticle = std::fabs(particleEta) < trk.etaCut && !skipParticle(particleInMcCollision);
+
+      if(!bKeepParticle)
+        continue;
+      
+      spectra.fill(HIST("hScaledMultFT0C_AllGeneratedParticlesPt"), scaledFT0C, particlePt, weight);
+      spectra.fill(HIST("hScaledMultFT0M_AllGeneratedParticlesPt"), scaledFT0M, particlePt, weight);
     }
   }
 
@@ -2404,7 +2531,7 @@ struct RecoilJets {
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcCollisionId = collision.mcCollisionId();
-    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho);
   }
@@ -2430,7 +2557,7 @@ struct RecoilJets {
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcCollisionId = collision.mcCollisionId();
-    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoPtHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho);
   }
@@ -2457,7 +2584,7 @@ struct RecoilJets {
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcCollisionId = collision.mcCollisionId();
-    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho, weight);
   }
@@ -2484,7 +2611,7 @@ struct RecoilJets {
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcCollisionId = collision.mcCollisionId();
-    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
     fillMatchedGeoPtHistograms(mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, detLevelCollRho, weight);
   }
@@ -2660,6 +2787,35 @@ struct RecoilJets {
     fillTTSmearingPtPhi<aod::JetParticles>(collision, tracksPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processTTSmearingPtPhiWeighted, "process MC data (weighted JJ) to estimate pT and phi smearing of TT", false);
+
+  //_________________________________
+  void processTrackingEfficiency(CollDetIt const& collision,
+                                 aod::JetMcCollisions const&,
+                                 TrackMCLbsTbl const& tracksPerColl,
+                                 aod::JetParticles const& particles)
+  {
+    // Skip detector level collision
+    if (skipEvent(collision) || !collision.has_mcCollision())
+      return;
+
+    fillTrackRecoEff<aod::JetMcCollisions>(collision, tracksPerColl, particles);
+  }
+  PROCESS_SWITCH(RecoilJets, processTrackingEfficiency, "process MC data (no weight; MB events) to estimate track reco eff", false);
+
+  //_________________________________
+  void processTrackingEfficiencyWeighted(CollOutlierDetIt const& collision,
+                                         aod::JetMcCollisions const&,
+                                         TrackMCLbsTbl const& tracksPerColl,
+                                         aod::JetParticles const& particles)
+  {
+    // Skip detector level collision
+    if (skipEvent(collision) || !collision.has_mcCollision() || collision.isOutlier())
+      return;
+
+    const auto weight = collision.mcCollision().weight();
+    fillTrackRecoEff<aod::JetMcCollisions>(collision, tracksPerColl, particles, weight);
+  }
+  PROCESS_SWITCH(RecoilJets, processTrackingEfficiencyWeighted, "process MC data (weighted JJ) to estimate track reco eff", false);
 
   //------------------------------------------------------------------------------
   // Auxiliary functions
