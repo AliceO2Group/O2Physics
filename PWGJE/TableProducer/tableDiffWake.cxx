@@ -184,7 +184,7 @@ struct tableDiffWake {
       }
     }
     if (!eventHighpT)
-        return;
+      return;
     //------------------------------------------------------------
     // Translate values to less memory consuming values
     Short_t Substitute_ep2 = (Short_t)(ep2 * 1000);
@@ -265,6 +265,6 @@ struct tableDiffWake {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-    return WorkflowSpec{
-        adaptAnalysisTask<tableDiffWake>(cfgc)};
+  return WorkflowSpec{
+    adaptAnalysisTask<tableDiffWake>(cfgc)};
 }
