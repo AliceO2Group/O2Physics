@@ -212,6 +212,7 @@ struct HfTaskFlow {
     Configurable<float> etaMcParticlesTriggerMin{"etaMcParticlesTriggerMin", -0.8f, "Minimum value for the eta of MC particles when used in cut function"};
     Configurable<float> etaMcParticlesAssocMax{"etaMcParticlesAssocMax", -2.4f, "Maximum value for the eta of MC particles when used in cut function"};
     Configurable<float> etaMcParticlesAssocMin{"etaMcParticlesAssocMin", -3.6f, "Minimum value for the eta of MC particles when used in cut function"};
+    Configurable<bool> fillOnlyStepAll{"fillOnlyStepAll", true, "Fill Mc Gen QA plots only for StepAll, or only for Primaries"};
     Configurable<float> ptMcParticlesTriggerMax{"ptMcParticlesTriggerMax", 3.0f, "Maximum value for the pT of MC particles when used in cut function"};
     Configurable<float> ptMcParticlesTriggerMin{"ptMcParticlesTriggerMin", 0.2f, "Minimum value for the pT of MC particles when used in cut function"};
     Configurable<float> ptMcParticlesAssocMax{"ptMcParticlesAssocMax", 100.0f, "Maximum value for the pT of MC particles when used in cut function"};
@@ -319,6 +320,8 @@ struct HfTaskFlow {
   std::vector<float> cstFT0RelGain{};
   RCTFlagsChecker rctChecker;
   RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
+
+  // o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
 
   // =========================
   //      using declarations : DATA
@@ -523,7 +526,7 @@ struct HfTaskFlow {
     //  =========================
 
     rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
-    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad, kITSLimAccMCRepr, kMFTLimAccMCRepr, kTPCLimAccMCRepr});
 
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {configAxis.axisVertex}});
     registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
@@ -853,19 +856,19 @@ struct HfTaskFlow {
 
     if (doprocessSameMcGen) {
 
-      if (configTask.chooseCorrelationCase == CorrelationCase::TpcTpc) {
+      if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
         addHistograms<Mc, TpcTpc, ChPartChPart>();
-      } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcMft) {
+      } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcMft)) {
         addHistograms<Mc, TpcMft, ChPartChPart>();
-      } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFv0a) {
+      } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFv0a)) {
         addHistograms<Mc, TpcFv0a, ChPartChPart>();
-      } else if (configTask.chooseCorrelationCase == CorrelationCase::MftFv0a) {
+      } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::MftFv0a)) {
         addHistograms<Mc, MftFv0a, ChPartChPart>();
-      } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFt0a) {
+      } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFt0a)) {
         addHistograms<Mc, TpcFt0a, ChPartChPart>();
-      } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFt0c) {
+      } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFt0c)) {
         addHistograms<Mc, TpcFt0c, ChPartChPart>();
-      } else if (configTask.chooseCorrelationCase == CorrelationCase::Ft0aFt0c) {
+      } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::Ft0aFt0c)) {
         addHistograms<Mc, Ft0aFt0c, ChPartChPart>();
       }
 
@@ -912,19 +915,19 @@ struct HfTaskFlow {
   //      Helper functions
   // =========================
 
-  HfProngSpecies getSpecies(int pdgCode)
-  {
-    switch (std::abs(pdgCode)) {
-      case PDG_t::kPiPlus: // positive or negative pion
-        return HfProngSpecies::Pion;
-      case PDG_t::kKPlus: // positive or negative kaon
-        return HfProngSpecies::Kaon;
-      case PDG_t::kProton: // proton or proton bar
-        return HfProngSpecies::Proton;
-      default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
-        return HfProngSpecies::NHfProngSpecies;
-    }
-  }
+  // HfProngSpecies getSpecies(int pdgCode)
+  // {
+  //   switch (std::abs(pdgCode)) {
+  //     case PDG_t::kPiPlus: // positive or negative pion
+  //       return HfProngSpecies::Pion;
+  //     case PDG_t::kKPlus: // positive or negative kaon
+  //       return HfProngSpecies::Kaon;
+  //     case PDG_t::kProton: // proton or proton bar
+  //       return HfProngSpecies::Proton;
+  //     default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
+  //       return HfProngSpecies::NHfProngSpecies;
+  //   }
+  // }
 
   template <typename TCollision>
   int64_t getMultiplicityEstimator(TCollision collision, bool isSameEvent)
@@ -2209,6 +2212,17 @@ struct HfTaskFlow {
     auto associatedWeight = 1;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    bool fillQaPlots = false;
+
+    if (configTask.fillOnlyStepAll) {
+      if (step == CorrelationContainer::kCFStepAll) {
+        fillQaPlots = true;
+      }
+    } else {
+      if (step == CorrelationContainer::kCFStepTrackedOnlyPrim) {
+        fillQaPlots = true;
+      }
+    }
 
     for (auto const& track1 : tracks1) {
       loopCounter++;
@@ -2233,20 +2247,20 @@ struct HfTaskFlow {
       }
 
       // FILL QA FOR TRIGGER PARTICLE
-      if (sameEvent) {
-        if (configTask.chooseCorrelationCase == CorrelationCase::TpcTpc) {
+      if (sameEvent && fillQaPlots) {
+        if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
           fillTriggerQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
-        } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcMft) {
+        } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcMft)) {
           fillTriggerQa<Mc, TpcMft, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
-        } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFv0a) {
+        } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFv0a)) {
           fillTriggerQa<Mc, TpcFv0a, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
-        } else if (configTask.chooseCorrelationCase == CorrelationCase::MftFv0a) {
+        } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::MftFv0a)) {
           fillTriggerQa<Mc, MftFv0a, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
-        } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFt0a) {
+        } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFt0a)) {
           fillTriggerQa<Mc, TpcFt0a, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
-        } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFt0c) {
+        } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFt0c)) {
           fillTriggerQa<Mc, TpcFt0c, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
-        } else if (configTask.chooseCorrelationCase == CorrelationCase::Ft0aFt0c) {
+        } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::Ft0aFt0c)) {
           fillTriggerQa<Mc, Ft0aFt0c, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
         }
       }
@@ -2281,26 +2295,24 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1)) {
-          if (configTask.chooseCorrelationCase == CorrelationCase::TpcTpc) {
+        if (sameEvent && fillQaPlots && (loopCounter == 1)) {
+          if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
             fillAssociatedQa<Mc, TpcTpc, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
-          } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcMft) {
+          } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcMft)) {
             fillAssociatedQa<Mc, TpcMft, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
-          } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFv0a) {
+          } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFv0a)) {
             fillAssociatedQa<Mc, TpcFv0a, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
-          } else if (configTask.chooseCorrelationCase == CorrelationCase::MftFv0a) {
+          } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::MftFv0a)) {
             fillAssociatedQa<Mc, MftFv0a, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
-          } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFt0a) {
+          } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFt0a)) {
             fillAssociatedQa<Mc, TpcFt0a, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
-          } else if (configTask.chooseCorrelationCase == CorrelationCase::TpcFt0c) {
+          } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcFt0c)) {
             fillAssociatedQa<Mc, TpcFt0c, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
-          } else if (configTask.chooseCorrelationCase == CorrelationCase::Ft0aFt0c) {
+          } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::Ft0aFt0c)) {
             fillAssociatedQa<Mc, Ft0aFt0c, ChPartChPart>(track2.eta(), track2.phi(), track2.pt());
           }
         } // end of fill QA
-
       } // end of loop over track2
-
     } // end of loop over track1
   }
 
@@ -2345,9 +2357,14 @@ struct HfTaskFlow {
       }
 
       auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
-      const auto multiplicity = getMultiplicityEstimator(collision1, false);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks1.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision1, false);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -2390,8 +2407,13 @@ struct HfTaskFlow {
       if (collision1.globalIndex() == collision2.globalIndex()) {
         continue;
       }
-      const auto multiplicity = getMultiplicityEstimator(collision1, false);
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks1.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision1, false);
+      }
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -2435,8 +2457,13 @@ struct HfTaskFlow {
       if (collision1.globalIndex() == collision2.globalIndex()) {
         continue;
       }
-      const auto multiplicity = getMultiplicityEstimator(collision1, false);
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracksTpc.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision1, false);
+      }
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -2493,11 +2520,17 @@ struct HfTaskFlow {
       if constexpr (std::is_same_v<aod::FV0As, TTracksAssoc>) { // IF ASSOCIATED PARTICLE FROM FV0A
         if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-          const auto multiplicity = getMultiplicityEstimator(collision1, false);
           auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
           const auto& fv0 = collision2.foundFV0();
 
-          if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+          auto multiplicity = 0;
+          if (configCollision.useMultiplicityFromTracks) {
+            multiplicity = tracks1.size();
+          } else {
+            multiplicity = getMultiplicityEstimator(collision1, false);
+          }
+
+          if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
             return;
           }
 
@@ -2509,9 +2542,18 @@ struct HfTaskFlow {
       if constexpr (std::is_same_v<aod::FT0s, TTracksAssoc>) {
         if (collision1.has_foundFT0() && collision2.has_foundFT0()) {
 
-          const auto multiplicity = getMultiplicityEstimator(collision1, false);
           auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
           const auto& ft0 = collision2.foundFT0();
+          auto multiplicity = 0;
+          if (configCollision.useMultiplicityFromTracks) {
+            multiplicity = tracks1.size();
+          } else {
+            multiplicity = getMultiplicityEstimator(collision1, false);
+          }
+
+          if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+            return;
+          }
 
           corrContainer->fillEvent(multiplicity, step);
           fillCorrelationsFIT(corrContainer, step, slicedTriggerTracks, ft0, tracks2, multiplicity, collision1.posZ(), false, fitType);
@@ -2555,11 +2597,16 @@ struct HfTaskFlow {
 
       if (collision1.has_foundFT0() && collision2.has_foundFT0()) {
 
-        const auto multiplicity = getMultiplicityEstimator(collision1, false);
         const auto& ft0as = collision1.foundFT0();
         const auto& ft0cs = collision2.foundFT0();
+        auto multiplicity = 0;
+        if (configCollision.useMultiplicityFromTracks) {
+          multiplicity = tracksTpc.size();
+        } else {
+          multiplicity = getMultiplicityEstimator(collision1, false);
+        }
 
-        if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
           return;
         }
 
@@ -2593,9 +2640,14 @@ struct HfTaskFlow {
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2626,9 +2678,14 @@ struct HfTaskFlow {
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2659,9 +2716,14 @@ struct HfTaskFlow {
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2685,9 +2747,14 @@ struct HfTaskFlow {
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2713,9 +2780,14 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2742,10 +2814,14 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
 
-    // const auto multiplicity = collision.multNTracksPV();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2771,9 +2847,14 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2793,7 +2874,7 @@ struct HfTaskFlow {
 
   void processSameTpcMftD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                              HfCandidatesSelD0 const& candidates,
-                             FilteredTracksWDcaSel const& /*tracks*/,
+                             FilteredTracksWDcaSel const& tracks,
                              FilteredMftTracks const& mftTracks,
                              aod::BCsWithTimestamps const&)
   {
@@ -2809,9 +2890,14 @@ struct HfTaskFlow {
     }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2823,15 +2909,21 @@ struct HfTaskFlow {
   void processSameTpcMftD0ChReassociated(FilteredCollisionsWSelMult::iterator const& collision,
                                          HfCandidatesSelD0 const& candidates,
                                          soa::SmallGroups<aod::BestCollisionsFwd> const& reassociatedMftTracks,
+                                         FilteredTracksWDcaSel const& tracks,
                                          FilteredMftTracks const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return; // when process function has iterator
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2846,7 +2938,7 @@ struct HfTaskFlow {
 
   void processSameTpcMftLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                              HfCandidatesSelLc const& candidates,
-                             FilteredTracksWDcaSel const& /*tracks*/,
+                             FilteredTracksWDcaSel const& tracks,
                              FilteredMftTracks const& mftTracks,
                              aod::BCsWithTimestamps const&)
   {
@@ -2862,9 +2954,14 @@ struct HfTaskFlow {
     }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2876,15 +2973,21 @@ struct HfTaskFlow {
   void processSameTpcMftLcChReassociated(FilteredCollisionsWSelMult::iterator const& collision,
                                          HfCandidatesSelLc const& candidates,
                                          soa::SmallGroups<aod::BestCollisionsFwd> const& reassociatedMftTracks,
+                                         FilteredTracksWDcaSel const& tracks,
                                          FilteredMftTracks const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return; // when process function has iterator
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    auto multiplicity = 0;
+    if (configCollision.useMultiplicityFromTracks) {
+      multiplicity = tracks.size();
+    } else {
+      multiplicity = getMultiplicityEstimator(collision, true);
+    }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
       return;
     }
 
@@ -2909,9 +3012,9 @@ struct HfTaskFlow {
   //     const auto& fv0 = collision.foundFV0();
 
   //     registry.fill(HIST("Data/hNTracks"), tracks.size());
-  //     const auto multiplicity = getMultiplicityEstimator(collision, true);
+  //     auto multiplicity = getMultiplicityEstimator(collision, true);
 
-  //     if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+  //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
   //       return;
   //     }
 
@@ -2935,9 +3038,9 @@ struct HfTaskFlow {
 
   //   if (collision.has_foundFV0()) {
   //     const auto& fv0 = collision.foundFV0();
-  //     const auto multiplicity = getMultiplicityEstimator(collision, true);
+  //     auto multiplicity = getMultiplicityEstimator(collision, true);
 
-  //     if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+  //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
   //       return;
   //     }
 
@@ -2961,9 +3064,9 @@ struct HfTaskFlow {
 
   //   if (collision.has_foundFV0()) {
   //     const auto& fv0 = collision.foundFV0();
-  //     const auto multiplicity = getMultiplicityEstimator(collision, true);
+  //     auto multiplicity = getMultiplicityEstimator(collision, true);
 
-  //     if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+  //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
   //       return;
   //     }
 
@@ -2987,9 +3090,9 @@ struct HfTaskFlow {
 
   //   if (collision.has_foundFV0()) {
   //     const auto& fv0 = collision.foundFV0();
-  //     const auto multiplicity = getMultiplicityEstimator(collision, true);
+  //     auto multiplicity = getMultiplicityEstimator(collision, true);
 
-  //     if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+  //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
   //       return;
   //     }
 
@@ -3010,9 +3113,9 @@ struct HfTaskFlow {
 
   //   if (collision.has_foundFV0()) {
   //     const auto& fv0 = collision.foundFV0();
-  //     const auto multiplicity = getMultiplicityEstimator(collision, true);
+  //     auto multiplicity = getMultiplicityEstimator(collision, true);
 
-  //     if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+  //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
   //       return;
   //     }
 
@@ -3034,9 +3137,9 @@ struct HfTaskFlow {
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = getMultiplicityEstimator(collision, true);
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3058,9 +3161,9 @@ struct HfTaskFlow {
 
   //   if (collision.has_foundFV0()) {
   //     const auto& fv0 = collision.foundFV0();
-  //     const auto multiplicity = getMultiplicityEstimator(collision, true);
+  //     auto multiplicity = getMultiplicityEstimator(collision, true);
 
-  //     if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+  //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
   //       return;
   //     }
 
@@ -3089,9 +3192,14 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       registry.fill(HIST("Data/hNTracks"), tracks.size());
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3113,6 +3221,7 @@ struct HfTaskFlow {
   void processSameTpcFt0aD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelD0 const& candidates,
                               aod::FT0s const& ft0as,
+                              FilteredTracksWDcaSel const& tracks,
                               aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3124,9 +3233,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3143,6 +3257,7 @@ struct HfTaskFlow {
   void processSameTpcFt0aLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelLc const& candidates,
                               aod::FT0s const& ft0as,
+                              FilteredTracksWDcaSel const& tracks,
                               aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3154,9 +3269,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3173,6 +3293,7 @@ struct HfTaskFlow {
   void processSameMftFt0aChCh(FilteredCollisionsWSelMult::iterator const& collision,
                               FilteredMftTracks const& mftTracks,
                               aod::FT0s const& ft0as,
+                              FilteredTracksWDcaSel const& tracks,
                               aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3184,9 +3305,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3205,6 +3331,7 @@ struct HfTaskFlow {
                                           soa::SmallGroups<aod::BestCollisionsFwd> const& reassociatedMftTracks,
                                           FilteredMftTracks const&,
                                           aod::FT0s const& ft0as,
+                                          FilteredTracksWDcaSel const& tracks,
                                           aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3216,9 +3343,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3237,6 +3369,7 @@ struct HfTaskFlow {
                                             soa::SmallGroups<aod::BestCollisionsFwd3d> const& reassociatedMftTracks,
                                             FilteredMftTracks const&,
                                             aod::FT0s const& ft0as,
+                                            FilteredTracksWDcaSel const& tracks,
                                             aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3248,9 +3381,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3269,6 +3407,7 @@ struct HfTaskFlow {
                                           soa::SmallGroups<aod::BestCollisionsFwd> const& reassociatedMftTracks,
                                           FilteredMftTracks const&,
                                           aod::FT0s const& ft0as,
+                                          FilteredTracksWDcaSel const& tracks,
                                           aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3280,9 +3419,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3316,9 +3460,14 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       registry.fill(HIST("Data/hNTracks"), tracks.size());
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3335,6 +3484,7 @@ struct HfTaskFlow {
   void processSameTpcFt0cD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelD0 const& candidates,
                               aod::FT0s const& ft0cs,
+                              FilteredTracksWDcaSel const& tracks,
                               aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3346,9 +3496,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3365,6 +3520,7 @@ struct HfTaskFlow {
   void processSameTpcFt0cLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelLc const& candidates,
                               aod::FT0s const& ft0cs,
+                              FilteredTracksWDcaSel const& tracks,
                               aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3376,9 +3532,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3394,6 +3555,7 @@ struct HfTaskFlow {
 
   void processSameFt0aFt0cChCh(FilteredCollisionsWSelMult::iterator const& collision,
                                aod::FT0s const&,
+                               FilteredTracksWDcaSel const& tracks,
                                aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
@@ -3405,9 +3567,14 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      const auto multiplicity = getMultiplicityEstimator(collision, true);
+      auto multiplicity = 0;
+      if (configCollision.useMultiplicityFromTracks) {
+        multiplicity = tracks.size();
+      } else {
+        multiplicity = getMultiplicityEstimator(collision, true);
+      }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
         return;
       }
 
@@ -3431,8 +3598,9 @@ struct HfTaskFlow {
 
     int multiplicity = 0;
     for (const auto& track : mcParticles) {
-      if (std::abs(track.eta()) < configCentral.etaCentralTrackMax)
+      if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
         multiplicity += 1;
+      }
     }
 
     if ((multiplicity < configCollision.minMultiplicity) || (multiplicity >= configCollision.maxMultiplicity)) {
@@ -3807,8 +3975,9 @@ struct HfTaskFlow {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
       int multiplicity = 0;
       for (const auto& track : associatedTracks) {
-        if (std::abs(track.eta()) < configCentral.etaCentralTrackMax)
+        if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
           multiplicity += 1;
+        }
       }
       return multiplicity;
     };
@@ -3822,14 +3991,17 @@ struct HfTaskFlow {
       auto tracks2 = mcParticles.sliceBy(perMcColMcParticles, collision2.globalIndex());
 
       int multiplicityCollision1 = 0;
-      for (const auto& track : tracks1) {
-        if (std::abs(track.eta()) < configCentral.etaCentralTrackMax)
-          multiplicityCollision1 += 1;
-      }
       int multiplicityCollision2 = 0;
+
+      for (const auto& track : tracks1) {
+        if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
+          multiplicityCollision1 += 1;
+        }
+      }
       for (const auto& track : tracks2) {
-        if (std::abs(track.eta()) < configCentral.etaCentralTrackMax)
+        if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
           multiplicityCollision2 += 1;
+        }
       }
 
       if ((multiplicityCollision1 < configCollision.minMultiplicity || multiplicityCollision1 >= configCollision.maxMultiplicity)) {
