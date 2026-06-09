@@ -147,9 +147,13 @@ struct DqJPsiMuonCorrelations {
           if (!assoc.isMuonSelected_bit(0)) {
             continue;
           }
-          auto track = assoc.template reducedmuon_as<TMuonTracks>();
 
-          // TODO: Check if the associated track is part of the dilepton candidate, if so skip it to avoid auto-correlations
+          // Skip associated muons that are part of the dilepton candidate
+          if (dilepton.index0Id() == assoc.reducedmuonId() || dilepton.index1Id() == assoc.reducedmuonId()) {
+            continue;
+          }
+
+          auto track = assoc.template reducedmuon_as<TMuonTracks>();
 
           float deltaEta = track.eta() - dilepton.eta();
           float deltaPhi = track.phi() - dilepton.phi();
