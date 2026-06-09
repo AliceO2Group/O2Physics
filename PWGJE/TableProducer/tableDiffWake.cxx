@@ -37,7 +37,6 @@
 #include <Framework/runDataProcessing.h>
 
 // Event selection: Only events that contain track above some threshold
-// 
 // -------------------------------------------------------------------------------------------
 // TRACK DATA
 // -------------------------------------------------------------------------------------------
