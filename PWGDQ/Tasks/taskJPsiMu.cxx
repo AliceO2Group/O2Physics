@@ -82,12 +82,12 @@ struct DqJPsiMuonCorrelations {
   Configurable<float> fConfigBackgroundHighMass{"cfgBackgroundHighMass", 3.7, "High mass cut for the background used in analysis"};
 
   // Configurables for the dilepton and associated muon cuts
-  Configurable<float> fConfigMuonPtMin{"cfgMuonPtMin", 1.0, "Minimum pT cut for the associated muons"};
-  Configurable<float> fConfigMuonPtMax{"cfgMuonPtMax", 10.0, "Maximum pT cut for the associated muons"};
-  Configurable<float> fConfigMuonEtaMin{"cfgMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
-  Configurable<float> fConfigMuonEtaMax{"cfgMuonEtaMax", -2.5, "Maximum eta cut for the associated muons"};
+  Configurable<float> fConfigDileptonPtMin{"cfgDileptonPtMin", 1.0, "Minimum pT cut for the associated muons"};
+  Configurable<float> fConfigDileptonPtMax{"cfgDileptonPtMax", 10.0, "Maximum pT cut for the associated muons"};
   Configurable<float> fConfigDileptonEtaMin{"cfgDileptonEtaMin", -4.0, "Minimum eta cut for the dileptons"};
   Configurable<float> fConfigDileptonEtaMax{"cfgDileptonEtaMax", -2.5, "Maximum eta cut for the dileptons"};
+  Configurable<float> fConfigMuonEtaMin{"cfgMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
+  Configurable<float> fConfigMuonEtaMax{"cfgMuonEtaMax", -2.5, "Maximum eta cut for the associated muons"};
 
   // Configurables for histograms
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f}, "p_{T} (GeV/c)"};
@@ -153,14 +153,19 @@ struct DqJPsiMuonCorrelations {
     }
 
     if (dileptons.size() > 0) {
-
-      // TODO: Implement cuts on dileptons and assocs
-
       for (auto& dilepton : dileptons) {
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
+
+        // Dilepton kinematic cuts
+        if ((dilepton.eta() < fConfigDileptonEtaMin || dilepton.eta() > fConfigDileptonEtaMax) ||
+            (dilepton.pt() < fConfigDileptonPtMin || dilepton.pt() > fConfigDileptonPtMax)) {
+          continue;
+        }
+
         registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt());
 
         for (auto& assoc : assocs) {
+          // Check selection bit 
           if (!assoc.isMuonSelected_bit(0)) {
             continue;
           }
@@ -170,7 +175,14 @@ struct DqJPsiMuonCorrelations {
             continue;
           }
 
+          // Get muon track information
           auto track = assoc.template reducedmuon_as<TMuonTracks>();
+
+          // Muon kinematic cuts
+          if ((track.eta() < fConfigMuonEtaMin || track.eta() > fConfigMuonEtaMax) ||
+              (track.pt() < axisPt.value.front() || track.pt() > axisPt.value.back())) {
+            continue;
+          }
 
           float deltaEta = track.eta() - dilepton.eta();
           float deltaPhi = track.phi() - dilepton.phi();
