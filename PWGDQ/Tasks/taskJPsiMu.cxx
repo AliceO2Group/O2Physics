@@ -83,7 +83,7 @@ struct DqJPsiMuonCorrelations {
 
   // Configurables for the dilepton and associated muon cuts
   Configurable<float> fConfigDileptonPtMin{"cfgDileptonPtMin", 1.0, "Minimum pT cut for the associated muons"};
-  Configurable<float> fConfigDileptonPtMax{"cfgDileptonPtMax", 10.0, "Maximum pT cut for the associated muons"};
+  Configurable<float> fConfigDileptonPtMax{"cfgDileptonPtMax", 20.0, "Maximum pT cut for the associated muons"};
   Configurable<float> fConfigDileptonEtaMin{"cfgDileptonEtaMin", -4.0, "Minimum eta cut for the dileptons"};
   Configurable<float> fConfigDileptonEtaMax{"cfgDileptonEtaMax", -2.5, "Maximum eta cut for the dileptons"};
   Configurable<float> fConfigMuonEtaMin{"cfgMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
@@ -123,26 +123,34 @@ struct DqJPsiMuonCorrelations {
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
-    fValuesDilepton = new float[VarManager::kNVars];
-    fValuesMuon = new float[VarManager::kNVars];
-    VarManager::SetDefaultVarNames();
-
-    registry.add("h2dDimuonPtInvVsInvMass", "h2dDimuonPtInvVsInvMass", kTH2D, {axisInvMass, axisPt});
-    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtSignal", "h2dDimuonMuonDeltaEtaVsMuonPtSignal", kTH2D, {axisDeltaEta, axisPt});
-    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtSignal", "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
-    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtBackground", "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
-    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtBackground", "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
-
+    // Assert correct size of the efficiency correction vector
     if (axisPt.value.size()-2 != fConfigBinEff.value.size()) {
       LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEff: %zu (excluding 'VARIABLE_WIDTH' entry)",
           axisPt.value.size()-1, fConfigBinEff.value.size());
     }
+
+    // Set up varmanager variable names
+    fValuesDilepton = new float[VarManager::kNVars];
+    fValuesMuon = new float[VarManager::kNVars];
+    VarManager::SetDefaultVarNames();
+
+    // Define trigger histograms
+    ConfigurableAxis axisTriggerMass{"axisTriggerMass", {VARIABLE_WIDTH, fConfigBackgroundLowMass, fConfigDileptonLowMass, fConfigDileptonHighMass, fConfigBackgroundHighMass}, "Invariant Mass (GeV/c^{2}) for trigger counting"};
+    registry.add("h2dDimuonPtInvVsInvMass", "h2dDimuonPtInvVsInvMass", kTH2D, {axisInvMass, axisPt});
+    registry.add("h2dTriggersPtInvVsInvMassRegion", "h2dTriggersPtInvVsInvMassRegion", kTH2D, {axisTriggerMass, axisPt});
+
+    // Define histograms for the dilepton-muon correlations
+    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtSignal", "h2dDimuonMuonDeltaEtaVsMuonPtSignal", kTH2D, {axisDeltaEta, axisPt});
+    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtSignal", "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
+    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtBackground", "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
+    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtBackground", "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
   }
 
   // Template function to run pair - muon combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuonAssocs, typename TMuonTracks, typename TDileptons>
   void runDileptonMuon(TEvent const& event, TMuonAssocs const& assocs, TMuonTracks const& /*tracks*/, TDileptons const& dileptons)
   {
+    // Reset the VarManager values at the beginning of each event
     VarManager::ResetValues(0, VarManager::kNVars, fValuesMuon);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
     VarManager::FillEvent<TEventFillMap>(event, fValuesMuon);
@@ -162,7 +170,9 @@ struct DqJPsiMuonCorrelations {
           continue;
         }
 
+        // Fill invariant mass vs pT histogram for the dileptons and for trigger counting
         registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt());
+        registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt());
 
         for (auto& assoc : assocs) {
           // Check selection bit 
@@ -202,8 +212,6 @@ struct DqJPsiMuonCorrelations {
             registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt());
           }
         }
-
-        // TODO: Implement trigger counting
       }
     }
   }
