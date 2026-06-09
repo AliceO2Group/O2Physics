@@ -107,7 +107,7 @@ struct HfTaskLcToK0sP {
     NumberOfMlClasses
   };
 
-  static constexpr int KDecayChannelLcToK0sP = 1;
+  static constexpr int DecayChannelLcToK0sP = 1;
 
   // Names of folders and suffixes for MC signal histograms
   constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
@@ -589,7 +589,7 @@ struct HfTaskLcToK0sP {
         continue;
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == KDecayChannelLcToK0sP) {
+      if (std::abs(candidate.flagMcMatchRec()) == DecayChannelLcToK0sP) {
         fillCandHistograms(candidate);
 
         // MC reconstructed signal
@@ -703,7 +703,7 @@ struct HfTaskLcToK0sP {
   void fillHistosMcGen(CandMcGen const& mcParticles, Coll const& recoCollisions)
   {
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == KDecayChannelLcToK0sP) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelLcToK0sP) {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
