@@ -244,10 +244,10 @@ class PairSHCentMultKt
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
-  void setPDGCodes(const int pdg1, const int pdg2)
+  void setPairMass(const float mass1, const float mass2)
   {
-    mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
-    mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
+    mMassOne = mass1;
+    mMassTwo = mass2;
   }
 
   /// To compute the bin value for cavariance matrix
