@@ -1298,6 +1298,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
   Produces<aod::DileptonPolarization> dileptonPolarList;
+  Produces<aod::DileptonsEventInfo> dileptonEventInfoList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -1842,6 +1843,7 @@ struct AnalysisSameEventPairing {
     }
     if (fConfigOptions.polarTables.value) {
       dileptonPolarList.reserve(nAssocs);
+      dileptonEventInfoList.reserve(nAssocs);
     }
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
@@ -1930,6 +1932,7 @@ struct AnalysisSameEventPairing {
                               VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
                               VarManager::fgValues[VarManager::kCosThetaRM],
                               VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C]);
+            dileptonEventInfoList(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPosZ], VarManager::fgValues[VarManager::kNumContrib], VarManager::fgValues[VarManager::kPsi2Random], VarManager::fgValues[VarManager::kPsi2A], VarManager::fgValues[VarManager::kPsi2B], VarManager::fgValues[VarManager::kPsi2C]);
           }
           if constexpr (trackHasCov && TTwoProngFitter) {
             dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
