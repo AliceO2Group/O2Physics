@@ -23,17 +23,12 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-// For centrality:
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-// For TPC Mult
 #include "Common/DataModel/Multiplicity.h"
-// For DCA and TrackSelection
 #include "Common/DataModel/TrackSelectionTables.h"
-// For EP
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
-// For occupancy bit
 #include "Common/CCDB/EventSelectionParams.h"
 
 // Event selection: Only events that contain track above some threshold
@@ -139,7 +134,7 @@ struct tableDiffWake {
   void init(InitContext const&)
   {
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
-    const AxisSpec axispT{nBinsPt, 0, 10, "p_{T}"};
+    const AxisSpec axispT{nBinsPt, 0, 250, "p_{T}"};
 
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     histos.add("pTHistogram", "pTHistogram", kTH1F, {axispT});
@@ -207,6 +202,9 @@ struct tableDiffWake {
       // Track cut
       if (!track.isGlobalTrack())
         continue; // General track cuts
+
+      if (abs(track.px()) > 173.0 || abs(track.py()) > 173.0 || abs(track.pz()) > 173.0)
+        continue; // to avoid overflow in Substitute_p
 
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("pTHistogram"), track.pt());
