@@ -191,8 +191,8 @@ struct TableDiffWake {
       return;
     //------------------------------------------------------------
     // Translate values to less memory consuming values
-    int16_t substituteEp2 = (int16_t)(ep2 * 1000);
-    int16_t substituteEp3 = (int16_t)(ep3 * 1000);
+    int16_t substituteEp2 = static_cast<int16_t>(ep2 * 1000);
+    int16_t substituteEp3 = static_cast<int16_t>(ep3 * 1000);
 
     testcol(col.globalIndex(),
             run,
@@ -226,44 +226,44 @@ struct TableDiffWake {
 
       int64_t particlePx = (track.px() * 6000);
       if (particlePx < 0)
-        substituteP |= (uint64_t)1 << uppermostBit;
+        substituteP |= static_cast<uint64_t>1 << uppermostBit;
       if (particlePx < 0)
         particlePx = (-1) * particlePx;
       for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
-        if ((particlePx & ((int64_t)1 << i_bit)))
-          substituteP |= (uint64_t)1 << i_bit;
+        if ((particlePx & (static_cast<int64_t>1 << i_bit)))
+          substituteP |= static_cast<uint64_t>1 << i_bit;
       }
 
       uppermostBit = 41;
       lowermostBit = 21;
       int64_t particlePy = (track.py() * 6000);
       if (particlePy < 0)
-        substituteP |= (uint64_t)1 << uppermostBit;
+        substituteP |= static_cast<uint64_t>1 << uppermostBit;
       if (particlePy < 0)
         particlePy = (-1) * particlePy;
       for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
-        if ((particlePy & ((int64_t)1 << (i_bit - lowermostBit))))
-          substituteP |= (uint64_t)1 << i_bit;
+        if ((particlePy & (static_cast<int64_t>1 << (i_bit - lowermostBit))))
+          substituteP |= static_cast<uint64_t>1 << i_bit;
       }
 
       uppermostBit = 62;
       lowermostBit = 42;
       int64_t particlePz = (track.pz() * 6000);
       if (particlePz < 0)
-        substituteP |= (uint64_t)1 << uppermostBit;
+        substituteP |= static_cast<uint64_t>1 << uppermostBit;
       if (particlePz < 0)
         particlePz = (-1) * particlePz;
       for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
-        if ((particlePz & ((int64_t)1 << (i_bit - lowermostBit))))
-          substituteP |= (uint64_t)1 << i_bit;
+        if ((particlePz & (static_cast<int64_t>1 << (i_bit - lowermostBit))))
+          substituteP |= static_cast<uint64_t>1 << i_bit;
       }
 
       // dEdx
-      uint16_t substituteDEDX = (uint16_t)(track.tpcSignal() * 10);
+      uint16_t substituteDEDX = static_cast<uint16_t>(track.tpcSignal() * 10);
 
       // DCA
-      int16_t substituteDCAXY = (int16_t)(track.dcaXY() * 100);
-      int16_t substituteDCAZ = (int16_t)(track.dcaZ() * 100);
+      int16_t substituteDCAXY = static_cast<int16_t>(track.dcaXY() * 100);
+      int16_t substituteDCAZ = static_cast<int16_t>(track.dcaZ() * 100);
 
       //--------------- Fill track table ------------------
       testtrack(track.collisionId(),
