@@ -2277,8 +2277,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ1Y0B] = -999;
     values[kQ1X0C] = -999;
     values[kQ1Y0C] = -999;
-    values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
-    values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    //values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    //values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    values[kQ2X0A] = event.qvecBAllRe();
+    values[kQ2Y0A] = event.qvecBAllIm();
     values[kQ2X0APOS] = event.qvecBPosRe();
     values[kQ2Y0APOS] = event.qvecBPosIm();
     values[kQ2X0ANEG] = event.qvecBNegRe();
@@ -2305,6 +2307,20 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ4X0C] = -999;
     values[kQ4Y0C] = -999;
 
+    values[kQ2YYAB] = values[kQ2Y0A] * values[kQ2Y0B];
+    values[kQ2XXAB] = values[kQ2X0A] * values[kQ2X0B];
+    values[kQ2XYAB] = values[kQ2X0A] * values[kQ2Y0B];
+    values[kQ2YXAB] = values[kQ2Y0A] * values[kQ2X0B];
+    values[kQ2YYAC] = values[kQ2Y0A] * values[kQ2Y0C];
+    values[kQ2XXAC] = values[kQ2X0A] * values[kQ2X0C];
+    values[kQ2XYAC] = values[kQ2X0A] * values[kQ2Y0C];
+    values[kQ2YXAC] = values[kQ2Y0A] * values[kQ2X0C];
+    values[kQ2YYBC] = values[kQ2Y0B] * values[kQ2Y0C];
+    values[kQ2XXBC] = values[kQ2X0B] * values[kQ2X0C];
+    values[kQ2XYBC] = values[kQ2X0B] * values[kQ2Y0C];
+    values[kQ2YXBC] = values[kQ2Y0B] * values[kQ2X0C];
+
+
     EventPlaneHelper epHelper;
     float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
     float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
@@ -2319,14 +2335,22 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kPsi2C] = Psi2C;
 
     float R2SP_AB = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
+    float R2SP_APOSB = (values[kQ2X0APOS] * values[kQ2X0B] + values[kQ2Y0APOS] * values[kQ2Y0B]);
+    float R2SP_ANEGB = (values[kQ2X0ANEG] * values[kQ2X0B] + values[kQ2Y0ANEG] * values[kQ2Y0B]);
     float R2SP_AC = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);
+    float R2SP_APOSC = (values[kQ2X0APOS] * values[kQ2X0C] + values[kQ2Y0APOS] * values[kQ2Y0C]);
+    float R2SP_ANEGC = (values[kQ2X0ANEG] * values[kQ2X0C] + values[kQ2Y0ANEG] * values[kQ2Y0C]);
     float R2SP_BC = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
     float R2SP_AB_Im = (values[kQ2Y0A] * values[kQ2X0B] - values[kQ2X0A] * values[kQ2Y0B]);
     float R2SP_AC_Im = (values[kQ2Y0A] * values[kQ2X0C] - values[kQ2X0A] * values[kQ2Y0C]);
     float R2SP_BC_Im = (values[kQ2Y0B] * values[kQ2X0C] - values[kQ2X0B] * values[kQ2Y0C]);
     values[kR2SP_AB] = std::isnan(R2SP_AB) || std::isinf(R2SP_AB) ? 0. : R2SP_AB;
+    values[kR2SP_FT0CTPCPOS] = std::isnan(R2SP_APOSB) || std::isinf(R2SP_APOSB) ? 0. : R2SP_APOSB;
+    values[kR2SP_FT0CTPCNEG] = std::isnan(R2SP_ANEGB) || std::isinf(R2SP_ANEGB) ? 0. : R2SP_ANEGB;
     values[kWR2SP_AB] = std::isnan(R2SP_AB) || std::isinf(R2SP_AB) ? 0. : 1.0;
     values[kR2SP_AC] = std::isnan(R2SP_AC) || std::isinf(R2SP_AC) ? 0. : R2SP_AC;
+    values[kR2SP_FT0ATPCPOS] = std::isnan(R2SP_APOSC) || std::isinf(R2SP_APOSC) ? 0. : R2SP_APOSC;
+    values[kR2SP_FT0ATPCNEG] = std::isnan(R2SP_ANEGC) || std::isinf(R2SP_ANEGC) ? 0. : R2SP_ANEGC;
     values[kWR2SP_AC] = std::isnan(R2SP_AC) || std::isinf(R2SP_AC) ? 0. : 1.0;
     values[kR2SP_BC] = std::isnan(R2SP_BC) || std::isinf(R2SP_BC) ? 0. : R2SP_BC;
     values[kWR2SP_BC] = std::isnan(R2SP_BC) || std::isinf(R2SP_BC) ? 0. : 1.0;

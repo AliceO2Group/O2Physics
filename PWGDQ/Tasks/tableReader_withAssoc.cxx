@@ -223,7 +223,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtraNoQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
+using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
 using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
@@ -240,9 +240,9 @@ using MyEventsVtxCovZdcFitSelected = soa::Join<aod::ReducedEvents, aod::ReducedE
 using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
-using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
+using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
