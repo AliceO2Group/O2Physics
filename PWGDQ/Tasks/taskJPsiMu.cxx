@@ -62,10 +62,14 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuo
 } 
 
 // Declarations of various short names
+using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
+using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
+using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 
 using MyPairCandidatesSelected = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
-using MyMuonTracksSelected = soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>;
+using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
+using MyMuonAssocsSelected = soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>;
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -74,8 +78,15 @@ constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | Va
 struct DqJPsiMuonCorrelations {
 
   // Configurables for the dilepton and dilepton cuts
-  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2., "Low mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 4., "High mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.4, "High mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigBackgroundLowMass{"cfgBackgroundLowMass", 2.5, "Low mass cut for the background used in analysis"};
+  Configurable<float> fConfigBackgroundHighMass{"cfgBackgroundHighMass", 3.7, "High mass cut for the background used in analysis"};
+
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f}, "p_{T} (GeV/c)"};
+  ConfigurableAxis axisInvMass{"axisInvMass", {80, 1.0f, 5.0f}, "Invariant Mass (GeV/c^{2})"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {10, -constants::math::PI/2.0f, 3.0f*constants::math::PI/2.0f}, "#Delta#phi (rad)"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {10, -2.0f, 2.0f}, "#Delta#eta"};
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -111,11 +122,17 @@ struct DqJPsiMuonCorrelations {
 
     // nMuons = 0;
     // nEvents = 0;
+
+    registry.add("h2dDimuonPtInvVsInvMass", "h2dDimuonPtInvVsInvMass", kTH2D, {axisInvMass, axisPt});
+    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtSignal", "h2dDimuonMuonDeltaEtaVsMuonPtSignal", kTH2D, {axisDeltaEta, axisPt});
+    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtSignal", "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
+    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtBackground", "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
+    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtBackground", "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
   }
 
   // Template function to run pair - muon combinations
-  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuons, typename TDileptons>
-  void runDileptonMuon(TEvent const& event, TMuons const& muons, TDileptons const& dileptons)
+  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuonAssocs, typename TMuonTracks, typename TDileptons>
+  void runDileptonMuon(TEvent const& event, TMuonAssocs const& assocs, TMuonTracks const& /*tracks*/, TDileptons const& dileptons)
   {
     // VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesMuon);
@@ -152,12 +169,34 @@ struct DqJPsiMuonCorrelations {
     // nEvents++;
     // LOG(info) << "Total number of events processed: " << nEvents << std::endl;
 
+    if (dileptons.size() > 0) {
 
+      for (auto& dilepton : dileptons) {
+        VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
+        registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt());
+
+        for (auto& assoc : assocs) {
+          if (!assoc.isMuonSelected_bit(0)) {
+            continue;
+          }
+          auto track = assoc.template reducedmuon_as<TMuonTracks>();
+
+          if (dilepton.mass() > fConfigDileptonLowMass && dilepton.mass() < fConfigDileptonHighMass) {
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), track.eta() - dilepton.eta(), track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), track.phi() - dilepton.phi(), track.pt());
+          } else if (dilepton.mass() > fConfigBackgroundLowMass && dilepton.mass() < fConfigBackgroundHighMass) {
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), track.eta() - dilepton.eta(), track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), track.phi() - dilepton.phi(), track.pt());
+          }
+        }
+
+      }
+    }
   }
 
-  void processSkimmedDimuon(MyEventsSelected::iterator const& event, MyMuonTracksSelected const& muons, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
+  void processSkimmedDimuon(MyEventsSelected::iterator const& event, MyMuonAssocsSelected const& muonassocs, MyMuonTracks const& muontracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
-    runDileptonMuon<VarManager::kDecayToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, dileptons);
+    runDileptonMuon<VarManager::kDecayToMuMu, gkEventFillMap, gkMuonFillMap>(event, muonassocs, muontracks, dileptons);
   }
   void processDummy(MyEvents&)
   {
