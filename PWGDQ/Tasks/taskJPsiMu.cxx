@@ -73,6 +73,10 @@ using MyMuonAssocsSelected = soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCut
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 
+// Declare helper function
+double getRapidity(const double pT, const double eta);
+double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max);
+
 struct DqJPsiMuonCorrelations {
 
   // Configurables for the dilepton signal region
@@ -96,7 +100,8 @@ struct DqJPsiMuonCorrelations {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {10, -2.0f, 2.0f}, "#Delta#eta"};
 
   // Configurable for acceptance efficiency correction
-  Configurable<std::vector<double>> fConfigBinEff{"cfgBinEff", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
+  Configurable<std::vector<double>> fConfigBinEffJPsi{"cfgBinEffJPsi", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
+  Configurable<std::vector<double>> fConfigBinEffMuon{"cfgBinEffMuon", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -124,9 +129,9 @@ struct DqJPsiMuonCorrelations {
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Assert correct size of the efficiency correction vector
-    if (axisPt.value.size()-2 != fConfigBinEff.value.size()) {
-      LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEff: %zu (excluding 'VARIABLE_WIDTH' entry)",
-          axisPt.value.size()-1, fConfigBinEff.value.size());
+    if (axisPt.value.size()-2 != fConfigBinEffJPsi.value.size() || axisPt.value.size()-2 != fConfigBinEffMuon.value.size()) {
+      LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEffJPsi: %zu and fConfigBinEffMuon: %zu (excluding 'VARIABLE_WIDTH' entry)",
+          axisPt.value.size()-1, fConfigBinEffJPsi.value.size(), fConfigBinEffMuon.value.size());
     }
 
     // Set up varmanager variable names
@@ -171,8 +176,10 @@ struct DqJPsiMuonCorrelations {
         }
 
         // Fill invariant mass vs pT histogram for the dileptons and for trigger counting
-        registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt());
-        registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt());
+        double w_dilepton = getWeight(dilepton.pt(), axisPt.value, fConfigBinEffJPsi.value, fConfigDileptonEtaMin, fConfigDileptonEtaMax);
+
+        registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt(), w_dilepton);
+        registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), w_dilepton);
 
         for (auto& assoc : assocs) {
           // Check selection bit 
@@ -194,6 +201,7 @@ struct DqJPsiMuonCorrelations {
             continue;
           }
 
+          // Compute deltaEta and deltaPhi between the dilepton and the associated muon
           float deltaEta = track.eta() - dilepton.eta();
           float deltaPhi = track.phi() - dilepton.phi();
           if (deltaPhi < -constants::math::PI/2.0f) {
@@ -202,14 +210,15 @@ struct DqJPsiMuonCorrelations {
             deltaPhi -= 2.0f * constants::math::PI;
           }
 
-          // TODO: Implement weights for efficiency and acceptance correction
+          // Fill signal and background histograms based on the dilepton mass
+          double w_muon = getWeight(track.pt(), axisPt.value, fConfigBinEffMuon.value, fConfigMuonEtaMin, fConfigMuonEtaMax);
 
           if (dilepton.mass() > fConfigDileptonLowMass && dilepton.mass() < fConfigDileptonHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt());
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt(), w_dilepton * w_muon);
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt(), w_dilepton * w_muon);
           } else if (dilepton.mass() > fConfigBackgroundLowMass && dilepton.mass() < fConfigBackgroundHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt());
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt(), w_dilepton * w_muon);
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt(), w_dilepton * w_muon);
           }
         }
       }
@@ -232,4 +241,21 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<DqJPsiMuonCorrelations>(cfgc)};
+}
+
+double getRapidity(const double pT, const double eta) {
+    double mJPsi = 3.096916; // J/Psi mass in GeV/c^2
+    return log((sqrt(pow(mJPsi, 2) + (pow(pT, 2) * pow(cosh(eta), 2))) + pT * sinh(eta)) / (sqrt(pow(mJPsi, 2) + pow(pT, 2))));
+}
+
+double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max) {
+
+    int eff_bin = -1;
+    for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
+        if (pT >= pT_bins[b] && pT < pT_bins[b + 1]) {
+            eff_bin = b;
+            break;
+        }
+    }
+    return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
 }
