@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file EventSelectionModule.h
-/// \brief Event selection modeule
+/// \brief Event selection module
 /// \author ALICE
 
 #ifndef COMMON_TOOLS_EVENTSELECTIONMODULE_H_
@@ -77,7 +77,7 @@ static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 // for providing temporary buffer
 // FIXME ideally cursors could be readable
 // to avoid duplicate memory allocation but ok
-struct bcselEntry { // o2-linter: disable=name/struct (temporary fix)
+struct BcselEntry {
   uint32_t alias{0};
   uint64_t selection{0};
   uint32_t rct{0};
@@ -88,20 +88,20 @@ struct bcselEntry { // o2-linter: disable=name/struct (temporary fix)
 };
 
 // bc selection configurables
-struct bcselConfigurables : o2::framework::ConfigurableGroup { // o2-linter: disable=name/struct (temporary fix)
+struct BcselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "bcselOpts";
-  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                                            // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};                  // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};                        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};                  // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};                        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                                            // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<std::vector<int>> confMaxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                    // o2-linter: disable=name/configurable (temporary fix)
 };
 
 // event selection configurables
-struct evselConfigurables : o2::framework::ConfigurableGroup { // o2-linter: disable=name/struct (temporary fix)
+struct EvselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "evselOpts";
   bool isMC_metadata = false;                                                                                              // o2-linter: disable=name/function-variable (temporary fix)
   o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run event selection or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
@@ -129,7 +129,7 @@ struct evselConfigurables : o2::framework::ConfigurableGroup { // o2-linter: dis
 };
 
 // luminosity configurables
-struct lumiConfigurables : o2::framework::ConfigurableGroup { // o2-linter: disable=name/struct (temporary fix)
+struct LumiConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "lumiOpts";
   o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
 };
@@ -143,7 +143,7 @@ class BcSelectionModule
   }
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
-  o2::common::eventselection::bcselConfigurables bcselOpts;
+  o2::common::eventselection::BcselConfigurables bcselOpts;
 
   int lastRun = -1;
   int64_t lastTF = -1;
@@ -424,7 +424,7 @@ class BcSelectionModule
       uint32_t rct = 0;
 
       // initialize properties
-      o2::common::eventselection::bcselEntry entry;
+      o2::common::eventselection::BcselEntry entry;
       entry.alias = alias;
       entry.selection = selection;
       entry.rct = rct;
@@ -597,7 +597,7 @@ class BcSelectionModule
       }
 
       // initialize properties
-      o2::common::eventselection::bcselEntry entry;
+      o2::common::eventselection::BcselEntry entry;
       entry.alias = alias;
       entry.selection = selection;
       entry.rct = rct;
@@ -706,7 +706,7 @@ class EventSelectionModule
 
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
-  o2::common::eventselection::evselConfigurables evselOpts;
+  o2::common::eventselection::EvselConfigurables evselOpts;
 
   template <typename TContext, typename TEvSelOpts, typename THistoRegistry, typename TMetadataInfo>
   void init(TContext& context, TEvSelOpts const& external_evselopts, THistoRegistry& histos, TMetadataInfo const& metadataInfo)
@@ -790,9 +790,9 @@ class EventSelectionModule
             diffVzParMean = *parMeans;
             diffVzParSigma = *parSigmas;
             LOGP(info, ">>> special treatment for diffVz for light ion run {}", runLightIons);
-            for (int j = 0; j < 5; j++) // o2-linter: disable=magic-number (5 parameters)
+            for (size_t j = 0; j < diffVzParMean.size(); j++)
               LOGP(info, " mean par {} = {}", j, diffVzParMean[j]);
-            for (int j = 0; j < 5; j++) // o2-linter: disable=magic-number (5 parameters)
+            for (size_t j = 0; j < diffVzParSigma.size(); j++)
               LOGP(info, " sigma par {} = {}", j, diffVzParSigma[j]);
             break;
           }
@@ -1553,7 +1553,7 @@ class LumiModule
 
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
-  o2::common::eventselection::lumiConfigurables lumiOpts;
+  o2::common::eventselection::LumiConfigurables lumiOpts;
 
   template <typename TContext, typename TLumiOpts, typename THistoRegistry>
   void init(TContext& context, TLumiOpts const& external_lumiopts, THistoRegistry& histos)
@@ -1658,12 +1658,12 @@ class LumiModule
       csZEM = -1;
       csZNC = -1;
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
-      if (beamZ1 == 8 && beamZ2 == 1) { // o2-linter: disable=magic-number (O beam on p, Z=8 and Z=1)
-        csTVX = 0.3874e6; // eff(TVX) = 0.807 (based on LHC25e6f); sigma(INEL)=0.48b; arxiv:2507.05853
-      } else if (beamZ1 == 8 && beamZ2 == 8) { // o2-linter: disable=magic-number (O-O collisions, Z=8)
-        csTVX = 1.2050e6; // eff(TVX) = 0.886 (based on LHC25e6b); sigma(INEL)=1.36b; arxiv:2507.05853
+      if (beamZ1 == 8 && beamZ2 == 1) {          // o2-linter: disable=magic-number (O beam on p, Z=8 and Z=1)
+        csTVX = 0.3874e6;                        // eff(TVX) = 0.807 (based on LHC25e6f); sigma(INEL)=0.48b; arxiv:2507.05853
+      } else if (beamZ1 == 8 && beamZ2 == 8) {   // o2-linter: disable=magic-number (O-O collisions, Z=8)
+        csTVX = 1.2050e6;                        // eff(TVX) = 0.886 (based on LHC25e6b); sigma(INEL)=1.36b; arxiv:2507.05853
       } else if (beamZ1 == 10 && beamZ2 == 10) { // o2-linter: disable=magic-number (Ne-Ne collisions, Z=10)
-        csTVX = 1.5411e6; // eff(TVX) = 0.896 (based on LHC25e6g); sigma(INEL)=1.72b; arxiv:2507.05853
+        csTVX = 1.5411e6;                        // eff(TVX) = 0.896 (based on LHC25e6g); sigma(INEL)=1.72b; arxiv:2507.05853
       } else if (beamZ1 == 1 && beamZ2 == 1) {
         if (std::fabs(sqrts - 900.) < 100.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0357e6;                            // ub
@@ -1757,13 +1757,13 @@ class LumiModule
         double perBcRateTCE = static_cast<double>(mCounterTCE[i + 1] - mCounterTCE[i]) / nOrbits / nCollidingBCs;
         double perBcRateZNC = static_cast<double>(mCounterZNC[i + 1] - mCounterZNC[i]) / nOrbits / nCollidingBCs;
         double perBcRateZEM = static_cast<double>(mCounterZEM[i + 1] - mCounterZEM[i]) / nOrbits / nCollidingBCs;
-        constexpr float rateMin = 1.e-10;
+        const float rateMin = 1.e-10;
         double muTVX = (perBcRateTVX < 1 && perBcRateTVX > rateMin) ? -std::log(1 - perBcRateTVX) : 0;
         double muTCE = (perBcRateTCE < 1 && perBcRateTCE > rateMin) ? -std::log(1 - perBcRateTCE) : 0;
         double muZNC = (perBcRateZNC < 1 && perBcRateZNC > rateMin) ? -std::log(1 - perBcRateZNC) : 0;
         double muZEM = (perBcRateZEM < 1 && perBcRateZEM > rateMin) ? -std::log(1 - perBcRateZEM) : 0;
         LOGP(debug, "orbit={} muTVX={} muTCE={} muZNC={} muZEM={}", mOrbits[i], muTVX, muTCE, muZNC, muZEM);
-        constexpr float muMin = 1.e-10;
+        const float muMin = 1.e-10;
         mPileupCorrectionTVX.push_back(muTVX > muMin ? muTVX / (1 - std::exp(-muTVX)) : 1);
         mPileupCorrectionTCE.push_back(muTCE > muMin ? muTCE / (1 - std::exp(-muTCE)) : 1);
         mPileupCorrectionZNC.push_back(muZNC > muMin ? muZNC / (1 - std::exp(-muZNC)) : 1);

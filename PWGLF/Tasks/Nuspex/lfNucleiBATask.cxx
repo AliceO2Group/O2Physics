@@ -10,12 +10,13 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file LFNucleiBATask.cxx
+/// \file lfNucleiBATask.cxx
 ///
 /// \brief  Analysis task for the measurement of the coalescence parameter B2/B3 in pp collisions for (anti)deuteron/(anti)helium-3
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
-///
+
+// o2-linter: disable=name/workflow-file
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
@@ -66,7 +67,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct LFNucleiBATask {
+struct lfNucleiBATask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -92,8 +93,8 @@ struct LFNucleiBATask {
   Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
-  Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency histos."};
-  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> enableTrackingEff{"enableTrackingEff", false, "Flag to enable tracking efficiency histos."};
+  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"}; // o2-linter: disable=name/configurable (fast fix)
 
   // Set the triggered events skimming scheme
   struct : ConfigurableGroup {
@@ -238,14 +239,15 @@ struct LFNucleiBATask {
 
   Configurable<bool> enablePtShiftPID{"enablePtShiftPID", true, "Flag to enable wrong PID in tracking pT correction shift"};
   Configurable<std::vector<float>> parShiftPtPID{"parShiftPtPID", {0.0f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f}, "Parameters for helium3-Pt wrong pid shift (if enabled)."};
+  Configurable<float> cfgPtShiftPID{"cfgPtShiftPID", 1.25f, "Default upper limit for PID pt-shift correction"};
 
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
 
   // ITS to TPC - Fake hit loop
-  static constexpr int kFakeLoop = 10; // Fixed O2Linter error
+  static constexpr int IntFakeLoop = 10; // Fixed O2Linter error
   // TPC low/high momentum range
-  static constexpr float kCfgTpcClasses[] = {0.5f, 0.1f};
-  static constexpr float kCfgKaonCut = 5.f;
+  static constexpr float CfgTpcClasses[] = {0.5f, 0.1f};
+  static constexpr float CfgKaonCut = 5.f;
 
   // PDG codes and masses used in this analysis
   static constexpr int PDGPion = PDG_t::kPiPlus;
@@ -263,7 +265,7 @@ struct LFNucleiBATask {
   static constexpr float MassAlphaVal = o2::constants::physics::MassAlpha;
 
   // PDG of Mothers
-  static constexpr int kPdgMotherList[] = {
+  static constexpr int PdgMotherList[] = {
     PDG_t::kPiPlus,
     PDG_t::kKPlus,
     PDG_t::kK0Short,
@@ -276,9 +278,9 @@ struct LFNucleiBATask {
     o2::constants::physics::Pdg::kHyperTriton,
     o2::constants::physics::Pdg::kAlpha};
 
-  static constexpr int kNumMotherList = sizeof(kPdgMotherList) / sizeof(kPdgMotherList[0]);
+  static constexpr int NumMotherList = sizeof(PdgMotherList) / sizeof(PdgMotherList[0]);
 
-  static constexpr const char* kMotherNames[kNumMotherList] = {
+  static constexpr const char* kMotherNames[NumMotherList] = {
     "#pi^{+}",
     "K^{+}",
     "K^{0}_{S}",
@@ -346,7 +348,7 @@ struct LFNucleiBATask {
     const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
     const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
-    if (doprocessData == true && doprocessMCReco == true) {
+    if (((doprocessData == true) || (doprocessDataLfPid == true)) && ((doprocessMCReco == true) || (doprocessMCRecoLfPid == true) || (doprocessMCGen == true))) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
     }
     if (doprocessEvSgLossMC) {
@@ -460,6 +462,11 @@ struct LFNucleiBATask {
         histoGen.get<TH2>(HIST("events/hMCGenRecoVsMult"))->GetXaxis()->SetBinLabel(1, "INEL");
         histoGen.get<TH2>(HIST("events/hMCGenRecoVsMult"))->GetXaxis()->SetBinLabel(2, "INELgt0");
 
+        histoGen.add("events/hMCRecoVsMult", "hMCRecoVsMult", HistType::kTH2D, {{3, 0.f, 3.f}, {binsPercentile}});
+        histoGen.get<TH2>(HIST("events/hMCRecoVsMult"))->GetXaxis()->SetBinLabel(1, "All");
+        histoGen.get<TH2>(HIST("events/hMCRecoVsMult"))->GetXaxis()->SetBinLabel(2, "Ev sel passed");
+        histoGen.get<TH2>(HIST("events/hMCRecoVsMult"))->GetXaxis()->SetBinLabel(3, "INELgt0");
+
         histoGen.add("helium/MCGen/ptGenVsMult_INEL_Prim_He", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
         histoGen.add("helium/MCGen/ptGenVsMult_INEL_Prim_antiHe", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
         histoGen.add("helium/MCGen/ptGenVsMult_INELgt0_Prim_He", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
@@ -486,7 +493,9 @@ struct LFNucleiBATask {
       debugHistos.add<TH1>("qa/h1VtxZ_Centrality", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
       if (enableCentrality) {
-        debugHistos.add<TH1>("event/hFT0M", "hFT0M", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+        debugHistos.add<TH1>("event/hFT0M", "hFT0M (INEL)", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+        debugHistos.add<TH1>("event/hFT0M_INELgt0", "hFT0M (INELgt0)", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+        debugHistos.add<TH1>("event/hFT0M_INELgt1", "hFT0M (INELgt1)", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
         debugHistos.add<TH1>("event/hFV0M", "hFV0M", HistType::kTH1F, {{binsPercentile, "Centrality FV0M"}});
       }
     }
@@ -497,7 +506,7 @@ struct LFNucleiBATask {
     hSkim->GetXaxis()->SetBinLabel(2, "Skimmed events");
 
     if (enableCentrality) {
-      histos.add<TH2>("event/eventSelection", "eventSelection", HistType::kTH2D, {{8, -0.5, 7.5}, {binsPercentile, "Centrality FT0M"}});
+      histos.add<TH2>("event/eventSelection", "eventSelection", HistType::kTH2D, {{11, -0.5, 10.5}, {binsPercentile, "Centrality FT0M"}});
       auto h2d = histos.get<TH2>(HIST("event/eventSelection"));
       if (skimmingOptions.applySkimming)
         h2d->GetXaxis()->SetBinLabel(1, "Skimmed events");
@@ -511,8 +520,11 @@ struct LFNucleiBATask {
       h2d->GetXaxis()->SetBinLabel(6, "Sel8 cut");
       h2d->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
       h2d->GetXaxis()->SetBinLabel(8, "Multiplicity cut");
+      h2d->GetXaxis()->SetBinLabel(9, "INEL");
+      h2d->GetXaxis()->SetBinLabel(10, "INEL > 0");
+      h2d->GetXaxis()->SetBinLabel(11, "INEL > 1");
     } else {
-      histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{8, -0.5, 7.5}});
+      histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{11, -0.5, 10.5}});
       auto h1d = histos.get<TH1>(HIST("event/eventSelection"));
       if (skimmingOptions.applySkimming)
         h1d->GetXaxis()->SetBinLabel(1, "Skimmed events");
@@ -526,6 +538,9 @@ struct LFNucleiBATask {
       h1d->GetXaxis()->SetBinLabel(6, "Sel8 cut");
       h1d->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
       h1d->GetXaxis()->SetBinLabel(8, "Multiplicity cut");
+      h1d->GetXaxis()->SetBinLabel(9, "INEL");
+      h1d->GetXaxis()->SetBinLabel(10, "INEL > 0");
+      h1d->GetXaxis()->SetBinLabel(11, "INEL > 1");
     }
 
     if (enableCentrality)
@@ -1078,7 +1093,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/proton/dca/before/hDCAxyVsPtProtonTrueMaterial", "DCAxy vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/proton/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/proton/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {150, 0.0, 15.0}});
+          histos.add<TH3>("tracks/proton/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {NumMotherList + 2, -1.5, static_cast<double>(NumMotherList) + 0.5}, {150, 0.0, 15.0}});
 
           std::shared_ptr<TH3> hTempPr = histos.get<TH3>(HIST("tracks/proton/dca/before/hMomTrueMaterial"));
           TH3* hPdgPr = hTempPr.get();
@@ -1090,7 +1105,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgPr = hPdgPr->GetYaxis();
           ayPdgPr->SetBinLabel(1, "undef.");
           ayPdgPr->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherList; i++) {
+          for (int i = 0; i < NumMotherList; i++) {
             ayPdgPr->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -1150,7 +1165,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/deuteron/dca/before/hDCAxyVsPtDeuteronTrueMaterial", "DCAxy vs Pt (d); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/deuteron/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {150, 0.0, 15.0}});
+          histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {NumMotherList + 2, -1.5, static_cast<double>(NumMotherList) + 0.5}, {150, 0.0, 15.0}});
 
           std::shared_ptr<TH3> hTempDe = histos.get<TH3>(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"));
           TH3* hPdgDe = hTempDe.get();
@@ -1162,7 +1177,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgDe = hPdgDe->GetYaxis();
           ayPdgDe->SetBinLabel(1, "undef.");
           ayPdgDe->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherList; i++) {
+          for (int i = 0; i < NumMotherList; i++) {
             ayPdgDe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -1324,7 +1339,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/helium/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {150, 0.0, 15.0}});
+          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{2, -2.0, 2.0}, {NumMotherList + 2, -1.5, static_cast<double>(NumMotherList) + 0.5}, {150, 0.0, 15.0}});
 
           // Fix for getting TH3 pointer
           std::shared_ptr<TH3> hTempHe = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
@@ -1337,7 +1352,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgHe = hPdgHe->GetYaxis();
           ayPdgHe->SetBinLabel(1, "undef.");
           ayPdgHe->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherList; i++) {
+          for (int i = 0; i < NumMotherList; i++) {
             ayPdgHe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -1796,9 +1811,10 @@ struct LFNucleiBATask {
       } else {
         histos.add<TH2>("tracks/deuteron/h2DeuteronVspTNSigmaTPC", "NSigmaTPC(d) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
         histos.add<TH2>("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC", "NSigmaTPC(#bar{d}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
-        histos.add<TH2>("tracks/deuteron/h2DeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(d) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
-        histos.add<TH2>("tracks/deuteron/h2antiDeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(#bar{d}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
       }
+
+      histos.add<TH2>("tracks/deuteron/h2DeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(d) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
+      histos.add<TH2>("tracks/deuteron/h2antiDeuteronVspTNSigmaTPCTruePrim", "NSigmaTPC(#bar{d}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
     }
     if (enableTr) {
       histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaTPC", "NSigmaTPC(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
@@ -2160,11 +2176,13 @@ struct LFNucleiBATask {
       }
     }
     // To be optimised
-    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight) {
-      LOG(info) << "Histograms of LFNucleiBATask:";
+    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight && !doprocessEvSgLossMC && !doprocessMCGenLosses) {
+      LOG(info) << "DATA mode ";
+      LOG(info) << "Histograms of lfNucleiBATask:";
       histos.print();
       return;
     }
+    LOG(info) << " MC mode ";
     // MC histograms  -   all, primary, sec. from weak decay, sec. from material
     if (enableCentrality)
       spectraGen.add("histGenVetxZ", "PosZ generated events", HistType::kTH2F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}, {binsPercentile, "Centrality FT0M"}});
@@ -2300,10 +2318,12 @@ struct LFNucleiBATask {
       spectraGen.add("alpha/histGenPtantiAlSec", "generated particles", HistType::kTH1F, {ptAxis});
       spectraGen.add("alpha/histSecTransportPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
     }
-    LOG(info) << "Histograms of LFNucleiBATask:";
+
+    LOG(info) << "MC Histograms defined";
+    // LOG(info) << "Histograms of lfNucleiBATask:";
+    LOG(info) << "Histograms of lfNucleiBATask:";
     histos.print();
-    if (doprocessMCGen)
-      spectraGen.print();
+    spectraGen.print();
   }
 
   template <bool IsMC, bool IsFilteredData, typename CollisionType, typename TracksType, typename ParticleType>
@@ -2405,10 +2425,26 @@ struct LFNucleiBATask {
     if (enableCentrality && (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh)) {
       return;
     }
-    if (enableCentrality)
+    if (enableCentrality) {
       histos.fill(HIST("event/eventSelection"), 7, centFT0M);
-    else
+      histos.fill(HIST("event/eventSelection"), 8, centFT0M);
+    } else {
       histos.fill(HIST("event/eventSelection"), 7);
+      histos.fill(HIST("event/eventSelection"), 8);
+    }
+
+    if (event.isInelGt0()) {
+      if (enableCentrality)
+        histos.fill(HIST("event/eventSelection"), 9, centFT0M);
+      else
+        histos.fill(HIST("event/eventSelection"), 9);
+    }
+    if (event.isInelGt1()) {
+      if (enableCentrality)
+        histos.fill(HIST("event/eventSelection"), 10, centFT0M);
+      else
+        histos.fill(HIST("event/eventSelection"), 10);
+    }
 
     float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0., heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f, DPt = 0.f;
     bool isTritonTPCpid = false;
@@ -2423,8 +2459,13 @@ struct LFNucleiBATask {
       histos.fill(HIST("event/h1VtxZ"), event.posZ(), centFT0M);
     else
       histos.fill(HIST("event/h1VtxZ"), event.posZ());
-    if (enableDebug && enableCentrality)
+    if (enableDebug && enableCentrality) {
       debugHistos.fill(HIST("event/hFT0M"), centFT0M);
+      if (event.isInelGt0())
+        debugHistos.fill(HIST("event/hFT0M_INELgt0"), centFT0M);
+      if (event.isInelGt1())
+        debugHistos.fill(HIST("event/hFT0M_INELgt1"), centFT0M);
+    }
 
     if constexpr (IsFilteredData) {
       if (enableCentrality)
@@ -2555,7 +2596,7 @@ struct LFNucleiBATask {
           }
           if (enablePtShiftPID && fShiftPtPID) {
             shiftPtPID = fShiftPtPID->Eval(2 * track.pt());
-            if (tritonPID && (track.pt() <= 1.25f)) {
+            if (tritonPID && (track.pt() <= cfgPtShiftPID)) {
               hePt = track.pt() - shiftPtPID / 2.f;
               antihePt = track.pt() - shiftPtPID / 2.f;
             }
@@ -3409,7 +3450,7 @@ struct LFNucleiBATask {
           }
 
           genPt = track.mcParticle().pt();
-          for (int i = 0; i < kFakeLoop; i++) { // From ITS to TPC
+          for (int i = 0; i < IntFakeLoop; i++) { // From ITS to TPC
             if (track.mcMask() & 1 << i) {
               hasFakeHit = true;
               break;
@@ -3447,8 +3488,8 @@ struct LFNucleiBATask {
                         int motherSpeciesBin = -1;
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
-                          for (int j = 0; j < kNumMotherList; j++) {
-                            if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
+                          for (int j = 0; j < NumMotherList; j++) {
+                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
@@ -3544,8 +3585,8 @@ struct LFNucleiBATask {
                           int motherSpeciesBin = -1;
                           if (pdgMom != -1) {
                             motherSpeciesBin = 0;
-                            for (int j = 0; j < kNumMotherList; j++) {
-                              if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
+                            for (int j = 0; j < NumMotherList; j++) {
+                              if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
                                 motherSpeciesBin = j + 1;
                                 break;
                               }
@@ -3703,8 +3744,8 @@ struct LFNucleiBATask {
                         int motherSpeciesBin = -1;
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
-                          for (int j = 0; j < kNumMotherList; j++) {
-                            if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
+                          for (int j = 0; j < NumMotherList; j++) {
+                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
@@ -4154,26 +4195,26 @@ struct LFNucleiBATask {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtPos"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsTPCsignalPos"), track.tpcSignal(), track.tpcNClsCrossedRows());
 
-            if (track.tpcInnerParam() < kCfgTpcClasses[0]) {
+            if (track.tpcInnerParam() < CfgTpcClasses[0]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrLowPPos"), track.tpcNClsCrossedRows());
             }
-            if ((track.tpcInnerParam() >= kCfgTpcClasses[0]) && (track.tpcInnerParam() < kCfgTpcClasses[1])) {
+            if ((track.tpcInnerParam() >= CfgTpcClasses[0]) && (track.tpcInnerParam() < CfgTpcClasses[1])) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrMidPPos"), track.tpcNClsCrossedRows());
             }
-            if (track.tpcInnerParam() >= kCfgTpcClasses[1]) {
+            if (track.tpcInnerParam() >= CfgTpcClasses[1]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrHighPPos"), track.tpcNClsCrossedRows());
             }
           } else {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtNeg"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsTPCsignalNeg"), track.tpcSignal(), track.tpcNClsCrossedRows());
 
-            if (track.tpcInnerParam() < kCfgTpcClasses[0]) {
+            if (track.tpcInnerParam() < CfgTpcClasses[0]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrLowPNeg"), track.tpcNClsCrossedRows());
             }
-            if ((track.tpcInnerParam() >= kCfgTpcClasses[0]) && (track.tpcInnerParam() < kCfgTpcClasses[1])) {
+            if ((track.tpcInnerParam() >= CfgTpcClasses[0]) && (track.tpcInnerParam() < CfgTpcClasses[1])) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrMidPNeg"), track.tpcNClsCrossedRows());
             }
-            if (track.tpcInnerParam() >= kCfgTpcClasses[1]) {
+            if (track.tpcInnerParam() >= CfgTpcClasses[1]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrHighPNeg"), track.tpcNClsCrossedRows());
             }
           }
@@ -4186,7 +4227,7 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/eff/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
 
         if (filterOptions.enableFiltering) {
-          if (track.tpcNSigmaKa() < kCfgKaonCut)
+          if (track.tpcNSigmaKa() < CfgKaonCut)
             continue;
         }
 
@@ -4573,12 +4614,12 @@ struct LFNucleiBATask {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             break;
           case 1:
-            if (track.hasTRD()) {
+            if (track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             }
             break;
           case 2:
-            if (!track.hasTRD()) {
+            if (!track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             }
             break;
@@ -4598,12 +4639,12 @@ struct LFNucleiBATask {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             break;
           case 1:
-            if (track.hasTRD()) {
+            if (track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             }
             break;
           case 2:
-            if (!track.hasTRD()) {
+            if (!track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             }
             break;
@@ -5178,7 +5219,7 @@ struct LFNucleiBATask {
                         track.passedTPCRefit() &&
                         track.hasTPC();
 
-          for (int i = 0; i < kFakeLoop; i++) { // From ITS to TPC
+          for (int i = 0; i < IntFakeLoop; i++) { // From ITS to TPC
             if (track.mcMask() & 1 << i) {
               hasFakeHit = true;
               break;
@@ -6090,7 +6131,7 @@ struct LFNucleiBATask {
     }
   }
 
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
   using EventCandidatesMC = soa::Join<EventCandidates, aod::McCollisionLabels>;
 
   using TrackCandidates0 = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
@@ -6127,7 +6168,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processData, "process data", true);
+  PROCESS_SWITCH(lfNucleiBATask, processData, "process data", true);
 
   // Process function that runs on the original AO2D
   void processDataLfPid(EventCandidates::iterator const& event,
@@ -6136,7 +6177,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processDataLfPid, "process data with LF PID", false);
+  PROCESS_SWITCH(lfNucleiBATask, processDataLfPid, "process data with LF PID", false);
 
   // Process function that runs on the filtered data
   void processDataFiltered(o2::aod::LfNuclEvents::iterator const& event,
@@ -6147,7 +6188,7 @@ struct LFNucleiBATask {
     // Takes as input full AO2Ds
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
+  PROCESS_SWITCH(lfNucleiBATask, processDataFiltered, "process data on the filtered data", false);
 
   void processDataLight(o2::aod::LfNuclEvents::iterator const& event,
                         o2::aod::LfCandNucleusDummy const& tracks,
@@ -6157,7 +6198,7 @@ struct LFNucleiBATask {
     // Takes as input derived trees
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
-  PROCESS_SWITCH(LFNucleiBATask, processDataLight, "process data on the derived trees", false);
+  PROCESS_SWITCH(lfNucleiBATask, processDataLight, "process data on the derived trees", false);
 
   /////////////
   // MC Reco //
@@ -6205,7 +6246,7 @@ struct LFNucleiBATask {
 
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles, mcCentFT0M);
   } // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCReco, "process mc reco", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCReco, "process mc reco", false);
 
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPid(EventCandidatesMC::iterator const& event,
@@ -6246,7 +6287,7 @@ struct LFNucleiBATask {
 
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles, mcCentFT0M);
   } // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPid, "process mc reco with LfPid", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoLfPid, "process mc reco with LfPid", false);
 
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPidEv(EventCandidatesMC const& collisions,
@@ -6358,7 +6399,7 @@ struct LFNucleiBATask {
     }
   }
   // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
 
   // Process function that runs on the filtered AO2D (for the MC)
   void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,
@@ -6367,7 +6408,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
 
   void processMCRecoFilteredLight(o2::aod::LfNuclEvents::iterator const& event,
                                   soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks,
@@ -6375,7 +6416,7 @@ struct LFNucleiBATask {
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
 
   ////////////
   // MC Gen //
@@ -6645,7 +6686,7 @@ struct LFNucleiBATask {
       }
     }
   } // Close processMCGen
-  PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
+  PROCESS_SWITCH(lfNucleiBATask, processMCGen, "process MC Generated", false);
 
   void processEvSgLossMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                          aod::McParticles const& mcParticles,
@@ -6687,7 +6728,7 @@ struct LFNucleiBATask {
     for (const auto& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary())
         continue;
-      if (std::abs(mcPart.y()) >= kCfgTpcClasses[0])
+      if (std::abs(mcPart.y()) >= CfgTpcClasses[0])
         continue;
 
       const float pt = mcPart.pt();
@@ -6731,10 +6772,7 @@ struct LFNucleiBATask {
       }
     }
   }
-  PROCESS_SWITCH(LFNucleiBATask, processEvSgLossMC, "process MC SignLoss", false);
-
-  //   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-  //                    aod::McParticles const& mcParticles)
+  PROCESS_SWITCH(lfNucleiBATask, processEvSgLossMC, "process MC SignLoss", false);
 
   // EVENT LOSS, SIGNAL LOSS and EFFICIENCY CHECKER process function
   void processMCGenLosses(
@@ -6809,6 +6847,8 @@ struct LFNucleiBATask {
 
       // Check event selection
       histoGen.fill(HIST("events/hMCReco"), 0.5);
+      if (enableCentrality)
+        histoGen.fill(HIST("events/hMCRecoVsMult"), 0.5, mcCollision.centFT0M());
       if (evselOptions.useTVXtrigger && !hasTVX)
         continue;
       if (evselOptions.removeTFBorder && !hasNoTFB)
@@ -6816,11 +6856,15 @@ struct LFNucleiBATask {
       if (evselOptions.removeITSROFBorder && !hasNoItsRofFB)
         continue;
       histoGen.fill(HIST("events/hMCReco"), 1.5);
+      if (enableCentrality)
+        histoGen.fill(HIST("events/hMCRecoVsMult"), 1.5, mcCollision.centFT0M());
 
       recoIdxINEL++;
 
       if (collision.isInelGt0() && isINELgt0true) {
         histoGen.fill(HIST("events/hMCReco"), 2.5);
+        if (enableCentrality)
+          histoGen.fill(HIST("events/hMCRecoVsMult"), 2.5, mcCollision.centFT0M());
         recoIdxINELgt0++;
       }
 
@@ -6907,10 +6951,10 @@ struct LFNucleiBATask {
       }
     }
   }
-  PROCESS_SWITCH(LFNucleiBATask, processMCGenLosses, "process MCGen losses", false);
+  PROCESS_SWITCH(lfNucleiBATask, processMCGenLosses, "process MCGen losses", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<LFNucleiBATask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<lfNucleiBATask>(cfgc)};
 }

@@ -116,6 +116,7 @@ struct HfTaskUpcLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "Only fill the tree for candidates that pass the single-gap UPC events"};
   Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "Fill Tree for UPC QA"};
+  Configurable<bool> fillHistQa{"fillHistQa", false, "Fill histograms for UPC detector QA"};
   Configurable<bool> verticesWithUpc{"verticesWithUpc", false, "Consider vertices with UPC settings"};
   Configurable<float> zdcTimeThreshold{"zdcTimeThreshold", 2., "Threshold for ZNA/ZNC time"};
   // CCDB configuration
@@ -154,7 +155,7 @@ struct HfTaskUpcLc {
     }
 
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{500, 0., 500}, {500, 0., 500}}});
+    registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{200, 0., 200}, {200, 0., 200}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{100, 0., 10}, {100, 0., 10}}});
     registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{200, -10., 10}, {200, -10., 10}}});
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
@@ -195,6 +196,9 @@ struct HfTaskUpcLc {
       }
       const auto thisCollId = collision.globalIndex();
       const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
+      if (!fillTreeUpcQa && !fillHistQa && groupedLcCandidates.size() == 0) {
+        continue;
+      }
       const auto numPvContributors = collision.numContrib();
       const auto& bc = collision.template bc_as<BCsType>();
 
@@ -232,27 +236,30 @@ struct HfTaskUpcLc {
         zdcEnergyZNC = zdc.energyCommonZNC();
         zdcTimeZNA = zdc.timeZNA();
         zdcTimeZNC = zdc.timeZNC();
-        registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
-        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-        registry.fill(HIST("Data/zdc/timeZNA_vs_timeZNC"), zdcTimeZNA, zdcTimeZNC);
+        if (fillHistQa) {
+          registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+          registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
+          registry.fill(HIST("Data/zdc/timeZNA_vs_timeZNC"), zdcTimeZNA, zdcTimeZNC);
+        }
         registry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
       }
       const bool ignoreZdcTime = (zdcTimeThreshold < 0.f);
-
+      const auto multNTracksPV = collision.multNTracksPV();
+      const auto posZ = collision.posZ();
       if (gap == o2::aod::sgselector::TrueGap::SingleGapA && (ignoreZdcTime || (std::abs(zdcTimeZNA) > zdcTimeThreshold && std::abs(zdcTimeZNC) < zdcTimeThreshold))) {
         gapA0nXn = true;
       }
       if (gap == o2::aod::sgselector::TrueGap::SingleGapC && (ignoreZdcTime || (std::abs(zdcTimeZNA) < zdcTimeThreshold && std::abs(zdcTimeZNC) > zdcTimeThreshold))) {
         gapCXn0n = true;
       }
-      if (fillTreeOnlySingleGap & !gapA0nXn & !gapCXn0n) {
+      if (fillTreeOnlySingleGap && !gapA0nXn && !gapCXn0n) {
         continue;
       }
-      registry.fill(HIST("Data/hUpcMulti"), collision.multNTracksPV());
-      registry.fill(HIST("Data/hUpcVtz"), collision.posZ());
+      registry.fill(HIST("Data/hUpcMulti"), multNTracksPV);
+      registry.fill(HIST("Data/hUpcVtz"), posZ);
 
       if (fillTreeUpcQa) {
-        rowUpcQa(numPvContributors, collision.multNTracksPV(), collision.posZ(), fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+        rowUpcQa(numPvContributors, multNTracksPV, posZ, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
       }
 
       for (const auto& candidate : groupedLcCandidates) {
@@ -272,10 +279,10 @@ struct HfTaskUpcLc {
         const auto eta = candidate.eta();
 
         double outputBkg(-1);
+        registry.fill(HIST("Data/eta_vs_Multi"), eta, multNTracksPV);
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
-          registry.fill(HIST("Data/eta_vs_Multi"), eta, collision.multNTracksPV());
           if constexpr (FillMl) {
             const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
             if (mlProb.size() == NumberOfMlClasses) {

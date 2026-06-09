@@ -32,6 +32,7 @@
 #include <Rtypes.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -66,14 +67,13 @@ class DielectronCut : public TNamed
     kTPCFracSharedClusters,
     kRelDiffPin,
     kTPCChi2NDF,
-    kDCA3Dsigma,
+    kDCAsigma,
     kDCAxy,
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
     kITSClusterSize,
     kTTCA,
-    kPrefilter,
     kNCuts
   };
 
@@ -144,9 +144,9 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    if (mRequireDiffSides && t1.eta() * t2.eta() > 0.0) {
-      return false;
-    }
+    // if (mRequireDiffSides && t1.eta() * t2.eta() > 0.0) {
+    //   return false;
+    // }
 
     if (mApplydEtadPhi && mApplydEtadPhiPosition) { // applying both cuts is not allowed.
       return false;
@@ -195,7 +195,7 @@ class DielectronCut : public TNamed
     if (!IsSelectedTrack(track, DielectronCuts::kTrackPhiPositionRange)) {
       return false;
     }
-    if (!IsSelectedTrack(track, DielectronCuts::kDCA3Dsigma)) {
+    if (!IsSelectedTrack(track, DielectronCuts::kDCAsigma)) {
       return false;
     }
     if (!IsSelectedTrack(track, DielectronCuts::kDCAxy)) {
@@ -262,9 +262,6 @@ class DielectronCut : public TNamed
       if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
         return false;
       }
-    }
-    if (mApplyPF && !IsSelectedTrack(track, DielectronCuts::kPrefilter)) {
-      return false;
     }
 
     // PID cuts
@@ -336,8 +333,6 @@ class DielectronCut : public TNamed
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = (track.tpcInnerParam() > mMinPinForPionRejectionTPC && track.tpcInnerParam() < mMaxPinForPionRejectionTPC) ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_el_included_TOF = (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) && (track.hasTOF() && track.tofChi2() < mMaxChi2TOF);
-    // bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
-    // bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
@@ -347,8 +342,6 @@ class DielectronCut : public TNamed
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_el_included_TOF = (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) && (track.hasTOF() && track.tofChi2() < mMaxChi2TOF);
-    // bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
-    // bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
@@ -361,8 +354,6 @@ class DielectronCut : public TNamed
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
     bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
-    // bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
-    // bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
     return is_el_included_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC && is_el_included_TOF;
   }
 
@@ -370,8 +361,6 @@ class DielectronCut : public TNamed
   bool PassTPConly(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    // bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
-    // bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
     return is_el_included_TPC;
   }
 
@@ -383,8 +372,6 @@ class DielectronCut : public TNamed
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    // bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
-    // bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
     return is_el_included_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
   }
 
@@ -394,8 +381,6 @@ class DielectronCut : public TNamed
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
-    // bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
-    // bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
@@ -462,8 +447,8 @@ class DielectronCut : public TNamed
       case DielectronCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
-      case DielectronCuts::kDCA3Dsigma:
-        return mMinDca3D < o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track) && o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
+      case DielectronCuts::kDCAsigma:
+        return (std::array<float, 3>{std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track)), std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaXYinSigma(track)), std::fabs(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(track))}[mDCAType]) < mMaxDcaSigma;
 
       case DielectronCuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
@@ -483,9 +468,6 @@ class DielectronCut : public TNamed
       case DielectronCuts::kTTCA:
         return mEnableTTCA ? true : track.isAssociatedToMPC();
 
-      case DielectronCuts::kPrefilter:
-        return track.pfb() <= 0;
-
       default:
         return false;
     }
@@ -500,7 +482,7 @@ class DielectronCut : public TNamed
   void SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv);
   void SelectPhotonConversion(bool flag);
   void SetMindEtadPhi(bool applydEtadPhi, bool applydEtadPhiPosition, float min_deta, float min_dphi);
-  void SetRequireDifferentSides(bool flag);
+  // void SetRequireDifferentSides(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -537,18 +519,14 @@ class DielectronCut : public TNamed
   // void SetITSNsigmaKaRange(float min, float max);
   // void SetITSNsigmaPrRange(float min, float max);
 
-  // void SetPRangeForITSNsigmaKa(float min, float max);
-  // void SetPRangeForITSNsigmaPr(float min, float max);
-
   void SetPinRangeForPionRejectionTPC(float min, float max);
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
-  void SetTrackDca3DRange(float min, float max); // in sigma
-  void SetTrackMaxDcaXY(float maxDcaXY);         // in cm
-  void SetTrackMaxDcaZ(float maxDcaZ);           // in cm
+  void SetTrackMaxDcaSigma(float max, uint dcaType); // in sigma
+  void SetTrackMaxDcaXY(float maxDcaXY);             // in cm
+  void SetTrackMaxDcaZ(float maxDcaZ);               // in cm
   void SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
-  void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
   void IncludeITSsa(bool flag, float maxpt);
   void EnableTTCA(bool flag);
@@ -589,7 +567,7 @@ class DielectronCut : public TNamed
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};
-  bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
+  // bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};                        // range in pT
@@ -614,15 +592,13 @@ class DielectronCut : public TNamed
   bool mRequireITSib1st{false};
   float mMinChi2TOF{-1e10f}, mMaxChi2TOF{1e10f}; // max tof chi2 per
 
-  float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
-  float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma
+  uint mDCAType{0};                             // 0:3D, 1:XY, 2:Z, else:3D
+  float mMaxDcaSigma{1e+10};                    // max dca in units of sigma
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mApplyPhiV{true};
-  bool mApplyPF{false};
   float mMinMeanClusterSizeITS{0.0}, mMaxMeanClusterSizeITS{1e10f}; // <its cluster size> x cos(lmabda)
-  // float mMinP_ITSClusterSize{0.0}, mMaxP_ITSClusterSize{0.0};
   bool mIncludeITSsa{false};
   float mMaxPtITSsa{1e+10};
 
@@ -649,8 +625,6 @@ class DielectronCut : public TNamed
   // float mMinITSNsigmaPi{-1e+10}, mMaxITSNsigmaPi{+1e+10};
   // float mMinITSNsigmaKa{-1e+10}, mMaxITSNsigmaKa{+1e+10};
   // float mMinITSNsigmaPr{-1e+10}, mMaxITSNsigmaPr{+1e+10};
-  // float mMinP_ITSNsigmaKa{0.0}, mMaxP_ITSNsigmaKa{0.0};
-  // float mMinP_ITSNsigmaPr{0.0}, mMaxP_ITSNsigmaPr{0.0};
 
   // o2::analysis::MlResponseDielectronSingleTrack<float>* mPIDMlResponse{nullptr};
   std::vector<float> mMLBins{}; // binning for a feature variable. e.g. tpcInnerParam

@@ -502,6 +502,38 @@ struct LongrangecorrDerived {
     } // pair loop
   } // process MC mixed
 
+  template <typename TTriggers, typename TAssocs>
+  void processMcGenSame(McCollsTable::iterator const& mccollision, TTriggers const& triggers, TAssocs const& assocs)
+  {
+    if (std::abs(mccollision.posZ()) >= cfgSel.cfgVtxCut) {
+      return;
+    }
+    fillCollQA(mccollision);
+    auto multiplicity = mccollision.multiplicity();
+    fillCorrHist<CorrelationContainer::kCFStepAll>(same, triggers, assocs, false, mccollision.posZ(), multiplicity, 1.0);
+  } // process MC gen same
+
+  template <typename... TrackTypes>
+  void processMcGenMixed(McCollsTable const& mccollisions, TrackTypes&&... tracks)
+  {
+    auto getMultiplicity = [this](auto& collision) {
+      (void)this;
+      return collision.multiplicity();
+    };
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}, true};
+    auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
+    using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
+    using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
+    Pair<McCollsTable, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgSel.cfgNmixedevent, -1, mccollisions, tracksTuple, &cache};
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [col1, tracks1, col2, tracks2] = *it;
+      float eventweight = 1.0f / it.currentWindowNeighbours();
+      auto multiplicity = getMultiplicity(col1);
+      fillCorrHist<CorrelationContainer::kCFStepAll>(mixed, tracks1, tracks2, true, col1.posZ(), multiplicity, eventweight);
+    } // pair loop
+  } // process MC gen mixed
+
   void processTpcft0aSE(CollsTable::iterator const& col, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
     processSame(col, tracks, ft0as);
@@ -700,6 +732,56 @@ struct LongrangecorrDerived {
     processMcMixed(mccollisions, collisions, ft0as, ft0cs);
   }
 
+  void processMcGenTpcft0aSE(McCollsTable::iterator const& mccollision, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
+  {
+    processMcGenSame(mccollision, tracks, ft0as);
+  }
+
+  void processMcGenTpcft0cSE(McCollsTable::iterator const& mccollision, McTrksTable const& tracks, McFt0cTrksTable const& ft0cs)
+  {
+    processMcGenSame(mccollision, tracks, ft0cs);
+  }
+
+  void processMcGenTpcmftSE(McCollsTable::iterator const& mccollision, McTrksTable const& tracks, McMftTrksTable const& mfts)
+  {
+    processMcGenSame(mccollision, tracks, mfts);
+  }
+
+  void processMcGenMftft0aSE(McCollsTable::iterator const& mccollision, McMftTrksTable const& mfts, McFt0aTrksTable const& ft0as)
+  {
+    processMcGenSame(mccollision, mfts, ft0as);
+  }
+
+  void processMcGenFt0aft0cSE(McCollsTable::iterator const& mccollision, McFt0aTrksTable const& ft0as, McFt0cTrksTable const& ft0cs)
+  {
+    processMcGenSame(mccollision, ft0as, ft0cs);
+  }
+
+  void processMcGenTpcft0aME(McCollsTable const& mccollisions, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
+  {
+    processMcGenMixed(mccollisions, tracks, ft0as);
+  }
+
+  void processMcGenTpcft0cME(McCollsTable const& mccollisions, McTrksTable const& tracks, McFt0cTrksTable const& ft0cs)
+  {
+    processMcGenMixed(mccollisions, tracks, ft0cs);
+  }
+
+  void processMcGenTpcmftME(McCollsTable const& mccollisions, McTrksTable const& tracks, McMftTrksTable const& mfts)
+  {
+    processMcGenMixed(mccollisions, tracks, mfts);
+  }
+
+  void processMcGenMftft0aME(McCollsTable const& mccollisions, McMftTrksTable const& mfts, McFt0aTrksTable const& ft0as)
+  {
+    processMcGenMixed(mccollisions, mfts, ft0as);
+  }
+
+  void processMcGenFt0aft0cME(McCollsTable const& mccollisions, McFt0aTrksTable const& ft0as, McFt0cTrksTable const& ft0cs)
+  {
+    processMcGenMixed(mccollisions, ft0as, ft0cs);
+  }
+
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aME, "mixed event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cSE, "same event TPC vs FT0C", false);
@@ -736,6 +818,16 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processMcMftft0aME, "mixed MC event MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcFt0aft0cSE, "same MC event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcFt0aft0cME, "mixed MC event FT0A vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcft0aSE, "same MC gen event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcft0aME, "mixed MC gen event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcft0cSE, "same MC gen event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcft0cME, "mixed MC gen event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcmftSE, "same MC gen event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcmftME, "mixed MC gen event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenMftft0aSE, "same MC gen event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenMftft0aME, "mixed MC gen event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenFt0aft0cSE, "same MC gen event FT0A vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenFt0aft0cME, "mixed MC gen event FT0A vs FT0C", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

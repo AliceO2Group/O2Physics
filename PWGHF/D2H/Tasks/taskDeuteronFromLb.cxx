@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file taskDeuteronFromLb.cxx
 /// \brief A filter task for non prompt deuterons from beauty-hadron decays
-/// \author Marta Razza marta.razza@cern.ch
-/// \author Francesca Ercolessi francesca.ercolessi@cern.ch
+/// \author Marta Razza <marta.razza@cern.ch>
+/// \author Francesca Ercolessi <francesca.ercolessi@cern.ch>
 /// \since May 25, 2026
 
 #include "Common/Core/Zorro.h"
@@ -69,7 +70,9 @@ struct HfTaskDeuteronFromLb {
   Configurable<float> cfgTPCNsigma{"cfgTPCNsigma", 4.0f, "TPC n sigma for deuteron PID"};
   Configurable<float> cfgTofNsigmaMin{"cfgTofNsigmaMin", 3.0f, "TOF n sigma min for deuteron PID"};
   Configurable<float> cfgTofNsigmaMax{"cfgTofNsigmaMax", 4.0f, "TOF n sigma max for deuteron PID"};
-  Configurable<float> ptThresholdPid{"ptThresholdPid", 1.0f, "pT threshold to switch between 4 and 3 sigmas for TOF PID"};
+  Configurable<float> ptThresholdPid{"ptThresholdPid", 0.5f, "pT threshold to switch between 4 and 3 sigmas for TOF PID"};
+  Configurable<float> cfgDCAmin{"cfgDCAmin", 0.05f, "Minimum DCA for deuteron PID"};
+  Configurable<float> cfgDCAmax{"cfgDCAmax", 1000.0f, "Maximum DCA for deuteron PID"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5f, "Rapidity cut"};
   // PDG codes
   Configurable<int> pdgCodeMother{"pdgCodeMother", -5122, "PDG code of the mother particle (default: anti-Lambda_b)"};
@@ -88,6 +91,11 @@ struct HfTaskDeuteronFromLb {
 
   Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
 
+  ConfigurableAxis ptAxis{"ptAxis", {100, 0., 10.f}, "p_{T} GeV/c"};
+  ConfigurableAxis nSigmaAxis{"nSigmaAxis", {200, -10.f, 10.f}, "nSigma"};
+  ConfigurableAxis dcaXyAxis{"dcaXyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
+  ConfigurableAxis dcaZAxis{"dcaZAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
+
   HistogramRegistry QAHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -105,23 +113,18 @@ struct HfTaskDeuteronFromLb {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
-    ConfigurableAxis ptAxis{"ptAxis", {100, 0., 10.f}, "p_{T} GeV/c"};
-    ConfigurableAxis nSigmaAxis{"nSigmaAxis", {200, -10.f, 10.f}, "nSigma"};
-    ConfigurableAxis dcaXyAxis{"dcaXyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
-    ConfigurableAxis dcaZAxis{"dcaZAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
-
-    QAHistos.add("hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
-    QAHistos.add("ptGeneratedLb", "ptGeneratedLb", HistType::kTH1F, {ptAxis});
-    QAHistos.add("ptAntiDeuteronPrimary", "ptAntiDeuteronPrimaryReco", HistType::kTH1F, {ptAxis});
-    QAHistos.add("ptAntiDeuteronFromLb", "ptAntiDeuteronFromLbReco", HistType::kTH1F, {ptAxis});
-    QAHistos.add("hDCAxy-Primary", "DCAxy-Primary", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
-    QAHistos.add("hDCAxy-FromLb", "DCAxy-FromLb", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
-    QAHistos.add("hDCAxyVsPt", "DCAxy #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
-    QAHistos.add("hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaZAxis}});
-    QAHistos.add("hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
-    QAHistos.add("hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
-    QAHistos.add("ptAntiDeuteron", "ptAntiDeuteron", {HistType::kTH1F, {ptAxis}});
-    QAHistos.add("etaAntideuteron", "etaAntideuteron", {HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
+    QAHistos.add("MC/ptGeneratedLb", "ptGeneratedLb", HistType::kTH1F, {ptAxis});
+    QAHistos.add("MC/ptAntiDeuteronPrimary", "ptAntiDeuteronPrimaryReco", HistType::kTH1F, {ptAxis});
+    QAHistos.add("MC/ptAntiDeuteronFromLb", "ptAntiDeuteronFromLbReco", HistType::kTH1F, {ptAxis});
+    QAHistos.add("MC/hDCAxy-Primary", "DCAxy-Primary", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
+    QAHistos.add("MC/hDCAxy-FromLb", "DCAxy-FromLb", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
+    QAHistos.add("Data/hDCAxyVsPt", "DCAxy #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
+    QAHistos.add("Data/hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaZAxis}});
+    QAHistos.add("Data/hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
+    QAHistos.add("Data/hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
+    QAHistos.add("Data/ptAntiDeuteron", "ptAntiDeuteron", {HistType::kTH1F, {ptAxis}});
+    QAHistos.add("Data/etaAntideuteron", "etaAntideuteron", {HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
+    QAHistos.add("Data/hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
 
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "ZORRO");
@@ -146,6 +149,8 @@ struct HfTaskDeuteronFromLb {
   bool passedSingleTrackSelection(const T1& track)
   {
     if (std::abs(track.eta()) > cfgEta)
+      return false;
+    if (std::abs(track.dcaXY()) < cfgDCAmin || std::abs(track.dcaXY()) > cfgDCAmax)
       return false;
     if (!track.hasITS())
       return false;
@@ -200,7 +205,7 @@ struct HfTaskDeuteronFromLb {
         continue;
       }
       hProcessedEvents->Fill(3.5);
-      QAHistos.fill(HIST("hVtxZ"), collision.posZ());
+      QAHistos.fill(HIST("Data/hVtxZ"), collision.posZ());
 
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
@@ -223,27 +228,27 @@ struct HfTaskDeuteronFromLb {
 
         if (track.pt() < ptThresholdPid) {
           if (isTPCDe && isTOFDe_max) {
-            QAHistos.fill(HIST("ptAntiDeuteron"), track.pt());
-            QAHistos.fill(HIST("etaAntideuteron"), track.eta());
-            QAHistos.fill(HIST("hDCAxyVsPt"), track.pt(), dca[0]);
-            QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
-            QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
-            QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
+            QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
+            QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
+            QAHistos.fill(HIST("Data/hDCAzVsPt"), track.pt(), dca[1]);
+            QAHistos.fill(HIST("Data/hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            QAHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
           }
         } else {
           if (isTPCDe && isTOFDe_min && isTOFDe_max) {
-            QAHistos.fill(HIST("ptAntiDeuteron"), track.pt());
-            QAHistos.fill(HIST("etaAntideuteron"), track.eta());
-            QAHistos.fill(HIST("hDCAxyVsPt"), track.pt(), dca[0]);
-            QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
-            QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
-            QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
+            QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
+            QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
+            QAHistos.fill(HIST("Data/hDCAzVsPt"), track.pt(), dca[1]);
+            QAHistos.fill(HIST("Data/hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            QAHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(HfTaskDeuteronFromLb, processData, "processData", false);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processData, "processData", true);
 
   void processMC(MCCollisionCandidates::iterator const&, MCTrackCandidates const& tracks, o2::aod::McParticles const&)
   {
@@ -272,17 +277,17 @@ struct HfTaskDeuteronFromLb {
             }
           }
           if (isFromLb) {
-            QAHistos.fill(HIST("hDCAxy-FromLb"), track.dcaXY());
-            QAHistos.fill(HIST("ptAntiDeuteronFromLb"), track.pt());
+            QAHistos.fill(HIST("MC/hDCAxy-FromLb"), track.dcaXY());
+            QAHistos.fill(HIST("MC/ptAntiDeuteronFromLb"), track.pt());
           } else {
-            QAHistos.fill(HIST("hDCAxy-Primary"), track.dcaXY());
-            QAHistos.fill(HIST("ptAntiDeuteronPrimary"), track.pt());
+            QAHistos.fill(HIST("MC/hDCAxy-Primary"), track.dcaXY());
+            QAHistos.fill(HIST("MC/ptAntiDeuteronPrimary"), track.pt());
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(HfTaskDeuteronFromLb, processMC, "processMC", true);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processMC, "processMC", false);
 
   void processGen(o2::aod::McCollision const&, o2::aod::McParticles const& mcParticles)
   {
@@ -290,7 +295,7 @@ struct HfTaskDeuteronFromLb {
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() == pdgCodeMother) {
         if (std::abs(mcParticle.y()) <= rapidityCut) {
-          QAHistos.fill(HIST("ptGeneratedLb"), mcParticle.pt());
+          QAHistos.fill(HIST("MC/ptGeneratedLb"), mcParticle.pt());
         }
       }
 
@@ -309,9 +314,9 @@ struct HfTaskDeuteronFromLb {
         }
 
         if (isFromLb) {
-          QAHistos.fill(HIST("ptAntiDeuteronFromLb"), mcParticle.pt());
+          QAHistos.fill(HIST("MC/ptAntiDeuteronFromLb"), mcParticle.pt());
         } else if (mcParticle.isPhysicalPrimary()) {
-          QAHistos.fill(HIST("ptAntiDeuteronPrimary"), mcParticle.pt());
+          QAHistos.fill(HIST("MC/ptAntiDeuteronPrimary"), mcParticle.pt());
         }
       }
     }

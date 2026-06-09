@@ -232,6 +232,8 @@ struct HfTaskBsToJpsiPhiReduced {
   Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<bool> useJpsiPdgMass{"useJpsiPdgMass", true, "Whether to use J/Psi PDG mass for B+ candidate mass evaluation or to use the invariant mass of the two prongs"};
+  Configurable<bool> usePhiPdgMass{"usePhiPdgMass", true, "Whether to use Phi PDG mass for B+ candidate mass evaluation or to use the invariant mass of the two prongs"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bs_to_jpsi_phi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bs_to_jpsi_phi::Cuts[0], hf_cuts_bs_to_jpsi_phi::NBinsPt, hf_cuts_bs_to_jpsi_phi::NCutVars, hf_cuts_bs_to_jpsi_phi::labelsPt, hf_cuts_bs_to_jpsi_phi::labelsCutVar}, "Bs candidate selection per pT bin"};
@@ -310,7 +312,6 @@ struct HfTaskBsToJpsiPhiReduced {
     registry.add("hMass", bSCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
     registry.add("hMassJpsi", bSCandTitle + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
     registry.add("hMassPhi", bSCandTitle + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
-    registry.add("hd0K", bSCandTitle + "Kaon DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisImpactPar, axisPtKa}});
 
     // histograms processMC
     if (doprocessMc || doprocessMcWithBsMl) {
@@ -321,11 +322,9 @@ struct HfTaskBsToJpsiPhiReduced {
       registry.add("hMassRecSig", bSCandMatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
       registry.add("hMassJpsiRecSig", bSCandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
       registry.add("hMassPhiRecSig", bSCandMatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
-      registry.add("hd0KRecSig", bSCandMatch + "Kaon DCAxy to prim. vertex (cm); K^{+} " + stringPt, {HistType::kTH2F, {axisImpactPar, axisPtKa}});
       registry.add("hMassRecBg", bSCandUnmatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
       registry.add("hMassJpsiRecBg", bSCandUnmatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
       registry.add("hMassPhiRecBg", bSCandMatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
-      registry.add("hd0KRecBg", bSCandMatch + "Kaon DCAxy to prim. vertex (cm); K^{+} " + stringPt, {HistType::kTH2F, {axisImpactPar, axisPtKa}});
     }
 
     if (doprocessDataWithBsMl || doprocessMcWithBsMl) {
@@ -371,14 +370,17 @@ struct HfTaskBsToJpsiPhiReduced {
                 aod::HfRedBach1Tracks const&)
   {
     auto ptCandBs = candidate.pt();
-    auto invMassBs = HfHelper::invMassBsToJpsiPhi(candidate);
+    auto invMassBs = HfHelper::invMassBsToJpsiPhi(candidate, useJpsiPdgMass, usePhiPdgMass);
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa0 = candidate.template prong0Phi_as<aod::HfRedBach0Tracks>();
     auto candKa1 = candidate.template prong1Phi_as<aod::HfRedBach1Tracks>();
-    std::array<float, 3> const pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
-    std::array<float, 3> const pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
-    auto ptJpsi = candidate.ptProng0();
-    auto invMassJpsi = candJpsi.m();
+    auto const pVecMu0 = candidate.pVectorProng0();
+    auto const pVecMu1 = candidate.pVectorProng1();
+    auto const pVecKa0 = candidate.pVectorProng2();
+    auto const pVecKa1 = candidate.pVectorProng3();
+    auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptPhi = RecoDecay::pt(pVecKa0, pVecKa1);
+    auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     auto invMassPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     uint8_t statusBs = 0;
 
@@ -393,7 +395,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
 
     SETBIT(statusBs, SelectionStep::RecoSkims);
-    if (HfHelper::selectionBsToJpsiPhiTopol(candidate, candKa0, candKa1, cuts, binsPt)) {
+    if (HfHelper::selectionBsToJpsiPhiTopol(candidate, cuts, binsPt, useJpsiPdgMass, usePhiPdgMass)) {
       SETBIT(statusBs, SelectionStep::RecoTopol);
     } else if (selectionFlagBs >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -432,18 +434,15 @@ struct HfTaskBsToJpsiPhiReduced {
     }
 
     registry.fill(HIST("hMass"), invMassBs, ptCandBs);
-    registry.fill(HIST("hMassJpsi"), invMassJpsi, candidate.ptProng0());
-    registry.fill(HIST("hMassPhi"), invMassPhi, candidate.ptProng0());
-    registry.fill(HIST("hd0K"), candidate.impactParameter1(), candidate.ptProng1());
+    registry.fill(HIST("hMassJpsi"), invMassJpsi, ptJpsi);
+    registry.fill(HIST("hMassPhi"), invMassPhi, ptPhi);
     if constexpr (DoMc) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), invMassBs, ptCandBs);
-        registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, candidate.ptProng0());
-        registry.fill(HIST("hd0KRecSig"), candidate.impactParameter1(), candidate.ptProng1());
+        registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, ptJpsi);
       } else if (fillBackground) {
         registry.fill(HIST("hMassRecBg"), invMassBs, ptCandBs);
-        registry.fill(HIST("hMassJpsiRecBg"), invMassJpsi, candidate.ptProng0());
-        registry.fill(HIST("hd0KRecBg"), candidate.impactParameter1(), candidate.ptProng1());
+        registry.fill(HIST("hMassJpsiRecBg"), invMassJpsi, ptJpsi);
       }
     }
 
