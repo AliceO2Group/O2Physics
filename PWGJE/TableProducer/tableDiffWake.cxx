@@ -125,7 +125,7 @@ DECLARE_SOA_TABLE(TableTrack, "AOD", "TABLETRACK",
 using namespace o2;
 using namespace o2::framework;
 
-struct tableDiffWake {
+struct TableDiffWake {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
@@ -279,5 +279,5 @@ struct tableDiffWake {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<tableDiffWake>(cfgc)};
+    adaptAnalysisTask<TableDiffWake>(cfgc)};
 }
