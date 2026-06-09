@@ -9,11 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// This task writes a collision and track table which are further used in
-/// a diffusion wake analysis
-///
-/// author N. Wilson
-
 /// \file tableDiffWake.cxx
 /// \brief This task writes a collision and track table which are further used in a diffusion wake analysis
 /// \author Nicola Wilson <nicola.wilson@cern.ch>
