@@ -126,7 +126,6 @@ struct DqJPsiMuonCorrelations {
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuonAssocs, typename TMuonTracks, typename TDileptons>
   void runDileptonMuon(TEvent const& event, TMuonAssocs const& assocs, TMuonTracks const& /*tracks*/, TDileptons const& dileptons)
   {
-    // VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesMuon);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
     VarManager::FillEvent<TEventFillMap>(event, fValuesMuon);
@@ -138,6 +137,8 @@ struct DqJPsiMuonCorrelations {
 
     if (dileptons.size() > 0) {
 
+      // TODO: Implement cuts on dileptons and assocs
+
       for (auto& dilepton : dileptons) {
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
         registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt());
@@ -148,6 +149,8 @@ struct DqJPsiMuonCorrelations {
           }
           auto track = assoc.template reducedmuon_as<TMuonTracks>();
 
+          // TODO: Check if the associated track is part of the dilepton candidate, if so skip it to avoid auto-correlations
+
           float deltaEta = track.eta() - dilepton.eta();
           float deltaPhi = track.phi() - dilepton.phi();
           if (deltaPhi < -constants::math::PI/2.0f) {
@@ -155,6 +158,8 @@ struct DqJPsiMuonCorrelations {
           } else if (deltaPhi > constants::math::PI*3.0f/2.0f) {
             deltaPhi -= 2.0f * constants::math::PI;
           }
+
+          // TODO: Implement weights for efficiency and acceptance correction
 
           if (dilepton.mass() > fConfigDileptonLowMass && dilepton.mass() < fConfigDileptonHighMass) {
             registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt());
@@ -165,6 +170,7 @@ struct DqJPsiMuonCorrelations {
           }
         }
 
+        // TODO: Implement trigger counting
       }
     }
   }
