@@ -1669,20 +1669,42 @@ struct AnalysisSameEventPairing {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     bool isCorrectAssoc_leg1 = false;
     bool isCorrectAssoc_leg2 = false;
-    dielectronList.reserve(1);
-    // dimuonList.reserve(1);
-    dielectronsExtraList.reserve(1);
-    // dimuonsExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dileptonInfoList.reserve(1);
+
+    // estimate reserved size
+    int64_t reserveSize = 0;
+    for (auto& event : events) {
+      if (event.isEventSelected_bit(0)) {
+        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+        reserveSize += (groupedAssocs.size() * (groupedAssocs.size() - 1)) / 2; // n choose 2 combinations
+      }
+    }
+
+    dielectronList.reserve(reserveSize);
+    dielectronsExtraList.reserve(reserveSize);
+    dielectronInfoList.reserve(reserveSize);
+    dileptonInfoList.reserve(reserveSize);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
-      // dimuonAllList.reserve(1);
+      dielectronAllList.reserve(reserveSize);
     }
     if (fConfigOptions.fConfigMiniTree) {
-      dileptonMiniTreeGen.reserve(1);
-      dileptonMiniTreeRec.reserve(1);
+      dileptonMiniTreeGen.reserve(reserveSize);
+      dileptonMiniTreeRec.reserve(reserveSize);
     }
+
+    // dielectronList.reserve(1);
+    // // dimuonList.reserve(1);
+    // dielectronsExtraList.reserve(1);
+    // // dimuonsExtraList.reserve(1);
+    // dielectronInfoList.reserve(1);
+    // dileptonInfoList.reserve(1);
+    // if (fConfigOptions.flatTables.value) {
+    //   dielectronAllList.reserve(1);
+    //   // dimuonAllList.reserve(1);
+    // }
+    // if (fConfigOptions.fConfigMiniTree) {
+    //   dileptonMiniTreeGen.reserve(1);
+    //   dileptonMiniTreeRec.reserve(1);
+    // }
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0);
 
