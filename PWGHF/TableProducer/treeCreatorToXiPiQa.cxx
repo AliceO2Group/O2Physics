@@ -651,7 +651,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  template <typename CollType, typename McCollType, typename CandType>
+  template <typename McCollType, typename CollType, typename CandType>
   void fillParticle(const CandType& mcParticles, const CollType& collisions)
   {
     for (const auto& particle : mcParticles) {
@@ -884,7 +884,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -909,7 +909,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -934,7 +934,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -959,7 +959,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
+      fillParticle<McCollisionsCentFT0Cs>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -984,7 +984,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
+      fillParticle<McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -1009,7 +1009,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -1034,7 +1034,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -1070,7 +1070,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -1095,7 +1095,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
+      fillParticle<McCollisionsCentFT0Cs>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -1120,7 +1120,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
+      fillParticle<McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -1145,7 +1145,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling particle properties if requested
     if (fillGenTable) {
       rowCandidateParticles.reserve(mcParticles.size());
-      fillParticle<MyEventTableWithMcLabels, aod::McCollisions>(mcParticles, collsWithMcLable);
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
