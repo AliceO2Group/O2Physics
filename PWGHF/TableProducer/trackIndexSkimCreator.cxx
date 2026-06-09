@@ -3938,6 +3938,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       // cascade loop
       const auto thisCollId = collision.globalIndex();
       const auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& casc : groupedCascades) {
 
@@ -3995,7 +3996,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
         trackParCovCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
-        const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdCharmBachelor1 = groupedBachTrackIndices.begin(); trackIdCharmBachelor1 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor1) {
 
           hfFlag = 0;
