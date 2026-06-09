@@ -14,6 +14,14 @@
 ///
 /// author N. Wilson
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -23,13 +31,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/CCDB/EventSelectionParams.h"
 
 // Event selection: Only events that contain track above some threshold
 /*
@@ -71,7 +72,7 @@ namespace o2::aod
 namespace testcol
 {
 // Event properties
-//DECLARE_SOA_COLUMN(Gi, gi, int64_t);
+// DECLARE_SOA_COLUMN(Gi, gi, int64_t);
 DECLARE_SOA_COLUMN(Rn, rn, int32_t);         // run number
 DECLARE_SOA_COLUMN(Cent, cent, float);       // FT0C centrality
 DECLARE_SOA_COLUMN(Mult, mult, int32_t);     // TPC multiplicity
