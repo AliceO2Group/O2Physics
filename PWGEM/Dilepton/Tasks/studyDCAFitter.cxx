@@ -625,30 +625,6 @@ struct studyDCAFitter {
             fRegistry.fill(HIST("Pair/SV/Zboson/lsmm/hChi2PCA"), std::log10(chi2PCA));
           }
           break;
-        case 113: // rho0
-          keepSignal = true;
-          if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
-            dileptonType = 1;
-          } else { // nonprompt
-            dileptonType = 2;
-          }
-          break;
-        case 223: // omega
-          keepSignal = true;
-          if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
-            dileptonType = 1;
-          } else { // nonprompt
-            dileptonType = 2;
-          }
-          break;
-        case 333: // phi
-          keepSignal = true;
-          if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
-            dileptonType = 1;
-          } else { // nonprompt
-            dileptonType = 2;
-          }
-          break;
         case 443:
           keepSignal = true;
           if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
