@@ -125,9 +125,9 @@ struct tableDiffWake {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
-  Configurable<double> pT_thresh{"pT_thresh", 20.0, "pT threshold"};
-  Configurable<float> cent_max{"cent_max", 10, "centrality"};
-  Configurable<float> z_vert_cut{"z_vert_cut", 10.0, "z_vertex cut"};
+  Configurable<double> ptThresh{"pT_thresh", 20.0, "pT threshold"};
+  Configurable<float> centMax{"cent_max", 10, "centrality"};
+  Configurable<float> zVertCut{"z_vert_cut", 10.0, "z_vertex cut"};
 
   Produces<o2::aod::TableCol> testcol;
   Produces<o2::aod::TableTrack> testtrack;
@@ -153,9 +153,9 @@ struct tableDiffWake {
     // Event selection corresponds to sel8FullPbPb
     if (!col.sel8())
       return;
-    if (col.centFT0C() > cent_max)
+    if (col.centFT0C() > centMax)
       return; // Centrality 0 - 10 %
-    if (std::abs(col.posZ()) > z_vert_cut)
+    if (std::abs(col.posZ()) > zVertCut)
       return; // z position < 10 cm
     if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
       return;
@@ -178,7 +178,7 @@ struct tableDiffWake {
 
       if (!track.isGlobalTrack())
         continue;
-      if (track.pt() > pT_thresh) {
+      if (track.pt() > ptThresh) {
         eventHighpT = true;
         break;
       }
@@ -187,8 +187,8 @@ struct tableDiffWake {
       return;
     //------------------------------------------------------------
     // Translate values to less memory consuming values
-    int16_t Substitute_ep2 = (int16_t)(ep2 * 1000);
-    int16_t Substitute_ep3 = (int16_t)(ep3 * 1000);
+    int16_t substituteEp2 = (int16_t)(ep2 * 1000);
+    int16_t substituteEp3 = (int16_t)(ep3 * 1000);
 
     testcol(col.globalIndex(),
             run,
@@ -199,8 +199,8 @@ struct tableDiffWake {
             col.posX(),
             col.posY(),
             col.posZ(),
-            Substitute_ep2,
-            Substitute_ep3);
+            substituteEp2,
+            substituteEp3);
 
     for (auto const &track : tracks) {
 
