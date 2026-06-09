@@ -1502,7 +1502,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMCRecoBitmask, "Process MC reco data for cascades using Bitmask for PID", false);
 
   /// Function used to get QA for MC tracks, mainly for DCAxy Primary, daughter and material
-  void processMCTrackQA(const FilteredFDCollision& col, FemtoRecoFullParticles&, o2::aod::FdMCParticles&)
+  void processMCTrackQA(const FilteredFDCollision& col, const FemtoRecoFullParticles&, const o2::aod::FdMCParticles&)
   {
     auto groupPartsOneMC = partsTrackOneFullMc->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     for (const auto& part : groupPartsOneMC) {
