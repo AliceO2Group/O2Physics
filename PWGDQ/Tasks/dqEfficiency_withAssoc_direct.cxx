@@ -1691,20 +1691,6 @@ struct AnalysisSameEventPairing {
       dileptonMiniTreeRec.reserve(reserveSize);
     }
 
-    // dielectronList.reserve(1);
-    // // dimuonList.reserve(1);
-    // dielectronsExtraList.reserve(1);
-    // // dimuonsExtraList.reserve(1);
-    // dielectronInfoList.reserve(1);
-    // dileptonInfoList.reserve(1);
-    // if (fConfigOptions.flatTables.value) {
-    //   dielectronAllList.reserve(1);
-    //   // dimuonAllList.reserve(1);
-    // }
-    // if (fConfigOptions.fConfigMiniTree) {
-    //   dileptonMiniTreeGen.reserve(1);
-    //   dileptonMiniTreeRec.reserve(1);
-    // }
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0);
 

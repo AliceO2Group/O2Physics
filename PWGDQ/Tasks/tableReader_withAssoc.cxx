@@ -1829,22 +1829,32 @@ struct AnalysisSameEventPairing {
     // Reserve capacity for the output tables to avoid repeated reallocations
     // inside the Arrow builders.  Unused capacity is virtual address space
     // only — pages are not faulted in until written.
-    auto nAssocs = assocs.size();
-    dielectronList.reserve(nAssocs);
-    dimuonList.reserve(nAssocs);
-    dielectronsExtraList.reserve(nAssocs);
-    dielectronInfoList.reserve(nAssocs);
-    dimuonsExtraList.reserve(nAssocs);
-    dileptonInfoList.reserve(nAssocs);
-    dileptonFlowList.reserve(nAssocs);
+    // estimate reserved size
+    int64_t reserveSize = 0;
+    for (auto& event : events) {
+      if (event.isEventSelected_bit(0)) {
+        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+        reserveSize += (groupedAssocs.size() * (groupedAssocs.size() - 1)) / 2; // n choose 2 combinations
+      }
+    }
+    LOG(info) << "Reserving capacity for " << reserveSize << " pairs in the output tables";
+    
+    dielectronList.reserve(reserveSize);
+    dimuonList.reserve(reserveSize);
+    dielectronsExtraList.reserve(reserveSize);
+    dielectronInfoList.reserve(reserveSize);
+    dimuonsExtraList.reserve(reserveSize);
+    dileptonInfoList.reserve(reserveSize);
+    dileptonFlowList.reserve(reserveSize);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(nAssocs);
-      dimuonAllList.reserve(nAssocs);
+      dielectronAllList.reserve(reserveSize);
+      dimuonAllList.reserve(reserveSize);
     }
     if (fConfigOptions.polarTables.value) {
-      dileptonPolarList.reserve(nAssocs);
-      dileptonEventInfoList.reserve(nAssocs);
+      dileptonPolarList.reserve(reserveSize);
+      dileptonEventInfoList.reserve(reserveSize);
     }
+    
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
