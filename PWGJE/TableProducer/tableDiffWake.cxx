@@ -217,16 +217,14 @@ struct TableDiffWake {
       uint64_t substituteP = 0;
       uint8_t uppermostBit = 20;
       uint8_t lowermostBit = 0;
+      uint64_t bitmask20Bits = 0b11111111111111111111;
 
       int64_t particlePx = (track.px() * 6000);
       if (particlePx < 0)
         substituteP |= static_cast<uint64_t>1 << uppermostBit;
       if (particlePx < 0)
         particlePx = (-1) * particlePx;
-      for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
-        if ((particlePx & (static_cast<int64_t>1 << i_bit)))
-          substituteP |= static_cast<uint64_t>1 << i_bit;
-      }
+      substituteP |= (particlePx & bitmask20Bits) << lowermostBit;
 
       uppermostBit = 41;
       lowermostBit = 21;
@@ -235,10 +233,7 @@ struct TableDiffWake {
         substituteP |= static_cast<uint64_t>1 << uppermostBit;
       if (particlePy < 0)
         particlePy = (-1) * particlePy;
-      for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
-        if ((particlePy & (static_cast<int64_t>1 << (i_bit - lowermostBit))))
-          substituteP |= static_cast<uint64_t>1 << i_bit;
-      }
+      substituteP |= (particlePy & bitmask20Bits) << lowermostBit;
 
       uppermostBit = 62;
       lowermostBit = 42;
@@ -247,10 +242,7 @@ struct TableDiffWake {
         substituteP |= static_cast<uint64_t>1 << uppermostBit;
       if (particlePz < 0)
         particlePz = (-1) * particlePz;
-      for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
-        if ((particlePz & (static_cast<int64_t>1 << (i_bit - lowermostBit))))
-          substituteP |= static_cast<uint64_t>1 << i_bit;
-      }
+      substituteP |= (particlePz & bitmask20Bits) << lowermostBit;
 
       // dEdx
       uint16_t substituteDEDX = static_cast<uint16_t>(track.tpcSignal() * 10);
