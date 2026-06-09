@@ -126,7 +126,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
   ConfigurableAxis thnConfigAxisIR{"thnConfigAxisIR", {5000, 0, 500}, "Interaction rate (kHz)"};
-  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {100, 0., 100.}, "axis for PV contributors"};
+  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {200, 0., 200.}, "axis for PV contributors"};
   ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
   ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
