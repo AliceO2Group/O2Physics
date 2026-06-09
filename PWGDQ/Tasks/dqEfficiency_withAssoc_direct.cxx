@@ -1675,9 +1675,22 @@ struct AnalysisSameEventPairing {
     for (auto& event : events) {
       if (event.isEventSelected_bit(0)) {
         auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-        reserveSize += (groupedAssocs.size() * (groupedAssocs.size() - 1)) / 2; // n choose 2 combinations
+        size_t nGood = 0;
+        for (auto const& t : groupedAssocs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            if (t.isBarrelSelected_raw()) {
+              nGood++;
+            }
+          }
+          /*else if constexpr (TPairType == VarManager::kDecayToMuMu) {
+            if (t.isMuonSelected_raw()) {
+              nGood++;
+            }
+          }*/
+        }
+        reserveSize += nGood * (nGood - 1) / 2;
       }
-    }
+    } 
 
     dielectronList.reserve(reserveSize);
     dielectronsExtraList.reserve(reserveSize);

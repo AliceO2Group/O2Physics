@@ -1849,7 +1849,6 @@ struct AnalysisSameEventPairing {
         reserveSize += nGood * (nGood - 1) / 2;
       }
     }
-    LOG(info) << "Reserving capacity for " << reserveSize << " pairs in the output tables";
     
     dielectronList.reserve(reserveSize);
     dimuonList.reserve(reserveSize);
