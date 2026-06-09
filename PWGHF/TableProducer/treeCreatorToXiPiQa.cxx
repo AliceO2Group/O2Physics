@@ -353,7 +353,7 @@ struct HfTreeCreatorToXiPiQa {
   using MyEventTableWithMcLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
   using MatchedGenXiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>>;
-  
+
   using McCollisionsCentFT0Cs = soa::Join<aod::McCollisions, aod::McCentFT0Cs>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
@@ -692,7 +692,7 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~Data with DCAFitter~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
 
-  void processDataFull(MyEventTable const& collisions, 
+  void processDataFull(MyEventTable const& collisions,
                        MyTrackTable const&,
                        MyCandTableDca const& candidates)
   {
@@ -709,7 +709,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLite(MyEventTable const& collisions, 
+  void processDataLite(MyEventTable const& collisions,
                        MyTrackTable const&,
                        MyCandTableDca const& candidates)
   {
@@ -726,7 +726,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions, 
+  void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions,
                                MyTrackTable const&,
                                MyCandTableDca const& candidates)
   {
@@ -760,7 +760,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions, 
+  void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions,
                                     MyTrackTable const&,
                                     MyCandTableDca const& candidates)
   {
@@ -786,7 +786,7 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~Data with KFParticle~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
-  void processKfData(MyEventTable const& collisions, 
+  void processKfData(MyEventTable const& collisions,
                      MyTrackTable const&,
                      MyCandTableKf const& candidates)
   {
@@ -803,7 +803,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfDataWithFT0M(MyEventTableWithFT0M const& collisions, 
+  void processKfDataWithFT0M(MyEventTableWithFT0M const& collisions,
                              MyTrackTable const&,
                              MyCandTableKf const& candidates)
   {
@@ -820,7 +820,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfDataWithFT0C(MyEventTableWithFT0C const& collisions, 
+  void processKfDataWithFT0C(MyEventTableWithFT0C const& collisions,
                              MyTrackTable const&,
                              MyCandTableKf const& candidates)
   {
@@ -837,7 +837,7 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfDataWithNTracksPV(MyEventTableWithNTracksPV const& collisions, 
+  void processKfDataWithNTracksPV(MyEventTableWithNTracksPV const& collisions,
                                   MyTrackTable const&,
                                   MyCandTableKf const& candidates)
   {
