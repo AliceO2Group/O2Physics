@@ -1834,12 +1834,16 @@ struct AnalysisSameEventPairing {
     for (auto& event : events) {
       if (event.isEventSelected_bit(0)) {
         auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-        reserveSize += (groupedAssocs.size() * (groupedAssocs.size() - 1)) / 2; // n choose 2 combinations
+        size_t nGood = 0;
+        for (auto const& t : groupedAssocs) {
+          if (t.isBarrelSelected_raw() && t.isBarrelSelectedPrefilter_raw()) {
+            nGood++;
+          }
+        }
+        reserveSize += nGood * (nGood - 1) / 2;
       }
     }
     LOG(info) << "Reserving capacity for " << reserveSize << " pairs in the output tables";
-    LOG(info) << "number of Assocs: " << assocs.size() << ", number of Events: " << events.size();
-    reserveSize = 1;
     
     dielectronList.reserve(reserveSize);
     dimuonList.reserve(reserveSize);
