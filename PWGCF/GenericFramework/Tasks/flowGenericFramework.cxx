@@ -43,6 +43,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -262,6 +263,7 @@ struct FlowGenericFramework {
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   o2::aod::ITSResponse itsResponse;
 
@@ -289,6 +291,11 @@ struct FlowGenericFramework {
     FractionV02 = 0,
     FractionV0,
     FractionSetupCount
+  };
+  enum EfficiencyStep {
+    EfficiencyGenerated = 0,
+    EfficiencyReconstructed,
+    EfficiencyStepCount
   };
 
   // QA outputs
@@ -360,6 +367,15 @@ struct FlowGenericFramework {
     KaonID,
     ProtonID,
     SpeciesCount
+  };
+  enum EfficiencySpecies {
+    EfficiencyCharged = ChargedID,
+    EfficiencyPion = PionID,
+    EfficiencyKaon = KaonID,
+    EfficiencyProton = ProtonID,
+    EfficiencyK0 = 4,
+    EfficiencyLambda,
+    EfficiencySpeciesCount
   };
   enum ResoIDs {
     K0Sideband1 = 0,
@@ -571,6 +587,8 @@ struct FlowGenericFramework {
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
     AxisSpec singleCount = {1, 0, 1};
+    AxisSpec efficiencyParticleAxis = {EfficiencySpeciesCount, -0.5, static_cast<float>(EfficiencySpeciesCount) - 0.5, "particle"};
+    AxisSpec efficiencyStepAxis = {EfficiencyStepCount, -0.5, static_cast<float>(EfficiencyStepCount) - 0.5, "generated/reconstructed"};
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -586,20 +604,14 @@ struct FlowGenericFramework {
         registryQA.add("MCGen/before/pt_gen", "", {HistType::kTH1D, {ptAxis}});
         registryQA.add("MCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
         registryQA.addClone("MCGen/before/", "MCGen/after/");
-        registry.add("MCGen/after/pt_centrality_K0_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_K0_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_Lambda_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_Lambda_proton_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_Lambda_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_ch_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_pion_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_kaon_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        registry.add("MCGen/after/pt_centrality_proton_gen", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
         if (doprocessOnTheFly)
           registryQA.add("MCGen/impactParameter", "", {HistType::kTH2D, {{bAxis, nchAxis}}});
       }
     }
-    if (doprocessMCReco || doprocessData || doprocessRun2) {
+    if (doprocessEfficiency) {
+      registry.add("Efficiency/efficiencyHist", "; #it{p}_{T}^{MC}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, efficiencyStepAxis}}});
+    }
+    if (doprocessMCReco || doprocessData || doprocessRun2 || doprocessEfficiency) {
       if (cfgFill.cfgFillQA) {
         registryQA.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
         registryQA.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
@@ -619,17 +631,6 @@ struct FlowGenericFramework {
         registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-        if (doprocessMCReco) {
-          registry.add("trackQA/after/pt_centrality_K0", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_K0_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_Lambda", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_Lambda_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_ch", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_Lambda_proton", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_pion", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_kaon", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-          registry.add("trackQA/after/pt_centrality_proton", "; #it{p}_{T}; Centrality (%)", {HistType::kTH2D, {ptAxis, centAxis}});
-        }
         if (!cfgFill.cfgFillRunByRunQA) {
           if (cfgUsePID) {
             registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -737,28 +738,28 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter track selection");
       }
     }
-
-    registry.add("npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-
+    if (!doprocessEfficiency) {
+      registry.add("npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+      registry.add("npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    }
     for (auto setup = 0; setup < FractionSetupCount; ++setup) {
       const char* setupName = (setup == FractionV02) ? "V02" : "V0";
       histosNpt[setup].resize(SpeciesCount);
@@ -1065,11 +1066,15 @@ struct FlowGenericFramework {
   { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr, 4 k0, 5 lambda
     double eff = 1.;
     if (!cfgEfficiency.cfgUsePIDEfficiencies) {
+      if (!cfg.mEfficiency)
+        return eff;
       if (cfgEfficiency.cfgUse2DEfficiency)
         eff = dynamic_cast<TH2D*>(cfg.mEfficiency)->GetBinContent(dynamic_cast<TH2D*>(cfg.mEfficiency)->FindBin(track.pt(), centrality));
       else
         eff = dynamic_cast<TH1D*>(cfg.mEfficiency)->GetBinContent(dynamic_cast<TH1D*>(cfg.mEfficiency)->FindBin(track.pt()));
     } else {
+      if (cfg.mPIDEfficiencies.empty())
+        return eff;
       if (cfgEfficiency.cfgUse2DEfficiency)
         eff = dynamic_cast<TH2D*>(cfg.mPIDEfficiencies[pidIndex])->GetBinContent(dynamic_cast<TH2D*>(cfg.mPIDEfficiencies[pidIndex])->FindBin(track.pt(), centrality));
       else
@@ -1807,21 +1812,14 @@ struct FlowGenericFramework {
 
       if (!trackSelected(track, field))
         return;
-      registry.fill(HIST("trackQA/after/pt_centrality_ch"), track.pt(), centrality);
 
       int pidIndex = 0;
-      if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+      if (std::abs(mcParticle.pdgCode()) == kPiPlus)
         pidIndex = PionID;
-        registry.fill(HIST("trackQA/after/pt_centrality_pion"), track.pt(), centrality);
-      }
-      if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+      if (std::abs(mcParticle.pdgCode()) == kKPlus)
         pidIndex = KaonID;
-        registry.fill(HIST("trackQA/after/pt_centrality_kaon"), track.pt(), centrality);
-      }
-      if (std::abs(mcParticle.pdgCode()) == kProton) {
+      if (std::abs(mcParticle.pdgCode()) == kProton)
         pidIndex = ProtonID;
-        registry.fill(HIST("trackQA/after/pt_centrality_proton"), track.pt(), centrality);
-      }
       double weff = getEfficiency(track, centrality, pidIndex);
       double nptWeightCh = (weffCh > 0) ? ((cfgUseNchCorrection) ? weffCh : 1.0) : -1.0;
       double nptWeightPid = (weff > 0) ? ((cfgUseNchCorrection) ? weff : 1.0) : -1.0;
@@ -1848,20 +1846,13 @@ struct FlowGenericFramework {
       if (track.eta() < o2::analysis::gfw::etalow || track.eta() > o2::analysis::gfw::etaup || track.pt() < o2::analysis::gfw::ptlow || track.pt() > o2::analysis::gfw::ptup)
         return;
 
-      registry.fill(HIST("MCGen/after/pt_centrality_ch_gen"), track.pt(), centrality);
       int pidIndex = 0;
-      if (std::abs(track.pdgCode()) == kPiPlus) {
+      if (std::abs(track.pdgCode()) == kPiPlus)
         pidIndex = PionID;
-        registry.fill(HIST("MCGen/after/pt_centrality_pion_gen"), track.pt(), centrality);
-      }
-      if (std::abs(track.pdgCode()) == kKPlus) {
+      if (std::abs(track.pdgCode()) == kKPlus)
         pidIndex = KaonID;
-        registry.fill(HIST("MCGen/after/pt_centrality_kaon_gen"), track.pt(), centrality);
-      }
-      if (std::abs(track.pdgCode()) == kProton) {
+      if (std::abs(track.pdgCode()) == kProton)
         pidIndex = ProtonID;
-        registry.fill(HIST("MCGen/after/pt_centrality_proton_gen"), track.pt(), centrality);
-      }
 
       if (track.eta() > cfgKinematics.cfgEtaNch->first && track.eta() < cfgKinematics.cfgEtaNch->second) {
         ++acceptedTracks.total;
@@ -1929,15 +1920,15 @@ struct FlowGenericFramework {
             fillK0 = false;
         }
         if (fillK0) {
-          auto K0Selection = selectK0(collision, v0, tracks);
-          if (K0Selection.selected) {
+          auto k0Selection = selectK0(collision, v0, tracks);
+          if (k0Selection.selected) {
             for (auto setup = 0; setup < FractionSetupCount; ++setup) {
               auto fractionSetup = static_cast<FractionSetup>(setup);
               if (!selectionV0DaughterEta(postrack, fractionSetup) || !selectionV0DaughterEta(negtrack, fractionSetup))
                 continue;
 
               if (cfgFill.cfgFillQA && fractionSetup == FractionV02)
-                fillV0QA(K0Selection, v0, postrack, negtrack, centrality, weff);
+                fillV0QA(k0Selection, v0, postrack, negtrack, centrality, weff);
               registryQA.fill(HIST("K0/hK0Count"), (fractionSetup == FractionV02) ? FillV02DaughterTrackSelection : FillV0DaughterTrackSelection);
 
               if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max)
@@ -2005,33 +1996,16 @@ struct FlowGenericFramework {
       }
 
       if (isK0) {
-        if (isWithinV02Acceptance) {
+        if (isWithinV02Acceptance)
           histosResoNpt[FractionV02][K0Signal]->Fill(v0.pt(), 1.0);
-          registry.fill(HIST("MCGen/after/pt_centrality_K0_gen"), v0.pt(), centrality);
-        }
         if (isWithinV0Acceptance)
           histosResoNpt[FractionV0][K0Signal]->Fill(v0.pt(), 1.0);
       }
       if (isLambda) {
-        if (isWithinV02Acceptance) {
+        if (isWithinV02Acceptance)
           histosResoNpt[FractionV02][LambdaSignal]->Fill(v0.pt(), 1.0);
-          registry.fill(HIST("MCGen/after/pt_centrality_Lambda_gen"), v0.pt(), centrality);
-        }
         if (isWithinV0Acceptance)
           histosResoNpt[FractionV0][LambdaSignal]->Fill(v0.pt(), 1.0);
-      }
-      // For efficiency
-      if (cfgFill.cfgFillQA && isWithinV02Acceptance) {
-        for (const auto& d : v0.template daughters_as<aod::McParticles>()) {
-          if (std::abs(d.pdgCode()) == PDG_t::kPiPlus) {
-            if (isK0)
-              registry.fill(HIST("MCGen/after/pt_centrality_K0_pion_gen"), d.pt(), centrality);
-            if (isLambda)
-              registry.fill(HIST("MCGen/after/pt_centrality_Lambda_pion_gen"), d.pt(), centrality);
-          }
-          if (std::abs(d.pdgCode()) == PDG_t::kProton)
-            registry.fill(HIST("MCGen/after/pt_centrality_Lambda_proton_gen"), d.pt(), centrality);
-        }
       }
     }
   }
@@ -2372,12 +2346,6 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("K0/hK0s"), 0.5, 1);
       if (cfgEfficiency.cfgUsePIDEfficiencies)
         registryQA.fill(HIST("K0/hK0s_corrected"), 0.5, weff);
-
-      if (doprocessMCReco) {
-        registry.fill(HIST("trackQA/after/pt_centrality_K0"), v0.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), postrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_K0_pion"), negtrack.pt(), centrality);
-      }
     }
     if (selection.isL) {
       registryQA.fill(HIST("Lambda/hLambdaMass_sparse"), v0.mLambda(), v0.pt(), centrality);
@@ -2387,12 +2355,6 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("Lambda/PrPlusTOF_L"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("Lambda/PiMinusTPC_L"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PiMinusTOF_L"), negtrack.pt(), negtrack.tofNSigmaKa());
-
-      if (doprocessMCReco) {
-        registry.fill(HIST("trackQA/after/pt_centrality_Lambda"), v0.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_Lambda_pion"), negtrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_Lambda_proton"), postrack.pt(), centrality);
-      }
     }
     if (selection.isAL) {
       registryQA.fill(HIST("Lambda/hAntiLambdaMass_sparse"), v0.mAntiLambda(), v0.pt(), centrality);
@@ -2402,12 +2364,6 @@ struct FlowGenericFramework {
       registryQA.fill(HIST("Lambda/PiPlusTOF_AL"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("Lambda/PrMinusTPC_AL"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PrMinusTOF_AL"), negtrack.pt(), negtrack.tofNSigmaKa());
-
-      if (doprocessMCReco) {
-        registry.fill(HIST("trackQA/after/pt_centrality_Lambda"), v0.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_Lambda_pion"), postrack.pt(), centrality);
-        registry.fill(HIST("trackQA/after/pt_centrality_Lambda_proton"), negtrack.pt(), centrality);
-      }
     }
     if (selection.isL || selection.isAL) {
       registryQA.fill(HIST("Lambda/hLambdas"), 0.5, 1);
@@ -2456,6 +2412,7 @@ struct FlowGenericFramework {
   o2::framework::expressions::Filter trackFilter = (aod::track::eta > cfgKinematics.cfgEta->first) && (aod::track::eta < cfgKinematics.cfgEta->second) && (aod::track::pt > cfgPtmin) && (aod::track::pt < cfgPtmax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
 
   using GFWCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>;
+  using GFWMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::McCollisionLabels>;
   // using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using GFWMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>>;
@@ -2598,6 +2555,211 @@ struct FlowGenericFramework {
     processCollision<Gen>(mcCollision, mcParticles, v0s, mcCollision.impactParameter(), -999, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processOnTheFly, "Process analysis for MC on-the-fly generated events", false);
+
+  template <typename TParticle>
+  bool isGeneratedEfficiencyV0(TParticle const& particle, int pdgCode, int resonanceIndex)
+  {
+    return particle.isPhysicalPrimary() && std::abs(particle.pdgCode()) == pdgCode && std::abs(particle.y()) < resoCutVals[Rapidity][resonanceIndex];
+  }
+
+  template <typename TParticle>
+  bool isGeneratedEfficiencyTrack(TParticle const& particle)
+  {
+    auto pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+    return pdgParticle && pdgParticle->Charge() != 0 && particle.isPhysicalPrimary() && particle.eta() > o2::analysis::gfw::etalow && particle.eta() < o2::analysis::gfw::etaup && particle.pt() > o2::analysis::gfw::ptlow && particle.pt() < o2::analysis::gfw::ptup;
+  }
+
+  template <typename TParticle>
+  int getEfficiencyTruthPID(TParticle const& particle)
+  {
+    if (std::abs(particle.pdgCode()) == kPiPlus)
+      return EfficiencyPion;
+    if (std::abs(particle.pdgCode()) == kKPlus)
+      return EfficiencyKaon;
+    if (std::abs(particle.pdgCode()) == kProton)
+      return EfficiencyProton;
+    return EfficiencyCharged;
+  }
+
+  template <typename TParticle>
+  void fillGeneratedEfficiencyTrack(TParticle const& particle, float centrality)
+  {
+    if (!isGeneratedEfficiencyTrack(particle))
+      return;
+    if (particle.eta() <= cfgKinematics.cfgEta->first || particle.eta() >= cfgKinematics.cfgEta->second)
+      return;
+
+    const int pidIndex = getEfficiencyTruthPID(particle);
+    registry.fill(HIST("Efficiency/efficiencyHist"), particle.pt(), centrality, EfficiencyCharged, EfficiencyGenerated);
+    if (pidIndex != EfficiencyCharged)
+      registry.fill(HIST("Efficiency/efficiencyHist"), particle.pt(), centrality, pidIndex, EfficiencyGenerated);
+  }
+
+  template <typename TParticle>
+  void fillGeneratedEfficiencyV0(TParticle const& particle, int particleIndex, float centrality)
+  {
+    if (!particle.has_daughters())
+      return;
+    for (const auto& daughter : particle.template daughters_as<aod::McParticles>()) {
+      if (daughter.eta() <= cfgKinematics.cfgEta->first || daughter.eta() >= cfgKinematics.cfgEta->second)
+        return;
+    }
+    registry.fill(HIST("Efficiency/efficiencyHist"), particle.pt(), centrality, particleIndex, EfficiencyGenerated);
+  }
+
+  template <typename TCollision>
+  bool isEfficiencyEventSelected(TCollision const& collision, const int multTrk, float& centrality)
+  {
+    if (!collision.sel8())
+      return false;
+    centrality = getCentrality(collision);
+    if (centrality < o2::analysis::gfw::centbinning.front() || centrality > o2::analysis::gfw::centbinning.back())
+      return false;
+    if (cfgDoOccupancySel) {
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy < 0 || occupancy > cfgOccupancySelection)
+        return false;
+    }
+    const int run = 0;
+    return eventSelected(collision, multTrk, centrality, run);
+  }
+
+  template <typename TTrack>
+  bool isWithinEfficiencyEtaAcceptance(TTrack const& track)
+  {
+    return track.eta() > cfgKinematics.cfgEta->first && track.eta() < cfgKinematics.cfgEta->second;
+  }
+
+  template <typename TParticle>
+  bool areGeneratedDaughtersWithinEfficiencyEtaAcceptance(TParticle const& particle)
+  {
+    if (!particle.has_daughters())
+      return false;
+    for (const auto& daughter : particle.template daughters_as<aod::McParticles>()) {
+      if (daughter.eta() <= cfgKinematics.cfgEta->first || daughter.eta() >= cfgKinematics.cfgEta->second)
+        return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  void fillEfficiencyRecoTrack(TTrack const& track, int field, float centrality)
+  {
+    if (track.mcParticleId() < 0 || !track.has_mcParticle())
+      return;
+    auto mcParticle = track.mcParticle();
+    if (!isGeneratedEfficiencyTrack(mcParticle))
+      return;
+    if (!trackSelected(track, field))
+      return;
+    if (!isWithinEfficiencyEtaAcceptance(mcParticle) || !isWithinEfficiencyEtaAcceptance(track))
+      return;
+
+    const int pidIndex = getEfficiencyTruthPID(mcParticle);
+    registry.fill(HIST("Efficiency/efficiencyHist"), mcParticle.pt(), centrality, EfficiencyCharged, EfficiencyReconstructed);
+    if (pidIndex != EfficiencyCharged)
+      registry.fill(HIST("Efficiency/efficiencyHist"), mcParticle.pt(), centrality, pidIndex, EfficiencyReconstructed);
+  }
+
+  template <typename TV0, typename TCollision, typename TTracks>
+  void fillEfficiencyRecoV0(TV0 const& v0, TCollision const& collision, TTracks const& tracks, float centrality)
+  {
+    using V0TrackTable = std::decay_t<TTracks>;
+    auto postrack = v0.template posTrack_as<V0TrackTable>();
+    auto negtrack = v0.template negTrack_as<V0TrackTable>();
+
+    if (!postrack.has_mcParticle() || !negtrack.has_mcParticle())
+      return;
+    auto posMcParticle = postrack.template mcParticle_as<aod::McParticles>();
+    auto negMcParticle = negtrack.template mcParticle_as<aod::McParticles>();
+    if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers())
+      return;
+
+    for (const auto& posMother : posMcParticle.template mothers_as<aod::McParticles>()) {
+      for (const auto& negMother : negMcParticle.template mothers_as<aod::McParticles>()) {
+        if (posMother.globalIndex() != negMother.globalIndex() || !posMother.isPhysicalPrimary())
+          continue;
+
+        int pdgCode = std::abs(posMother.pdgCode());
+        if (pdgCode == PDG_t::kK0Short && resoSwitchVals[UseParticle][K0]) {
+          if (std::abs(posMother.y()) >= resoCutVals[Rapidity][K0])
+            return;
+          auto selection = selectK0(collision, v0, tracks);
+          if (selection.selected) {
+            if (areGeneratedDaughtersWithinEfficiencyEtaAcceptance(posMother) && isWithinEfficiencyEtaAcceptance(postrack) && isWithinEfficiencyEtaAcceptance(negtrack))
+              registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyK0, EfficiencyReconstructed);
+          }
+          return;
+        } else if (pdgCode == PDG_t::kLambda0 && resoSwitchVals[UseParticle][Lambda]) {
+          if (std::abs(posMother.y()) >= resoCutVals[Rapidity][Lambda])
+            return;
+          auto selection = selectLambda(collision, v0, tracks);
+          if (selection.selected) {
+            if (areGeneratedDaughtersWithinEfficiencyEtaAcceptance(posMother) && isWithinEfficiencyEtaAcceptance(postrack) && isWithinEfficiencyEtaAcceptance(negtrack))
+              registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyLambda, EfficiencyReconstructed);
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  void processEfficiency(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<GFWMCCollisions> const& collisions, aod::BCsWithTimestamps const&, GFWMCTracks const& tracks, aod::V0Datas const& v0s, aod::McParticles const& mcParticles)
+  {
+    bool hasSelectedCollision = false;
+    int bestNumContrib = -1;
+    int bestCollisionIndex = -1;
+    float selectedCentrality = -1.f;
+
+    for (const auto& collision : collisions) {
+      int tracksThisCollision = 0;
+      for (const auto& track : tracks) {
+        if (track.collisionId() == collision.globalIndex())
+          ++tracksThisCollision;
+      }
+      float centrality = -1.f;
+      if (!isEfficiencyEventSelected(collision, tracksThisCollision, centrality))
+        continue;
+      if (!hasSelectedCollision || collision.numContrib() > bestNumContrib) {
+        hasSelectedCollision = true;
+        bestNumContrib = collision.numContrib();
+        bestCollisionIndex = collision.globalIndex();
+        selectedCentrality = centrality;
+      }
+    }
+    if (!hasSelectedCollision)
+      return;
+
+    for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.globalIndex())
+        continue;
+      fillGeneratedEfficiencyTrack(particle, selectedCentrality);
+      if (isGeneratedEfficiencyV0(particle, PDG_t::kK0Short, K0) && resoSwitchVals[UseParticle][K0])
+        fillGeneratedEfficiencyV0(particle, EfficiencyK0, selectedCentrality);
+      if (isGeneratedEfficiencyV0(particle, PDG_t::kLambda0, Lambda) && resoSwitchVals[UseParticle][Lambda])
+        fillGeneratedEfficiencyV0(particle, EfficiencyLambda, selectedCentrality);
+    }
+
+    for (const auto& collision : collisions) {
+      if (collision.globalIndex() != bestCollisionIndex)
+        continue;
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      int defaultMagCut = 99999;
+      auto field = (cfgMagField == defaultMagCut) ? getMagneticField(bc.timestamp()) : cfgMagField;
+      for (const auto& track : tracks) {
+        if (track.collisionId() != bestCollisionIndex)
+          continue;
+        fillEfficiencyRecoTrack(track, field, selectedCentrality);
+      }
+      for (const auto& v0 : v0s) {
+        if (v0.collisionId() != bestCollisionIndex)
+          continue;
+        fillEfficiencyRecoV0(v0, collision, tracks, selectedCentrality);
+      }
+      break;
+    }
+  }
+  PROCESS_SWITCH(FlowGenericFramework, processEfficiency, "Process reconstruction efficiency for charged particles, K0Short, and Lambda", false);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks, aod::V0Datas const& v0s)
   {
