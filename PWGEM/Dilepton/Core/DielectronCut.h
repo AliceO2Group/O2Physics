@@ -162,10 +162,12 @@ class DielectronCut : public TNamed
     float phiPosition1 = t1.phi() + std::asin(t1.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t1.pt()));
     float phiPosition2 = t2.phi() + std::asin(t2.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t2.pt()));
 
-    phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1); // 0-2pi
-    phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1); // 0-2pi
+    phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1U); // 0-2pi
+    phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1U); // 0-2pi
     float dphiPosition = phiPosition1 - phiPosition2;
-    o2::math_utils::bringToPMPi(dphiPosition);
+    dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
+    // o2::math_utils::bringToPMPi(dphiPosition);
+
     if (mApplydEtadPhiPosition && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphiPosition / mMinDeltaPhi, 2) < 1.f) {
       return false;
     }
