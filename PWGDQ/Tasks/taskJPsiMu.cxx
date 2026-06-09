@@ -75,16 +75,28 @@ constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | Va
 
 struct DqJPsiMuonCorrelations {
 
-  // Configurables for the dilepton and dilepton cuts
+  // Configurables for the dilepton signal region
   Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.4, "High mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigBackgroundLowMass{"cfgBackgroundLowMass", 2.5, "Low mass cut for the background used in analysis"};
   Configurable<float> fConfigBackgroundHighMass{"cfgBackgroundHighMass", 3.7, "High mass cut for the background used in analysis"};
 
+  // Configurables for the dilepton and associated muon cuts
+  Configurable<float> fConfigMuonPtMin{"cfgMuonPtMin", 1.0, "Minimum pT cut for the associated muons"};
+  Configurable<float> fConfigMuonPtMax{"cfgMuonPtMax", 10.0, "Maximum pT cut for the associated muons"};
+  Configurable<float> fConfigMuonEtaMin{"cfgMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
+  Configurable<float> fConfigMuonEtaMax{"cfgMuonEtaMax", -2.5, "Maximum eta cut for the associated muons"};
+  Configurable<float> fConfigDileptonEtaMin{"cfgDileptonEtaMin", -4.0, "Minimum eta cut for the dileptons"};
+  Configurable<float> fConfigDileptonEtaMax{"cfgDileptonEtaMax", -2.5, "Maximum eta cut for the dileptons"};
+
+  // Configurables for histograms
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f}, "p_{T} (GeV/c)"};
   ConfigurableAxis axisInvMass{"axisInvMass", {80, 1.0f, 5.0f}, "Invariant Mass (GeV/c^{2})"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {10, -constants::math::PI/2.0f, 3.0f*constants::math::PI/2.0f}, "#Delta#phi (rad)"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {10, -2.0f, 2.0f}, "#Delta#eta"};
+
+  // Configurable for acceptance efficiency correction
+  Configurable<std::vector<double>> fConfigBinEff{"cfgBinEff", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -120,6 +132,11 @@ struct DqJPsiMuonCorrelations {
     registry.add("h2dDimuonMuonDeltaPhiVsMuonPtSignal", "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
     registry.add("h2dDimuonMuonDeltaEtaVsMuonPtBackground", "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
     registry.add("h2dDimuonMuonDeltaPhiVsMuonPtBackground", "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
+
+    if (axisPt.value.size()-2 != fConfigBinEff.value.size()) {
+      LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEff: %zu (excluding 'VARIABLE_WIDTH' entry)",
+          axisPt.value.size()-1, fConfigBinEff.value.size());
+    }
   }
 
   // Template function to run pair - muon combinations
