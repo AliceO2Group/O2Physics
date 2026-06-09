@@ -222,7 +222,6 @@ DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
 DECLARE_SOA_COLUMN(MaxNumContrib, maxNumContrib, int);
 DECLARE_SOA_COLUMN(NRecoColl, nRecoColl, int);
 DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
-DECLARE_SOA_COLUMN(IsSel8RecoColl, isSel8RecoColl, bool);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
@@ -651,21 +650,6 @@ struct HfTreeCreatorToXiPiQa {
       }
     }
   }
-
-  #if 0
-  template <typename T>
-  void fillParticle(const T& particle)
-  {
-    rowCandidateParticles(RecoDecay::m(particle.pVector(), particle.e()),
-                          particle.pt(),
-                          particle.eta(),
-                          particle.phi(),
-                          particle.rapidityCharmBaryonGen(),
-                          particle.flagMcMatchGen(),
-                          particle.originMcGen(),
-                          particle.pdgCode());
-  }
-  #endif
 
   template <typename CollType, typename McCollType, typename CandType>
   void fillParticle(const CandType& mcParticles, const CollType& collisions)
