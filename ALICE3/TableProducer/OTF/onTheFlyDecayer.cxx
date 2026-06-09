@@ -208,7 +208,7 @@ struct OnTheFlyDecayer {
     // Particles for later collisions in df's needs to have thier mother
     // and daughter indices adjusted since their global index will be
     // shifted due to the appending of decay products
-    indexOffset += allParticles.size();
+    indexOffset += (allParticles.size() - mcParticles.size());
   }
 };
 
