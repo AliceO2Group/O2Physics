@@ -17,7 +17,9 @@
 #include "PWGCF/JCorran/Core/FlowJHistManager.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
@@ -60,6 +62,8 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
+using namespace o2::constants::physics;
 using namespace std;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors, aod::FT0sCorrected>;
@@ -87,6 +91,14 @@ struct JEPFlowAnalysis {
                                       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                                       "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+  RCTFlagsChecker rctChecker;
 
   // Set Configurables here
   struct : ConfigurableGroup {
@@ -165,7 +177,11 @@ struct JEPFlowAnalysis {
   float minQvecAmp = 1e-5;
   float minChg = 0.1;
   float q2Mag;
+
+  float activity;
+  float qOvecM;
   float highestPt;
+  float hPtPhi;
 
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
@@ -246,6 +262,9 @@ struct JEPFlowAnalysis {
     }
     // Check occupancy
     if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
+      return false;
+
+    if (rctCut.requireRCTFlagChecker && !rctChecker(coll))
       return false;
 
     return true;
@@ -409,35 +428,15 @@ struct JEPFlowAnalysis {
         }
       }
 
-      float qOvecM;
-      float activity;
-      if (i == 0) { // second harmonic only
-        qOvecM = calcFT0CRawQVecMag(coll, i + 2) / coll.qvecAmp()[detId];
-
-        epFlowHistograms.fill(HIST("hQoverM2M"), cent, coll.qvecAmp()[detId], qOvecM);
-        epFlowHistograms.fill(HIST("hQoverM2Q2"), cent, q2Mag, qOvecM);
-
-        activity = calcFT0CLocalActivity(coll);
-      }
-
-      if (cfgJetSubEvtSel & 1) {
-        if (cfgJetSubEvlSelVar->at(0) > qOvecM) {
-          return;
-        }
-      }
-      if (cfgJetSubEvtSel & 2) {
-        if (cfgJetSubEvlSelVar->at(1) > activity) {
-          return;
-        }
-      }
-
       highestPt = 0.0;
+      hPtPhi = 0.0;
       for (const auto& track : tracks) {
         if (cfgTrkSelFlag && trackSel(track))
           continue;
 
         if (highestPt < track.pt()) {
           highestPt = track.pt();
+          hPtPhi = track.phi();
         }
 
         if (cfgEffCor) {
@@ -464,6 +463,12 @@ struct JEPFlowAnalysis {
       if (i == 0) { // second harmonic only
         epFlowHistograms.fill(HIST("hQoverM"), cent, highestPt, qOvecM);
         epFlowHistograms.fill(HIST("hActivity"), cent, highestPt, activity);
+
+        epFlowHistograms.fill(HIST("hQoverM2M"), cent, coll.qvecAmp()[detId], qOvecM);
+        epFlowHistograms.fill(HIST("hQoverM2Q2"), cent, q2Mag, qOvecM);
+
+        epFlowHistograms.fill(HIST("hQoverMdphi"), cent, RecoDecay::constrainAngle(hPtPhi - eps[0], -constants::math::PI), qOvecM);
+        epFlowHistograms.fill(HIST("hActivitydphi"), cent, RecoDecay::constrainAngle(hPtPhi - eps[0], -constants::math::PI), activity);
       }
     }
   }
@@ -486,6 +491,8 @@ struct JEPFlowAnalysis {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
 
@@ -522,10 +529,17 @@ struct JEPFlowAnalysis {
     epFlowHistograms.add("EpResRefARefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
 
     epFlowHistograms.add("hQ2", "", {HistType::kTH3F, {axisMod, axisCent, axisQ2}});
+
+    epFlowHistograms.add("hQoverMCnt", "", {HistType::kTH2F, {axisCent, axisAmpR}});
+    epFlowHistograms.add("hActivityCnt", "", {HistType::kTH2F, {axisCent, axisActR}});
+
     epFlowHistograms.add("hQoverM", "", {HistType::kTH3F, {axisCent, axisPt, axisAmpR}});
+    epFlowHistograms.add("hQoverMdphi", "", {HistType::kTH3F, {axisCent, axisEvtPl, axisAmpR}});
     epFlowHistograms.add("hQoverM2M", "", {HistType::kTH3F, {axisCent, axisAmp, axisAmpR}});
     epFlowHistograms.add("hQoverM2Q2", "", {HistType::kTH3F, {axisCent, axisQ2, axisAmpR}});
+
     epFlowHistograms.add("hActivity", "", {HistType::kTH3F, {axisCent, axisPt, axisActR}});
+    epFlowHistograms.add("hActivitydphi", "", {HistType::kTH3F, {axisCent, axisEvtPl, axisActR}});
 
     epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
     epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
@@ -638,6 +652,20 @@ struct JEPFlowAnalysis {
 
     if (coll.qvecAmp()[detId] < minQvecAmp || coll.qvecAmp()[refAId] < minQvecAmp || coll.qvecAmp()[refBId] < minQvecAmp)
       return;
+
+    qOvecM = calcFT0CRawQVecMag(coll, 2) / coll.qvecAmp()[detId]; // second order
+    activity = calcFT0CLocalActivity(coll);
+
+    if (cfgJetSubEvtSel & 1) {
+      if (cfgJetSubEvlSelVar->at(0) < qOvecM) {
+        return;
+      }
+    }
+    if (cfgJetSubEvtSel & 2) {
+      if (cfgJetSubEvlSelVar->at(1) < activity) {
+        return;
+      }
+    }
 
     fillvn(coll, tracks);
   }
