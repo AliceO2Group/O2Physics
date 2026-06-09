@@ -219,52 +219,58 @@ struct tableDiffWake {
 
       //------------ Translate values to less memory consuming values --------------------
       // Px, Py, Pz
-      uint64_t Substitute_p = 0;
+      uint64_t substituteP = 0;
+      uint8_t uppermostBit = 20;
+      uint8_t lowermostBit = 0;
 
-      int64_t Particle_px = (track.px() * 6000);
-      if (Particle_px < 0)
-        Substitute_p |= (uint64_t)1 << 20;
-      if (Particle_px < 0)
-        Particle_px = (-1) * Particle_px;
-      for (Int_t i_bit = 0; i_bit < 20; i_bit++) {
-        if ((Particle_px & ((int64_t)1 << i_bit)))
-          Substitute_p |= (uint64_t)1 << i_bit;
+      int64_t particlePx = (track.px() * 6000);
+      if (particlePx < 0)
+        substituteP |= (uint64_t)1 << uppermostBit;
+      if (particlePx < 0)
+        particlePx = (-1) * particlePx;
+      for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
+        if ((particlePx & ((int64_t)1 << i_bit)))
+          substituteP |= (uint64_t)1 << i_bit;
       }
 
-      int64_t Particle_py = (track.py() * 6000);
-      if (Particle_py < 0)
-        Substitute_p |= (uint64_t)1 << 41;
-      if (Particle_py < 0)
-        Particle_py = (-1) * Particle_py;
-      for (Int_t i_bit = 21; i_bit < 41; i_bit++) {
-        if ((Particle_py & ((int64_t)1 << (i_bit - 21))))
-          Substitute_p |= (uint64_t)1 << i_bit;
+      uppermostBit = 41;
+      lowermostBit = 21;
+      int64_t particlePy = (track.py() * 6000);
+      if (particlePy < 0)
+        substituteP |= (uint64_t)1 << uppermostBit;
+      if (particlePy < 0)
+        particlePy = (-1) * particlePy;
+      for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
+        if ((particlePy & ((int64_t)1 << (i_bit - lowermostBit))))
+          substituteP |= (uint64_t)1 << i_bit;
       }
 
-      int64_t Particle_pz = (track.pz() * 6000);
-      if (Particle_pz < 0)
-        Substitute_p |= (uint64_t)1 << 62;
-      if (Particle_pz < 0)
-        Particle_pz = (-1) * Particle_pz;
-      for (Int_t i_bit = 42; i_bit < 62; i_bit++) {
-        if ((Particle_pz & ((int64_t)1 << (i_bit - 42))))
-          Substitute_p |= (uint64_t)1 << i_bit;
+      uppermostBit = 62;
+      lowermostBit = 42;
+      int64_t particlePz = (track.pz() * 6000);
+      if (particlePz < 0)
+        substituteP |= (uint64_t)1 << uppermostBit;
+      if (particlePz < 0)
+        particlePz = (-1) * particlePz;
+      for (int8_t i_bit = lowermostBit; i_bit < uppermostBit; i_bit++) {
+        if ((particlePz & ((int64_t)1 << (i_bit - lowermostBit))))
+          substituteP |= (uint64_t)1 << i_bit;
       }
 
       // dEdx
-      uint16_t Substitute_dEdx = (uint16_t)(track.tpcSignal() * 10);
+      uint16_t substituteDEDX = (uint16_t)(track.tpcSignal() * 10);
 
       // DCA
-      int16_t Substitute_DCAXY = (int16_t)(track.dcaXY() * 100);
-      int16_t Substitute_DCAZ = (int16_t)(track.dcaZ() * 100);
+      int16_t substituteDCAXY = (int16_t)(track.dcaXY() * 100);
+      int16_t substituteDCAZ = (int16_t)(track.dcaZ() * 100);
 
       //--------------- Fill track table ------------------
       testtrack(track.collisionId(),
                 track.sign(),
-                Substitute_p,
-                Substitute_dEdx,
-                Substitute_DCAXY,
-                Substitute_DCAZ);
+                substituteP,
+                substituteDEDX,
+                substituteDCAXY,
+                substituteDCAZ);
     }
   }
 };
