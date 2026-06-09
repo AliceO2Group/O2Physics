@@ -151,6 +151,8 @@ struct tableDiffWake {
                soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const& tracks,
                bcs const&)
   {
+    const float maxMomentum = 173.0;
+
     // Event selection corresponds to sel8FullPbPb
     if (!col.sel8())
       return;
@@ -175,7 +177,7 @@ struct tableDiffWake {
     //------- Only events with track above some thresh ----------
 
     bool eventHighpT = false;
-    for (auto& track : tracks) {
+    for (auto const &track : tracks) {
 
       if (!track.isGlobalTrack())
         continue;
@@ -188,8 +190,8 @@ struct tableDiffWake {
       return;
     //------------------------------------------------------------
     // Translate values to less memory consuming values
-    Short_t Substitute_ep2 = (Short_t)(ep2 * 1000);
-    Short_t Substitute_ep3 = (Short_t)(ep3 * 1000);
+    int16_t Substitute_ep2 = (int16_t)(ep2 * 1000);
+    int16_t Substitute_ep3 = (int16_t)(ep3 * 1000);
 
     testcol(col.globalIndex(),
             run,
@@ -203,13 +205,13 @@ struct tableDiffWake {
             Substitute_ep2,
             Substitute_ep3);
 
-    for (auto& track : tracks) {
+    for (auto const &track : tracks) {
 
       // Track cut
       if (!track.isGlobalTrack())
         continue; // General track cuts
 
-      if (abs(track.px()) > 173.0 || abs(track.py()) > 173.0 || abs(track.pz()) > 173.0)
+      if (std::abs(track.px()) > maxMomentum || std::abs(track.py()) > maxMomentum || std::abs(track.pz()) > maxMomentum)
         continue; // to avoid overflow in Substitute_p
 
       histos.fill(HIST("etaHistogram"), track.eta());
@@ -217,44 +219,44 @@ struct tableDiffWake {
 
       //------------ Translate values to less memory consuming values --------------------
       // Px, Py, Pz
-      ULong64_t Substitute_p = 0;
+      uint64_t Substitute_p = 0;
 
-      Long64_t Particle_px = (track.px() * 6000);
+      int64_t Particle_px = (track.px() * 6000);
       if (Particle_px < 0)
-        Substitute_p |= (ULong64_t)1 << 20;
+        Substitute_p |= (uint64_t)1 << 20;
       if (Particle_px < 0)
         Particle_px = (-1) * Particle_px;
       for (Int_t i_bit = 0; i_bit < 20; i_bit++) {
-        if ((Particle_px & ((Long64_t)1 << i_bit)))
-          Substitute_p |= (ULong64_t)1 << i_bit;
+        if ((Particle_px & ((int64_t)1 << i_bit)))
+          Substitute_p |= (uint64_t)1 << i_bit;
       }
 
-      Long64_t Particle_py = (track.py() * 6000);
+      int64_t Particle_py = (track.py() * 6000);
       if (Particle_py < 0)
-        Substitute_p |= (ULong64_t)1 << 41;
+        Substitute_p |= (uint64_t)1 << 41;
       if (Particle_py < 0)
         Particle_py = (-1) * Particle_py;
       for (Int_t i_bit = 21; i_bit < 41; i_bit++) {
-        if ((Particle_py & ((Long64_t)1 << (i_bit - 21))))
-          Substitute_p |= (ULong64_t)1 << i_bit;
+        if ((Particle_py & ((int64_t)1 << (i_bit - 21))))
+          Substitute_p |= (uint64_t)1 << i_bit;
       }
 
-      Long64_t Particle_pz = (track.pz() * 6000);
+      int64_t Particle_pz = (track.pz() * 6000);
       if (Particle_pz < 0)
-        Substitute_p |= (ULong64_t)1 << 62;
+        Substitute_p |= (uint64_t)1 << 62;
       if (Particle_pz < 0)
         Particle_pz = (-1) * Particle_pz;
       for (Int_t i_bit = 42; i_bit < 62; i_bit++) {
-        if ((Particle_pz & ((Long64_t)1 << (i_bit - 42))))
-          Substitute_p |= (ULong64_t)1 << i_bit;
+        if ((Particle_pz & ((int64_t)1 << (i_bit - 42))))
+          Substitute_p |= (uint64_t)1 << i_bit;
       }
 
       // dEdx
-      UShort_t Substitute_dEdx = (UShort_t)(track.tpcSignal() * 10);
+      uint16_t Substitute_dEdx = (uint16_t)(track.tpcSignal() * 10);
 
       // DCA
-      Short_t Substitute_DCAXY = (Short_t)(track.dcaXY() * 100);
-      Short_t Substitute_DCAZ = (Short_t)(track.dcaZ() * 100);
+      int16_t Substitute_DCAXY = (int16_t)(track.dcaXY() * 100);
+      int16_t Substitute_DCAZ = (int16_t)(track.dcaZ() * 100);
 
       //--------------- Fill track table ------------------
       testtrack(track.collisionId(),
