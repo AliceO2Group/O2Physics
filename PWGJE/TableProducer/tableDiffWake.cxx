@@ -129,9 +129,9 @@ struct tableDiffWake {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
-  Configurable<double> ptThresh{"pT_thresh", 20.0, "pT threshold"};
-  Configurable<float> centMax{"cent_max", 10, "centrality"};
-  Configurable<float> zVertCut{"z_vert_cut", 10.0, "z_vertex cut"};
+  Configurable<double> ptThresh{"ptThresh", 20.0, "pT threshold"};
+  Configurable<float> centMax{"centMax", 10, "centrality"};
+  Configurable<float> zVertCut{"zVertCut", 10.0, "z_vertex cut"};
 
   Produces<o2::aod::TableCol> testcol;
   Produces<o2::aod::TableTrack> testtrack;
@@ -147,10 +147,10 @@ struct tableDiffWake {
     histos.add("pTHistogram", "pTHistogram", kTH1F, {axispT});
   }
 
-  using bcs = aod::BCs;
+  using Bcs = aod::BCs;
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::TPCMults, aod::QvectorFT0Cs>::iterator const& col,
                soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const& tracks,
-               bcs const&)
+               Bcs const&)
   {
     const float maxMomentum = 173.0;
 
@@ -167,7 +167,7 @@ struct tableDiffWake {
       return;
 
     //------ Get Run number ---------------------
-    auto bc = col.bc_as<bcs>();
+    auto bc = col.bc_as<Bcs>();
     int run = bc.runNumber();
     //------------ EP ---------------------------
     double ep2 = 0.0;
