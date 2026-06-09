@@ -33,39 +33,36 @@
 #include <Framework/runDataProcessing.h>
 
 // Event selection: Only events that contain track above some threshold
-/*
--------------------------------------------------------------------------------------------
-TRACK DATA
--------------------------------------------------------------------------------------------
-BEFORE COMPRESSION                              AFTER COMPRESSION
-Name            Data Type       Size(b)         Name            Data Type       Size(b)
-ColID           int32_t         4               [same]
-Charge          short           2               [same]
-Px, Py, Pz      float           3x4             P               unsigned long   8
-DEdx            float           4               DEdx            unsigned short  2
-DCAXY           float           4               DCAXY           short           2
-DCAZ            float           4               DCAZ            short           2
-Length          float           4               Length          unsigned short  2
+// 
+// -------------------------------------------------------------------------------------------
+// TRACK DATA
+// -------------------------------------------------------------------------------------------
+// BEFORE COMPRESSION                              AFTER COMPRESSION
+// Name            Data Type       Size(b)         Name            Data Type       Size(b)
+// ColID           int32_t         4               [same]
+// Charge          short           2               [same]
+// Px, Py, Pz      float           3x4             P               unsigned long   8
+// DEdx            float           4               DEdx            unsigned short  2
+// DCAXY           float           4               DCAXY           short           2
+// DCAZ            float           4               DCAZ            short           2
+// Length          float           4               Length          unsigned short  2
 
-OVERALL COMPRESSION 34b->22b
+// OVERALL COMPRESSION 34b->22b
 
--------------------------------------------------------------------------------------------
-EVENT DATA
--------------------------------------------------------------------------------------------
-GI              int64_t         8               [same]
-RN              int             4               [same]
-Cent            float           4               [same]
-Mult            int             4               [same]
-VertexX         float           4               [same]
-VertexY         float           4               [same]
-VertexZ         float           4               [same]
-Psi2            float           4               Psi2            short           2
-Psi3            float           4               Psi3            short           2
+// -------------------------------------------------------------------------------------------
+// EVENT DATA
+// -------------------------------------------------------------------------------------------
+// GI              int64_t         8               [same]
+// RN              int             4               [same]
+// Cent            float           4               [same]
+// Mult            int             4               [same]
+// VertexX         float           4               [same]
+// VertexY         float           4               [same]
+// VertexZ         float           4               [same]
+// Psi2            float           4               Psi2            short           2
+// Psi3            float           4               Psi3            short           2
 
-OVERALL COMPRESSION 40b->36b
-
-*/
-
+// OVERALL COMPRESSION 40b->36b
 //--------------------------------------------------------
 namespace o2::aod
 {
