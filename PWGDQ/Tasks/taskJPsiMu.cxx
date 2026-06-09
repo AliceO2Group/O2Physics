@@ -148,12 +148,20 @@ struct DqJPsiMuonCorrelations {
           }
           auto track = assoc.template reducedmuon_as<TMuonTracks>();
 
+          float deltaEta = track.eta() - dilepton.eta();
+          float deltaPhi = track.phi() - dilepton.phi();
+          if (deltaPhi < -constants::math::PI/2.0f) {
+            deltaPhi += 2.0f * constants::math::PI;
+          } else if (deltaPhi > constants::math::PI*3.0f/2.0f) {
+            deltaPhi -= 2.0f * constants::math::PI;
+          }
+
           if (dilepton.mass() > fConfigDileptonLowMass && dilepton.mass() < fConfigDileptonHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), track.eta() - dilepton.eta(), track.pt());
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), track.phi() - dilepton.phi(), track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt());
           } else if (dilepton.mass() > fConfigBackgroundLowMass && dilepton.mass() < fConfigBackgroundHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), track.eta() - dilepton.eta(), track.pt());
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), track.phi() - dilepton.phi(), track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt());
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt());
           }
         }
 
