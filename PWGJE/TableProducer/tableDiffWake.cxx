@@ -71,7 +71,7 @@ namespace o2::aod
 namespace testcol
 {
 // Event properties
-DECLARE_SOA_COLUMN(Gi, gi, int64_t);
+//DECLARE_SOA_COLUMN(Gi, gi, int64_t);
 DECLARE_SOA_COLUMN(Rn, rn, int32_t);         // run number
 DECLARE_SOA_COLUMN(Cent, cent, float);       // FT0C centrality
 DECLARE_SOA_COLUMN(Mult, mult, int32_t);     // TPC multiplicity
@@ -83,19 +83,9 @@ DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);
 DECLARE_SOA_COLUMN(Psi2, psi2, int16_t);
 DECLARE_SOA_COLUMN(Psi3, psi3, int16_t);
 } // namespace testcol
-namespace testtrack
-{
 
-// Track properties
-DECLARE_SOA_COLUMN(Colid, colid, int32_t); // Collision ID
-DECLARE_SOA_COLUMN(Charge, charge, int16_t);
-DECLARE_SOA_COLUMN(P, p, uint64_t);
-DECLARE_SOA_COLUMN(Dedx, dedx, uint16_t);
-DECLARE_SOA_COLUMN(Dcaxy, dcaxy, int16_t);
-DECLARE_SOA_COLUMN(Dcaz, dcaz, int16_t);
-} // namespace testtrack
 DECLARE_SOA_TABLE(TableCol, "AOD", "TABLECOL",
-                  testcol::Gi,
+                  o2::soa::Index<>,
                   testcol::Rn,
                   testcol::Cent,
                   testcol::Mult,
@@ -106,8 +96,23 @@ DECLARE_SOA_TABLE(TableCol, "AOD", "TABLECOL",
                   testcol::VertexZ,
                   testcol::Psi2,
                   testcol::Psi3);
+using Collision = TableCol::iterator;
+
+namespace testtrack
+{
+
+// Track properties
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(Charge, charge, int16_t);
+DECLARE_SOA_COLUMN(P, p, uint64_t);
+DECLARE_SOA_COLUMN(Dedx, dedx, uint16_t);
+DECLARE_SOA_COLUMN(Dcaxy, dcaxy, int16_t);
+DECLARE_SOA_COLUMN(Dcaz, dcaz, int16_t);
+} // namespace testtrack
+
 DECLARE_SOA_TABLE(TableTrack, "AOD", "TABLETRACK",
-                  testtrack::Colid,
+                  o2::soa::Index<>,
+                  testtrack::CollisionId,
                   testtrack::Charge,
                   testtrack::P,
                   testtrack::Dedx,
