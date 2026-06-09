@@ -178,7 +178,7 @@ struct TableDiffWake {
     //------- Only events with track above some thresh ----------
 
     bool eventHighpT = false;
-    for (auto const &track : tracks) {
+    for (const auto& track : tracks) {
 
       if (!track.isGlobalTrack())
         continue;
@@ -206,7 +206,7 @@ struct TableDiffWake {
             substituteEp2,
             substituteEp3);
 
-    for (auto const &track : tracks) {
+    for (const auto& track : tracks) {
 
       // Track cut
       if (!track.isGlobalTrack())
