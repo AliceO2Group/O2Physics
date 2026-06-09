@@ -219,7 +219,7 @@ DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 // MC
 DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
-DECLARE_SOA_COLUMN(MaxNumContrib, maxNumContrib, int);
+DECLARE_SOA_COLUMN(NContribMax, nContribMax, int);
 DECLARE_SOA_COLUMN(NRecoColl, nRecoColl, int);
 DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
 } // namespace full
@@ -322,7 +322,7 @@ DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
                   full::FlagMcMatchRec,
                   full::OriginRec,
                   full::ParticlePdg,
-                  full::MaxNumContrib,
+                  full::NContribMax,
                   full::NRecoColl,
                   full::PtGenB)
 } // namespace o2::aod
@@ -659,11 +659,11 @@ struct HfTreeCreatorToXiPiQa {
       auto ptGen = particle.pt();
       auto yGen = particle.rapidityCharmBaryonGen();
 
-      int maxNumContrib = 0;
+      int nContribMax = 0;
       auto mcCollision = particle.template mcCollision_as<McCollType>();
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       for (const auto& recoCol : recoCollsPerMcColl) {
-        maxNumContrib = recoCol.numContrib() > maxNumContrib ? recoCol.numContrib() : maxNumContrib;
+        nContribMax = recoCol.numContrib() > nContribMax ? recoCol.numContrib() : nContribMax;
       }
 
       float ptGenBhad = (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) ? mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt() : -999.f;
@@ -676,7 +676,7 @@ struct HfTreeCreatorToXiPiQa {
                             particle.flagMcMatchGen(),
                             particle.originMcGen(),
                             particle.pdgCode(),
-                            maxNumContrib,
+                            nContribMax,
                             recoCollsPerMcColl.size(),
                             ptGenBhad);
     }
