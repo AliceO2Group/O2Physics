@@ -84,7 +84,6 @@ class PairSHCentMultKt
     int em = 0;
     int il = 0;
     do {
-
       fels[il] = el;
       fems[il] = em;
       felsi[il] = static_cast<int>(el);
@@ -245,10 +244,10 @@ class PairSHCentMultKt
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
-  void setPionPairMass()
+  void setPairMass(const float mass1, const float mass2)
   {
-    mMassOne = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
-    mMassTwo = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
+    mMassOne = mass1;
+    mMassTwo = mass2;
   }
 
   /// To compute the bin value for cavariance matrix
@@ -278,10 +277,8 @@ class PairSHCentMultKt
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(kMaxJM);
     std::vector<double> f3d;
-    setPionPairMass();
 
-    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
-                                         isIdenLCMS, isWeight, isIdenPRF);
+    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo, isIdenLCMS, isWeight, isIdenPRF);
     double varout = 0.0;
     double varside = 0.0;
     double varlong = 0.0;
