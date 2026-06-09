@@ -2277,8 +2277,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ1Y0B] = -999;
     values[kQ1X0C] = -999;
     values[kQ1Y0C] = -999;
-    //values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
-    //values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    // values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    // values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
     values[kQ2X0A] = event.qvecBAllRe();
     values[kQ2Y0A] = event.qvecBAllIm();
     values[kQ2X0APOS] = event.qvecBPosRe();
@@ -2319,7 +2319,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ2XXBC] = values[kQ2X0B] * values[kQ2X0C];
     values[kQ2XYBC] = values[kQ2X0B] * values[kQ2Y0C];
     values[kQ2YXBC] = values[kQ2Y0B] * values[kQ2X0C];
-
 
     EventPlaneHelper epHelper;
     float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
