@@ -114,11 +114,11 @@ struct flowDirectedFlowTask {
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0., 5., 10., 20., 30., 40., 50., 80.}, "Centrality (%)"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1., 1.5, 2., 2.5, 3., 4., 5., 6.5, 8., 10.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis etaAxis{"etaAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0., 0.2, 0.4, 0.8}, "#eta"};
-  ConfigurableAxis massAxis{"massAxis", {100, 1.0, 1.2}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis polAxis{"polAxis", {200, -1.0, 1.0}, "polarization observable"};
-  ConfigurableAxis spAxis{"spAxis", {400, -10.0, 10.0}, "SP observable"};
+  ConfigurableAxis massAxis{"massAxis", {50, 1.09, 1.14}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis polAxis{"polAxis", {200, -3.0, 3.0}, "polarization observable"};
+  ConfigurableAxis spAxis{"spAxis", {200, -3.0, 3.0}, "SP observable"};
   ConfigurableAxis q1Axis{"q1Axis", {VARIABLE_WIDTH, 0., 0.5, 1., 1.5, 2., 3., 5., 10.}, "q_{1}^{ZDC}"};
-  ConfigurableAxis qAxis{"qAxis", {200, -10., 10.}, "Q"};
+  ConfigurableAxis qAxis{"qAxis", {100, -3., 3.}, "Q"};
   ConfigurableAxis resAxis{"resAxis", {200, -1., 1.}, "resolution / correlation"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -126,6 +126,7 @@ struct flowDirectedFlowTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   TProfile2D* accprofileL = nullptr;
   TProfile2D* accprofileAL = nullptr;
+
   int currentRunNumber = -999;
   int lastRunNumber = -999;
 
@@ -185,6 +186,9 @@ struct flowDirectedFlowTask {
     histos.add("hSparseLambdaPolSPCQ1", "Lambda SP polarization numerator C vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
 
     histos.add("hSparseAntiLambdaPolSPQ1", "AntiLambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+    histos.add("hSparseAntiLambdaPolSPuxQ1", "AntiLambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+    histos.add("hSparseAntiLambdaPolSPuyQ1", "AntiLambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+
     histos.add("hSparseAntiLambdaPolSPAQ1", "AntiLambda SP polarization numerator A vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
     histos.add("hSparseAntiLambdaPolSPCQ1", "AntiLambda SP polarization numerator C vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
 
