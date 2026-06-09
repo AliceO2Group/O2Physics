@@ -64,8 +64,6 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuo
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 
 using MyPairCandidatesSelected = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
@@ -106,9 +104,6 @@ struct DqJPsiMuonCorrelations {
   float* fValuesMuon;
 
   HistogramRegistry registry{"registry"};
-  
-  // int nMuons;
-  // int nEvents;
 
   void init(o2::framework::InitContext&)
   {
@@ -119,9 +114,6 @@ struct DqJPsiMuonCorrelations {
     fValuesDilepton = new float[VarManager::kNVars];
     fValuesMuon = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
-
-    // nMuons = 0;
-    // nEvents = 0;
 
     registry.add("h2dDimuonPtInvVsInvMass", "h2dDimuonPtInvVsInvMass", kTH2D, {axisInvMass, axisPt});
     registry.add("h2dDimuonMuonDeltaEtaVsMuonPtSignal", "h2dDimuonMuonDeltaEtaVsMuonPtSignal", kTH2D, {axisDeltaEta, axisPt});
@@ -143,31 +135,6 @@ struct DqJPsiMuonCorrelations {
     if (!event.isEventSelected_bit(0)) {
       return;
     }
-
-    // if (dileptons.size() > 0) {
-    //   LOG(info) << "Processing event " << event.globalIndex() << " with " << muons.size() << " muons and " << dileptons.size() << " dileptons" << std::endl;
-    //   LOG(info) << "Dilepton leg indexes: ";
-    //   for (auto& dilepton : dileptons) {
-    //     LOG(info) << dilepton.index0Id() << " and " << dilepton.index1Id() << " ";
-    //   }
-    //   LOG(info) << std::endl;
-    //   LOG(info) << "Muon indexes: ";
-    //   for (auto& muon : muons) {
-    //     LOG(info) << muon.reducedmuonId() << " ";
-    //   }
-    //   LOG(info) << std::endl;
-    // }
-
-    // for (auto& muon : muons) {
-    //   // VarManager::FillTrack<TMuonFillMap>(muon, fValuesMuon);
-    //   if (!muon.isMuonSelected_raw()) {
-    //     continue;
-    //   }
-    //   nMuons++;
-    //   LOG(info) << "Total number of muons processed: " << nMuons << std::endl;
-    // }
-    // nEvents++;
-    // LOG(info) << "Total number of events processed: " << nEvents << std::endl;
 
     if (dileptons.size() > 0) {
 
