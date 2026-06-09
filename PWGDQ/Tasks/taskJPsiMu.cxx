@@ -197,7 +197,7 @@ struct DqJPsiMuonCorrelations {
 
           // Muon kinematic cuts
           if ((track.eta() < fConfigMuonEtaMin || track.eta() > fConfigMuonEtaMax) ||
-              (track.pt() < axisPt.value.front() || track.pt() > axisPt.value.back())) {
+              (track.pt() < axisPt.value[1] || track.pt() > axisPt.value.back())) {
             continue;
           }
 
@@ -252,7 +252,8 @@ double getWeight(const double pT, const std::vector<double>& pT_bins, const std:
 
     int eff_bin = -1;
     for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
-        if (pT >= pT_bins[b] && pT < pT_bins[b + 1]) {
+        // Shift pT index by one to account for the VARIABLE_WIDTH entry in the axis configuration
+        if (pT >= pT_bins[b + 1] && pT < pT_bins[b + 2]) {
             eff_bin = b;
             break;
         }
