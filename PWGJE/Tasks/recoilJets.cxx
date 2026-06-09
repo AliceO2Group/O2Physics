@@ -17,11 +17,13 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
@@ -69,7 +71,9 @@ using CollRhoDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChar
 using CollPartIt = soa::Filtered<aod::JetMcCollisions>::iterator;
 using CollRhoPartTbl = soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>;
 using CollRhoPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator;
+using CollCentRhoPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::McCentFT0As, aod::McCentFT0Cs, aod::BkgChargedMcRhos>>::iterator;
 using CollRhoOutlierPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
+using CollCentRhoOutlierPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::McCentFT0As, aod::McCentFT0Cs, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
 using CollRhoOutlierPartTbl = soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>;
 
 // --- Event multiplicity (+ ZDC etc.)
@@ -323,18 +327,18 @@ struct RecoilJets {
 
     // List of raw and MC det. distributions
     if (doprocessData || doprocessMCDetLevel || doprocessMCDetLevelWeighted) {
-      spectra.add("hEventSelectionCountReco", "Count # of events in the analysis", kTH1F, {{5, 0.0, 5.}});
+      spectra.add("hEventSelectionCountReco", "Count # of events", kTH1F, {{5, 0.0, 5.}});
       spectra.get<TH1>(HIST("hEventSelectionCountReco"))->GetXaxis()->SetBinLabel(1, "Total # of events");
       spectra.get<TH1>(HIST("hEventSelectionCountReco"))->GetXaxis()->SetBinLabel(2, Form("# of events after sel. %s", evSelToString.data()));
       spectra.get<TH1>(HIST("hEventSelectionCountReco"))->GetXaxis()->SetBinLabel(3, "# of events w. outlier");
       spectra.get<TH1>(HIST("hEventSelectionCountReco"))->GetXaxis()->SetBinLabel(4, "# of events w/o assoc MC.");
       spectra.get<TH1>(HIST("hEventSelectionCountReco"))->GetXaxis()->SetBinLabel(5, "# of selected events");
 
-      spectra.add("hTrackSelectionCount", "Count # of tracks in the analysis", kTH1F, {{2, 0.0, 2.}});
+      spectra.add("hTrackSelectionCount", "Count # of tracks", kTH1F, {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hTrackSelectionCount"))->GetXaxis()->SetBinLabel(1, "Total # of tracks");
       spectra.get<TH1>(HIST("hTrackSelectionCount"))->GetXaxis()->SetBinLabel(2, Form("# of tracks after sel. %s", trkSelToString.data()));
 
-      spectra.add("hTTSig_pT", "pT spectrum of all found TT_{Sig} cand.", kTH1F, {{40, 10., 50.}}); // needed to distinguish merged data from diff. wagons
+      spectra.add("hTTSig_pT", "#it{p}_{T} spectrum of all found TT_{Sig}", kTH1F, {{40, 10., 50.}}); // needed to distinguish merged data from diff. wagons
 
       spectra.add("hJetPtEtaPhiRhoArea", "Charact. of inclusive jets", kTHnSparseF, {pT, pseudorapJets, phiAngle, rho, jetArea}, hist.sumw2);
       spectra.add("hJetArea_JetPt_Rho_TTRef", "Events w. TT_{Ref}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho}, hist.sumw2);
@@ -342,7 +346,7 @@ struct RecoilJets {
 
       for (const auto& eaAxis : arrConfigurableAxisEA) {
         spectra.add(Form("hScaled%s_vertexZ", eaAxis.label),
-                    "Z vertex of collisions",
+                    Form("Scaled %s vs. Z vertex of collisions", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {60, -12., 12., "#it{z}_{vertex}"}}, hist.sumw2);
 
         spectra.add(Form("hScaled%sTrackPtEtaPhi", eaAxis.label),
@@ -350,17 +354,17 @@ struct RecoilJets {
                     kTHnSparseF, {{eaAxis.axis, eaAxis.axisName}, pT, pseudorap, phiAngle}, hist.sumw2);
 
         auto tmpHistPointer = spectra.add<TH2>(Form("hScaled%s_Ntrig", eaAxis.label),
-                                               Form("Total number of selected triggers per class vs scaled %s", eaAxis.label),
+                                               Form("Scaled %s vs Total number of selected triggers per class", eaAxis.label),
                                                kTH2F, {{eaAxis.axis, eaAxis.axisName}, {2, 0.0, 2.}});
         tmpHistPointer->GetYaxis()->SetBinLabel(1, "TT_{Ref}");
         tmpHistPointer->GetYaxis()->SetBinLabel(2, "TT_{Sig}");
 
         spectra.add(Form("hScaled%s_TTRef_per_event", eaAxis.label),
-                    Form("Number of TT_{Ref} per event vs scaled %s", eaAxis.label),
+                    Form("Scaled %s vs Number of TT_{Ref} per event", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {15, 0.5, 15.5, "# of TT_{Ref}"}});
 
         spectra.add(Form("hScaled%s_TTSig_per_event", eaAxis.label),
-                    Form("Number of TT_{Sig} per event vs scaled %s", eaAxis.label),
+                    Form("Scaled %s vs Number of TT_{Sig} per event", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {10, 0.5, 10.5, "# of TT_{Sig}"}});
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTRef", eaAxis.label),
@@ -417,6 +421,10 @@ struct RecoilJets {
       }
 
       for (const auto& eaAxis : arrAxisSpecScaledEA) {
+        spectra.add(Form("hScaled%s", eaAxis.label),
+                    Form("Scaled %s", eaAxis.label),
+                    kTH1F, {eaAxis.axis});
+
         spectra.add(Form("hScaled%s_TTRef", eaAxis.label),
                     Form("Events w. TT_{Ref}: scaled %s", eaAxis.label),
                     kTH1F, {eaAxis.axis});
@@ -431,12 +439,12 @@ struct RecoilJets {
 
         // Vertex Z position
         spectra.add(Form("h%s_vertexZ", centAxis.label),
-                    "Centrality vs Z vertex of collisions",
+                    Form("%s vs Z vertex of collisions", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, {60, -12., 12., "#it{z}_{vertex}"}}, hist.sumw2);
 
         // Distributions of centrality in events w/o and w. TT
         spectra.add(Form("h%s", centAxis.label),
-                    "",
+                    Form("%s", centAxis.label),
                     kTH1F, {{centAxis.axis, centAxis.axisName}});
 
         spectra.add(Form("h%s_TTRef", centAxis.label),
@@ -452,10 +460,9 @@ struct RecoilJets {
                     "Charact. of tracks",
                     kTHnSparseF, {{centAxis.axis, centAxis.axisName}, pT, pseudorap, phiAngle}, hist.sumw2);
 
-
         // Rho vs centrality
         spectra.add(Form("h%s_Rho", centAxis.label),
-                    Form("Scaled %s & #rho", centAxis.label),
+                    Form("%s & #rho", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, rho}, hist.sumw2);
 
         spectra.add(Form("h%s_Rho_TTRef", centAxis.label),
@@ -469,7 +476,7 @@ struct RecoilJets {
 
         // Recoil jets vs centrality
         auto tmpHistPointer = spectra.add<TH2>(Form("h%s_Ntrig", centAxis.label),
-                                        Form("Total number of selected triggers per class vs %s", centAxis.label),
+                                        Form("%s vs Total number of selected triggers per class", centAxis.label),
                                         kTH2F, {{centAxis.axis, centAxis.axisName}, {2, 0.0, 2.}});
         tmpHistPointer->GetYaxis()->SetBinLabel(1, "TT_{Ref}");
         tmpHistPointer->GetYaxis()->SetBinLabel(2, "TT_{Sig}");
@@ -507,90 +514,165 @@ struct RecoilJets {
       spectra.add("hJetArea_JetPt_Rho_TTSig_Part", "Events w. TT_{Sig}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho}, hist.sumw2);
 
       for (const auto& eaAxis : arrConfigurableAxisEAPartLevel) {
-        spectra.add(Form("hScaled%s_vertexZMC", eaAxis.label),
+        spectra.add(Form("hScaled%s_vertexZ_Part", eaAxis.label),
                     "Z vertex of MC collision",
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {60, -12., 12., "#it{z}_{vertex}"}}, hist.sumw2);
 
         auto tmpHistPointer = spectra.add<TH2>(Form("hScaled%s_Ntrig_Part", eaAxis.label),
-                                               Form("Total number of selected triggers per class vs scaled %s", eaAxis.label),
+                                               Form("Scaled %s vs Total number of selected triggers per class", eaAxis.label),
                                                kTH2F, {{eaAxis.axis, eaAxis.axisName}, {2, 0.0, 2.}});
         tmpHistPointer->GetYaxis()->SetBinLabel(1, "TT_{Ref}");
         tmpHistPointer->GetYaxis()->SetBinLabel(2, "TT_{Sig}");
 
-        spectra.add(Form("hScaled%sPartPtEtaPhi", eaAxis.label),
-                    "Charact. of particles",
+        spectra.add(Form("hScaled%sTrackPtEtaPhi_Part", eaAxis.label),
+                    "Charact. of MC generated particles",
                     kTHnSparseF, {{eaAxis.axis, eaAxis.axisName}, pT, pseudorap, phiAngle}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_TTRef_per_event_Part", eaAxis.label),
-                    Form("Number of TT_{Ref} per event vs scaled %s", eaAxis.label),
+                    Form("Scaled %s vs Number of MC TT_{Ref} per event", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {15, 0.5, 15.5, "# of TT_{Ref}"}});
 
         spectra.add(Form("hScaled%s_TTSig_per_event_Part", eaAxis.label),
-                    Form("Number of TT_{Sig} per event vs scaled %s", eaAxis.label),
+                    Form("Scaled %s vs Number of MC TT_{Sig} per event", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {10, 0.5, 10.5, "# of TT_{Sig}"}});
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTRef_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
+                    Form("MC events w. TT_{Ref}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, deltaPhiAngle, jetPTcorr}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTSig_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
+                    Form("MC events w. TT_{Sig}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, deltaPhiAngle, jetPTcorr}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_TTRef_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
+                    Form("MC events w. TT_{Ref}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, deltaPhiAngle, pT}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_TTSig_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
+                    Form("MC events w. TT_{Sig}: scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, deltaPhiAngle, pT}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTRef_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
+                    Form("MC events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTSig_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
+                    Form("MC events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_TTRef_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
+                    Form("MC events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, pT}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_TTSig_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
+                    Form("MC events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, pT}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Rho_Part", eaAxis.label),
-                    Form("Scaled %s & #rho", eaAxis.label),
+                    Form("MC events %s & #rho", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, rho}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Rho_TTRef_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref}: scaled %s & #rho", eaAxis.label),
+                    Form("MC events w. TT_{Ref}: scaled %s & #rho", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, rho}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Rho_TTSig_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig}: scaled %s & #rho", eaAxis.label),
+                    Form("MC events w. TT_{Sig}: scaled %s & #rho", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, rho}, hist.sumw2);
 
         // Rectricted phi range for TT selection
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTRef_RestrictedPhi_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiMin, phiMax, eaAxis.label),
+                    Form("MC events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiMin, phiMax, eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, deltaPhiAngle, jetPTcorr}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTSig_RestrictedPhi_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiMin, phiMax, eaAxis.label),
+                    Form("MC events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiMin, phiMax, eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, deltaPhiAngle, jetPTcorr}, hist.sumw2);
       }
 
       for (const auto& eaAxis : arrAxisSpecScaledEA) {
+        spectra.add(Form("hScaled%s_Part", eaAxis.label),
+                    "Scaled EA in MC collisions",
+                    kTH1F, {eaAxis.axis});
+
         spectra.add(Form("hScaled%s_TTRef_Part", eaAxis.label),
-                    Form("Events w. TT_{Ref}: scaled %s", eaAxis.label),
+                    Form("MC events w. TT_{Ref}: scaled %s", eaAxis.label),
                     kTH1F, {eaAxis.axis});
 
         spectra.add(Form("hScaled%s_TTSig_Part", eaAxis.label),
-                    Form("Events w. TT_{Sig}: scaled %s", eaAxis.label),
+                    Form("MC events w. TT_{Sig}: scaled %s", eaAxis.label),
                     kTH1F, {eaAxis.axis});
+      }
+
+      // Centrality dependence
+      uint8_t iCent = 0;
+      for (const auto& centAxis : arrConfigurableAxisCentrality) {
+        
+        if (iCent == 3) // case of "CentFT0CVar1"
+          continue;
+
+        // Vertex Z position
+        spectra.add(Form("h%s_vertexZ_Part", centAxis.label),
+                    "Centrality vs Z vertex of MC collisions",
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, {60, -12., 12., "#it{z}_{vertex}"}}, hist.sumw2);
+
+        // Distributions of centrality in events w/o and w. TT
+        spectra.add(Form("h%s_Part", centAxis.label),
+                    "Centrality in MC collisions",
+                    kTH1F, {{centAxis.axis, centAxis.axisName}});
+
+        spectra.add(Form("h%s_TTRef_Part", centAxis.label),
+                    Form("%s in MC events w. TT_{Ref}", centAxis.label),
+                    kTH1F, {{centAxis.axis, centAxis.axisName}});
+
+        spectra.add(Form("h%s_TTSig_Part", centAxis.label),
+                    Form("%s in MC events w. TT_{Sig}", centAxis.label),
+                    kTH1F, {{centAxis.axis}});
+
+        // Distribution of tracks
+        spectra.add(Form("h%sTrackPtEtaPhi_Part", centAxis.label),
+                    "Charact. of MC generated particles",
+                    kTHnSparseF, {{centAxis.axis, centAxis.axisName}, pT, pseudorap, phiAngle}, hist.sumw2);
+
+
+        // Rho vs centrality
+        spectra.add(Form("h%s_Rho_Part", centAxis.label),
+                    Form("MC events %s & #rho", centAxis.label),
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, rho}, hist.sumw2);
+
+        spectra.add(Form("h%s_Rho_TTRef_Part", centAxis.label),
+                    Form("MC events w. TT_{Ref}: %s & #rho", centAxis.label),
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, rho}, hist.sumw2);
+
+        spectra.add(Form("h%s_Rho_TTSig_Part", centAxis.label),
+                    Form("MC events w. TT_{Sig}: %s & #rho", centAxis.label),
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, rho}, hist.sumw2);
+
+
+        // Recoil jets vs centrality
+        auto tmpHistPointer = spectra.add<TH2>(Form("h%s_Ntrig_Part", centAxis.label),
+                                        Form("%s vs Total number of selected MC triggers per class", centAxis.label),
+                                        kTH2F, {{centAxis.axis, centAxis.axisName}, {2, 0.0, 2.}});
+        tmpHistPointer->GetYaxis()->SetBinLabel(1, "TT_{Ref}");
+        tmpHistPointer->GetYaxis()->SetBinLabel(2, "TT_{Sig}");
+
+        spectra.add(Form("h%s_DPhi_JetPt_Corr_TTRef_Part", centAxis.label),
+                    Form("MC events w. TT_{Ref}: %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", centAxis.label),
+                    kTH3F, {{centAxis.axis, centAxis.axisName}, deltaPhiAngle, jetPTcorr}, hist.sumw2);
+
+        spectra.add(Form("h%s_DPhi_JetPt_Corr_TTSig_Part", centAxis.label),
+                    Form("MC events w. TT_{Sig}: %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", centAxis.label),
+                    kTH3F, {{centAxis.axis, centAxis.axisName}, deltaPhiAngle, jetPTcorr}, hist.sumw2);
+
+        spectra.add(Form("h%s_Recoil_JetPt_Corr_TTRef_Part", centAxis.label),
+                    Form("MC events w. TT_{Ref}: %s & #it{p}_{T} of recoil jets", centAxis.label),
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+
+        spectra.add(Form("h%s_Recoil_JetPt_Corr_TTSig_Part", centAxis.label),
+                    Form("MC events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+          
+        ++iCent;
       }
     }
 
@@ -1107,6 +1189,10 @@ struct RecoilJets {
     if (dice < tt.fracSig)
       bSigEv = true;
 
+    // EA distributions
+    spectra.fill(HIST("hScaledFT0C"), scaledFT0C, weight);
+    spectra.fill(HIST("hScaledFT0M"), scaledFT0M, weight);
+
     // Centrality distribution
     spectra.fill(HIST("hCentFT0A"), centFT0A, weight);
     spectra.fill(HIST("hCentFT0C"), centFT0C, weight);
@@ -1241,9 +1327,9 @@ struct RecoilJets {
       if (isJetWithHighPtConstituent<JTracks>(jet))
         continue;
 
-      float jetPt = jet.pt();
-      float jetArea = jet.area();
-      float jetPtCorr = jetPt - rho * jetArea;
+      const auto jetPt = jet.pt();
+      const auto jetArea = jet.area();
+      const auto jetPtCorr = jetPt - rho * jetArea;
 
       spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jetPt, jet.eta(), jet.phi(), rho, jetArea, weight);
 
@@ -1254,64 +1340,74 @@ struct RecoilJets {
         auto [dphi, bRecoilJet] = isRecoilJet(jet, phiTT);
 
         if (bSigEv) {
+
+          spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig"), jetArea, jetPt, rho, weight);
+
+          // EA dependence
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig"), scaledFT0C, dphi, jetPtCorr, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig"), scaledFT0M, dphi, jetPtCorr, weight);
-
-          spectra.fill(HIST("hCentFT0A_DPhi_JetPt_Corr_TTSig"), centFT0A, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hCentFT0C_DPhi_JetPt_Corr_TTSig"), centFT0C, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTSig"), centFT0M, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hCentFT0CVar1_DPhi_JetPt_Corr_TTSig"), centFT0CVar1, dphi, jetPtCorr, weight);
-
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTSig"), scaledFT0C, dphi, jetPt, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTSig"), scaledFT0M, dphi, jetPt, weight);
-          spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig"), jetArea, jetPt, rho, weight);
 
           if (phiTT > phiMin && phiTT < phiMax) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RestrictedPhi"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RestrictedPhi"), scaledFT0M, dphi, jetPtCorr, weight);
           }
 
+          // Centrality dependence
+          spectra.fill(HIST("hCentFT0A_DPhi_JetPt_Corr_TTSig"), centFT0A, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0C_DPhi_JetPt_Corr_TTSig"), centFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTSig"), centFT0M, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0CVar1_DPhi_JetPt_Corr_TTSig"), centFT0CVar1, dphi, jetPtCorr, weight);
+
           if (bRecoilJet) {
+
+            // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTSig"), scaledFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTSig"), scaledFT0M, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTSig"), scaledFT0C, jetPt, weight);
+            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTSig"), scaledFT0M, jetPt, weight);
 
+            // Centrality dependence
             spectra.fill(HIST("hCentFT0A_Recoil_JetPt_Corr_TTSig"), centFT0A, jetPtCorr, weight);
             spectra.fill(HIST("hCentFT0C_Recoil_JetPt_Corr_TTSig"), centFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hCentFT0M_Recoil_JetPt_Corr_TTSig"), centFT0M, jetPtCorr, weight);
             spectra.fill(HIST("hCentFT0CVar1_Recoil_JetPt_Corr_TTSig"), centFT0CVar1, jetPtCorr, weight);
-
-            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTSig"), scaledFT0C, jetPt, weight);
-            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTSig"), scaledFT0M, jetPt, weight);
           }
         } else {
+
+          spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef"), jetArea, jetPt, rho, weight);
+
+          // EA dependence
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef"), scaledFT0C, dphi, jetPtCorr, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef"), scaledFT0M, dphi, jetPtCorr, weight);
-
-          spectra.fill(HIST("hCentFT0A_DPhi_JetPt_Corr_TTRef"), centFT0A, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hCentFT0C_DPhi_JetPt_Corr_TTRef"), centFT0C, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTRef"), centFT0M, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hCentFT0CVar1_DPhi_JetPt_Corr_TTRef"), centFT0CVar1, dphi, jetPtCorr, weight);
-
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTRef"), scaledFT0C, dphi, jetPt, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTRef"), scaledFT0M, dphi, jetPt, weight);
-          spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef"), jetArea, jetPt, rho, weight);
 
           if (phiTT > phiMin && phiTT < phiMax) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RestrictedPhi"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RestrictedPhi"), scaledFT0M, dphi, jetPtCorr, weight);
           }
 
+          // Centrality dependence
+          spectra.fill(HIST("hCentFT0A_DPhi_JetPt_Corr_TTRef"), centFT0A, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0C_DPhi_JetPt_Corr_TTRef"), centFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTRef"), centFT0M, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0CVar1_DPhi_JetPt_Corr_TTRef"), centFT0CVar1, dphi, jetPtCorr, weight);
+
           if (bRecoilJet) {
+
+            // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef"), scaledFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTRef"), scaledFT0M, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTRef"), scaledFT0C, jetPt, weight);
+            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTRef"), scaledFT0M, jetPt, weight);
 
+            // Centrality dependence
             spectra.fill(HIST("hCentFT0A_Recoil_JetPt_Corr_TTRef"), centFT0A, jetPtCorr, weight);
             spectra.fill(HIST("hCentFT0C_Recoil_JetPt_Corr_TTRef"), centFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hCentFT0M_Recoil_JetPt_Corr_TTRef"), centFT0M, jetPtCorr, weight);
             spectra.fill(HIST("hCentFT0CVar1_Recoil_JetPt_Corr_TTRef"), centFT0CVar1, jetPtCorr, weight);
-
-            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTRef"), scaledFT0C, jetPt, weight);
-            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTRef"), scaledFT0M, jetPt, weight);
           }
         }
       }
@@ -1327,19 +1423,46 @@ struct RecoilJets {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
-    int nTT = 0;
-    float rho = collision.rho();
+    int nTT = 0;    
+    const float addCountToTTRef = 0.5;
+    const float addCountToTTSig = 1.5;
+
+    const auto vertexZ = collision.posZ();
+    const auto rho = collision.rho();
+
     const auto ft0Metrics = getFT0Metrics(collision, ft0a.meanPartLevel, ft0c.meanPartLevel);
     const auto scaledFT0C = ft0Metrics.scaledFT0C;
     const auto scaledFT0M = ft0Metrics.scaledFT0M;
 
-    auto dice = randGen->Rndm();
+    const auto centFT0A = collision.centFT0A();
+    const auto centFT0C = collision.centFT0C();
+    const auto centFT0M = collision.centFT0M();
+
+    const auto dice = randGen->Rndm();
     if (dice < tt.fracSig)
       bSigEv = true;
 
-    spectra.fill(HIST("hScaledFT0C_vertexZMC"), scaledFT0C, collision.posZ(), weight);
-    spectra.fill(HIST("hScaledFT0M_vertexZMC"), scaledFT0M, collision.posZ(), weight);
+    // EA distributions
+    spectra.fill(HIST("hScaledFT0C_Part"), scaledFT0C, weight);
+    spectra.fill(HIST("hScaledFT0M_Part"), scaledFT0M, weight);
 
+
+    // Centrality distribution
+    spectra.fill(HIST("hCentFT0A_Part"), centFT0A, weight);
+    spectra.fill(HIST("hCentFT0C_Part"), centFT0C, weight);
+    spectra.fill(HIST("hCentFT0M_Part"), centFT0M, weight);
+
+
+    // Z vertex position vs EA / centrality
+    spectra.fill(HIST("hScaledFT0C_vertexZ_Part"), scaledFT0C, vertexZ, weight);
+    spectra.fill(HIST("hScaledFT0M_vertexZ_Part"), scaledFT0M, vertexZ, weight);
+
+    spectra.fill(HIST("hCentFT0A_vertexZ_Part"), centFT0A, vertexZ, weight);
+    spectra.fill(HIST("hCentFT0C_vertexZ_Part"), centFT0C, vertexZ, weight);
+    spectra.fill(HIST("hCentFT0M_vertexZ_Part"), centFT0M, vertexZ, weight);
+
+
+    // Rho vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_Rho_Part"), scaledFT0C, rho, weight);
     spectra.fill(HIST("hScaledFT0M_Rho_Part"), scaledFT0M, rho, weight);
 
@@ -1347,11 +1470,16 @@ struct RecoilJets {
       if (skipParticle(particle))
         continue;
 
-      float particlePt = particle.pt();
-      float particlePhi = particle.phi();
+      const auto particlePt = particle.pt();
+      const auto particlePhi = particle.phi();
+      const auto particleEta = particle.eta();
 
-      spectra.fill(HIST("hScaledFT0CPartPtEtaPhi"), scaledFT0C, particlePt, particle.eta(), particlePhi, weight);
-      spectra.fill(HIST("hScaledFT0MPartPtEtaPhi"), scaledFT0M, particlePt, particle.eta(), particlePhi, weight);
+      spectra.fill(HIST("hScaledFT0CTrackPtEtaPhi_Part"), scaledFT0C, particlePt, particleEta, particlePhi, weight);
+      spectra.fill(HIST("hScaledFT0MTrackPtEtaPhi_Part"), scaledFT0M, particlePt, particleEta, particlePhi, weight);
+
+      spectra.fill(HIST("hCentFT0ATrackPtEtaPhi_Part"), centFT0A, particlePt, particleEta, particlePhi, weight);
+      spectra.fill(HIST("hCentFT0CTrackPtEtaPhi_Part"), centFT0C, particlePt, particleEta, particlePhi, weight);
+      spectra.fill(HIST("hCentFT0MTrackPtEtaPhi_Part"), centFT0M, particlePt, particleEta, particlePhi, weight);
 
       // Search for TT candidate
       const auto ptTTsigMin = tt.sigPtRange->at(0);
@@ -1374,8 +1502,11 @@ struct RecoilJets {
       phiTT = getPhiTT(vPhiOfTT);
 
       if (bSigEv) {
-        spectra.fill(HIST("hScaledFT0C_Ntrig_Part"), scaledFT0C, 1.5, weight);
-        spectra.fill(HIST("hScaledFT0M_Ntrig_Part"), scaledFT0M, 1.5, weight);
+
+        // EA
+        spectra.fill(HIST("hScaledFT0C_Ntrig_Part"), scaledFT0C, addCountToTTSig, weight);
+        spectra.fill(HIST("hScaledFT0M_Ntrig_Part"), scaledFT0M, addCountToTTSig, weight);
+
         spectra.fill(HIST("hScaledFT0C_TTSig_per_event_Part"), scaledFT0C, nTT, weight);
         spectra.fill(HIST("hScaledFT0M_TTSig_per_event_Part"), scaledFT0M, nTT, weight);
 
@@ -1384,9 +1515,25 @@ struct RecoilJets {
 
         spectra.fill(HIST("hScaledFT0C_Rho_TTSig_Part"), scaledFT0C, rho, weight);
         spectra.fill(HIST("hScaledFT0M_Rho_TTSig_Part"), scaledFT0M, rho, weight);
+
+        //_____________________________________________________
+        // Centrality
+        spectra.fill(HIST("hCentFT0A_Ntrig_Part"), centFT0A, addCountToTTSig, weight);
+        spectra.fill(HIST("hCentFT0C_Ntrig_Part"), centFT0C, addCountToTTSig, weight);
+        spectra.fill(HIST("hCentFT0M_Ntrig_Part"), centFT0M, addCountToTTSig, weight);
+
+        spectra.fill(HIST("hCentFT0A_TTSig_Part"), centFT0A, weight);
+        spectra.fill(HIST("hCentFT0C_TTSig_Part"), centFT0C, weight);
+        spectra.fill(HIST("hCentFT0M_TTSig_Part"), centFT0M, weight);
+
+        spectra.fill(HIST("hCentFT0A_Rho_TTSig_Part"), centFT0A, rho, weight);
+        spectra.fill(HIST("hCentFT0C_Rho_TTSig_Part"), centFT0C, rho, weight);
+        spectra.fill(HIST("hCentFT0M_Rho_TTSig_Part"), centFT0M, rho, weight);
+
       } else {
-        spectra.fill(HIST("hScaledFT0C_Ntrig_Part"), scaledFT0C, 0.5, weight);
-        spectra.fill(HIST("hScaledFT0M_Ntrig_Part"), scaledFT0M, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0C_Ntrig_Part"), scaledFT0C, addCountToTTRef, weight);
+        spectra.fill(HIST("hScaledFT0M_Ntrig_Part"), scaledFT0M, addCountToTTRef, weight);
+
         spectra.fill(HIST("hScaledFT0C_TTRef_per_event_Part"), scaledFT0C, nTT, weight);
         spectra.fill(HIST("hScaledFT0M_TTRef_per_event_Part"), scaledFT0M, nTT, weight);
 
@@ -1395,13 +1542,27 @@ struct RecoilJets {
 
         spectra.fill(HIST("hScaledFT0C_Rho_TTRef_Part"), scaledFT0C, rho, weight);
         spectra.fill(HIST("hScaledFT0M_Rho_TTRef_Part"), scaledFT0M, rho, weight);
+
+        //_____________________________________________________
+        // Centrality
+        spectra.fill(HIST("hCentFT0A_Ntrig_Part"), centFT0A, addCountToTTRef, weight);
+        spectra.fill(HIST("hCentFT0C_Ntrig_Part"), centFT0C, addCountToTTRef, weight);
+        spectra.fill(HIST("hCentFT0M_Ntrig_Part"), centFT0M, addCountToTTRef, weight);
+
+        spectra.fill(HIST("hCentFT0A_TTRef_Part"), centFT0A, weight);
+        spectra.fill(HIST("hCentFT0C_TTRef_Part"), centFT0C, weight);
+        spectra.fill(HIST("hCentFT0M_TTRef_Part"), centFT0M, weight);
+
+        spectra.fill(HIST("hCentFT0A_Rho_TTRef_Part"), centFT0A, rho, weight);
+        spectra.fill(HIST("hCentFT0C_Rho_TTRef_Part"), centFT0C, rho, weight);
+        spectra.fill(HIST("hCentFT0M_Rho_TTRef_Part"), centFT0M, rho, weight);
       }
     }
 
     for (const auto& jet : jets) {
-      float jetPt = jet.pt();
-      float jetArea = jet.area();
-      float jetPtCorr = jetPt - rho * jetArea;
+      const auto jetPt = jet.pt();
+      const auto jetArea = jet.area();
+      const auto jetPtCorr = jetPt - rho * jetArea;
 
       spectra.fill(HIST("hJetPtEtaPhiRhoArea_Part"), jetPt, jet.eta(), jet.phi(), rho, jetArea, weight);
 
@@ -1412,48 +1573,70 @@ struct RecoilJets {
         auto [dphi, bRecoilJet] = isRecoilJet(jet, phiTT);
 
         if (bSigEv) {
-          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_Part"), scaledFT0C, dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_Part"), scaledFT0M, dphi, jetPtCorr, weight);
-
-          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTSig_Part"), scaledFT0C, dphi, jetPt, weight);
-          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTSig_Part"), scaledFT0M, dphi, jetPt, weight);
 
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig_Part"), jetArea, jetPt, rho, weight);
+
+          // EA dependence
+          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_Part"), scaledFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_Part"), scaledFT0M, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTSig_Part"), scaledFT0C, dphi, jetPt, weight);
+          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTSig_Part"), scaledFT0M, dphi, jetPt, weight);
 
           if (phiTT > phiMin && phiTT < phiMax) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RestrictedPhi_Part"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RestrictedPhi_Part"), scaledFT0M, dphi, jetPtCorr, weight);
           }
 
+          // Centrality dependence
+          spectra.fill(HIST("hCentFT0A_DPhi_JetPt_Corr_TTSig_Part"), centFT0A, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0C_DPhi_JetPt_Corr_TTSig_Part"), centFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTSig_Part"), centFT0M, dphi, jetPtCorr, weight);
+
           if (bRecoilJet) {
+
+            // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTSig_Part"), scaledFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTSig_Part"), scaledFT0M, jetPtCorr, weight);
-
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTSig_Part"), scaledFT0C, jetPt, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTSig_Part"), scaledFT0M, jetPt, weight);
-          }
 
+            // Centrality dependence
+            spectra.fill(HIST("hCentFT0A_Recoil_JetPt_Corr_TTSig_Part"), centFT0A, jetPtCorr, weight);
+            spectra.fill(HIST("hCentFT0C_Recoil_JetPt_Corr_TTSig_Part"), centFT0C, jetPtCorr, weight);
+            spectra.fill(HIST("hCentFT0M_Recoil_JetPt_Corr_TTSig_Part"), centFT0M, jetPtCorr, weight);
+          }
         } else {
 
+          spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef_Part"), jetArea, jetPt, rho, weight);
+
+          // EA dependence
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_Part"), scaledFT0C, dphi, jetPtCorr, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_Part"), scaledFT0M, dphi, jetPtCorr, weight);
-
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTRef_Part"), scaledFT0C, dphi, jetPt, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTRef_Part"), scaledFT0M, dphi, jetPt, weight);
-
-          spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef_Part"), jetArea, jetPt, rho, weight);
 
           if (phiTT > phiMin && phiTT < phiMax) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RestrictedPhi_Part"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RestrictedPhi_Part"), scaledFT0M, dphi, jetPtCorr, weight);
           }
 
+          // Centrality dependence
+          spectra.fill(HIST("hCentFT0A_DPhi_JetPt_Corr_TTRef_Part"), centFT0A, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0C_DPhi_JetPt_Corr_TTRef_Part"), centFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTRef_Part"), centFT0M, dphi, jetPtCorr, weight);
+
           if (bRecoilJet) {
+
+            // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef_Part"), scaledFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTRef_Part"), scaledFT0M, jetPtCorr, weight);
-
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTRef_Part"), scaledFT0C, jetPt, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTRef_Part"), scaledFT0M, jetPt, weight);
+
+            // Centrality dependence
+            spectra.fill(HIST("hCentFT0A_Recoil_JetPt_Corr_TTRef_Part"), centFT0A, jetPtCorr, weight);
+            spectra.fill(HIST("hCentFT0C_Recoil_JetPt_Corr_TTRef_Part"), centFT0C, jetPtCorr, weight);
+            spectra.fill(HIST("hCentFT0M_Recoil_JetPt_Corr_TTRef_Part"), centFT0M, jetPtCorr, weight);
           }
         }
       }
@@ -1471,21 +1654,20 @@ struct RecoilJets {
                                 float detLevelCollRho,
                                 float weight = 1.)
   {
-    /// TODO: consider TT cand. on both MC levels simultaneously
 
     // Utilities for recoil jets; TTsis at det. level MC
     std::vector<double> vPhiOfTT = getPhiOfAllTTsigCandidates(tracks);
     double phiTTSig = 0.0;
-    bool bIsThereTTSig = vPhiOfTT.size() > 0;
+    const bool bIsThereTTSig = vPhiOfTT.size() > 0;
 
     if (bIsThereTTSig)
       phiTTSig = getPhiTT(vPhiOfTT);
 
     for (const auto& jetPart : jetsPart) {
-      auto partJetPt = jetPart.pt();
-      auto partJetPtCorr = partJetPt - partLevelCollRho * jetPart.area();
+      const auto partJetPt = jetPart.pt();
+      const auto partJetPtCorr = partJetPt - partLevelCollRho * jetPart.area();
 
-      bool bIsPartJetRecoil =
+      const bool bIsPartJetRecoil =
         get<1>(isRecoilJet(jetPart, phiTTSig)) && bIsThereTTSig;
 
       // Distribution of all part. level jets
@@ -1515,8 +1697,8 @@ struct RecoilJets {
             }
 
           } else {
-            auto detJetPt = jetDetMatched.pt();
-            auto detJetPtCorr = detJetPt - detLevelCollRho * jetDetMatched.area();
+            const auto detJetPt = jetDetMatched.pt();
+            const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDetMatched.area();
 
             spectra.fill(HIST("hNumberMatchedInclusiveDetJetsPerOnePartJet"), jetsDetMatched.size(), detJetPt, partJetPt, weight);
 
@@ -1558,10 +1740,10 @@ struct RecoilJets {
       if (isJetWithHighPtConstituent<JTracks>(jetDet))
         continue;
 
-      auto detJetPt = jetDet.pt();
-      auto detJetPtCorr = detJetPt - detLevelCollRho * jetDet.area();
+      const auto detJetPt = jetDet.pt();
+      const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDet.area();
 
-      bool bIsJetRecoil =
+      const bool bIsJetRecoil =
         get<1>(isRecoilJet(jetDet, phiTTSig)) && bIsThereTTSig;
 
       // Distribution of all det. level jets
@@ -1597,16 +1779,16 @@ struct RecoilJets {
     // Utilities for recoil jets; TTsis at det. level MC
     std::vector<double> vPhiOfTT = getPhiOfAllTTsigCandidates(tracks);
     double phiTTSig = 0.0;
-    bool bIsThereTTSig = vPhiOfTT.size() > 0;
+    const bool bIsThereTTSig = vPhiOfTT.size() > 0;
 
     if (bIsThereTTSig)
       phiTTSig = getPhiTT(vPhiOfTT);
 
     for (const auto& jetPart : jetsPart) {
-      auto partJetPt = jetPart.pt();
-      auto partJetPtCorr = partJetPt - partLevelCollRho * jetPart.area();
+      const auto partJetPt = jetPart.pt();
+      const auto partJetPtCorr = partJetPt - partLevelCollRho * jetPart.area();
 
-      bool bIsPartJetRecoil =
+      const bool bIsPartJetRecoil =
         get<1>(isRecoilJet(jetPart, phiTTSig)) && bIsThereTTSig;
 
       // Distribution of all part. level jets
@@ -1640,8 +1822,8 @@ struct RecoilJets {
               spectra.fill(HIST("hMissedRecoilJetsPtCorr"), partJetPtCorr, weight);
             }
           } else {
-            auto detJetPt = jetDetMatched.pt();
-            auto detJetPtCorr = detJetPt - detLevelCollRho * jetDetMatched.area();
+            const auto detJetPt = jetDetMatched.pt();
+            const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDetMatched.area();
 
             spectra.fill(HIST("hNumberMatchedInclusiveDetJetsPerOnePartJet"), jetsDetMatched.size(), detJetPt, partJetPt, weight);
 
@@ -1683,10 +1865,10 @@ struct RecoilJets {
       if (isJetWithHighPtConstituent<JTracks>(jetDet))
         continue;
 
-      auto detJetPt = jetDet.pt();
-      auto detJetPtCorr = detJetPt - detLevelCollRho * jetDet.area();
+      const auto detJetPt = jetDet.pt();
+      const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDet.area();
 
-      bool bIsJetRecoil =
+      const bool bIsJetRecoil =
         get<1>(isRecoilJet(jetDet, phiTTSig)) && bIsThereTTSig;
 
       // Distribution of all det. level jets
@@ -2635,7 +2817,7 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted, "process MC det. level data (weighted JJ)", false);
 
   //_____________________
-  void processMCPartLevel(CollRhoPartIt const& collision,
+  void processMCPartLevel(CollCentRhoPartIt const& collision,
                           PartTbl const& particlesPerColl,
                           JetsPartTbl const& jetsPerColl)
   {
@@ -2652,7 +2834,7 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC part. level data (no weight; MB events)", false);
 
   //_____________________________
-  void processMCPartLevelWeighted(CollRhoOutlierPartIt const& collision,
+  void processMCPartLevelWeighted(CollCentRhoOutlierPartIt const& collision,
                                   PartTbl const& particlesPerColl,
                                   JetsPartTbl const& jetsPerColl)
   {
