@@ -14,6 +14,10 @@
 ///
 /// author N. Wilson
 
+/// \file tableDiffWake.cxx
+/// \brief This task writes a collision and track table which are further used in a diffusion wake analysis
+/// \author Nicola Wilson <nicola.wilson@cern.ch>
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Centrality.h"
