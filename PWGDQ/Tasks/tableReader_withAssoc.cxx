@@ -1838,6 +1838,7 @@ struct AnalysisSameEventPairing {
       }
     }
     LOG(info) << "Reserving capacity for " << reserveSize << " pairs in the output tables";
+    LOG(info) << "number of Assocs: " << assocs.size() << ", number of Events: " << events.size();
     
     dielectronList.reserve(reserveSize);
     dimuonList.reserve(reserveSize);
