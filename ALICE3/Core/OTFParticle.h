@@ -24,7 +24,6 @@
 #include <bitset>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <span>
 
 namespace o2::upgrade
