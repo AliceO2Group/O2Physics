@@ -1836,8 +1836,14 @@ struct AnalysisSameEventPairing {
         auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
         size_t nGood = 0;
         for (auto const& t : groupedAssocs) {
-          if (t.isBarrelSelected_raw() && t.isBarrelSelectedPrefilter_raw()) {
-            nGood++;
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            if (t.isBarrelSelected_raw()) {
+              nGood++;
+            }
+          } else if constexpr (TPairType == VarManager::kDecayToMuMu) {
+            if (t.isMuonSelected_raw()) {
+              nGood++;
+            }
           }
         }
         reserveSize += nGood * (nGood - 1) / 2;
