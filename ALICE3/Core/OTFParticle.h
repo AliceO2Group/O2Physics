@@ -24,6 +24,7 @@
 #include <bitset>
 #include <cmath>
 #include <cstdint>
+#include <iostream>
 #include <span>
 
 namespace o2::upgrade
@@ -87,6 +88,14 @@ class OTFParticle
     mPy = py;
     mPz = pz;
     mE = e;
+  }
+  void setIndexOffset(const std::size_t offset)
+  {
+    static constexpr int NotFound = -1;
+    mIndicesMother[0] = (mIndicesMother[0] >= 0) ? mIndicesMother[0] + static_cast<int>(offset) : NotFound;
+    mIndicesMother[1] = (mIndicesMother[1] >= 0) ? mIndicesMother[1] + static_cast<int>(offset) : NotFound;
+    mIndicesDaughter[0] = (mIndicesDaughter[0] >= 0) ? mIndicesDaughter[0] + static_cast<int>(offset) : NotFound;
+    mIndicesDaughter[1] = (mIndicesDaughter[1] >= 0) ? mIndicesDaughter[1] + static_cast<int>(offset) : NotFound;
   }
 
   // Getters
@@ -171,7 +180,7 @@ class OTFParticle
 
  private:
   int mPdgCode{}, mGlobalIndex{-1};
-  int mCollisionId{};
+  int mCollisionId{-1};
   float mVx{}, mVy{}, mVz{}, mVt{};
   float mPx{}, mPy{}, mPz{}, mE{};
   bool mIsAlive{}, mIsFromMcParticles{false};

@@ -79,6 +79,7 @@ struct OnTheFlyDecayer {
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  std::vector<std::vector<int>> mcParticlesGrouped;
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
@@ -86,9 +87,8 @@ struct OnTheFlyDecayer {
                                                 {DefaultParameters[0], NumDecays, NumParameters, ParticleNames, ParameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
 
+  std::size_t indexOffset = 0;
   static constexpr float PicoToNano = 1.e-3f;
-  int mCollisionId{-1};
-
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
   {
@@ -154,7 +154,7 @@ struct OnTheFlyDecayer {
       particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
       for (o2::upgrade::OTFParticle daughter : decayStack) {
         daughter.setIndicesMother(i, i);
-        daughter.setCollisionId(mCollisionId);
+        daughter.setCollisionId(particle.collisionId());
         daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
         daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
         daughter.setProductionTime(trackTimeNS);
@@ -173,18 +173,14 @@ struct OnTheFlyDecayer {
   void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>>::iterator const& collision, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
     allParticles.clear();
+    if (collision.globalIndex() == 0) {
+      indexOffset = 0;
+    }
 
     // Reproduce collision table to have AOD origin
-    mCollisionId = collision.globalIndex();
-    tableMcCollisions(collision.bcId(),
-                      collision.generatorsID(),
-                      collision.posX(),
-                      collision.posY(),
-                      collision.posZ(),
-                      collision.t(),
-                      collision.weight(),
-                      collision.impactParameter(),
-                      collision.eventPlaneAngle());
+    tableMcCollisions(collision.bcId(), collision.generatorsID(),
+                      collision.posX(), collision.posY(), collision.posZ(), collision.t(),
+                      collision.weight(), collision.impactParameter(), collision.eventPlaneAngle());
 
     // First we copy the particles from the table into a vector that is extendable
     for (const auto& particle : mcParticles) {
@@ -195,7 +191,8 @@ struct OnTheFlyDecayer {
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    for (const auto& otfParticle : allParticles) {
+    for (auto& otfParticle : allParticles) {
+      otfParticle.setIndexOffset(indexOffset);
       if (otfParticle.hasNaN()) {
         histos.fill(HIST("hNaNBookkeeping"), 1);
       } else {
@@ -208,6 +205,11 @@ struct OnTheFlyDecayer {
                        otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
                        otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
     }
+
+    // Particles for later collisions in df's needs to have thier mother
+    // and daughter indices adjusted since their global index will be
+    // shifted due to the appending of decay products
+    indexOffset += allParticles.size();
   }
 };
 
