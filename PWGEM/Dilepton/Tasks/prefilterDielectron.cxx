@@ -394,8 +394,8 @@ struct prefilterDielectron {
         float dphi = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos.phi() + std::asin(pos.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele.phi() + std::asin(ele.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele.pt())), 0, 1U); // 0-2pi
+        float phiPosition1 = RecoDecay::constrainAngle(pos.phi() + std::asin(pos.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos.pt())), 0, 1U); // 0-2pi
+        float phiPosition2 = RecoDecay::constrainAngle(ele.phi() + std::asin(ele.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele.pt())), 0, 1U); // 0-2pi
         float dphiPosition = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
         dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 
@@ -439,8 +439,8 @@ struct prefilterDielectron {
         float dphi = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos1.phi() + std::asin(pos1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(pos2.phi() + std::asin(pos2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos2.pt())), 0, 1U); // 0-2pi
+        float phiPosition1 = RecoDecay::constrainAngle(pos1.phi() + std::asin(pos1.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos1.pt())), 0, 1U); // 0-2pi
+        float phiPosition2 = RecoDecay::constrainAngle(pos2.phi() + std::asin(pos2.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos2.pt())), 0, 1U); // 0-2pi
         float dphiPosition = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
         dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 
@@ -480,8 +480,8 @@ struct prefilterDielectron {
         float dphi = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(ele1.phi() + std::asin(ele1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele2.phi() + std::asin(ele2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele2.pt())), 0, 1U); // 0-2pi
+        float phiPosition1 = RecoDecay::constrainAngle(ele1.phi() + std::asin(ele1.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele1.pt())), 0, 1U); // 0-2pi
+        float phiPosition2 = RecoDecay::constrainAngle(ele2.phi() + std::asin(ele2.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele2.pt())), 0, 1U); // 0-2pi
         float dphiPosition = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
         dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 
@@ -542,8 +542,8 @@ struct prefilterDielectron {
         float dphi = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos.phi() + std::asin(pos.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele.phi() + std::asin(ele.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele.pt())), 0, 1U); // 0-2pi
+        float phiPosition1 = RecoDecay::constrainAngle(pos.phi() + std::asin(pos.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos.pt())), 0, 1U); // 0-2pi
+        float phiPosition2 = RecoDecay::constrainAngle(ele.phi() + std::asin(ele.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele.pt())), 0, 1U); // 0-2pi
         float dphiPosition = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
         dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 
@@ -569,8 +569,8 @@ struct prefilterDielectron {
         float dphi = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos1.phi() + std::asin(pos1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(pos2.phi() + std::asin(pos2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos2.pt())), 0, 1U); // 0-2pi
+        float phiPosition1 = RecoDecay::constrainAngle(pos1.phi() + std::asin(pos1.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos1.pt())), 0, 1U); // 0-2pi
+        float phiPosition2 = RecoDecay::constrainAngle(pos2.phi() + std::asin(pos2.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos2.pt())), 0, 1U); // 0-2pi
         float dphiPosition = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
         dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 
@@ -596,8 +596,8 @@ struct prefilterDielectron {
         float dphi = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(ele1.phi() + std::asin(ele1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele2.phi() + std::asin(ele2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele2.pt())), 0, 1U); // 0-2pi
+        float phiPosition1 = RecoDecay::constrainAngle(ele1.phi() + std::asin(ele1.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele1.pt())), 0, 1U); // 0-2pi
+        float phiPosition2 = RecoDecay::constrainAngle(ele2.phi() + std::asin(ele2.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele2.pt())), 0, 1U); // 0-2pi
         float dphiPosition = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
         dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 

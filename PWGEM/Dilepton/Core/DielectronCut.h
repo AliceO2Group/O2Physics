@@ -89,33 +89,33 @@ class DielectronCut : public TNamed
     kTPChadrejORTOFreqLowB = 7,
   };
 
-  template <typename T = int, typename TPair>
-  bool IsSelected(TPair const& pair) const
-  {
-    auto t1 = std::get<0>(pair);
-    auto t2 = std::get<1>(pair);
-    float bz = std::get<2>(pair);
+  // template <typename T = int, typename TPair>
+  // bool IsSelected(TPair const& pair) const
+  // {
+  //   auto t1 = std::get<0>(pair);
+  //   auto t2 = std::get<1>(pair);
+  //   float bz = std::get<2>(pair);
 
-    if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
-      return false;
-    }
+  //   if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
+  //     return false;
+  //   }
 
-    if (!IsSelectedPair(t1, t2, bz)) {
-      return false;
-    }
+  //   if (!IsSelectedPair(t1, t2, bz)) {
+  //     return false;
+  //   }
 
-    return true;
-  }
+  //   return true;
+  // }
 
   template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
-  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz, const float refR) const
+  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
     float dca_ee_3d = o2::aod::pwgem::dilepton::utils::pairutil::pairDCAQuadSum(o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(t1), o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(t2));
-    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), mBz);
     float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
     if (v12.M() < mMinMee || mMaxMee < v12.M()) {
@@ -154,20 +154,17 @@ class DielectronCut : public TNamed
 
     float deta = v1.Eta() - v2.Eta();
     float dphi = v1.Phi() - v2.Phi();
-    o2::math_utils::bringToPMPi(dphi);
+    dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
     if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
       return false;
     }
 
-    float phiPosition1 = t1.phi() + std::asin(t1.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t1.pt()));
-    float phiPosition2 = t2.phi() + std::asin(t2.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t2.pt()));
-
+    float phiPosition1 = t1.phi() + std::asin(t1.sign() * -0.30282 * (mBz * 0.1) * mRefR / (2.f * t1.pt()));
+    float phiPosition2 = t2.phi() + std::asin(t2.sign() * -0.30282 * (mBz * 0.1) * mRefR / (2.f * t2.pt()));
     phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1U); // 0-2pi
     phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1U); // 0-2pi
     float dphiPosition = phiPosition1 - phiPosition2;
     dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-    // o2::math_utils::bringToPMPi(dphiPosition);
-
     if (mApplydEtadPhiPosition && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphiPosition / mMinDeltaPhi, 2) < 1.f) {
       return false;
     }
