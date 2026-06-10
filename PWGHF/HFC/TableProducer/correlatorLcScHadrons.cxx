@@ -337,6 +337,8 @@ struct HfCorrelatorLcScHadrons {
   Produces<aod::PairedV0InvMass> entryPairedV0InvMass;
   Produces<aod::V0InvMass> entryV0InvMass;
 
+  Service<o2::framework::O2DatabasePDG> pdg{};
+
   struct : ConfigurableGroup {
     Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
     Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
@@ -387,27 +389,7 @@ struct HfCorrelatorLcScHadrons {
     Configurable<bool> calEffV0{"calEffV0", false, "calculate lambda0 efficiency"};
   } cfgV0;
 
-  SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg{};
-  int8_t chargeCand = 3;
-  int8_t signSoftPion = 0;
-  int leadingIndex = 0;
-  int poolBin = 0;
-  int poolBinLc = 0;
-  bool correlationStatus = false;
-  bool isPrompt = false;
-  bool isNonPrompt = false;
-  bool isSignal = false;
-  static constexpr int8_t ChargeScPlusPlus{2};
-  static constexpr int8_t ChargeZero{0};
-  static constexpr int8_t AssignedChargeSc0{1}; // to distinguish sc0 from anti-sc0, charge set to +1 and -1
-
-  TRandom3* rnd = new TRandom3(0);
-  // std::vector<float> outputMl = {-1., -1., -1.};
-  std::vector<float> outputMlPKPi = {-1., -1., -1.};
-  std::vector<float> outputMlPiKP = {-1., -1., -1.};
-
-  // Event Mixing for the Data Mode
+    // Event Mixing for the Data Mode
   // using SelCollisionsWithSc = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
   using SelCollisionsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>; // collisionFilter applied
@@ -427,6 +409,9 @@ struct HfCorrelatorLcScHadrons {
   // Tracks used in Data and MC
   using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;                           // trackFilter applied
   using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, o2::aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>; // trackFilter applied
+
+  template <class T>
+  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
 
   // Filters for ME
   Filter collisionFilter = aod::hf_selection_lc_collision::lcSel == true;
@@ -451,8 +436,25 @@ struct HfCorrelatorLcScHadrons {
   ConfigurableAxis binsNSigmas{"binsNSigmas", {4000, -500., 500.}, "n#sigma"};
 
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
-
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  SliceCache cache;
+  int8_t chargeCand = 3;
+  int8_t signSoftPion = 0;
+  int leadingIndex = 0;
+  int poolBin = 0;
+  int poolBinLc = 0;
+  bool correlationStatus = false;
+  bool isPrompt = false;
+  bool isNonPrompt = false;
+  bool isSignal = false;
+  static constexpr int8_t ChargeScPlusPlus{2};
+  static constexpr int8_t ChargeZero{0};
+  static constexpr int8_t AssignedChargeSc0{1}; // to distinguish sc0 from anti-sc0, charge set to +1 and -1
+  TRandom3 rnd{0};
+  std::vector<float> outputMlPKPi = {-1., -1., -1.};
+  std::vector<float> outputMlPiKP = {-1., -1., -1.};
+
   void init(InitContext&)
   {
     AxisSpec axisCandMass = {binsCandMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
@@ -580,9 +582,6 @@ struct HfCorrelatorLcScHadrons {
     return y;
   }
 
-  template <class T>
-  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
-
   template <typename Tracktype, typename V0Type>
   bool isSelectedV0Daughter(Tracktype const& track, V0Type v0, int pid)
   {
@@ -680,7 +679,7 @@ struct HfCorrelatorLcScHadrons {
     }
 
     if (cfgCharmCand.eventFractionToAnalyze > 0) {
-      if (rnd->Uniform(0, 1) > cfgCharmCand.eventFractionToAnalyze) {
+      if (rnd.Uniform(0, 1) > cfgCharmCand.eventFractionToAnalyze) {
         skipMixedEventTableFilling = true;
       }
     }
@@ -1162,7 +1161,7 @@ struct HfCorrelatorLcScHadrons {
     }
 
     if (cfgCharmCand.eventFractionToAnalyze > 0) {
-      if (rnd->Uniform(0, 1) > cfgCharmCand.eventFractionToAnalyze) {
+      if (rnd.Uniform(0, 1) > cfgCharmCand.eventFractionToAnalyze) {
         skipMixedEventTableFilling = true;
       }
     }
