@@ -337,6 +337,7 @@ struct HfCorrelatorLcScHadrons {
   Produces<aod::PairedV0InvMass> entryPairedV0InvMass;
   Produces<aod::V0InvMass> entryV0InvMass;
 
+  SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   struct : ConfigurableGroup {
@@ -389,7 +390,7 @@ struct HfCorrelatorLcScHadrons {
     Configurable<bool> calEffV0{"calEffV0", false, "calculate lambda0 efficiency"};
   } cfgV0;
 
-  // Event Mixing for the Data Mode
+    // Event Mixing for the Data Mode
   // using SelCollisionsWithSc = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
   using SelCollisionsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>; // collisionFilter applied
@@ -411,7 +412,7 @@ struct HfCorrelatorLcScHadrons {
   using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, o2::aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>; // trackFilter applied
 
   template <class T>
-  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
+  using HasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
 
   // Filters for ME
   Filter collisionFilter = aod::hf_selection_lc_collision::lcSel == true;
@@ -438,7 +439,6 @@ struct HfCorrelatorLcScHadrons {
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  SliceCache cache;
   int8_t chargeCand = 3;
   int8_t signSoftPion = 0;
   int leadingIndex = 0;
@@ -598,7 +598,7 @@ struct HfCorrelatorLcScHadrons {
         return false;
       }
       if (track.hasTOF()) {
-        if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
+        if constexpr (std::experimental::is_detected<HasStrangeTOFinV0, V0Type>::value) {
           // pid > 0: Proton from Lambda (LaPr)
           // pid < 0: Antiproton from Anti-Lambda (ALaPr)
           double strangeTOF = (pid > 0) ? v0.tofNSigmaLaPr() : v0.tofNSigmaALaPr();
@@ -625,7 +625,7 @@ struct HfCorrelatorLcScHadrons {
       }
 
       if (track.hasTOF()) {
-        if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
+        if constexpr (std::experimental::is_detected<HasStrangeTOFinV0, V0Type>::value) {
           // A pion can belong to either a Lambda/Anti-Lambda decay or a K0s decay.
           // We evaluate both applicable hypotheses based on charge sign and pick the best match.
           double tofLa = (pid > 0) ? v0.tofNSigmaALaPi() : v0.tofNSigmaLaPi();
@@ -1037,9 +1037,9 @@ struct HfCorrelatorLcScHadrons {
           }
 
           auto daughterParts = particle.daughters_as<aod::McParticles>();
-          const int8_t NdaughtersV0 = 2;
+          const int8_t nDaughtersV0 = 2;
 
-          if (daughterParts.size() != NdaughtersV0) {
+          if (daughterParts.size() != nDaughtersV0) {
             continue;
           }
 
