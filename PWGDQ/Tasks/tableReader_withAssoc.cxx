@@ -1849,7 +1849,7 @@ struct AnalysisSameEventPairing {
         reserveSize += nGood * (nGood - 1) / 2;
       }
     }
-    
+
     dielectronList.reserve(reserveSize);
     dimuonList.reserve(reserveSize);
     dielectronsExtraList.reserve(reserveSize);
@@ -1865,7 +1865,7 @@ struct AnalysisSameEventPairing {
       dileptonPolarList.reserve(reserveSize);
       dileptonEventInfoList.reserve(reserveSize);
     }
-    
+
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
@@ -2787,8 +2787,8 @@ struct AnalysisSameEventPairing {
   }
 
   void processBarrelOnlyWithQvectorCentrSkimmed(MyEventsQvectorCentrSelected const& events,
-                                                     soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
-                                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+                                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
