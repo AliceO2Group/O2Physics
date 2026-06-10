@@ -218,7 +218,8 @@ class VarManager : public TObject
     kCollisionRandom, // random number generated per collision (if required, can be used to perform random selections at the collision level)
     kIsPhysicsSelection,
     kIsTVXTriggered,             // Is trigger TVX
-    kIsNoTFBorder,               // No time frame border
+    kIsNoTFBorder,               // No time frame border (from event selection)
+    kIsNoTFBorderRecomputed,     // No time frame border, computed here
     kIsNoITSROFBorder,           // No ITS read out frame border (from event selection)
     kIsNoITSROFBorderRecomputed, // No ITS read out frame border, computed here
     kIsNoSameBunch,              // No collisions with same T0 BC
@@ -342,6 +343,8 @@ class VarManager : public TObject
     kMultMCNParticlesEta10,
     kMultMCNParticlesEta08,
     kMultMCNParticlesEta05,
+    kMCIsNoITSROFBorderRecomputed,
+    kMCIsNoTFBorderRecomputed,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -1513,6 +1516,14 @@ class VarManager : public TObject
     fgITSROFBorderMarginHigh = marginHigh;
   }
 
+  static void SetTFBorderselection(int64_t bcSOR, int64_t nBCsPerTF, int marginLow, int marginHigh)
+  {
+    fgBCSOR = bcSOR;
+    fgNBCsPerTF = nBCsPerTF;
+    fgTFBorderMarginLow = marginLow;
+    fgTFBorderMarginHigh = marginHigh;
+  }
+
   static void SetSORandEOR(uint64_t sor, uint64_t eor)
   {
     fgSOR = sor;
@@ -1542,6 +1553,10 @@ class VarManager : public TObject
   static int fgITSROFlength;                // ITS ROF length (from ALPIDE parameters)
   static int fgITSROFBorderMarginLow;       // ITS ROF border low margin
   static int fgITSROFBorderMarginHigh;      // ITS ROF border high margin
+  static int64_t fgBCSOR;                   // BC for start of run
+  static int64_t fgNBCsPerTF;               // duration of TF in bcs, should be 128*3564 or 32*3564
+  static int fgTFBorderMarginLow;           // TF border low margin
+  static int fgTFBorderMarginHigh;          // TF border high margin
   static uint64_t fgSOR;                    // Timestamp for start of run
   static uint64_t fgEOR;                    // Timestamp for end of run
   static ROOT::Math::PxPyPzEVector fgBeamA; // beam from A-side 4-momentum vector
@@ -2125,7 +2140,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCentVZERO] = event.centRun2V0M();
     values[kCentFT0C] = event.centFT0C();
     if (fgUsedVars[kIsNoITSROFBorderRecomputed]) {
-      uint16_t bcInITSROF = (event.globalBC() + 3564 - fgITSROFbias) % fgITSROFlength;
+      uint16_t bcInITSROF = (event.globalBC() + o2::constants::lhc::LHCMaxBunches - fgITSROFbias) % fgITSROFlength;
       values[kIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
     }
     if (fgUsedVars[kIsNoITSROFBorder]) {
@@ -2133,6 +2148,10 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsTVXTriggered]) {
       values[kIsTVXTriggered] = (event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
+    }
+    if (fgUsedVars[kIsNoTFBorderRecomputed]) {
+      int64_t bcInTF = (event.globalBC() - fgBCSOR) % fgNBCsPerTF;
+      values[kIsNoTFBorderRecomputed] = bcInTF > fgTFBorderMarginLow && bcInTF < fgNBCsPerTF - fgTFBorderMarginHigh ? 1.0 : 0.0;
     }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
@@ -2393,6 +2412,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
     values[kMultMCNParticlesEta08] = event.multMCNParticlesEta08();
     values[kMultMCNParticlesEta10] = event.multMCNParticlesEta10();
+    uint16_t bcInITSROF = (event.globalBC() + o2::constants::lhc::LHCMaxBunches - fgITSROFbias) % fgITSROFlength;
+    values[kMCIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
+    int64_t bcInTF = (event.globalBC() - fgBCSOR) % fgNBCsPerTF;
+    values[kMCIsNoTFBorderRecomputed] = bcInTF > fgTFBorderMarginLow && bcInTF < fgNBCsPerTF - fgTFBorderMarginHigh ? 1.0 : 0.0;
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
