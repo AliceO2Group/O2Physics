@@ -227,6 +227,7 @@ DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! A
 DECLARE_SOA_COLUMN(MCandHadron, mCandHadron, float);                       //! Invariant mass of Lc/Sc+Hadron combined system
 DECLARE_SOA_COLUMN(PtCombined, ptCombined, float);                         //! Transverse momentum of combined Lc+Hadron system
 DECLARE_SOA_COLUMN(MV0, mV0, float);                                       //! Invariant mass of V0
+DECLARE_SOA_COLUMN(MRefV0, mRefV0, float);                                       //! Invariant mass of reflected V0
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
@@ -259,9 +260,9 @@ DECLARE_SOA_TABLE(CandHadronInvMass, "AOD", "CANDHIMASS", //! Lc-Hadron mass
                   aod::hf_correlation_lc_hadron::MCandHadron,
                   aod::hf_correlation_lc_hadron::PtCombined);
 DECLARE_SOA_TABLE(PairedV0InvMass, "AOD", "PAIRV0IMASS", //! invarient mass of v0 which paired with  charm candidates
-                  aod::hf_correlation_lc_hadron::MV0);
+                  aod::hf_correlation_lc_hadron::MV0, aod::hf_correlation_lc_hadron::MRefV0);
 DECLARE_SOA_TABLE(V0InvMass, "AOD", "V0IMASS", //! invarient mass of v0
-                  aod::hf_correlation_lc_hadron::MV0);
+                  aod::hf_correlation_lc_hadron::MV0, aod::hf_correlation_lc_hadron::MRefV0);
 
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,
