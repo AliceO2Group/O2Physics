@@ -153,10 +153,10 @@ DECLARE_SOA_COLUMN(M11REF, m11ref, float);                 //!  Weighted multipl
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float);             //!  Weighted multiplicity of <<4>> for reference flow
 DECLARE_SOA_COLUMN(M11REFetagap, m11refetagap, float);     //!  Weighted multiplicity of <<2>>  etagap for reference flow
 
-DECLARE_SOA_COLUMN(Psi2Random, psi2random, float);         //!  Event plane angle from random subevent
-DECLARE_SOA_COLUMN(Psi2A, psi2a, float);                   //!  Event plane angle from Q-vector A
-DECLARE_SOA_COLUMN(Psi2B, psi2b, float);                   //!  Event plane angle from Q-vector B
-DECLARE_SOA_COLUMN(Psi2C, psi2c, float);                   //!  Event plane angle from Q-vector C
+DECLARE_SOA_COLUMN(Psi2Random, psi2random, float); //!  Event plane angle from random subevent
+DECLARE_SOA_COLUMN(Psi2A, psi2a, float);           //!  Event plane angle from Q-vector A
+DECLARE_SOA_COLUMN(Psi2B, psi2b, float);           //!  Event plane angle from Q-vector B
+DECLARE_SOA_COLUMN(Psi2C, psi2c, float);           //!  Event plane angle from Q-vector C
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table

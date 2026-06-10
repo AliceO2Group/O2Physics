@@ -1690,7 +1690,7 @@ struct AnalysisSameEventPairing {
         }
         reserveSize += nGood * (nGood - 1) / 2;
       }
-    } 
+    }
 
     dielectronList.reserve(reserveSize);
     dielectronsExtraList.reserve(reserveSize);
