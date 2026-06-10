@@ -87,8 +87,8 @@ class svPoolCreator
     }
   }
 
-  template <typename T, typename C, typename BC>
-  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, BC const&)
+  template <typename T, typename C, typename AT, typename BC>
+  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, const AT& ambiTracks, BC const&)
   {
     if (pdgHypo != track0Pdg && pdgHypo != track1Pdg) {
       LOGP(debug, "Wrong pdg hypothesis");
@@ -106,11 +106,11 @@ class svPoolCreator
         if (ambTrack.trackId() != trackCand.globalIndex()) {
           continue;
         }
-        if (!ambTrack.has_bc() || ambTrack.bc_as<BC>().size() == 0) {
+        if (!ambTrack.has_bc() || ambTrack.template bc_as<BC>().size() == 0) {
           globalBC = BcInvalid;
           break;
         }
-        globalBC = ambTrack.bc_as<BC>().begin().globalBC();
+        globalBC = ambTrack.template bc_as<BC>().begin().globalBC();
         break;
       }
     } else {
@@ -170,7 +170,6 @@ class svPoolCreator
       } else if (TESTBIT(trackCand.flags(), o2::aod::track::TrackTimeResIsRange)) {
         thresholdTime = std::sqrt(sigmaTimeRes2);
         thresholdTime += timeMarginNS;
-
       } else {
         thresholdTime = 4. * std::sqrt(sigmaTimeRes2);
         thresholdTime += timeMarginNS;
@@ -197,6 +196,7 @@ class svPoolCreator
 
     // is Sorting Needed ? TBD
   }
+
   template <typename C>
   std::vector<SVCand>& getSVCandPool(const C& collisions, bool combineLikeSign = false)
   {
@@ -208,37 +208,34 @@ class svPoolCreator
       mVtxTrack0[i].clear();
       mVtxTrack0[i].resize(collisions.size(), -1);
     }
-
-    for (int pn = 0; pn < 2; pn++) {
-      auto& vtxFirstT = mVtxTrack0[pn];
-      const auto& signTrack0Pool = track0Pool[pn];
+    for (int iCharge = 0; iCharge < 2; iCharge++) {
+      auto& vtxFirstT = mVtxTrack0[iCharge];
+      const auto& signTrack0Pool = track0Pool[iCharge];
       for (unsigned i = 0; i < signTrack0Pool.size(); i++) {
         const auto& track0Seed = signTrack0Pool[i];
-        LOG(debug) << "Processsing track0 with index: " << track0Seed.Idxtr << " min bracket: " << track0Seed.collBracket.getMin() << " max bracket: " << track0Seed.collBracket.getMax();
         for (int j{track0Seed.collBracket.getMin()}; j <= track0Seed.collBracket.getMax(); ++j) {
           if (vtxFirstT[j] == -1) {
             vtxFirstT[j] = i;
           }
         }
       }
-      int track1sign = combineLikeSign ? pn : 1 - pn;
+      int track1sign = combineLikeSign ? iCharge : 1 - iCharge;
       auto& signTrack1 = track1Pool[track1sign];
-      for (unsigned itp = 0; itp < signTrack1.size(); itp++) {
-        auto& track1Seed = signTrack1[itp];
-        LOG(debug) << "Processing track1 with index: " << track1Seed.Idxtr << " min bracket: " << track1Seed.collBracket.getMin() << " max bracket: " << track1Seed.collBracket.getMax();
-        int firsOverlapIdx = -1;
+      for (unsigned iTrack1 = 0; iTrack1 < signTrack1.size(); iTrack1++) {
+        auto& track1Seed = signTrack1[iTrack1];
+        int firstOverlapIdx = -1;
         for (int j{track1Seed.collBracket.getMin()}; j <= track1Seed.collBracket.getMax(); ++j) {
           LOG(debug) << "Checking vtxFirstT at position " << j << " with value " << vtxFirstT[j];
           if (vtxFirstT[j] != -1) {
-            firsOverlapIdx = vtxFirstT[j];
+            firstOverlapIdx = vtxFirstT[j];
             break;
           }
         }
-        if (firsOverlapIdx < 0) {
+        if (firstOverlapIdx < 0) {
           continue;
         }
-        for (unsigned itn = firsOverlapIdx; itn < signTrack0Pool.size(); itn++) {
-          auto& track0Seed = signTrack0Pool[itn];
+        for (unsigned iTrack0 = firstOverlapIdx; iTrack0 < signTrack0Pool.size(); iTrack0++) {
+          auto& track0Seed = signTrack0Pool[iTrack0];
 
           if (track0Seed.collBracket.getMin() > track1Seed.collBracket.getMax()) {
             break;

@@ -223,7 +223,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtraNoQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
+using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
 using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
@@ -240,9 +240,9 @@ using MyEventsVtxCovZdcFitSelected = soa::Join<aod::ReducedEvents, aod::ReducedE
 using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
-using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
+using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
@@ -1313,11 +1313,18 @@ struct AnalysisSameEventPairing {
   } fConfigCuts;
 
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
+  Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
+  Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
+  Configurable<bool> fConfigRunMixingAcrossTFs{"cfgRunMixingAcrossTFs", false, "If true, run event mixing using the MixingHandler which accumulates events across multiple TFs"};
   // Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
   Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
+
+  // option for TR pair fill
+  Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
+  Configurable<int> fConfigNRotations{"cfgNRotations", 20, "Number of rotations for track rotation method"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -1360,6 +1367,7 @@ struct AnalysisSameEventPairing {
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
 
   HistogramManager* fHistMan;
+  MixingHandler fMixingHandler;
 
   o2::analysis::DQMlResponse<float> fDQMlResponse;
   std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
@@ -1397,6 +1405,7 @@ struct AnalysisSameEventPairing {
   {
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
+    fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmedFlow");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
@@ -1510,6 +1519,7 @@ struct AnalysisSameEventPairing {
 
           if (fEnableBarrelHistos) {
             names = {
+              // change define histname
               Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
@@ -1518,11 +1528,16 @@ struct AnalysisSameEventPairing {
             names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
             names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
             histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+            if (fConfigTRPairs) {
+              names.push_back(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;", names[6].Data(), names[7].Data());
+            }
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
+              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 8 : 6)].Data(), names[(fConfigTRPairs ? 9 : 7)].Data(), names[(fConfigTRPairs ? 10 : 8)].Data());
             }
             fTrackHistNames[icut] = names;
 
@@ -1625,6 +1640,25 @@ struct AnalysisSameEventPairing {
           }
         }
       }
+    }
+
+    if (fConfigRunMixingAcrossTFs) {
+      TString mixVarsString = fConfigMixingVariables.value;
+      TString mixVarsJsonString = fConfigMixingVariablesJson.value;
+      std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
+      if (objArray->GetEntries() > 0 || mixVarsJsonString != "") {
+        // fMixingHandler = new MixingHandler("mixingHandler", "mixing handler");
+        if (objArray->GetEntries() > 0) {
+          for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+            dqmixing::SetUpMixing(&fMixingHandler, objArray->At(iVar)->GetName());
+          }
+        }
+      }
+      if (mixVarsJsonString != "") {
+        dqmixing::SetUpMixingFromJSON(&fMixingHandler, mixVarsJsonString.Data());
+      }
+      fMixingHandler.SetPoolDepth(fConfigMixingDepth);
+      fMixingHandler.Init();
     }
 
     fCurrentRun = 0;
@@ -2184,10 +2218,164 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
+
+        // edit
+        // rotation 20 times
+        if (fConfigTRPairs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
+
+            if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
+              continue;
+            }
+
+            auto t1 = a1.template reducedtrack_as<TTracks>();
+            auto t2 = a2.template reducedtrack_as<TTracks>();
+            sign1 = t1.sign();
+            sign2 = t2.sign();
+            if (t1.barrelAmbiguityInBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 28);
+            }
+            if (t2.barrelAmbiguityInBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 29);
+            }
+            if (t1.barrelAmbiguityOutOfBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 30);
+            }
+            if (t2.barrelAmbiguityOutOfBunch() > 1) {
+              twoTrackFilter |= (static_cast<uint32_t>(1) << 31);
+            }
+
+            for (int icut = 0; icut < ncuts; icut++) {
+              if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+                isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+                isUnambiguous = !(isAmbiInBunch || isAmbiOutOfBunch);
+                isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
+                isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  if (isLeg1Ambi && isLeg2Ambi) {
+                    std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
+                    if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
+                      if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
+                        isAmbiExtra = true;
+                      } else {
+                        fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
+                      }
+                    } else {
+                      fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
+                    }
+                  }
+                }
+                if (sign1 * sign2 < 0) {
+                  for (int i = 0; i < fConfigNRotations.value; i++) {
+                    VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2);
+                    if constexpr (TPairType == VarManager::kDecayToEE) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                      if (isAmbiExtra) {
+                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        // end
       } // end loop over pairs of track associations
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
       if (fEnableBarrelHistos && fConfigQA) {
         fHistMan->FillHistClass("PairingSEQA", VarManager::fgValues);
+      }
+
+      if (fConfigRunMixingAcrossTFs) {
+        // run event mixing across TFs
+        // 1) create a MixingEvent and fill it with the relevant tracks
+        MixingHandler::MixingEvent mixingEvent;
+        uint32_t trackFilterForMixing = 0;
+        for (auto& assoc : groupedAssocs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            trackFilterForMixing = assoc.isBarrelSelected_raw() & assoc.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
+            if (!trackFilterForMixing) {
+              continue;
+            }
+            auto t1 = assoc.template reducedtrack_as<TTracks>();
+            MixingHandler::MixingTrack mixingTrack(t1.pt(), t1.eta(), t1.phi(), trackFilterForMixing);
+            if (t1.sign() > 0) {
+              mixingEvent.AddTrack1(mixingTrack);
+            } else {
+              mixingEvent.AddTrack2(mixingTrack);
+            }
+          }
+        }
+        // 2) run the mixing with the events in the pool corresponding to this event
+        auto& pool = fMixingHandler.GetPool(fMixingHandler.FindEventCategory(VarManager::fgValues));
+        for (auto& poolEvent : pool.GetEvents()) {
+          for (auto& t1 : mixingEvent.tracks1) {
+            // run +- pairing
+            for (auto& t2 : poolEvent.tracks2) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+            // run ++ pairing
+            for (auto& t2 : poolEvent.tracks1) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+          for (auto& t1 : mixingEvent.tracks2) {
+            // run -+ pairing
+            for (auto& t2 : poolEvent.tracks1) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+            // run -- pairing
+            for (auto& t2 : poolEvent.tracks2) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+        }
+        // 3) add the current event to the pool
+        pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth());
+        // pool.Print();
       }
     } // end loop over events
   }

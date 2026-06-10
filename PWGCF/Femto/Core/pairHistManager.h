@@ -351,6 +351,9 @@ constexpr char PrefixV0V0Me[] = "V0V0/ME/";
 constexpr char PrefixTrackResonanceSe[] = "TrackResonance/SE/";
 constexpr char PrefixTrackResonanceMe[] = "TrackResonance/ME/";
 
+constexpr char PrefixV0ResonanceSe[] = "V0Resonance/SE/";
+constexpr char PrefixV0ResonanceMe[] = "V0Resonance/ME/";
+
 constexpr char PrefixTrackCascadeSe[] = "TrackCascade/SE/";
 constexpr char PrefixTrackCascadeMe[] = "TrackCascade/ME/";
 

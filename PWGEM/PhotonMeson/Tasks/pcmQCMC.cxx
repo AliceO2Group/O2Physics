@@ -774,6 +774,9 @@ struct PCMQCMC {
           if (cfgResolDetailPlots) {
             fRegistry.fill(HIST("Generated/hPtEtaPhi"), mctrack.pt(), mctrack.eta(), mctrack.phi()); // fill for all generated photons before any kinematic cut
           }
+          if (mctrack.daughtersIds().size() == 0) {
+            continue;
+          }
           auto daughter = mcparticles.iteratorAt(mctrack.daughtersIds()[0]); // choose ele or pos.
           float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2));
           float phi_cp = std::atan2(daughter.vy(), daughter.vx());
