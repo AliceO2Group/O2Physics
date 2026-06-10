@@ -3809,7 +3809,7 @@ struct HfTaskFlow {
                         aod::McParticles const& mcParticles,
                         SmallGroupMcCollisions const& collisions)
   {
-    if (!(abs(mcCollision.posZ()) <= configCollision.zVertexMax)) {
+    if (!(nabs(mcCollision.posZ()) <= configCollision.zVertexMax)) {
       return;
     }
 
