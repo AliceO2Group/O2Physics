@@ -2005,22 +2005,24 @@ struct AnalysisSameEventPairing {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     bool isCorrectAssoc_leg1 = false;
     bool isCorrectAssoc_leg2 = false;
-    dielectronList.reserve(1);
-    dimuonList.reserve(1);
-    dielectronsExtraList.reserve(1);
-    dimuonsExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dileptonInfoList.reserve(1);
+
+    auto nAssocs = assocs.size();
+    dielectronList.reserve(nAssocs);
+    dimuonList.reserve(nAssocs);
+    dielectronsExtraList.reserve(nAssocs);
+    dimuonsExtraList.reserve(nAssocs);
+    dielectronInfoList.reserve(nAssocs);
+    dileptonInfoList.reserve(nAssocs);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
-      dimuonAllList.reserve(1);
+      dielectronAllList.reserve(nAssocs);
+      dimuonAllList.reserve(nAssocs);
     }
     if (useMiniTree.fConfigMiniTree) {
-      dileptonMiniTreeGen.reserve(1);
-      dileptonMiniTreeRec.reserve(1);
+      dileptonMiniTreeGen.reserve(nAssocs);
+      dileptonMiniTreeRec.reserve(nAssocs);
     }
     if (fConfigOptions.polarTables.value) {
-      dileptonPolarList.reserve(1);
+      dileptonPolarList.reserve(nAssocs);
     }
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
@@ -3567,7 +3569,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
+  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
   {
     fPairCount.clear();
 
@@ -3581,8 +3583,10 @@ struct AnalysisAsymmetricPairing {
     int sign1 = 0;
     int sign2 = 0;
     uint32_t mcDecision = 0;
-    ditrackList.reserve(1);
-    ditrackExtraList.reserve(1);
+
+    auto nAssocs = assocs.size();
+    ditrackList.reserve(nAssocs);
+    ditrackExtraList.reserve(nAssocs);
 
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 
