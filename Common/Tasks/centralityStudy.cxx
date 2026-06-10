@@ -955,7 +955,7 @@ struct centralityStudy {
 
     if constexpr (requires { collision.has_multBC(); }) {
       if (collision.has_multBC()) {
-        auto multbc = collision.template multBC_as<aod::MultBCs>();
+        auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
         const uint64_t bcTimestamp = multbc.timestamp();
         const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
