@@ -450,7 +450,7 @@ struct CentralityQa {
       histos.fill(HIST("hBCSelection"), 3); // FV0OrA
     }
 
-    const float largeVertexZ = 100.0f; 
+    const float largeVertexZ = 100.0f;
     if (bcsel.selectVertexZwithT0 && bcsel.vertexZwithT0 < largeVertexZ) {
       if (bc.has_ft0()) {
         const auto& ft0 = bc.ft0();
