@@ -21,9 +21,9 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
@@ -111,9 +111,9 @@ struct RecoilJets {
 
     Configurable<float> vertexZCut{"vertexZCut", 10., "Accepted z-vertex range"};
     Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false,
-                       "Flag to choose to reject min. bias gap events; jet-level rejection "
-                       "applied at the jet finder level, here rejection is applied for "
-                       "collision and track process functions"};
+                                       "Flag to choose to reject min. bias gap events; jet-level rejection "
+                                       "applied at the jet finder level, here rejection is applied for "
+                                       "collision and track process functions"};
   } ev;
 
   // ---------- RCT / flag-based selections ----------
@@ -473,11 +473,10 @@ struct RecoilJets {
                     Form("Events w. TT_{Sig}: %s & #rho", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, rho}, hist.sumw2);
 
-
         // Recoil jets vs centrality
         auto tmpHistPointer = spectra.add<TH2>(Form("h%s_Ntrig", centAxis.label),
-                                        Form("%s vs Total number of selected triggers per class", centAxis.label),
-                                        kTH2F, {{centAxis.axis, centAxis.axisName}, {2, 0.0, 2.}});
+                                               Form("%s vs Total number of selected triggers per class", centAxis.label),
+                                               kTH2F, {{centAxis.axis, centAxis.axisName}, {2, 0.0, 2.}});
         tmpHistPointer->GetYaxis()->SetBinLabel(1, "TT_{Ref}");
         tmpHistPointer->GetYaxis()->SetBinLabel(2, "TT_{Sig}");
 
@@ -607,8 +606,8 @@ struct RecoilJets {
       // Centrality dependence
       uint8_t iCent = 0;
       for (const auto& centAxis : arrConfigurableAxisCentrality) {
-        
-        if (iCent == 3){ // case of "CentFT0CVar1"
+
+        if (iCent == 3) { // case of "CentFT0CVar1"
           ++iCent;
           continue;
         }
@@ -636,7 +635,6 @@ struct RecoilJets {
                     "Charact. of MC generated particles",
                     kTHnSparseF, {{centAxis.axis, centAxis.axisName}, pT, pseudorap, phiAngle}, hist.sumw2);
 
-
         // Rho vs centrality
         spectra.add(Form("h%s_Rho_Part", centAxis.label),
                     Form("MC events %s & #rho", centAxis.label),
@@ -650,11 +648,10 @@ struct RecoilJets {
                     Form("MC events w. TT_{Sig}: %s & #rho", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, rho}, hist.sumw2);
 
-
         // Recoil jets vs centrality
         auto tmpHistPointer = spectra.add<TH2>(Form("h%s_Ntrig_Part", centAxis.label),
-                                        Form("%s vs Total number of selected MC triggers per class", centAxis.label),
-                                        kTH2F, {{centAxis.axis, centAxis.axisName}, {2, 0.0, 2.}});
+                                               Form("%s vs Total number of selected MC triggers per class", centAxis.label),
+                                               kTH2F, {{centAxis.axis, centAxis.axisName}, {2, 0.0, 2.}});
         tmpHistPointer->GetYaxis()->SetBinLabel(1, "TT_{Ref}");
         tmpHistPointer->GetYaxis()->SetBinLabel(2, "TT_{Sig}");
 
@@ -673,7 +670,7 @@ struct RecoilJets {
         spectra.add(Form("h%s_Recoil_JetPt_Corr_TTSig_Part", centAxis.label),
                     Form("MC events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
-          
+
         ++iCent;
       }
     }
@@ -752,12 +749,12 @@ struct RecoilJets {
       // Centrality-differential corrected spectra and response QA
       uint8_t iCent = 0;
       for (const auto& centAxis : arrConfigurableAxisCentrality) {
-        
+
         if (iCent == 0 || iCent == 3) { // case of "CentFT0A" & "CentFT0CVar1"
           ++iCent;
           continue;
         }
-        
+
         spectra.add(Form("h%s_ResponseMatrixInclusiveJetsPtCorr", centAxis.label),
                     Form("%s: correlation inclusive #it{p}_{T, det.}^{corr.} vs. #it{p}_{T, part}^{corr.}", centAxis.label),
                     kTH3F, {{centAxis.axis, centAxis.axisName}, detJetPtCorr, partJetPtCorr}, hist.sumw2);
@@ -1186,17 +1183,14 @@ struct RecoilJets {
     }
 
     // Tracking efficiency as a function of EA / Centrality
-    if(doprocessTrackingEfficiency || doprocessTrackingEfficiencyWeighted)
-    {
-      for (const auto& eaAxis : arrConfigurableAxisEA)
-      {
+    if (doprocessTrackingEfficiency || doprocessTrackingEfficiencyWeighted) {
+      for (const auto& eaAxis : arrConfigurableAxisEA) {
         // ------------------------------------------------------------------
         // Denominator: all generated particles passing phase-space cuts
         // ------------------------------------------------------------------
         spectra.add(Form("hScaledMult%s_AllGeneratedParticlesPt", eaAxis.label),
                     Form("Generated & selected particles; %s ; #it{p}_{T}^{part} (GeV/#it{c})", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{part}"}}, hist.sumw2);
-
 
         // ------------------------------------------------------------------
         // Track has an associated MC particle,
@@ -1207,7 +1201,6 @@ struct RecoilJets {
                     Form("Track eff.; %s; #it{p}_{T}^{rec}; #it{p}_{T}^{part}", eaAxis.label),
                     kTH3F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec}"}, {hist.axisPtTrackEff, "#it{p}_{T}^{part}"}}, hist.sumw2);
 
-
         // ------------------------------------------------------------------
         // Fake reconstructed tracks
 
@@ -1216,12 +1209,10 @@ struct RecoilJets {
                     Form("Tracks without associated MC particle; %s; #it{p}_{T}^{rec} (GeV/#it{c})", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec}"}}, hist.sumw2);
 
-
         // Case 2: MC particle exists, but belongs to another MC collision
         spectra.add(Form("hScaledMult%s_MismatchedMcCollisionTracks", eaAxis.label),
                     Form("Tracks matched to particle from different MC collision; %s; #it{p}_{T}^{rec} (GeV/#it{c})", eaAxis.label),
                     kTH2F, {{eaAxis.axis, eaAxis.axisName}, {hist.axisPtTrackEff, "#it{p}_{T}^{rec}"}}, hist.sumw2);
-
 
         // Case 3: same MC collision, but particle fails phase-space cuts
         spectra.add(Form("hScaledMult%s_MatchedToRejectedTracks", eaAxis.label),
@@ -1275,7 +1266,6 @@ struct RecoilJets {
     spectra.fill(HIST("hCentFT0M"), centFT0M, weight);
     spectra.fill(HIST("hCentFT0CVar1"), centFT0CVar1, weight);
 
-
     // Z vertex position vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_vertexZ"), scaledFT0C, vertexZ, weight);
     spectra.fill(HIST("hScaledFT0M_vertexZ"), scaledFT0M, vertexZ, weight);
@@ -1284,7 +1274,6 @@ struct RecoilJets {
     spectra.fill(HIST("hCentFT0C_vertexZ"), centFT0C, vertexZ, weight);
     spectra.fill(HIST("hCentFT0M_vertexZ"), centFT0M, vertexZ, weight);
     spectra.fill(HIST("hCentFT0CVar1_vertexZ"), centFT0CVar1, vertexZ, weight);
-
 
     // Rho vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_Rho"), scaledFT0C, rho, weight);
@@ -1499,7 +1488,7 @@ struct RecoilJets {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
-    int nTT = 0;    
+    int nTT = 0;
     const float addCountToTTRef = 0.5;
     const float addCountToTTSig = 1.5;
 
@@ -1522,12 +1511,10 @@ struct RecoilJets {
     spectra.fill(HIST("hScaledFT0C_Part"), scaledFT0C, weight);
     spectra.fill(HIST("hScaledFT0M_Part"), scaledFT0M, weight);
 
-
     // Centrality distribution
     spectra.fill(HIST("hCentFT0A_Part"), centFT0A, weight);
     spectra.fill(HIST("hCentFT0C_Part"), centFT0C, weight);
     spectra.fill(HIST("hCentFT0M_Part"), centFT0M, weight);
-
 
     // Z vertex position vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_vertexZ_Part"), scaledFT0C, vertexZ, weight);
@@ -1536,7 +1523,6 @@ struct RecoilJets {
     spectra.fill(HIST("hCentFT0A_vertexZ_Part"), centFT0A, vertexZ, weight);
     spectra.fill(HIST("hCentFT0C_vertexZ_Part"), centFT0C, vertexZ, weight);
     spectra.fill(HIST("hCentFT0M_vertexZ_Part"), centFT0M, vertexZ, weight);
-
 
     // Rho vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_Rho_Part"), scaledFT0C, rho, weight);
@@ -1729,7 +1715,7 @@ struct RecoilJets {
                                 JTracks const& tracks,
                                 const float partLevelCollRho,
                                 float weight = 1.)
-  { 
+  {
 
     //====================================================================================
     // Event properties
@@ -1866,7 +1852,7 @@ struct RecoilJets {
     }
 
     //====================================================================================
-    // Detector-level jets    
+    // Detector-level jets
     for (const auto& jetDet : jetsDet) {
       if (isJetWithHighPtConstituent<JTracks>(jetDet)) {
         continue;
@@ -1877,7 +1863,7 @@ struct RecoilJets {
 
       const bool bIsJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(jetDet, phiTTSig));
 
-      //==================================================================================    
+      //==================================================================================
       // All detector-level inclusive jets
       spectra.fill(HIST("hDetLevelInclusiveJetsPt"), detJetPt, weight);
       spectra.fill(HIST("hScaledFT0C_DetLevelInclusiveJetsPtCorr"), scaledFT0C, detJetPtCorr, weight);
@@ -2914,43 +2900,36 @@ struct RecoilJets {
     const auto mcCollisionId = collision.mcCollisionId();
 
     // Numerator candidates: reconstructed tracks in this detector collision
-    for(const auto& trackPerColl : tracks)
-    {
+    for (const auto& trackPerColl : tracks) {
       if (skipTrack(trackPerColl))
         continue;
 
       auto trackPt = trackPerColl.pt();
 
       // Case 1: no associated MC particle
-      if(!trackPerColl.has_mcParticle())
-      { 
+      if (!trackPerColl.has_mcParticle()) {
         spectra.fill(HIST("hScaledMultFT0C_NoMcParticle"), scaledFT0C, trackPt, weight);
         spectra.fill(HIST("hScaledMultFT0M_NoMcParticle"), scaledFT0M, trackPt, weight);
         continue;
       }
 
-
       // Case 2: MC particle exists, but belongs to another MC collision
       auto particle = trackPerColl.mcParticle();
-      if(particle.mcCollisionId() != mcCollisionId)
-      {
+      if (particle.mcCollisionId() != mcCollisionId) {
         spectra.fill(HIST("hScaledMultFT0C_MismatchedMcCollisionTracks"), scaledFT0C, trackPt, weight);
         spectra.fill(HIST("hScaledMultFT0M_MismatchedMcCollisionTracks"), scaledFT0M, trackPt, weight);
         continue;
       }
 
-      
       // Case 3: same MC collision, but particle fails phase-space cuts
       float particleEta = particle.eta();
       bool bKeepParticle = std::fabs(particleEta) < trk.etaCut && !skipParticle(particle);
 
-      if(!bKeepParticle)
-      {
+      if (!bKeepParticle) {
         spectra.fill(HIST("hScaledMultFT0C_MatchedToRejectedTracks"), scaledFT0C, trackPt, weight);
         spectra.fill(HIST("hScaledMultFT0M_MatchedToRejectedTracks"), scaledFT0M, trackPt, weight);
         continue;
       }
-
 
       // Track has an associated MC particle,
       // the particle belongs to the same MC collision,
@@ -2959,20 +2938,18 @@ struct RecoilJets {
       spectra.fill(HIST("hScaledMultFT0C_ResponseMatrixTrackEff"), scaledFT0C, trackPt, particlePt, weight);
       spectra.fill(HIST("hScaledMultFT0M_ResponseMatrixTrackEff"), scaledFT0M, trackPt, particlePt, weight);
     }
-     
 
     // Denominator: generated selected particles from the same MC collision
     auto particlesInMcCollision = particles.sliceBy(particlesByMcCollision, mcCollisionId);
 
-    for(const auto& particleInMcCollision : particlesInMcCollision)
-    {
+    for (const auto& particleInMcCollision : particlesInMcCollision) {
       float particleEta = particleInMcCollision.eta();
       float particlePt = particleInMcCollision.pt();
       bool bKeepParticle = std::fabs(particleEta) < trk.etaCut && !skipParticle(particleInMcCollision);
 
-      if(!bKeepParticle)
+      if (!bKeepParticle)
         continue;
-      
+
       spectra.fill(HIST("hScaledMultFT0C_AllGeneratedParticlesPt"), scaledFT0C, particlePt, weight);
       spectra.fill(HIST("hScaledMultFT0M_AllGeneratedParticlesPt"), scaledFT0M, particlePt, weight);
     }
@@ -3124,7 +3101,7 @@ struct RecoilJets {
       return;
 
     const auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
-    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
       return;
 
     const auto partLevelCollRho = mcColl.rho();
@@ -3149,7 +3126,7 @@ struct RecoilJets {
       return;
 
     const auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
-    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
       return;
 
     const auto partLevelCollRho = mcColl.rho();
@@ -3175,7 +3152,7 @@ struct RecoilJets {
       return;
 
     auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
-    if(std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
       return;
 
     auto partLevelCollRho = mcColl.rho();
@@ -3369,7 +3346,7 @@ struct RecoilJets {
     // Skip detector level collision
     if (skipEvent(collision) || !collision.has_mcCollision())
       return;
-    
+
     fillTrackRecoEff<aod::JetMcCollisions>(collision, tracksPerColl, particles);
   }
   PROCESS_SWITCH(RecoilJets, processTrackingEfficiency, "process MC data (no weight; MB events) to estimate track reco eff", false);
