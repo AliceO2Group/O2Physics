@@ -366,6 +366,8 @@ struct HfCorrelatorXicHadrons {
   Produces<aod::PairedV0InvMass> entryPairedV0InvMass;
   Produces<aod::V0InvMass> entryV0InvMass;
 
+  Service<o2::framework::O2DatabasePDG> pdg{};
+
   struct : ConfigurableGroup {
     Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection flag for Xic"};
     Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
@@ -418,22 +420,9 @@ struct HfCorrelatorXicHadrons {
     Configurable<bool> calEffV0{"calEffV0", false, "calculate lambda0 efficiency"};
   } cfgV0;
 
-  SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg{};
-  int8_t chargeCand = 3;
-  int leadingIndex = 0;
-  int poolBin = 0;
-  int poolBinXic = 0;
-  bool correlationStatus = false;
-  bool isPrompt = false;
-  bool isNonPrompt = false;
-  bool isSignal = false;
-  TRandom3 rnd{0};
-  std::vector<float> outputMlXic = {-1., -1., -1.};
-
   // Event Mixing for the Data Mode
   using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
-  using SelCollisionsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>; // collisionFilter applied
+  using SelCollisionsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>;
 
   // XicPlus data
   using CandsXicPlusData = soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi>;
@@ -454,9 +443,12 @@ struct HfCorrelatorXicHadrons {
   using McCollisionsSel = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection>>;
   using McParticlesSel = soa::Filtered<aod::McParticles>;
 
-  // Tracks used in Data and MC
+  // Tracks
   using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, o2::aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+
+  template <class T>
+  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
 
   Filter collisionFilter = aod::hf_selection_lc_collision::lcSel == true;
   Filter trackFilter = (nabs(aod::track::eta) < cfgXicCand.etaTrackMax) && (nabs(aod::track::pt) > cfgXicCand.ptTrackMin) && (nabs(aod::track::dcaXY) < cfgXicCand.dcaXYTrackMax) && (nabs(aod::track::dcaZ) < cfgXicCand.dcaZTrackMax);
@@ -482,8 +474,19 @@ struct HfCorrelatorXicHadrons {
   ConfigurableAxis binsNSigmas{"binsNSigmas", {4000, -500., 500.}, "n#sigma"};
 
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
-
   HistogramRegistry registry{"registry"};
+
+  SliceCache cache;
+  int8_t chargeCand = 3;
+  int leadingIndex = 0;
+  int poolBin = 0;
+  int poolBinXic = 0;
+  bool correlationStatus = false;
+  bool isPrompt = false;
+  bool isNonPrompt = false;
+  bool isSignal = false;
+  TRandom3 rnd{0};
+  std::vector<float> outputMlXic = {-1., -1., -1.};
 
   void init(InitContext&)
   {
@@ -629,9 +632,6 @@ struct HfCorrelatorXicHadrons {
     }
   }
 
-  template <class T>
-  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
-
   template <typename Tracktype, typename V0Type>
   bool isSelectedV0Daughter(Tracktype const& track, V0Type v0, int pid)
   {
@@ -698,9 +698,8 @@ struct HfCorrelatorXicHadrons {
   // ========================================
   // Efficiency calculation block
   // ========================================
-  template <bool IsMc, typename CollisionType, typename V0, typename TrackType>
-  void fillEffV0(CollisionType const& collision,
-                 V0 const& v0s,
+  template <bool IsMc, typename V0, typename TrackType>
+  void fillEffV0(V0 const& v0s,
                  TrackType const&,
                  aod::McParticles const& mcParticles)
   {
@@ -1697,12 +1696,12 @@ struct HfCorrelatorXicHadrons {
   PROCESS_SWITCH(HfCorrelatorXicHadrons, processMcRecXic0V0, "Mc process for v0 lambda with Xic0", false);
 
   /// MC Reco processing: Xic0 with V0 Lambda
-  void processV0McRec(SelCollisions::iterator const& collision,
+  void processV0McRec(SelCollisions::iterator const&,
                       TracksWithMc const& tracks,
                       soa::Join<aod::V0Datas, aod::McV0Labels> const& v0s,
                       aod::McParticles const& mcParticles)
   {
-    fillEffV0<true>(collision, v0s, tracks, mcParticles);
+    fillEffV0<true>(v0s, tracks, mcParticles);
   }
   PROCESS_SWITCH(HfCorrelatorXicHadrons, processV0McRec, "Mc process for v0 lambda", false);
 
