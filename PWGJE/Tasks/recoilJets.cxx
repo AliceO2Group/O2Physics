@@ -607,7 +607,8 @@ struct RecoilJets {
       uint8_t iCent = 0;
       for (const auto& centAxis : arrConfigurableAxisCentrality) {
 
-        if (iCent == 3) { // case of "CentFT0CVar1"
+        int positionCentFT0CVar1 = 3;
+        if (iCent == positionCentFT0CVar1) { // case of "CentFT0CVar1"
           ++iCent;
           continue;
         }
@@ -750,7 +751,9 @@ struct RecoilJets {
       uint8_t iCent = 0;
       for (const auto& centAxis : arrConfigurableAxisCentrality) {
 
-        if (iCent == 0 || iCent == 3) { // case of "CentFT0A" & "CentFT0CVar1"
+        int positionCentFT0A = 0;
+        int positionCentFT0CVar1 = 3;
+        if (iCent == positionCentFT0A || iCent == positionCentFT0CVar1) { // case of "CentFT0A" & "CentFT0CVar1"
           ++iCent;
           continue;
         }
