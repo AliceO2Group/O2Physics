@@ -68,6 +68,7 @@ struct LumiStabilityTask {
   Configurable<int> minEmpty{"minEmpty", 13, "number of BCs empty for leading BC"};
   Configurable<int> nBCsOffSet{"nBCsOffSet", 7, "number of BCs offset for FDD"};
 
+  //
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   parameters::GRPLHCIFData* grplhcif = nullptr;
   int nBCsPerOrbit = 3564;

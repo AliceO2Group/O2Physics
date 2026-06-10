@@ -289,6 +289,11 @@ o2physics_add_dpl_workflow(sg-exclusive-jpsi-midrapidity
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(upc-vm-rof
+                           SOURCES upcVmRof.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(fitbit-mapping
 													 SOURCES upcTestFITBitMapping.cxx
 													 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
