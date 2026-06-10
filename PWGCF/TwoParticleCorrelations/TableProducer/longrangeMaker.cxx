@@ -117,6 +117,7 @@ struct LongrangeMaker {
     Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, "Enable NoCollInRofStrict cut"};
     Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
     Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
+    Configurable<bool> isApplyMultNTracksPV{"isApplyMultNTracksPV", false, "Multiplicity based on MultNTracksPV"};
     Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
     Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
     Configurable<bool> isApplyOccuSelection{"isApplyOccuSelection", false, "Enable occupancy selection"};
@@ -880,7 +881,7 @@ struct LongrangeMaker {
           continue;
         }
         // Fill midrapidity tracks
-        if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMult)
+        if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax)
           lrmidmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particle.flags());
         // Fill FT0 tracks
         if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
@@ -888,7 +889,7 @@ struct LongrangeMaker {
         if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
           lrft0cmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
         // Fill MFT tracks
-        if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax)
+        if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax && particle.pt() > cfgmfttrksel.cfgMftPtCutMin && particle.pt() < cfgmfttrksel.cfgMftPtCutMax)
           lrmftmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
       }
     }
@@ -909,7 +910,7 @@ struct LongrangeMaker {
         continue;
       }
       // Fill midrapidity tracks
-      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMult)
+      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax)
         lrmidmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particle.flags());
       // Fill FT0 tracks
       if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
@@ -917,7 +918,7 @@ struct LongrangeMaker {
       if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
         lrft0cmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
       // Fill MFT tracks
-      if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax)
+      if (cfgmfttrksel.cfgMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfgMftEtaMax && particle.pt() > cfgmfttrksel.cfgMftPtCutMin && particle.pt() < cfgmfttrksel.cfgMftPtCutMax)
         lrmftmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
     }
   }
@@ -1140,6 +1141,9 @@ struct LongrangeMaker {
   float selColCent(CheckColCent const& col)
   {
     auto cent = -1;
+    if (cfgevtsel.isApplyMultNTracksPV) {
+      cent = col.multNTracksPV();
+    }
     if (cfgevtsel.isApplyCentFT0C) {
       cent = col.centFT0C();
     }

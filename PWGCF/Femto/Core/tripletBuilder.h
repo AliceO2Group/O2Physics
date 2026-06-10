@@ -702,25 +702,20 @@ class TripletTrackTrackCascadeBuilder
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
-
     mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
     mTripletHistManagerSe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
     mTripletHistManagerMe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
 
     mTc.template init<mode>(confTripletCuts);
-
     if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
       mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
       mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
-
       mTrackCleaner.init(confTrackCleaner);
       mCascadeCleaner.init(confCascadeCleaner);
-
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
       mCtrSe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
-
       mTripletHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
       mCtrMe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
@@ -742,7 +737,6 @@ class TripletTrackTrackCascadeBuilder
     // setup mixing
     mMixingPolicy = static_cast<triplethistmanager::MixingPolicy>(confMixing.policy.value);
     mMixingDepth = confMixing.depth.value;
-
     // setup rng if necessary
     if (confMixing.seed.value >= 0) {
       uint64_t randomSeed = 0;

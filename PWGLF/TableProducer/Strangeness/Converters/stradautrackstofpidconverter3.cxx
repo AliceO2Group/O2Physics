@@ -18,9 +18,9 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -33,16 +33,18 @@ struct stradautrackstofpidconverter3 {
   void process(aod::DauTrackTOFPIDs_001 const& dauTracks, aod::StraEvTimes_000 const& straEvTimes_000)
   {
     // create new TOFPIDs
+    dautracktofpids.reserve(dauTracks.size());
     for (const auto& dauTrack : dauTracks) {
       dautracktofpids(
-        -1,
-        -1,
+        dauTrack.straCollisionId(),
+        dauTrack.dauTrackExtraId(),
         dauTrack.tofSignal(),
         dauTrack.tofEvTime(),
         999.0f, /*dummy event time error for TOF*/
         dauTrack.length(),
-        0.0f);
+        dauTrack.tofExpMom());
     }
+    straEvTimes.reserve(straEvTimes_000.size());
     for (const auto& value : straEvTimes_000) {
       straEvTimes(value.eventTime(), 999.0f /*dummy event time error for TOF*/);
     }

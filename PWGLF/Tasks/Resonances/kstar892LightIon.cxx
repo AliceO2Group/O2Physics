@@ -137,6 +137,7 @@ struct Kstar892LightIon {
     // PID selections
     Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
     Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
+    Configurable<bool> onlyTOFVeto{"onlyTOFVeto", false, "only select TOF tracks with TOF and TPC cuts"};
     Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"};
     Configurable<bool> isApplypTdepPID{"isApplypTdepPID", false, "Apply pT dependent PID"};
     Configurable<bool> isApplypTdepPIDwTOF{"isApplypTdepPIDwTOF", false, "Apply pT dependent PID with compulsory TOF condition in a pT range"};
@@ -157,6 +158,11 @@ struct Kstar892LightIon {
     Configurable<bool> isApplyFakeTrack{"isApplyFakeTrack", false, "Fake track selection"};
     Configurable<float> cfgFakeTrackCutKa{"cfgFakeTrackCutKa", 0.3, "Cut based on momentum difference in global and TPC tracks for kaons"};
     Configurable<float> cfgFakeTrackCutPi{"cfgFakeTrackCutPi", 0.3, "Cut based on momentum difference in global and TPC tracks for pions"};
+
+    Configurable<float> pionMIDpTLow{"pionMIDpTLow", 1.0, "Low pT cut for pion in MID"};
+    Configurable<float> pionMIDpTHigh{"pionMIDpTHigh", 2.5, "High pT cut for pion in MID"};
+    Configurable<float> kaonMIDpTLow{"kaonMIDpTLow", 0.7, "Low pT cut for kaon in MID"};
+    Configurable<float> kaonMIDpTHigh{"kaonMIDpTHigh", 2.5, "High pT cut for kaon in MID"};
 
     // Fixed variables
     float lowPtCutPID = 0.5;
@@ -211,7 +217,7 @@ struct Kstar892LightIon {
 
   int noOfDaughters = 2;
 
-  double pionPIDpTlow = 1.0, pionPIDpThigh = 2.5, kaonPIDpTlow = 0.7, kaonPIDpThigh = 2.5;
+  double pionPIDpTLow = 1.0, pionPIDpTHigh = 2.5, kaonPIDpTLow = 0.7, kaonPIDpTHigh = 2.5;
 
   TRandom* rn = new TRandom();
 
@@ -646,6 +652,10 @@ struct Kstar892LightIon {
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
           return true;
         }
+      } else if (selectionConfig.onlyTOFVeto) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
+          return true;
+        }
       } else if (selectionConfig.onlyTPC) {
         if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
           return true;
@@ -668,6 +678,10 @@ struct Kstar892LightIon {
           return true;
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
+          return true;
+        }
+      } else if (selectionConfig.onlyTOFVeto) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
           return true;
         }
       } else if (selectionConfig.onlyTPC) {
@@ -717,7 +731,7 @@ struct Kstar892LightIon {
   bool selectionPIDpTdepTOF(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
-      if (candidate.pt() < pionPIDpTlow || candidate.pt() > pionPIDpThigh) {
+      if (candidate.pt() < pionPIDpTLow || candidate.pt() > pionPIDpTHigh) {
         if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
           return true;
         }
@@ -733,7 +747,7 @@ struct Kstar892LightIon {
         }
       }
     } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() < kaonPIDpTlow || candidate.pt() > kaonPIDpThigh) {
+      if (candidate.pt() < kaonPIDpTLow || candidate.pt() > kaonPIDpTHigh) {
         if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
           return true;
         }
@@ -797,11 +811,11 @@ struct Kstar892LightIon {
   bool selectionMIDpTdep(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= pionPIDpTlow && candidate.pt() < pionPIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
+      if (candidate.pt() >= selectionConfig.pionMIDpTLow && candidate.pt() < selectionConfig.pionMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
         return true;
       }
     } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= kaonPIDpTlow && candidate.pt() < kaonPIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
+      if (candidate.pt() >= selectionConfig.kaonMIDpTLow && candidate.pt() < selectionConfig.kaonMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
         return true;
       }
     }
@@ -812,11 +826,11 @@ struct Kstar892LightIon {
   bool selectionMIDPtDepComp(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= pionPIDpTlow && candidate.pt() < pionPIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
+      if (candidate.pt() >= selectionConfig.pionMIDpTLow && candidate.pt() < selectionConfig.pionMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
         return true;
       }
     } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= kaonPIDpTlow && candidate.pt() < kaonPIDpThigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
+      if (candidate.pt() >= selectionConfig.kaonMIDpTLow && candidate.pt() < selectionConfig.kaonMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
         return true;
       }
     }

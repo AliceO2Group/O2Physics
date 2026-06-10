@@ -1967,7 +1967,11 @@ struct strangenesstofpid {
     if (isNewTOFFormat) {
       // re-index
       for (const auto& dauTrackTOFPID : dauTrackTOFPIDs) {
-        tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
+        if (dauTrackTOFPID.dauTrackExtraId() >= 0) {
+          tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
+        } else {
+          LOGF(warning, "dauTrackTOFPID points to no entry in the DauTrackExtras table (dauTrackExtraId = %i)! This could be intentional (for example, using converters) but please be careful.", dauTrackTOFPID.dauTrackExtraId());
+        }
       }
     } else {
       // they are actually joinable

@@ -679,14 +679,14 @@ struct QaMatching {
     o2::framework::HistPtr hDeltaEta;
     o2::framework::HistPtr hRabs;
 
-    MatchFeaturesHistos(std::string path, HistogramRegistry* registry, int numCandidates)
+    MatchFeaturesHistos(std::string path, HistogramRegistry* registry, int numCandidates, double scoreMax)
     {
       AxisSpec indexAxis = {numCandidates, 0, static_cast<double>(numCandidates), "ranking index"};
-      AxisSpec scoreAxis = {100, 0, 1, "match score"};
       int matchTypeMax = static_cast<int>(kMatchTypeUndefined) + 1;
       AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), "match type"};
       AxisSpec taggedAxis = {2, 0, 2.0, "is tagged"};
-      AxisSpec scoreGapAxis = {100, 0, 1.0, "match score gap"};
+      AxisSpec scoreAxis = {100, 0, scoreMax, "match score"};
+      AxisSpec scoreGapAxis = {100, 0, scoreMax, "match score gap"};
       AxisSpec logpAxis = {16, -1, 3, "log_{10}(p)"};
       AxisSpec dxAxis = {100, -20, 20, "#Deltax (cm)"};
       AxisSpec dyAxis = {100, -20, 20, "#Deltay (cm)"};
@@ -818,7 +818,7 @@ struct QaMatching {
       std::string histName;
       std::string histTitle;
 
-      fMatchFeaturesGoodMCH = std::make_unique<MatchFeaturesHistos>(path + "matchFeaturesGoodMCH", registry, numCandidates);
+      fMatchFeaturesGoodMCH = std::make_unique<MatchFeaturesHistos>(path + "matchFeaturesGoodMCH", registry, numCandidates, 100);
 
       if (isMc) {
         fMatchRanking = std::make_unique<MatchRankingHistos>(path + "matchRanking", "True match ranking", registry, mftMultMax, numCandidates);
@@ -2179,13 +2179,13 @@ struct QaMatching {
         isTagged = 1;
       }
 
-      float scoreGap = 0;
+      float chi2Gap = 0;
       if (globalTracksVector.size() > 1) {
         // we have at least two candidates, so we can check the score difference
         // between the leading and the sub-leading
-        auto leadingScore = globalTracksVector[0].matchScore;
-        auto subleadingScore = globalTracksVector[1].matchScore;
-        scoreGap = leadingScore - subleadingScore;
+        auto leadingChi2 = globalTracksVector[0].matchChi2;
+        auto subleadingChi2 = globalTracksVector[1].matchChi2;
+        chi2Gap = subleadingChi2 - leadingChi2;
       }
 
       for (const auto& candidate : globalTracksVector) {
@@ -2198,14 +2198,14 @@ struct QaMatching {
         double deta = candidate.mchTrackProp.getEta() - candidate.mftTrackProp.getEta();
         int matchType = static_cast<int>(candidate.matchType);
         int ranking = candidate.matchRanking - 1;
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaP)->Fill(dp, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPt)->Fill(dpt, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaX)->Fill(dx, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaY)->Fill(dy, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPhi)->Fill(dphi, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaTanl)->Fill(dtanl, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaEta)->Fill(deta, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hRabs)->Fill(mchTrack.rAtAbsorberEnd(), logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaP)->Fill(dp, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPt)->Fill(dpt, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaX)->Fill(dx, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaY)->Fill(dy, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPhi)->Fill(dphi, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaTanl)->Fill(dtanl, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaEta)->Fill(deta, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hRabs)->Fill(mchTrack.rAtAbsorberEnd(), logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
       }
     }
 
@@ -2344,13 +2344,13 @@ struct QaMatching {
           isTagged = 1;
         }
 
-        float scoreGap = 0;
-        if (globalTracksVector.size()) {
-          // we have a matchable pair with at least two candidates, so we can check the score difference
+        float chi2Gap = 0;
+        if (globalTracksVector.size() > 1) {
+          // we have at least two candidates, so we can check the score difference
           // between the leading and the sub-leading
-          auto leadingScore = globalTracksVector[0].matchScore;
-          auto subleadingScore = globalTracksVector[1].matchScore;
-          scoreGap = leadingScore - subleadingScore;
+          auto leadingChi2 = globalTracksVector[0].matchChi2;
+          auto subleadingChi2 = globalTracksVector[1].matchChi2;
+          chi2Gap = subleadingChi2 - leadingChi2;
         }
 
         for (const auto& candidate : globalTracksVector) {
@@ -2363,14 +2363,14 @@ struct QaMatching {
           double deta = candidate.mchTrackProp.getEta() - candidate.mftTrackProp.getEta();
           int matchType = static_cast<int>(candidate.matchType);
           int ranking = candidate.matchRanking - 1;
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaP)->Fill(dp, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPt)->Fill(dpt, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaX)->Fill(dx, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaY)->Fill(dy, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPhi)->Fill(dphi, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaTanl)->Fill(dtanl, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaEta)->Fill(deta, logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
-          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hRabs)->Fill(mchTrack.rAtAbsorberEnd(), logp, candidate.matchScore, scoreGap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaP)->Fill(dp, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPt)->Fill(dpt, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaX)->Fill(dx, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaY)->Fill(dy, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaPhi)->Fill(dphi, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaTanl)->Fill(dtanl, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hDeltaEta)->Fill(deta, logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
+          std::get<std::shared_ptr<THnSparse>>(plotter->fMatchFeaturesGoodMCH->hRabs)->Fill(mchTrack.rAtAbsorberEnd(), logp, candidate.matchChi2, chi2Gap, ranking, matchType, isTagged);
         }
       }
 

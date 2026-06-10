@@ -30,6 +30,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsCalibration/MeanVertexObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -48,8 +49,12 @@
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackLTIntegral.h>
 
 #include <TH1.h>
+#include <TMath.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
@@ -103,8 +108,8 @@ struct taggingHFE {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
   Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for wrongly found SV"};
-  Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", true, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
-  Configurable<bool> cfgApplyBCShiftTOF{"cfgApplyBCShiftTOF", true, "apply bc shift for TOF n sigma of track from v0 or cascade"};
+  Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", true, "Flag to shift delta BC for TOF n sigma (with TTCA and for V0s)"};
+  // Configurable<bool> storeHFeWithRandomHadron{"storeHFeWithRandomHadron", false, "Flag to store random lh pairs also for HFl"};
 
   struct : ConfigurableGroup {
     std::string prefix = "dcaFitterGroup_eK";
@@ -1234,61 +1239,61 @@ struct taggingHFE {
         }
 
         float beta = -1.f;
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Electron, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Pion, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Kaon, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, +1>(collision, v0, o2::constants::physics::MassPhoton, beta) : pos.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, +1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : pos.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, +1>(collision, v0, o2::constants::physics::MassLambda, beta) : pos.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, -1>(collision, v0, o2::constants::physics::MassPhoton, beta) : neg.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Photon, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, -1>(collision, v0, o2::constants::physics::MassKaonNeutral, beta) : neg.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::K0, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaLegFromV0<o2::track::PID::Proton, -1>(collision, v0, o2::constants::physics::MassLambda, beta) : neg.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::Lambda, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
 
       } // end of v0 loop
 
@@ -1312,60 +1317,60 @@ struct taggingHFE {
 
         // for bachelor tracks
         float beta = -1.f;
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Electron>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Pion>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Kaon>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Proton>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Electron>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Pion>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Kaon>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Proton>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : bachelor.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Electron>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Pion>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Kaon>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Proton>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Electron>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Pion>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Kaon>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaBachelorFromCascade<o2::track::PID::Proton>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : bachelor.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), bachelor.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : bachelor.beta();
 
         // for tracks from lambda from cascade
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, +1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : pos.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, -1>(collision, cascade, o2::constants::physics::MassXiMinus, beta) : neg.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::XiMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : pos.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, +1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : pos.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), pos.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : pos.beta();
 
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaEl();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaPi();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaKa();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = cfgApplyBCShiftTOF ? beta : neg.beta();
-        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaPr();
-        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = cfgApplyBCShiftTOF ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Electron, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaEl();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Electron)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Pion, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaPi();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Pion)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Kaon, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaKa();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Kaon)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
+        mapTOFNSigma[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? recalculateTOFNSigmaTrackFromV0FromCascade<o2::track::PID::Proton, -1>(collision, cascade, o2::constants::physics::MassOmegaMinus, beta) : neg.tofNSigmaPr();
+        mapTOFBeta[std::make_tuple(collision.globalIndex(), neg.globalIndex(), o2::track::PID::OmegaMinus, o2::track::PID::Proton)] = useTOFNSigmaDeltaBC ? beta : neg.beta();
 
       } // end of cascade loop
     } // end of collision loop
@@ -1765,11 +1770,9 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.p,
-                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.mass, /*eKpair.p, eKpair.deta, eKpair.dphi,*/
                      eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -1826,11 +1829,9 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.p,
-                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.mass, /*eKpair.p, eKpair.deta, eKpair.dphi,*/
                      eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -1905,11 +1906,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.p,
-                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.mass, /*eV0pair.p, eV0pair.deta, eV0pair.dphi,*/
                       eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of K0S loop
@@ -1968,11 +1967,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.p,
-                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.mass, /*eV0pair.p, eV0pair.deta, eV0pair.dphi,*/
                       eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of Lambda loop
@@ -2036,11 +2033,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.p,
-                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.mass, /*eCpair.p, eCpair.deta, eCpair.dphi,*/
                         eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Xi- loop
@@ -2104,11 +2099,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.p,
-                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.mass, /*eCpair.p, eCpair.deta, eCpair.dphi,*/
                         eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Omega- loop
@@ -2201,11 +2194,9 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.p,
-                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.mass, /*eKpair.p, eKpair.deta, eKpair.dphi,*/
                      eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -2263,11 +2254,9 @@ struct taggingHFE {
                      // kaon.tpcNSigmaPi(), tofNSigmaPi,
                      kaon.tpcNSigmaKa(), tofNSigmaKa,
                      // kaon.tpcNSigmaPr(), tofNSigmaPr,
-                     eKpair.mass, eKpair.p,
-                     // eKpair.ptSVL, eKpair.ptSVH, eKpair.ptFD, eKpair.plFD,
+                     eKpair.mass, /*eKpair.p, eKpair.deta, eKpair.dphi,*/
                      eKpair.chi2PCA, eKpair.cospa, eKpair.cospaXY, eKpair.cospaRZ,
                      eKpair.lxy, eKpair.lz, eKpair.lxyz, eKpair.lxyErr, eKpair.lzErr, eKpair.lxyzErr,
-                     // eKpair.impParXY, eKpair.impParZ, eKpair.impParCYY, eKpair.impParCZY, eKpair.impParCZZ,
                      mckaon.pdgCode(), pdgCodeIM, foundCommonMother);
 
         } // end of kaon loop
@@ -2341,11 +2330,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.p,
-                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.mass, /*eV0pair.p, eV0pair.deta, eV0pair.dphi,*/
                       eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of K0S loop
@@ -2404,11 +2391,9 @@ struct taggingHFE {
                       RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{v0.x(), v0.y(), v0.z()}, std::array<float, 3>{v0.px(), v0.py(), v0.pz()}),
                       impactParameterV0.getY(), impactParameterV0.getZ(), impactParameterV0.getSigmaY2(), impactParameterV0.getSigmaYZ(), impactParameterV0.getSigmaZ2(),
-                      eV0pair.mass, eV0pair.p,
-                      // eV0pair.ptSVL, eV0pair.ptSVH, eV0pair.ptFD, eV0pair.plFD,
+                      eV0pair.mass, /*eV0pair.p, eV0pair.deta, eV0pair.dphi,*/
                       eV0pair.chi2PCA, eV0pair.cospa, eV0pair.cospaXY, eV0pair.cospaRZ,
                       eV0pair.lxy, eV0pair.lz, eV0pair.lxyz, eV0pair.lxyErr, eV0pair.lzErr, eV0pair.lxyzErr,
-                      // eV0pair.impParXY, eV0pair.impParZ, eV0pair.impParCYY, eV0pair.impParCZY, eV0pair.impParCZZ,
                       pdgCodeV0, pdgCodeIM, foundCommonMother);
 
         } // end of Anti-Lambda loop
@@ -2472,11 +2457,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.p,
-                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.mass, /*eCpair.p, eCpair.deta, eCpair.dphi,*/
                         eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Xi+ loop
@@ -2540,11 +2523,9 @@ struct taggingHFE {
                         RecoDecay::cpaXY(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         RecoDecay::cpaRZ(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{cascade.x(), cascade.y(), cascade.z()}, std::array<float, 3>{cascade.px(), cascade.py(), cascade.pz()}),
                         impactParameterCasc.getY(), impactParameterCasc.getZ(), impactParameterCasc.getSigmaY2(), impactParameterCasc.getSigmaYZ(), impactParameterCasc.getSigmaZ2(),
-                        eCpair.mass, eCpair.p,
-                        // eCpair.ptSVL, eCpair.ptSVH, eCpair.ptFD, eCpair.plFD,
+                        eCpair.mass, /*eCpair.p, eCpair.deta, eCpair.dphi,*/
                         eCpair.chi2PCA, eCpair.cospa, eCpair.cospaXY, eCpair.cospaRZ,
                         eCpair.lxy, eCpair.lz, eCpair.lxyz, eCpair.lxyErr, eCpair.lzErr, eCpair.lxyzErr,
-                        // eCpair.impParXY, eCpair.impParZ, eCpair.impParCYY, eCpair.impParCZY, eCpair.impParCZZ,
                         pdgCodeCascade, pdgCodeIM, foundCommonMother);
 
         } // end of Omega+ loop
@@ -2552,7 +2533,7 @@ struct taggingHFE {
       } // end of main electron sample
 
       if (npos + nele > 0) { // fill eventTable only if at least 1 electron or positron exists.
-        eventTable(collision.chi2(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+        eventTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), 0);
       }
 
       electronIds.clear();

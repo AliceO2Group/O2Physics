@@ -37,6 +37,7 @@ struct stradautrackstofpidconverter2 {
   void process(aod::StraCollisions const& collisions, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs_000> const& dauTracks, soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& v0s)
   {
     // create new TOFPIDs
+    dautracktofpids.reserve(dauTracks.size());
     for (int ii = 0; ii < dauTracks.size(); ii++) {
       auto dauTrack = dauTracks.rawIteratorAt(ii);
       dautracktofpids(-1, -1, dauTrack.tofSignal(), dauTrack.tofEvTime(), dauTrack.length(), 0.0f);
@@ -59,6 +60,7 @@ struct stradautrackstofpidconverter2 {
         collisionNtracks[v0.straCollisionId()]++;
       }
     }
+    straEvTimes.reserve(collisions.size());
     for (const auto& collision : collisions) {
       if (collisionNtracks[collision.globalIndex()] > 0) {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);

@@ -83,7 +83,6 @@ AxisSpec dcaXyAxis = {6000, -30, 30};
 AxisSpec dcaZAxis = {6000, -30, 30};
 AxisSpec dcaXAxis = {6000, -30, 30};
 AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10, 10};
-
 // AxisSpec dcaXyAxis = {600, -0.15f, 0.15f};
 // AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
 // AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
@@ -91,7 +90,6 @@ AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10
 // bin width 0.0005 cm: range [-30, 30] cm => 60/0.0005 = 120000 bins
 // Keep bin width = 0.0005 cm (5 um): range [-1, 1] cm => 2.0/0.0005 = 4000 bins
 // AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
-
 AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 // Vertex position axes (cm)
@@ -345,7 +343,8 @@ struct PseudorapidityDensityMFT {
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0,
                                    "eta range for INEL>0 sample definition"};
-
+  Configurable<bool> usePerCollisionSampleGt0Cut{"usePerCollisionSampleGt0Cut", true, "Require at least one central-barrel track in the per-collision sample"};
+  Configurable<bool> useMidtracksAndPerCollisionSampleGt0Cut{"useMidtracksAndPerCollisionSampleGt0Cut", true, "Require both INEL>0 midtracks and at least one central-barrel track in the per-collision sample"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
   Configurable<bool> useGoodItsLayersAll{"useGoodItsLayersAll", true, "all ITS layers are in a good state"};
@@ -1562,20 +1561,24 @@ struct PseudorapidityDensityMFT {
     registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_all"), nTrk, z);
     fillDataCut(DataCutBin::VzWindow);
     // registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Vz));
+    const bool hasPerCollisionSample = perCollisionSample.size() > 0;
+    const bool hasMidtracks = midtracks.size() > 0;
     if (midtracks.size() > 0) {
       // registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Sel8VzInelGt0));
       registry.fill(HIST("EventsNtrkZvtx_gt0"), nTrk, z);
       registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelgt0"), nTrk, z);
       eventsInel.insert(collision.globalIndex());
     }
-    if (perCollisionSample.size() > 0) {
-      // registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::PerCollisionSampleGt0));
-      fillDataCut(DataCutBin::PerCollisionSampleGt0);
+    if (usePerCollisionSampleGt0Cut && !hasPerCollisionSample) {
+      return;
     }
-    if (midtracks.size() > 0 && perCollisionSample.size() > 0) {
-      // registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0));
-      fillDataCut(DataCutBin::InelGt0);
+    fillDataCut(DataCutBin::PerCollisionSampleGt0);
+
+    if (useMidtracksAndPerCollisionSampleGt0Cut && !(hasMidtracks && hasPerCollisionSample)) {
+      return;
     }
+    // registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0));
+    fillDataCut(DataCutBin::InelGt0);
 
     const auto passEventSelection = [&](auto const& collision) {
       struct EvSelStep {
@@ -1626,6 +1629,7 @@ struct PseudorapidityDensityMFT {
       const float ndf = getTrackNdf(track);
       const float chi2ndf = track.chi2() / ndf;
       float phi = track.phi();
+      float ptCut = track.pt();
       o2::math_utils::bringTo02Pi(phi);
       const float dcaXyCut = retrack.bestDCAXY();
 
@@ -1641,7 +1645,7 @@ struct PseudorapidityDensityMFT {
          ((phi <= PhiVetoLow) ||
           ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
           (phi >= PhiVetoHigh))) ||
-        (useDCAxyCut && dcaXyCut > maxDCAxy);
+        (useDCAxyCut && dcaXyCut > maxDCAxy) || (usePtCut && ptCut > cfgnPt);
 
       if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
         const float dcaZCut = retrack.bestDCAZ();

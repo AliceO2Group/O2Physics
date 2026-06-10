@@ -3938,6 +3938,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       // cascade loop
       const auto thisCollId = collision.globalIndex();
       const auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& casc : groupedCascades) {
 
@@ -3995,7 +3996,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
         trackParCovCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
-        const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdCharmBachelor1 = groupedBachTrackIndices.begin(); trackIdCharmBachelor1 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor1) {
 
           hfFlag = 0;
@@ -4131,6 +4131,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
               continue;
             }
 
+            const auto pVecCharmBachelor1 = trackCharmBachelor1.pVector();
+
             // second loop over tracks
             for (auto trackIdCharmBachelor2 = trackIdCharmBachelor1 + 1; trackIdCharmBachelor2 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor2) {
 
@@ -4154,7 +4156,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 continue;
               }
 
-              if (!isPreselectedCandidateXic(pVecCasc, trackCharmBachelor1.pVector(), trackCharmBachelor2.pVector())) {
+              if (!isPreselectedCandidateXic(pVecCasc, pVecCharmBachelor1, trackCharmBachelor2.pVector())) {
                 continue;
               }
 
