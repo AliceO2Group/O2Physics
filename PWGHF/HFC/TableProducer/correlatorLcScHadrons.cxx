@@ -580,72 +580,71 @@ struct HfCorrelatorLcScHadrons {
     return y;
   }
 
-
-template <class T>
-using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
+  template <class T>
+  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
 
   template <typename Tracktype, typename V0Type>
   bool isSelectedV0Daughter(Tracktype const& track, V0Type v0, int pid)
-{
-  if (std::abs(track.eta()) > cfgCharmCand.etaTrackMax) {
-    return false;
-  }
-  // ---------------------------------------------------------
-  // 1. Proton PID Selection
-  // ---------------------------------------------------------
-  if (std::abs(pid) == kProton) {
-    bool passTOF = false;
-    
-    if (track.pt() > cfgV0.cfgDaughPrPtMax || track.pt() < cfgV0.cfgDaughPrPtMin) {
+  {
+    if (std::abs(track.eta()) > cfgCharmCand.etaTrackMax) {
       return false;
     }
-    if (track.hasTOF()) {
-      if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
-        // pid > 0: Proton from Lambda (LaPr)
-        // pid < 0: Antiproton from Anti-Lambda (ALaPr)
-        double strangeTOF = (pid > 0) ? v0.tofNSigmaLaPr() : v0.tofNSigmaALaPr();
-        passTOF = std::abs(strangeTOF) > cfgV0.cfgDaughPIDCutsTOFPr;
-      } else {
-        // if strange TOF is unavailable
-        passTOF = std::abs(track.tofNSigmaPr()) > cfgV0.cfgDaughPIDCutsTOFPr;
+    // ---------------------------------------------------------
+    // 1. Proton PID Selection
+    // ---------------------------------------------------------
+    if (std::abs(pid) == kProton) {
+      bool passTOF = false;
+
+      if (track.pt() > cfgV0.cfgDaughPrPtMax || track.pt() < cfgV0.cfgDaughPrPtMin) {
+        return false;
+      }
+      if (track.hasTOF()) {
+        if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
+          // pid > 0: Proton from Lambda (LaPr)
+          // pid < 0: Antiproton from Anti-Lambda (ALaPr)
+          double strangeTOF = (pid > 0) ? v0.tofNSigmaLaPr() : v0.tofNSigmaALaPr();
+          passTOF = std::abs(strangeTOF) > cfgV0.cfgDaughPIDCutsTOFPr;
+        } else {
+          // if strange TOF is unavailable
+          passTOF = std::abs(track.tofNSigmaPr()) > cfgV0.cfgDaughPIDCutsTOFPr;
+        }
+      }
+
+      if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgDaughPIDCutsTPCPr) || passTOF) {
+        return false;
       }
     }
 
-    if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgDaughPIDCutsTPCPr) || passTOF) {
-      return false;
-    }
-  }
+    // ---------------------------------------------------------
+    // 2. Pion PID Selection
+    // ---------------------------------------------------------
+    if (std::abs(pid) == kPiPlus) {
+      bool passTOF = false;
 
-  // ---------------------------------------------------------
-  // 2. Pion PID Selection
-  // ---------------------------------------------------------
-  if (std::abs(pid) == kPiPlus) {
-    bool passTOF = false;
+      if (track.pt() > cfgV0.cfgDaughPiPtMax || track.pt() < cfgV0.cfgDaughPiPtMin) {
+        return false;
+      }
 
-     if (track.pt() > cfgV0.cfgDaughPiPtMax || track.pt() < cfgV0.cfgDaughPiPtMin) {
-      return false;
-    }
-    
-    if (track.hasTOF()) {
-      if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
-        // A pion can belong to either a Lambda/Anti-Lambda decay or a K0s decay.
-        // We evaluate both applicable hypotheses based on charge sign and pick the best match.
-        double tofLa = (pid > 0) ? v0.tofNSigmaALaPi() : v0.tofNSigmaLaPi();
-        
-        passTOF = tofLa > cfgV0.cfgDaughPIDCutsTOFPi;
-      } else {
-        // Fallback to standard track TOF
-        passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgDaughPIDCutsTOFPi;
+      if (track.hasTOF()) {
+        if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
+          // A pion can belong to either a Lambda/Anti-Lambda decay or a K0s decay.
+          // We evaluate both applicable hypotheses based on charge sign and pick the best match.
+          double tofLa = (pid > 0) ? v0.tofNSigmaALaPi() : v0.tofNSigmaLaPi();
+
+          passTOF = tofLa > cfgV0.cfgDaughPIDCutsTOFPi;
+        } else {
+          // Fallback to standard track TOF
+          passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgDaughPIDCutsTOFPi;
+        }
+      }
+
+      if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgDaughPIDCutsTPCPi) || passTOF) {
+        return false;
       }
     }
 
-    if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgDaughPIDCutsTPCPi) || passTOF) {
-      return false;
-    }
+    return true;
   }
-
-  return true;
-}
 
   template <typename T1, typename T2>
   float calculateInvMass(T1 const& particle1, T2 const& particle2, float mass1, float mass2)
@@ -919,8 +918,8 @@ using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
     }
   }
 
-    // ========================================
-  // Efficiency calculation block 
+  // ========================================
+  // Efficiency calculation block
   // ========================================
   template <bool IsMc, typename V0, typename TrackType>
   void fillEffV0(V0 const& v0s,
@@ -928,155 +927,149 @@ using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
                  aod::McParticles const& mcParticles)
   {
     // Data-driven efficiency calculation for protons using Lambda
-      for (const auto& v0 : v0s) {
-        auto const& trackV0Pos = v0.template posTrack_as<TrackType>();
-        auto const& trackV0Neg = v0.template negTrack_as<TrackType>();
-        if (cfgV0.cfgIsCorrCollMatchV0 && ((v0.collisionId() != trackV0Pos.collisionId()) || (v0.collisionId() != trackV0Neg.collisionId()))) {
-          continue;
-        }
-
-        // Process Lambda (proton + pion)
-        if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
-          entryHadron(v0.mLambda(), trackV0Pos.eta(), trackV0Pos.pt() * trackV0Pos.sign(), 0, 0, v0.pt());
-          entryTrkPID(trackV0Pos.tpcNSigmaPr(), trackV0Pos.tpcNSigmaKa(), trackV0Pos.tpcNSigmaPi(), trackV0Pos.tofNSigmaPr(), trackV0Pos.tofNSigmaKa(), trackV0Pos.tofNSigmaPi());
-
-          if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
-            registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
-            registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
-            registry.fill(HIST("hTPCnSigmaPr"), trackV0Pos.pt(), trackV0Pos.tpcNSigmaPr());
-
-            if (trackV0Pos.hasTOF()) {
-              registry.fill(HIST("hTOFnSigmaPr"), trackV0Pos.pt(), trackV0Pos.tofNSigmaPr());
-            }
-
-            if (passPIDSelection(trackV0Pos, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
-              registry.fill(HIST("hV0LambdaPiKRej"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
-              registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
-              registry.fill(HIST("hTPCnSigmaPrPiKRej"), trackV0Pos.pt(), trackV0Pos.tpcNSigmaPr());
-              if (trackV0Pos.hasTOF()) {
-                registry.fill(HIST("hTOFnSigmaPrPiKRej"), trackV0Pos.pt(), trackV0Pos.tofNSigmaPr());
-              }
-            }
-          }
-        }
-
-        if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
-          entryHadron(v0.mAntiLambda(), trackV0Neg.eta(), trackV0Neg.pt() * trackV0Neg.sign(), 0, 0, v0.pt());
-          entryTrkPID(trackV0Neg.tpcNSigmaPr(), trackV0Neg.tpcNSigmaKa(), trackV0Neg.tpcNSigmaPi(), trackV0Neg.tofNSigmaPr(), trackV0Neg.tofNSigmaKa(), trackV0Neg.tofNSigmaPi());
-
-          if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
-            registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
-            registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
-            registry.fill(HIST("hTPCnSigmaPr"), trackV0Neg.pt(), trackV0Neg.tpcNSigmaPr());
-
-            if (trackV0Neg.hasTOF()) {
-              registry.fill(HIST("hTOFnSigmaPr"), trackV0Neg.pt(), trackV0Neg.tofNSigmaPr());
-            }
-
-            if (passPIDSelection(trackV0Neg, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
-              registry.fill(HIST("hV0LambdaPiKRej"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
-              registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
-              registry.fill(HIST("hTPCnSigmaPrPiKRej"), trackV0Neg.pt(), trackV0Neg.tpcNSigmaPr());
-              if (trackV0Neg.hasTOF()) {
-                registry.fill(HIST("hTOFnSigmaPrPiKRej"), trackV0Neg.pt(), trackV0Neg.tofNSigmaPr());
-              }
-            }
-          }
-        }
-
-        // MC-Reco specific V0 matching
-        if constexpr (IsMc) {
-          if (!v0.has_mcParticle() || !trackV0Pos.has_mcParticle() || !trackV0Neg.has_mcParticle()) {
-            continue;
-          }
-          auto const& v0Mc = v0.mcParticle();
-          auto const& partV0Pos = trackV0Pos.mcParticle();
-          auto const& partV0Neg = trackV0Neg.mcParticle();
-
-            if (v0Mc.pdgCode() == kLambda0) {
-              registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-              registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-              if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
-              registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-              registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-              }
-
-              if (passPIDSelection(trackV0Pos, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
-                registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-                registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-              }
-            }
-            if (v0Mc.pdgCode() == kLambda0Bar) {
-              registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-              registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-
-              if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
-              registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-              registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-              }
-              if (passPIDSelection(trackV0Neg, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
-                registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-                registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-              }
-            }
-
-          }
+    for (const auto& v0 : v0s) {
+      auto const& trackV0Pos = v0.template posTrack_as<TrackType>();
+      auto const& trackV0Neg = v0.template negTrack_as<TrackType>();
+      if (cfgV0.cfgIsCorrCollMatchV0 && ((v0.collisionId() != trackV0Pos.collisionId()) || (v0.collisionId() != trackV0Neg.collisionId()))) {
+        continue;
       }
 
-              if constexpr (IsMc) {
-                if (cfgV0.calEffV0){
+      // Process Lambda (proton + pion)
+      if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
+        entryHadron(v0.mLambda(), trackV0Pos.eta(), trackV0Pos.pt() * trackV0Pos.sign(), 0, 0, v0.pt());
+        entryTrkPID(trackV0Pos.tpcNSigmaPr(), trackV0Pos.tpcNSigmaKa(), trackV0Pos.tpcNSigmaPi(), trackV0Pos.tofNSigmaPr(), trackV0Pos.tofNSigmaKa(), trackV0Pos.tofNSigmaPi());
 
-                for (const auto& particle : mcParticles) {
+        if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
+          registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
+          registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
+          registry.fill(HIST("hTPCnSigmaPr"), trackV0Pos.pt(), trackV0Pos.tpcNSigmaPr());
 
-        if (std::abs(particle.pdgCode()) != kLambda0) {
+          if (trackV0Pos.hasTOF()) {
+            registry.fill(HIST("hTOFnSigmaPr"), trackV0Pos.pt(), trackV0Pos.tofNSigmaPr());
+          }
+
+          if (passPIDSelection(trackV0Pos, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
+            registry.fill(HIST("hV0LambdaPiKRej"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
+            registry.fill(HIST("hTPCnSigmaPrPiKRej"), trackV0Pos.pt(), trackV0Pos.tpcNSigmaPr());
+            if (trackV0Pos.hasTOF()) {
+              registry.fill(HIST("hTOFnSigmaPrPiKRej"), trackV0Pos.pt(), trackV0Pos.tofNSigmaPr());
+            }
+          }
+        }
+      }
+
+      if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
+        entryHadron(v0.mAntiLambda(), trackV0Neg.eta(), trackV0Neg.pt() * trackV0Neg.sign(), 0, 0, v0.pt());
+        entryTrkPID(trackV0Neg.tpcNSigmaPr(), trackV0Neg.tpcNSigmaKa(), trackV0Neg.tpcNSigmaPi(), trackV0Neg.tofNSigmaPr(), trackV0Neg.tofNSigmaKa(), trackV0Neg.tofNSigmaPi());
+
+        if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
+          registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
+          registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
+          registry.fill(HIST("hTPCnSigmaPr"), trackV0Neg.pt(), trackV0Neg.tpcNSigmaPr());
+
+          if (trackV0Neg.hasTOF()) {
+            registry.fill(HIST("hTOFnSigmaPr"), trackV0Neg.pt(), trackV0Neg.tofNSigmaPr());
+          }
+
+          if (passPIDSelection(trackV0Neg, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
+            registry.fill(HIST("hV0LambdaPiKRej"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
+            registry.fill(HIST("hTPCnSigmaPrPiKRej"), trackV0Neg.pt(), trackV0Neg.tpcNSigmaPr());
+            if (trackV0Neg.hasTOF()) {
+              registry.fill(HIST("hTOFnSigmaPrPiKRej"), trackV0Neg.pt(), trackV0Neg.tofNSigmaPr());
+            }
+          }
+        }
+      }
+
+      // MC-Reco specific V0 matching
+      if constexpr (IsMc) {
+        if (!v0.has_mcParticle() || !trackV0Pos.has_mcParticle() || !trackV0Neg.has_mcParticle()) {
           continue;
         }
+        auto const& v0Mc = v0.mcParticle();
+        auto const& partV0Pos = trackV0Pos.mcParticle();
+        auto const& partV0Neg = trackV0Neg.mcParticle();
 
-        if (std::abs(particle.y()) > cfgCharmCand.yCandMax) {
-          continue;
+        if (v0Mc.pdgCode() == kLambda0) {
+          registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+          registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+          if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
+            registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+            registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+          }
+
+          if (passPIDSelection(trackV0Pos, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
+            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+          }
         }
-        if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
-          continue;
+        if (v0Mc.pdgCode() == kLambda0Bar) {
+          registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+          registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+
+          if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
+            registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+          }
+          if (passPIDSelection(trackV0Neg, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
+            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+          }
         }
+      }
+    }
 
+    if constexpr (IsMc) {
+      if (cfgV0.calEffV0) {
 
-    auto daughterParts = particle.daughters_as<aod::McParticles>();
-    const int8_t NdaughtersV0 = 2;
+        for (const auto& particle : mcParticles) {
 
-    if (daughterParts.size() != NdaughtersV0) {
-          continue;
-        }
-
-        for (const auto& currentDaughter : daughterParts) {
-
-          if (std::abs(currentDaughter.eta()) > cfgCharmCand.etaTrackMax) {
+          if (std::abs(particle.pdgCode()) != kLambda0) {
             continue;
           }
 
-          if (std::abs(currentDaughter.pdgCode()) == kProton ){
+          if (std::abs(particle.y()) > cfgCharmCand.yCandMax) {
+            continue;
+          }
+          if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
+            continue;
+          }
 
-            if (currentDaughter.pt() > cfgV0.cfgDaughPrPtMax || currentDaughter.pt() < cfgV0.cfgDaughPrPtMin) {
-             continue;
-                      }
+          auto daughterParts = particle.daughters_as<aod::McParticles>();
+          const int8_t NdaughtersV0 = 2;
 
-          } else if (std::abs(currentDaughter.pdgCode()) == kPiPlus ){
-                    if (currentDaughter.pt() > cfgV0.cfgDaughPiPtMax || currentDaughter.pt() < cfgV0.cfgDaughPiPtMin) {
-                     continue;
+          if (daughterParts.size() != NdaughtersV0) {
+            continue;
+          }
+
+          for (const auto& currentDaughter : daughterParts) {
+
+            if (std::abs(currentDaughter.eta()) > cfgCharmCand.etaTrackMax) {
+              continue;
             }
 
-          } else {
-            continue;
-          }
-          
+            if (std::abs(currentDaughter.pdgCode()) == kProton) {
+
+              if (currentDaughter.pt() > cfgV0.cfgDaughPrPtMax || currentDaughter.pt() < cfgV0.cfgDaughPrPtMin) {
+                continue;
+              }
+
+            } else if (std::abs(currentDaughter.pdgCode()) == kPiPlus) {
+              if (currentDaughter.pt() > cfgV0.cfgDaughPiPtMax || currentDaughter.pt() < cfgV0.cfgDaughPiPtMin) {
+                continue;
+              }
+
+            } else {
+              continue;
+            }
           }
           registry.fill(HIST("hV0PtPrimLambdaMcGen"), particle.pt());
-    
-          }
         }
       }
-
+    }
   }
-
 
   template <bool IsMcRec, int LambdaPart, typename AssocType, typename CandType, typename McPart>
   void fillCorrelationTable(bool trkPidFill, AssocType const& assoc, CandType const& candidate,
@@ -1874,16 +1867,14 @@ using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processMcLambdaV0, "Mc process for v0 lambda with Lc", false);
 
-
   void processLambda0EffCal(SelCollisions::iterator const&,
-                         TracksWithMc const& tracks,
-                         soa::Join<aod::V0Datas, aod::V0TOFNSigmas, aod::McV0Labels> const& v0s,
-                         aod::McParticles const& mcParticles)
+                            TracksWithMc const& tracks,
+                            soa::Join<aod::V0Datas, aod::V0TOFNSigmas, aod::McV0Labels> const& v0s,
+                            aod::McParticles const& mcParticles)
   {
     fillEffV0<true>(v0s, tracks, mcParticles);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processLambda0EffCal, "Mc process for lambda0", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -227,7 +227,7 @@ DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! A
 DECLARE_SOA_COLUMN(MCandHadron, mCandHadron, float);                       //! Invariant mass of Lc/Sc+Hadron combined system
 DECLARE_SOA_COLUMN(PtCombined, ptCombined, float);                         //! Transverse momentum of combined Lc+Hadron system
 DECLARE_SOA_COLUMN(MV0, mV0, float);                                       //! Invariant mass of V0
-DECLARE_SOA_COLUMN(MRefV0, mRefV0, float);                                       //! Invariant mass of reflected V0
+DECLARE_SOA_COLUMN(MRefV0, mRefV0, float);                                 //! Invariant mass of reflected V0
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
