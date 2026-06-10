@@ -950,7 +950,7 @@ struct Dilepton {
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.IsSelectedPair(t1, t2, d_bz, 0)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
@@ -1000,8 +1000,8 @@ struct Dilepton {
       float dphi = t1.sign() * v1.Pt() > t2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
       dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-      float phiPosition1 = RecoDecay::constrainAngle(t1.phi() + std::asin(t1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * t1.pt())), 0, 1U); // 0-2pi
-      float phiPosition2 = RecoDecay::constrainAngle(t2.phi() + std::asin(t2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * t2.pt())), 0, 1U); // 0-2pi
+      float phiPosition1 = RecoDecay::constrainAngle(t1.phi() + std::asin(t1.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * t1.pt())), 0, 1U); // 0-2pi
+      float phiPosition2 = RecoDecay::constrainAngle(t2.phi() + std::asin(t2.sign() * -0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * t2.pt())), 0, 1U); // 0-2pi
       float dphiPosition = t1.sign() * v1.Pt() > t2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
       dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
 
@@ -1628,7 +1628,7 @@ struct Dilepton {
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.IsSelectedPair(t1, t2, d_bz, 0.0)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
