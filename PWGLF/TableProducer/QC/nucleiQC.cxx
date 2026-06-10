@@ -58,6 +58,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -517,6 +518,7 @@ struct nucleiQC {
       candidate.DCAxy,
       candidate.DCAz,
       candidate.flags,
+      candidate.centrality,
       candidate.ptGenerated,
       candidate.mcProcess,
       candidate.pdgCode,
@@ -531,6 +533,7 @@ struct nucleiQC {
     gRandom->SetSeed(67);
     std::unordered_set<int> reconstructedMcParticles;
     std::unordered_set<int> reconstructedCollisions;
+    std::map<int, float> mcCollisionIdToCentrality;
 
     for (const auto& collision : collisions) {
 
@@ -539,8 +542,10 @@ struct nucleiQC {
 
       if (!nuclei::eventSelection(collision, mHistograms, cfgEventSelections, cfgCutVertex))
         continue;
-      mHistograms.fill(HIST("hCentrality"), nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality));
+      const float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
+      mHistograms.fill(HIST("hCentrality"), centrality);
       reconstructedCollisions.insert(collision.mcCollisionId());
+      mcCollisionIdToCentrality[collision.mcCollisionId()] = centrality;
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
@@ -635,8 +640,8 @@ struct nucleiQC {
       }
 
       nuclei::SlimCandidate candidate;
-      // candidate.centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
-      candidate.centrality = -1.f; // centrality is not well defined for non-reconstructed particles, set to -1 for now
+      const auto& centralityIt = mcCollisionIdToCentrality.find(particle.mcCollisionId());
+      candidate.centrality = centralityIt != mcCollisionIdToCentrality.end() ? centralityIt->second : -1.f;
       fillCollisionFlag(particle, candidate, reconstructedCollisions);
       fillNucleusFlagsPdgsMc(particle, candidate);
       fillNucleusGeneratedVariables(particle, candidate);

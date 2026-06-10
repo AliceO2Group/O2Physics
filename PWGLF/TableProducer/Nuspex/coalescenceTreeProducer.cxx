@@ -63,6 +63,8 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
 
+constexpr double massHypertriton = 2.99116;
+
 // Lightweight particle container
 struct ReducedParticle {
   int64_t idPart = 0;
@@ -84,8 +86,9 @@ struct CoalescenceTreeProducer {
   // Configurable analysis parameters
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum |z vertex| in cm"};
   Configurable<float> etaMax{"etaMax", 1.5f, "Maximum |eta| for generated particles"};
-  Configurable<float> pRhoMax{"pRhoMax", 1.0f, "Maximum Jacobi p_rho in GeV/c"};
-  Configurable<float> pLambdaMax{"pLambdaMax", 1.0f, "Maximum Jacobi p_lambda in GeV/c"};
+  Configurable<float> pRhoMax{"pRhoMax", 0.5f, "Maximum Jacobi p_rho in GeV/c"};
+  Configurable<float> pLambdaMax{"pLambdaMax", 0.5f, "Maximum Jacobi p_lambda in GeV/c"};
+  Configurable<float> yMax{"yMax", 0.5f, "Maximum rapidity"};
 
   // Output tree storing bound-state candidates
   OutputObj<TTree> treeBoundState{"treeBoundState", OutputObjHandlingPolicy::AnalysisObject};
@@ -173,7 +176,7 @@ struct CoalescenceTreeProducer {
 
   // Apply a momentum-space skim using Jacobi momenta in the candidate rest frame
   template <typename ReducedPart>
-  bool passThreeBodySkim(const ReducedPart& b1, const ReducedPart& b2, const ReducedPart& b3)
+  bool passThreeBodySkim(const ReducedPart& b1, const ReducedPart& b2, const ReducedPart& b3, double massBoundState)
   {
     // Constituent masses from PDG codes
     double m1 = massFromPdg(b1.pdgPart);
@@ -189,10 +192,15 @@ struct CoalescenceTreeProducer {
     auto p4B3 = ROOT::Math::PxPyPzMVector{b3.pxPart, b3.pyPart, b3.pzPart, m3};
 
     // Candidate four-momentum
-    auto candidate = p4B1 + p4B2 + p4B3;
+    ROOT::Math::PxPyPzMVector p4Candidate(p4B1.Px() + p4B2.Px() + p4B3.Px(), p4B1.Py() + p4B2.Py() + p4B3.Py(), p4B1.Pz() + p4B2.Pz() + p4B3.Pz(), massBoundState);
+
+    // Apply rapidity selection
+    if (std::abs(p4Candidate.Rapidity()) > yMax) {
+      return false;
+    }
 
     // Boost to the candidate rest frame
-    auto betaCandidate = candidate.BoostToCM();
+    auto betaCandidate = p4Candidate.BoostToCM();
     ROOT::Math::Boost boostToRest(betaCandidate);
 
     // Constituent momenta in the candidate rest frame
@@ -298,7 +306,7 @@ struct CoalescenceTreeProducer {
             // Skip mixed-sign combinations
             if (!isMatter && !isAntimatter)
               continue;
-            const bool passSkim = passThreeBodySkim(proton, neutron, lambda);
+            const bool passSkim = passThreeBodySkim(proton, neutron, lambda, massHypertriton);
 
             if (isMatter && passSkim)
               nCandidatesMatter++;
@@ -332,7 +340,7 @@ struct CoalescenceTreeProducer {
               continue;
 
             // Apply momentum-space selection
-            const bool passSkim = passThreeBodySkim(proton, neutron, lambda);
+            const bool passSkim = passThreeBodySkim(proton, neutron, lambda, massHypertriton);
             if (!passSkim)
               continue;
 

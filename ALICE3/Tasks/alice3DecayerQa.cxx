@@ -132,7 +132,6 @@ struct Alice3DecayerQa {
 
   void process(const aod::McCollision& collision, const aod::McParticles& particles)
   {
-    LOG(info) << particles.size();
     // Group with collision
     auto trueElectronsGrouped = trueElectrons->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
     auto trueMuonsGrouped = trueMuons->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);

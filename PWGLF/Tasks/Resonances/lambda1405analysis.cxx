@@ -343,15 +343,15 @@ struct lambda1405analysis {
     // Functional selections
     funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", cutSigmaQtAPMin.value.data()), -1, 1);
     LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", cutSigmaQtAPMin.value.data()));
-    funcMinQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", cutSigmaQtAPMax.value.data()), -1, 1);
+    funcMaxQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", cutSigmaQtAPMax.value.data()), -1, 1);
     LOGF(info, "funcMaxQtAlphaAP: %s", Form("%s", cutSigmaQtAPMax.value.data()));
-    funcMinQtAlphaAP = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
+    funcMinBachPiPtVsL1405Pt = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMinBachPiPtVsL1405Pt: %s", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()));
-    funcMinQtAlphaAP = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
+    funcMaxBachPiPtVsL1405Pt = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMaxBachPiPtVsL1405Pt: %s", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()));
-    funcMinQtAlphaAP = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
+    funcMinSigmaPtVsL1405Pt = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMinSigmaPtVsL1405Pt: %s", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()));
-    funcMinQtAlphaAP = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
+    funcMaxSigmaPtVsL1405Pt = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
     LOGF(info, "funcMaxSigmaPtVsL1405Pt: %s", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()));
   }
 
@@ -729,7 +729,6 @@ struct lambda1405analysis {
   {
     if constexpr (requires { collision.centFT0C(); }) {
       if (collision.centFT0C() < centralityMin || collision.centFT0C() > centralityMax) {
-        LOG(info) << "Skipping collision due to centrality cut";
         return;
       }
     }
@@ -780,7 +779,6 @@ struct lambda1405analysis {
           lambda1405Cand.scalarProd = cos2Phi * xQVec + sin2Phi * yQVec;
           float const ptCand = lambda1405Cand.pt();
           rLambda1405.fill(HIST("hSparseFlowL1405"), ptCand, lambda1405Cand.massL1405, collision.centFT0C(), lambda1405Cand.scalarProd);
-          LOG(info) << "Filled flow sparse for candidate with pt " << ptCand << ", mass " << lambda1405Cand.massL1405 << ", centrality " << collision.centFT0C() << " and scalar product " << lambda1405Cand.scalarProd;
           if (fillFlowTree) {
             if (downSampleFactor < 1.) {
               float const pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
@@ -904,7 +902,6 @@ struct lambda1405analysis {
       for (const auto& sigmaCand : sigmaCandsPerCol) {
         std::vector<lambda1405candidate> selectedCandidates;
         constructCollCandidates(sigmaCand, tracksPerCol, selectedCandidates);
-        LOG(info) << "Selected " << selectedCandidates.size() << " Lambda(1405) candidates in this collision";
         for (const auto& lambda1405Cand : selectedCandidates) {
           rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
 

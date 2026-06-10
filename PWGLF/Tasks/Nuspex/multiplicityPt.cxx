@@ -70,6 +70,7 @@ struct MultiplicityPt {
   static constexpr int RecMultBinMax = 100;
   static constexpr int ParticlesType = 4;
   static constexpr int ResponseMatrixTypes = 7;
+  static constexpr int CentralityClasses = 10;
 
   enum INELCutSelection : int {
     INEL = 0,
@@ -114,6 +115,11 @@ struct MultiplicityPt {
   Configurable<float> cfgCutNsigmaPi{"cfgCutNsigmaPi", 3.0f, "nsigma cut for pions"};
   Configurable<float> cfgCutNsigmaKa{"cfgCutNsigmaKa", 2.5f, "nsigma cut for kaons"};
   Configurable<float> cfgCutNsigmaPr{"cfgCutNsigmaPr", 2.5f, "nsigma cut for protons"};
+  ConfigurableAxis ptBinning{"ptBinning", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, "pT bin limits"};
+  ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum"};
+  ConfigurableAxis dedxBins{"dedxBins", {100, 0, 100}, "Binning for dedx"};
+
+  std::vector<double> centBinningStd = {0., 1., 5., 10., 15., 20., 30., 40., 50., 70., 100.};
   // Histogram names for V0s dE/dx analysis
   static constexpr std::string_view DedxvsMomentumPos[ParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view DedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
@@ -127,6 +133,12 @@ struct MultiplicityPt {
   static constexpr std::string_view ParticleFractionsVsMomentumNeg[ParticlesType + 1] = {"hFractionVsMomentum_Pion_Neg", "hFractionVsMomentum_Kaon_Neg", "hFractionVsMomentum_Proton_Neg", "hFractionVsMomentum_Electron_Neg", "hFractionVsMomentum_Muon_Neg"};
 
   static constexpr std::string_view ParticleFractionsVsPtNeg[ParticlesType + 1] = {"hFractionVsPt_Pion_Neg", "hFractionVsPt_Kaon_Neg", "hFractionVsPt_Proton_Neg", "hFractionVsPt_Electron_Neg", "hFractionVsPt_Muon_Neg"};
+
+  // Fine binning
+  static constexpr std::string_view CentpPos[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Pos", "p_vs_eta_Cent1_5_Pos", "p_vs_eta_Cent5_10_Pos", "p_vs_eta_Cent10_15_Pos", "p_vs_eta_Cent15_20_Pos", "p_vs_eta_Cent20_30_Pos", "p_vs_eta_Cent30_40_Pos", "p_vs_eta_Cent40_50_Pos", "p_vs_eta_Cent50_70_Pos", "p_vs_eta_Cent70_100_Pos", "p_vs_eta_MB_Pos"};
+  static constexpr std::string_view CentpNeg[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Neg", "p_vs_eta_Cent1_5_Neg", "p_vs_eta_Cent5_10_Neg", "p_vs_eta_Cent10_15_Neg", "p_vs_eta_Cent15_20_Neg", "p_vs_eta_Cent20_30_Neg", "p_vs_eta_Cent30_40_Neg", "p_vs_eta_Cent40_50_Neg", "p_vs_eta_Cent50_70_Neg", "p_vs_eta_Cent70_100_Neg", "p_vs_eta_MB_Neg"};
+  static constexpr std::string_view CentpTPos[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Pos", "pT_vs_eta_Cent1_5_Pos", "pT_vs_eta_Cent5_10_Pos", "pT_vs_eta_Cent10_15_Pos", "pT_vs_eta_Cent15_20_Pos", "pT_vs_eta_Cent20_30_Pos", "pT_vs_eta_Cent30_40_Pos", "pT_vs_eta_Cent40_50_Pos", "pT_vs_eta_Cent50_70_Pos", "pT_vs_eta_Cent70_100_Pos", "pT_vs_eta_MB_Pos"};
+  static constexpr std::string_view CentpTNeg[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Neg", "pT_vs_eta_Cent1_5_Neg", "pT_vs_eta_Cent5_10_Neg", "pT_vs_eta_Cent10_15_Neg", "pT_vs_eta_Cent15_20_Neg", "pT_vs_eta_Cent20_30_Neg", "pT_vs_eta_Cent30_40_Neg", "pT_vs_eta_Cent40_50_Neg", "pT_vs_eta_Cent50_70_Neg", "pT_vs_eta_Cent70_100_Neg", "pT_vs_eta_MB_Neg"};
 
   TrackSelection customTrackCuts;
   TF1* fphiCutLow = nullptr;
@@ -360,13 +372,12 @@ void MultiplicityPt::init(InitContext const&)
   }
 
   // Axis definitions
-  ConfigurableAxis ptBinning{"ptBinning", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, "pT bin limits"};
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-  AxisSpec dedxAxis{100, 0.0, 100.0, "dE/dx (a. u.)"};
+  AxisSpec dedxAxis = {dedxBins, "dE/dx (a. u.)"};
   AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
   AxisSpec pAxis = {ptBinning, "#it{p} (GeV/#it{c})"};
-
-  std::vector<double> centBinningStd = {0., 1., 5., 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100.};
+  AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
+  AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
   AxisSpec centAxis = {centBinningStd, "FT0M Centrality (%)"};
 
   std::vector<double> centBinningFine;
@@ -494,6 +505,13 @@ void MultiplicityPt::init(InitContext const&)
     ue.add(("ResponseMatrix/" + std::string(EtavspvspTNegPart[i])).c_str(),
            "eta vs pT vs p Negative", HistType::kTH3F,
            {{etaAxis}, {ptAxis}, {pAxis}});
+  }
+
+  for (int i = 0; i < CentralityClasses + 1; ++i) {
+    ue.add(("Binning/" + std::string(CentpPos[i])).c_str(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+    ue.add(("Binning/" + std::string(CentpNeg[i])).c_str(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+    ue.add(("Binning/" + std::string(CentpTPos[i])).c_str(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
+    ue.add(("Binning/" + std::string(CentpTNeg[i])).c_str(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
   }
 
   // ===== Particle Fractions as function of p and pT =====
@@ -757,13 +775,116 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       float eta = track.eta();
       int charge = track.sign();
 
+      int centIndex = -1;
+      for (int j = 0; j < CentralityClasses; ++j) {
+        if (cent >= centBinningStd[j] && cent < centBinningStd[j + 1]) {
+          centIndex = j;
+          break;
+        }
+      }
+      if (centIndex == -1)
+        continue;
+
       // dedx for all particles
       if (charge > 0) {
         ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
         ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
+        // binning
+        ue.fill(HIST("Binning/p_vs_eta_MB_Pos"), eta, momentum);
+        ue.fill(HIST("Binning/pT_vs_eta_MB_Pos"), eta, track.pt());
+
+        // For centrality
+        switch (centIndex) {
+          case 0:
+            ue.fill(HIST("Binning/p_vs_eta_Cent0_1_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent0_1_Pos"), eta, track.pt());
+            break;
+          case 1:
+            ue.fill(HIST("Binning/p_vs_eta_Cent1_5_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent1_5_Pos"), eta, track.pt());
+            break;
+          case 2:
+            ue.fill(HIST("Binning/p_vs_eta_Cent5_10_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent5_10_Pos"), eta, track.pt());
+            break;
+          case 3:
+            ue.fill(HIST("Binning/p_vs_eta_Cent10_15_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent10_15_Pos"), eta, track.pt());
+            break;
+          case 4:
+            ue.fill(HIST("Binning/p_vs_eta_Cent15_20_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent15_20_Pos"), eta, track.pt());
+            break;
+          case 5:
+            ue.fill(HIST("Binning/p_vs_eta_Cent20_30_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent20_30_Pos"), eta, track.pt());
+            break;
+          case 6:
+            ue.fill(HIST("Binning/p_vs_eta_Cent30_40_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent30_40_Pos"), eta, track.pt());
+            break;
+          case 7:
+            ue.fill(HIST("Binning/p_vs_eta_Cent40_50_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent40_50_Pos"), eta, track.pt());
+            break;
+          case 8:
+            ue.fill(HIST("Binning/p_vs_eta_Cent50_70_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent50_70_Pos"), eta, track.pt());
+            break;
+          case 9:
+            ue.fill(HIST("Binning/p_vs_eta_Cent70_100_Pos"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent70_100_Pos"), eta, track.pt());
+            break;
+        }
       } else {
         ue.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
         ue.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
+        // binning
+        ue.fill(HIST("Binning/p_vs_eta_MB_Neg"), eta, momentum);
+        ue.fill(HIST("Binning/pT_vs_eta_MB_Neg"), eta, track.pt());
+
+        switch (centIndex) {
+          case 0:
+            ue.fill(HIST("Binning/p_vs_eta_Cent0_1_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent0_1_Neg"), eta, track.pt());
+            break;
+          case 1:
+            ue.fill(HIST("Binning/p_vs_eta_Cent1_5_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent1_5_Neg"), eta, track.pt());
+            break;
+          case 2:
+            ue.fill(HIST("Binning/p_vs_eta_Cent5_10_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent5_10_Neg"), eta, track.pt());
+            break;
+          case 3:
+            ue.fill(HIST("Binning/p_vs_eta_Cent10_15_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent10_15_Neg"), eta, track.pt());
+            break;
+          case 4:
+            ue.fill(HIST("Binning/p_vs_eta_Cent15_20_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent15_20_Neg"), eta, track.pt());
+            break;
+          case 5:
+            ue.fill(HIST("Binning/p_vs_eta_Cent20_30_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent20_30_Neg"), eta, track.pt());
+            break;
+          case 6:
+            ue.fill(HIST("Binning/p_vs_eta_Cent30_40_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent30_40_Neg"), eta, track.pt());
+            break;
+          case 7:
+            ue.fill(HIST("Binning/p_vs_eta_Cent40_50_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent40_50_Neg"), eta, track.pt());
+            break;
+          case 8:
+            ue.fill(HIST("Binning/p_vs_eta_Cent50_70_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent50_70_Neg"), eta, track.pt());
+            break;
+          case 9:
+            ue.fill(HIST("Binning/p_vs_eta_Cent70_100_Neg"), eta, momentum);
+            ue.fill(HIST("Binning/pT_vs_eta_Cent70_100_Neg"), eta, track.pt());
+            break;
+        }
       }
 
       if (track.mcParticle().isPhysicalPrimary()) {
