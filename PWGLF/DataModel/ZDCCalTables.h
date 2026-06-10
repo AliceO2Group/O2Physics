@@ -20,6 +20,7 @@
 #include <Framework/AnalysisDataModel.h>
 
 #include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -48,5 +49,58 @@ DECLARE_SOA_TABLE(ZDCCalTables, "AOD", "ZDCCALTABLE",
                   zdccaltable::QyA,
                   zdccaltable::QyC);
 using ZDCCalTable = ZDCCalTables::iterator;
+
+// Extra optional linked table.
+// This table does NOT duplicate cent, vx, vy, vz, run number, trigger, etc.
+// It only stores the ZDC energies and links back to ZDCCalTables.
+namespace zdcenergytable
+{
+DECLARE_SOA_INDEX_COLUMN(ZDCCalTable, zdcCalTable);
+
+DECLARE_SOA_COLUMN(ZNACommon, znaCommon, float);
+DECLARE_SOA_COLUMN(ZNCCommon, zncCommon, float);
+
+DECLARE_SOA_COLUMN(ZNA0, zna0, float);
+DECLARE_SOA_COLUMN(ZNA1, zna1, float);
+DECLARE_SOA_COLUMN(ZNA2, zna2, float);
+DECLARE_SOA_COLUMN(ZNA3, zna3, float);
+
+DECLARE_SOA_COLUMN(ZNC0, znc0, float);
+DECLARE_SOA_COLUMN(ZNC1, znc1, float);
+DECLARE_SOA_COLUMN(ZNC2, znc2, float);
+DECLARE_SOA_COLUMN(ZNC3, znc3, float);
+} // namespace zdcenergytable
+
+DECLARE_SOA_TABLE(ZDCEnergyTables, "AOD", "ZDCENERGY",
+                  zdcenergytable::ZDCCalTableId,
+                  zdcenergytable::ZNACommon,
+                  zdcenergytable::ZNCCommon,
+                  zdcenergytable::ZNA0,
+                  zdcenergytable::ZNA1,
+                  zdcenergytable::ZNA2,
+                  zdcenergytable::ZNA3,
+                  zdcenergytable::ZNC0,
+                  zdcenergytable::ZNC1,
+                  zdcenergytable::ZNC2,
+                  zdcenergytable::ZNC3);
+
+using ZDCEnergyTable = ZDCEnergyTables::iterator;
+
+// Extra optional linked table for time information.
+// It only stores timestamp and relative time, linked back to ZDCCalTables.
+namespace zdctimetable
+{
+DECLARE_SOA_INDEX_COLUMN(ZDCCalTable, zdcCalTable);
+
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t); // bc.timestamp(), in ms
+DECLARE_SOA_COLUMN(TimeMin, timeMin, float);        // time from first event seen in this run, in minutes
+} // namespace zdctimetable
+
+DECLARE_SOA_TABLE(ZDCTimeTables, "AOD", "ZDCTIME",
+                  zdctimetable::ZDCCalTableId,
+                  zdctimetable::Timestamp,
+                  zdctimetable::TimeMin);
+
+using ZDCTimeTable = ZDCTimeTables::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_ZDCCALTABLES_H_

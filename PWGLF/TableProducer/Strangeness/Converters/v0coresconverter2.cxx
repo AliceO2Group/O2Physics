@@ -24,6 +24,7 @@ struct v0coresconverter2 {
 
   void process(aod::V0MCCores_001 const& v0MCCores_001)
   {
+    v0MCCores_002.reserve(v0MCCores_001.size());
     for (auto& values : v0MCCores_001) {
       v0MCCores_002(0,
                     values.pdgCode(),

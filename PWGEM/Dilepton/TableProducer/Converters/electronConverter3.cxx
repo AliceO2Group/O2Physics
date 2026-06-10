@@ -31,6 +31,7 @@ struct electronConverter3 {
 
   void process(aod::EMPrimaryElectrons_002 const& tracks)
   {
+    track_003.reserve(tracks.size());
     for (const auto& track : tracks) {
       track_003(track.collisionId(),
                 track.trackId(),

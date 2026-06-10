@@ -25,6 +25,7 @@ struct V0Converter {
 
   void process(aod::V0s_001 const& v0s)
   {
+    v0s_002.reserve(v0s.size());
     for (auto& v0 : v0s) {
       uint8_t bitMask = static_cast<uint8_t>(1); // first bit on
       v0s_002(v0.collisionId(), v0.posTrackId(), v0.negTrackId(), bitMask);

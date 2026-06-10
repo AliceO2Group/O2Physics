@@ -18,6 +18,8 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
 
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
 #include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/ASoA.h>
@@ -140,17 +142,24 @@ namespace lrcorrtrktable
 {
 DECLARE_SOA_INDEX_COLUMN(LRCollision, lrCollision);
 DECLARE_SOA_INDEX_COLUMN(UpcLRCollision, upcLRCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(ChannelID, channelID, int);
+DECLARE_SOA_COLUMN(ChannelID, channelID, uint8_t);
 DECLARE_SOA_COLUMN(Amplitude, amplitude, float);
-DECLARE_SOA_COLUMN(GainAmplitude, gainAmplitude, float);
 DECLARE_SOA_COLUMN(InvMass, invMass, float);
 DECLARE_SOA_COLUMN(IdPos, idPos, int64_t);
 DECLARE_SOA_COLUMN(IdNeg, idNeg, int64_t);
 DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t);
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);
+DECLARE_SOA_COLUMN(AmbDegree, ambDegree, uint8_t);
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(IsCA, isCA, bool);
+DECLARE_SOA_COLUMN(IsReassigned, isReassigned, bool);
+
 enum TrackPid {
   kSpCharge,
   kSpPion,
@@ -168,9 +177,13 @@ enum V0TrackPid {
 DECLARE_SOA_TABLE(LRMidTracks, "AOD", "LRMIDTRACK",
                   o2::soa::Index<>,
                   lrcorrtrktable::LRCollisionId,
+                  lrcorrtrktable::TPCNClsFound,
+                  lrcorrtrktable::TPCNClsCrossedRows,
+                  lrcorrtrktable::TPCChi2NCl,
                   lrcorrtrktable::Pt,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi,
+                  lrcorrtrktable::DcaZ,
                   lrcorrtrktable::TrackType);
 using LRMidTrack = LRMidTracks::iterator;
 
@@ -179,7 +192,6 @@ DECLARE_SOA_TABLE(LRFt0aTracks, "AOD", "LRFT0ATRACK",
                   lrcorrtrktable::LRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
-                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using LRFt0aTrack = LRFt0aTracks::iterator;
@@ -189,7 +201,6 @@ DECLARE_SOA_TABLE(LRFt0cTracks, "AOD", "LRFT0CTRACK",
                   lrcorrtrktable::LRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
-                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using LRFt0cTrack = LRFt0cTracks::iterator;
@@ -209,25 +220,27 @@ using LRV0Track = LRV0Tracks::iterator;
 DECLARE_SOA_TABLE(LRMftTracks, "AOD", "LRMFTTRACK",
                   o2::soa::Index<>,
                   lrcorrtrktable::LRCollisionId,
+                  lrcorrtrktable::AmbDegree,
                   lrcorrtrktable::Pt,
                   lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
+                  lrcorrtrktable::Phi,
+                  fwdtrack::NClusters,
+                  fwdtrack::BestDCAXY,
+                  fwdtrack::BestDCAZ,
+                  lrcorrtrktable::IsCA,
+                  lrcorrtrktable::IsReassigned);
 using LRMftTrack = LRMftTracks::iterator;
-
-DECLARE_SOA_TABLE(LRMftBestTracks, "AOD", "LRMFTBESTTRACK",
-                  o2::soa::Index<>,
-                  lrcorrtrktable::LRCollisionId,
-                  lrcorrtrktable::Pt,
-                  lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
-using LRMftBestTrack = LRMftBestTracks::iterator;
 
 DECLARE_SOA_TABLE(UpcLRMidTracks, "AOD", "UPCLRMIDTRACK",
                   o2::soa::Index<>,
                   lrcorrtrktable::UpcLRCollisionId,
+                  lrcorrtrktable::TPCNClsFound,
+                  lrcorrtrktable::TPCNClsCrossedRows,
+                  lrcorrtrktable::TPCChi2NCl,
                   lrcorrtrktable::Pt,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi,
+                  lrcorrtrktable::DcaZ,
                   lrcorrtrktable::TrackType);
 using UpcLRMidTrack = UpcLRMidTracks::iterator;
 
@@ -236,7 +249,6 @@ DECLARE_SOA_TABLE(UpcLRFt0aTracks, "AOD", "UPCLRFT0ATRACK",
                   lrcorrtrktable::UpcLRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
-                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using UpcLRFt0aTrack = UpcLRFt0aTracks::iterator;
@@ -246,7 +258,6 @@ DECLARE_SOA_TABLE(UpcLRFt0cTracks, "AOD", "UPCLRFT0CTRACK",
                   lrcorrtrktable::UpcLRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
-                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using UpcLRFt0cTrack = UpcLRFt0cTracks::iterator;
@@ -266,18 +277,16 @@ using UpcLRV0Track = UpcLRV0Tracks::iterator;
 DECLARE_SOA_TABLE(UpcLRMftTracks, "AOD", "UPCLRMFTTRACK",
                   o2::soa::Index<>,
                   lrcorrtrktable::UpcLRCollisionId,
+                  lrcorrtrktable::AmbDegree,
                   lrcorrtrktable::Pt,
                   lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
+                  lrcorrtrktable::Phi,
+                  fwdtrack::NClusters,
+                  fwdtrack::BestDCAXY,
+                  fwdtrack::BestDCAZ,
+                  lrcorrtrktable::IsCA,
+                  lrcorrtrktable::IsReassigned);
 using UpcLRMftTrack = UpcLRMftTracks::iterator;
-
-DECLARE_SOA_TABLE(UpcLRMftBestTracks, "AOD", "UPCLRMFTBESTTRACK",
-                  o2::soa::Index<>,
-                  lrcorrtrktable::UpcLRCollisionId,
-                  lrcorrtrktable::Pt,
-                  lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
-using UpcLRMftBestTrack = UpcLRMftBestTracks::iterator;
 } // namespace o2::aod
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_

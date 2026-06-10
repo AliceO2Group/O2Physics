@@ -902,6 +902,27 @@ struct HfTaskFlow {
       }
     }
 
+    //  =========================
+    //  Initialization of histograms and CorrelationContainers for McGen cases
+    //  =========================
+
+    // if (doprocessSameMcGen) {
+
+    //   if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
+    //     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{configAxis.axisSamples, configAxis.axisVertex, configAxis.axisPtTrigger}}});
+    //     sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+    //     mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+    //   } else if (configTask.doEtaDependentFlow){
+    //     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{configAxis.axisSamples, configAxis.axisVertex, configAxis.axisEtaTrigger}}});
+    //     sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisEta, effAxis, {}));
+    //     mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisEta, effAxis, {}));
+    //   } else {
+    //     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{configAxis.axisSamples, configAxis.axisVertex, configAxis.axisPtTrigger}}});
+    //     sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisVariations, effAxis, {}));
+    //     mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisVariations, effAxis, {}));
+    //   }
+    // }
+
   } // End of init() function
 
   // =========================

@@ -120,7 +120,7 @@ struct FemtoV0Qa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessLambda + doprocessLambdaMc + doprocessK0short + doprocessK0shortMc) > 1) {
+    if ((doprocessLambda + doprocessLambdaMc + doprocessK0short + doprocessK0shortMc) != 1) {
       LOG(fatal) << "Only one process can be activated";
     }
     bool processData = doprocessLambda || doprocessK0short;
@@ -220,7 +220,7 @@ struct FemtoV0Qa {
       lambdaHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(lambda, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
-  PROCESS_SWITCH(FemtoV0Qa, processLambdaMc, "Process lambdas", false);
+  PROCESS_SWITCH(FemtoV0Qa, processLambdaMc, "Process lambdas with MC informaton", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

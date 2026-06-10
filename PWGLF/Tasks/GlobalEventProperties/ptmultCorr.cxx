@@ -22,6 +22,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -36,12 +37,16 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -56,9 +61,7 @@ using ColMCRecTablePbPb = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod
 using ColMCRecTablepp = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>>;
 using ColMCTrueTable = soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-using FilTrackDataTable = soa::Filtered<TrackDataTable>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
-using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 using TrackMCTrueTable = aod::McParticles;
 
 enum {
@@ -77,6 +80,13 @@ enum {
   kGenpTend
 };
 
+// ── CHANGE 1 ────────────────────────────────────────────────────────────────
+// Added kGenAllCharged as the new last bin before kGenTrkTypeend.
+// Numerator  : kGenAll        → MC truth physical primaries
+// Denominator: kGenAllCharged → MC truth all charged (primaries + secondaries)
+// Primary fraction from MC = kGenAll / kGenAllCharged per pT bin.
+// axisGenTrkType (built from kGenTrkTypeend) auto-expands from 5 → 6 bins.
+// ────────────────────────────────────────────────────────────────────────────
 enum {
   kGenTrkTypebegin = 0,
   kGenAll = 1,
@@ -84,6 +94,7 @@ enum {
   kGenKaon,
   kGenProton,
   kGenOther,
+  kGenAllCharged, // all charged particles (primaries + secondaries) — denominator for primary fraction
   kGenTrkTypeend
 };
 
@@ -103,18 +114,6 @@ enum {
   kRecTrkTypeend
 };
 
-static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
-  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-  TrackSelectionFlags::kITSHits;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
-  TrackSelectionFlags::kTPCNCls |
-  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-  TrackSelectionFlags::kTPCChi2NDF;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
-  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
-  TrackSelectionFlags::kDCAxy;
-
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
@@ -122,7 +121,9 @@ AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf
 AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
 AxisSpec axisDeltaPt{50, -1.0, +1.0, "#Delta(pT)"};
+AxisSpec axisDCAxy{100, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
 AxisSpec axisGenPtVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
+// axisGenTrkType auto-expands: kGenTrkTypeend is now 8, giving 6 bins (kGenAll … kGenAllCharged)
 AxisSpec axisGenTrkType = {kGenTrkTypeend - 1, +kGenTrkTypebegin + 0.5, +kGenTrkTypeend - 0.5, "", "GenTrackTypeAxis"};
 AxisSpec axisRecTrkType = {kRecTrkTypeend - 1, +kRecTrkTypebegin + 0.5, +kRecTrkTypeend - 0.5, "", "RecTrackTypeAxis"};
 AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
@@ -133,19 +134,45 @@ struct PtmultCorr {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<ccdb::BasicCCDBManager> ccdb;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
-  Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
+  Configurable<float> etaRange{"etaRange", 0.8f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> occuRange{"occuRange", 500.0f, "Occupancy range to consider"};
-  Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.15f, "minimum accepted track pT"};
+  Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.1f, "minimum accepted track pT"};
+  Configurable<float> cfgPtCutMax{"cfgPtCutMax", 1e9f, "maximum accepted track pT"};
   Configurable<float> extraphicut1{"extraphicut1", 3.07666f, "Extra Phi cut 1"};
   Configurable<float> extraphicut2{"extraphicut2", 3.12661f, "Extra Phi cut 2"};
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
   Configurable<float> extraphicut4{"extraphicut4", 6.253f, "Extra Phi cut 4"};
+
+  // Track quality cuts (matching piKpRAA analysis)
+  Configurable<uint8_t> cfgMinNClusITS{"cfgMinNClusITS", 7, "Minimum ITS clusters"};
+  Configurable<int16_t> cfgMinNCrossedRows{"cfgMinNCrossedRows", 70, "Minimum TPC crossed rows"};
+  Configurable<int16_t> cfgMinNcls{"cfgMinNcls", 130, "Minimum TPC clusters (applied only if cfgApplyNclSel is true)"};
+  Configurable<bool> cfgApplyNclSel{"cfgApplyNclSel", true, "Enable minimum TPC cluster selection"};
+  Configurable<bool> cfgUseNclsPID{"cfgUseNclsPID", false, "Use NclsPID instead of NclsFound for the Ncls cut"};
+  Configurable<float> cfgMinChi2ClsTPC{"cfgMinChi2ClsTPC", 0.5f, "Minimum TPC chi2/cls"};
+  Configurable<float> cfgMaxChi2ClsTPC{"cfgMaxChi2ClsTPC", 4.0f, "Maximum TPC chi2/cls"};
+  Configurable<float> cfgMaxChi2ClsITS{"cfgMaxChi2ClsITS", 36.0f, "Maximum ITS chi2/cls"};
+  Configurable<float> cfgNSigmaDCAxy{"cfgNSigmaDCAxy", 1.0f, "nSigma scaling for DCAxy cut"};
+  Configurable<float> cfgNSigmaDCAz{"cfgNSigmaDCAz", 1.0f, "nSigma scaling for DCAz cut"};
+
+  // CCDB paths for pT-dependent DCA cuts
+  Configurable<std::string> pathDCAxy{"pathDCAxy", "", "CCDB path for DCAxy parametrisation (leave empty to skip)"};
+  Configurable<std::string> pathDCAz{"pathDCAz", "", "CCDB path for DCAz parametrisation (leave empty to skip)"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable CCDB timestamp"};
+
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
+
+  // DCA cache (loaded from CCDB)
+  struct ConfigDCA {
+    TH1F* hDCAxy = nullptr;
+    TH1F* hDCAz = nullptr;
+    bool loaded = false;
+  } cfgDCA;
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
@@ -157,8 +184,26 @@ struct PtmultCorr {
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyOccuCut{"isApplyOccuCut", false, "Enable occupancy selection"};
 
+  // Secondary estimation related configurables
+  Configurable<bool> isApplyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
+
   void init(InitContext const&)
   {
+    // Load DCA parametrisations from CCDB (matching piKpRAA)
+    if (!pathDCAxy.value.empty()) {
+      cfgDCA.hDCAxy = ccdb->getForTimeStamp<TH1F>(pathDCAxy, ccdbNoLaterThan);
+      if (cfgDCA.hDCAxy == nullptr)
+        LOGF(fatal, "Could not load DCAxy histogram from %s", pathDCAxy.value.c_str());
+    }
+    if (!pathDCAz.value.empty()) {
+      cfgDCA.hDCAz = ccdb->getForTimeStamp<TH1F>(pathDCAz, ccdbNoLaterThan);
+      if (cfgDCA.hDCAz == nullptr)
+        LOGF(fatal, "Could not load DCAz histogram from %s", pathDCAz.value.c_str());
+    }
+    if (cfgDCA.hDCAxy && cfgDCA.hDCAz)
+      cfgDCA.loaded = true;
     AxisSpec centAxis = {centralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
@@ -172,11 +217,11 @@ struct PtmultCorr {
 
     if (doprocessDataPbPb) {
       histos.add("hdatazvtxcent", "hdatazvtxcent", kTH2D, {axisVtxZ, centAxis}, false);
-      histos.add("hdatahistPbPb", "hdatahistPbPb", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisTrackType}, false);
+      histos.add("hdatahistPbPb", "hdatahistPbPb", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisTrackType, axisDCAxy}, false);
     }
 
     if (doprocessDatapp) {
-      histos.add("hdatahistpp", "hdatahistpp", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisTrackType}, false);
+      histos.add("hdatahistpp", "hdatahistpp", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisTrackType, axisDCAxy}, false);
     }
 
     if (doprocessMCeffPbPb) {
@@ -185,12 +230,13 @@ struct PtmultCorr {
       histos.add("hPbPbGenMCAssoRecvtxz", "hPbPbGenMCAssoRecvtxz", kTH1D, {axisVtxZ}, false);
       histos.add("hPbPbGenMCAssoRecvtxzcent", "hPbPbGenMCAssoRecvtxzcent", kTH2D, {axisVtxZ, centAxis}, false);
       histos.add("hPbPbGenMCdndpt", "hPbPbGenMCdndpt", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi}, false);
+      // axisGenTrkType now has 6 bins: kGenAll(1)…kGenOther(5), kGenAllCharged(6)
       histos.add("hPbPbGenMCAssoRecdndpt", "hPbPbGenMCAssoRecdndpt", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisGenTrkType, axisGenPtVary}, false);
 
       histos.add("hPbPbRecMCvtxz", "hPbPbRecMCvtxz", kTH1D, {axisVtxZ}, false);
       histos.add("hPbPbRecMCvtxzcent", "hPbPbRecMCvtxzcent", kTH2D, {axisVtxZ, centAxis}, false);
       histos.add("hPbPbRecMCcent", "hPbPbRecMCcent", kTH1D, {axisCent}, false);
-      histos.add("hPbPbRecMCdndpt", "hPbPbRecMCdndpt", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisRecTrkType}, false);
+      histos.add("hPbPbRecMCdndpt", "hPbPbRecMCdndpt", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisRecTrkType, axisTrackType, axisDCAxy}, false);
       histos.add("hPbPbEtaReso", "hPbPbEtaReso", kTH2D, {axisPt, axisDeltaPt});
     }
 
@@ -198,10 +244,11 @@ struct PtmultCorr {
       histos.add("hppGenMCvtxz", "hppGenMCvtxz", kTH1D, {axisVtxZ}, false);
       histos.add("hppGenMCAssoRecvtxz", "hppGenMCAssoRecvtxz", kTH1D, {axisVtxZ}, false);
       histos.add("hppGenMCdndpt", "hppGenMCdndpt", kTHnSparseD, {axisVtxZ, axisPt, axisPhi}, false);
+      // axisGenTrkType now has 6 bins: kGenAll(1)…kGenOther(5), kGenAllCharged(6)
       histos.add("hppGenMCAssoRecdndpt", "hppGenMCAssoRecdndpt", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisGenTrkType, axisGenPtVary}, false);
 
       histos.add("hppRecMCvtxz", "hppRecMCvtxz", kTH1D, {axisVtxZ}, false);
-      histos.add("hppRecMCdndpt", "hppRecMCdndpt", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisRecTrkType}, false);
+      histos.add("hppRecMCdndpt", "hppRecMCdndpt", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisRecTrkType, axisTrackType, axisDCAxy}, false);
       histos.add("hppEtaReso", "hppEtaReso", kTH2D, {axisPt, axisDeltaPt});
     }
 
@@ -290,17 +337,80 @@ struct PtmultCorr {
   template <typename CheckTrack>
   bool isTrackSelected(CheckTrack const& track)
   {
+    // --- eta (applied to all track types) ---
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
+
+    // --- pT (applied to all track types) ---
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
+      return false;
+    }
+
+    if (track.hasTPC()) {
+      // ---- Global (ITS+TPC) tracks:
+
+      // ITS cuts: can be disabled for secondary estimation
+      if (isApplyITSCuts) {
+        // ITS inner-barrel hit: must fire layer 0 or layer 1
+        if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
+          return false;
+        }
+        if (track.itsNCls() < cfgMinNClusITS) {
+          return false;
+        }
+        // ITS chi2 cut (also part of ITS cuts)
+        if (track.itsChi2NCl() > cfgMaxChi2ClsITS) {
+          return false;
+        }
+      }
+
+      // TPC quality cuts (always applied)
+      if (track.tpcNClsCrossedRows() < cfgMinNCrossedRows) {
+        return false;
+      }
+      // optional minimum TPC clusters (found or PID, matching piKpRAA applyNclSel)
+      if (cfgApplyNclSel) {
+        const int16_t ncl = cfgUseNclsPID ? track.tpcNClsPID() : track.tpcNClsFound();
+        if (ncl < cfgMinNcls) {
+          return false;
+        }
+      }
+
+      // --- χ² cuts (can be disabled for secondary estimation) ---
+      if (isApplyChi2Cuts) {
+        if (track.tpcChi2NCl() < cfgMinChi2ClsTPC || track.tpcChi2NCl() > cfgMaxChi2ClsTPC) {
+          return false;
+        }
+      }
+
+      // pT-dependent DCA cuts (can be disabled for secondary estimation)
+      if (isApplyDCACuts && cfgDCA.loaded) {
+        const float pt = track.pt();
+        const double dcaXYcut = cfgNSigmaDCAxy * (cfgDCA.hDCAxy->GetBinContent(1) +
+                                                  cfgDCA.hDCAxy->GetBinContent(2) /
+                                                    std::pow(std::abs(pt), cfgDCA.hDCAxy->GetBinContent(3)));
+        const double dcaZcut = cfgNSigmaDCAz * (cfgDCA.hDCAz->GetBinContent(1) +
+                                                cfgDCA.hDCAz->GetBinContent(2) /
+                                                  std::pow(std::abs(pt), cfgDCA.hDCAz->GetBinContent(3)));
+        if (std::abs(track.dcaZ()) > dcaZcut || std::abs(track.dcaXY()) > dcaXYcut) {
+          return false;
+        }
+      }
+    }
+
+    // --- optional phi cut (applied to all track types) ---
     histos.fill(HIST("PhiVsEtaHistNoCut"), track.phi(), track.eta());
     if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
     }
     histos.fill(HIST("PhiVsEtaHistWithCut"), track.phi(), track.eta());
+
     return true;
   }
 
+  // Selects MC truth physical primaries (numerator for primary fraction).
+  // Requires: isPhysicalPrimary + producedByGenerator + charged + |eta| < etaRange
   template <typename CheckGenTrack>
   bool isGenTrackSelected(CheckGenTrack const& track)
   {
@@ -326,15 +436,35 @@ struct PtmultCorr {
     return true;
   }
 
-  Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                              ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
-  Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                     ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
-  Filter fTrackSelectionDCA = ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
-                                     ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
-  Filter fTracksPt = aod::track::pt > cfgPtCutMin;
+  // ── CHANGE 2 ──────────────────────────────────────────────────────────────
+  // New helper: selects ALL charged particles in acceptance (denominator).
+  // Identical to isGenTrackSelected but WITHOUT the isPhysicalPrimary() check,
+  // so secondaries (weak-decay daughters, material interactions) also pass.
+  // Used to fill kGenAllCharged → primary fraction = kGenAll / kGenAllCharged.
+  // ──────────────────────────────────────────────────────────────────────────
+  template <typename CheckGenTrack>
+  bool isGenChargedTrackSelected(CheckGenTrack const& track)
+  {
+    if (!track.producedByGenerator()) {
+      return false;
+    }
+    auto pdgTrack = pdg->GetParticle(track.pdgCode());
+    if (pdgTrack == nullptr) {
+      return false;
+    }
+    if (std::abs(pdgTrack->Charge()) < KminCharge) {
+      return false;
+    }
+    if (std::abs(track.eta()) >= etaRange) {
+      return false;
+    }
+    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+      return false;
+    }
+    return true;
+  }
 
-  void processDataPbPb(ColDataTablePbPb::iterator const& cols, FilTrackDataTable const& tracks)
+  void processDataPbPb(ColDataTablePbPb::iterator const& cols, TrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
       return;
@@ -347,16 +477,16 @@ struct PtmultCorr {
       if (!isTrackSelected(track)) {
         continue;
       }
-      histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalplusITS);
+      histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalplusITS, track.dcaXY());
       if (track.hasTPC()) {
-        histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalonly);
+        histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalonly, track.dcaXY());
       } else {
-        histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kITSonly);
+        histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kITSonly, track.dcaXY());
       }
     }
   }
 
-  void processDatapp(ColDataTablepp::iterator const& cols, FilTrackDataTable const& tracks)
+  void processDatapp(ColDataTablepp::iterator const& cols, TrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
       return;
@@ -367,16 +497,16 @@ struct PtmultCorr {
       if (!isTrackSelected(track)) {
         continue;
       }
-      histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kGlobalplusITS);
+      histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kGlobalplusITS, track.dcaXY());
       if (track.hasTPC()) {
-        histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kGlobalonly);
+        histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kGlobalonly, track.dcaXY());
       } else {
-        histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kITSonly);
+        histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kITSonly, track.dcaXY());
       }
     }
   }
 
-  void processMCeffPbPb(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablePbPb const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMCeffPbPb(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablePbPb const& RecCols, TrackMCTrueTable const& GenParticles, TrackMCRecTable const& RecTracks)
   {
     auto gencent = -999;
     bool atLeastOne = false;
@@ -396,10 +526,33 @@ struct PtmultCorr {
       histos.fill(HIST("hPbPbGenMCAssoRecvtxz"), mcCollision.posZ());
       histos.fill(HIST("hPbPbGenMCAssoRecvtxzcent"), mcCollision.posZ(), gencent);
     }
+
+    // ── CHANGE 3 ────────────────────────────────────────────────────────────
+    // Restructured PbPb gen particle loop for primary fraction from MC truth.
+    //
+    // Pass 1 (loose): isGenChargedTrackSelected — all charged in acceptance.
+    //   → fills kGenAllCharged (denominator) when associated with a reco event.
+    //
+    // Pass 2 (tight): additionally require isPhysicalPrimary (via continue).
+    //   → fills kGenAll and species bins (numerator) — identical to before.
+    //
+    // Primary fraction (PbPb) = hPbPbGenMCAssoRecdndpt[kGenAll]
+    //                         / hPbPbGenMCAssoRecdndpt[kGenAllCharged]  per pT bin
+    // ────────────────────────────────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      if (!isGenTrackSelected(particle)) {
+      // Loose check: charged + |eta| + phi (no isPhysicalPrimary requirement)
+      if (!isGenChargedTrackSelected(particle)) {
         continue;
       }
+      // Fill denominator: all charged particles (primaries + secondaries)
+      if (atLeastOne) {
+        histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAllCharged), kNoGenpTVar);
+      }
+      // Tight check: physical primaries only — skip secondaries from this point on
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      // Fill primary-only histograms (numerator + species breakdown)
       histos.fill(HIST("hPbPbGenMCdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
@@ -445,14 +598,20 @@ struct PtmultCorr {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
-        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll));
+        auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
+
+        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), kGlobalplusITS, Rectrack.dcaXY());
+        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), trkType, Rectrack.dcaXY());
+
         if (Rectrack.has_mcParticle()) {
           int pid = 0;
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("hPbPbEtaReso"), Rectrack.pt(), Rectrack.pt() - mcpart.pt());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc));
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), trkType, Rectrack.dcaXY());
           if (mcpart.isPhysicalPrimary()) {
-            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary));
+            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), kGlobalplusITS, Rectrack.dcaXY());
+            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), trkType, Rectrack.dcaXY());
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
@@ -480,15 +639,17 @@ struct PtmultCorr {
             pid = kRecoFake;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid));
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType, Rectrack.dcaXY());
         } else {
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg));
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType, Rectrack.dcaXY());
         }
       } // track (mcrec) loop
     } // collision loop
   }
 
-  void processMCeffpp(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMCeffpp(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles, TrackMCRecTable const& RecTracks)
   {
     bool atLeastOne = false;
     for (const auto& RecCol : RecCols) {
@@ -504,10 +665,33 @@ struct PtmultCorr {
     if (atLeastOne) {
       histos.fill(HIST("hppGenMCAssoRecvtxz"), mcCollision.posZ());
     }
+
+    // ── CHANGE 4 ────────────────────────────────────────────────────────────
+    // Restructured pp gen particle loop for primary fraction from MC truth.
+    //
+    // Pass 1 (loose): isGenChargedTrackSelected — all charged in acceptance.
+    //   → fills kGenAllCharged (denominator) when associated with a reco event.
+    //
+    // Pass 2 (tight): additionally require isPhysicalPrimary (via continue).
+    //   → fills kGenAll and species bins (numerator) — identical to before.
+    //
+    // Primary fraction (pp) = hppGenMCAssoRecdndpt[kGenAll]
+    //                       / hppGenMCAssoRecdndpt[kGenAllCharged]  per pT bin
+    // ────────────────────────────────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      if (!isGenTrackSelected(particle)) {
+      // Loose check: charged + |eta| + phi (no isPhysicalPrimary requirement)
+      if (!isGenChargedTrackSelected(particle)) {
         continue;
       }
+      // Fill denominator: all charged particles (primaries + secondaries)
+      if (atLeastOne) {
+        histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAllCharged), kNoGenpTVar);
+      }
+      // Tight check: physical primaries only — skip secondaries from this point on
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      // Fill primary-only histograms (numerator + species breakdown)
       histos.fill(HIST("hppGenMCdndpt"), mcCollision.posZ(), particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
@@ -551,14 +735,18 @@ struct PtmultCorr {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
-        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll));
+        auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
+        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), kGlobalplusITS, Rectrack.dcaXY());
+        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), trkType, Rectrack.dcaXY());
         if (Rectrack.has_mcParticle()) {
           int pid = 0;
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("hppEtaReso"), Rectrack.pt(), Rectrack.pt() - mcpart.pt());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc));
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), trkType, Rectrack.dcaXY());
           if (mcpart.isPhysicalPrimary()) {
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary));
+            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), kGlobalplusITS, Rectrack.dcaXY());
+            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), trkType, Rectrack.dcaXY());
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
@@ -586,9 +774,11 @@ struct PtmultCorr {
             pid = kRecoFake;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid));
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType, Rectrack.dcaXY());
         } else {
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg));
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType, Rectrack.dcaXY());
         }
       } // track (mcrec) loop
     } // collision loop

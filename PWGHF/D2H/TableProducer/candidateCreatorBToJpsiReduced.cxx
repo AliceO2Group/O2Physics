@@ -75,7 +75,6 @@ struct HfCandidateCreatorBToJpsiReduced {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B+ is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
 
-  Configurable<bool> runJpsiToee{"runJpsiToee", false, "Run analysis for J/Psi to ee (debug)"};
   // selection
   Configurable<double> invMassWindowJpsiHadTolerance{"invMassWindowJpsiHadTolerance", 0.01, "invariant-mass window tolerance for J/Psi K pair preselections (GeV/c2)"};
 
@@ -200,11 +199,7 @@ struct HfCandidateCreatorBToJpsiReduced {
       trackParCovJpsi.setAbsCharge(0); // to be sure
 
       float invMassJpsi{0.f};
-      if (runJpsiToee) {
-        invMassJpsi = RecoDecay::m2(std::array{pVecDauPos, pVecDauNeg}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
-      } else {
-        invMassJpsi = RecoDecay::m2(std::array{pVecDauPos, pVecDauNeg}, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon});
-      }
+      invMassJpsi = RecoDecay::m2(std::array{pVecDauPos, pVecDauNeg}, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon});
       invMassJpsi = std::sqrt(invMassJpsi);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
 
@@ -343,9 +338,9 @@ struct HfCandidateCreatorBToJpsiReduced {
                                errorDecayLength, errorDecayLengthXY,
                                chi2PCA,
                                pVecDauPos[0], pVecDauPos[1], pVecDauPos[2],
-                               pVecDauNeg[0], pVecDauNeg[1], pVecDauPos[2],
+                               pVecDauNeg[0], pVecDauNeg[1], pVecDauNeg[2],
                                pVecTrackLf0[0], pVecTrackLf0[1], pVecTrackLf0[2],
-                               pVecTrackLf1[0], pVecTrackLf1[1], pVecTrackLf0[2],
+                               pVecTrackLf1[0], pVecTrackLf1[1], pVecTrackLf1[2],
                                dcaDauPos.getY(), dcaDauNeg.getY(), dcaTrackLf0.getY(), dcaTrackLf1.getY(),
                                std::sqrt(dcaDauPos.getSigmaY2()), std::sqrt(dcaDauNeg.getSigmaY2()), std::sqrt(dcaTrackLf0.getSigmaY2()), std::sqrt(dcaTrackLf1.getSigmaY2()));
             rowCandidateBsProngs(candJpsi.globalIndex(), trackLf0.globalIndex(), trackLf1.globalIndex());
