@@ -139,7 +139,7 @@ enum EnCentEstm {
 const char* centEstmNames[eCentEstm_N] = {
   "FT0C",
   "FT0M",
-  "FV0A",};
+  "FV0A"};
 
 enum EnMultEstm {
   eMultFT0C,
@@ -283,19 +283,19 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   } tc;
 
   struct ParticleHistograms {
-    TList* fParticleHistogramsList = NULL; //!<! list to hold all control particle histograms
+    TList* fParticleHistogramsList = NULL;
     TH1F* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};
   } pc;
 
   struct EventHistograms {
-    TList* fEventHistogramsList = NULL; //!<! list to hold all control event histograms
-    TH1F* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum EnEventHistograms ][reco,sim][before,after event cuts]
+    TList* fEventHistogramsList = NULL;
+    TH1F* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; // [ type - see enum EnEventHistograms ][reco,sim][before,after event cuts]
   } ev;
 
   struct QAHistograms {
     bool fQASwitch = kTRUE;
     TList* fQAHistogramsList = NULL;
-    TH2F* fQAHistograms[eQAHistograms_N][2] = {{NULL}}; //[type][before/after cut]
+    TH2F* fQAHistograms[eQAHistograms_N][2] = {{NULL}}; // [type][before/after cut]
   } qa;
 
   struct CorrHistograms {
@@ -329,7 +329,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   struct MultiparticleCorrelationCalculation {
     int h1, h2, h3, h4, h5, h6, h7, h8;
     // Book Q-vector components:
-    static constexpr int MaxCorrelator = 4; //<<m>>
+    static constexpr int MaxCorrelator = 4; // <<m>>
     static constexpr int MaxHarmonic = 5;   // n+1 in vn, in this case n=4 as we need v2, v3, v4
     static constexpr int MaxPower = MaxCorrelator + 1;
     static constexpr int NumSC = 2; // need SC(3,2) and SC(4,2)
@@ -533,7 +533,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     if (mult == 1)
       return c - c2;
-    return c - double(mult)*  c2;
+    return c - double(mult) * c2;
 
   }
 
@@ -585,7 +585,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   {
     // a) Return value:
     std::vector<TH1F*> histograms;
-    TList* baseList = NULL; // base top-level list in the TFile, e.g. named "ccdb_object"
+    TList* baseList = NULL;     // base top-level list in the TFile, e.g. named "ccdb_object"
     TList* listWithRuns = NULL; // nested list with run-wise TList's holding run-specific weights
 
     // c) Determine from filePath if the file in on a local machine, or in home dir AliEn, or in CCDB:
@@ -985,7 +985,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     } // end of for (int64_t i = 0; i < tracks.size(); i++) {
 
-    for (int i = 0; i < mcc.MaxHarmonic - 2 ; i++) {
+    for (int i = 0; i < mcc.MaxHarmonic - 2; i++) {
       mcc.h1 = -(i + 2);
       mcc.h2 = i + 2;
       int harmonicsTwoNum[2] = {mcc.h1, mcc.h2};
@@ -1031,7 +1031,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         mc.fFourParticleCorrelationProfiles[eAfter]->Fill(i + 3.5, ebye.fFourParticleCorrelationEbye[eAfter][i], wFourRecursionAfter);
       }
     }
-
   }
 
   template <EnParticleHistograms histType, typename T1>
@@ -1326,8 +1325,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     bookCorrHistograms<eCorrMult>(lCrBins, cr);
 
     if (wt.fWeightSwitch) {
-      wt.fWeightHistograms = getHistogramsWithWeights(
-          tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
+      wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
       for (auto* const& hist : wt.fWeightHistograms) { // o2-linter: disable=const-ref-in-for-loop
         wt.fWeightHistogramsList->Add(hist);
       }
@@ -1381,5 +1379,5 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 // *) The final touch:
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<MultiparticleCumulants>(cfgc),};
+  return WorkflowSpec{adaptAnalysisTask<MultiparticleCumulants>(cfgc)};
 } // WorkflowSpec...
