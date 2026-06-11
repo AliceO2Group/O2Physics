@@ -764,7 +764,8 @@ struct HStrangeCorrelationFilter {
         continue;
       if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
         continue;
-
+      if (v0.dcaV0daughters() > v0Selection.dcaV0dau)
+        continue;
       bool isGoodK0Short = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
                             std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV &&
                             v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha()));
@@ -890,7 +891,8 @@ struct HStrangeCorrelationFilter {
         continue;
       if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
         continue;
-
+      if (v0.dcaV0daughters() > v0Selection.dcaV0dau)
+        continue;
       bool isGoodK0Short = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
                            std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV &&
                            v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
