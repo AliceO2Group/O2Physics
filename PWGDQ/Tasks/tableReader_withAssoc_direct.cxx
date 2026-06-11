@@ -1637,16 +1637,29 @@ struct AnalysisSameEventPairing {
     int sign1 = 0;
     int sign2 = 0;
 
-    dielectronList.reserve(1);
-    // dimuonList.reserve(1);
-    dielectronsExtraList.reserve(1);
-    // dimuonsExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dileptonInfoList.reserve(1);
+    // estimate reserved size
+    int64_t reserveSize = 0;
+    for (auto& event : events) {
+      if (event.isEventSelected_bit(0)) {
+        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+        size_t nGood = 0;
+        for (auto const& t : groupedAssocs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            if (t.isBarrelSelected_raw()) {
+              nGood++;
+            }
+          }
+        }
+        reserveSize += nGood * (nGood - 1) / 2;
+      }
+    }
 
+    dielectronList.reserve(reserveSize);
+    dielectronsExtraList.reserve(reserveSize);
+    dielectronInfoList.reserve(reserveSize);
+    dileptonInfoList.reserve(reserveSize);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
-      // dimuonAllList.reserve(1);
+      dielectronAllList.reserve(reserveSize);
     }
 
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
