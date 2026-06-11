@@ -1739,6 +1739,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kAmplitudeFT0A] = "a.u.";
   fgVariableNames[kAmplitudeFT0C] = "FT0C amplitude";
   fgVariableUnits[kAmplitudeFT0C] = "a.u.";
+  fgVariableNames[kAmplitudeFT0M] = "FT0M amplitude";
+  fgVariableUnits[kAmplitudeFT0M] = "a.u.";
   fgVariableNames[kTimeFT0A] = "FT0A time";
   fgVariableUnits[kTimeFT0A] = "ns";
   fgVariableNames[kTimeFT0C] = "FT0C time";
@@ -2658,6 +2660,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
   fgVarNamesMap["kAmplitudeFT0A"] = kAmplitudeFT0A;
   fgVarNamesMap["kAmplitudeFT0C"] = kAmplitudeFT0C;
+  fgVarNamesMap["kAmplitudeFT0M"] = kAmplitudeFT0M;
+  fgVarNamesMap["kFT0OrA"] = kFT0OrA;
+  fgVarNamesMap["kFT0OrC"] = kFT0OrC;
   fgVarNamesMap["kTimeFT0A"] = kTimeFT0A;
   fgVarNamesMap["kTimeFT0C"] = kTimeFT0C;
   fgVarNamesMap["kTriggerMaskFT0"] = kTriggerMaskFT0;
