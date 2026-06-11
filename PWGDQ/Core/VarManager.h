@@ -36,6 +36,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -1022,9 +1023,12 @@ class VarManager : public TObject
     // FIT detector variables
     kAmplitudeFT0A,
     kAmplitudeFT0C,
+    kAmplitudeFT0M,
     kTimeFT0A,
     kTimeFT0C,
     kTriggerMaskFT0,
+    kFT0OrA,
+    kFT0OrC,
     kAmplitudeFDDA,
     kAmplitudeFDDC,
     kTimeFDDA,
@@ -2434,9 +2438,12 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & ReducedFit) > 0) {
     values[kAmplitudeFT0A] = event.amplitudeFT0A();
     values[kAmplitudeFT0C] = event.amplitudeFT0C();
+    values[kAmplitudeFT0M] = values[kAmplitudeFT0A] + values[kAmplitudeFT0C];
     values[kTimeFT0A] = event.timeFT0A();
     values[kTimeFT0C] = event.timeFT0C();
     values[kTriggerMaskFT0] = event.triggerMaskFT0();
+    values[kFT0OrA] = TESTBIT(event.triggerMaskFT0(), o2::fit::Triggers::bitA);
+    values[kFT0OrC] = TESTBIT(event.triggerMaskFT0(), o2::fit::Triggers::bitC);
     values[kNFiredChannelsFT0A] = event.nFiredChannelsFT0A();
     values[kNFiredChannelsFT0C] = event.nFiredChannelsFT0C();
     values[kAmplitudeFDDA] = event.amplitudeFDDA();
@@ -6797,9 +6804,12 @@ void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& 
   // Fill FT0 information
   values[kAmplitudeFT0A] = fitInfo.ampFT0A;
   values[kAmplitudeFT0C] = fitInfo.ampFT0C;
+  values[kAmplitudeFT0M] = values[kAmplitudeFT0A] + values[kAmplitudeFT0C];
   values[kTimeFT0A] = fitInfo.timeFT0A;
   values[kTimeFT0C] = fitInfo.timeFT0C;
   values[kTriggerMaskFT0] = static_cast<float>(fitInfo.triggerMaskFT0);
+  values[kFT0OrA] = TESTBIT(fitInfo.triggerMaskFT0, o2::fit::Triggers::bitA);
+  values[kFT0OrC] = TESTBIT(fitInfo.triggerMaskFT0, o2::fit::Triggers::bitC);
   const auto ft0Index = bc.ft0Id();
   if (ft0Index < 0 || ft0Index >= ft0s.size()) {
     values[kNFiredChannelsFT0A] = -1;
