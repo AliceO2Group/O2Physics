@@ -1170,10 +1170,10 @@ struct HfTaskFlow {
     float efficiencyTpc = 1.;
 
     if (mEfficiencyTpc) {
-      int etaBin = mEfficiencyTpc->GetXaxis()->FindBin(eta);
-      int ptBin = mEfficiencyTpc->FindBin(pt);
+      int ptBin = mEfficiencyTpc->GetXaxis()->FindBin(pt);
+      int etaBin = mEfficiencyTpc->GetYaxis()->FindBin(eta);
       int vertexBin = mEfficiencyTpc->GetZaxis()->FindBin(vertex);
-      efficiencyTpc = mEfficiencyTpc->GetBinContent(etaBin, ptBin, vertexBin);
+      efficiencyTpc = mEfficiencyTpc->GetBinContent(ptBin, etaBin, vertexBin);
     }
 
     if (efficiencyTpc == 0) {
@@ -1190,10 +1190,10 @@ struct HfTaskFlow {
     float efficiencyMft = 1.;
 
     if (mEfficiencyMft) {
-      int etaBin = mEfficiencyMft->GetXaxis()->FindBin(eta);
-      int ptBin = mEfficiencyMft->FindBin(pt);
+      int ptBin = mEfficiencyMft->GetXaxis()->FindBin(pt);
+      int etaBin = mEfficiencyMft->GetYaxis()->FindBin(eta);
       int vertexBin = mEfficiencyMft->GetZaxis()->FindBin(vertex);
-      efficiencyMft = mEfficiencyMft->GetBinContent(etaBin, ptBin, vertexBin);
+      efficiencyMft = mEfficiencyMft->GetBinContent(ptBin, etaBin, vertexBin);
     }
 
     if (efficiencyMft == 0) {
