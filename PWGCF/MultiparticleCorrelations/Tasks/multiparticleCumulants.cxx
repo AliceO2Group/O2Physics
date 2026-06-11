@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -16,7 +16,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -52,8 +52,8 @@ using namespace o2;
 using namespace o2::framework;
 
 // Definitions of join tables for Run 3 analysis:
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>; // no FV0Ms for cent
-using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
+using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision;
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
@@ -68,12 +68,12 @@ using namespace std;
 // *) Define enums:
 enum EnRlMc {
   eRl = 0,
-  eMc 
+  eMc
 };
 
 enum EnRecSim {
   eRec = 0,
-  eSim, 
+  eSim,
   eRecAndSim
 };
 
@@ -94,14 +94,13 @@ enum EnEventHistograms {
   eEventHistograms_N
 };
 
-const char *eventHistNames[eEventHistograms_N] = {
+const char* eventHistNames[eEventHistograms_N] = {
   "Centrality",
   "Multiplicity",
   "VertexX",
   "VertexY",
   "VertexZ",
-  "NumContrib"
-};
+  "NumContrib"};
 
 enum EnParticleHistograms {
   ePt,
@@ -109,10 +108,9 @@ enum EnParticleHistograms {
   eParticleHistograms_N
 };
 
-const char *particleHistNames[eParticleHistograms_N] = {
+const char* particleHistNames[eParticleHistograms_N] = {
   "Pt",
-  "Phi"
-};
+  "Phi"};
 
 enum EnQAHistograms {
   eQACent,
@@ -126,7 +124,7 @@ enum EnCorrHistograms {
   eCorrHistograms_N
 };
 
-const char *corrHistNames[eCorrHistograms_N] = {
+const char* corrHistNames[eCorrHistograms_N] = {
   "Centrality",
   "Multiplicity",
 };
@@ -138,11 +136,10 @@ enum EnCentEstm {
   eCentEstm_N
 };
 
-const char *centEstmNames[eCentEstm_N] = {
+const char* centEstmNames[eCentEstm_N] = {
   "FT0C",
   "FT0M",
-  "FV0A",
-};
+  "FV0A",};
 
 enum EnMultEstm {
   eMultFT0C,
@@ -151,11 +148,10 @@ enum EnMultEstm {
   eMultEstm_N
 };
 
-const char *multEstmNames[eMultEstm_N] = {
+const char* multEstmNames[eMultEstm_N] = {
   "FT0C",
   "FT0M",
-  "FV0A"
-};
+  "FV0A"};
 
 enum EnCutBeforeAfter {
   eBefore,
@@ -163,7 +159,7 @@ enum EnCutBeforeAfter {
   eCutBeforeAfter_N
 };
 
-const char *cutBeforeAfterNames[eCutBeforeAfter_N] = {
+const char* cutBeforeAfterNames[eCutBeforeAfter_N] = {
   "before",
   "after",
 };
@@ -237,8 +233,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   // **) Task configuration:
   struct TaskConfiguration {
     bool fProcess[eProcess_N] = {false}; // Set what to process. See enum EnProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
-    bool fDryRun = false; // book all histos and run without filling and calculating anything
-    
+    bool fDryRun = false;                // book all histos and run without filling and calculating anything
+
     std::string fCentEstm = "FT0M";
     std::string fMultEstm = "FV0A";
 
@@ -287,30 +283,30 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   } tc;
 
   struct ParticleHistograms {
-    TList *fParticleHistogramsList = NULL; //!<! list to hold all control particle histograms
-    TH1F *fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};
+    TList* fParticleHistogramsList = NULL; //!<! list to hold all control particle histograms
+    TH1F* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};
   } pc;
 
   struct EventHistograms {
-    TList *fEventHistogramsList = NULL; //!<! list to hold all control event histograms
-    TH1F *fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum EnEventHistograms ][reco,sim][before,after event cuts]
+    TList* fEventHistogramsList = NULL; //!<! list to hold all control event histograms
+    TH1F* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum EnEventHistograms ][reco,sim][before,after event cuts]
   } ev;
 
   struct QAHistograms {
     bool fQASwitch = kTRUE;
-    TList *fQAHistogramsList = NULL;
-    TH2F *fQAHistograms[eQAHistograms_N][2] = {{NULL}}; //[type][before/after cut]
+    TList* fQAHistogramsList = NULL;
+    TH2F* fQAHistograms[eQAHistograms_N][2] = {{NULL}}; //[type][before/after cut]
   } qa;
 
   struct CorrHistograms {
-    TList *fCorrHistogramsList = NULL;
-    TH2F *fCorrHistograms[eCorrHistograms_N][eMultEstm_N][eMultEstm_N][2] = {{{{NULL}}}};
+    TList* fCorrHistogramsList = NULL;
+    TH2F* fCorrHistograms[eCorrHistograms_N][eMultEstm_N][eMultEstm_N][2] = {{{{NULL}}}};
   } cr;
 
   struct WeightHistograms {
     bool fWeightSwitch = kTRUE;
-    TList *fWeightHistogramsList = NULL;
-    std::vector<TH1F *> fWeightHistograms;
+    TList* fWeightHistogramsList = NULL;
+    std::vector<TH1F*> fWeightHistograms;
   } wt;
 
   struct EventByEventQuantities {
@@ -321,13 +317,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     float fNumContrib = 0.;
 
     float fTwoParticleCorrelationEbye[eCutBeforeAfter_N][3] = {{0., 0., 0.}, {0., 0., 0.}}; //<2> [before, after][v2^2, v3^2, v4^2]
-    float fFourParticleCorrelationEbye[eCutBeforeAfter_N][2] = {{0., 0.}, {0., 0.}}; //<4> [before, after][v3^2 v2^2, v4^2 v2^2]
+    float fFourParticleCorrelationEbye[eCutBeforeAfter_N][2] = {{0., 0.}, {0., 0.}};        //<4> [before, after][v3^2 v2^2, v4^2 v2^2]
   } ebye;
 
   struct MultiparticleCorrelationProfile {
-    TList *fMultiparticleCorrelationProfilesList = NULL;
-    TProfile *fTwoParticleCorrelationProfiles[eCutBeforeAfter_N] = {NULL};
-    TProfile *fFourParticleCorrelationProfiles[eCutBeforeAfter_N] = {NULL};
+    TList* fMultiparticleCorrelationProfilesList = NULL;
+    TProfile* fTwoParticleCorrelationProfiles[eCutBeforeAfter_N] = {NULL};
+    TProfile* fFourParticleCorrelationProfiles[eCutBeforeAfter_N] = {NULL};
   } mc;
 
   struct MultiparticleCorrelationCalculation {
@@ -336,12 +332,14 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     static constexpr int MaxCorrelator = 4; //<<m>>
     static constexpr int MaxHarmonic = 5;   // n+1 in vn, in this case n=4 as we need v2, v3, v4
     static constexpr int MaxPower = MaxCorrelator + 1;
-    static constexpr int NumSC = 2; //need SC(3,2) and SC(4,2)
+    static constexpr int NumSC = 2; // need SC(3,2) and SC(4,2)
     TComplex fQvectorBefore[MaxHarmonic][MaxPower];
     TComplex fQvectorAfter[MaxHarmonic][MaxPower]; // All needed Q-vector components
   } mcc;
 
-  template <EnRlMc rm, typename T1, typename T2, typename T3> bool ctEventCuts(T1 const& collision, T2 rlCollisionCentAll, T3 rlCollisionMultAll) {
+  template <EnRlMc rm, typename T1, typename T2, typename T3>
+  bool ctEventCuts(T1 const& collision, T2 rlCollisionCentAll, T3 rlCollisionMultAll)
+  {
     bool pass = true;
 
     bool bVertexZCut = true;
@@ -417,7 +415,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     return pass;
   }
 
-  template <EnRlMc rm, typename T1> bool ctParticleCuts(T1 const& track) {
+  template <EnRlMc rm, typename T1>
+  bool ctParticleCuts(T1 const& track)
+  {
     bool pass = true;
 
     bool bPtCut = true;
@@ -446,7 +446,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     // *) For mc event only
     if constexpr (rm == eMc) {
-      TParticlePDG *particle = pdg->GetParticle(track.pdgCode());
+      TParticlePDG* particle = pdg->GetParticle(track.pdgCode());
       if (!particle) {
         // LOGF(warning, "PDG code %d not found", track.pdgCode());
         bSignCut = false;
@@ -481,7 +481,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     return pass;
   }
 
-  TComplex mccQ(int n, int p, EnCutBeforeAfter eba) {
+  TComplex mccQ(int n, int p, EnCutBeforeAfter eba)
+  {
     // Using the fact that Q{-n,p} = Q{n,p}^*.
 
     if (eba == eBefore) {
@@ -495,10 +496,10 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
       return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
     }
-
   }
 
-  TComplex mccRecursion(int n, int *harmonic, EnCutBeforeAfter eba, int mult = 1, int skip = 0) {
+  TComplex mccRecursion(int n, int* harmonic, EnCutBeforeAfter eba, int mult = 1, int skip = 0)
+  {
     // Calculate multi-particle correlators by using recursion (an improved faster version) originally developed by Kristjan Gulbrandsen (gulbrand@nbi.dk).
 
     int nm1 = n - 1;
@@ -532,18 +533,19 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     if (mult == 1)
       return c - c2;
-    return c - double(mult) * c2;
+    return c - double(mult)*  c2;
 
   }
 
-  TObject *getObjectFromList(TList *list, const char *objectName) {
+  TObject* getObjectFromList(TList* list, const char* objectName)
+  {
     // Get TObject pointer from TList, even if it's in some nested TList.
     // Foreseen to be used to fetch histograms or profiles from files directly.
     // Some ideas taken from TCollection::ls()
     // If you have added histograms directly to files (without TList's), then
     // you can fetch them directly with file->Get("hist-name").
 
-    // Usage: TH1D *hist = (TH1D*)
+    // Usage: TH1D* hist = (TH1D*)
     // getObjectFromList("some-valid-TList-pointer","some-object-name");
 
     // Insanity checks:
@@ -558,19 +560,18 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
 
     // The object is in the current base list:
-    TObject *objectFinal =
-        list->FindObject(objectName); // the final object I am after
+    TObject* objectFinal = list->FindObject(objectName); // the final object I am after
     if (objectFinal) {
       return objectFinal;
     }
 
     // Otherwise, search for the object recursively in the nested lists:
-    TObject *objectIter; // iterator object in the loop below
+    TObject* objectIter; // iterator object in the loop below
     TIter next(list);
     while ((objectIter = next())) // double round braces are to silence the warnings
     {
       if (TString(objectIter->ClassName()).EqualTo("TList")) {
-        objectFinal = getObjectFromList(reinterpret_cast<TList *>(objectIter), objectName);
+        objectFinal = getObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
         if (objectFinal)
           return objectFinal;
       }
@@ -578,18 +579,19 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     return NULL;
 
-  } // TObject* getObjectFromList(TList *list, char *objectName)
+  } // TObject* getObjectFromList(TList* list, char* objectName)
 
-  std::vector<TH1F *> getHistogramsWithWeights(const char *filePath, const char *runNumber) {
+  std::vector<TH1F*> getHistogramsWithWeights(const char* filePath, const char* runNumber)
+  {
     // a) Return value:
-    std::vector<TH1F *> histograms;
-    TList *baseList = NULL; // base top-level list in the TFile, e.g. named "ccdb_object"
-    TList *listWithRuns = NULL; // nested list with run-wise TList's holding run-specific weights
+    std::vector<TH1F*> histograms;
+    TList* baseList = NULL; // base top-level list in the TFile, e.g. named "ccdb_object"
+    TList* listWithRuns = NULL; // nested list with run-wise TList's holding run-specific weights
 
     // c) Determine from filePath if the file in on a local machine, or in home dir AliEn, or in CCDB:
-    //    Algorithm: 
+    //    Algorithm:
     //    If filePath begins with "/alice/data/CCDB/" then it's in home dir AliEn.
-    //    If filePath begins with "/alice-ccdb.cern.ch/" then it's in CCDB. 
+    //    If filePath begins with "/alice-ccdb.cern.ch/" then it's in CCDB.
     //    Therefore, files in AliEn and CCDB must be specified with abs path, for local files both abs and relative paths are just fine.
     bool bFileIsInAliEn = false;
     bool bFileIsInCCDB = false;
@@ -604,11 +606,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     if (bFileIsInAliEn) {
       // File you want to access is in your home dir in AliEn:
-      TGrid *alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
+      TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
       if (!alien) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-      TFile *weightsFile = TFile::Open(Form("alien://%s", filePath), "READ"); // yes, ROOT can open a file transparently, even if it's sitting in AliEn, with this specific syntax
+      TFile* weightsFile = TFile::Open(Form("alien://%s", filePath), "READ"); // yes, ROOT can open a file transparently, even if it's sitting in AliEn, with this specific syntax
       if (!weightsFile) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
@@ -620,11 +622,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
       // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level,
       // for thare there is a helper utility function GetObjectFromList(...) , see its implementation further below
-      listWithRuns = reinterpret_cast<TList *>(getObjectFromList(baseList, runNumber));
+      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList *>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -634,18 +636,17 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       // Remember that here I do not access the file; instead, I directly access the object in that file.
       // My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/ => adapt for your case
       ccdb->setURL("https://alice-ccdb.cern.ch"); // to be able to use "ccdb" this object in your analysis task, see 4b/ below
-      baseList = reinterpret_cast<TList *>(ccdb->get<TList>(
-          TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
+      baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
       baseList->ls();
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList *>(getObjectFromList(baseList, runNumber));
+      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList *>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -664,7 +665,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      TFile *weightsFile = TFile::Open(filePath, "READ");
+      TFile* weightsFile = TFile::Open(filePath, "READ");
       if (!weightsFile) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
@@ -676,11 +677,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList *>(getObjectFromList(baseList, runNumber));
+      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList *>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           baseList->ls();
           LOGF(fatal,
@@ -690,7 +691,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
 
     TIter next(listWithRuns);
-    TObject *object = nullptr;
+    TObject* object = nullptr;
 
     while (true) {
 
@@ -699,13 +700,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         break;
       }
 
-      auto *hist = dynamic_cast<TH1F *>(object);
+      auto* hist = dynamic_cast<TH1F*>(object);
       if (!hist) {
         continue;
       }
 
       hist->SetDirectory(0);
-      auto *histClone = dynamic_cast<TH1F *>(hist->Clone());
+      auto* histClone = dynamic_cast<TH1F*>(hist->Clone());
       if (!histClone) {
         LOGF(fatal, "Failed to clone histogram %s", hist->GetName());
       }
@@ -716,16 +717,17 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     return histograms;
   }
 
-  // *) Define all member functions to be called in the main process* functions:
+  //* ) Define all member functions to be called in the main process* functions:
   template <EnRecSim rs, typename T1, typename T2>
-  void runLoop(T1 const& collision, T2 const& tracks) {
+  void runLoop(T1 const& collision, T2 const& tracks)
+  {
 
     // Dry run:
     if (tc.fDryRun) {
       return;
     }
 
-    TH1F *histAcceptanceWeight = wt.fWeightHistograms[1];
+    TH1F* histAcceptanceWeight = wt.fWeightHistograms[1];
 
     for (int h = 0; h < mcc.MaxHarmonic; h++) {
       for (int p = 0; p < mcc.MaxPower; p++) {
@@ -740,11 +742,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
 
     float rlCollisionCentAll[eCentEstm_N] = {
-      // collision.centFT0A(),
       collision.centFT0C(),
       collision.centFT0M(),
-      collision.centFV0A()
-    };
+      collision.centFV0A()};
 
     float rlCollisionCent = 0.;
 
@@ -761,8 +761,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     float rlCollisionMultAll[eMultEstm_N] = {
       static_cast<float>(collision.multFT0C()),
       static_cast<float>(collision.multFT0M()),
-      static_cast<float>(collision.multFV0A())
-    };
+      static_cast<float>(collision.multFV0A())};
     float rlCollisionMult = 0.;
 
     for (int i = 0; i < eMultEstm_N; i++) {
@@ -807,7 +806,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
       for (int i = 0; i < eCentEstm_N; i++) {
         for (int j = i + 1; j < eCentEstm_N; j++) {
-          auto *h = cr.fCorrHistograms[eCorrCent][i][j][eBefore];
+          auto* h = cr.fCorrHistograms[eCorrCent][i][j][eBefore];
           if (!h) {
             LOGF(fatal, "Missing histogram cr.fCorrHistograms[eCorrCent][%d][%d][eBefore]", i, j);
           }
@@ -817,7 +816,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
       for (int i = 0; i < eMultEstm_N; i++) {
         for (int j = i + 1; j < eMultEstm_N; j++) {
-          auto *h = cr.fCorrHistograms[eCorrMult][i][j][eBefore];
+          auto* h = cr.fCorrHistograms[eCorrMult][i][j][eBefore];
           if (!h) {
             LOGF(fatal, "Missing histogram cr.fCorrHistograms[eCorrMult][%d][%d][eBefore]", i, j);
           }
@@ -838,7 +837,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         float mcCollisionCent = 0.;
 
         float b = mccollision.impactParameter() * std::pow(10, -15); // convert fm to m
-        float xs = 7.71 * std::pow(10, -28); // convert barn to m^2
+        float xs = 7.71 * std::pow(10, -28);                         // convert barn to m^2
         mcCollisionCent = o2::constants::math::PI * b * b / xs * 100;
 
         ebye.fCentralitySim = mcCollisionCent;
@@ -883,7 +882,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         if (tc.fCentCorrCutSwitch) {
           for (int i = 0; i < eCentEstm_N; i++) {
             for (int j = i + 1; j < eCentEstm_N; j++) {
-              auto *h = cr.fCorrHistograms[eCorrCent][i][j][eAfter];
+              auto* h = cr.fCorrHistograms[eCorrCent][i][j][eAfter];
               if (!h) {
                 LOGF(fatal, "Missing histogram cr.fCorrHistograms[eCorrCent][%d][%d][eAfter]", i, j);
               }
@@ -896,7 +895,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
           for (int i = 0; i < eMultEstm_N; i++) {
             for (int j = i + 1; j < eMultEstm_N; j++) {
-              auto *h = cr.fCorrHistograms[eCorrMult][i][j][eAfter];
+              auto* h = cr.fCorrHistograms[eCorrMult][i][j][eAfter];
               if (!h) {
                 LOGF(fatal, "Missing histogram cr.fCorrHistograms[eCorrMult][%d][%d][eAfter]", i, j);
               }
@@ -931,7 +930,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
         dPhi = track.phi();
         if (wt.fWeightSwitch) {
-          auto *hist = wt.fWeightHistograms[1];
+          auto* hist = wt.fWeightHistograms[1];
           wPhi = hist->GetBinContent(wt.fWeightHistograms[1]->GetXaxis()->FindBin(dPhi));
         }
 
@@ -986,7 +985,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     } // end of for (int64_t i = 0; i < tracks.size(); i++) {
 
-    for (int i = 0; i < mcc.MaxHarmonic-2 ; i++) {
+    for (int i = 0; i < mcc.MaxHarmonic - 2 ; i++) {
       mcc.h1 = -(i + 2);
       mcc.h2 = i + 2;
       int harmonicsTwoNum[2] = {mcc.h1, mcc.h2};
@@ -1036,7 +1035,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnParticleHistograms histType, typename T1>
-  void bookParticleHistograms(T1 const& lPcBins, ParticleHistograms &pc) {
+  void bookParticleHistograms(T1 const& lPcBins, ParticleHistograms& pc)
+  {
     std::vector<float> lPtBins = lPcBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsPt = static_cast<int>(lPtBins[0]);
     float minPt = lPtBins[1];
@@ -1064,7 +1064,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnEventHistograms histType, typename T1>
-  void bookEventHistograms(T1 const& lEvBins, EventHistograms &ev) {
+  void bookEventHistograms(T1 const& lEvBins, EventHistograms& ev)
+  {
     std::vector<float> lCentBins = lEvBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsCent = static_cast<int>(lCentBins[0]);
     float minCent = lCentBins[1];
@@ -1104,7 +1105,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
   }
 
-  template <EnEventHistograms histType, typename T1> void bookQAHistograms(T1 const& lQABins, QAHistograms &qa) {
+  template <EnEventHistograms histType, typename T1>
+  void bookQAHistograms(T1 const& lQABins, QAHistograms& qa)
+  {
     int nBinsCentX = 0;
     float minCentX = 0.;
     float maxCentX = 0.;
@@ -1157,7 +1160,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnCorrHistograms histType, typename T1>
-  void bookCorrHistograms(T1 const& lCrBins, CorrHistograms &cr) {
+  void bookCorrHistograms(T1 const& lCrBins, CorrHistograms& cr)
+  {
 
     std::vector<float> lCentBins = lCrBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsCent = static_cast<int>(lCentBins[0]);
@@ -1207,7 +1211,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   // *) Initialize and book all objects:
-  void init(InitContext &) {
+  void init(InitContext&)
+  {
 
     // ... code to book and initialize all analysis objects ...
 
@@ -1267,7 +1272,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     wt.fWeightSwitch = cfWeightSwitch;
 
     // *) Book base list:
-    TList *temp = new TList();
+    TList* temp = new TList();
     temp->SetOwner(kTRUE);
     fBaseList.setObject(temp);
 
@@ -1323,15 +1328,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     if (wt.fWeightSwitch) {
       wt.fWeightHistograms = getHistogramsWithWeights(
           tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
-      for (auto* const& hist : wt.fWeightHistograms) { //o2-linter: disable=const-ref-in-for-loop
+      for (auto* const& hist : wt.fWeightHistograms) { // o2-linter: disable=const-ref-in-for-loop
         wt.fWeightHistogramsList->Add(hist);
       }
     }
 
-    mc.fTwoParticleCorrelationProfiles[eBefore] =
-        new TProfile("prof2Before", "2-p correlation before cut", 3, 2., 5.);
-    mc.fTwoParticleCorrelationProfiles[eAfter] =
-        new TProfile("prof2After", "2-p correlation after cut", 3, 2., 5.);
+    mc.fTwoParticleCorrelationProfiles[eBefore] = new TProfile("prof2Before", "2-p correlation before cut", 3, 2., 5.);
+    mc.fTwoParticleCorrelationProfiles[eAfter] = new TProfile("prof2After", "2-p correlation after cut", 3, 2., 5.);
     mc.fTwoParticleCorrelationProfiles[eBefore]->Sumw2();
     mc.fTwoParticleCorrelationProfiles[eAfter]->Sumw2();
     mc.fMultiparticleCorrelationProfilesList->Add(mc.fTwoParticleCorrelationProfiles[eBefore]);
@@ -1347,7 +1350,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   } // end of void init(InitContext&) {
 
   // A) Process only reconstructed data:
-  void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks) {
+  void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
+  {
     // ...
     // *) Steer all analysis steps:
     runLoop<eRec>(collision, tracks);
@@ -1357,7 +1361,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   // -------------------------------------------
 
   // B) Process both reconstructed and corresponding MC truth simulated data:
-  void processRecSim(CollisionRecSim const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&) {
+  void processRecSim(CollisionRecSim const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  {
     runLoop<eRecAndSim>(collision, tracks);
   }
   PROCESS_SWITCH(MultiparticleCumulants, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
@@ -1365,7 +1370,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   // -------------------------------------------
 
   // C) Process only simulated data:
-  void processSim(CollisionSim const& /*collision*/, aod::BCs const&, TracksSim const& /*tracks*/) {
+  void processSim(CollisionSim const& /*collision*/, aod::BCs const&, TracksSim const& /*tracks*/)
+  {
     // runLoop<eSim>(collision, tracks); // TBI 20241105 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
   PROCESS_SWITCH(MultiparticleCumulants, processSim, "process only simulated data", false);
@@ -1373,8 +1379,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 }; // struct MultiparticleCumulants {
 
 // *) The final touch:
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
-  return WorkflowSpec{
-      adaptAnalysisTask<MultiparticleCumulants>(cfgc),
-  };
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<MultiparticleCumulants>(cfgc),};
 } // WorkflowSpec...
