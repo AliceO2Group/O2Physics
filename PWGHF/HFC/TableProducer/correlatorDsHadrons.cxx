@@ -30,6 +30,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -216,7 +217,7 @@ struct HfCorrelatorDsHadrons {
 
   SliceCache cache;
 
-  using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>; // collisionFilter applied
+  using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels, aod::DmesonSelection>>; // collisionFilter applied
   // using SelCollisionsWithDsWithMc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection, aod::McCollisionLabels>>; // collisionFilter applied
   using SelCollisionsMc = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;                                                                                                                                           // flagDsFilter applied
@@ -468,13 +469,13 @@ struct HfCorrelatorDsHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
         }
-        entryDsCandRecoInfo(HfHelper::invMassDsToKKPi(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib());
+        entryDsCandRecoInfo(HfHelper::invMassDsToKKPi(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib(), collision.centFT0M());
       } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
         fillHistoPiKK(candidate, efficiencyWeightD);
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
-        entryDsCandRecoInfo(HfHelper::invMassDsToPiKK(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib());
+        entryDsCandRecoInfo(HfHelper::invMassDsToPiKK(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib(), collision.centFT0M());
       }
       if (candidate.isSelDsToKKPi() >= selectionFlagDs && candidate.isSelDsToPiKK() >= selectionFlagDs) {
         registry.fill(HIST("hCountSelectionStatusDsToKKPiAndToPiKK"), 0.);
@@ -498,7 +499,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             track.pt() * track.sign(),
                             poolBin,
-                            collision.numContrib());
+                            collision.numContrib(),
+                            collision.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToKKPi(candidate), false, false);
           // entryDsHadronGenInfo(false, false, 0);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
@@ -509,7 +511,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             track.pt() * track.sign(),
                             poolBin,
-                            collision.numContrib());
+                            collision.numContrib(),
+                            collision.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToPiKK(candidate), false, false);
           // entryDsHadronGenInfo(false, false, 0);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
@@ -569,7 +572,7 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hMassDsMcRecSig"), HfHelper::invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
           registry.fill(HIST("hMassDsVsPtMcRec"), HfHelper::invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
           registry.fill(HIST("hSelectionStatusDsToKKPiMcRec"), candidate.isSelDsToKKPi());
-          entryDsCandRecoInfo(HfHelper::invMassDsToKKPi(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib());
+          entryDsCandRecoInfo(HfHelper::invMassDsToKKPi(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib(), collision.centFT0M());
           entryDsCandGenInfo(isDsPrompt);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -579,7 +582,7 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hMassDsMcRecSig"), HfHelper::invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
           registry.fill(HIST("hMassDsVsPtMcRec"), HfHelper::invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
           registry.fill(HIST("hSelectionStatusDsToPiKKMcRec"), candidate.isSelDsToPiKK());
-          entryDsCandRecoInfo(HfHelper::invMassDsToPiKK(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib());
+          entryDsCandRecoInfo(HfHelper::invMassDsToPiKK(candidate), candidate.pt() * chargeDs, outputMl[0], outputMl[2], collision.numContrib(), collision.centFT0M());
           entryDsCandGenInfo(isDsPrompt);
         }
       } else {
@@ -653,7 +656,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             track.pt() * track.sign(),
                             poolBin,
-                            collision.numContrib());
+                            collision.numContrib(),
+                            collision.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToKKPi(candidate), isDsSignal, isDecayChan);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -675,7 +679,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             track.pt() * track.sign(),
                             poolBin,
-                            collision.numContrib());
+                            collision.numContrib(),
+                            collision.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToPiKK(candidate), isDsSignal, isDecayChan);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -819,7 +824,8 @@ struct HfCorrelatorDsHadrons {
                                 particle.pt() * chargeDs,
                                 particleAssoc.pt() * chargeParticle,
                                 poolBin,
-                                0);
+                                0,
+                                0.f); // no multiplicity and centrality info at gen level
               entryDsHadronRecoInfo(MassDS, true, isDecayChan);
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
             } // end loop generated particles
@@ -902,7 +908,7 @@ struct HfCorrelatorDsHadrons {
         }
       }
 
-      collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
+      collReduced(collision.multFT0M(), collision.centFT0M(), collision.numContrib(), collision.posZ());
     }
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
@@ -952,7 +958,8 @@ struct HfCorrelatorDsHadrons {
                             cand.pt() * chargeDs,
                             pAssoc.pt() * pAssoc.sign(),
                             poolBin,
-                            c1.numContrib());
+                            c1.numContrib(),
+                            c1.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToKKPi(cand), false, false);
           // entryDsHadronGenInfo(false, false, 0);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -967,7 +974,8 @@ struct HfCorrelatorDsHadrons {
                             cand.pt() * chargeDs,
                             pAssoc.pt() * pAssoc.sign(),
                             poolBin,
-                            c1.numContrib());
+                            c1.numContrib(),
+                            c1.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToPiKK(cand), false, false);
           // entryDsHadronGenInfo(false, false, 0);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -1044,7 +1052,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             pAssoc.pt() * pAssoc.sign(),
                             poolBin,
-                            c1.numContrib());
+                            c1.numContrib(),
+                            c1.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToKKPi(candidate), isDsSignal, isDecayChan);
           entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -1058,7 +1067,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             pAssoc.pt() * pAssoc.sign(),
                             poolBin,
-                            c1.numContrib());
+                            c1.numContrib(),
+                            c1.centFT0M());
           entryDsHadronRecoInfo(HfHelper::invMassDsToPiKK(candidate), isDsSignal, isDecayChan);
           entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -1128,7 +1138,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt() * chargeDs,
                             particleAssoc.pt() * chargeParticle,
                             poolBin,
-                            0);
+                            0,
+                            0.f); // no multiplicity and centrality info at gen level
           entryDsHadronRecoInfo(MassDS, true, true);
           entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
         }
