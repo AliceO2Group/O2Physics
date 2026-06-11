@@ -533,8 +533,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     if (mult == 1)
       return c - c2;
-    return c - double(mult) * c2;
-
+    return c - static_cast<double>(mult) * c2;
   }
 
   TObject* getObjectFromList(TList* list, const char* objectName)
@@ -684,8 +683,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           baseList->ls();
-          LOGF(fatal,
-               "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+          LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
         }
       }
     }
@@ -904,8 +902,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
           }
         }
 
-      } else
+      } else {
         return;
+      }
     }
 
     int nTracksBefore = tracks.size();
