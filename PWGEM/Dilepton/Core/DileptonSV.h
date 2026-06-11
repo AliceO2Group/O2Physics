@@ -38,12 +38,12 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>

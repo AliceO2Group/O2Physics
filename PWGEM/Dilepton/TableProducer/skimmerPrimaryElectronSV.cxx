@@ -23,6 +23,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -36,8 +38,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <PID/PIDTOFParamService.h>
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 
