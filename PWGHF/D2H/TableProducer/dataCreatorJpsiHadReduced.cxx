@@ -159,7 +159,7 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_mu_mu::Cuts[0], hf_cuts_jpsi_to_mu_mu::NBinsPt, hf_cuts_jpsi_to_mu_mu::NCutVars, hf_cuts_jpsi_to_mu_mu::labelsPt, hf_cuts_jpsi_to_mu_mu::labelsCutVar}, "J/Psi candidate selection per pT bin"};
   Configurable<double> invMassWindowJpsiHad{"invMassWindowJpsiHad", 0.3, "invariant-mass window for Jpsi-Had pair preselections (GeV/c2)"};
   Configurable<double> deltaMPhiMax{"deltaMPhiMax", 0.02, "invariant-mass window for phi preselections (GeV/c2) (only for Bs->J/PsiPhi)"};
-  Configurable<double> deltaMK0StarMax{"deltaMK0StarMax", 0.02, "invariant-mass window for K*0 preselections (GeV/c2) (only for B0->J/PsiK0*)"};
+  Configurable<double> deltaMK0StarMax{"deltaMK0StarMax", 0.15, "invariant-mass window for K*0 preselections (GeV/c2) (only for B0->J/PsiK0*)"};
   Configurable<double> cpaMin{"cpaMin", 0., "Minimum cosine of pointing angle for B candidates"};
   Configurable<double> decLenMin{"decLenMin", 0., "Minimum decay length for B candidates"};
 
@@ -647,7 +647,7 @@ struct HfDataCreatorJpsiHadReduced {
           }
           // Check K*0 -> K+pi-
           if (RecoDecay::isMatchedMCGen(particlesMc, candK0StarMC, static_cast<int>(Pdg::kK0Star892), std::array{+kKPlus, -kPiPlus}, true)) {
-            channel = o2::hf_decay::hf_cand_beauty::B0ToJpsiPiK;
+            channel = o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
           }
         }
 
@@ -927,6 +927,9 @@ struct HfDataCreatorJpsiHadReduced {
         } else if constexpr (DecChannel == DecayChannel::B0ToJpsiK0Star) {
           for (auto trackBachId2 = trackId + 1; trackBachId2 != trackIndices.end(); ++trackBachId2) {
             auto trackBach2 = trackBachId2.template track_as<TTracks>();
+            if (trackBach.sign() == trackBach2.sign()) {
+              continue;
+            }
             auto trackBach2ParCov = getTrackParCov(trackBach2);
 
             std::array<float, 2> dcaBach2{trackBach2.dcaXY(), trackBach2.dcaZ()};
@@ -1054,6 +1057,9 @@ struct HfDataCreatorJpsiHadReduced {
         } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
           for (auto trackBachId2 = trackId + 1; trackBachId2 != trackIndices.end(); ++trackBachId2) {
             auto trackBach2 = trackBachId2.template track_as<TTracks>();
+            if (trackBach.sign() == trackBach2.sign()) {
+              continue;
+            }
             auto trackBach2ParCov = getTrackParCov(trackBach2);
 
             std::array<float, 2> dcaBach2{trackBach2.dcaXY(), trackBach2.dcaZ()};
