@@ -217,6 +217,7 @@ struct Kstar892LightIon {
   };
 
   int noOfDaughters = 2;
+  int initialValue = -9999999;
 
   double pionPIDpTLow = 1.0, pionPIDpTHigh = 2.5, kaonPIDpTLow = 0.7, kaonPIDpTHigh = 2.5;
 
@@ -2758,7 +2759,7 @@ struct Kstar892LightIon {
       bool isTrueKstar = false;
       bool hasCommonMother = false;
 
-      int commonMotherPDG;
+      int commonMotherPDG = initialValue;
 
       for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
         for (const auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
