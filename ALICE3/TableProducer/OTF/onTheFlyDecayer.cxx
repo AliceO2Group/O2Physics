@@ -151,7 +151,7 @@ struct OnTheFlyDecayer {
 
       const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
       particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
-      for (o2::upgrade::OTFParticle daughter : decayStack) {
+      for (const o2::upgrade::OTFParticle& daughter : decayStack) {
         daughter.setIndicesMother(i, i);
         daughter.setCollisionId(particle.collisionId());
         daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
@@ -190,7 +190,7 @@ struct OnTheFlyDecayer {
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    for (auto& otfParticle : allParticles) {
+    for (const o2::upgrade::OTFParticle& otfParticle : allParticles) {
       otfParticle.setIndexOffset(indexOffset);
       if (otfParticle.hasNaN()) {
         histos.fill(HIST("hNaNBookkeeping"), 1);
