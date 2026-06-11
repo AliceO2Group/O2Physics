@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file tableDiffWake.cxx
+/// \file DiffWakeTreeProducer.cxx
 /// \brief This task writes a collision and track table which are further used in a diffusion wake analysis
 /// \author Nicola Wilson <nicola.wilson@cern.ch>
 
@@ -119,7 +119,7 @@ DECLARE_SOA_TABLE(TableTrack, "AOD", "TABLETRACK",
 using namespace o2;
 using namespace o2::framework;
 
-struct TableDiffWake {
+struct DiffWakeTreeProducer {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
@@ -267,5 +267,5 @@ struct TableDiffWake {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TableDiffWake>(cfgc)};
+    adaptAnalysisTask<DiffWakeTreeProducer>(cfgc)};
 }
