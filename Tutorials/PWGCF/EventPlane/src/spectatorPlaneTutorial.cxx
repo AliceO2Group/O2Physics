@@ -102,8 +102,8 @@ struct SpectatorPlaneTutorial {
     AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
     AxisSpec axisCent = {90, 0, 90, "Centrality(%)"};
-    AxisSpec axisPhiPlane = {40, -constants::math::PI, constants::math::PI, "#Psi"};
-    AxisSpec axisQQ = {10, -0.2, 0.2, "#LT Q_{X}^{A}Q_{Y}^{C} #GT"};
+    AxisSpec axisPhiPlane = {100, -constants::math::PI, constants::math::PI, "#Psi"};
+    AxisSpec axisQQ = {100, -0.2, 0.2, "#LT Q_{X}^{A}Q_{Y}^{C} #GT"};
 
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
@@ -127,13 +127,13 @@ struct SpectatorPlaneTutorial {
     registry.add("CalibHistos/hEvPlaneRes", "Event Plane Resolution; #Events; Event Plane Resolution", {HistType::kTProfile, {axisCent}});
 
     // Flow Histograms
-    registry.add("flow/v1A", "", {HistType::kTProfile, {axisEtaVn}});
-    registry.add("flow/v1C", "", {HistType::kTProfile, {axisEtaVn}});
+    registry.add("flow/v1A", "", {HistType::kTProfile, {axisPt}});
+    registry.add("flow/v1C", "", {HistType::kTProfile, {axisPt}});
 
-    registry.add("flow/v2AxCxUxMH", "", {HistType::kTProfile, {axisCent}});
-    registry.add("flow/v2AyCyUxMH", "", {HistType::kTProfile, {axisCent}});
-    registry.add("flow/v2AxCyUyMH", "", {HistType::kTProfile, {axisCent}});
-    registry.add("flow/v2AyCxUyMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAxCxUxMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAyCyUxMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAxCyUyMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAyCxUyMH", "", {HistType::kTProfile, {axisCent}});
   }
 
   void process(ZDCCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
@@ -147,7 +147,7 @@ struct SpectatorPlaneTutorial {
     float centMin = 0;
     float centMax = 80;
 
-    if (centrality >= centMax || centrality < centMin)
+    if (centrality > centMax || centrality < centMin)
       return;
 
     if (collision.isSelected() == false)
@@ -174,10 +174,10 @@ struct SpectatorPlaneTutorial {
     // Fill the q-vector correlations
     registry.fill(HIST("qAqCXY"), centrality, qxA * qxC + qyA * qyC);
 
-    double corrQQx = 1.0;
-    double corrQQy = 1.0;
-    double corrQQ = 1.0;
-    double evPlaneRes = 1.0;
+    double corrQQx = 1;
+    double corrQQy = 1;
+    double corrQQ = 1;
+    double evPlaneRes = 1;
 
     // Get QQ-correlations from CCDB
     if (cfgCCDBdir_QQ.value.empty() == false) {
@@ -200,6 +200,7 @@ struct SpectatorPlaneTutorial {
     }
 
     for (const auto& track : tracks) {
+
       // constrain angle to 0 -> [0,0+2pi]
       auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
@@ -208,9 +209,6 @@ struct SpectatorPlaneTutorial {
 
       double uxMH = std::cos(2 * phi);
       double uyMH = std::sin(2 * phi);
-
-      if (corrQQ == 0 || corrQQx == 0 || corrQQy == 0)
-        continue;
 
       double v1A = (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ));
       double v1C = (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ));
