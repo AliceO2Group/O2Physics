@@ -84,7 +84,7 @@ struct NetchargeFluctuations {
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency"};
   Configurable<bool> cfgEffNue{"cfgEffNue", false, "efficiency correction to nu_dyn"};
 
-  Configurable<int> cfgCentEstimator{ "cfgCentEstimator",  0, "0=FT0C, 1=FT0A, 2=FT0M"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0=FT0C, 1=FT0A, 2=FT0M"};
   Configurable<int> cut05{"cut05", 155, "0-5% boundary"};
   Configurable<int> cut10{"cut10", 130, "5-10% boundary"};
   Configurable<int> cut20{"cut20", 97, "10-20% boundary"};
@@ -262,10 +262,9 @@ struct NetchargeFluctuations {
     histogramRegistry.add("QA/hCentrality", "", kTH1F, {centAxis});
     histogramRegistry.add("QA/hMultiplicity", "", kTH1F, {multAxis});
 
-     histogramRegistry.add("cent/multFT0C", "", kTH1F, {nchAxis});
+    histogramRegistry.add("cent/multFT0C", "", kTH1F, {nchAxis});
     histogramRegistry.add("cent/multFT0A", "", kTH1F, {nchAxis});
     histogramRegistry.add("cent/multFT0M", "", kTH1F, {nchAxis});
-
 
     histogramRegistry.add("gen/hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("gen/hVtxZ_after", "", kTH1F, {vtxzAxis});
@@ -597,12 +596,12 @@ struct NetchargeFluctuations {
     int binx = hEff->GetXaxis()->FindBin(pt);
     int biny = hEff->GetYaxis()->FindBin(eta);
 
-  if (binx < 1 || binx > hEff->GetNbinsX() ||
-      biny < 1 || biny > hEff->GetNbinsY()) {
-    return -1;
-  }
+    if (binx < 1 || binx > hEff->GetNbinsX() ||
+        biny < 1 || biny > hEff->GetNbinsY()) {
+      return -1;
+    }
 
-  double eff = hEff->GetBinContent(binx, biny);
+    double eff = hEff->GetBinContent(binx, biny);
     return eff;
   }
 
@@ -779,7 +778,7 @@ struct NetchargeFluctuations {
       nch += 1;
       fillAfterQA(track);
 
-    if (track.sign() == 1) {
+      if (track.sign() == 1) {
         histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_np"), track.pt(), track.eta());
       } else if (track.sign() == -1) {
@@ -860,7 +859,7 @@ struct NetchargeFluctuations {
       if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut)) {
         continue;
       }
-        if (sign == 1) {
+      if (sign == 1) {
         histogramRegistry.fill(HIST("eff/hPt_np_gen"), mcpart.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_np_gen"), mcpart.pt(), mcpart.eta());
       } else if (sign == -1) {
@@ -1055,7 +1054,7 @@ struct NetchargeFluctuations {
         continue;
 
       histogramRegistry.fill(HIST("data/delta_eta_eta"), eta);
-     double eff = getEfficiency(track.pt(), track.eta(), track.sign());
+      double eff = getEfficiency(track.pt(), track.eta(), track.sign());
 
       if (eff < threshold)
         continue;
@@ -1178,75 +1177,86 @@ struct NetchargeFluctuations {
 
   } // void
 
-
   int getCentrality(aod::McParticles const& particles)
-{
-  int multFT0A = 0;
-  int multFT0C = 0;
+  {
+    int multFT0A = 0;
+    int multFT0C = 0;
 
-  for (auto const& part : particles) {
+    for (auto const& part : particles) {
 
-    if (!part.isPhysicalPrimary()) {
-      continue;
+      if (!part.isPhysicalPrimary()) {
+        continue;
+      }
+
+      // FT0C
+      if (part.eta() > ft0Cmin && part.eta() < ft0Cmax) {
+        multFT0C++;
+      }
+
+      // FT0A
+      if (part.eta() > ft0Amin && part.eta() < ft0Amax) {
+        multFT0A++;
+      }
     }
 
-    // FT0C
-    if (part.eta() > ft0Cmin && part.eta() < ft0Cmax) {
-      multFT0C++;
-          }
+    int multFT0M = multFT0A + multFT0C;
+    // LOGF(info, "multFT0C = %d", multFT0C);
+    histogramRegistry.fill(HIST("cent/multFT0C"), multFT0C);
+    histogramRegistry.fill(HIST("cent/multFT0A"), multFT0A);
+    histogramRegistry.fill(HIST("cent/multFT0M"), multFT0M);
 
-    // FT0A
-    if (part.eta() > ft0Amin && part.eta() < ft0Amax) {
-      multFT0A++;
+    int multEstimator = 0;
+
+    if (cfgCentEstimator == 0) {
+      multEstimator = multFT0C;
+    } else if (cfgCentEstimator == 1) {
+      multEstimator = multFT0A;
+    } else {
+      multEstimator = multFT0M;
     }
+
+    // centrality cuts
+    if (multEstimator >= cut05)
+      return 2.5;
+    if (multEstimator >= cut10)
+      return 7.5;
+    if (multEstimator >= cut20)
+      return 15;
+    if (multEstimator >= cut30)
+      return 25;
+    if (multEstimator >= cut40)
+      return 35;
+    if (multEstimator >= cut50)
+      return 45;
+    if (multEstimator >= cut60)
+      return 55;
+    if (multEstimator >= cut70)
+      return 65;
+    if (multEstimator >= cut80)
+      return 75;
+    if (multEstimator >= cut90)
+      return 85;
+
+    return -1;
   }
 
-  
-int multFT0M = multFT0A + multFT0C;
-//LOGF(info, "multFT0C = %d", multFT0C);
-histogramRegistry.fill(HIST("cent/multFT0C"), multFT0C);
-histogramRegistry.fill(HIST("cent/multFT0A"), multFT0A);
-histogramRegistry.fill(HIST("cent/multFT0M"), multFT0M);
+  void mcPredictionsCent(aod::McCollision const& collision, aod::McParticles const& particles)
+  {
+    (void)collision;
+    int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0;
+    int cent = getCentrality(particles);
 
-  int multEstimator = 0;
+    if (cent < 0) {
+      return;
+    }
 
-  if (cfgCentEstimator == 0) {   multEstimator = multFT0C;  }
-  else if (cfgCentEstimator == 1) {    multEstimator = multFT0A;  }
-  else {    multEstimator = multFT0M; }
+    for (auto const& mcpart : particles) {
 
-  // centrality cuts
-  if (multEstimator >= cut05) return 2.5;
-  if (multEstimator >= cut10) return 7.5;
-  if (multEstimator >= cut20) return 15;
-  if (multEstimator >= cut30) return 25;
-  if (multEstimator >= cut40) return 35;
-  if (multEstimator >= cut50) return 45;
-  if (multEstimator >= cut60) return 55;
-  if (multEstimator >= cut70) return 65;
-  if (multEstimator >= cut80) return 75;
-  if (multEstimator >= cut90) return 85;
-
-  
-
-  return -1;
-}
-
-
-void mcPredictionsCent(aod::McCollision const& collision, aod::McParticles const& particles)
-{
-	(void)collision;
-  	int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0;
-int cent = getCentrality(particles);
-
-  if (cent < 0) {
-    return;
-  }
-
-  for (auto const& mcpart : particles) {
-
-    if (!mcpart.isPhysicalPrimary()) {      continue;    }
-    int pid = mcpart.pdgCode();
-    auto sign = 0;
+      if (!mcpart.isPhysicalPrimary()) {
+        continue;
+      }
+      int pid = mcpart.pdgCode();
+      auto sign = 0;
       auto* pd = pdgService->GetParticle(pid);
       if (pd != nullptr) {
         sign = pd->Charge() / 3.;
@@ -1260,9 +1270,13 @@ int cent = getCentrality(particles);
           std::abs(pid) != kProton)
         continue;
 
-    if (std::fabs(mcpart.eta()) >= etaCut) {      continue;    }
+      if (std::fabs(mcpart.eta()) >= etaCut) {
+        continue;
+      }
 
-    if (mcpart.pt() <= ptMinCut || mcpart.pt() >= ptMaxCut) {  continue; }
+      if (mcpart.pt() <= ptMinCut || mcpart.pt() >= ptMaxCut) {
+        continue;
+      }
 
       histogramRegistry.fill(HIST("gen/hPt"), mcpart.pt());
       histogramRegistry.fill(HIST("gen/cent_hPt"), cent, mcpart.pt());
@@ -1278,8 +1292,8 @@ int cent = getCentrality(particles);
       if (sign == -1) {
         negGen += 1;
       }
-  }
-//LOGF(info, "cent = %d  nch = %d", cent, nchGen);
+    }
+    // LOGF(info, "cent = %d  nch = %d", cent, nchGen);
     termPGen = posGen * (posGen - 1);
     termNGen = negGen * (negGen - 1);
     posNegGen = posGen * negGen;
@@ -1303,13 +1317,13 @@ int cent = getCentrality(particles);
     histogramRegistry.fill(HIST("subsample/gen/pos_sq"), cent, sampleIndex, posGen * posGen);
     histogramRegistry.fill(HIST("subsample/gen/neg_sq"), cent, sampleIndex, negGen * negGen);
     histogramRegistry.fill(HIST("subsample/gen/posneg"), cent, sampleIndex, posNegGen);
-}//void
+  } // void
 
   void mcPredictionsDeltaEta(aod::McCollision const& collision, aod::McParticles const& particles, float deta1, float deta2)
   {
     (void)collision;
 
-    float deltaEtaWidth = deta2 - deta1+ 1e-5f;
+    float deltaEtaWidth = deta2 - deta1 + 1e-5f;
 
     int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0;
     for (const auto& mcpart : particles) {
@@ -1377,7 +1391,6 @@ int cent = getCentrality(particles);
 
   } // void
 
-
   SliceCache cache;
   Preslice<aod::McParticles> mcTrack = aod::mcparticle::mcCollisionId;
 
@@ -1438,7 +1451,7 @@ int cent = getCentrality(particles);
 
   PROCESS_SWITCH(NetchargeFluctuations, processMcRun2, "Process reconstructed", false);
 
-   void processMcPrediction(aod::McCollision const& collision, aod::McParticles const& particles)
+  void processMcPrediction(aod::McCollision const& collision, aod::McParticles const& particles)
   {
     mcPredictionsCent(collision, particles);
     for (int ii = 0; ii < deltaEta; ii++) {
@@ -1446,11 +1459,9 @@ int cent = getCentrality(particles);
       float etaMax = 0.1f * (ii + 1);
       mcPredictionsDeltaEta(collision, particles, etaMin, etaMax);
     }
-
   }
 
   PROCESS_SWITCH(NetchargeFluctuations, processMcPrediction, "Process Prediction", false);
-
 };
 
 // struct
