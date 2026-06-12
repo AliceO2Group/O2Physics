@@ -488,15 +488,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     if (eba == eBefore) {
       if (n >= 0) {
         return mcc.fQvectorBefore[n][p];
-      }
-      else {
+      } else {
         return TComplex::Conjugate(mcc.fQvectorBefore[-n][p]);
       }
     } else {
       if (n >= 0) {
         return mcc.fQvectorAfter[n][p];
-      }
-      else {
+      } else {
         return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
       }
     }
