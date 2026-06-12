@@ -110,7 +110,8 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedRecoEv;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcPrm;
-std::array<std::shared_ptr<TH2>, nParticles> hPtGenVsPtTrkItsTpcPrm; // histogram to store generated pt vs reco pt for primaries
+std::array<std::shared_ptr<TH2>, nParticles> hDeltaPtVsPtTrkItsTpcPrm;
+std::array<std::shared_ptr<TH2>, nParticles> hPtGenVsPtTrkItsTpcPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcTofPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedPrm;
@@ -377,11 +378,13 @@ struct QaEfficiency {
     hPtItsPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its", PDGs[histogramIndex]), "ITS tracks (primaries) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (primaries) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
-    hPtGenVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco", PDGs[histogramIndex]), "Abs(Gen - Reco) pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
+    hDeltaPtVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco_delta", PDGs[histogramIndex]), "Abs(Gen - Reco) pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
+    hPtGenVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco", PDGs[histogramIndex]), "Reco pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
     hPtItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedPrmRecoEv[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated_reco_ev", PDGs[histogramIndex]), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
+    
     // Str
     hPtItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
@@ -1157,7 +1160,8 @@ struct QaEfficiency {
       if (passedITS && passedTPC) {
         hPtItsTpcPrm[histogramIndex]->Fill(mcParticle.pt());
         hPtTrkItsTpcPrm[histogramIndex]->Fill(track.pt());
-        hPtGenVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), abs(track.pt() - mcParticle.pt()));
+        hDeltaPtVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), abs(track.pt() - mcParticle.pt()));
+        hPtGenVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), track.pt());
         hEtaItsTpcPrm[histogramIndex]->Fill(mcParticle.eta());
         hEtaTrkItsTpcPrm[histogramIndex]->Fill(track.eta());
         hPhiItsTpcPrm[histogramIndex]->Fill(mcParticle.phi());
