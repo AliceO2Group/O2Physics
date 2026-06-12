@@ -216,6 +216,7 @@ struct OnTheFlyDecayer {
     // and daughter indices adjusted since their global index will be
     // shifted due to the appending of decay products
     indexOffset += (allParticles.size() - mcParticles.size());
+    particlesInDataframe += allParticles.size();
   }
 };
 
