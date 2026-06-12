@@ -71,10 +71,10 @@ enum class DileptonPrefilterBit : int {
 };
 
 enum class DileptonPrefilterBitDerived : int {
-  kMee = 0,                         // reject tracks from pi0 dalitz decays at very low mass
-  kPhiV = 1,                        // reject tracks from photon conversions
-  kSplitOrMergedTrackLS = 2,        // reject split or marged tracks in LS pairs based on momentum deta-dphi at PV
-  kSplitOrMergedTrackULS = 3,       // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
+  kMee = 0,                   // reject tracks from pi0 dalitz decays at very low mass
+  kPhiV = 1,                  // reject tracks from photon conversions
+  kSplitOrMergedTrackLS = 2,  // reject split or marged tracks in LS pairs based on momentum deta-dphi at PV
+  kSplitOrMergedTrackULS = 3, // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
