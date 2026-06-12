@@ -197,7 +197,6 @@ struct OnTheFlyDecayer {
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    int id = particlesInDataframe;
     for (auto& otfParticle : allParticles) {
       otfParticle.setIndexOffset(indexOffset);
       if (otfParticle.hasNaN()) {
