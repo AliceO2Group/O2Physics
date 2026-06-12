@@ -75,8 +75,8 @@ struct TrackDcaCovFillerRun2 {
   void init(o2::framework::InitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
-    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
-    fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
+    fillTracksDCA = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksDCA");
+    fillTracksDCACov = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);

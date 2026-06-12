@@ -16,15 +16,9 @@
 #ifndef PWGEM_PHOTONMESON_CORE_PAIRCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PAIRCUT_H_
 
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
-#include "Rtypes.h"
-#include "TNamed.h"
-#include "TMath.h"
+#include <TNamed.h>
+
+#include <Rtypes.h>
 
 class PairCut : public TNamed
 {

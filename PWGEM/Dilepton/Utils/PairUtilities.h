@@ -18,14 +18,20 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/SMatrix.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMathBase.h>
 
 #include <array>
+#include <cmath>
+#include <cstdint>
 #include <vector>
 
 //_______________________________________________________________________
@@ -39,10 +45,13 @@ enum class DileptonPairType : int {
 enum class DileptonAnalysisType : int {
   kQC = 0,
   kUPC = 1,
-  kFlowV2 = 2,
-  kFlowV3 = 3,
+  kFlowV2SP = 2,
+  kFlowV3SP = 3,
   kPolarization = 4,
   kHFll = 5,
+  kBootstrapv2 = 6,
+  kFlowV2EP = 7,
+  kFlowV3EP = 8,
 };
 
 enum class DileptonHadronAnalysisType : int {
@@ -62,10 +71,13 @@ enum class DileptonPrefilterBit : int {
 };
 
 enum class DileptonPrefilterBitDerived : int {
-  kMee = 0,                   // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
-  kPhiV = 1,                  // reject tracks from photon conversions
-  kSplitOrMergedTrackLS = 2,  // reject split or marged tracks in LS pairs based on momentum deta-dphi at PV
-  kSplitOrMergedTrackULS = 3, // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
+  kMee = 0,                         // reject tracks from pi0 dalitz decays at very low mass
+  kPhiV = 1,                        // reject tracks from photon conversions
+  kSplitOrMergedTrackLS = 2,        // reject split or marged tracks in LS pairs based on momentum deta-dphi at PV
+  kSplitOrMergedTrackULS = 3,       // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
+  kSplitOrMergedTrackLSAtRefR = 4,  // reject split or marged tracks in LS pairs based on deta-dphi position at ref. radius
+  kSplitOrMergedTrackULSAtRefR = 5, // reject split or marged tracks in ULS pairs based on deta-dphi position at ref. radius
+  kPhiVLS = 6,                      // reject suspicious tracks. e.g. duplicated tracks or wrongly matched ITS-TPC tracks. Check mee vs. phiv.
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;

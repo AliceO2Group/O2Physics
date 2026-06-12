@@ -36,8 +36,6 @@
 #include <utility>
 #include <vector>
 
-// NB: runDataProcessing.h must be included after customize!
-
 template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateMcOnlyCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename RecoilTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename RecoilOutputTableData, typename JetTableMCD, typename RecoilTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename RecoilOutputTableMCD, typename MatchingRecoilOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename RecoilTableMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename CandidateMcOnlyCollisionOutputTable, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename RecoilOutputTableMCP, typename MatchingRecoilOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
 struct JetSubstructureHFOutputTask {
 
@@ -329,10 +327,10 @@ struct JetSubstructureHFOutputTask {
     std::copy(pairPerpCone1PerpCone2EnergySpan.begin(), pairPerpCone1PerpCone2EnergySpan.end(), std::back_inserter(pairPerpCone1PerpCone2EnergyVec));
     std::copy(pairPerpCone1PerpCone2ThetaSpan.begin(), pairPerpCone1PerpCone2ThetaSpan.end(), std::back_inserter(pairPerpCone1PerpCone2ThetaVec));
 
-    std::vector<int> splittingMatchesGeoVec;
-    std::vector<int> splittingMatchesPtVec;
-    std::vector<int> splittingMatchesHFVec;
-    std::vector<int> pairMatchesVec;
+    std::vector<int32_t> splittingMatchesGeoVec;
+    std::vector<int32_t> splittingMatchesPtVec;
+    std::vector<int32_t> splittingMatchesHFVec;
+    std::vector<int32_t> pairMatchesVec;
     if (doprocessOutputSubstructureMatchingData || doprocessOutputSubstructureMatchingMC) {
       splittingMatchesGeoVec = splittingMatchesGeoVecVec[jet.globalIndex()];
       splittingMatchesPtVec = splittingMatchesPtVecVec[jet.globalIndex()];
@@ -367,7 +365,7 @@ struct JetSubstructureHFOutputTask {
             if (candidateTableIndex != candidateMap.end()) {
               candidatesIndices.push_back(candidateTableIndex->second);
             }
-            rho = candidate.rho();
+            rho = candidate.rho(); // doesn't work if multiple jet candidates
           }
           if (nJetInCollision == 0) {
             float centrality = -1.0;
@@ -413,6 +411,9 @@ struct JetSubstructureHFOutputTask {
   {
     for (const auto& jet : jets) {
       auto const& candidates = jet.template candidates_as<U>();
+      for (auto const& candidate : candidates) {
+        candidateSelectionFlags[candidate.globalIndex()] = true;
+      }
       if (jet.pt() < jetPtMin) {
         for (const auto& candidate : candidates) {
           candidateSelectionFlags[candidate.globalIndex()] = false;
@@ -445,6 +446,7 @@ struct JetSubstructureHFOutputTask {
   {
     for (const auto& jet : jets) {
       auto candidateId = jet.candidateId();
+      candidateSelectionFlags[candidateId] = true;
       if (jet.pt() < jetPtMin) {
         candidateSelectionFlags[candidateId] = false;
         continue;
@@ -578,7 +580,7 @@ struct JetSubstructureHFOutputTask {
       } else {
         continue;
       }
-      for (const auto& jetRadiiValue : jetRadiiValues) {
+      for (const auto& jetRadiiValue : recoilJetRadiiValues) {
         if (recoilJet.r() == round(jetRadiiValue * 100.0f)) {
           auto const& jet = recoilJet.template jet_as<U>();
           std::vector<int> geoMatching;

@@ -15,8 +15,8 @@
 
 #include "PWGJE/DataModel/Jet.h"
 
-#include "Framework/AnalysisTask.h"
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataProcessorSpec.h>
 #include <Framework/runDataProcessing.h>

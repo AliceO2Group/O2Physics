@@ -31,6 +31,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
@@ -111,10 +112,10 @@ class TrackPropagationModule
   void init(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
-    fillTracks = isTableRequiredInWorkflow(initContext, "Tracks");
-    fillTracksCov = isTableRequiredInWorkflow(initContext, "TracksCov");
-    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
-    fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
+    fillTracks = o2::common::core::isTableRequiredInWorkflow(initContext, "Tracks");
+    fillTracksCov = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksCov");
+    fillTracksDCA = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksDCA");
+    fillTracksDCACov = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
     // enable Tracks in case Tracks have been requested
     if (fillTracksDCA && !fillTracks) {
@@ -199,14 +200,14 @@ class TrackPropagationModule
       }
     }
 
-    trackTunedTracks = registry.template add<TH1>("trackTunedTracks", outputStringParams.c_str(), o2::framework::kTH1D, {{1, 0.5f, 1.5f}});
+    trackTunedTracks = registry.template add<TH1>("trackTunedTracks", outputStringParams.c_str(), o2::framework::HistType::kTH1D, {{1, 0.5f, 1.5f}});
 
     // Histograms for track tuner
     o2::framework::AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
-    registry.template add<TH2>("hDCAxyVsPtRec", "hDCAxyVsPtRec", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
-    registry.template add<TH2>("hDCAxyVsPtMC", "hDCAxyVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
-    registry.template add<TH2>("hDCAzVsPtRec", "hDCAzVsPtRec", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
-    registry.template add<TH2>("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAxyVsPtRec", "hDCAxyVsPtRec", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAxyVsPtMC", "hDCAxyVsPtMC", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAzVsPtRec", "hDCAzVsPtRec", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
   }
 
   template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
@@ -233,18 +234,24 @@ class TrackPropagationModule
       return; // suppress everything
     }
 
+    // Reserve every cursor filled in the loop below: reserve() switches the
+    // cursor to the unsafe (no bounds check) append, so a cursor filled
+    // without it pays the safe per-row append. The Par/ParExtension/DCA
+    // tables are filled in the covariance branch as well.
+    cursors.tracksParPropagated.reserve(tracks.size());
+    cursors.tracksParExtensionPropagated.reserve(tracks.size());
+    if (fillTracksDCA) {
+      cursors.tracksDCA.reserve(tracks.size());
+    }
     if (fillTracksCov) {
       cursors.tracksParCovPropagated.reserve(tracks.size());
       cursors.tracksParCovExtensionPropagated.reserve(tracks.size());
       if (fillTracksDCACov) {
         cursors.tracksDCACov.reserve(tracks.size());
       }
-    } else {
-      cursors.tracksParPropagated.reserve(tracks.size());
-      cursors.tracksParExtensionPropagated.reserve(tracks.size());
-      if (fillTracksDCA) {
-        cursors.tracksDCA.reserve(tracks.size());
-      }
+    }
+    if (cGroup.useTrackTuner.value && cGroup.fillTrackTunerTable.value) {
+      cursors.tunertable.reserve(tracks.size());
     }
 
     for (const auto& track : tracks) {

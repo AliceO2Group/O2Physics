@@ -19,17 +19,25 @@
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsFT0/Digit.h"
-#include "Framework/Logger.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Logger.h>
+#include <Framework/SliceCache.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
 
-#include <bitset>
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <numeric>
+#include <type_traits>
 #include <vector>
 
 // namespace with helpers for UD framework
@@ -531,6 +539,160 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
     return !cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
   }
   return false;
+}
+
+inline void setBit(uint64_t w[4], int bit, bool val)
+{
+  if (!val) {
+    return;
+  }
+  const int word = bit >> 6;
+  const int offs = bit & 63;
+  w[word] |= (static_cast<uint64_t>(1) << offs);
+}
+
+template <typename TFT0, typename TFV0A>
+inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
+                             uint64_t thr1[4], uint64_t thr2[4],
+                             float thr1_FT0A = 25., float thr1_FT0C = 50., float thr1_FV0A = 50.,
+                             float thr2_FT0A = 50., float thr2_FT0C = 100., float thr2_FV0A = 100.)
+{
+  thr1[0] = thr1[1] = thr1[2] = thr1[3] = 0ull;
+  thr2[0] = thr2[1] = thr2[2] = thr2[3] = 0ull;
+
+  constexpr int kFT0AOffset = 0;
+  constexpr int kFT0COffset = 96;
+  constexpr int kFV0Offset = 208;
+
+  auto ampsA = ft0.amplitudeA();
+  const int nA = std::min<int>(ampsA.size(), 96);
+  for (int i = 0; i < nA; ++i) {
+    const auto a = ampsA[i];
+    setBit(thr1, kFT0AOffset + i, a >= thr1_FT0A);
+    setBit(thr2, kFT0AOffset + i, a >= thr2_FT0A);
+  }
+
+  auto ampsC = ft0.amplitudeC();
+  const int nC = std::min<int>(ampsC.size(), 112);
+  for (int i = 0; i < nC; ++i) {
+    const auto a = ampsC[i];
+    setBit(thr1, kFT0COffset + i, a >= thr1_FT0C);
+    setBit(thr2, kFT0COffset + i, a >= thr2_FT0C);
+  }
+
+  auto ampsV = fv0a.amplitude();
+  const int nV = std::min<int>(ampsV.size(), 48);
+  for (int i = 0; i < nV; ++i) {
+    const auto a = ampsV[i];
+    setBit(thr1, kFV0Offset + i, a >= thr1_FV0A);
+    setBit(thr2, kFV0Offset + i, a >= thr2_FV0A);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// return eta and phi of a given FIT channel based on the bitset
+// Bit layout contract:
+constexpr int kFT0Bits = 208;   // FT0 total channels
+constexpr int kFV0Bits = 48;    // FV0A channels
+constexpr int kTotalBits = 256; // 4*64
+
+// FT0 side split
+constexpr int kFT0AChannels = 96;  // FT0A channels are [0..95]
+constexpr int kFT0CChannels = 112; // FT0C channels are [96..207]
+static_assert(kFT0AChannels + kFT0CChannels == kFT0Bits);
+
+using Bits256 = std::array<uint64_t, 4>;
+
+inline Bits256 makeBits256(uint64_t w0, uint64_t w1, uint64_t w2, uint64_t w3)
+{
+  return {w0, w1, w2, w3};
+}
+
+inline bool testBit(Bits256 const& w, int bit)
+{
+  if (bit < 0 || bit >= kTotalBits) {
+    return false;
+  }
+  return (w[bit >> 6] >> (bit & 63)) & 1ULL;
+}
+
+struct FitBitRef {
+  enum class Det : uint8_t { FT0,
+                             FV0,
+                             Unknown };
+  Det det = Det::Unknown;
+  int ch = -1;      // FT0: 0..207, FV0: 0..47
+  bool isC = false; // only meaningful for FT0
+};
+
+inline FitBitRef decodeFitBit(int bit)
+{
+  FitBitRef out;
+  if (bit >= 0 && bit < kFT0Bits) {
+    out.det = FitBitRef::Det::FT0;
+    out.ch = bit;                     // FT0 channel id
+    out.isC = (bit >= kFT0AChannels); // C side if in upper range
+    return out;
+  }
+  if (bit >= kFT0Bits && bit < kTotalBits) {
+    out.det = FitBitRef::Det::FV0;
+    out.ch = bit - kFT0Bits; // FV0A channel id 0..47
+    return out;
+  }
+  return out;
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline double getPhiFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
+{
+  ft0Det.calculateChannelCenter();
+  auto chPos = ft0Det.getChannelCenter(ft0Ch);
+
+  const double x = chPos.X() + offsetFT0[i].getX();
+  const double y = chPos.Y() + offsetFT0[i].getY();
+
+  return RecoDecay::phi(x, y);
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline double getEtaFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
+{
+  ft0Det.calculateChannelCenter();
+  auto chPos = ft0Det.getChannelCenter(ft0Ch);
+
+  double x = chPos.X() + offsetFT0[i].getX();
+  double y = chPos.Y() + offsetFT0[i].getY();
+  double z = chPos.Z() + offsetFT0[i].getZ();
+
+  // If this channel belongs to FT0C, flip z (matches your original intent)
+  const bool isC = (ft0Ch >= kFT0AChannels);
+  if (isC) {
+    z = -z;
+  }
+
+  const double r = std::sqrt(x * x + y * y);
+  const double theta = std::atan2(r, z);
+  return -std::log(std::tan(0.5 * theta));
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline bool getPhiEtaFromFitBit(FT0DetT& ft0Det,
+                                int bit,
+                                OffsetsT const& offsetFT0,
+                                int iRunOffset,
+                                double& phi,
+                                double& eta)
+{
+  auto ref = decodeFitBit(bit);
+  if (ref.det != FitBitRef::Det::FT0) {
+    return false;
+  }
+
+  // FT0A: 0..95, FT0C: 96..207
+  const int ft0Ch = bit;
+  phi = getPhiFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
+  eta = getEtaFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
+  return true;
 }
 
 // -----------------------------------------------------------------------------

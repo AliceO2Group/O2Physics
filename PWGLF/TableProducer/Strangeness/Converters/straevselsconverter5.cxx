@@ -10,11 +10,20 @@
 // or submit itself to any jurisdiction.
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
+
+#include <cstdint>
+#include <map>
+#include <string>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -81,6 +90,7 @@ struct straevselsconverter5 {
 
   void process(soa::Join<aod::StraEvSels_004, aod::StraStamps> const& straEvSels_004)
   {
+    straEvSels_005.reserve(straEvSels_004.size());
     for (auto& values : straEvSels_004) {
       straEvSels_005(values.sel8(),
                      values.selection_raw(),

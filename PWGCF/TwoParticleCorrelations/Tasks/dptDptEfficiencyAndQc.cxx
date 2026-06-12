@@ -19,29 +19,36 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Expressions.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-#include <TH2F.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <THnSparse.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 #include <TProfile2D.h>
+#include <TString.h>
 
-#include <algorithm>
+#include <sys/types.h>
+
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -51,6 +58,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
+using namespace o2::common::core;
 
 #define ADDHISTOGRAM(thetype, thedirectory, thename, thetitle, thekind, thebinning...) \
   registry.add<thetype>(TString::Format("%s/%s", thedirectory, thename).Data(), thetitle, thekind, thebinning)

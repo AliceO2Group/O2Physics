@@ -11,16 +11,24 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <string>
-#include <vector>
-// #include <iostream>
-
 #include "PWGDQ/Core/MCSignalLibrary.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/Logger.h"
+#include "MCProng.h"
+#include "MCSignal.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 
 #include <TPDGCode.h>
+#include <TString.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
+
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <vector>
 
 using namespace o2::constants::physics;
 // using std::cout;
@@ -449,6 +457,30 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng electron(1, {11}, {true}, {false}, {0}, {0}, {false});
     MCProng muon(1, {13}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Electron-muon pair", {electron, muon}, {-1, -1});
+    return signal;
+  }
+  if (!nameStr.compare("emuFromOpenHFhadron")) {
+    MCProng electron(2, {11, 902}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    electron.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng muon(2, {13, 902}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    muon.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "e and mu each from an open charm or beauty hadron decay", {electron, muon}, {-1, -1});
+    return signal;
+  }
+  if (!nameStr.compare("emuFromOpenCharmHadron")) {
+    MCProng electron(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    electron.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng muon(2, {13, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    muon.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "e and mu each from an open charm hadron decay", {electron, muon}, {-1, -1});
+    return signal;
+  }
+  if (!nameStr.compare("emuFromOpenBeautyHadron")) {
+    MCProng electron(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    electron.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng muon(2, {13, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    muon.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "e and mu each from an open beauty hadron decay", {electron, muon}, {-1, -1});
     return signal;
   }
   if (!nameStr.compare("dielectronFromPC")) {

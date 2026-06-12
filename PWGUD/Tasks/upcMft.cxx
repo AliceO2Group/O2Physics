@@ -9,31 +9,35 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// c++ headers
-#include <iostream>
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-// root headers
-#include <TH1F.h>
-#include <TH2F.h>
-#include "TMath.h"
-#include "TLorentzVector.h"
+#include <Math/MatrixFunctions.h>
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <TGeoGlobalMagField.h>
+#include <TLorentzVector.h>
 
-// framework headers
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include <RtypesCore.h>
 
-// for track propagation
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-#include "MathUtils/Utils.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
-#include "DataFormatsMFT/TrackMFT.h"
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 // define namespaces
 using namespace o2;

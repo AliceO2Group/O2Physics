@@ -18,8 +18,9 @@
 #ifndef PWGLF_DATAMODEL_LFANTINCEXTABLES_H_
 #define PWGLF_DATAMODEL_LFANTINCEXTABLES_H_
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -28,6 +29,7 @@ namespace antin_cex
 // Metadata
 DECLARE_SOA_COLUMN(IsCex, isCex, bool);            // 1=CEX (from antin), 0=BG
 DECLARE_SOA_COLUMN(MotherPdg, motherPdg, int32_t); // mother PDG
+DECLARE_SOA_COLUMN(MotherP, motherP, float);       // mother P
 DECLARE_SOA_COLUMN(ColId, colId, int32_t);         // mcCollisionId
 DECLARE_SOA_COLUMN(PId, pId, int32_t);             // proton MC id
 DECLARE_SOA_COLUMN(AntipId, antipId, int32_t);     // antiproton MC id
@@ -85,6 +87,8 @@ DECLARE_SOA_COLUMN(AntipTrkNClsIts, antipTrkNClsIts, int16_t);
 DECLARE_SOA_COLUMN(SelMask, selMask, uint32_t);
 
 DECLARE_SOA_COLUMN(PairPointingAngleDeg, pairPointingAngleDeg, float);
+DECLARE_SOA_COLUMN(PvsvThetaDeg, pvsvThetaDeg, float);
+DECLARE_SOA_COLUMN(PvsvPhiDeg, pvsvPhiDeg, float);
 DECLARE_SOA_COLUMN(PairPBalance, pairPBalance, float);
 DECLARE_SOA_COLUMN(PairPtBalance, pairPtBalance, float);
 DECLARE_SOA_COLUMN(PairQ, pairQ, float);
@@ -99,8 +103,6 @@ DECLARE_SOA_COLUMN(SVDeltaRToLayer, svDeltaRToLayer, float);
 
 DECLARE_SOA_COLUMN(PTrkItsHitMap, pTrkItsHitMap, uint16_t);
 DECLARE_SOA_COLUMN(APTrkItsHitMap, apTrkItsHitMap, uint16_t);
-DECLARE_SOA_COLUMN(PLayersOk, pLayersOk, int8_t);
-DECLARE_SOA_COLUMN(APLayersOk, apLayersOk, int8_t);
 
 DECLARE_SOA_COLUMN(PVtxZ, pVtxZ, float);
 
@@ -118,7 +120,7 @@ DECLARE_SOA_COLUMN(AntipTrkTgl, antipTrkTgl, float);
 // Table
 DECLARE_SOA_TABLE(AntinCexPairs, "AOD", "ANTINCEX",
                   antin_cex::IsCex,
-                  antin_cex::MotherPdg, antin_cex::ColId, antin_cex::PId, antin_cex::AntipId,
+                  antin_cex::MotherPdg, antin_cex::MotherP, antin_cex::ColId, antin_cex::PId, antin_cex::AntipId,
                   antin_cex::McPairP, antin_cex::McPairPt, antin_cex::McPairPz,
                   antin_cex::McDplane, antin_cex::McAngleDeg, antin_cex::McVtxX, antin_cex::McVtxY, antin_cex::McVtxZ,
                   antin_cex::TrkPairP, antin_cex::TrkPairPt, antin_cex::TrkPairPz, antin_cex::TrkAngleDeg,
@@ -129,10 +131,10 @@ DECLARE_SOA_TABLE(AntinCexPairs, "AOD", "ANTINCEX",
                   antin_cex::PTrkP, antin_cex::PTrkPx, antin_cex::PTrkPy, antin_cex::PTrkPz, antin_cex::PTrkEta, antin_cex::PTrkTpcSignal, antin_cex::PTrkNClsIts,
                   antin_cex::AntipTrkP, antin_cex::AntipTrkPx, antin_cex::AntipTrkPy, antin_cex::AntipTrkPz, antin_cex::AntipTrkEta, antin_cex::AntipTrkTpcSignal, antin_cex::AntipTrkNClsIts,
                   antin_cex::SelMask,
-                  antin_cex::PairPointingAngleDeg, antin_cex::PairPBalance, antin_cex::PairPtBalance, antin_cex::PairQ,
+                  antin_cex::PairPointingAngleDeg, antin_cex::PvsvThetaDeg, antin_cex::PvsvPhiDeg, antin_cex::PairPBalance, antin_cex::PairPtBalance, antin_cex::PairQ,
                   antin_cex::DPairP, antin_cex::DPairPt, antin_cex::DPairPz, antin_cex::DOpenAngle,
                   antin_cex::SVNearestLayerId, antin_cex::SVDeltaRToLayer,
-                  antin_cex::PTrkItsHitMap, antin_cex::APTrkItsHitMap, antin_cex::PLayersOk, antin_cex::APLayersOk,
+                  antin_cex::PTrkItsHitMap, antin_cex::APTrkItsHitMap,
                   antin_cex::PVtxZ,
                   antin_cex::PTrkItsNSigmaPr, antin_cex::PTrkItsPidValid, antin_cex::PTrkTgl,
                   antin_cex::AntipTrkItsNSigmaPr, antin_cex::AntipTrkItsPidValid, antin_cex::AntipTrkTgl);

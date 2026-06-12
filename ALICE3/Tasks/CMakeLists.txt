@@ -24,21 +24,6 @@ o2physics_add_dpl_workflow(alice3-lutmaker
                     PUBLIC_LINK_LIBRARIES O2::Framework FairRoot::Base O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(alice3-pid-rich-qa
-                    SOURCES pidRICHqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(alice3-ecal-qa
-                    SOURCES ECALqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(alice3-pid-ftof-qa
-                    SOURCES pidFTOFqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(alice3-pid-separation-power
                     SOURCES alice3SeparationPower.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -95,6 +80,6 @@ o2physics_add_dpl_workflow(alice3-dq-efficiency
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-decayer-qa
-                    SOURCES alice3DecayerQA.cxx
+                    SOURCES alice3DecayerQa.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

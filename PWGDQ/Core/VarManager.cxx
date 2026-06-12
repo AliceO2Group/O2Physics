@@ -8,17 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH3.h>
+#include <THn.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <KFParticle.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cmath>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <numeric>
+#include <tuple>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using namespace o2::constants::physics;
 
 ClassImp(VarManager);
@@ -28,6 +50,7 @@ TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
 std::map<TString, int> VarManager::fgVarNamesMap;
 bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
+bool VarManager::fgPVrecalKF = true;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
 float VarManager::fgzShiftFwd = 0.0;
@@ -51,6 +74,8 @@ std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
 bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
 int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
+int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
+TObject* VarManager::fgEfficiencyHist = nullptr;      // histogram for efficiency
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -358,6 +383,265 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
 }
 
 //__________________________________________________________________
+void VarManager::SetEfficiencyObject(int efficiencyType, TObject* obj)
+{
+  // check the type of the efficiency object and set it accordingly
+  if (efficiencyType >= kNEfficiencyTypes || efficiencyType < 0) {
+    LOG(warning) << "SetEfficiencyObject: unknown efficiency type " << efficiencyType;
+    return;
+  }
+
+  // set the efficiency type
+  fgEfficiencyType = efficiencyType;
+  // set the efficiency object
+  fgEfficiencyHist = obj;
+}
+
+void VarManager::FillEfficiency(float* values)
+{
+  // depending on the efficiency type, we use different types of efficiency histograms and different variables to get the efficiency value
+  if (!values) {
+    values = fgValues;
+  }
+
+  if (fgEfficiencyType == kNone) {
+    values[kPairEfficiency] = 1.0; // if no efficiency is to be applied, set the efficiency value to 1
+    values[kPairWeight] = 1.0;     // set the weight to 1
+  } else if (fgEfficiencyType == kPairPtCentFT0cCosThetaStarFT0c) {
+    if (!fgEfficiencyHist) {
+      LOG(fatal) << "efficiency histogram not set";
+      return;
+    }
+    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    // Get the bin indices for the efficiency histogram
+    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
+    binPt = (binPt == 0 ? 1 : binPt);
+    binPt = (binPt > efficiencyHist->GetXaxis()->GetNbins() ? efficiencyHist->GetXaxis()->GetNbins() : binPt);
+    int binCent = efficiencyHist->GetYaxis()->FindBin(values[kCentFT0C]);
+    binCent = (binCent == 0 ? 1 : binCent);
+    binCent = (binCent > efficiencyHist->GetYaxis()->GetNbins() ? efficiencyHist->GetYaxis()->GetNbins() : binCent);
+    int binCosThetaStarFT0c = efficiencyHist->GetZaxis()->FindBin(values[kCosThetaStarFT0C]);
+    binCosThetaStarFT0c = (binCosThetaStarFT0c == 0 ? 1 : binCosThetaStarFT0c);
+    binCosThetaStarFT0c = (binCosThetaStarFT0c > efficiencyHist->GetZaxis()->GetNbins() ? efficiencyHist->GetZaxis()->GetNbins() : binCosThetaStarFT0c);
+
+    // get the efficiency value from the histogram
+    values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarFT0c);
+    values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
+  } else if (fgEfficiencyType == kPairPtCentFT0cCosThetaStarRandom) {
+    if (!fgEfficiencyHist) {
+      LOG(fatal) << "efficiency histogram not set";
+      return;
+    }
+    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    // Get the bin indices for the efficiency histogram
+    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
+    binPt = (binPt == 0 ? 1 : binPt);
+    binPt = (binPt > efficiencyHist->GetXaxis()->GetNbins() ? efficiencyHist->GetXaxis()->GetNbins() : binPt);
+    int binCent = efficiencyHist->GetYaxis()->FindBin(values[kCentFT0C]);
+    binCent = (binCent == 0 ? 1 : binCent);
+    binCent = (binCent > efficiencyHist->GetYaxis()->GetNbins() ? efficiencyHist->GetYaxis()->GetNbins() : binCent);
+    int binCosThetaStarRandom = efficiencyHist->GetZaxis()->FindBin(values[kCosThetaStarRandom]);
+    binCosThetaStarRandom = (binCosThetaStarRandom == 0 ? 1 : binCosThetaStarRandom);
+    binCosThetaStarRandom = (binCosThetaStarRandom > efficiencyHist->GetZaxis()->GetNbins() ? efficiencyHist->GetZaxis()->GetNbins() : binCosThetaStarRandom);
+
+    // get the efficiency value from the histogram
+    values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarRandom);
+    values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
+  } else {
+    LOG(warning) << "FillEfficiency: unknown efficiency type " << fgEfficiencyType << ", using default efficiency = 1";
+    values[kPairEfficiency] = 1;
+    values[kPairWeight] = 1;
+  }
+}
+
+//__________________________________________________________________
+std::tuple<float, float, float, float, float> VarManager::BimodalityCoefficientUnbinned(const std::vector<float>& data)
+{
+  // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+  // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+  size_t n = data.size();
+  if (n < 3) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+  }
+  float mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
+
+  float m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  float diff, diff2;
+  for (float x : data) {
+    diff = x - mean;
+    diff2 = diff * diff;
+    m2 += diff2;
+    m3 += diff2 * diff;
+    m4 += diff2 * diff2;
+  }
+
+  m2 /= n;
+  m3 /= n;
+  m4 /= n;
+
+  if (m2 == 0.0) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+  }
+
+  float stddev = std::sqrt(m2);
+  float skewness = m3 / (stddev * stddev * stddev);
+  float kurtosis = m4 / (m2 * m2);
+
+  return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+}
+
+std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoefficientAndNPeaks(const std::vector<float>& data, float binWidth, int trim, float min, float max)
+{
+  // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+  // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+
+  // if the binWidth is < 0, use the unbinned calculation
+  if (binWidth < 0) {
+    // get the tuple from the unbinned calculation
+    auto result = BimodalityCoefficientUnbinned(data);
+    return std::make_tuple(std::get<0>(result), std::get<1>(result), std::get<2>(result), std::get<3>(result), std::get<4>(result), -1);
+  }
+
+  // bin the data and put it in a vector
+  int nBins = static_cast<int>((max - min) / binWidth);
+  std::vector<int> counts(nBins, 0.0);
+
+  for (float x : data) {
+    if (x < min || x >= max) {
+      continue; // skip out-of-range values
+    }
+    int bin = static_cast<int>((x - min) / binWidth);
+    if (bin >= 0 && bin < nBins) {
+      counts[bin]++;
+    }
+  }
+
+  // trim the distribution if requested, by requiring a minimum of "trim" counts in each bin
+  if (trim > 0) {
+    for (int i = 0; i < nBins; ++i) {
+      // if the count in the bin is less than the trim value, set it to zero
+      if (counts[i] < trim) {
+        // set the count to zero only if this is an isolated bin,
+        // i.e. if this count belongs to a peak, we want to keep it even if it has counts below the trim limit, as long as the whole peak is not below the trim limit
+        // check the previous bins until we find an empty bin or we reach the beginning of the histogram
+        int localPeakCount = counts[i];
+        for (int j = i - 1; j >= 0; --j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          localPeakCount += counts[j];
+        }
+        // check the next bins until we find an empty bin or we reach the end of the histogram
+        for (int j = i + 1; j < nBins; ++j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          localPeakCount += counts[j];
+        }
+        if (localPeakCount < trim) {
+          counts[i] = 0;
+        }
+      }
+    }
+  }
+  if (trim < 0) {
+    // if trim is negative, then we remove all counts belonging to local peaks with an integrated count below 1/abs(trim)
+    for (int i = 0; i < nBins; ++i) {
+      if (counts[i] == 0) {
+        continue; // skip empty bins
+      }
+      // check the previous bins until we find an empty bin or we reach the beginning of the histogram
+      int localPeakCount = counts[i];
+      for (int j = i - 1; j >= 0; --j) {
+        if (counts[j] == 0) {
+          break;
+        }
+        localPeakCount += counts[j];
+      }
+      // check the next bins until we find an empty bin or we reach the end of the histogram
+      for (int j = i + 1; j < nBins; ++j) {
+        if (counts[j] == 0) {
+          break;
+        }
+        localPeakCount += counts[j];
+      }
+      if (localPeakCount < (1.0 / std::abs(trim)) * data.size()) {
+        // set all bins belonging to this local peak to zero
+        for (int j = i; j >= 0; --j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          counts[j] = 0;
+        }
+        for (int j = i + 1; j < nBins; ++j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          counts[j] = 0;
+        }
+      }
+    }
+  }
+
+  // count the number of peaks
+  int nPeaks = 0;
+  bool inPeak = false;
+  for (int i = 0; i < nBins; ++i) {
+    if (counts[i] > 0) {
+      if (!inPeak) {
+        inPeak = true;
+        nPeaks++;
+      }
+    } else {
+      inPeak = false;
+    }
+  }
+
+  // first compute the mean
+  float mean = 0.0;
+  float totalCounts = 0.0;
+  for (int i = 0; i < nBins; ++i) {
+    float binCenter = min + (i + 0.5) * binWidth;
+    mean += counts[i] * binCenter;
+    totalCounts += counts[i];
+  }
+
+  if (totalCounts == 0) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, nPeaks);
+  }
+  mean /= totalCounts;
+
+  // then compute the second, third, and fourth central moments
+  float m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  float diff, diff2, binCenter;
+  for (int i = 0; i < nBins; ++i) {
+    if (counts[i] == 0) {
+      continue; // skip empty bins
+    }
+    binCenter = min + (i + 0.5) * binWidth;
+    diff = binCenter - mean;
+    diff2 = diff * diff;
+    m2 += counts[i] * diff2;
+    m3 += counts[i] * diff2 * diff;
+    m4 += counts[i] * diff2 * diff2;
+  }
+
+  m2 /= totalCounts;
+  m3 /= totalCounts;
+  m4 /= totalCounts;
+
+  if (m2 == 0.0) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, nPeaks);
+  }
+
+  float stddev = std::sqrt(m2);
+  float skewness = m3 / (stddev * stddev * stddev);
+  float kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
+
+  return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis, nPeaks);
+}
+
+//__________________________________________________________________
 void VarManager::SetDefaultVarNames()
 {
   //
@@ -388,6 +672,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTimeFromSOR] = "min.";
   fgVariableNames[kBCOrbit] = "Bunch crossing";
   fgVariableUnits[kBCOrbit] = "";
+  fgVariableNames[kCollisionRandom] = "Random number (collision-level)";
+  fgVariableUnits[kCollisionRandom] = "";
   fgVariableNames[kIsPhysicsSelection] = "Physics selection";
   fgVariableUnits[kIsPhysicsSelection] = "";
   fgVariableNames[kVtxX] = "Vtx X ";
@@ -460,6 +746,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCEventTime] = "MC event time";
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
+  fgVariableNames[kMCEventPlaneAngle] = "MC event plane angle";
   fgVariableNames[kMCEventCentrFT0C] = "MC Centrality FT0C";
   fgVariableNames[kMultMCNParticlesEta05] = "MC Multiplicity Central Barrel for |eta| < 0.5";
   fgVariableNames[kMultMCNParticlesEta08] = "MC Multiplicity Central Barrel for |eta| < 0.8";
@@ -472,6 +759,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
+  fgVariableUnits[kMCEventPlaneAngle] = "";
   fgVariableUnits[kMCEventCentrFT0C] = "%";
   fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
   fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
@@ -576,6 +864,58 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kNTPCmedianTimeShortA] = "#mu s";
   fgVariableNames[kNTPCmedianTimeShortC] = "# TPC-C pileup median time, short time range";
   fgVariableUnits[kNTPCmedianTimeShortC] = "#mu s";
+  fgVariableNames[kDCAzBimodalityCoefficient] = "Unbinned Bimodality Coeff of DCAz distribution";
+  fgVariableUnits[kDCAzBimodalityCoefficient] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinned] = "Binned Bimodality Coeff of DCAz distribution";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinned] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinnedTrimmed1] = "Binned Bimodality Coeff of DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinnedTrimmed1] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinnedTrimmed2] = "Binned Bimodality Coeff of DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinnedTrimmed2] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinnedTrimmed3] = "Binned Bimodality Coeff of DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinnedTrimmed3] = "";
+  fgVariableNames[kDCAzMean] = "Mean of DCAz distribution";
+  fgVariableUnits[kDCAzMean] = "cm";
+  fgVariableNames[kDCAzMeanBinnedTrimmed1] = "Mean of DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzMeanBinnedTrimmed1] = "cm";
+  fgVariableNames[kDCAzMeanBinnedTrimmed2] = "Mean of DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzMeanBinnedTrimmed2] = "cm";
+  fgVariableNames[kDCAzMeanBinnedTrimmed3] = "Mean of DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzMeanBinnedTrimmed3] = "cm";
+  fgVariableNames[kDCAzRMS] = "RMS of DCAz distribution";
+  fgVariableUnits[kDCAzRMS] = "cm";
+  fgVariableNames[kDCAzRMSBinnedTrimmed1] = "RMS of DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzRMSBinnedTrimmed1] = "cm";
+  fgVariableNames[kDCAzRMSBinnedTrimmed2] = "RMS of DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzRMSBinnedTrimmed2] = "cm";
+  fgVariableNames[kDCAzRMSBinnedTrimmed3] = "RMS of DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzRMSBinnedTrimmed3] = "cm";
+  fgVariableNames[kDCAzSkewness] = "Skewness of DCAz distribution";
+  fgVariableUnits[kDCAzSkewness] = "";
+  fgVariableNames[kDCAzKurtosis] = "Kurtosis of DCAz distribution";
+  fgVariableUnits[kDCAzKurtosis] = "";
+  fgVariableNames[kDCAzFracAbove100um] = "Fraction of tracks with |DCAz| > 100 um";
+  fgVariableUnits[kDCAzFracAbove100um] = "";
+  fgVariableNames[kDCAzFracAbove200um] = "Fraction of tracks with |DCAz| > 200 um";
+  fgVariableUnits[kDCAzFracAbove200um] = "";
+  fgVariableNames[kDCAzFracAbove500um] = "Fraction of tracks with |DCAz| > 500 um";
+  fgVariableUnits[kDCAzFracAbove500um] = "";
+  fgVariableNames[kDCAzFracAbove1mm] = "Fraction of tracks with |DCAz| > 1 mm";
+  fgVariableUnits[kDCAzFracAbove1mm] = "";
+  fgVariableNames[kDCAzFracAbove2mm] = "Fraction of tracks with |DCAz| > 2 mm";
+  fgVariableUnits[kDCAzFracAbove2mm] = "";
+  fgVariableNames[kDCAzFracAbove5mm] = "Fraction of tracks with |DCAz| > 5 mm";
+  fgVariableUnits[kDCAzFracAbove5mm] = "";
+  fgVariableNames[kDCAzFracAbove10mm] = "Fraction of tracks with |DCAz| > 10 mm";
+  fgVariableUnits[kDCAzFracAbove10mm] = "";
+  fgVariableNames[kDCAzNPeaks] = "Number of peaks in DCAz distribution";
+  fgVariableUnits[kDCAzNPeaks] = "";
+  fgVariableNames[kDCAzNPeaksTrimmed1] = "Number of peaks in binned DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzNPeaksTrimmed1] = "";
+  fgVariableNames[kDCAzNPeaksTrimmed2] = "Number of peaks in binned DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzNPeaksTrimmed2] = "";
+  fgVariableNames[kDCAzNPeaksTrimmed3] = "Number of peaks in binned DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -665,6 +1005,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAxy] = "cm";
   fgVariableNames[kTrackDCAz] = "DCA_{z}";
   fgVariableUnits[kTrackDCAz] = "cm";
+  fgVariableNames[kDCAxy1] = "DCA_{xy}";
+  fgVariableUnits[kDCAxy1] = "cm";
+  fgVariableNames[kDCAz1] = "DCA_{z}";
+  fgVariableUnits[kDCAz1] = "cm";
+  fgVariableNames[kDCAxy2] = "DCA_{xy}";
+  fgVariableUnits[kDCAxy2] = "cm";
+  fgVariableNames[kDCAz2] = "DCA_{z}";
+  fgVariableUnits[kDCAz2] = "cm";
   fgVariableNames[kTPCnSigmaEl] = "n #sigma_{e}^{TPC}";
   fgVariableUnits[kTPCnSigmaEl] = "";
   fgVariableNames[kTPCnSigmaEl_Corr] = "n #sigma_{e}^{TPC} Corr.";
@@ -677,6 +1025,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnSigmaPi_Corr] = "";
   fgVariableNames[kTPCnSigmaKa] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa] = "";
+  fgVariableNames[kTPCnSigmaEl1] = "n #sigma_{el}^{TPC}";
+  fgVariableUnits[kTPCnSigmaEl1] = "";
+  fgVariableNames[kTPCnSigmaEl2] = "n #sigma_{el}^{TPC}";
+  fgVariableUnits[kTPCnSigmaEl2] = "";
   fgVariableNames[kTPCnSigmaKa_leg1] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa_leg1] = "";
   fgVariableNames[kTPCnSigmaKa_Corr] = "n #sigma_{K}^{TPC} Corr.";
@@ -1161,6 +1513,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPsi2B] = "";
   fgVariableNames[kPsi2C] = "#Psi_{2}^{C} ";
   fgVariableUnits[kPsi2C] = "";
+  fgVariableNames[kRandomPsi2] = "Random #Psi_{2} ";
+  fgVariableUnits[kRandomPsi2] = "";
   fgVariableNames[kR2SP_AB] = "R_{2}^{SP} (AB) ";
   fgVariableUnits[kR2SP_AB] = "";
   fgVariableNames[kR2SP_AC] = "R_{2}^{SP} (AC) ";
@@ -1193,6 +1547,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR3SP] = "";
   fgVariableNames[kR3EP] = "R_{3}^{EP} ";
   fgVariableUnits[kR3EP] = "";
+  fgVariableNames[kNPairsPerEvent] = "number of pairs per event";
+  fgVariableUnits[kNPairsPerEvent] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
@@ -1255,6 +1611,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaStarFT0A] = "";
   fgVariableNames[kCosThetaStarFT0C] = "cos#it{#theta}^{*}_{FT0C}";
   fgVariableUnits[kCosThetaStarFT0C] = "";
+  fgVariableNames[kAbsCosThetaStarFT0C] = "|cos#it{#theta}^{*}_{FT0C}|";
+  fgVariableUnits[kAbsCosThetaStarFT0C] = "";
+  fgVariableNames[kCos2ThetaStarFT0C] = "cos^{2}#it{#theta}^{*}_{FT0C}";
+  fgVariableUnits[kCos2ThetaStarFT0C] = "";
+  fgVariableNames[kCosThetaStarRandom] = "cos#it{#theta}^{*}_{Random}";
+  fgVariableUnits[kCosThetaStarRandom] = "";
+  fgVariableNames[kCos2ThetaStarRandom] = "cos^{2}#it{#theta}^{*}_{Random}";
+  fgVariableUnits[kCos2ThetaStarRandom] = "";
+  fgVariableNames[kMCCosThetaStar] = "cos#it{#theta}^{*}_{MC}";
+  fgVariableUnits[kMCCosThetaStar] = "";
+  fgVariableNames[kPairWeight] = "weight";
+  fgVariableUnits[kPairWeight] = "";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1301,6 +1669,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPhiCharmHadron] = "rad.";
   fgVariableNames[kBdtCharmHadron] = "BDT score (charm hadron)";
   fgVariableUnits[kBdtCharmHadron] = " ";
+  fgVariableNames[kDeltaPt] = "pT Reco - pT MC ";
+  fgVariableUnits[kDeltaPt] = "GeV/c";
+  fgVariableNames[kPtResolution] = "Resolution (pT Reco - pT MC) / pT MC";
+  fgVariableUnits[kPtResolution] = "";
+  fgVariableNames[kEtaResolution] = "Resolution (eta Reco - eta MC)";
+  fgVariableUnits[kEtaResolution] = "";
   fgVariableNames[kIsDoubleGap] = "is double gap event";
   fgVariableUnits[kIsDoubleGap] = "";
   fgVariableNames[kIsSingleGapA] = "is single gap event side A";
@@ -1365,6 +1739,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kAmplitudeFT0A] = "a.u.";
   fgVariableNames[kAmplitudeFT0C] = "FT0C amplitude";
   fgVariableUnits[kAmplitudeFT0C] = "a.u.";
+  fgVariableNames[kAmplitudeFT0M] = "FT0M amplitude";
+  fgVariableUnits[kAmplitudeFT0M] = "a.u.";
   fgVariableNames[kTimeFT0A] = "FT0A time";
   fgVariableUnits[kTimeFT0A] = "ns";
   fgVariableNames[kTimeFT0C] = "FT0C time";
@@ -1489,6 +1865,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTOFEventTime] = "ns";
   fgVariableNames[kTOFEventTimeErr] = "Event time error reconstructed with ALICE3 TOF";
   fgVariableUnits[kTOFEventTimeErr] = "ns";
+  fgVariableNames[koTOFBeta] = "oTOF #beta";
+  fgVariableUnits[koTOFBeta] = "";
   fgVariableNames[kOuterTOFnSigmaEl] = "n #sigma_{El}^{oTOF}";
   fgVariableUnits[kOuterTOFnSigmaEl] = "";
   fgVariableNames[kOuterTOFnSigmaMu] = "n #sigma_{Mu}^{oTOF}";
@@ -1507,6 +1885,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kOuterTOFnSigmaHe3] = "";
   fgVariableNames[kOuterTOFnSigmaAl] = "n #sigma_{Al}^{oTOF}";
   fgVariableUnits[kOuterTOFnSigmaAl] = "";
+  fgVariableNames[kiTOFBeta] = "iTOF #beta";
+  fgVariableUnits[kiTOFBeta] = "";
   fgVariableNames[kInnerTOFnSigmaEl] = "n #sigma_{El}^{iTOF}";
   fgVariableUnits[kInnerTOFnSigmaEl] = "";
   fgVariableNames[kInnerTOFnSigmaMu] = "n #sigma_{Mu}^{iTOF}";
@@ -1542,7 +1922,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCollisionTimeRes"] = kCollisionTimeRes;
   fgVarNamesMap["kBC"] = kBC;
   fgVarNamesMap["kBCOrbit"] = kBCOrbit;
+  fgVarNamesMap["kCollisionRandom"] = kCollisionRandom;
   fgVarNamesMap["kIsPhysicsSelection"] = kIsPhysicsSelection;
+  fgVarNamesMap["kIsTVXTriggered"] = kIsTVXTriggered;
   fgVarNamesMap["kIsNoTFBorder"] = kIsNoTFBorder;
   fgVarNamesMap["kIsNoITSROFBorder"] = kIsNoITSROFBorder;
   fgVarNamesMap["kIsNoITSROFBorderRecomputed"] = kIsNoITSROFBorderRecomputed;
@@ -1554,6 +1936,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsGoodITSLayer3"] = kIsGoodITSLayer3;
   fgVarNamesMap["kIsGoodITSLayer0123"] = kIsGoodITSLayer0123;
   fgVarNamesMap["kIsGoodITSLayersAll"] = kIsGoodITSLayersAll;
+  fgVarNamesMap["kIsTriggerZNAZNC"] = kIsTriggerZNAZNC;
   fgVarNamesMap["kIsINT7"] = kIsINT7;
   fgVarNamesMap["kIsEMC7"] = kIsEMC7;
   fgVarNamesMap["kIsINT7inMUON"] = kIsINT7inMUON;
@@ -1625,6 +2008,32 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kNTPCmeanTimeShortC"] = kNTPCmeanTimeShortC;
   fgVarNamesMap["kNTPCmedianTimeShortA"] = kNTPCmedianTimeShortA;
   fgVarNamesMap["kNTPCmedianTimeShortC"] = kNTPCmedianTimeShortC;
+  fgVarNamesMap["kDCAzBimodalityCoefficient"] = kDCAzBimodalityCoefficient;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinned"] = kDCAzBimodalityCoefficientBinned;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinnedTrimmed1"] = kDCAzBimodalityCoefficientBinnedTrimmed1;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinnedTrimmed2"] = kDCAzBimodalityCoefficientBinnedTrimmed2;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinnedTrimmed3"] = kDCAzBimodalityCoefficientBinnedTrimmed3;
+  fgVarNamesMap["kDCAzMean"] = kDCAzMean;
+  fgVarNamesMap["kDCAzMeanBinnedTrimmed1"] = kDCAzMeanBinnedTrimmed1;
+  fgVarNamesMap["kDCAzMeanBinnedTrimmed2"] = kDCAzMeanBinnedTrimmed2;
+  fgVarNamesMap["kDCAzMeanBinnedTrimmed3"] = kDCAzMeanBinnedTrimmed3;
+  fgVarNamesMap["kDCAzRMS"] = kDCAzRMS;
+  fgVarNamesMap["kDCAzRMSBinnedTrimmed1"] = kDCAzRMSBinnedTrimmed1;
+  fgVarNamesMap["kDCAzRMSBinnedTrimmed2"] = kDCAzRMSBinnedTrimmed2;
+  fgVarNamesMap["kDCAzRMSBinnedTrimmed3"] = kDCAzRMSBinnedTrimmed3;
+  fgVarNamesMap["kDCAzSkewness"] = kDCAzSkewness;
+  fgVarNamesMap["kDCAzKurtosis"] = kDCAzKurtosis;
+  fgVarNamesMap["kDCAzFracAbove100um"] = kDCAzFracAbove100um;
+  fgVarNamesMap["kDCAzFracAbove200um"] = kDCAzFracAbove200um;
+  fgVarNamesMap["kDCAzFracAbove500um"] = kDCAzFracAbove500um;
+  fgVarNamesMap["kDCAzFracAbove1mm"] = kDCAzFracAbove1mm;
+  fgVarNamesMap["kDCAzFracAbove2mm"] = kDCAzFracAbove2mm;
+  fgVarNamesMap["kDCAzFracAbove5mm"] = kDCAzFracAbove5mm;
+  fgVarNamesMap["kDCAzFracAbove10mm"] = kDCAzFracAbove10mm;
+  fgVarNamesMap["kDCAzNPeaks"] = kDCAzNPeaks;
+  fgVarNamesMap["kDCAzNPeaksTrimmed1"] = kDCAzNPeaksTrimmed1;
+  fgVarNamesMap["kDCAzNPeaksTrimmed2"] = kDCAzNPeaksTrimmed2;
+  fgVarNamesMap["kDCAzNPeaksTrimmed3"] = kDCAzNPeaksTrimmed3;
   fgVarNamesMap["kMCEventGeneratorId"] = kMCEventGeneratorId;
   fgVarNamesMap["kMCEventSubGeneratorId"] = kMCEventSubGeneratorId;
   fgVarNamesMap["kMCVtxX"] = kMCVtxX;
@@ -1633,6 +2042,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEventTime"] = kMCEventTime;
   fgVarNamesMap["kMCEventWeight"] = kMCEventWeight;
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;
+  fgVarNamesMap["kMCEventPlaneAngle"] = kMCEventPlaneAngle;
+  fgVarNamesMap["kMCEventCentrFT0C"] = kMCEventCentrFT0C;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
@@ -1784,6 +2195,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2SP2"] = kTwoR2SP2;
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
+  fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;
@@ -1809,12 +2221,20 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kEta1"] = kEta1;
   fgVarNamesMap["kPhi1"] = kPhi1;
   fgVarNamesMap["kCharge1"] = kCharge1;
+  fgVarNamesMap["kDCAxy1"] = kDCAxy1;
+  fgVarNamesMap["kDCAz1"] = kDCAz1;
+  fgVarNamesMap["kITSclusterMap1"] = kITSclusterMap1;
+  fgVarNamesMap["kTPCnSigmaEl1"] = kTPCnSigmaEl1;
   fgVarNamesMap["kPin_leg1"] = kPin_leg1;
   fgVarNamesMap["kTPCnSigmaKa_leg1"] = kTPCnSigmaKa_leg1;
   fgVarNamesMap["kPt2"] = kPt2;
   fgVarNamesMap["kEta2"] = kEta2;
   fgVarNamesMap["kPhi2"] = kPhi2;
   fgVarNamesMap["kCharge2"] = kCharge2;
+  fgVarNamesMap["kDCAxy2"] = kDCAxy2;
+  fgVarNamesMap["kDCAz2"] = kDCAz2;
+  fgVarNamesMap["kITSclusterMap2"] = kITSclusterMap2;
+  fgVarNamesMap["kTPCnSigmaEl2"] = kTPCnSigmaEl2;
   fgVarNamesMap["kPin"] = kPin;
   fgVarNamesMap["kSignedPin"] = kSignedPin;
   fgVarNamesMap["kTOFExpMom"] = kTOFExpMom;
@@ -1933,9 +2353,11 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
+  fgVarNamesMap["kMCAccweight"] = kMCAccweight;
   fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
+  fgVarNamesMap["kMCEWeight_before"] = kMCEWeight_before;
   fgVarNamesMap["kMCdeltaeta"] = kMCdeltaeta;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCHadronEta"] = kMCHadronEta;
@@ -1950,12 +2372,17 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCdeltaphi_randomPhi_toward"] = kMCdeltaphi_randomPhi_toward;
   fgVarNamesMap["kMCdeltaphi_randomPhi_away"] = kMCdeltaphi_randomPhi_away;
   fgVarNamesMap["kMCdeltaphi_randomPhi_trans"] = kMCdeltaphi_randomPhi_trans;
+  fgVarNamesMap["kMCHadronpt_randomPhi_trans"] = kMCHadronpt_randomPhi_trans;
   fgVarNamesMap["kMCCosChi_gen"] = kMCCosChi_gen;
   fgVarNamesMap["kMCWeight_gen"] = kMCWeight_gen;
   fgVarNamesMap["kMCdeltaeta_gen"] = kMCdeltaeta_gen;
   fgVarNamesMap["kMCCosChi_rec"] = kMCCosChi_rec;
   fgVarNamesMap["kMCWeight_rec"] = kMCWeight_rec;
   fgVarNamesMap["kMCdeltaeta_rec"] = kMCdeltaeta_rec;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans_rec"] = kMCCosChi_randomPhi_trans_rec;
+  fgVarNamesMap["kMCWeight_randomPhi_trans_rec"] = kMCWeight_randomPhi_trans_rec;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans_gen"] = kMCCosChi_randomPhi_trans_gen;
+  fgVarNamesMap["kMCWeight_randomPhi_trans_gen"] = kMCWeight_randomPhi_trans_gen;
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCdeltaphi"] = kMCdeltaphi;
@@ -2030,6 +2457,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCosThetaStarTPC"] = kCosThetaStarTPC;
   fgVarNamesMap["kCosThetaStarFT0A"] = kCosThetaStarFT0A;
   fgVarNamesMap["kCosThetaStarFT0C"] = kCosThetaStarFT0C;
+  fgVarNamesMap["kAbsCosThetaStarFT0C"] = kAbsCosThetaStarFT0C;
+  fgVarNamesMap["kCos2ThetaStarFT0C"] = kCos2ThetaStarFT0C;
+  fgVarNamesMap["kCosThetaStarRandom"] = kCosThetaStarRandom;
+  fgVarNamesMap["kCos2ThetaStarRandom"] = kCos2ThetaStarRandom;
+  fgVarNamesMap["kMCCosThetaStar"] = kMCCosThetaStar;
+  fgVarNamesMap["kPairWeight"] = kPairWeight;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
@@ -2128,6 +2561,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPsi2ANEG"] = kPsi2ANEG;
   fgVarNamesMap["kPsi2B"] = kPsi2B;
   fgVarNamesMap["kPsi2C"] = kPsi2C;
+  fgVarNamesMap["kRandomPsi2"] = kRandomPsi2;
   fgVarNamesMap["kCos2DeltaPhi"] = kCos2DeltaPhi;
   fgVarNamesMap["kCos2DeltaPhiMu1"] = kCos2DeltaPhiMu1;
   fgVarNamesMap["kCos2DeltaPhiMu2"] = kCos2DeltaPhiMu2;
@@ -2175,8 +2609,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
   fgVarNamesMap["kCosTheta"] = kCosTheta;
   fgVarNamesMap["kCosChi"] = kCosChi;
+  fgVarNamesMap["kWeight"] = kWeight;
   fgVarNamesMap["kECWeight"] = kECWeight;
   fgVarNamesMap["kEWeight_before"] = kEWeight_before;
+  fgVarNamesMap["kWeight_before"] = kWeight_before;
   fgVarNamesMap["kPtDau"] = kPtDau;
   fgVarNamesMap["kEtaDau"] = kEtaDau;
   fgVarNamesMap["kPhiDau"] = kPhiDau;
@@ -2189,6 +2625,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kdeltaphi_randomPhi_trans"] = kdeltaphi_randomPhi_trans;
   fgVarNamesMap["kdeltaphi_randomPhi_toward"] = kdeltaphi_randomPhi_toward;
   fgVarNamesMap["kdeltaphi_randomPhi_away"] = kdeltaphi_randomPhi_away;
+  fgVarNamesMap["kPtDau_randomPhi_trans"] = kPtDau_randomPhi_trans;
   fgVarNamesMap["kdileptonmass"] = kdileptonmass;
   fgVarNamesMap["kNCorrelationVariables"] = kNCorrelationVariables;
   fgVarNamesMap["kQuadMass"] = kQuadMass;
@@ -2223,6 +2660,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
   fgVarNamesMap["kAmplitudeFT0A"] = kAmplitudeFT0A;
   fgVarNamesMap["kAmplitudeFT0C"] = kAmplitudeFT0C;
+  fgVarNamesMap["kAmplitudeFT0M"] = kAmplitudeFT0M;
+  fgVarNamesMap["kFT0OrA"] = kFT0OrA;
+  fgVarNamesMap["kFT0OrC"] = kFT0OrC;
   fgVarNamesMap["kTimeFT0A"] = kTimeFT0A;
   fgVarNamesMap["kTimeFT0C"] = kTimeFT0C;
   fgVarNamesMap["kTriggerMaskFT0"] = kTriggerMaskFT0;

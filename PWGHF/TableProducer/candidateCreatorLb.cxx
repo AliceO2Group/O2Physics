@@ -80,8 +80,6 @@ struct HfCandidateCreatorLb {
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter (to rebuild Lc vertex)
 
-  double massPi{0.};
-  double massLc{0.};
   double massLcPi{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
@@ -99,9 +97,6 @@ struct HfCandidateCreatorLb {
 
   void init(InitContext const&)
   {
-    massPi = MassPiMinus;
-    massLc = MassLambdaCPlus;
-
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -230,7 +225,7 @@ struct HfCandidateCreatorLb {
         hCovPVXX->Fill(covMatrixPV[0]);
 
         // get uncertainty of the decay length
-        double phi, theta;
+        double phi{}, theta{};
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexLb, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
@@ -248,7 +243,7 @@ struct HfCandidateCreatorLb {
         rowCandidateProngs(lcCand.globalIndex(), trackPion.globalIndex());
         // calculate invariant mass
         auto arrayMomenta = std::array{pvecLc, pvecPion};
-        massLcPi = RecoDecay::m(arrayMomenta, std::array{massLc, massPi});
+        massLcPi = RecoDecay::m(arrayMomenta, std::array{MassLambdaCPlus, MassPiMinus});
         if (lcCand.isSelLcToPKPi() > 0) {
           hMassLbToLcPi->Fill(massLcPi);
         }

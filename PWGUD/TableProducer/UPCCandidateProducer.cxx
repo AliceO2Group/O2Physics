@@ -11,24 +11,47 @@
 /// \author Nazar Burmasov, nazar.burmasov@cern.ch
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
+/// \author Andrea Riffero, andrea.giovanni.riffero@cern.ch
+/// \since 19.03.2026
 
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsITSMFT/ROFRecord.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <DataFormatsITSMFT/ROFRecord.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TMath.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <limits>
 #include <map>
+#include <numeric>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -36,6 +59,7 @@
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 struct UpcCandProducer {
   bool fDoMC{false};
@@ -69,6 +93,9 @@ struct UpcCandProducer {
 
   std::vector<bool> fwdSelectors;
   std::vector<bool> barrelSelectors;
+
+  // RCT flag checker
+  RCTFlagsChecker myRCTChecker;
 
   // skimmer flags
   // choose a source of signal MC events
@@ -104,8 +131,15 @@ struct UpcCandProducer {
   Configurable<bool> fRequireNoTimeFrameBorder{"requireNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection bit"};
   Configurable<bool> fRequireNoITSROFrameBorder{"requireNoITSROFrameBorder", true, "Require kNoITSROFrameBorder selection bit"};
 
+  Configurable<std::string> rctLabel{"rctLabel", "muon", "RCT label to use, options: CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo, muon = FV0 + MID + MCH, muon_glo = muon + MFT, none = do not use RCT flags"};
+  Configurable<bool> checkZDC{"checkZDC", false, "Consider ZDC quality"};
+  Configurable<bool> useLAasBad{"useLAasBad", false, "Consider Lim acc flag as Bad"};
+  bool useRCTflags = true;
+
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  using CollisionsSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 
   using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels, o2::aod::BCFlags>;
 
@@ -124,6 +158,34 @@ struct UpcCandProducer {
     barrelSelectors.resize(upchelpers::kNBarrelSels - 1, false);
 
     upcCuts = (UPCCutparHolder)inputCuts;
+
+    // initialize RCT flag checker
+    if (rctLabel.value != "none" && rctLabel.value != "muon" && rctLabel.value != "muon_glo") {
+      myRCTChecker.init(rctLabel.value, checkZDC.value, useLAasBad.value);
+    } else if (rctLabel.value == "none") {
+      useRCTflags = false;
+      myRCTChecker.init("CBT_muon");
+    } else if (rctLabel.value == "muon") {
+      if (checkZDC.value && useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr});
+      } else if (checkZDC.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kZDCBad});
+      } else if (useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr});
+      } else {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad});
+      }
+    } else if (rctLabel.value == "muon_glo") {
+      if (checkZDC.value && useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr});
+      } else if (checkZDC.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad});
+      } else if (useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr});
+      } else {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad});
+      }
+    }
 
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
@@ -158,6 +220,11 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelTPCChi2 + 1, "TPCChi2");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAXY + 1, "DCAXY");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAZ + 1, "DCAZ");
+
+    histRegistry.add("RCTSelCounter", "RCTSelCounter", kTH1F, {{3, 0.5, 3.5}});
+    histRegistry.get<TH1>(HIST("RCTSelCounter"))->GetXaxis()->SetBinLabel(1, "Before RCT sel");
+    histRegistry.get<TH1>(HIST("RCTSelCounter"))->GetXaxis()->SetBinLabel(2, "After RCT sel");
+    histRegistry.get<TH1>(HIST("RCTSelCounter"))->GetXaxis()->SetBinLabel(3, "RCT rejected");
   }
 
   template <typename T>
@@ -603,17 +670,25 @@ struct UpcCandProducer {
   // "uncorrected" bcs
   template <int32_t tracksSwitch, typename TBCs, typename TAmbTracks>
   void collectAmbTrackBCs(std::unordered_map<int64_t, uint64_t>& ambTrIds,
+                          TBCs const& bcs,
                           TAmbTracks ambTracks)
   {
     for (const auto& ambTrk : ambTracks) {
       auto trkId = getAmbTrackId<tracksSwitch>(ambTrk);
-      const auto& bcSlice = ambTrk.template bc_as<TBCs>();
-      uint64_t trackBC = -1;
-      if (bcSlice.size() != 0) {
-        auto first = bcSlice.begin();
-        trackBC = first.globalBC();
+
+      const auto& bcIds = ambTrk.bcIds();
+      if (bcIds.size() == 0)
+        continue;
+
+      const auto firstBcId = static_cast<int64_t>(*bcIds.begin());
+      if (firstBcId < 0 || firstBcId >= static_cast<int64_t>(bcs.size())) {
+        LOGP(debug,
+             "Skipping ambiguous track {}: invalid first bcId {} (nBCs = {})",
+             trkId, firstBcId, bcs.size());
+        continue;
       }
-      ambTrIds[trkId] = trackBC;
+
+      ambTrIds[trkId] = bcs.iteratorAt(firstBcId).globalBC();
     }
   }
 
@@ -649,16 +724,29 @@ struct UpcCandProducer {
         continue;
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
+      bool hasTrackBC = false;
       uint64_t trackBC = 0;
       if (trk.has_collision()) {
         const auto& col = trk.collision();
+        auto bcRCT = col.bc_as<TBCs>();
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
+          histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
+          continue;
+        }
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(2);
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
+        hasTrackBC = true;
       } else {
         auto ambIter = ambBarrelTrBCs.find(trkId);
-        if (ambIter != ambBarrelTrBCs.end())
+        if (ambIter != ambBarrelTrBCs.end()) {
           trackBC = ambIter->second;
+          hasTrackBC = true;
+        }
       }
+      if (!hasTrackBC)
+        continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fBarrelTrackTShift));
       uint64_t bc = trackBC + tint;
       if (nContrib > upcCuts.getMaxNContrib())
@@ -683,15 +771,29 @@ struct UpcCandProducer {
         continue;
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
+      bool hasTrackBC = false;
       uint64_t trackBC = 0;
       auto ambIter = ambFwdTrBCs.find(trkId);
       if (ambIter == ambFwdTrBCs.end()) {
+        if (!trk.has_collision())
+          continue;
         const auto& col = trk.collision();
+        auto bcRCT = col.bc_as<TBCs>();
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
+          histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
+          continue;
+        }
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(2);
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
+        hasTrackBC = true;
       } else {
         trackBC = ambIter->second;
+        hasTrackBC = true;
       }
+      if (!hasTrackBC)
+        continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
       if (nContrib > upcCuts.getMaxNContrib())
@@ -716,10 +818,20 @@ struct UpcCandProducer {
         continue;
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
+      bool hasTrackBC = false;
       uint64_t trackBC = 0;
       auto ambIter = ambFwdTrBCs.find(trkId);
       if (ambIter == ambFwdTrBCs.end()) {
+        if (!trk.has_collision())
+          continue;
         const auto& col = trk.collision();
+        auto bcRCT = col.bc_as<TBCs>();
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
+          histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
+          continue;
+        }
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(2);
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
         const auto& bc = col.bc_as<TBCs>();
@@ -729,9 +841,13 @@ struct UpcCandProducer {
         if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
           continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
         }
+        hasTrackBC = true;
       } else {
         trackBC = ambIter->second;
+        hasTrackBC = true;
       }
+      if (!hasTrackBC)
+        continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
       if (nContrib > upcCuts.getMaxNContrib())
@@ -800,7 +916,7 @@ struct UpcCandProducer {
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
     if (upcCuts.getAmbigSwitch() != 1)
-      collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, ambBarrelTracks);
+      collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, bcs, ambBarrelTracks);
 
     collectBarrelTracks(bcsMatchedTrIdsTOF,
                         0,
@@ -1101,10 +1217,10 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
-    collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, ambBarrelTracks);
+    collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, bcs, ambBarrelTracks);
 
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1301,7 +1417,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1556,7 +1672,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,

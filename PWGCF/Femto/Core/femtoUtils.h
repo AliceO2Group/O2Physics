@@ -18,19 +18,17 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/InitContext.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 
-#include "TPDGCode.h"
-
-#include "fairlogger/Logger.h"
+#include <TPDGCode.h>
 
 #include <cmath>
+#include <concepts>
 #include <cstdint>
-#include <experimental/type_traits>
 #include <optional>
 #include <unordered_map>
-#include <utility>
 
 namespace o2::analysis::femto
 {
@@ -65,7 +63,7 @@ float itsSignal(T const& track)
   return static_cast<float>(signal);
 };
 
-inline double getMass(int pdgCode)
+inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
@@ -121,7 +119,7 @@ inline double getMass(int pdgCode)
       mass = o2::constants::physics::MassOmegaMinus;
       break;
     default:
-      LOG(fatal) << "PDG code is not suppored";
+      LOG(warn) << "PDG code is not suppored. Return 0...";
   }
   return mass;
 }
@@ -131,6 +129,64 @@ float qn(T const& col)
 {
   float qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
   return qn;
+}
+
+/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
+{
+  float almost0 = 1e-6f;
+  // Particle masses in GeV/c^2
+  auto massPion = o2::constants::physics::MassPionCharged;
+  auto massNeutron = o2::constants::physics::MassNeutron;
+  auto massSigmaMinus = o2::constants::physics::MassSigmaMinus;
+
+  // Calculate mother momentum and direction versor
+  float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
+  if (pMother < almost0)
+    return -999.f;
+
+  float versorX = pxMother / pMother;
+  float versorY = pyMother / pMother;
+  float versorZ = pzMother / pMother;
+
+  // Calculate daughter energy
+  float ePi = std::sqrt(massPion * massPion + pxDaughter * pxDaughter + pyDaughter * pyDaughter + pzDaughter * pzDaughter);
+
+  // Scalar product of versor with daughter momentum
+  float scalarProduct = versorX * pxDaughter + versorY * pyDaughter + versorZ * pzDaughter;
+
+  // Solve quadratic equation for momentum magnitude
+  float k = massSigmaMinus * massSigmaMinus + massPion * massPion - massNeutron * massNeutron;
+  float a = 4.f * (ePi * ePi - scalarProduct * scalarProduct);
+  float b = -4.f * scalarProduct * k;
+  float c = 4.f * ePi * ePi * massSigmaMinus * massSigmaMinus - k * k;
+
+  if (std::abs(a) < almost0)
+    return -999.f;
+
+  float d = b * b - 4.f * a * c;
+  if (d < 0.f)
+    return -999.f;
+
+  float sqrtD = std::sqrt(d);
+  float p1 = (-b + sqrtD) / (2.f * a);
+  float p2 = (-b - sqrtD) / (2.f * a);
+
+  // Pick physical solution: prefer P2 if positive, otherwise P1
+  if (p2 < 0.f && p1 < 0.f)
+    return -999.f;
+  if (p2 < 0.f)
+    return p1;
+
+  // Choose solution closest to original momentum
+  float p1Diff = std::abs(p1 - pMother);
+  float p2Diff = std::abs(p2 - pMother);
+  float p = (p1Diff < p2Diff) ? p1 : p2;
+
+  // Calculate pT from recalibrated momentum
+  float pxS = versorX * p;
+  float pyS = versorY * p;
+  return std::sqrt(pxS * pxS + pyS * pyS);
 }
 
 inline bool enableTable(const char* tableName, int userSetting, o2::framework::InitContext& initContext)
@@ -150,11 +206,16 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
   return required;
 }
 
-template <typename T>
-using HasMass = decltype(std::declval<T&>().mass());
+// template <typename T>
+// using HasMass = decltype(std::declval<T&>().mass());
+//
+// template <typename T>
+// using HasSign = decltype(std::declval<T&>().sign());
 
 template <typename T>
-using HasSign = decltype(std::declval<T&>().sign());
+concept HasMass = requires(T t) {
+  { t.mass() } -> std::convertible_to<float>; // or double, whatever mass() returns
+};
 
 template <typename T>
 inline int signum(T x)

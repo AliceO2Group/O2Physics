@@ -14,18 +14,21 @@
 /// \author Ante.Bilandzic@cern.ch
 
 // O2:
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -145,6 +148,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     bool oldHistAddStatus = TH1::AddDirectoryStatus();
     TH1::AddDirectory(kFALSE);
 
+    // *) Print environment (here I always print it, in Steer(...) only if verbose is set to true):
+    printEnvironment();
+
     // *) Default configuration, booking, binning and cuts:
     insanityChecksOnDefinitionsOfConfigurables(); // values passed via configurables are insanitized here. Nothing is initialized yet via configurables in this method
     defaultConfiguration();                       // here default values from configurables are taken into account
@@ -217,8 +223,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
   // I) Process only converted simulated Run 1 data.
 
-  // For testing purposes I have processTest(...)
-  // J) Process data with minimum subscription to the tables.
+  // For testing purposes, enhanced QA, etc., I have:
+  // J) Process data with minimum subscription to the tables;
+  // K) Process data with more than necessary subscriptions to the tables, only for QA purposes;
+  // L) Process extra Monte Carlo info the from table HepMCHeavyIons.
+  // ...
 
   // -------------------------------------------
 

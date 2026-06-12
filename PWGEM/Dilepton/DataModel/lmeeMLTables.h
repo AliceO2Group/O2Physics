@@ -9,16 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include <vector>
+#include <cstdint>
 
 #ifndef PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
 #define PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
@@ -43,10 +41,21 @@ enum class Track_Type : uint8_t {
 
 } // namespace pwgem::dilepton::ml
 
+namespace emmlevent
+{
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of mc collision
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);   //!
+} // namespace emmlevent
+
+DECLARE_SOA_TABLE(EMMLEvents, "AOD", "EMMLEVENT", //!
+                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::HadronicRate);
+// iterators
+using EMMLEvent = EMMLEvents::iterator;
+
 namespace emmltrack
 {
+DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);                      //! index to event table
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                   //!
-DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);               //!
 DECLARE_SOA_COLUMN(PIDLabel, pidlabel, uint8_t);                     //!
 DECLARE_SOA_COLUMN(TrackType, tracktype, uint8_t);                   //!
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
@@ -55,6 +64,10 @@ DECLARE_SOA_COLUMN(TPCNClsPID, tpcNClsPID, uint8_t);                 //!
 DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);          //!
 DECLARE_SOA_COLUMN(Sign, sign, short);                               //!
 DECLARE_SOA_COLUMN(P, p, float);                                     //!
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                             //!
+DECLARE_SOA_COLUMN(EtaGen, etaGen, float);                           //!
+DECLARE_SOA_COLUMN(PhiGen, phiGen, float);                           //!
+
 // DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
@@ -90,22 +103,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 
 // reconstructed track information
 DECLARE_SOA_TABLE(EMTracksForMLPID, "AOD", "EMTRACKMLPID", //!
-                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate,
-                  emmltrack::P, track::Tgl, emmltrack::Sign,
+                  o2::soa::Index<>, track::Signed1Pt, track::Tgl,
                   track::TPCNClsFindable, emmltrack::TPCNClsFound, emmltrack::TPCNClsCrossedRows, emmltrack::TPCNClsPID,
                   track::TPCChi2NCl, track::TPCInnerParam,
-                  track::TPCSignal,
-                  pidtofbeta::Beta,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, emmltrack::PIDLabel,
+                  track::ITSClusterSizes, emmltrack::PIDLabel,
 
                   // dynamic column
                   emmltrack::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emmltrack::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-DECLARE_SOA_TABLE(EMPIDsEl, "AOD", "EMPIDEL", pidtpc::TPCNSigmaEl, pidtof::TOFNSigmaEl); // Joinable with EMTracksForMLPID
-DECLARE_SOA_TABLE(EMPIDsPi, "AOD", "EMPIDPI", pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi); // Joinable with EMTracksForMLPID
-DECLARE_SOA_TABLE(EMPIDsKa, "AOD", "EMPIDKA", pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa); // Joinable with EMTracksForMLPID
-DECLARE_SOA_TABLE(EMPIDsPr, "AOD", "EMPIDPR", pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr); // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDs, "AOD", "EMPID", track::TPCSignal, pidtofbeta::Beta);                          // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsEl, "AOD", "EMPIDEL", pidtpc::TPCNSigmaEl, pidtof::TOFNSigmaEl);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsPi, "AOD", "EMPIDPI", pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsKa, "AOD", "EMPIDKA", pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsPr, "AOD", "EMPIDPR", pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr);                // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsSub, "AOD", "EMPIDSUB", track::ITSChi2NCl, track::TOFChi2, track::DetectorMap); // Joinable with EMTracksForMLPID, separated from track table because they are not useful for ML PID.
 
 // iterators
 using EMTrackForMLPID = EMTracksForMLPID::iterator;
@@ -113,6 +125,280 @@ using EMPIDEl = EMPIDsEl::iterator;
 using EMPIDPi = EMPIDsPi::iterator;
 using EMPIDKa = EMPIDsKa::iterator;
 using EMPIDPr = EMPIDsPr::iterator;
+
+namespace emmlfwdtrack
+{
+// DECLARE_SOA_COLUMN(Signed1PtMFTMCHMIDatPV, signed1PtMFTMCHMIDatPV, float); //! pt of MCH-MID track in MFT-MCH-MID track at PV
+// DECLARE_SOA_COLUMN(EtaMFTMCHMIDatPV, etaMFTMCHMIDatPV, float);             //! eta of MCH-MID track in MFT-MCH-MID track at PV
+// DECLARE_SOA_COLUMN(PhiMFTMCHMIDatPV, phiMFTMCHMIDatPV, float);             //! phi of MCH-MID track in MFT-MCH-MID track at PV
+//
+// DECLARE_SOA_COLUMN(Signed1PtMCHMIDatPV, signed1PtMCHMIDatPV, float); //! pt of MCH-MID track in MFT-MCH-MID track at PV
+// DECLARE_SOA_COLUMN(EtaMCHMIDatPV, etaMCHMIDatPV, float);             //! eta of MCH-MID track in MFT-MCH-MID track at PV
+// DECLARE_SOA_COLUMN(PhiMCHMIDatPV, phiMCHMIDatPV, float);             //! phi of MCH-MID track in MFT-MCH-MID track at PV
+
+DECLARE_SOA_COLUMN(Signed1PtMCHMIDatMP, signed1PtMCHMIDatMP, float); //! pt of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(TglMCHMIDatMP, tglMCHMIDatMP, float);             //! tgl of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(PhiMCHMIDatMP, phiMCHMIDatMP, float);             //! phi of MCH-MID track in MFT-MCH-MID track at MP
+
+DECLARE_SOA_COLUMN(Signed1PtErrMCHMIDatMP, signed1PtErrMCHMIDatMP, float); //! pt of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(TglErrMCHMIDatMP, tglErrMCHMIDatMP, float);             //! tgl of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(PhiErrMCHMIDatMP, phiErrMCHMIDatMP, float);             //! phi of MCH-MID track in MFT-MCH-MID track at MP
+
+DECLARE_SOA_COLUMN(Signed1PtMFTatMP, signed1PtMFTatMP, float); //! pt of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(TglMFTatMP, tglMFTatMP, float);             //! tgl of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(PhiMFTatMP, phiMFTatMP, float);             //! phi of MCH-MID track in MFT-MCH-MID track at MP
+
+DECLARE_SOA_COLUMN(Signed1PtErrMFTatMP, signed1PtErrMFTatMP, float); //! pt of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(TglErrMFTatMP, tglErrMFTatMP, float);             //! tgl of MCH-MID track in MFT-MCH-MID track at MP
+DECLARE_SOA_COLUMN(PhiErrMFTatMP, phiErrMFTatMP, float);             //! phi of MCH-MID track in MFT-MCH-MID track at MP
+
+DECLARE_SOA_COLUMN(XMCHMIDatMP, xMCHMIDatMP, float);       //! x of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(YMCHMIDatMP, yMCHMIDatMP, float);       //! y of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(XErrMCHMIDatMP, xErrMCHMIDatMP, float); //! x error of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(YErrMCHMIDatMP, yErrMCHMIDatMP, float); //! y error of MCH-MID track in MFT-MCH-MID track at matching plane
+
+DECLARE_SOA_COLUMN(XMFTatMP, xMFTatMP, float);       //! x of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(YMFTatMP, yMFTatMP, float);       //! y of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(XErrMFTatMP, xErrMFTatMP, float); //! x error of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(YErrMFTatMP, yErrMFTatMP, float); //! y error of MFT track in MFT-MCH-MID track at matching plane
+
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                //! chi2/ndf of MFT track
+DECLARE_SOA_COLUMN(Chi2MCHMID, chi2MCHMID, float);          //! chi2/ndf of MCH-MID track
+DECLARE_SOA_COLUMN(Chi2MFTMCHMID, chi2MFTMCHMID, float);    //! chi2/ndf of MFT-MCH-MID track
+DECLARE_SOA_COLUMN(NClustersMFT, nClustersMFT, uint8_t);    //!
+DECLARE_SOA_COLUMN(IsPrimaryMFT, isPrimaryMFT, bool);       //!
+DECLARE_SOA_COLUMN(IsPrimaryMCHMID, isPrimaryMCHMID, bool); //!
+DECLARE_SOA_COLUMN(IsCorrectMatch, isCorrectMatch, bool);   //!
+DECLARE_SOA_COLUMN(PdgCodeMFT, pdgCodeMFT, int);            //!
+DECLARE_SOA_COLUMN(PdgCodeMCHMID, pdgCodeMCHMID, int);      //!
+DECLARE_SOA_COLUMN(MatchMCHTrackId, mchTrackId, int);       //!
+DECLARE_SOA_COLUMN(DFId, dfId, uint64_t);                   //!
+
+DECLARE_SOA_COLUMN(MultMFT, multMFT, uint16_t); //! number of MFTsa tracks per collision
+} // namespace emmlfwdtrack
+
+DECLARE_SOA_TABLE(EMFwdTracksForML, "AOD", "EMFWDTRKML", //!
+                  o2::soa::Index<>, collision::PosZ, /*collision::NumContrib,*/ mult::MultFT0C, /*evsel::NumTracksInTimeRange,*/ evsel::SumAmpFT0CInTimeRange, emmlevent::HadronicRate, emmlfwdtrack::MultMFT,
+
+                  emmlfwdtrack::Signed1PtMFTatMP, emmlfwdtrack::TglMFTatMP, emmlfwdtrack::PhiMFTatMP,
+                  emmlfwdtrack::XMFTatMP, emmlfwdtrack::YMFTatMP,
+
+                  emmlfwdtrack::Signed1PtMCHMIDatMP, emmlfwdtrack::TglMCHMIDatMP, emmlfwdtrack::PhiMCHMIDatMP,
+                  emmlfwdtrack::XMCHMIDatMP, emmlfwdtrack::YMCHMIDatMP,
+
+                  fwdtrack::Chi2MatchMCHMFT,
+                  emmlfwdtrack::PdgCodeMFT, emmlfwdtrack::IsPrimaryMFT,
+                  emmlfwdtrack::PdgCodeMCHMID, emmlfwdtrack::IsPrimaryMCHMID,
+                  emmlfwdtrack::IsCorrectMatch, emmlfwdtrack::MatchMCHTrackId, emmlfwdtrack::DFId);
+
+// iterators
+using EMFwdTrackForML = EMFwdTracksForML::iterator;
+
+DECLARE_SOA_TABLE(EMFwdTrackErrsForML, "AOD", "EMFWDTRKERRML", //! Joinable with EMFwdTracksForML
+                  /*emmlfwdtrack::Signed1PtErrMFTatMP,*/ emmlfwdtrack::TglErrMFTatMP, emmlfwdtrack::PhiErrMFTatMP,
+                  emmlfwdtrack::XErrMFTatMP, emmlfwdtrack::YErrMFTatMP,
+                  /*emmlfwdtrack::Signed1PtErrMCHMIDatMP,*/ emmlfwdtrack::TglErrMCHMIDatMP, emmlfwdtrack::PhiErrMCHMIDatMP,
+                  emmlfwdtrack::XErrMCHMIDatMP, emmlfwdtrack::YErrMCHMIDatMP);
+
+// iterators
+using EMFwdTrackErrForML = EMFwdTrackErrsForML::iterator;
+
+// for SemiCharmTag at midrapidity, only electrons
+namespace emmltrack
+{
+DECLARE_SOA_COLUMN(IsMotherFromBeauty, isMotherFromBeauty, bool); //! is b quark included in decay history
+DECLARE_SOA_COLUMN(Signed1PtL, signedPtL, float);                 //! sign/pT of lepton
+DECLARE_SOA_COLUMN(EtaL, etaL, float);                            //! eta of lepton
+DECLARE_SOA_COLUMN(PhiL, phiL, float);                            //! phi of lepton
+DECLARE_SOA_COLUMN(ImpParXYL, impParXYL, float);                  //! impact parameter for lepton in XY plane
+DECLARE_SOA_COLUMN(ImpParZL, impParZL, float);                    //! impact parameter for lepton in Z plane
+DECLARE_SOA_COLUMN(ImpParCYYL, impParCYYL, float);                //! sigma of impact parameter for lepton in XY
+DECLARE_SOA_COLUMN(ImpParCZYL, impParCZYL, float);                //! sigma of impact parameter for lepton, correlaion term
+DECLARE_SOA_COLUMN(ImpParCZZL, impParCZZL, float);                //! sigma of impact parameter for lepton in Z
+DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);            //! pdg code of mother of lepton
+DECLARE_SOA_COLUMN(IsCorrectCollision, isCorrectCollision, bool); //! LH pair is associated to correct collision.
+DECLARE_SOA_COLUMN(MotherId, motherId, int);                      //! globalIndex of mother of lepton
+} // namespace emmltrack
+
+DECLARE_SOA_TABLE(EMMLLeptons, "AOD", "EMMLLEPTON", //!
+                  o2::soa::Index<>, emmltrack::EMMLEventId, emmlevent::SubGeneratorId,
+                  emmltrack::Signed1PtL, emmltrack::EtaL, emmltrack::PhiL,
+                  emmltrack::ImpParXYL, emmltrack::ImpParZL, emmltrack::ImpParCYYL, emmltrack::ImpParCZYL, emmltrack::ImpParCZZL,
+                  emmltrack::IsMotherFromBeauty, emmltrack::PdgCodeMother, emmltrack::MotherId, emmltrack::IsCorrectCollision);
+// iterators
+using EMMLLepton = EMMLLeptons::iterator;
+
+namespace emmllhpair
+{
+DECLARE_SOA_INDEX_COLUMN(EMMLLepton, emmllepton); //! index to lepton table
+
+DECLARE_SOA_COLUMN(Signed1PtH, signedPtH, float);  //! sign/pT of associated hadron
+DECLARE_SOA_COLUMN(PtH, ptH, float);               //! pT of associated hadron
+DECLARE_SOA_COLUMN(EtaH, etaH, float);             //! eta of associated hadron
+DECLARE_SOA_COLUMN(PhiH, phiH, float);             //! phi of associated hadron
+DECLARE_SOA_COLUMN(RapidityV0, rapidityV0, float); //! rapidity of associated V0
+DECLARE_SOA_COLUMN(RapidityC, rapidityC, float);   //! rapidity of associated Cascade
+
+DECLARE_SOA_COLUMN(ImpParXYH, impParXYH, float);   //! impact parameter for V0/Cascade in XY plane
+DECLARE_SOA_COLUMN(ImpParZH, impParZH, float);     //! impact parameter for V0/Cascade in Z plane
+DECLARE_SOA_COLUMN(ImpParCYYH, impParCYYH, float); //! sigma of impact parameter for V0/Cascade in XY
+DECLARE_SOA_COLUMN(ImpParCZYH, impParCZYH, float); //! sigma of impact parameter for V0/Cascade, correlaion term
+DECLARE_SOA_COLUMN(ImpParCZZH, impParCZZH, float); //! sigma of impact parameter for V0/Cascade in Z
+
+DECLARE_SOA_COLUMN(V0CPA, v0cpa, float);     //! cosPA of V0
+DECLARE_SOA_COLUMN(V0CPAXY, v0cpaXY, float); //! cosPA of V0 in XY plane
+DECLARE_SOA_COLUMN(V0CPARZ, v0cpaRZ, float); //! cosPA of V0 in RZ plane
+
+DECLARE_SOA_COLUMN(CascCPA, casccpa, float);     //! cosPA of Cascade
+DECLARE_SOA_COLUMN(CascCPAXY, casccpaXY, float); //! cosPA of Cascade in XY plane
+DECLARE_SOA_COLUMN(CascCPARZ, casccpaRZ, float); //! cosPA of Cascade in RZ plane
+
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);           //! v0 type, 0 = K0S, 1 = Lambda, 2 = AntiLambda
+DECLARE_SOA_COLUMN(CascadeType, cascadeType, uint8_t); //! cascade type, 0 = XiMunus, 1 = OmegaMinus
+
+// LH pair variables
+DECLARE_SOA_COLUMN(MassLH, massLH, float); //! invariant mass of LH assuming kaon
+// DECLARE_SOA_COLUMN(PtLH, ptLH, float);     //! pt of LH
+// DECLARE_SOA_COLUMN(PLH, pLH, float);       //! p of LH
+// DECLARE_SOA_COLUMN(DEtaLH, dEtaLH, float); //! deta between LH at SV
+// DECLARE_SOA_COLUMN(DPhiLH, dPhiLH, float); //! dphi between LH at SV
+
+DECLARE_SOA_COLUMN(PtSVL, ptSVL, float); //! pT of lepton at SV
+// DECLARE_SOA_COLUMN(PlSVL, plSVL, float); //! pL of lepton at SV
+DECLARE_SOA_COLUMN(PtSVH, ptSVH, float); //! pT of associated hadron at SV
+// DECLARE_SOA_COLUMN(PlSVH, plSVH, float); //! pL of associated hadron at SV
+
+// DECLARE_SOA_COLUMN(PtFDL, ptFDL, float); //! pT of lepton perpendicular to flight direction
+// DECLARE_SOA_COLUMN(PlFDL, plFDL, float); //! pL of lepton in parallel to flight direction
+// DECLARE_SOA_COLUMN(PtFDH, ptFDH, float); //! pT of associated hadron perpendicular to flight direction
+// DECLARE_SOA_COLUMN(PlFDH, plFDH, float); //! pL of associated hadron in parallel to flight direction
+
+DECLARE_SOA_COLUMN(PtFD, ptFD, float); //! visible momentum of LH pair perpendicular to flight direction = - missing pT due to neutrino perpendicular to flight direction
+DECLARE_SOA_COLUMN(PlFD, plFD, float); //! visible momentum of LH pair in parallel to flight direction
+
+// DECLARE_SOA_COLUMN(DcaLH, dcalh, float); //! DCA between lepton and hadron
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! DCA between lepton and hadron
+DECLARE_SOA_COLUMN(CPA, cpa, float);         //! cosine of pointing angle of LH pair
+DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);     //! cosine of pointing angle of LH pair in XY
+DECLARE_SOA_COLUMN(CPARZ, cpaRZ, float);     //! cosine of pointing angle of LH pair in RZ
+
+DECLARE_SOA_COLUMN(Lxy, lxy, float);         //! decay length of LH pair
+DECLARE_SOA_COLUMN(Lz, lz, float);           //! decay length of LH pair
+DECLARE_SOA_COLUMN(Lxyz, lxyz, float);       //! decay length of LH pair
+DECLARE_SOA_COLUMN(LxyErr, lxyErr, float);   //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(LzErr, lzErr, float);     //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(LxyzErr, lxyzErr, float); //! decay length resolution of LH pair
+
+// DECLARE_SOA_COLUMN(ImpParXY, impParXY, float);   //! impact parameter for LH in XY plane
+// DECLARE_SOA_COLUMN(ImpParZ, impParZ, float);     //! impact parameter for LH in Z plane
+// DECLARE_SOA_COLUMN(ImpParCYY, impParCYY, float); //! sigma of impact parameter for LH in XY
+// DECLARE_SOA_COLUMN(ImpParCZY, impParCZY, float); //! sigma of impact parameter for LH, correlation term
+// DECLARE_SOA_COLUMN(ImpParCZZ, impParCZZ, float); //! sigma of impact parameter for LH in Z
+
+DECLARE_SOA_COLUMN(PdgCodeH, pdgCodeH, int);                    //! pdg code of associated hadron
+DECLARE_SOA_COLUMN(PdgCodeIM, pdgCodeIM, int);                  //! pdg code of intermediate hadron from HF hadrons. e.g K*, D*
+DECLARE_SOA_COLUMN(FoundCommonMother, foundCommonMother, bool); //! decay length resolution of LH pair
+} // namespace emmllhpair
+
+DECLARE_SOA_TABLE(EMMLLTPairs, "AOD", "EMMLLTPAIR", //!
+                  emmllhpair::EMMLLeptonId,
+                  emmllhpair::Signed1PtH, emmllhpair::EtaH,
+                  emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
+                  // pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
+                  pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
+                  // pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr,
+                  emmllhpair::MassLH, /*emmllhpair::PLH, emmllhpair::DEtaLH, emmllhpair::DPhiLH,*/
+                  // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
+                  emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
+                  emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
+                  // emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
+// iterators
+using EMMLLTPair = EMMLLTPairs::iterator;
+
+DECLARE_SOA_TABLE(EMMLLV0Pairs, "AOD", "EMMLLV0PAIR", //!
+                  emmllhpair::EMMLLeptonId, emmllhpair::V0Type,
+                  emmllhpair::PtH, emmllhpair::RapidityV0,
+                  emmllhpair::V0CPA, emmllhpair::V0CPAXY, emmllhpair::V0CPARZ,
+                  emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
+                  emmllhpair::MassLH, /*emmllhpair::PLH, emmllhpair::DEtaLH, emmllhpair::DPhiLH,*/
+                  // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
+                  emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
+                  emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
+                  // emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
+// iterators
+using EMMLLV0Pair = EMMLLV0Pairs::iterator;
+
+DECLARE_SOA_TABLE(EMMLLCascPairs, "AOD", "EMMLLCPAIR", //!
+                  emmllhpair::EMMLLeptonId, emmllhpair::CascadeType,
+                  emmllhpair::Signed1PtH, emmllhpair::RapidityC,
+                  emmllhpair::CascCPA, emmllhpair::CascCPAXY, emmllhpair::CascCPARZ,
+                  emmllhpair::ImpParXYH, emmllhpair::ImpParZH, emmllhpair::ImpParCYYH, emmllhpair::ImpParCZYH, emmllhpair::ImpParCZZH,
+                  emmllhpair::MassLH, /*emmllhpair::PLH, emmllhpair::DEtaLH, emmllhpair::DPhiLH,*/
+                  // emmllhpair::PtSVL, emmllhpair::PtSVH, emmllhpair::PtFD, emmllhpair::PlFD,
+                  emmllhpair::Chi2PCA, emmllhpair::CPA, emmllhpair::CPAXY, emmllhpair::CPARZ,
+                  emmllhpair::Lxy, emmllhpair::Lz, emmllhpair::Lxyz, emmllhpair::LxyErr, emmllhpair::LzErr, emmllhpair::LxyzErr,
+                  // emmllhpair::ImpParXY, emmllhpair::ImpParZ, emmllhpair::ImpParCYY, emmllhpair::ImpParCZY, emmllhpair::ImpParCZZ,
+                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeIM, emmllhpair::FoundCommonMother);
+// iterators
+using EMMLLCascPair = EMMLLCascPairs::iterator;
+
+namespace emmldilepton
+{
+DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);                     //! index to event table
+DECLARE_SOA_COLUMN(Signed1Pt1, signed1Pt1, float);                  //! q/pt of lepton1 at PV
+DECLARE_SOA_COLUMN(Eta1, eta1, float);                              //! eta of lepton1 at PV
+DECLARE_SOA_COLUMN(ImpParXY1, impParXY1, float);                    //! impact parameter for lepton1 in XY plane
+DECLARE_SOA_COLUMN(ImpParZ1, impParZ1, float);                      //! impact parameter for lepton1 in Z plane
+DECLARE_SOA_COLUMN(ImpParCYY1, impParCYY1, float);                  //! sigma of impact parameter for lepton1 in XY
+DECLARE_SOA_COLUMN(ImpParCZY1, impParCZY1, float);                  //! sigma of impact parameter for lepton1, correlaion term
+DECLARE_SOA_COLUMN(ImpParCZZ1, impParCZZ1, float);                  //! sigma of impact parameter for lepton1 in Z
+DECLARE_SOA_COLUMN(IsCorrectCollision1, isCorrectCollision1, bool); //! lepton1 is associated to correct collision.
+DECLARE_SOA_COLUMN(PdgCodeMother1, pdgCodeMother1, int);            //! pdg code of mother of lepton1
+
+DECLARE_SOA_COLUMN(Signed1Pt2, signed1Pt2, float);                  //! q/pt of lepton2 at PV
+DECLARE_SOA_COLUMN(Eta2, eta2, float);                              //! eta of lepton1 at PV
+DECLARE_SOA_COLUMN(ImpParXY2, impParXY2, float);                    //! impact parameter for lepton2 in XY plane
+DECLARE_SOA_COLUMN(ImpParZ2, impParZ2, float);                      //! impact parameter for lepton2 in Z plane
+DECLARE_SOA_COLUMN(ImpParCYY2, impParCYY2, float);                  //! sigma of impact parameter for lepton2 in XY
+DECLARE_SOA_COLUMN(ImpParCZY2, impParCZY2, float);                  //! sigma of impact parameter for lepton2, correlaion term
+DECLARE_SOA_COLUMN(ImpParCZZ2, impParCZZ2, float);                  //! sigma of impact parameter for lepton2 in Z
+DECLARE_SOA_COLUMN(IsCorrectCollision2, isCorrectCollision2, bool); //! lepton is associated to correct collision.
+DECLARE_SOA_COLUMN(PdgCodeMother2, pdgCodeMother2, int);            //! pdg code of mother of lepton1
+
+DECLARE_SOA_COLUMN(Mass, mass, float);         //! invariant mass of dilepton
+DECLARE_SOA_COLUMN(Pt, pt, float);             //! dilepton pair pt
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float); //! dilepton pair rapidity
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);   //! chi2 at PCA of dilepton
+DECLARE_SOA_COLUMN(CPA, cpa, float);           //! cosine of pointing angle of dilepton
+DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);       //! cosine of pointing angle of dilepton in XY
+DECLARE_SOA_COLUMN(CPARZ, cpaRZ, float);       //! cosine of pointing angle of dilepton in RZ
+
+DECLARE_SOA_COLUMN(Lxy, lxy, float);         //! decay length of dilepton
+DECLARE_SOA_COLUMN(Lz, lz, float);           //! decay length of dilepton
+DECLARE_SOA_COLUMN(Lxyz, lxyz, float);       //! decay length of dilepton
+DECLARE_SOA_COLUMN(LxyErr, lxyErr, float);   //! decay length resolution of dilepton
+DECLARE_SOA_COLUMN(LzErr, lzErr, float);     //! decay length resolution of dilepton
+DECLARE_SOA_COLUMN(LxyzErr, lxyzErr, float); //! decay length resolution of dilepton
+
+DECLARE_SOA_COLUMN(DileptonType, dileptonType, uint8_t);           //! dilepton type: 0=combinatorial bkg, 1=prompt SM, 2=nonprompt SM, 3=c2l_c2l, 4=b2l_b2l, 5=b2bc2l_b2c2l, 6=b2c2e_b2e_sameb, 7=b2c2e_b2e_diffb
+DECLARE_SOA_COLUMN(PdgCodeCommonMother, pdgCodeCommonMother, int); //! pdg code of common mother. If it is not found, -1.
+} // namespace emmldilepton
+
+DECLARE_SOA_TABLE(EMMLDielectronsAtSV, "AOD", "EMMLEESV", //!
+                  emmldilepton::EMMLEventId,
+                  emmldilepton::Signed1Pt1, emmldilepton::Eta1, emmldilepton::ImpParXY1, emmldilepton::ImpParZ1, emmldilepton::ImpParCYY1, emmldilepton::ImpParCZY1, emmldilepton::ImpParCZZ1, emmldilepton::IsCorrectCollision1, emmldilepton::PdgCodeMother1,
+                  emmldilepton::Signed1Pt2, emmldilepton::Eta2, emmldilepton::ImpParXY2, emmldilepton::ImpParZ2, emmldilepton::ImpParCYY2, emmldilepton::ImpParCZY2, emmldilepton::ImpParCZZ2, emmldilepton::IsCorrectCollision2, emmldilepton::PdgCodeMother2,
+                  emmldilepton::Mass, emmldilepton::Pt, emmldilepton::Rapidity,
+                  emmldilepton::Chi2PCA,
+                  emmldilepton::CPA, emmldilepton::CPAXY, emmldilepton::CPARZ,
+                  emmldilepton::Lxy, emmldilepton::Lz, emmldilepton::Lxyz,
+                  emmldilepton::LxyErr, emmldilepton::LzErr, emmldilepton::LxyzErr,
+                  emmldilepton::DileptonType);
+
+// iterators
+using EMMLDielectronAtSV = EMMLDielectronsAtSV::iterator;
 
 } // namespace o2::aod
 

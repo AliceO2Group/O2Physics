@@ -41,7 +41,8 @@ struct JetSubstructureMatching {
   o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
   o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
   o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<std::vector<double>> jetRadiiForMatchingDistance{"jetRadiiForMatchingDistance", {0.2, 0.3, 0.4, 0.5, 0.6}, "Jet R values for per-R matching distance"};
+  o2::framework::Configurable<std::vector<double>> maxMatchingDistancePerJetR{"maxMatchingDistancePerJetR", {0.12, 0.18, 0.24, 0.30, 0.36}, "Max matching distance (0.6*R, see ALICE-AN-852) for each R in jetRadiiForMatchingDistance"};
   o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
   o2::framework::Configurable<bool> requireGeoMatchedJets{"requireGeoMatchedJets", false, "require jets are geo matched as well"};
   o2::framework::Configurable<bool> requirePtMatchedJets{"requirePtMatchedJets", false, "require jets are pT matched as well"};
@@ -52,6 +53,12 @@ struct JetSubstructureMatching {
 
   void init(o2::framework::InitContext const&)
   {
+    if (jetRadiiForMatchingDistance->empty() || maxMatchingDistancePerJetR->empty()) {
+      LOGP(fatal, "jetRadiiForMatchingDistance and maxMatchingDistancePerJetR must not be empty");
+    }
+    if (jetRadiiForMatchingDistance->size() != maxMatchingDistancePerJetR->size()) {
+      LOGP(fatal, "jetRadiiForMatchingDistance and maxMatchingDistancePerJetR must have the same number of entries");
+    }
   }
 
   o2::framework::PresliceOptional<o2::aod::ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetInclusive = o2::aod::chargedmcdetectorlevelsplitting::jetId;
@@ -98,14 +105,14 @@ struct JetSubstructureMatching {
 
   // workaround till binding nodes can be passed as template arguments
   template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A, typename B>
-  auto slicedPerJetForMatching(T const& table, U const& jet, V const& perIncluisveJet, M const& perD0Jet, N const& perDplusJet, O const& perDsJet, P const& perDstarJet, Q const& perLcJet, R const& perB0Jet, S const& perBplusJet, A const& perXicToXiPiPiJet, B const& perDielectronJet)
+  auto slicedPerJetForMatching(T const& table, U const& jet, V const& perInclusiveJet, M const& perD0Jet, N const& perDplusJet, O const& perDsJet, P const& perDstarJet, Q const& perLcJet, R const& perB0Jet, S const& perBplusJet, A const& perXicToXiPiPiJet, B const& perDielectronJet)
   {
     if constexpr (jethfutilities::isHFTable<CandidateTable>() || jethfutilities::isHFMcTable<CandidateTable>()) {
       return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perDsJet, perDstarJet, perLcJet, perB0Jet, perBplusJet, perXicToXiPiPiJet);
     } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>() || jetdqutilities::isDielectronMcTable<CandidateTable>()) {
       return jetdqutilities::slicedPerDielectronJet<CandidateTable>(table, jet, perDielectronJet);
     } else {
-      return table.sliceBy(perIncluisveJet, jet.globalIndex());
+      return table.sliceBy(perInclusiveJet, jet.globalIndex());
     }
   }
 
@@ -218,7 +225,7 @@ struct JetSubstructureMatching {
             jetBaseSplittingsMap[jetBaseSplitting.globalIndex()] = baseSplittingIndex;
             baseSplittingIndex++;
           }
-          jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetBaseSplittings, jetTagSplittings, jetsBasetoTagSplittingsMatchingGeo, jetsBasetoTagSplittingsMatchingPt, jetsBasetoTagSplittingsMatchingHF, jetsTagtoBaseSplittingsMatchingGeo, jetsTagtoBaseSplittingsMatchingPt, jetsTagtoBaseSplittingsMatchingHF, candidatesBase, tracksBase, clustersBase, candidatesTag, tracksTag, tracksTag, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+          jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetBaseSplittings, jetTagSplittings, jetsBasetoTagSplittingsMatchingGeo, jetsBasetoTagSplittingsMatchingPt, jetsBasetoTagSplittingsMatchingHF, jetsTagtoBaseSplittingsMatchingGeo, jetsTagtoBaseSplittingsMatchingPt, jetsTagtoBaseSplittingsMatchingHF, candidatesBase, tracksBase, clustersBase, candidatesTag, tracksTag, tracksTag, doMatchingGeo, doMatchingHf, doMatchingPt, minPtFraction, jetRadiiForMatchingDistance, maxMatchingDistancePerJetR);
           // auto const& jetBasePairs = jetsBasePairs.sliceBy(BasePairsPerBaseJet, jetBase.globalIndex());
           auto const& jetBasePairs = slicedPerJetForMatching<CandidatesBase>(jetsBasePairs, jetBase, BasePairsPerBaseJetInclusive, BasePairsPerBaseJetD0, BasePairsPerBaseJetDplus, BasePairsPerBaseJetDs, BasePairsPerBaseJetDstar, BasePairsPerBaseJetLc, BasePairsPerBaseJetB0, BasePairsPerBaseJetBplus, BasePairsPerBaseJetXicToXiPiPi, BasePairsPerBaseJetDielectron);
           int basePairIndex = 0;

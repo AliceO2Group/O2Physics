@@ -8,11 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -23,6 +24,7 @@ struct stradautracksextraconverter3 {
 
   void process(aod::DauTrackExtras_002 const& dauTrackExtras_002)
   {
+    dauTrackExtras_003.reserve(dauTrackExtras_002.size());
     for (auto& values : dauTrackExtras_002) {
       dauTrackExtras_003(values.itsChi2PerNcl(),
                          -1 /* dummy tpcChi2PerNcl value */,

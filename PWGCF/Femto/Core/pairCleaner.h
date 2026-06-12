@@ -18,7 +18,7 @@
 
 #include "PWGCF/Femto/Core/modes.h"
 
-#include "fairlogger/Logger.h"
+#include <Framework/Logger.h>
 
 namespace o2::analysis::femto
 {
@@ -111,7 +111,7 @@ class TrackTrackPairCleaner : public BasePairCleaner
   }
 };
 
-class V0V0PairCleaner : public BasePairCleaner
+class V0V0PairCleaner : public BasePairCleaner // also works for particles decaying into a positive and negative daughter, like resonances
 {
  public:
   V0V0PairCleaner() = default;
@@ -122,7 +122,9 @@ class V0V0PairCleaner : public BasePairCleaner
     auto negDaughter1 = trackTable.rawIteratorAt(v01.negDauId() - trackTable.offset());
     auto posDaughter2 = trackTable.rawIteratorAt(v02.posDauId() - trackTable.offset());
     auto negDaughter2 = trackTable.rawIteratorAt(v02.negDauId() - trackTable.offset());
-    return this->isCleanTrackPair(posDaughter1, posDaughter2) && this->isCleanTrackPair(negDaughter1, negDaughter2);
+    // check all charge combinations
+    return this->isCleanTrackPair(posDaughter1, posDaughter2) && this->isCleanTrackPair(negDaughter1, negDaughter2) &&
+           this->isCleanTrackPair(posDaughter1, negDaughter2) && this->isCleanTrackPair(negDaughter1, posDaughter2);
   }
 
   template <typename T1, typename T2, typename T3, typename T4>

@@ -16,9 +16,11 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +33,7 @@ struct eventNormConverter1 {
 
   void process(aod::EMEventNormInfos_000 const& collisions)
   {
+    event_001.reserve(collisions.size());
     for (const auto& collision : collisions) {
       event_001(
         collision.selection_raw(),

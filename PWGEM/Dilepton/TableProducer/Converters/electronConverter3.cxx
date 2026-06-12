@@ -16,9 +16,9 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +31,7 @@ struct electronConverter3 {
 
   void process(aod::EMPrimaryElectrons_002 const& tracks)
   {
+    track_003.reserve(tracks.size());
     for (const auto& track : tracks) {
       track_003(track.collisionId(),
                 track.trackId(),

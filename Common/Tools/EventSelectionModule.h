@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file EventSelectionModule.h
-/// \brief
+/// \brief Event selection module
 /// \author ALICE
 
 #ifndef COMMON_TOOLS_EVENTSELECTIONMODULE_H_
@@ -27,6 +27,7 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -35,7 +36,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
-#include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 
 #include <TH1.h>
@@ -54,12 +54,13 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
-#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
-#define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
+#define BITCHECK(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
+#define BITCHECK64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
 //__________________________________________
 // MultModule
@@ -76,7 +77,7 @@ static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 // for providing temporary buffer
 // FIXME ideally cursors could be readable
 // to avoid duplicate memory allocation but ok
-struct bcselEntry {
+struct BcselEntry {
   uint32_t alias{0};
   uint64_t selection{0};
   uint32_t rct{0};
@@ -87,23 +88,22 @@ struct bcselEntry {
 };
 
 // bc selection configurables
-struct bcselConfigurables : o2::framework::ConfigurableGroup {
+struct BcselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "bcselOpts";
-  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confTriggerBcShift{"triggerBcShift", 0, "set either custom shift or 999 for apass2/apass3 in LHC22o-t"};                                       // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<std::vector<int>> confMaxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
-  o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                                            // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};                  // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};                        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};                  // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};                        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                                            // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<std::vector<int>> confMaxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                    // o2-linter: disable=name/configurable (temporary fix)
 };
 
 // event selection configurables
-struct evselConfigurables : o2::framework::ConfigurableGroup {
+struct EvselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "evselOpts";
-  bool isMC_metadata = false;
+  bool isMC_metadata = false;                                                                                              // o2-linter: disable=name/function-variable (temporary fix)
   o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run event selection or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   o2::framework::Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
@@ -129,7 +129,7 @@ struct evselConfigurables : o2::framework::ConfigurableGroup {
 };
 
 // luminosity configurables
-struct lumiConfigurables : o2::framework::ConfigurableGroup {
+struct LumiConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "lumiOpts";
   o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
 };
@@ -143,7 +143,7 @@ class BcSelectionModule
   }
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
-  o2::common::eventselection::bcselConfigurables bcselOpts;
+  o2::common::eventselection::BcselConfigurables bcselOpts;
 
   int lastRun = -1;
   int64_t lastTF = -1;
@@ -159,6 +159,8 @@ class BcSelectionModule
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
   std::string strLPMProductionTag = "";  // MC production tag to be retrieved from AO2D metadata
+  std::string strPassName = "";          // RecoPassName (for data) or AnchorPassName (for MC) from metadata
+  bool isMC = false;
 
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
@@ -179,8 +181,8 @@ class BcSelectionModule
     if (bcselOpts.amIneeded.value < 0) {
       int bcSelNeeded = -1, evSelNeeded = -1;
       bcselOpts.amIneeded.value = 0;
-      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
-      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
       if (bcSelNeeded == 1) {
         bcselOpts.amIneeded.value = 1;
         LOGF(info, "BC Selection / Autodetection for aod::BcSels: subscription present, will generate.");
@@ -194,10 +196,12 @@ class BcSelectionModule
         return;
       }
     }
+    isMC = metadataInfo.isMC();
     strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+    strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
 
     // add counter
-    histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::kTH1D, {{1, 0., 1.}});
+    histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::HistType::kTH1D, {{1, 0., 1.}});
   }
 
   //__________________________________________________
@@ -223,7 +227,10 @@ class BcSelectionModule
         // duration of TF in bcs
         nBCsPerTF = 32; // hard-coded for Run3 MC (no info from ccdb at the moment)
       } else {
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+        auto runInfo = (!isMC) ? o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run)
+                               : o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+        LOGP(info, "BcSelectionModule: isMC = {}, NumberOfOrbitsPerTF extracted from AggregatedRunInfo = {}", isMC, runInfo.orbitsPerTF);
+
         // SOR and EOR timestamps
         sorTimestamp = runInfo.sor;
         eorTimestamp = runInfo.eor;
@@ -274,8 +281,15 @@ class BcSelectionModule
       // QC info
       std::map<std::string, std::string> metadata;
       metadata["run"] = Form("%d", run);
+      metadata["passName"] = strPassName;
+      LOGP(info, "accessing pass-specific rct object for run={} and passName={} from ccdb", run, strPassName);
       ccdb->setFatalWhenNull(0);
       mapRCT = ccdb->template getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
+      if (mapRCT == nullptr) {
+        LOGP(info, "pass-specific rct object missing... trying the latest");
+        metadata.erase("passName");
+        mapRCT = ccdb->template getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
+      }
       ccdb->setFatalWhenNull(1);
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
@@ -410,7 +424,7 @@ class BcSelectionModule
       uint32_t rct = 0;
 
       // initialize properties
-      o2::common::eventselection::bcselEntry entry;
+      o2::common::eventselection::BcselEntry entry;
       entry.alias = alias;
       entry.selection = selection;
       entry.rct = rct;
@@ -438,16 +452,6 @@ class BcSelectionModule
       return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
-    // map from GlobalBC to BcId needed to find triggerBc
-    std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
-    for (const auto& bc : bcs) {
-      mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
-    }
-
-    int triggerBcShift = bcselOpts.confTriggerBcShift;
-    if (bcselOpts.confTriggerBcShift == 999) {                                                                                                                               // o2-linter: disable=magic-number (special shift for early 2022 data)
-      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294; // o2-linter: disable=magic-number (magic list of runs)
-    }
 
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
@@ -466,11 +470,8 @@ class BcSelectionModule
       }
 
       uint32_t alias{0};
-      // workaround for pp2022 (trigger info is shifted by -294 bcs)
-      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
-      if (triggerBcId && aliases) {
-        auto triggerBc = bcs.iteratorAt(triggerBcId);
-        uint64_t triggerMask = triggerBc.triggerMask();
+      if (aliases) {
+        uint64_t triggerMask = bc.triggerMask();
         for (const auto& al : aliases->GetAliasToTriggerMaskMap()) {
           if (triggerMask & al.second) {
             alias |= BIT(al.first);
@@ -596,7 +597,7 @@ class BcSelectionModule
       }
 
       // initialize properties
-      o2::common::eventselection::bcselEntry entry;
+      o2::common::eventselection::BcselEntry entry;
       entry.alias = alias;
       entry.selection = selection;
       entry.rct = rct;
@@ -692,20 +693,20 @@ class EventSelectionModule
   float calcWeightForOccupancy(float dt)
   {
     float wOccup = 0;
-    if (dt >= -40 && dt < -5)                     // collisions in the past                    // o2-linter: disable=magic-number
-      wOccup = 1. / 1225 * (dt + 40) * (dt + 40); // o2-linter: disable=magic-number
-    else if (dt >= -5 && dt < 15)                 // collisions near a given one           // o2-linter: disable=magic-number
+    if (dt >= -40 && dt < -5)                     // o2-linter: disable=magic-number (collisions in the past)
+      wOccup = 1. / 1225 * (dt + 40) * (dt + 40); // o2-linter: disable=magic-number (parabolic weight for past collisions)
+    else if (dt >= -5 && dt < 15)                 // o2-linter: disable=magic-number (collisions near a given one)
       wOccup = 1;
-    else if (dt >= 15 && dt < 40)              // collisions from the future            // o2-linter: disable=magic-number
-      wOccup = -0.4 / 25 * dt + 1.24;          // o2-linter: disable=magic-number
-    else if (dt >= 40 && dt < 100)             // collisions from the distant future   // o2-linter: disable=magic-number
-      wOccup = -0.4 / 60 * dt + 0.6 + 0.8 / 3; // o2-linter: disable=magic-number
+    else if (dt >= 15 && dt < 40)              // o2-linter: disable=magic-number (collisions from the future)
+      wOccup = -0.4 / 25 * dt + 1.24;          // o2-linter: disable=magic-number (linear weight for future collisions)
+    else if (dt >= 40 && dt < 100)             // o2-linter: disable=magic-number (collisions from the distant future)
+      wOccup = -0.4 / 60 * dt + 0.6 + 0.8 / 3; // o2-linter: disable=magic-number (linear weight for distant future collisions)
     return wOccup;
   }
 
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
-  o2::common::eventselection::evselConfigurables evselOpts;
+  o2::common::eventselection::EvselConfigurables evselOpts;
 
   template <typename TContext, typename TEvSelOpts, typename THistoRegistry, typename TMetadataInfo>
   void init(TContext& context, TEvSelOpts const& external_evselopts, THistoRegistry& histos, TMetadataInfo const& metadataInfo)
@@ -714,7 +715,7 @@ class EventSelectionModule
     evselOpts = external_evselopts;
 
     if (evselOpts.amIneeded.value < 0) {
-      enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
       if (evselOpts.amIneeded.value == 0) {
         LOGF(info, "Event Selection / Autodetecting for aod::EvSels: not required, won't generate.");
         return;
@@ -751,7 +752,10 @@ class EventSelectionModule
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= run3min) {
       lastRun = run;
-      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+      auto runInfo = (!evselOpts.isMC) ? o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run)
+                                       : o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+      LOGP(info, "EventSelectionModule: isMC = {}, NumberOfOrbitsPerTF extracted from AggregatedRunInfo = {}", (bool)evselOpts.isMC, runInfo.orbitsPerTF);
+
       // first bc of the first orbit
       bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs
@@ -776,7 +780,7 @@ class EventSelectionModule
       LOGP(debug, "ITS ROF Offset={} ITS ROF Length={}", rofOffset, rofLength);
 
       // special treatment of light ion runs
-      if (lastRun >= 564356 && lastRun <= 564472) {
+      if (lastRun >= 564356 && lastRun <= 564472) { // o2-linter: disable=magic-number (light ion run range)
         for (uint32_t i = 0; i < sizeof(runListLightIons) / sizeof(*runListLightIons); i++) {
           if (runListLightIons[i] == lastRun) {
             runLightIons = lastRun;
@@ -786,9 +790,9 @@ class EventSelectionModule
             diffVzParMean = *parMeans;
             diffVzParSigma = *parSigmas;
             LOGP(info, ">>> special treatment for diffVz for light ion run {}", runLightIons);
-            for (int j = 0; j < 5; j++)
+            for (size_t j = 0; j < diffVzParMean.size(); j++)
               LOGP(info, " mean par {} = {}", j, diffVzParMean[j]);
-            for (int j = 0; j < 5; j++)
+            for (size_t j = 0; j < diffVzParSigma.size(); j++)
               LOGP(info, " sigma par {} = {}", j, diffVzParSigma[j]);
             break;
           }
@@ -859,18 +863,18 @@ class EventSelectionModule
       }
 
       // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bitcheck64(selection, aod::evsel::kIsBBT0A) && bitcheck64(selection, aod::evsel::kIsBBT0C); // TODO apply other cuts for sel8
-      bool sel1 = bitcheck64(selection, aod::evsel::kIsINT1);
-      sel1 = sel1 && bitcheck64(selection, aod::evsel::kNoBGV0A);
-      sel1 = sel1 && bitcheck64(selection, aod::evsel::kNoBGV0C);
-      sel1 = sel1 && bitcheck64(selection, aod::evsel::kNoTPCLaserWarmUp);
-      sel1 = sel1 && bitcheck64(selection, aod::evsel::kNoTPCHVdip);
+      bool sel8 = BITCHECK64(selection, aod::evsel::kIsBBT0A) && BITCHECK64(selection, aod::evsel::kIsBBT0C); // TODO apply other cuts for sel8
+      bool sel1 = BITCHECK64(selection, aod::evsel::kIsINT1);
+      sel1 = sel1 && BITCHECK64(selection, aod::evsel::kNoBGV0A);
+      sel1 = sel1 && BITCHECK64(selection, aod::evsel::kNoBGV0C);
+      sel1 = sel1 && BITCHECK64(selection, aod::evsel::kNoTPCLaserWarmUp);
+      sel1 = sel1 && BITCHECK64(selection, aod::evsel::kNoTPCHVdip);
 
       // INT1 (SPDFO>0 | V0A | V0C) minimum bias trigger logic used in pp2010 and pp2011
       bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582); // o2-linter: disable=magic-number (magic run numbers)
 
       // fill counters
-      if (evselOpts.isMC == 1 || (!isINT1period && bitcheck(alias, kINT7)) || (isINT1period && bitcheck(alias, kINT1))) {
+      if (evselOpts.isMC == 1 || (!isINT1period && BITCHECK(alias, kINT7)) || (isINT1period && BITCHECK(alias, kINT1))) {
         histos.template get<TH1>(HIST("eventselection/hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
         if ((!isINT1period && sel7) || (isINT1period && sel1)) {
           histos.template get<TH1>(HIST("eventselection/hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
@@ -909,7 +913,7 @@ class EventSelectionModule
       }
 
       auto selection = bcselbuffer[bc.globalIndex()].selection;
-      if (bitcheck64(selection, aod::evsel::kIsTriggerTVX)) {
+      if (BITCHECK64(selection, aod::evsel::kIsTriggerTVX)) {
         mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
         mapGlobalBcVtxZ[globalBC] = bc.has_ft0() ? bc.ft0().posZ() : 0;
       }
@@ -1018,7 +1022,7 @@ class EventSelectionModule
           int32_t localBC = globalBC % nBCsPerOrbit;
           int32_t bcFromPattern = bcsPattern.at(i);
           int64_t bcDiff = bcFromPattern - localBC;
-          if (std::abs(bcDiff) <= 20) {
+          if (std::abs(bcDiff) <= 20) { // o2-linter: disable=magic-number (max BC difference to match pattern)
             foundGlobalBC = (globalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPattern;
             break; // the bc in pattern is found
           }
@@ -1055,7 +1059,7 @@ class EventSelectionModule
             for (uint32_t j = 0; j < bcsPattern.size(); j++) {
               int32_t bcFromPatternBest = bcsPattern.at(j);
               int64_t bcDiff = bcFromPatternBest - (bestGlobalBC % nBCsPerOrbit);
-              if (std::abs(bcDiff) <= 20) {
+              if (std::abs(bcDiff) <= 20) { // o2-linter: disable=magic-number (max BC difference to match pattern)
                 foundGlobalBC = (bestGlobalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPatternBest;
                 break; // the bc in pattern is found
               }
@@ -1159,12 +1163,12 @@ class EventSelectionModule
       auto bcselEntry = bcselbuffer[foundBC];
       // check if we are close to ITS ROF borders => N ITS tracks is not reliable, and FT0C ampl can be used for occupancy estimation
       // denominator for vAmpFT0CperColl is the approximate conversion factor b/n FT0C ampl and number of PV tracks after cuts
-      vProxyForCollNtracks[colIndex] = bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder) ? vTracksITS567perColl[colIndex] : vAmpFT0CperColl[colIndex] / 10.;
+      vProxyForCollNtracks[colIndex] = BITCHECK64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder) ? vTracksITS567perColl[colIndex] : vAmpFT0CperColl[colIndex] / 10.;
 
-      if (!bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder)) {
+      if (!BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder)) {
         vIsCollRejectedByTFborderCut[colIndex] = true;
       }
-      if (nBCsPerTF - bcInTF < 4000 * 2) {
+      if (nBCsPerTF - bcInTF < 4000 * 2) { // o2-linter: disable=magic-number (BCs within last drift time window)
         vCanHaveAssocCollsWithinLastDriftTime[colIndex] = true;
       }
     }
@@ -1363,7 +1367,7 @@ class EventSelectionModule
           nITS567tracksForVetoStrict += vProxyForCollNtracks[thisColIndex];
 
         // veto on high-mult collisions nearby, where artificial structures in the dt-occupancy plots are observed
-        if (dt > -4.0 && dt < 2.0 && vAmpFT0CperColl[thisColIndex] > evselOpts.confFT0CamplCutVetoOnCollInTimeRange) { // dt in us // o2-linter: disable=magic-number
+        if (dt > -4.0 && dt < 2.0 && vAmpFT0CperColl[thisColIndex] > evselOpts.confFT0CamplCutVetoOnCollInTimeRange) { // o2-linter: disable=magic-number (dt in us, time window for high-mult veto)
           nCollsWithFT0CAboveVetoStandard++;
         }
 
@@ -1410,7 +1414,7 @@ class EventSelectionModule
             if (evselOpts.confUseWeightsForOccupancyVariable) {
               wOccup = calcWeightForOccupancy(dt / 1e3); // ns -> us
             }
-            if (multT0C > 50.) // multiplicity in TVX is non-negligible, take it into occupancy calc
+            if (multT0C > 50.) // o2-linter: disable=magic-number (multiplicity threshold for occupancy calc)
             {
               nITS567tracksInFullTimeWindow += wOccup * multT0C / 10.;
               sumAmpFT0CInFullTimeWindow += wOccup * multT0C;
@@ -1454,13 +1458,13 @@ class EventSelectionModule
         } else { // special treatment of light ion runs
           float multT0A = bc.ft0().sumAmpA();
           float multT0C = bc.ft0().sumAmpC();
-          float T0M = multT0A + multT0C;
+          float multT0M = multT0A + multT0C;
           // calc mean at this T0 ampl.
-          float x = (T0M < 50 ? 50 : T0M);
-          double diffMean = diffVzParMean[0] + diffVzParMean[1] * pow(x, diffVzParMean[2]) + diffVzParMean[3] * pow(x, diffVzParMean[4]);
+          float x = (multT0M < 50 ? 50 : multT0M); // o2-linter: disable=magic-number (min T0M for mean parametrization)
+          double diffMean = diffVzParMean[0] + diffVzParMean[1] * std::pow(x, diffVzParMean[2]) + diffVzParMean[3] * std::pow(x, diffVzParMean[4]);
           // calc sigma at this T0 ampl.
-          x = (T0M < 20 ? 20 : (T0M > 1.2e4 ? 1.2e4 : T0M));
-          double diffSigma = diffVzParSigma[0] + diffVzParSigma[1] * pow(x, diffVzParSigma[2]) + diffVzParSigma[3] * pow(x, diffVzParSigma[4]);
+          x = (multT0M < 20 ? 20 : (multT0M > 1.2e4 ? 1.2e4 : multT0M)); // o2-linter: disable=magic-number (min/max T0M for sigma parametrization)
+          double diffSigma = diffVzParSigma[0] + diffVzParSigma[1] * std::pow(x, diffVzParSigma[2]) + diffVzParSigma[3] * std::pow(x, diffVzParSigma[4]);
           float nSigma = evselOpts.confLightIonsNsigmaOnVzDiff;
           float margin = evselOpts.confLightIonsMarginVzDiff;
           isGoodZvtxFT0vsPV = (diffVz > diffMean - nSigma * diffSigma - margin && diffVz < diffMean + nSigma * diffSigma + margin);
@@ -1497,14 +1501,18 @@ class EventSelectionModule
       // apply int7-like selections
       bool sel7 = 0;
 
-      // TODO apply other cuts for sel8
-      // TODO introduce sel1 etc?
+      // Combination of bits for Run 3 event selection decisions
+      // TODO apply other cuts for sel8?
       // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
+      bool sel8 = false;
+      if (lastRun < 568873) // o2-linter: disable=magic-number (pre-2026 data & MC: require all three bits: TVX, TF and ROF border cuts)
+        sel8 = BITCHECK64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && BITCHECK64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
+      else // for pp 2026: sel8 without kNoITSROFrameBorder bit, because the cross-ROF reconstruction for ITS will be On (the switch by a runNumber is a temporary solution)
+        sel8 = BITCHECK64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder);
 
       // fill counters
       histos.template get<TH1>(HIST("eventselection/hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
-      if (bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX)) {
+      if (BITCHECK64(bcselEntry.selection, aod::evsel::kIsTriggerTVX)) {
         histos.template get<TH1>(HIST("eventselection/hColCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
       }
       if (sel8) {
@@ -1545,7 +1553,7 @@ class LumiModule
 
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
-  o2::common::eventselection::lumiConfigurables lumiOpts;
+  o2::common::eventselection::LumiConfigurables lumiOpts;
 
   template <typename TContext, typename TLumiOpts, typename THistoRegistry>
   void init(TContext& context, TLumiOpts const& external_lumiopts, THistoRegistry& histos)
@@ -1555,8 +1563,8 @@ class LumiModule
     if (lumiOpts.amIneeded.value < 0) {
       int bcSelNeeded = -1, evSelNeeded = -1;
       lumiOpts.amIneeded.value = 0;
-      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
-      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
       if (bcSelNeeded == 1) {
         lumiOpts.amIneeded.value = 1;
         LOGF(info, "Luminosity / Autodetection for aod::BcSels: subscription present, will generate.");
@@ -1650,12 +1658,12 @@ class LumiModule
       csZEM = -1;
       csZNC = -1;
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
-      if (beamZ1 == 8 && beamZ2 == 1) {
-        csTVX = 0.3874e6; // eff(TVX) = 0.807 (based on LHC25e6f); sigma(INEL)=0.48b; arxiv:2507.05853
-      } else if (beamZ1 == 8 && beamZ2 == 8) {
-        csTVX = 1.2050e6; // eff(TVX) = 0.886 (based on LHC25e6b); sigma(INEL)=1.36b; arxiv:2507.05853
-      } else if (beamZ1 == 10 && beamZ2 == 10) {
-        csTVX = 1.5411e6; // eff(TVX) = 0.896 (based on LHC25e6g); sigma(INEL)=1.72b; arxiv:2507.05853
+      if (beamZ1 == 8 && beamZ2 == 1) {          // o2-linter: disable=magic-number (O beam on p, Z=8 and Z=1)
+        csTVX = 0.3874e6;                        // eff(TVX) = 0.807 (based on LHC25e6f); sigma(INEL)=0.48b; arxiv:2507.05853
+      } else if (beamZ1 == 8 && beamZ2 == 8) {   // o2-linter: disable=magic-number (O-O collisions, Z=8)
+        csTVX = 1.2050e6;                        // eff(TVX) = 0.886 (based on LHC25e6b); sigma(INEL)=1.36b; arxiv:2507.05853
+      } else if (beamZ1 == 10 && beamZ2 == 10) { // o2-linter: disable=magic-number (Ne-Ne collisions, Z=10)
+        csTVX = 1.5411e6;                        // eff(TVX) = 0.896 (based on LHC25e6g); sigma(INEL)=1.72b; arxiv:2507.05853
       } else if (beamZ1 == 1 && beamZ2 == 1) {
         if (std::fabs(sqrts - 900.) < 100.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0357e6;                            // ub
@@ -1749,15 +1757,17 @@ class LumiModule
         double perBcRateTCE = static_cast<double>(mCounterTCE[i + 1] - mCounterTCE[i]) / nOrbits / nCollidingBCs;
         double perBcRateZNC = static_cast<double>(mCounterZNC[i + 1] - mCounterZNC[i]) / nOrbits / nCollidingBCs;
         double perBcRateZEM = static_cast<double>(mCounterZEM[i + 1] - mCounterZEM[i]) / nOrbits / nCollidingBCs;
-        double muTVX = (perBcRateTVX < 1 && perBcRateTVX > 1e-10) ? -std::log(1 - perBcRateTVX) : 0;
-        double muTCE = (perBcRateTCE < 1 && perBcRateTCE > 1e-10) ? -std::log(1 - perBcRateTCE) : 0;
-        double muZNC = (perBcRateZNC < 1 && perBcRateZNC > 1e-10) ? -std::log(1 - perBcRateZNC) : 0;
-        double muZEM = (perBcRateZEM < 1 && perBcRateZEM > 1e-10) ? -std::log(1 - perBcRateZEM) : 0;
+        const float rateMin = 1.e-10;
+        double muTVX = (perBcRateTVX < 1 && perBcRateTVX > rateMin) ? -std::log(1 - perBcRateTVX) : 0;
+        double muTCE = (perBcRateTCE < 1 && perBcRateTCE > rateMin) ? -std::log(1 - perBcRateTCE) : 0;
+        double muZNC = (perBcRateZNC < 1 && perBcRateZNC > rateMin) ? -std::log(1 - perBcRateZNC) : 0;
+        double muZEM = (perBcRateZEM < 1 && perBcRateZEM > rateMin) ? -std::log(1 - perBcRateZEM) : 0;
         LOGP(debug, "orbit={} muTVX={} muTCE={} muZNC={} muZEM={}", mOrbits[i], muTVX, muTCE, muZNC, muZEM);
-        mPileupCorrectionTVX.push_back(muTVX > 1e-10 ? muTVX / (1 - std::exp(-muTVX)) : 1);
-        mPileupCorrectionTCE.push_back(muTCE > 1e-10 ? muTCE / (1 - std::exp(-muTCE)) : 1);
-        mPileupCorrectionZNC.push_back(muZNC > 1e-10 ? muZNC / (1 - std::exp(-muZNC)) : 1);
-        mPileupCorrectionZEM.push_back(muZEM > 1e-10 ? muZEM / (1 - std::exp(-muZEM)) : 1);
+        const float muMin = 1.e-10;
+        mPileupCorrectionTVX.push_back(muTVX > muMin ? muTVX / (1 - std::exp(-muTVX)) : 1);
+        mPileupCorrectionTCE.push_back(muTCE > muMin ? muTCE / (1 - std::exp(-muTCE)) : 1);
+        mPileupCorrectionZNC.push_back(muZNC > muMin ? muZNC / (1 - std::exp(-muZNC)) : 1);
+        mPileupCorrectionZEM.push_back(muZEM > muMin ? muZEM / (1 - std::exp(-muZEM)) : 1);
       }
       // filling last orbit range using previous orbit range
       mPileupCorrectionTVX.push_back(mPileupCorrectionTVX.back());

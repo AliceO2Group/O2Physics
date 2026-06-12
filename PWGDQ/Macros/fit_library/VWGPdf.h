@@ -11,14 +11,16 @@
 
 /// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 
-#ifndef VWGPDF
-#define VWGPDF
+#ifndef PWGDQ_MACROS_FIT_LIBRARY_VWGPDF_H_
+#define PWGDQ_MACROS_FIT_LIBRARY_VWGPDF_H_
 
-#include "RooAbsPdf.h"
-#include "RooRealProxy.h"
-#include "RooCategoryProxy.h"
-#include "RooAbsReal.h"
-#include "RooAbsCategory.h"
+#include <RooAbsPdf.h>
+#include <RooAbsReal.h>
+#include <RooRealProxy.h>
+#include <TObject.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class VWGPdf : public RooAbsPdf
 {
@@ -45,4 +47,4 @@ class VWGPdf : public RooAbsPdf
   ClassDef(VWGPdf, 1) // Your description goes here...
 };
 
-#endif
+#endif // PWGDQ_MACROS_FIT_LIBRARY_VWGPDF_H_

@@ -16,20 +16,24 @@
 #ifndef PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 #define PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 
-#include "RecoDecay.h"
-
 #include "PWGCF/Femto/Core/histManager.h"
 
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>
@@ -84,6 +88,8 @@ constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaugh
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
 constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0DaughterNeg";
+constexpr const char PrefixCprV0DaughterResoDaughterPos[] = "CprV0DaughterResoDaughterPos";
+constexpr const char PrefixCprV0DaughterResoDaughterNeg[] = "CprV0DaughterResoDaughterNeg";
 constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor";
 
 // pairs
@@ -93,6 +99,8 @@ using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
 using ConfCprV0DaugherV0DaughterNeg = ConfCpr<PrefixCprV0DaughterV0DaughterNeg>;
+using ConfCprV0DaughterResoDaughterPos = ConfCpr<PrefixCprV0DaughterResoDaughterPos>;
+using ConfCprV0DaughterResoDaughterNeg = ConfCpr<PrefixCprV0DaughterResoDaughterNeg>;
 using ConfCprTrackCascadeBachelor = ConfCpr<PrefixCprTrackCascadeBachelor>;
 
 // tpc radii for computing phistar
@@ -108,6 +116,10 @@ constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
 constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
 constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";
 constexpr char PrefixV0V0NegMe[] = "CPR_V0V0_NegDau/ME/";
+constexpr char PrefixV0TwoTrackResonancePosSe[] = "CPR_V0Resonance_PosDau/SE/";
+constexpr char PrefixV0TwoTrackResonanceNegSe[] = "CPR_V0Resonance_NegDau/SE/";
+constexpr char PrefixV0TwoTrackResonancePosMe[] = "CPR_V0Resonance_PosDau/ME/";
+constexpr char PrefixV0TwoTrackResonanceNegMe[] = "CPR_V0Resonance_NegDau/ME/";
 constexpr char PrefixTrackTwoTrackResonanceSe[] = "CPR_TrackResonanceDau/SE/";
 constexpr char PrefixTrackTwoTrackResonanceMe[] = "CPR_TrackResonanceDau/ME/";
 constexpr char PrefixTrackCascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
@@ -118,18 +130,18 @@ constexpr char PrefixTrackKinkMe[] = "CPR_TrackKink/ME/";
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
 constexpr std::array<histmanager::HistInfo<CprHist>, kCprHistogramLast> HistTable = {
-  {{kAverage, o2::framework::kTH2F, "hAverage", "#Delta #eta vs #Delta #phi* (averaged over all radii); #Delta #eta; #Delta #phi*"},
-   {kRadius0, o2::framework::kTH2F, "hRadius0", "Radius 0: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius1, o2::framework::kTH2F, "hRadius1", "Radius 1: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius2, o2::framework::kTH2F, "hRadius2", "Radius 2: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius3, o2::framework::kTH2F, "hRadius3", "Radius 3: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius4, o2::framework::kTH2F, "hRadius4", "Radius 4: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius5, o2::framework::kTH2F, "hRadius5", "Radius 5: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius6, o2::framework::kTH2F, "hRadius6", "Radius 6: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius7, o2::framework::kTH2F, "hRadius7", "Radius 7: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius8, o2::framework::kTH2F, "hRadius8", "Radius 8: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kPhi1VsPhi2, o2::framework::kTH2F, "hPhi1vsPhi2", "#phi_{1} vs #phi_{2}; #phi_{1}; #phi_{2}"},
-   {kEta1VsEta2, o2::framework::kTH2F, "hEta1VsEta2", "#eta_{1} vs #eta_{2}; #eta_{1}; #eta_{2}"}}};
+  {{kAverage, o2::framework::HistType::kTH2F, "hAverage", "#Delta #eta vs #Delta #phi* (averaged over all radii); #Delta #eta; #Delta #phi*"},
+   {kRadius0, o2::framework::HistType::kTH2F, "hRadius0", "Radius 0: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius1, o2::framework::HistType::kTH2F, "hRadius1", "Radius 1: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius2, o2::framework::HistType::kTH2F, "hRadius2", "Radius 2: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius3, o2::framework::HistType::kTH2F, "hRadius3", "Radius 3: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius4, o2::framework::HistType::kTH2F, "hRadius4", "Radius 4: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius5, o2::framework::HistType::kTH2F, "hRadius5", "Radius 5: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius6, o2::framework::HistType::kTH2F, "hRadius6", "Radius 6: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius7, o2::framework::HistType::kTH2F, "hRadius7", "Radius 7: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kRadius8, o2::framework::HistType::kTH2F, "hRadius8", "Radius 8: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kPhi1VsPhi2, o2::framework::HistType::kTH2F, "hPhi1vsPhi2", "#phi_{1} vs #phi_{2}; #phi_{1}; #phi_{2}"},
+   {kEta1VsEta2, o2::framework::HistType::kTH2F, "hEta1VsEta2", "#eta_{1} vs #eta_{2}; #eta_{1}; #eta_{2}"}}};
 
 template <typename T>
 auto makeCprHistSpecMap(const T& confCpr)
@@ -363,8 +375,8 @@ class CloseTrackRejection
   {
     double arg = 0.3 * (0.1 * magfield) * (0.01 * radius) / (2. * signedPt);
     if (std::fabs(arg) <= 1.) {
-      double phistar = phi - std::asin(arg);
-      return static_cast<float>(RecoDecay::constrainAngle(phistar));
+      double angle = phi - std::asin(arg);
+      return static_cast<float>(RecoDecay::constrainAngle(angle));
     }
     return std::nullopt;
   }
@@ -554,7 +566,7 @@ class ClosePairRejectionTrackCascade
   bool
     isClosePair() const
   {
-    return mCtrBachelor.isClosePair() || mCtrBachelor.isClosePair();
+    return mCtrBachelor.isClosePair();
   }
 
   void fill(float kstar)

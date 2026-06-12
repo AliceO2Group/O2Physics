@@ -14,16 +14,19 @@
 // This code loops over photons and makes pairs for neutral mesons analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/TaggingPi0.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
-using namespace o2;
-using namespace o2::aod;
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+using namespace o2::framework;
+using namespace o2::aod::pwgem::photonmeson::photonpair;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TaggingPi0<PairType::kPCMDalitzEE, MyV0Photons, aod::V0Legs, MyPrimaryElectrons>>(cfgc, TaskName{"tagging-pi0-pcmdalitzee"}),
+    adaptAnalysisTask<TaggingPi0<PairType::kPCMDalitzEE, MyV0Photons, o2::aod::V0Legs, MyPrimaryElectrons>>(cfgc, TaskName{"tagging-pi0-pcmdalitzee"}),
   };
 }

@@ -28,6 +28,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+//
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -53,9 +54,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
@@ -94,6 +97,28 @@ enum McMatchFlag : uint8_t {
   CascUnmatched,
   V0Unmatched
 };
+
+// Convert the absolute KFParticle PDG code to the O2 track PID enum needed by getTrackParCovFromKFP()
+o2::track::PID::ID getTrackPIDFromPDG(const int pdg)
+{
+  switch (std::abs(pdg)) {
+    case kPiPlus:
+      return o2::track::PID::Pion;
+    case kKPlus:
+      return o2::track::PID::Kaon;
+    case kProton:
+      return o2::track::PID::Proton;
+    case kLambda0:
+      return o2::track::PID::Lambda;
+    case kXiMinus:
+      return o2::track::PID::XiMinus;
+    case kOmegaMinus:
+      return o2::track::PID::OmegaMinus;
+    default:
+      LOGF(fatal, "Unsupported PDG code %d in getTrackPIDFromPDG()", pdg);
+      return o2::track::PID::Pion;
+  }
+}
 
 // Reconstruction of omegac0 and xic0 candidates
 struct HfCandidateCreatorXic0Omegac0 {
@@ -142,7 +167,8 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdgdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{-1};
@@ -613,7 +639,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       float const decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
       float const decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
 
-      double phiCharmBaryon, thetaCharmBaryon;
+      double phiCharmBaryon{}, thetaCharmBaryon{};
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, coordVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon);
       auto errorDecayLengthCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
       auto errorDecayLengthXYCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, 0.) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, 0.));
@@ -806,7 +832,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle const kfNegKa(kfTrackBach, kKMinus);
       KFParticle const kfNegPiRej(kfTrackBach, kPiMinus); // rej
       KFParticle const kfPosPi(kfTrack0, kPiPlus);
-      KFParticle const kfNegPr(kfTrack1, kProton);
+      KFParticle const kfNegPr(kfTrack1, kProtonBar);
       KFParticle const kfPosKa(kfTrackBach, kKPlus);
       KFParticle const kfPosPiRej(kfTrackBach, kPiPlus); // rej
 
@@ -840,7 +866,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
 
       // mass window cut on lambda before mass constraint
-      float massLam, sigLam;
+      float massLam{}, sigLam{};
       kfV0.GetMass(massLam, sigLam);
       if (std::abs(massLam - MassLambda0) > lambdaMassWindow) {
         continue;
@@ -864,6 +890,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       // construct cascade
       KFParticle kfOmega;
       KFParticle kfOmegarej; // rej
+      kfOmega.SetPDG(bachCharge < 0 ? kOmegaMinus : kOmegaPlusBar);
+      kfOmegarej.SetPDG(bachCharge < 0 ? kOmegaMinus : kOmegaPlusBar);
       kfOmega.SetConstructMethod(kfConstructMethod);
       kfOmegarej.SetConstructMethod(kfConstructMethod); // rej
       try {
@@ -873,8 +901,8 @@ struct HfCandidateCreatorXic0Omegac0 {
         LOG(debug) << "Failed to construct Omega or Omega_rej from V0 and bachelor track: " << e.what();
         continue;
       }
-      float massCasc, sigCasc;
-      float massCascrej, sigCascrej;
+      float massCasc{}, sigCasc{};
+      float massCascrej{}, sigCascrej{};
       kfOmega.GetMass(massCasc, sigCasc);
       kfOmegarej.GetMass(massCascrej, sigCascrej); // rej
       // err_massOmega > 0
@@ -914,7 +942,7 @@ struct HfCandidateCreatorXic0Omegac0 {
         LOG(debug) << "Failed to construct OmegaC0 from Cascade and bachelor pion track: " << e.what();
         continue;
       }
-      float massOmegaC0, sigOmegaC0;
+      float massOmegaC0{}, sigOmegaC0{};
       kfOmegaC0.GetMass(massOmegaC0, sigOmegaC0);
       if (sigOmegaC0 <= 0) {
         continue;
@@ -957,12 +985,16 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfBachKaonToOmega, o2::track::PID::Kaon, bachCharge); // Cascade bach kaon
       omegaDauChargedTrackParCov.setAbsCharge(1);
-      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, kfOmegaToOmegaC.GetPDG(), bachCharge);
+      o2::track::PID::ID pidCasc = getTrackPIDFromPDG(kfOmegaToOmegaC.GetPDG());
+      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, pidCasc, bachCharge);
       trackCasc.setAbsCharge(1);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1); // V0 postive daughter
+      o2::track::PID::ID pidV0Dau0 = getTrackPIDFromPDG(kfPos.GetPDG());
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, pidV0Dau0, +1); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1); // V0 negtive daughter
+
+      o2::track::PID::ID pidV0Dau1 = getTrackPIDFromPDG(kfNeg.GetPDG());
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, pidV0Dau1, -1); // V0 negative daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
@@ -1028,7 +1060,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       float const decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
       float const decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
 
-      double phiCharmBaryon, thetaCharmBaryon;
+      double phiCharmBaryon{}, thetaCharmBaryon{};
       getPointDirection(std::array{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()}, coordVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon);
       auto errorDecayLengthCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
       auto errorDecayLengthXYCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phiCharmBaryon, 0.) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, 0.));
@@ -1118,7 +1150,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.rapOmegac = kfOmegaC0.GetRapidity();
 
       // KF cosThetaStar
-      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC);
+      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC, pdgdb);
 
       // KF ct
       kfOmegac0Candidate.ctV0 = kfV0.GetLifeTime();
@@ -1295,7 +1327,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle const kfNegPi(kfTrack1, kPiMinus);
       KFParticle const kfNegBachPi(kfTrackBach, kPiMinus);
       KFParticle const kfPosPi(kfTrack0, kPiPlus);
-      KFParticle const kfNegPr(kfTrack1, kProton);
+      KFParticle const kfNegPr(kfTrack1, kProtonBar);
       KFParticle const kfPosBachPi(kfTrackBach, kPiPlus);
 
       KFParticle kfBachPion;
@@ -1353,6 +1385,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       const KFParticle* xiDaugthers[2] = {&kfBachPion, &kfV0};
       // construct cascade
       KFParticle kfXi;
+      kfXi.SetPDG(bachCharge < 0 ? kXiMinus : kXiPlusBar);
       kfXi.SetConstructMethod(kfConstructMethod);
       try {
         kfXi.Construct(xiDaugthers, 2);
@@ -1450,12 +1483,17 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       xiDauChargedTrackParCov = getTrackParCovFromKFP(kfBachPionToXi, o2::track::PID::Pion, bachCharge); // Cascade bach pion
       xiDauChargedTrackParCov.setAbsCharge(1);
-      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfXiToXiC, kfXiToXiC.GetPDG(), bachCharge);
+
+      o2::track::PID::ID pidCasc = getTrackPIDFromPDG(kfXiToXiC.GetPDG());
+      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfXiToXiC, pidCasc, bachCharge);
       trackCasc.setAbsCharge(1);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1); // V0 postive daughter
+      o2::track::PID::ID pidV0Dau0 = getTrackPIDFromPDG(kfPos.GetPDG());
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, pidV0Dau0, +1); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1); // V0 negtive daughter
+
+      o2::track::PID::ID pidV0Dau1 = getTrackPIDFromPDG(kfNeg.GetPDG());
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, pidV0Dau1, -1); // V0 negative daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
@@ -1582,7 +1620,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfXic0Candidate.rapXic = kfXiC0.GetRapidity();
 
       // KF cosThetaStar
-      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC);
+      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC, pdgdb);
 
       // KF ct
       kfXic0Candidate.ctV0 = kfV0ToCasc.GetLifeTime();
@@ -1944,8 +1982,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       float const ptOmega = kfOmega.GetPt();
 
       // KF cosThetaStar
-      float const cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
-      float const cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
+      float const cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa, pdgdb);
+      float const cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa, pdgdb);
 
       // KF ct
       float const ctV0 = kfV0ToOmega.GetLifeTime();

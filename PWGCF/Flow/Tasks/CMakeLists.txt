@@ -26,7 +26,7 @@ o2physics_add_dpl_workflow(flow-runby-run
 
 o2physics_add_dpl_workflow(flow-mc
                     SOURCES flowMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-qa
@@ -64,6 +64,11 @@ o2physics_add_dpl_workflow(flow-pid-cme
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flow-zdc-energy
+                    SOURCES flowZdcEnergy.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(flow-sp
                     SOURCES flowSP.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
@@ -94,6 +99,11 @@ o2physics_add_dpl_workflow(flow-gfw-ese
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flow-fluc-gfw-pp
+                    SOURCES flowFlucGfwPp.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(flow-event-plane
                            SOURCES flowEventPlane.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -103,3 +113,9 @@ o2physics_add_dpl_workflow(pid-flow-pt-corr
                     SOURCES pidFlowPtCorr.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-directed-flow-task
+                    SOURCES flowDirectedFlowTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+

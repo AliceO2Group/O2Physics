@@ -21,6 +21,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -181,11 +182,22 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::TrkRecInfoDplus> entryTrackRecoInfo;
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
+  Produces<aod::HfcRedCollisions> collReduced;
+  Produces<aod::HcCandReduceds> candReduced;
+  Produces<aod::HcCandSelInfos> candSelInfo;
+  Produces<aod::AssocTrackReds> assocTrackReduced;
+  Produces<aod::AssocTrackSels> assocTrackSelInfo;
+
   static constexpr std::size_t NDaughters{3u};
   static constexpr float EtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
+  Configurable<bool> removeUnreconstructedGenCollisions{"removeUnreconstructedGenCollisions", true, "Remove generator-level collisions that were not reconstructed"};
+  Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", true, "Flag for rejecting the splitted collisions"};
+  Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection"};
+  Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
+  Configurable<float> zVtxMax{"zVtxMax", 10., "max. position-z of the reconstructed collision"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
   Configurable<bool> removeDaughters{"removeDaughters", true, "Flag for removing D-meson daughters from correlations"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -210,6 +222,7 @@ struct HfCorrelatorDplusHadrons {
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
   using SelCollisionsWithDplusMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection, aod::MultsExtraMC>>; // collisionFilter applied
+  using CollisionsMc = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using CandidatesDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   // Event Mixing for the MCRec Mode
   using CandidatesDplusMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi, aod::HfCand3ProngMcRec>>;
@@ -226,6 +239,12 @@ struct HfCorrelatorDplusHadrons {
   Filter dplusFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) != static_cast<uint8_t>(0)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   // Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  Preslice<aod::McParticles> presliceMc{aod::mcparticle::mcCollisionId};
+  Preslice<CandDplusMcGen> candMcGenPerMcCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<CandidatesDplusData> candsDplusPerCollision = aod::hf_cand::collisionId;
+  Preslice<TracksData> trackIndicesPerCollision = aod::track::collisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> recoCollisionsPerMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
+
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
   ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
@@ -235,6 +254,7 @@ struct HfCorrelatorDplusHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -252,6 +272,7 @@ struct HfCorrelatorDplusHadrons {
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
     AxisSpec const axisRapidity = {100, -2, 2, "Rapidity"};
+    AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
 
     registry.add("hPtCand", "Dplus,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtProng0", "Dplus,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}});
@@ -272,6 +293,7 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hMassDplusData", "Dplus candidates;inv. mass (K^{-}#pi^{+}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{axisMassD}}});
     registry.add("hDplusPoolBin", "D+ candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
+    registry.add("hDcaXYVsPt", "DCA xy vs pt", {HistType::kTH2F, {{axisDcaXY}, {axisPtHadron}}});
     // Histograms for MC Reco analysis
     registry.add("hSelectionStatusMCRec", "Dplus,Hadron candidates - MC reco;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}});
     registry.add("hMCEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}});
@@ -307,7 +329,127 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hEtaMcGen", "D+,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}});
     registry.add("hPhiMcGen", "D+,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     registry.add("hMultFT0AMcGen", "D+,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
+    registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
+  }
+
+  template <typename ParticleContainer, typename AssocContainer>
+  void runMcGenDplusHadronAnalysis(const ParticleContainer& particlesToLoop, const AssocContainer& groupedMcParticles, int poolBin, int& counterDplusHadron)
+  {
+    for (const auto& particle : particlesToLoop) {
+
+      if (std::abs(particle.pdgCode()) != Pdg::kDPlus) {
+        continue;
+      }
+
+      if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
+        continue;
+      }
+
+      double yD = RecoDecay::y(particle.pVector(), MassDPlus);
+
+      if (std::abs(yD) > yCandGenMax ||
+          particle.pt() < ptCandMin ||
+          particle.pt() > ptCandMax) {
+        continue;
+      }
+
+      std::vector<int> listDaughters{};
+      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
+      std::array<int, NDaughters> prongsId{};
+
+      RecoDecay::getDaughters(particle, &listDaughters, arrDaughDplusPDG, 2);
+
+      if (listDaughters.size() != NDaughters) {
+        continue;
+      }
+
+      bool isDaughtersOk = true;
+      int counterDaughters = 0;
+
+      for (const auto& dauIdx : listDaughters) {
+        auto daughI = particlesToLoop.rawIteratorAt(dauIdx - particlesToLoop.offset());
+
+        if (std::abs(daughI.eta()) >= EtaDaughtersMax) {
+          isDaughtersOk = false;
+          break;
+        }
+
+        prongsId[counterDaughters++] = daughI.globalIndex();
+      }
+
+      if (!isDaughtersOk) { // Skip this D+ candidate if any daughter fails eta cut
+        continue;
+      }
+      counterDplusHadron++;
+
+      registry.fill(HIST("hDplusBin"), poolBin);
+      registry.fill(HIST("hPtCandMCGen"), particle.pt());
+      registry.fill(HIST("hEtaMcGen"), particle.eta());
+      registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -PIHalf));
+      registry.fill(HIST("hYMCGen"), yD);
+
+      // Prompt / Non-prompt separation
+      bool isDplusPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
+      bool isDplusNonPrompt = particle.originMcGen() == RecoDecay::OriginType::NonPrompt;
+
+      if (isDplusPrompt) {
+        registry.fill(HIST("hPtCandMcGenPrompt"), particle.pt());
+      } else if (isDplusNonPrompt) {
+        registry.fill(HIST("hPtCandMcGenNonPrompt"), particle.pt());
+      }
+
+      // Count triggers
+      registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle.pt());
+
+      for (const auto& particleAssoc : groupedMcParticles) {
+
+        if (std::abs(particleAssoc.eta()) > etaTrackMax ||
+            particleAssoc.pt() < ptTrackMin ||
+            particleAssoc.pt() > ptTrackMax) {
+          continue;
+        }
+
+        // Remove daughters if requested
+        if (removeDaughters) {
+          if (particleAssoc.globalIndex() == prongsId[0] ||
+              particleAssoc.globalIndex() == prongsId[1] ||
+              particleAssoc.globalIndex() == prongsId[2]) {
+            continue;
+          }
+        }
+
+        // Particle species selection
+        if ((std::abs(particleAssoc.pdgCode()) != kElectron) &&
+            (std::abs(particleAssoc.pdgCode()) != kMuonMinus) &&
+            (std::abs(particleAssoc.pdgCode()) != kPiPlus) &&
+            (std::abs(particleAssoc.pdgCode()) != kKPlus) &&
+            (std::abs(particleAssoc.pdgCode()) != kProton)) {
+          continue;
+        }
+
+        if (!particleAssoc.isPhysicalPrimary()) {
+          continue;
+        }
+
+        int trackOrigin = RecoDecay::getCharmHadronOrigin(groupedMcParticles,
+                                                          particleAssoc,
+                                                          true);
+
+        registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
+        entryDplusHadronPair(
+          getDeltaPhi(particleAssoc.phi(), particle.phi()),
+          particleAssoc.eta() - particle.eta(),
+          particle.pt(),
+          particleAssoc.pt(),
+          poolBin);
+
+        entryDplusHadronRecoInfo(MassDPlus, true);
+        entryDplusHadronGenInfo(isDplusPrompt,
+                                particleAssoc.isPhysicalPrimary(),
+                                trackOrigin);
+      }
+    }
   }
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -398,6 +540,46 @@ struct HfCorrelatorDplusHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
+
+  void processDerivedDataDplus(SelCollisionsWithDplus const& collisions,
+                               CandidatesDplusData const& candidates,
+                               TracksData const& tracks)
+  {
+
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDplusThisColl = candidates.sliceBy(candsDplusPerCollision, thisCollId);
+      auto tracksThisColl = tracks.sliceBy(trackIndicesPerCollision, thisCollId);
+
+      int indexHfcReducedCollision = collReduced.lastIndex() + 1;
+
+      // Ds fill histograms and Dplus candidates information stored
+      for (const auto& candidate : candsDplusThisColl) {
+        std::vector<float> outputMl = {-1., -1., -1.};
+        // candidate selected
+        if (candidate.isSelDplusToPiKPi() >= selectionFlagDplus) {
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+          }
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), HfHelper::invMassDplusToPiKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
+        }
+      }
+
+      // tracks information
+      for (const auto& track : tracksThisColl) {
+        if (!track.isGlobalTrackWoDCA()) {
+          continue;
+        }
+        registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
+        assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt());
+        assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
+      }
+
+      collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
+    }
+  }
+  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processDerivedDataDplus, "Process derived data D+", false);
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(SelCollisionsWithDplus::iterator const& collision,
@@ -535,99 +717,65 @@ struct HfCorrelatorDplusHadrons {
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRec, "Process MC Reco mode", true);
 
   /// Dplus-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(SelCollisionsWithDplusMc::iterator const& mcCollision,
+  void processMcGen(CollisionsMc const& mcCollisions,
+                    soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
                     CandDplusMcGen const& mcParticles)
   {
-    int counterDplusHadron = 0;
-    registry.fill(HIST("hMCEvtCount"), 0);
-
     BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
-    int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
-    registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
-    // MC gen level
-    for (const auto& particle1 : mcParticles) {
-      // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
-        continue;
-      }
-      if (std::abs(particle1.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
-        continue;
-      }
-      double const yD = RecoDecay::y(particle1.pVector(), MassDPlus);
-      if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
-        continue;
-      }
-      std::vector<int> listDaughters{};
-      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
-      std::array<int, NDaughters> prongsId{};
-      listDaughters.clear();
-      RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
-      int counterDaughters = 0;
-      if (listDaughters.size() != NDaughters)
-        continue;
-      bool isDaughtersOk = true;
-      for (const auto& dauIdx : listDaughters) {
-        auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
-        if (std::abs(daughI.eta()) >= EtaDaughtersMax) {
-          isDaughtersOk = false;
-          break;
-        }
-        counterDaughters += 1;
-        prongsId[counterDaughters - 1] = daughI.globalIndex();
-      }
-      if (!isDaughtersOk)
-        continue; // Skip this D+ candidate if any daughter fails eta cut
-      counterDplusHadron++;
+    for (const auto& mcCollision : mcCollisions) {
 
-      registry.fill(HIST("hDplusBin"), poolBin);
-      registry.fill(HIST("hPtCandMCGen"), particle1.pt());
-      registry.fill(HIST("hEtaMcGen"), particle1.eta());
-      registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle1.phi(), -PIHalf));
-      registry.fill(HIST("hYMCGen"), yD);
+      int counterDplusHadron = 0;
+      registry.fill(HIST("hMCEvtCount"), 0);
 
-      // prompt and non-prompt division
-      bool isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
-      bool isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
-      if (isDplusPrompt) {
-        registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
-      } else if (isDplusNonPrompt) {
-        registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
-      }
+      int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
+      registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
-      // Dplus Hadron correlation dedicated section
-      // if it's a Dplus particle, search for Hadron and evaluate correlations
-      registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
-      for (const auto& particleAssoc : mcParticles) {
-        if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
+      const auto groupedMcParticles = mcParticles.sliceBy(candMcGenPerMcCollision, mcCollision.globalIndex());
+      const auto groupedCollisions = collisions.sliceBy(recoCollisionsPerMcCollision, mcCollision.globalIndex());
+
+      if (removeUnreconstructedGenCollisions) {
+
+        if (groupedCollisions.size() < 1) {
           continue;
         }
-        if (removeDaughters) {
-          if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
+
+        if (groupedCollisions.size() > 1 && removeCollWSplitVtx) {
+          continue;
+        }
+
+        for (const auto& collision : groupedCollisions) {
+
+          if (useSel8 && !collision.sel8()) {
             continue;
           }
-        }
-        if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
-          continue;
-        }
-        if (!particleAssoc.isPhysicalPrimary()) {
-          continue;
+
+          if (std::abs(collision.posZ()) > zVtxMax) {
+            continue;
+          }
+
+          if (selNoSameBunchPileUpColl &&
+              !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+            continue;
+          }
+
+          if (!collision.has_mcCollision()) {
+            registry.fill(HIST("hFakeCollision"), 0.);
+            continue;
+          }
+
+          // MC particles with reconstructed-collision selection
+          runMcGenDplusHadronAnalysis(groupedMcParticles, groupedMcParticles, poolBin, counterDplusHadron);
         }
 
-        int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
-        registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
-        entryDplusHadronPair(getDeltaPhi(particleAssoc.phi(), particle1.phi()),
-                             particleAssoc.eta() - particle1.eta(),
-                             particle1.pt(),
-                             particleAssoc.pt(),
-                             poolBin);
-        entryDplusHadronRecoInfo(MassDPlus, true);
-        entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
-      } // end associated loop
-    } // end trigger
-    registry.fill(HIST("hcountDplusHadronPerEvent"), counterDplusHadron);
-    registry.fill(HIST("hZvtx"), mcCollision.posZ());
-    // registry.fill(HIST("hMultiplicity"), getTracksSize(mcCollision));
+      } else {
+        // MC particles without reconstructed-collision selection (preliminary approval approach)
+        runMcGenDplusHadronAnalysis(groupedMcParticles, groupedMcParticles, poolBin, counterDplusHadron);
+      }
+
+      registry.fill(HIST("hcountDplusHadronPerEvent"), counterDplusHadron);
+      registry.fill(HIST("hZvtx"), mcCollision.posZ());
+    }
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcGen, "Process MC Gen mode", false);
 

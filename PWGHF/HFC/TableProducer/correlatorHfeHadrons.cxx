@@ -36,8 +36,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TPDGCode.h>
 #include <TRandom3.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -47,11 +49,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::hf_sel_electron;
 
-const std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
-const std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
-const std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-const BinningType corrBinning{{zBins, multBins}, true};
 
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
 
@@ -73,6 +71,16 @@ struct HfCorrelatorHfeHadrons {
   Configurable<float> etaTrackMin{"etaTrackMin", -0.8f, "Eta range  for associated hadron tracks"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.5f, "DCA XY cut"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1.0f, "DCA Z cut"};
+  Configurable<float> tpccrossCut{"tpccrossCut", 70, "TPC crossrows cut"};
+  Configurable<float> itsChi2{"itsChi2", 36, "ITS chi2 cluster cut"};
+  Configurable<float> tpcChi2NCl{"tpcChi2NCl", 4, "TPC chi2 cluster cut"};
+  Configurable<float> tpccrOverFindableRatio{"tpccrOverFindableRatio", 0.8f, "TPC chi2 cluster cut"};
+  Configurable<bool> isDefault{"isDefault", true, "Default cut"};
+  Configurable<bool> csyTPCcr{"csyTPCcr", true, "tpc crossed rows"};
+  Configurable<bool> csyTPCcrOverFindableRatio{"csyTPCcrOverFindableRatio", true, "tpc crossed rows over findable cluster"};
+  Configurable<bool> csyITSchi{"csyITSchi", true, "ITS chi2"};
+  Configurable<bool> csyTPCchi{"csyTPCchi", true, "TPC chi2"};
+
   Configurable<bool> requireEmcal{"requireEmcal", true, "Require electron to be in EMCal"};
 
   // Sigma cut for non-EMCal electrons
@@ -101,6 +109,10 @@ struct HfCorrelatorHfeHadrons {
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::HfSelEl> perCollision = aod::hf_sel_electron::collisionId;
 
+  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
+  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
+  ConfigurableAxis multPoolBinsMcGen{"multPoolBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
+
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsDeltaEta{"binsDeltaEta", {30, -1.8, 1.8}, "#it{#Delta#eta}"};
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "#it{#Delta#varphi}"};
@@ -109,6 +121,7 @@ struct HfCorrelatorHfeHadrons {
   ConfigurableAxis binsNSigma{"binsNSigma", {30, -15., 15.}, "#it{#sigma_{TPC}}"};
   ConfigurableAxis binsMass{"binsMass", {100, 0.0, 2.0}, "Mass (GeV/#it{c}^{2}); entries"};
 
+  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
   HistogramRegistry registry{
     "registry",
     {}};
@@ -138,8 +151,21 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hptElectron", "hptElectron", {HistType::kTH1D, {axisPt}});
     registry.add("hptHadron", "hptHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hptHadronMcRec", "hptHadronMcRec", {HistType::kTH1D, {axisPt}});
+    registry.add("hptHadronMcRecPrimary", "hptHadronMcRecPrimary", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptEleHadron", "hMCRecptEleHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptMuonHadron", "hMCRecptMuonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptPionHadron", "hMCRecptPionHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptKaonHadron", "hMCRecptKaonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptProtonHadron", "hMCRecptProtonHadron", {HistType::kTH1D, {axisPt}});
+
     registry.add("hMCgenptHadron", "hMCgenptHadron", {HistType::kTH1D, {axisPt}});
     registry.add("hMCgenptHadronprimary", "hMCgenptHadronprimary", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptEleHadron", "hMCgenptEleHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptMuonHadron", "hMCgenptMuonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptPionHadron", "hMCgenptPionHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptKaonHadron", "hMCgenptKaonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptProtonHadron", "hMCgenptProtonHadron", {HistType::kTH1D, {axisPt}});
 
     registry.add("hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -156,7 +182,19 @@ struct HfCorrelatorHfeHadrons {
   template <typename T>
   bool selAssoHadron(T const& track)
   {
-    if (!track.isGlobalTrackWoDCA()) {
+    if (isDefault && !track.isGlobalTrackWoDCA()) {
+      return false;
+    }
+    if (csyTPCcr && track.tpcNClsCrossedRows() < tpccrossCut) {
+      return false;
+    }
+    if (csyTPCcrOverFindableRatio && track.tpcCrossedRowsOverFindableCls() < tpccrOverFindableRatio) {
+      return false;
+    }
+    if (csyITSchi && track.itsChi2NCl() > itsChi2) {
+      return false;
+    }
+    if (csyTPCchi && track.tpcChi2NCl() > tpcChi2NCl) {
       return false;
     }
 
@@ -173,8 +211,8 @@ struct HfCorrelatorHfeHadrons {
   }
 
   // Electron-hadron Correlation
-  template <typename TracksType, typename ElectronType, typename CollisionType, typename BcType>
-  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&)
+  template <bool IsMc, typename TracksType, typename ElectronType, typename CollisionType, typename BcType, typename McParticlesType>
+  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&, McParticlesType const&)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
@@ -192,16 +230,43 @@ struct HfCorrelatorHfeHadrons {
     }
 
     registry.fill(HIST("hNevents"), 1);
-    // Add hadron Table For Mix Event Electron Hadron correlation
+
+    // fraction of event which used for Event mixing
     if (!skipEventTableFilling) {
+      registry.fill(HIST("hTracksBin"), poolBin);
       registry.fill(HIST("hZvertex"), collision.posZ());
-      for (const auto& hTrack : tracks) {
-        if (!selAssoHadron(hTrack)) {
-          continue;
+    }
+    for (const auto& hTrack : tracks) {
+      if (!selAssoHadron(hTrack)) {
+        continue;
+      }
+
+      // Mc rec hadron efficiency
+      if constexpr (IsMc) {
+        if (hTrack.has_mcParticle()) {
+          auto mcParticle = hTrack.template mcParticle_as<aod::McParticles>();
+          if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
+            continue;
+          }
+
+          registry.fill(HIST("hptHadronMcRec"), hTrack.pt());
+          if (mcParticle.isPhysicalPrimary()) {
+
+            registry.fill(HIST("hptHadronMcRecPrimary"), hTrack.pt());
+
+            if (std::abs(mcParticle.pdgCode()) == kElectron) {
+              registry.fill(HIST("hMCRecptEleHadron"), hTrack.pt());
+            } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+              registry.fill(HIST("hMCRecptMuonHadron"), hTrack.pt());
+            } else if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+              registry.fill(HIST("hMCRecptPionHadron"), hTrack.pt());
+            } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+              registry.fill(HIST("hMCRecptKaonHadron"), hTrack.pt());
+            } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+              registry.fill(HIST("hMCRecptProtonHadron"), hTrack.pt());
+            }
+          }
         }
-        registry.fill(HIST("hTracksBin"), poolBin);
-        registry.fill(HIST("hptHadron"), hTrack.pt());
-        entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
       }
     }
 
@@ -210,11 +275,12 @@ struct HfCorrelatorHfeHadrons {
     double ptElectron = -999;
     double phiElectron = -999;
     double etaElectron = -999;
-
+    int cntEle = 0;
     for (const auto& eTrack : electrons) {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
       etaElectron = eTrack.etaTrack();
+
       bool acceptElectron = false;
 
       double deltaPhi = -999;
@@ -307,10 +373,17 @@ struct HfCorrelatorHfeHadrons {
             ++nElHadUSCorr;
           }
         }
-        entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, nElHadLSCorr, nElHadUSCorr);
 
+        entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, eTrack.eopEl(), eTrack.m02El(), eTrack.tpcNSigmaElTrack(), eTrack.tofNSigmaElTrack(), eTrack.tpcNClsCrRowsTrack(), eTrack.tpcCrRowsRatioTrack(), eTrack.itsChi2NClTrack(), eTrack.tpcChi2NClTrack(), eTrack.dcaXYTrack(), eTrack.dcaZTrack(), hTrack.tpcNClsCrossedRows(), hTrack.tpcCrossedRowsOverFindableCls(), hTrack.itsChi2NCl(), hTrack.tpcChi2NCl(), hTrack.dcaXY(), hTrack.dcaZ(), poolBin, nElHadLSCorr, nElHadUSCorr);
+        if (!skipEventTableFilling) {
+          if (cntEle == 0) {
+            registry.fill(HIST("hptHadron"), hTrack.pt());
+
+            entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
+          }
+        }
       } // end Hadron Track loop
-
+      cntEle++;
     } // end Electron loop
   }
 
@@ -370,7 +443,7 @@ struct HfCorrelatorHfeHadrons {
           ++nElHadUSCorr;
         }
       }
-      entryElectronHadronPair(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, poolBin, nElHadLSCorr, nElHadUSCorr);
+      entryElectronHadronPair(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, t1.eopEl(), t1.m02El(), t1.tpcNSigmaElTrack(), t1.tofNSigmaElTrack(), t1.tpcNClsCrRowsTrack(), t1.tpcCrRowsRatioTrack(), t1.itsChi2NClTrack(), t1.tpcChi2NClTrack(), t1.dcaXYTrack(), t1.dcaZTrack(), t2.tpcNClsCrossedRows(), t2.tpcCrossedRowsOverFindableCls(), t2.itsChi2NCl(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), poolBin, nElHadLSCorr, nElHadUSCorr);
     }
   }
 
@@ -381,27 +454,27 @@ struct HfCorrelatorHfeHadrons {
                    TableTracks const& tracks,
                    aod::BCsWithTimestamps const& bcs)
   {
-    fillCorrelation(collision, electrons, tracks, bcs);
+    fillCorrelation<false>(collision, electrons, tracks, bcs, 0);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
 
   // =======  Process starts for McRec, Same event ============
 
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfCorrSelEl const& mcElectrons,
                     McTableTracks const& mcTracks,
-                    aod::BCsWithTimestamps const& bcs)
+                    aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticle)
   {
-    fillCorrelation(mcCollision, mcElectrons, mcTracks, bcs);
+    fillCorrelation<true>(mcCollision, mcElectrons, mcTracks, bcs, mcParticle);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", true);
 
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electrons)
   {
 
-    BinningTypeMcGen const corrBinningMcGen{{zBins, multBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
 
     for (const auto& particleMc : mcParticles) {
@@ -411,11 +484,25 @@ struct HfCorrelatorHfeHadrons {
       if (particleMc.pt() < ptTrackMin) {
         continue;
       }
-
+      if ((std::abs(particleMc.pdgCode()) != kElectron) && (std::abs(particleMc.pdgCode()) != kMuonMinus) && (std::abs(particleMc.pdgCode()) != kPiPlus) && (std::abs(particleMc.pdgCode()) != kKPlus) && (std::abs(particleMc.pdgCode()) != kProton)) {
+        continue;
+      }
       registry.fill(HIST("hMCgenptHadron"), particleMc.pt());
       if (particleMc.isPhysicalPrimary()) {
 
         registry.fill(HIST("hMCgenptHadronprimary"), particleMc.pt());
+
+        if (std::abs(particleMc.pdgCode()) == kElectron) {
+          registry.fill(HIST("hMCgenptEleHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kMuonMinus) {
+          registry.fill(HIST("hMCgenptMuonHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kPiPlus) {
+          registry.fill(HIST("hMCgenptPionHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kKPlus) {
+          registry.fill(HIST("hMCgenptKaonHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kProton) {
+          registry.fill(HIST("hMCgenptProtonHadron"), particleMc.pt());
+        }
       }
     }
 
@@ -506,7 +593,7 @@ struct HfCorrelatorHfeHadrons {
   void processMcGenMixedEvent(McGenTableCollisions const& mcCollision, aod::HfMcGenSelEl const& electrons, aod::McParticles const& mcParticles)
   {
 
-    BinningTypeMcGen const corrBinningMcGen{{zBins, multBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
 
     auto tracksTuple = std::make_tuple(electrons, mcParticles);
     Pair<McGenTableCollisions, aod::HfMcGenSelEl, aod::McParticles, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, 5, -1, mcCollision, tracksTuple, &cache};

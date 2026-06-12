@@ -22,6 +22,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -212,7 +213,7 @@ struct HfTaskPidStudies {
   HfEventSelectionMc hfEvSelMc;
   double interactionRate{-1.};
 
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry registry{"registry", {}};
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 

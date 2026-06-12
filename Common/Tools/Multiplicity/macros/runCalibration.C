@@ -13,6 +13,19 @@
 /// \brief
 /// \author ALICE
 
+#include "Common/Tools/Multiplicity/multCalibrator.h"
+#include "Common/Tools/Multiplicity/multGlauberNBDFitter.h"
+
+#include <TCanvas.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <iostream>
 
 /// @brief function to calibrate centrality
@@ -42,9 +55,9 @@ void runCalibration(TString lInputFileName = "results/AR_544122_glauberNBD_ances
   c1->SetFrameFillStyle(0);
   c1->SetFillStyle(0);
 
-  cout << "Data bin width: " << hData->GetBinWidth(1) << endl;
-  cout << "Fit bin width: " << hFit->GetBinWidth(1) << endl;
-  cout << "Match range to use: " << matchRange << endl;
+  std::cout << "Data bin width: " << hData->GetBinWidth(1) << std::endl;
+  std::cout << "Fit bin width: " << hFit->GetBinWidth(1) << std::endl;
+  std::cout << "Match range to use: " << matchRange << std::endl;
 
   //____________________________________________
   double anchorPointFraction = anchorPointPercentage / 100.f;
@@ -66,7 +79,7 @@ void runCalibration(TString lInputFileName = "results/AR_544122_glauberNBD_ances
     double integralData = hData->Integral(ii + 1, hData->GetNbinsX() + 1);
     double integralAll = integralFit + integralData;
 
-    cout << "at bin #" << ii << ", integrated up to " << hData->GetBinLowEdge(ii + 1) << " fraction above this value is: " << integralData / integralAll << endl;
+    std::cout << "at bin #" << ii << ", integrated up to " << hData->GetBinLowEdge(ii + 1) << " fraction above this value is: " << integralData / integralAll << std::endl;
     anchorPoint = hData->GetBinLowEdge(ii + 1);
 
     if (integralData / integralAll < anchorPointFraction)
@@ -80,8 +93,8 @@ void runCalibration(TString lInputFileName = "results/AR_544122_glauberNBD_ances
       hStitched->SetBinContent(ii, hFit->GetBinContent(ii));
   }
 
-  cout << "Anchor point determined to be: " << anchorPoint << endl;
-  cout << "Preparing stitched histogram ... " << endl;
+  std::cout << "Anchor point determined to be: " << anchorPoint << std::endl;
+  std::cout << "Preparing stitched histogram ... " << std::endl;
 
   hFit->SetLineColor(kRed);
   hStitched->SetLineColor(kBlue);
@@ -134,7 +147,7 @@ void runCalibration(TString lInputFileName = "results/AR_544122_glauberNBD_ances
   hFit->Write();
 
   if (doNpartNcoll) {
-    cout << "Will now attempt to calculate % -> Np, Nc map..." << endl;
+    std::cout << "Will now attempt to calculate % -> Np, Nc map..." << std::endl;
 
     TProfile* hProfileNpart = new TProfile("hProfileNpart", "", 100, 0, 100);
     TProfile* hProfileNcoll = new TProfile("hProfileNcoll", "", 100, 0, 100);

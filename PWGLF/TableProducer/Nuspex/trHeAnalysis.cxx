@@ -8,47 +8,44 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+///
 /// \file trHeAnalysis.cxx
 /// \brief triton and helion analysis on Run 3 pp data
 /// \author Esther Bartsch <esther.bartsch@cern.ch>, Goethe University Frankfurt
 
-#include "MetadataHelper.h"
-
-#include "PWGLF/DataModel/LFNucleiTables.h"
 #include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/Utils/pidTOFGeneric.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TRandom3.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
 
-#include <limits>
-#include <map>
+#include <cmath>
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -285,6 +282,7 @@ struct TrHeAnalysis {
     Configurable<float> cfgMaxDCAXY{"cfgMaxDCAXY", 10000.f, "Maximum DCA to PV in Z"};
     Configurable<float> cfgMinDCAZ{"cfgMinDCAZ", 0.f, "Minimum DCA to PV in XY"};
     Configurable<float> cfgMaxDCAZ{"cfgMaxDCAZ", 10000.f, "Maximum DCA to PV in Z"};
+    Configurable<int> cfgTrackSign{"cfgTrackSign", 0, "1: positive only, -1: negative only, 0: all tracks"};
   } trackCuts;
 
   Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams",
@@ -459,6 +457,8 @@ struct TrHeAnalysis {
           if (!track.has_mcParticle())
             continue;
         }
+        if (track.sign() * trackCuts.cfgTrackSign < 0)
+          continue;
         float rigidity = getRigidity(track);
         histos.fill(HIST("PID/histdEdx"), track.sign() * rigidity,
                     track.tpcSignal());
@@ -584,13 +584,13 @@ struct TrHeAnalysis {
             continue;
           histCuts.at(species)->Fill(12., pt);
 
-          if (track.dcaXY() < trackCuts.cfgMinDCAXY ||
-              track.dcaXY() > trackCuts.cfgMaxDCAXY)
+          if (std::abs(track.dcaXY()) < trackCuts.cfgMinDCAXY ||
+              std::abs(track.dcaXY()) > trackCuts.cfgMaxDCAXY)
             continue;
           histCuts.at(species)->Fill(13., pt);
 
-          if (track.dcaZ() < trackCuts.cfgMinDCAZ ||
-              track.dcaZ() > trackCuts.cfgMaxDCAZ)
+          if (std::abs(track.dcaZ()) < trackCuts.cfgMinDCAZ ||
+              std::abs(track.dcaZ()) > trackCuts.cfgMaxDCAZ)
             continue;
           histCuts.at(species)->Fill(14., pt);
 

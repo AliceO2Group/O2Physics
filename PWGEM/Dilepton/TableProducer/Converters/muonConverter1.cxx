@@ -16,9 +16,9 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -31,6 +31,7 @@ struct muonConverter1 {
 
   void process(aod::EMPrimaryMuons_000 const& muons)
   {
+    muon_001.reserve(muons.size());
     for (const auto& muon : muons) {
       muon_001(
         muon.collisionId(),

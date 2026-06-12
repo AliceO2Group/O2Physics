@@ -62,14 +62,20 @@ struct HfTaskSigmac {
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandGenMax{"yCandGenMax", -1, "Maximum generated Sc rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
-  Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
-  Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of sof-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
+  Configurable<bool> enableTHnSc{"enableTHnSc", false, "enable the usage of THn for Σc0,++"};
+  Configurable<bool> enableTHnLc{"enableTHnLc", false, "enable the usage of THn for Λc+"};
+  Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of soft-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
+  Configurable<bool> addMassDiffAbsLambdaCToSigmacSparse{"addMassDiffAbsLambdaCToSigmacSparse", false, "enable the filling of |M(pkpi, piKp) - M(LambdaC)| in the Σc0,++ THnSparse"};
   Configurable<float> deltaMassSigmacRecoMax{"deltaMassSigmacRecoMax", 1000, "Maximum allowed value for Sigmac deltaMass. Conceived to reduce the output size (i.e. reject background above a certain threshold)"};
+  Configurable<float> ptMinSc{"ptMinSc", -1.f, "Minimum accepted value for SigmaC-hadron pt (GeV/c)"};
 
   bool isMc{};
+  bool storeTrackProp{};
   static constexpr std::size_t NDaughters{2u};
 
   using RecoLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
+  using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
+  using TracksWMcWithExtra = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra>;
 
   /// THn for candidate Λc+ and Σc0,++ cut variation
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {16, 0, 16}, ""};
@@ -84,6 +90,10 @@ struct HfTaskSigmac {
   ConfigurableAxis thnConfigAxisBdtScoreLcBkg{"thnConfigAxisBdtScoreLcBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreLcNonPrompt{"thnConfigAxisBdtScoreLcNonPrompt", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisSoftPiAbsDca{"thnConfigAxisSoftPiAbsDca", {14, 0., 0.07}, ""};
+  ConfigurableAxis thnConfigAxisMassDiffAbsLambdaC{"thnConfigAxisMassDiffAbsLambdaC", {12, 0, 0.06}, ""};
+  ConfigurableAxis thnConfigAxisAbsEtaTrackMin{"thnConfigAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
+  ConfigurableAxis thnConfigAxisNumItsClsMin{"thnConfigAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
+  ConfigurableAxis thnConfigAxisNumTpcClsMin{"thnConfigAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
 
   /// analysis histograms
   HistogramRegistry registry{
@@ -133,27 +143,40 @@ struct HfTaskSigmac {
   void init(InitContext&)
   {
 
-    /// To be considered in the future, let's keep the possibility to run in MC also with "data-like" mode (just for TH1 objects)
-    // std::array<int, 4> processes {doprocessDataWoMl, doprocessDataWithMl, doprocessMcWoMl, doprocessMcWithMl};
-    // if( std::accumulate(processes.begin(), processes.end(), 0) != 1 ) {
-    //   LOG(fatal) << "One and only one process function must be enabled. Fix it!";
-    // }
-
-    // avoid 2 enabled process functions on data
-    if (doprocessDataWoMl && doprocessDataWithMl) {
-      LOG(fatal) << "processDataWoMl and processDataWithMl both enabled. Fix it!";
+    // avoid more than one enabled process functions on data
+    std::array<int, 3> processesData = {doprocessDataWoMl, doprocessDataWithMl, doprocessDataWithMlWithTrackInfo};
+    if (std::accumulate(processesData.begin(), processesData.end(), 0) > 1) {
+      LOG(fatal) << "one and only one process function in data can be enabled. Fix it!";
     }
-    // avoid 2 enabled process functions on MC
-    if (doprocessMcWoMl && doprocessMcWithMl) {
-      LOG(fatal) << "processMcWoMl and processMcWithMl both enabled. Fix it!";
+    // avoid more than one enabled process functions on MC
+    std::array<int, 3> processesMc = {doprocessMcWoMl, doprocessMcWithMl, doprocessMcWithMlWithTrackInfo};
+    if (std::accumulate(processesMc.begin(), processesMc.end(), 0) > 1) {
+      LOG(fatal) << "one and only one process function in MC can be enabled. Fix it!";
     }
     // avoid that in data no ML is used while in MC yes, and viceversa
-    if ((doprocessDataWithMl && doprocessMcWoMl) || (doprocessDataWoMl && doprocessMcWithMl)) {
+    if (((doprocessDataWithMl || doprocessDataWithMlWithTrackInfo) && doprocessMcWoMl) || (doprocessDataWoMl && (doprocessMcWithMl || doprocessMcWithMlWithTrackInfo))) {
       LOG(fatal) << "process functions with and w/o ML enabled not consistently between data and MC. Fix it! processDataWoMl: " << doprocessDataWoMl << "processDataWithMl: " << doprocessDataWithMl << "processMcWoMl: " << doprocessMcWoMl << "processMcWithMl: " << doprocessMcWithMl;
     }
 
+    // avoid that in data track info get stored while in MC not, and viceversa
+    if ((doprocessDataWithMlWithTrackInfo && doprocessMcWithMl) || (doprocessDataWithMl && doprocessMcWithMlWithTrackInfo)) {
+      LOG(fatal) << "process functions with and w/o storage of track information enabled not consistently between data and MC. Fix it! processDataWithMlWithTrackInfo: " << doprocessDataWithMlWithTrackInfo << "processDataWithMl: " << doprocessDataWithMl << "processMcWithMlWithTrackInfo: " << doprocessMcWithMlWithTrackInfo << "processMcWithMl: " << doprocessMcWithMl;
+    }
+
     /// establish if the analysis is done on Data or MC
-    isMc = doprocessMcWoMl || doprocessMcWithMl;
+    isMc = doprocessMcWoMl || doprocessMcWithMl || doprocessMcWithMlWithTrackInfo;
+
+    /// establish if the output THnSparse should include track information
+    storeTrackProp = doprocessDataWithMlWithTrackInfo || doprocessMcWithMlWithTrackInfo;
+
+    LOG(info) << "### doprocessDataWoMl: " << doprocessDataWoMl;
+    LOG(info) << "### doprocessDataWithMl: " << doprocessDataWithMl;
+    LOG(info) << "### doprocessDataWithMlWithTrackInfo: " << doprocessDataWithMlWithTrackInfo;
+    LOG(info) << "### doprocessMcWoMl: " << doprocessMcWoMl;
+    LOG(info) << "### doprocessMcWithMl: " << doprocessMcWithMl;
+    LOG(info) << "### doprocessMcWithMlWithTrackInfo: " << doprocessMcWithMlWithTrackInfo;
+    LOG(info) << "+++ isMc: " << isMc;
+    LOG(info) << "+++ storeTrackProp: " << storeTrackProp;
 
     const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
@@ -176,6 +199,10 @@ struct HfTaskSigmac {
     const AxisSpec thnAxisGenSigmaCSpecies = {o2::aod::hf_cand_sigmac::Species::NSpecies, -0.5f, +o2::aod::hf_cand_sigmac::Species::NSpecies - 0.5f, "bin 1: #Sigma_{c}(2455), bin 2: #Sigma_{c}(2520)"};
     const AxisSpec thnAxisSigmaCParticleAntiparticle = {o2::aod::hf_cand_sigmac::Conjugated::NConjugated, -0.5f, +o2::aod::hf_cand_sigmac::Conjugated::NConjugated - 0.5f, "bin 1: particle, bin 2: antiparticle"};
     const AxisSpec axisDeltaMassSigmaC{configAxisDeltaMassSigmaC, "#it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassDiffAbsLambdaC{thnConfigAxisMassDiffAbsLambdaC, "|#it{M}(pK#pi or piK#pi) - #it{M}(#Lambda_{c})| (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisAbsEtaTrackMin{thnConfigAxisAbsEtaTrackMin, "min |#it{#eta_{track}}|"};
+    const AxisSpec thnAxisNumItsClsMin{thnConfigAxisNumItsClsMin, "min #it{N}_{cls ITS}"};
+    const AxisSpec thnAxisNumTpcClsMin{thnConfigAxisNumTpcClsMin, "min #it{N}_{cls TPC}"};
     registry.add("Data/hDeltaMassSc0", "#Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {axisDeltaMassSigmaC, {36, 0., 36.}}});
     registry.add("Data/hDeltaMassScPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {axisDeltaMassSigmaC, {36, 0., 36.}}});
     registry.add("Data/hDeltaMassSc0PlusPlus", "#Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2D, {axisDeltaMassSigmaC, {36, 0., 36.}}});
@@ -286,15 +313,23 @@ struct HfTaskSigmac {
     }
 
     /// THn for candidate Λc+ and Σc0,++ cut variation
-    if (enableTHn) {
+    if (enableTHnSc || enableTHnLc) {
+
+      /// force the setting of a minimum pt value for SigmaC in case we want to store the track info, to reduce the output size
+      if (storeTrackProp && ptMinSc < 0.f) {
+        LOG(fatal) << "Storage of track properties enabled, but no constraints on minimum pt(Sc) are defined. Please specify the minimum pt for Sc candidates to be stored in the output THnSparse";
+      }
+
       std::vector<AxisSpec> axesLambdaCWithMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel};
       std::vector<AxisSpec> axesSigmaCWithMl = {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC};
       std::vector<AxisSpec> axesLambdaCWoMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel};
       std::vector<AxisSpec> axesSigmaCWoMl = {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC};
       if (isMc) {
+        /// MC analysis
         registry.add("MC/generated/hnLambdaCGen", "THn for Lambdac gen", HistType::kTHnSparseF, {thnAxisGenPtLambdaC, thnAxisGenPtLambdaCBMother, thnAxisOriginMc, thnAxisChannel});
         registry.add("MC/generated/hnSigmaCGen", "THn for Sigmac gen", HistType::kTHnSparseF, {thnAxisGenPtSigmaC, thnAxisGenPtSigmaCBMother, thnAxisOriginMc, thnAxisChannel, thnAxisGenPtLambdaC, thnAxisChargeSigmaC, thnAxisGenSigmaCSpecies, thnAxisSigmaCParticleAntiparticle});
-        if (doprocessMcWithMl) {
+        if (doprocessMcWithMl || doprocessMcWithMlWithTrackInfo) {
+          /// MC analysis with ML info
           axesLambdaCWithMl.push_back(thnAxisGenPtLambdaCBMother);
           axesSigmaCWithMl.push_back(thnAxisGenPtSigmaCBMother);
           axesSigmaCWithMl.push_back(thnAxisGenSigmaCSpecies);
@@ -303,9 +338,27 @@ struct HfTaskSigmac {
             axesSigmaCWithMl.push_back(thnAxisSoftPiAbsDcaXY);
             axesSigmaCWithMl.push_back(thnAxisSoftPiAbsDcaZ);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          if (addMassDiffAbsLambdaCToSigmacSparse) {
+            axesSigmaCWithMl.push_back(thnAxisMassDiffAbsLambdaC);
+          }
+          if (storeTrackProp) {
+            axesLambdaCWithMl.push_back(thnAxisAbsEtaTrackMin);
+            axesSigmaCWithMl.push_back(thnAxisAbsEtaTrackMin);
+            axesLambdaCWithMl.push_back(thnAxisNumItsClsMin);
+            axesSigmaCWithMl.push_back(thnAxisNumItsClsMin);
+            axesLambdaCWithMl.push_back(thnAxisNumTpcClsMin);
+            axesSigmaCWithMl.push_back(thnAxisNumTpcClsMin);
+          }
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         } else {
+          /// MC analysis w/o ML info
           axesLambdaCWoMl.push_back(thnAxisGenPtLambdaCBMother);
           axesSigmaCWoMl.push_back(thnAxisGenPtSigmaCBMother);
           axesSigmaCWoMl.push_back(thnAxisGenSigmaCSpecies);
@@ -314,37 +367,100 @@ struct HfTaskSigmac {
             axesSigmaCWoMl.push_back(thnAxisSoftPiAbsDcaXY);
             axesSigmaCWoMl.push_back(thnAxisSoftPiAbsDcaZ);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWoMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWoMl);
+          if (addMassDiffAbsLambdaCToSigmacSparse) {
+            axesSigmaCWoMl.push_back(thnAxisMassDiffAbsLambdaC);
+          }
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         }
       } else {
-        if (doprocessDataWithMl) {
+        /// data analysis
+        if (doprocessDataWithMl || doprocessDataWithMlWithTrackInfo) {
+          /// data analysis with ML info
           if (addSoftPiDcaToSigmacSparse) {
             axesSigmaCWithMl.push_back(thnAxisSoftPiAbsDcaXY);
             axesSigmaCWithMl.push_back(thnAxisSoftPiAbsDcaZ);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          if (addMassDiffAbsLambdaCToSigmacSparse) {
+            axesSigmaCWithMl.push_back(thnAxisMassDiffAbsLambdaC);
+          }
+          if (storeTrackProp) {
+            axesLambdaCWithMl.push_back(thnAxisAbsEtaTrackMin);
+            axesSigmaCWithMl.push_back(thnAxisAbsEtaTrackMin);
+            axesLambdaCWithMl.push_back(thnAxisNumItsClsMin);
+            axesSigmaCWithMl.push_back(thnAxisNumItsClsMin);
+            axesLambdaCWithMl.push_back(thnAxisNumTpcClsMin);
+            axesSigmaCWithMl.push_back(thnAxisNumTpcClsMin);
+          }
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         } else {
+          /// data analysis w/o ML info
           if (addSoftPiDcaToSigmacSparse) {
             axesSigmaCWoMl.push_back(thnAxisSoftPiAbsDcaXY);
             axesSigmaCWoMl.push_back(thnAxisSoftPiAbsDcaZ);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWoMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWoMl);
+          if (addMassDiffAbsLambdaCToSigmacSparse) {
+            axesSigmaCWoMl.push_back(thnAxisMassDiffAbsLambdaC);
+          }
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         }
       }
     }
 
   }; /// end init
 
+  /// @brief Function to retrieve information about track properties
+  /// @param prongTracks is the vector of daughter tracks
+  /// @param etaMin is the minimum eta
+  /// @param nItsClsMin is the minumum number of clusters in ITS
+  /// @param nTpcClsMin is the minumum number of clusters in TPC
+  template <typename TRK>
+  void getTrackingInfo(std::vector<TRK> const& prongTracks, float& etaMin, int& nItsClsMin, int& nTpcClsMin)
+  {
+    etaMin = 10.f;
+    nItsClsMin = 10;
+    nTpcClsMin = 1000;
+
+    for (const auto& track : prongTracks) {
+      if (std::abs(track.eta()) < etaMin) {
+        etaMin = std::abs(track.eta());
+      }
+      if (track.itsNCls() < nItsClsMin) {
+        nItsClsMin = track.itsNCls();
+      }
+      if (track.tpcNClsCrossedRows() < nTpcClsMin) {
+        nTpcClsMin = track.tpcNClsCrossedRows();
+      }
+    }
+  }
+
   /// @brief function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  template <bool UseMl, typename CandsLc>
+  template <bool UseMl, typename CandsLc, typename TRK>
   void fillHistosData(aod::HfCandSc const& candidatesSc,
                       CandsLc const& candidatesLc,
-                      aod::Tracks const&)
+                      TRK const&)
   {
 
     /// loop over the candidate Σc0,++
@@ -364,17 +480,23 @@ struct HfTaskSigmac {
       // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
       const int8_t isCandPKPiPiKP = hf_sigmac_utils::isDecayToPKPiToPiKP(candidateLc, candSc);
-      double massSc(-1.), massLc(-1.), deltaMass(-1.);
+      double massSc(-1.), massLc(-1.), deltaMass(-1.), massDiffAbsFromPdgLc(-1.);
       double ptSc(candSc.pt()), ptLc(candidateLc.pt());
       double etaSc(candSc.eta()), etaLc(candidateLc.eta());
       double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-      double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+      const auto& trackSoftPi = candSc.template prong1_as<TRK>();
+      double ptSoftPi(trackSoftPi.pt()), etaSoftPi(trackSoftPi.eta()), phiSoftPi(trackSoftPi.phi());
       double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
       double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
+      /// exclude already candidate Σc0,++ outside the accepted pt range
+      if (ptMinSc > 0.f && ptSc < ptMinSc) {
+        continue;
+      }
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) {
         massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
         massLc = HfHelper::invMassLcToPKPi(candidateLc);
+        massDiffAbsFromPdgLc = std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPKPi(candidateLc));
         deltaMass = massSc - massLc;
 
         if (deltaMass > deltaMassSigmacRecoMax) {
@@ -431,7 +553,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("Data/hDeltaMassLcFromSc0PlusPlus"), deltaMass, ptLc); // Λc+ ← Σc0,++
         }
         /// THn for candidate Σc0,++ cut variation
-        if (enableTHn) {
+        if (enableTHnSc) {
           if (!isMc) {
             /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
@@ -444,26 +566,104 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
               }
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                  }
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
+                  }
+                }
               }
             } else {
               /// fill w/o BDT information
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: none
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
+                }
               }
             }
-          }
-        }
+          } /// end if (!isMc)
+        } /// end enableTHn
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
       if (TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) {
         massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
         massLc = HfHelper::invMassLcToPiKP(candidateLc);
+        massDiffAbsFromPdgLc = std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPiKP(candidateLc));
         deltaMass = massSc - massLc;
 
         if (deltaMass > deltaMassSigmacRecoMax) {
@@ -520,7 +720,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("Data/hDeltaMassLcFromSc0PlusPlus"), deltaMass, ptLc); // Λc+ ← Σc0,++
         }
         /// THn for candidate Σc0,++ cut variation
-        if (enableTHn) {
+        if (enableTHnSc) {
           if (!isMc) {
             /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
@@ -533,26 +733,103 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                  }
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
+                  }
+                }
               }
             } else {
               /// fill w/o BDT information
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), softPiAbsDcaXY, softPiAbsDcaZ);
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: none
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
+                }
               }
             }
-          }
-        }
+          } /// end if (!isMc)
+        } /// end enableTHn
       } /// end candidate Λc+ → π+K-p (and charge conjugate)
     } /// end loop over the candidate Σc0,++
 
     /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
-    if (enableTHn) {
+    if (enableTHnLc) {
       /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
       if (!isMc) {
         /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
@@ -571,7 +848,28 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
+              if (storeTrackProp) {
+                /// track info stored
+                /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+                registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              } else {
+                /// track info note stored
+                /// optional axes enabled: none
+                registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
+              }
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
@@ -587,7 +885,28 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
+              if (storeTrackProp) {
+                /// track info stored
+                /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+                registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              } else {
+                /// track info note stored
+                /// optional axes enabled: none
+                registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
+              }
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
@@ -620,13 +939,13 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  template <bool UseMl, typename CandsLc>
+  template <bool UseMl, typename CandsLc, typename TRK>
   void fillHistosMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
                     soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
                     aod::McParticles const& mcParticles, // this establishes the type of particle obtained with the .mcParticle() getter
                     CandsLc const& candidatesLc,
-                    aod::TracksWMc const&)
+                    TRK const&)
   {
 
     /// loop over Sc generated particles
@@ -672,6 +991,10 @@ struct HfTaskSigmac {
       /// Get information about origin (prompt, non-prompt)
       /// Get information about decay Λc+ channel (direct, resonant)
       double ptGenSc(particle.pt()), etaGenSc(particle.eta()), phiGenSc(particle.phi());
+      /// exclude already candidate Σc0,++ outside the accepted pt range
+      if (ptMinSc > 0.f && ptGenSc < ptMinSc) {
+        continue;
+      }
       double ptGenScBMother(-1.);
       auto arrayDaughtersIds = particle.daughtersIds();
       if (arrayDaughtersIds.size() != NDaughters) {
@@ -856,40 +1179,45 @@ struct HfTaskSigmac {
         int indexMcScRec = -1;
         if (isTrueSc0Reco) {
           // Σc0(2455)
-          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaC0, true);
+          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<TRK>().mcParticle(), o2::constants::physics::Pdg::kSigmaC0, true);
           sigmacSpecies = o2::aod::hf_cand_sigmac::Sc2455;
         } else if (isTrueScStar0Reco) {
           // Σc0(2520)
-          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaCStar0, true);
+          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<TRK>().mcParticle(), o2::constants::physics::Pdg::kSigmaCStar0, true);
           sigmacSpecies = o2::aod::hf_cand_sigmac::Sc2520;
         }
         auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = std::array{candidateLc.template prong0_as<aod::TracksWMc>(), candidateLc.template prong1_as<aod::TracksWMc>(), candidateLc.template prong2_as<aod::TracksWMc>()};
+        auto arrayDaughtersLc = std::array{candidateLc.template prong0_as<TRK>(), candidateLc.template prong1_as<TRK>(), candidateLc.template prong2_as<TRK>()};
         int8_t sign = 0;
         int const indexMcLcRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
-        auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
+        auto particleSoftPi = candSc.prong1_as<TRK>().mcParticle();
 
         // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
         // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-        double massSc(-1.), massLc(-1.), deltaMass(-1.);
+        double massSc(-1.), massLc(-1.), deltaMass(-1.), massDiffAbsFromPdgLc(-1.);
         double ptSc(candSc.pt()), ptLc(candidateLc.pt());
         double etaSc(candSc.eta()), etaLc(candidateLc.eta());
         double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-        double ptSoftPi(candSc.prong1_as<aod::TracksWMc>().pt()), etaSoftPi(candSc.prong1_as<aod::TracksWMc>().eta()), phiSoftPi(candSc.prong1_as<aod::TracksWMc>().phi());
+        double ptSoftPi(candSc.prong1_as<TRK>().pt()), etaSoftPi(candSc.prong1_as<TRK>().eta()), phiSoftPi(candSc.prong1_as<TRK>().phi());
         double ptGenSc(particleSc.pt()), ptGenLc(particleLc.pt()), ptGenSoftPi(particleSoftPi.pt());
         double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int const origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
         channel = remapResoChannelLc(channel);
+        /// exclude already candidate Σc0,++ outside the accepted pt range
+        if (ptMinSc > 0.f && ptSc < ptMinSc) {
+          continue;
+        }
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<TRK>().mcParticle().pdgCode()) == kProton) {
           massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
+          massDiffAbsFromPdgLc = std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPKPi(candidateLc));
           deltaMass = massSc - massLc;
 
           if (deltaMass > deltaMassSigmacRecoMax) {
@@ -948,7 +1276,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -960,26 +1288,105 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
               }
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWMcWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                const auto& trackSoftPi = candSc.template prong1_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                  }
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                  }
+                }
               }
             } else {
               /// fill w/o BDT information
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: none
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                }
               }
             }
           }
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<TRK>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPiKP(candidateLc);
+          massDiffAbsFromPdgLc = std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPiKP(candidateLc));
           deltaMass = massSc - massLc;
 
           if (deltaMass > deltaMassSigmacRecoMax) {
@@ -1038,7 +1445,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1050,17 +1457,95 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWMcWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                const auto& trackSoftPi = candSc.template prong1_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                  }
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                  }
+                }
               }
             } else {
               /// fill w/o BDT information
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: none
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                }
               }
             }
           }
@@ -1073,29 +1558,29 @@ struct HfTaskSigmac {
         int indexMcScRec = -1;
         if (isTrueScPlusPlusReco) {
           // Σc0(2455)
-          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaCPlusPlus, true);
+          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<TRK>().mcParticle(), o2::constants::physics::Pdg::kSigmaCPlusPlus, true);
           sigmacSpecies = o2::aod::hf_cand_sigmac::Sc2455;
         } else if (isTrueScStarPlusPlusReco) {
           // Σc0(2520)
-          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaCStarPlusPlus, true);
+          indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<TRK>().mcParticle(), o2::constants::physics::Pdg::kSigmaCStarPlusPlus, true);
           sigmacSpecies = o2::aod::hf_cand_sigmac::Sc2520;
         }
         auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = std::array{candidateLc.template prong0_as<aod::TracksWMc>(), candidateLc.template prong1_as<aod::TracksWMc>(), candidateLc.template prong2_as<aod::TracksWMc>()};
+        auto arrayDaughtersLc = std::array{candidateLc.template prong0_as<TRK>(), candidateLc.template prong1_as<TRK>(), candidateLc.template prong2_as<TRK>()};
         int8_t sign = 0;
         int const indexMcLcRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
-        auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
+        auto particleSoftPi = candSc.prong1_as<TRK>().mcParticle();
 
         // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
         // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-        double massSc(-1.), massLc(-1.), deltaMass(-1.);
+        double massSc(-1.), massLc(-1.), deltaMass(-1.), massDiffAbsFromPdgLc(-1.);
         double ptSc(candSc.pt()), ptLc(candidateLc.pt());
         double etaSc(candSc.eta()), etaLc(candidateLc.eta());
         double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-        double ptSoftPi(candSc.prong1_as<aod::TracksWMc>().pt()), etaSoftPi(candSc.prong1_as<aod::TracksWMc>().eta()), phiSoftPi(candSc.prong1_as<aod::TracksWMc>().phi());
+        double ptSoftPi(candSc.prong1_as<TRK>().pt()), etaSoftPi(candSc.prong1_as<TRK>().eta()), phiSoftPi(candSc.prong1_as<TRK>().phi());
         double ptGenSc(particleSc.pt()), ptGenLc(particleLc.pt()), ptGenSoftPi(particleSoftPi.pt());
         double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
@@ -1104,9 +1589,10 @@ struct HfTaskSigmac {
         channel = remapResoChannelLc(channel);
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<TRK>().mcParticle().pdgCode()) == kProton) {
           massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
+          massDiffAbsFromPdgLc = std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPKPi(candidateLc));
           deltaMass = massSc - massLc;
 
           if (deltaMass > deltaMassSigmacRecoMax) {
@@ -1165,7 +1651,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1177,26 +1663,105 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
               }
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWMcWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                const auto& trackSoftPi = candSc.template prong1_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                  }
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                  }
+                }
               }
             } else {
               /// fill w/o BDT information
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: none
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                }
               }
             }
           }
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<TRK>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPiKP(candidateLc);
+          massDiffAbsFromPdgLc = std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPiKP(candidateLc));
           deltaMass = massSc - massLc;
 
           if (deltaMass > deltaMassSigmacRecoMax) {
@@ -1253,7 +1818,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1265,17 +1830,95 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
+              /// track properties
+              float absEtaTrackMin{-1.f};
+              int numItsClsMin{-1}, numTpcClsMin{-1};
+              if constexpr (std::is_same_v<TRK, TracksWMcWithExtra>) {
+                if (!storeTrackProp) {
+                  /// this should never happen
+                  LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+                }
+                const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+                const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+                const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+                const auto& trackSoftPi = candSc.template prong1_as<TRK>();
+                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+              }
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, trackEtaMin, trackItsClstMin, trackTpcClstMin
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                  }
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: massDiffLc
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                  }
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  if (storeTrackProp) {
+                    /// track info stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                  } else {
+                    /// track info not stored
+                    /// optional axes enabled: none
+                    registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                  }
+                }
               }
             } else {
               /// fill w/o BDT information
               if (addSoftPiDcaToSigmacSparse) {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                /// dcaXY,Z of soft pion track stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi, massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: dcaXY_softPi, dcaZ_softPi
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+                }
               } else {
-                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                /// dcaXY,Z of soft pion track not stored
+                if (addMassDiffAbsLambdaCToSigmacSparse) {
+                  /// difference |candidate mass - Lc mass| stored
+                  /// optional axes enabled: massDiffLc
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, massDiffAbsFromPdgLc);
+                } else {
+                  /// difference |candidate mass - Lc mass| not stored
+                  /// optional axes enabled: none
+                  registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+                }
               }
             }
           }
@@ -1286,7 +1929,7 @@ struct HfTaskSigmac {
     } /// end loop on reconstructed Σc0,++
 
     /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
-    if (enableTHn) {
+    if (enableTHnLc) {
       /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
       for (const auto& candidateLc : candidatesLc) {
         if (std::abs(candidateLc.flagMcMatchRec()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
@@ -1300,8 +1943,8 @@ struct HfTaskSigmac {
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
         channel = remapResoChannelLc(channel);
         int pdgAbs = -1;
-        if (candidateLc.template prong0_as<aod::TracksWMc>().has_mcParticle()) {
-          pdgAbs = std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode());
+        if (candidateLc.template prong0_as<TRK>().has_mcParticle()) {
+          pdgAbs = std::abs(candidateLc.template prong0_as<TRK>().mcParticle().pdgCode());
         }
         if (candidateLc.isSelLcToPKPi() >= 1 && pdgAbs == kProton) {
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
@@ -1313,7 +1956,28 @@ struct HfTaskSigmac {
               outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
               outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
             }
-            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel, candidateLc.ptBhadMotherPart());
+            /// track properties
+            float absEtaTrackMin{-1.f};
+            int numItsClsMin{-1}, numTpcClsMin{-1};
+            if constexpr (std::is_same_v<TRK, TracksWMcWithExtra>) {
+              if (!storeTrackProp) {
+                /// this should never happen
+                LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+              }
+              const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+              const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+              const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+              getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+            }
+            if (storeTrackProp) {
+              /// track info stored
+              /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel, candidateLc.ptBhadMotherPart(), absEtaTrackMin, numItsClsMin, numTpcClsMin);
+            } else {
+              /// track info not stored
+              /// optional axes enabled: none
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel, candidateLc.ptBhadMotherPart());
+            }
           } else {
             /// fill w/o BDT information
             registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, candidateLc.ptBhadMotherPart());
@@ -1329,7 +1993,28 @@ struct HfTaskSigmac {
               outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
               outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
             }
-            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel, candidateLc.ptBhadMotherPart());
+            /// track properties
+            float absEtaTrackMin{-1.f};
+            int numItsClsMin{-1}, numTpcClsMin{-1};
+            if constexpr (std::is_same_v<TRK, TracksWMcWithExtra>) {
+              if (!storeTrackProp) {
+                /// this should never happen
+                LOG(fatal) << "getting track info but storeTrackProp=" << storeTrackProp << ". Not possible! Aborting ...";
+              }
+              const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
+              const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
+              const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
+              getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+            }
+            if (storeTrackProp) {
+              /// track info stored
+              /// optional axes enabled: trackEtaMin, trackItsClstMin, trackTpcClstMin
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel, candidateLc.ptBhadMotherPart(), absEtaTrackMin, numItsClsMin, numTpcClsMin);
+            } else {
+              /// track info not stored
+              /// optional axes enabled: none
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel, candidateLc.ptBhadMotherPart());
+            }
           } else {
             /// fill w/o BDT information
             registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, candidateLc.ptBhadMotherPart());
@@ -1359,6 +2044,15 @@ struct HfTaskSigmac {
   }
   PROCESS_SWITCH(HfTaskSigmac, processDataWithMl, "Process data with ML information on Lc", false);
 
+  /// @brief process function to fill the histograms needed in analysis with ML information (data), with specific settings to store single-track properties
+  void processDataWithMlWithTrackInfo(aod::HfCandSc const& candidatesSc,
+                                      soa::Join<RecoLc, aod::HfMlLcToPKPi> const& candidatesLc,
+                                      TracksWithExtra const& tracks)
+  {
+    fillHistosData<true>(candidatesSc, candidatesLc, tracks);
+  }
+  PROCESS_SWITCH(HfTaskSigmac, processDataWithMlWithTrackInfo, "Process data with ML information on Lc, including also information about track properties", false);
+
   /// @brief process function to fill the histograms needed in analysis w/o ML information (MC)
   void processMcWoMl(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
                      soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
@@ -1382,6 +2076,18 @@ struct HfTaskSigmac {
     fillHistosMc<true>(candidatesSc, mcParticlesSc, mcParticlesLc, mcParticles, candidatesLc, tracksWithMc);
   }
   PROCESS_SWITCH(HfTaskSigmac, processMcWithMl, "Process MC with ML information on Lc", false);
+
+  /// @brief process function to fill the histograms needed in analysis with ML information (MC), with specific settings to store single-track properties
+  void processMcWithMlWithTrackInfo(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
+                                    soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
+                                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
+                                    aod::McParticles const& mcParticles, // this establishes the type of particle obtained with the .mcParticle() getter
+                                    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec, aod::HfMlLcToPKPi> const& candidatesLc,
+                                    TracksWMcWithExtra const& tracksWithMc)
+  {
+    fillHistosMc<true>(candidatesSc, mcParticlesSc, mcParticlesLc, mcParticles, candidatesLc, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskSigmac, processMcWithMlWithTrackInfo, "Process MC with ML information on Lc, including also information about track properties", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -450,7 +450,7 @@ struct HfCandidateCreatorCharmResoReduced {
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         }
       } else if constexpr (DType == DMesonType::Dstar) {
-        float invMassD0;
+        float invMassD0{};
         if (candD.sign() > 0) {
           invMassD = candD.invMassDstar();
           invMassD0 = candD.invMassD0();

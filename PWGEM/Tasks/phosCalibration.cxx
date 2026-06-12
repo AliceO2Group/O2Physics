@@ -9,35 +9,42 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsPHOS/BadChannelsMap.h>
+#include <DataFormatsPHOS/CalibParams.h>
+#include <DataFormatsPHOS/Cell.h>
+#include <DataFormatsPHOS/Cluster.h>
+#include <DataFormatsPHOS/MCLabel.h>
+#include <DataFormatsPHOS/TriggerRecord.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <PHOSBase/Geometry.h>
+#include <PHOSReconstruction/Clusterer.h>
+#include <SimulationDataFormat/MCTruthContainer.h>
+
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TVector3.h>
+
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
-#include <map>
 #include <memory>
 #include <vector>
-#include "TFile.h"
-#include "TGrid.h"
-#include "TLorentzVector.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "DataFormatsPHOS/Cell.h"
-#include "DataFormatsPHOS/Cluster.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
-#include "DataFormatsPHOS/BadChannelsMap.h"
-#include "DataFormatsPHOS/CalibParams.h"
-#include "PHOSBase/Geometry.h"
-#include "PHOSReconstruction/Clusterer.h"
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "CommonDataFormat/InteractionRecord.h"
 
 using namespace o2;
 using namespace o2::aod::evsel;

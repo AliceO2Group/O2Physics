@@ -19,7 +19,6 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h" // IWYU pragma: keep (FIXME: not used, remove asap)
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
@@ -66,6 +65,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total s
 
 // event time
 DECLARE_SOA_COLUMN(EventTime, eventTime, float); //! event time (FT0, TOF) for TOF PID (stored once per event)
+// event time
+DECLARE_SOA_COLUMN(EventTimeErr, eventTimeErr, float); //! event time (FT0, TOF) for TOF PID (stored once per event)
 } // namespace stracollision
 
 //______________________________________________________
@@ -82,6 +83,11 @@ DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality
                             cent::CentFT0C, cent::CentFV0A,
                             cent::CentFT0CVariant1, cent::CentMFT,
                             cent::CentNGlobal);
+DECLARE_SOA_TABLE_VERSIONED(StraCents_002, "AOD", "STRACENTS", 2, //! centrality percentiles in Run 3
+                            cent::CentFT0M, cent::CentFT0A,
+                            cent::CentFT0C, cent::CentFV0A,
+                            cent::CentFT0CVariant1, cent::CentFT0CVariant2,
+                            cent::CentMFT, cent::CentNGlobal, cent::CentNTPV);
 
 DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
                   cent::CentRun2V0M, cent::CentRun2V0A,
@@ -274,6 +280,61 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_005, "AOD", "STRAEVSELS", 5,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_006, "AOD", "STRAEVSELS", 6,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,       // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors, // number of PV contribs total
+                            mult::MultNTracksGlobal,       // global track multiplicities
+                            collision::Flags,              // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            evsel::Alias,                  // trigger aliases (e.g. kTVXinTRD for v2)
+                            evsel::Rct);                   // Bitmask of RCT flags
+
+DECLARE_SOA_TABLE(StraEvSelExtras_000, "AOD", "STRAEVSELEXTRAS", //! debug information
+                  udzdc::TimeZNA,                                // UPC info: re-assigned ZN-A time, in case of SG event, from the most active bc
+                  udzdc::TimeZNC,                                // UPC info: re-assigned ZN-C time, in case of SG event, from the most active bc
+                  udcollision::TimeFDDA,                         // Average A-side time (ns)
+                  udcollision::TimeFDDC,                         // Average C-side time (ns)
+                  udcollision::TimeFV0A,                         // Average A-side time (ns)
+                  udcollision::TimeFT0A,                         // Average A-side time (ns)
+                  udcollision::TimeFT0C,                         // Average C-side time (ns)
+                  udcollision::TriggerMaskFT0);                  // 8 trigger bits: OrA, OrC, Semi-central, Central, Vertex, IsActiveA, IsActiveC, IsFlangeEvent
+
+DECLARE_SOA_TABLE_VERSIONED(StraEvSelExtras_001, "AOD", "STRAEVSELEXTRAS", 1, //! debug information
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,     // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            mult::MultNTracksITSTPC,         // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,      // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,       // ITSTPC track multiplicities, all, no eta cut
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            evsel::SumAmpFT0CInTimeRange,    // add occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
+                            udcollision::TimeFDDA,           // Average A-side time (ns)
+                            udcollision::TimeFDDC,           // Average C-side time (ns)
+                            udcollision::TimeFV0A,           // Average A-side time (ns)
+                            udcollision::TimeFT0A,           // Average A-side time (ns)
+                            udcollision::TimeFT0C,           // Average C-side time (ns)
+                            udcollision::TriggerMaskFT0,     // 8 trigger bits: OrA, OrC, Semi-central, Central, Vertex, IsActiveA, IsActiveC, IsFlangeEvent
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::TimeZNA,                  // UPC info: re-assigned ZN-A time, in case of SG event, from the most active bc
+                            udzdc::TimeZNC,                  // UPC info: re-assigned ZN-C time, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+                            // Dynamic columns for manipulating information
+                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
+                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
+                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
+                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
+                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
+                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
+                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
+                            stracollision::IsUPC<udcollision::GapSide>);
+
 DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
                   evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
                   mult::MultFT0A, mult::MultFT0C,             // FIT detectors
@@ -311,15 +372,19 @@ DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-in
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
                             bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
-DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
+DECLARE_SOA_TABLE(StraEvTimes_000, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
                   stracollision::EventTime);
+DECLARE_SOA_TABLE_VERSIONED(StraEvTimes_001, "AOD", "STRAEVTIMES", 1, //! event time (FT0, TOF)
+                            stracollision::EventTime, stracollision::EventTimeErr);
 
 using StraRawCents = StraRawCents_004;
-using StraCents = StraCents_001;
-using StraEvSels = StraEvSels_005;
+using StraCents = StraCents_002;
+using StraEvSels = StraEvSels_006;
+using StraEvSelExtras = StraEvSelExtras_001;
 using StraStamps = StraStamps_001;
+using StraEvTimes = StraEvTimes_001;
 using StraCollision = StraCollisions::iterator;
-using StraCent = StraCents_001::iterator;
+using StraCent = StraCents::iterator;
 
 namespace stramccollision
 {

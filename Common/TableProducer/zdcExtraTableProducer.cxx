@@ -33,6 +33,7 @@
 #include <TH2.h>
 #include <TRandom3.h>
 
+#include <cmath>
 #include <cstdint>
 
 using namespace o2;
@@ -58,33 +59,53 @@ struct ZdcExtraTableProducer {
   // Event selections
   Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
   Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx"};
-  Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", true, "Event selection: do occupancy selection"};
+  Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", false, "Event selection: do occupancy selection"};
   Configurable<float> cfgEvSelsMaxOccupancy{"cfgEvSelsMaxOccupancy", 10000, "Event selection: set max occupancy"};
-  Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", true, "Event selection: no same bunch pileup cut"};
-  Configurable<bool> cfgEvSelsIsGoodZvtxFT0vsPV{"cfgEvSelsIsGoodZvtxFT0vsPV", true, "Event selection: is good ZVTX FT0 vs PV"};
-  Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", true, "Event selection: no collision in time range standard"};
-  Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", true, "Event selection: is vertex ITSTPC"};
-  Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
+  Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", false, "Event selection: no same bunch pileup cut"};
+  Configurable<bool> cfgEvSelsIsGoodZvtxFT0vsPV{"cfgEvSelsIsGoodZvtxFT0vsPV", false, "Event selection: is good ZVTX FT0 vs PV"};
+  Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
+  Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", false, "Event selection: is vertex ITSTPC"};
+  Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", false, "Event selection: is good ITS layers all"};
   // Calibration settings
   Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
 
-  HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // Output settings
+  Configurable<bool> cfgSaveQaHistos{"cfgSaveQaHistos", false, "Flag to save QA histograms"};
 
   enum SelectionCriteria {
-    evSel_zvtx,
-    evSel_sel8,
-    evSel_occupancy,
-    evSel_kNoSameBunchPileup,
-    evSel_kIsGoodZvtxFT0vsPV,
-    evSel_kNoCollInTimeRangeStandard,
-    evSel_kIsVertexITSTPC,
-    evSel_kIsGoodITSLayersAll,
-    evSel_allEvents,
-    nEventSelections
+    ZVtxCut,
+    Sel8,
+    OccupancyCut,
+    NoSameBunchPileup,
+    IsGoodZvtxFT0vsPV,
+    NoCollInTimeRangeStandard,
+    IsVertexITSTPC,
+    IsGoodITSLayersAll,
+    AllEvents,
+    NEventSelections
   };
+
+  HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
+
+    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{NEventSelections, 0, NEventSelections}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(AllEvents + 1, "AllEvents");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(ZVtxCut + 1, "ZVtxCut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(Sel8 + 1, "Sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(OccupancyCut + 1, "OccupancyCut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(NoSameBunchPileup + 1, "NoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsGoodZvtxFT0vsPV + 1, "IsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(NoCollInTimeRangeStandard + 1, "NoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsVertexITSTPC + 1, "IsVertexITSTPC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsGoodITSLayersAll + 1, "IsGoodITSLayersAll");
+
+    // Skip histogram registration if QA flag is false
+    if (!cfgSaveQaHistos) {
+      return;
+    }
+
     registry.add("ZNApmc", "ZNApmc; ZNA PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNCpmc", "ZNCpmc; ZNC PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNApm1", "ZNApm1; ZNA PM1; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
@@ -100,17 +121,6 @@ struct ZdcExtraTableProducer {
 
     registry.add("ZNACentroid", "ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
     registry.add("ZNCCentroid", "ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
-
-    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
   }
 
   template <typename TCollision>
@@ -119,55 +129,55 @@ struct ZdcExtraTableProducer {
     uint8_t selectionBits = 0;
     bool selected;
 
-    registry.fill(HIST("hEventCount"), evSel_allEvents);
+    registry.fill(HIST("hEventCount"), AllEvents);
 
     selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_zvtx);
-      registry.fill(HIST("hEventCount"), evSel_zvtx);
+      SETBIT(selectionBits, ZVtxCut);
+      registry.fill(HIST("hEventCount"), ZVtxCut);
     }
 
     selected = collision.sel8();
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_sel8);
-      registry.fill(HIST("hEventCount"), evSel_sel8);
+      SETBIT(selectionBits, Sel8);
+      registry.fill(HIST("hEventCount"), Sel8);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
     selected = occupancy <= cfgEvSelsMaxOccupancy;
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_occupancy);
-      registry.fill(HIST("hEventCount"), evSel_occupancy);
+      SETBIT(selectionBits, OccupancyCut);
+      registry.fill(HIST("hEventCount"), OccupancyCut);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kNoSameBunchPileup);
-      registry.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
+      SETBIT(selectionBits, NoSameBunchPileup);
+      registry.fill(HIST("hEventCount"), NoSameBunchPileup);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodZvtxFT0vsPV);
-      registry.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
+      SETBIT(selectionBits, IsGoodZvtxFT0vsPV);
+      registry.fill(HIST("hEventCount"), IsGoodZvtxFT0vsPV);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kNoCollInTimeRangeStandard);
-      registry.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
+      SETBIT(selectionBits, NoCollInTimeRangeStandard);
+      registry.fill(HIST("hEventCount"), NoCollInTimeRangeStandard);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kIsVertexITSTPC);
-      registry.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
+      SETBIT(selectionBits, IsVertexITSTPC);
+      registry.fill(HIST("hEventCount"), IsVertexITSTPC);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodITSLayersAll);
-      registry.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+      SETBIT(selectionBits, IsGoodITSLayersAll);
+      registry.fill(HIST("hEventCount"), IsGoodITSLayersAll);
     }
 
     return selectionBits;
@@ -175,8 +185,9 @@ struct ZdcExtraTableProducer {
 
   void process(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
   {
+
     // collision-based event selection
-    int nTowers = 4; // number of ZDC towers
+    constexpr int NTowers = 4; // number of ZDC towers
 
     for (auto const& collision : cols) {
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
@@ -184,6 +195,31 @@ struct ZdcExtraTableProducer {
         const auto& zdc = foundBC.zdc();
 
         uint8_t evSelection = eventSelected(collision);
+
+        if (cfgEvSelSel8 && !TESTBIT(evSelection, Sel8)) {
+          continue;
+        }
+        if (!TESTBIT(evSelection, ZVtxCut)) {
+          continue;
+        }
+        if (cfgEvSelsDoOccupancySel && !TESTBIT(evSelection, OccupancyCut)) {
+          continue;
+        }
+        if (cfgEvSelsNoSameBunchPileupCut && !TESTBIT(evSelection, NoSameBunchPileup)) {
+          continue;
+        }
+        if (cfgEvSelsIsGoodZvtxFT0vsPV && !TESTBIT(evSelection, IsGoodZvtxFT0vsPV)) {
+          continue;
+        }
+        if (cfgEvSelsNoCollInTimeRangeStandard && !TESTBIT(evSelection, NoCollInTimeRangeStandard)) {
+          continue;
+        }
+        if (cfgEvSelsIsVertexITSTPC && !TESTBIT(evSelection, IsVertexITSTPC)) {
+          continue;
+        }
+        if (cfgEvSelsIsGoodITSLayersAll && !TESTBIT(evSelection, IsGoodITSLayersAll)) {
+          continue;
+        }
 
         float centrality = collision.centFT0C();
 
@@ -196,6 +232,7 @@ struct ZdcExtraTableProducer {
         //
         double tdcZNC = zdc.timeZNC();
         double tdcZNA = zdc.timeZNA();
+
         // OR we can select a narrow window in both ZN TDCs using the configurable parameters
         if (tdcCut) { // a narrow TDC window is set
           if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
@@ -219,29 +256,34 @@ struct ZdcExtraTableProducer {
         double pmqZNA[4] = {};
         //
         if (isZNChit) {
-          for (int it = 0; it < nTowers; it++) {
+          for (int it = 0; it < NTowers; it++) {
             pmqZNC[it] = (zdc.energySectorZNC())[it];
             sumZNC += pmqZNC[it];
           }
-          registry.get<TH1>(HIST("ZNCpmc"))->Fill(pmcZNC);
-          registry.get<TH1>(HIST("ZNCpm1"))->Fill(pmqZNC[0]);
-          registry.get<TH1>(HIST("ZNCpm2"))->Fill(pmqZNC[1]);
-          registry.get<TH1>(HIST("ZNCpm3"))->Fill(pmqZNC[2]);
-          registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
-          registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
+
+          if (cfgSaveQaHistos) {
+            registry.get<TH1>(HIST("ZNCpmc"))->Fill(pmcZNC);
+            registry.get<TH1>(HIST("ZNCpm1"))->Fill(pmqZNC[0]);
+            registry.get<TH1>(HIST("ZNCpm2"))->Fill(pmqZNC[1]);
+            registry.get<TH1>(HIST("ZNCpm3"))->Fill(pmqZNC[2]);
+            registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
+            registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
+          }
         }
         if (isZNAhit) {
-          for (int it = 0; it < nTowers; it++) {
+          for (int it = 0; it < NTowers; it++) {
             pmqZNA[it] = (zdc.energySectorZNA())[it];
             sumZNA += pmqZNA[it];
           }
           //
-          registry.get<TH1>(HIST("ZNApmc"))->Fill(pmcZNA);
-          registry.get<TH1>(HIST("ZNApm1"))->Fill(pmqZNA[0]);
-          registry.get<TH1>(HIST("ZNApm2"))->Fill(pmqZNA[1]);
-          registry.get<TH1>(HIST("ZNApm3"))->Fill(pmqZNA[2]);
-          registry.get<TH1>(HIST("ZNApm4"))->Fill(pmqZNA[3]);
-          registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
+          if (cfgSaveQaHistos) {
+            registry.get<TH1>(HIST("ZNApmc"))->Fill(pmcZNA);
+            registry.get<TH1>(HIST("ZNApm1"))->Fill(pmqZNA[0]);
+            registry.get<TH1>(HIST("ZNApm2"))->Fill(pmqZNA[1]);
+            registry.get<TH1>(HIST("ZNApm3"))->Fill(pmqZNA[2]);
+            registry.get<TH1>(HIST("ZNApm4"))->Fill(pmqZNA[3]);
+            registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
+          }
         }
 
         // Q-vectors (centroid) calculation
@@ -257,8 +299,7 @@ struct ZdcExtraTableProducer {
         float numXZNA = 0., numYZNA = 0., denZNA = 0.;
 
         // Calculate weighted sums of the x and y coordinates
-        constexpr int kNTowers = 4; // number of ZDC towers
-        for (int i = 0; i < kNTowers; i++) {
+        for (int i = 0; i < NTowers; i++) {
           if (pmqZNC[i] > 0.) {
             float wZNC = std::pow(pmqZNC[i], kAlpha);
             numXZNC -= X[i] * wZNC; // numerator x (minus sign due to opposite orientation of ZNC)
@@ -307,8 +348,14 @@ struct ZdcExtraTableProducer {
           centroidZNA[0] = 999.;
           centroidZNA[1] = 999.;
         }
-        registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
-        registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
+        if (cfgSaveQaHistos) {
+          if (isZNChit) {
+            registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
+          }
+          if (isZNAhit) {
+            registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
+          }
+        }
 
         auto vz = collision.posZ();
         auto vx = collision.posX();

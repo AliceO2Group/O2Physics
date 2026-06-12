@@ -8,31 +8,45 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/detail/TypeTruncation.h"
-#include <Framework/Output.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
+#include <TH3.h>
+#include <TParticlePDG.h>
 
+#include <Rtypes.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <experimental/type_traits> // required for is_detected
+#include <type_traits>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -41,17 +55,6 @@ using namespace o2::math_utils::detail;
 
 #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
-namespace o2::aod
-{
-namespace cfmultiplicity
-{
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Centrality/multiplicity value
-} // namespace cfmultiplicity
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity); //! Transient multiplicity table
-
-using CFMultiplicity = CFMultiplicities::iterator;
-} // namespace o2::aod
 
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -90,6 +93,9 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(nsigmaCutITSProton, float, 3, "proton nsigma ITS")
   O2_DEFINE_CONFIGURABLE(dcaxymax, float, 999.f, "maximum dcaxy of tracks")
   O2_DEFINE_CONFIGURABLE(dcazmax, float, 999.f, "maximum dcaz of tracks")
+  O2_DEFINE_CONFIGURABLE(enablePtDepDCAxy, bool, false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT")
+  O2_DEFINE_CONFIGURABLE(dcaXyConst, float, 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)")
+  O2_DEFINE_CONFIGURABLE(dcaXySlope, float, 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)")
   O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "minimum number of ITS clusters for tracks")
   O2_DEFINE_CONFIGURABLE(tpcncrossedrows, int, 80, "minimum number of TPC crossed rows for tracks")
   O2_DEFINE_CONFIGURABLE(tpcnclusters, int, 50, "minimum number of TPC clusters found")
@@ -103,7 +109,7 @@ struct FilterCF {
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
@@ -265,6 +271,14 @@ struct FilterCF {
     return 0;
   }
 
+  inline float getMaxDCAxy(float pt)
+  {
+    if (!enablePtDepDCAxy) {
+      return dcaxymax; // Use constant cut if pT-dependent cut is disabled
+    }
+    return dcaXyConst + dcaXySlope / pt; // a + b/pT
+  }
+
   template <class T>
   using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
 
@@ -303,7 +317,8 @@ struct FilterCF {
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
     for (auto& track : tracks) {
-      if ((std::abs(track.dcaXY()) > dcaxymax) || (std::abs(track.dcaZ()) > dcazmax)) {
+      float maxDCAxy = getMaxDCAxy(track.pt());
+      if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
         continue;
       }
 
@@ -336,10 +351,17 @@ struct FilterCF {
 
   void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
+    if (!keepCollision(collision)) {
+      return;
+    }
     registrytrackQA.fill(HIST("zvtx"), collision.posZ());
     for (const auto& track : tracks) {
       if (!track.isGlobalTrack()) {
-        return; // trackQA for global tracks only
+        continue; // trackQA for global tracks only
+      }
+      float maxDCAxy = getMaxDCAxy(track.pt());
+      if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
+        continue;
       }
       registrytrackQA.fill(HIST("eta"), track.eta());
       registrytrackQA.fill(HIST("pT"), track.pt());
@@ -551,7 +573,7 @@ struct MultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   void init(InitContext&)
   {
@@ -569,6 +591,9 @@ struct MultiplicitySelector {
       enabledFunctions++;
     }
     if (doprocessFT0CVariant1) {
+      enabledFunctions++;
+    }
+    if (doprocessFT0CVariant2) {
       enabledFunctions++;
     }
     if (doprocessFT0A) {
@@ -615,6 +640,14 @@ struct MultiplicitySelector {
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
+
+  void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0CVariant2());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant2, "Select FT0CVariant2 centrality as multiplicity", false);
 
   void processFT0A(aod::CentFT0As const& centralities)
   {

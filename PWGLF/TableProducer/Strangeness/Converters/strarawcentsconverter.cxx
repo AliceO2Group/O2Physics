@@ -8,10 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -23,12 +26,14 @@ struct strarawcentsconverter {
 
   void process000to001(aod::StraRawCents_000 const& straRawCents_000)
   {
+    straRawCents_001.reserve(straRawCents_000.size());
     for (auto& values : straRawCents_000) {
       straRawCents_001(values.multFT0A(), values.multFT0C(), values.multFV0A(), values.multNTracksPVeta1(), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
   }
   void process002to003(aod::StraRawCents_002 const& straRawCents_002)
   {
+    straRawCents_003.reserve(straRawCents_002.size());
     for (auto& values : straRawCents_002) {
       straRawCents_003(values.multFT0A(),
                        values.multFT0C(),
