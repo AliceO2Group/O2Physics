@@ -197,7 +197,6 @@ struct prefilterDielectron {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-
   }
 
   template <typename TCollision>
