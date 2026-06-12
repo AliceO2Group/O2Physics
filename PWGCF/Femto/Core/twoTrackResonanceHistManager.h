@@ -161,11 +161,11 @@ class TwoTrackResonanceHistManager
         negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
       } else {
         mPdgCode = -1 * mPdgCode;
-        posDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
-        negDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
       }
     } else {
-      LOG(fatal) << "PDG code for V0 has to be either Lambda or K0short";
+      LOG(fatal) << "PDG code for Resonance has to be either Phi, Rho or K*0";
     }
 
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);

@@ -199,6 +199,9 @@ constexpr char PrefixTrackTrackTrackMe[] = "TrackTrackTrack/ME/";
 constexpr char PrefixTrackTrackLambdaSe[] = "TrackTrackLambda/SE/";
 constexpr char PrefixTrackTrackLambdaMe[] = "TrackTrackLambda/ME/";
 
+constexpr char PrefixTrackTrackCascadeSe[] = "TrackTrackCascade/SE/";
+constexpr char PrefixTrackTrackCascadeMe[] = "TrackTrackCascade/ME/";
+
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";

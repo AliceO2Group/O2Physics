@@ -126,6 +126,7 @@ class Decayer
       particle.setPDG(pdgCodesDaughters[i]);
       particle.setVxVyVz(mVx, mVy, mVz);
       particle.setPxPyPzE(dau.Px(), dau.Py(), dau.Pz(), dau.E());
+      particle.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
       decayProducts.push_back(particle);
     }
 

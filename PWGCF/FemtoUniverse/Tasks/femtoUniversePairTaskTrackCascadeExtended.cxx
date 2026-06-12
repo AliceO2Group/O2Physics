@@ -19,12 +19,10 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
@@ -65,6 +63,8 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
+// /* CONFIGURABLE NUMBER LIMIT REACHED? Add configurables to structs if anything else needed -> configurables, partitions, histograms .... */ ///
+
 struct femtoUniversePairTaskTrackCascadeExtended {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
@@ -75,9 +75,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
-  Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
-
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
+    Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
+  } cascInvMassCuts;
   /// applying narrow cut
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
@@ -91,7 +92,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
     Configurable<int> confTrkPDGCodePartTwo{"confTrkPDGCodePartTwo", 2212, "Particle 1 (Track) - PDG code"};
     Configurable<int> confChargePart1{"confChargePart1", 1, "sign of track particle 1"};
-    Configurable<int> confChargePart2{"confChargePart2", -1, "sign of track particle 2"};
+    Configurable<int> confChargePart2{"confChargePart2", 1, "sign of track particle 2"};
     Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "higher limit for pt of track particle"};
     Configurable<float> confLPtPart1{"confLPtPart1", 0.5f, "lower limit for pt of track particle"};
     Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "combined TPC and TOF Sigma for track particle for momentum > Confmom"};
@@ -101,8 +102,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<int> confCascPDGCode{"confCascPDGCode", 3312, "Particle 2 (Cascade) - PDG code"};
   Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade and cascade-cascade combination"};
   Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
-  Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of cascade"};
-  Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of cascade"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of cascade"};
+    Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of cascade"};
+  } cascPtLimits; // Structs here only to make space for additional configurables/histograms/partitions
   Configurable<float> confmom{"confmom", 0.75, "momentum threshold for particle identification using TOF"};
   Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < Confmom"};
   Configurable<float> confNsigmaTPCParticleChild{"confNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < Confmom"};
@@ -153,7 +156,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   /// Partition for the first track particle using extended table
   Partition<FemtoFullParticles> partsTrackOneFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - cascade and track - track correlations
-
+  /// Partition for MC QA of track using partone configs
+  Partition<FemtoRecoFullParticles> partsTrackOneFullMc = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
   /// Partition for the first track particle using bitmask (without extended table)
   Partition<aod::FDParticles> partsTrackOneBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
   Partition<aod::FDParticles> partsTrackOneMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
@@ -165,15 +169,18 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Partition<aod::FDParticles> partsTrackTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
 
   /// Partition for cascades using extended table
-  Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascPtLimits.confHPtPart2) && (aod::femtouniverseparticle::pt > cascPtLimits.confLPtPart2);
 
   /// Partition for cascades using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
-  Partition<aod::FDParticles> partsTwoMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
+  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascPtLimits.confHPtPart2) && (aod::femtouniverseparticle::pt > cascPtLimits.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < cascPtLimits.confHPtPart2) && (aod::femtouniverseparticle::pt > cascPtLimits.confLPtPart2);
 
   /// Histogramming for track particle
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 4> trackHistoPartOneNeg;
+
+  /// Histogramming for MC track QA
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack> trackQAHistos;
 
   /// Histogramming for cascade
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> posChildHistos;
@@ -213,7 +220,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   bool invMCascade(float invMassXi, float invMassOmega, int cascType)
   {
-    return (((cascType == 1 || cascType == 3) && (invMassXi > confCascInvMassLowLimit && invMassXi < confCascInvMassUpLimit)) || ((cascType == 0 || cascType == 2) && (invMassOmega > confCascInvMassLowLimit && invMassOmega < confCascInvMassUpLimit)));
+    return (((cascType == 1 || cascType == 3) && (invMassXi > cascInvMassCuts.confCascInvMassLowLimit && invMassXi < cascInvMassCuts.confCascInvMassUpLimit)) || ((cascType == 0 || cascType == 2) && (invMassOmega > cascInvMassCuts.confCascInvMassLowLimit && invMassOmega < cascInvMassCuts.confCascInvMassUpLimit)));
   }
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
@@ -365,6 +372,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     trackHistoPartOnePos.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, confIsMC, trackparticleconfigs.confTrkPDGCodePartOne);
     trackHistoPartOneNeg.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, confIsMC, trackparticleconfigs.confTrkPDGCodePartOne);
+    trackQAHistos.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, true, trackparticleconfigs.confTrkPDGCodePartOne.value, true);
     posChildHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true);
     negChildHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true);
     bachHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true, "hBachelor");
@@ -400,6 +408,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         pEffHistp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
         pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
         LOGF(info, "Loaded efficiency histograms for Cascade-Cascade.");
+      } else if (doprocessSameEventTrack || doprocessSameEventTrackBitmask || doprocessMixedEventTrack || doprocessMixedEventTrackBitmask) {
+        pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        pEffHistp2 = (trackparticleconfigs.confChargePart2 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
       }
     } else if (!ccdbEffLoader.confCCDBEfficiency.value.empty()) {
       ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -415,6 +426,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         pEffHistp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
         pEffHistp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/Cascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/AntiCascade", ccdbEffLoader.confCCDBNoLaterThanCasc.value));
         LOGF(info, "Loaded efficiency histograms for Cascade-Cascade from CCDB.");
+      } else if (doprocessSameEventTrack || doprocessSameEventTrackBitmask || doprocessMixedEventTrack || doprocessMixedEventTrackBitmask) {
+        pEffHistp1 = (trackparticleconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); /// works only for protons
+        pEffHistp2 = (trackparticleconfigs.confChargePart2 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrPlus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(ccdbEffLoader.confCCDBEfficiency.value + "/PrMinus", ccdbEffLoader.confCCDBNoLaterThanTrack.value)); /// works only for protons
       }
     }
   }
@@ -1216,33 +1230,32 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       int pdgCode = static_cast<int>(part.pidCut());
       if ((confCascType1 == 0 && pdgCode != kOmegaMinus) || (confCascType1 == 2 && pdgCode != kOmegaPlusBar) || (confCascType1 == 1 && pdgCode != kXiMinus) || (confCascType1 == 3 && pdgCode != kXiPlusBar))
         continue;
-
       cascQAHistos.fillQA<false, false>(part);
+    }
 
-      for (const auto& part : groupPartsOne) {
-        int pdgCode = static_cast<int>(part.pidCut());
-        if (pdgCode != trackparticleconfigs.confTrkPDGCodePartOne)
-          continue;
-        const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
-        if (!pdgTrackParticle) {
-          continue;
-        }
-
-        if (pdgTrackParticle->Charge() > 0) {
-          trackHistoPartOnePos.fillQA<false, false>(part);
-        } else if (pdgTrackParticle->Charge() < 0) {
-          trackHistoPartOneNeg.fillQA<false, false>(part);
-        }
+    for (const auto& part : groupPartsOne) {
+      int pdgCode = static_cast<int>(part.pidCut());
+      if (pdgCode != trackparticleconfigs.confTrkPDGCodePartOne)
+        continue;
+      const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgTrackParticle) {
+        continue;
       }
 
-      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (static_cast<int>(p1.pidCut()) != trackparticleconfigs.confTrkPDGCodePartOne)
-          continue;
-        int pdgCodeCasc = static_cast<int>(p2.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
-          continue;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      if (pdgTrackParticle->Charge() > 0) {
+        trackHistoPartOnePos.fillQA<false, false>(part);
+      } else if (pdgTrackParticle->Charge() < 0) {
+        trackHistoPartOneNeg.fillQA<false, false>(part);
       }
+    }
+
+    for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (static_cast<int>(p1.pidCut()) != trackparticleconfigs.confTrkPDGCodePartOne)
+        continue;
+      int pdgCodeCasc = static_cast<int>(p2.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
+        continue;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCgen, "Enable processing same event MC truth for track - cascade", false);
@@ -1262,24 +1275,23 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
 
       cascQAHistos.fillQA<false, false>(part);
+    }
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+      int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
+        return;
+      int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
+      if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
+        return;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+    };
 
-      auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
-        int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
-          return;
-        int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
-        if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
-          return;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
-      };
-
-      if (confCascType1 == confCascType2) {
-        for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
-          pairProcessFunc(p1, p2);
-      } else {
-        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
-          pairProcessFunc(p1, p2);
-      }
+    if (confCascType1 == confCascType2) {
+      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
+        pairProcessFunc(p1, p2);
+    } else {
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
+        pairProcessFunc(p1, p2);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventCascMCgen, "Enable processing same event MC truth for cascade - cascade", false);
@@ -1488,6 +1500,20 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     doMCReco(parts, mcparts);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMCRecoBitmask, "Process MC reco data for cascades using Bitmask for PID", false);
+
+  /// Function used to get QA for MC tracks, mainly for DCAxy Primary, daughter and material
+  void processMCTrackQA(const FilteredFDCollision& col, const FemtoRecoFullParticles&, const o2::aod::FdMCParticles&)
+  {
+    auto groupPartsOneMC = partsTrackOneFullMc->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    for (const auto& part : groupPartsOneMC) {
+      const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+      const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+      if (!isNSigmaCombined(part.p(), tpcNSigmas[trackparticleconfigs.confTrackChoicePartOne], tofNSigmas[trackparticleconfigs.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
+        continue;
+      trackQAHistos.fillQA<true, true>(part);
+    }
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMCTrackQA, "Process MC track QA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

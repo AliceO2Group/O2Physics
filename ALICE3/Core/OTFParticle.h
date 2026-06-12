@@ -21,12 +21,17 @@
 #include <CommonConstants/MathConstants.h>
 
 #include <array>
+#include <bitset>
 #include <cmath>
 #include <cstdint>
 #include <span>
 
 namespace o2::upgrade
 {
+
+enum class DecayerBits { ProducedByDecayer = 0,
+                         IsPrimary,
+                         IsAlive };
 
 class OTFParticle
 {
@@ -47,20 +52,29 @@ class OTFParticle
     mVy = particle.vy();
     mVz = particle.vz();
     mVt = particle.vt();
+    mFlag = particle.flags();
+    mStatusCode = particle.statusCode();
     mIsFromMcParticles = true;
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
+    if constexpr (requires { particle.decayerBits(); }) {
+      mBits = particle.decayerBits();
+    } else {
+      // If we are here, we created particle in the standard workflow -- without secondaries
+      // Then we should set all particles as physical primaries accordingly
+      setBitOn(DecayerBits::IsPrimary);
+    }
   }
 
   // Setters
-  void setIsAlive(const bool isAlive) { mIsAlive = isAlive; }
   void setIsPrimary(const bool isPrimary) { mIsPrimary = isPrimary; }
   void setCollisionId(const int collisionId) { mCollisionId = collisionId; }
   void setPDG(const int pdg) { mPdgCode = pdg; }
   void setIndicesMother(const int start, const int stop) { mIndicesMother = {start, stop}; }
   void setIndicesDaughter(const int start, const int stop) { mIndicesDaughter = {start, stop}; }
   void setProductionTime(const float vt) { mVt = vt; }
+  void setFlags(uint8_t flag) { mFlag = flag; }
   void setVxVyVz(const float vx, const float vy, const float vz)
   {
     mVx = vx;
@@ -87,16 +101,8 @@ class OTFParticle
     static constexpr float Weight = 1.f;
     return Weight;
   }
-  uint8_t flags() const
-  {
-    static constexpr uint8_t Flags = 1;
-    return Flags; // todo
-  }
-  int statusCode() const
-  {
-    static constexpr int StatusCode = 1;
-    return StatusCode; // todo
-  }
+  uint8_t flags() const { return mFlag; }
+  int statusCode() const { return mStatusCode; }
   float vx() const { return mVx; }
   float vy() const { return mVy; }
   float vz() const { return mVz; }
@@ -112,7 +118,8 @@ class OTFParticle
   float phi() const { return o2::constants::math::PI + std::atan2(-1.0f * py(), -1.0f * px()); }
   float eta() const
   {
-    // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
+    // Conditionally defined to avoid FPEs
+    // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1959
     static constexpr float Tolerance = 1e-7f;
     if ((p() - mPz) < Tolerance) {
       return (mPz < 0.0f) ? -100.0f : 100.0f;
@@ -122,7 +129,8 @@ class OTFParticle
   }
   float y() const
   {
-    // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1922
+    // Conditionally defined to avoid FPEs
+    // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1980
     static constexpr float Tolerance = 1e-7f;
     if ((e() - mPz) < Tolerance) {
       return (mPz < 0.0f) ? -100.0f : 100.0f;
@@ -151,6 +159,16 @@ class OTFParticle
     return (mGlobalIndex != -1);
   }
 
+  // Bits
+  bool checkBit(DecayerBits bit) const { return mBits.test(static_cast<size_t>(bit)); }
+  void setBit(DecayerBits bit, bool value = true) { mBits.set(static_cast<size_t>(bit), value); }
+  void setBitOn(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), true); }
+  void setBitOff(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), false); }
+
+  std::bitset<8> getBits() const { return mBits; }
+  uint8_t getBitsValue() const { return static_cast<uint8_t>(mBits.to_ulong()); }
+  void setBits(std::bitset<8> bits) { mBits = bits; }
+
  private:
   int mPdgCode{}, mGlobalIndex{-1};
   int mCollisionId{};
@@ -158,6 +176,10 @@ class OTFParticle
   float mPx{}, mPy{}, mPz{}, mE{};
   bool mIsAlive{}, mIsFromMcParticles{false};
   bool mIsPrimary{};
+
+  int mStatusCode{};
+  uint8_t mFlag{};
+  std::bitset<8> mBits{};
   std::array<int, 2> mIndicesMother{-1, -1}, mIndicesDaughter{-1, -1};
 };
 

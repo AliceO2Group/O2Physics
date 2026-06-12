@@ -36,6 +36,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -822,6 +823,8 @@ class VarManager : public TObject
     kWV2SP,
     kWV2EP,
     kU2Q2,
+    kU2Q2POS,
+    kU2Q2NEG,
     kU3Q3,
     kQ42XA,
     kQ42YA,
@@ -906,6 +909,8 @@ class VarManager : public TObject
     kPsi2C,
     kRandomPsi2,
     kCos2DeltaPhi,
+    kCos2DeltaPhiPOS,
+    kCos2DeltaPhiNEG,
     kCos2DeltaPhiMu1, // cos(phi - phi1) for muon1
     kCos2DeltaPhiMu2, ////cos(phi - phi2) for muon2
     kCos3DeltaPhi,
@@ -1018,9 +1023,12 @@ class VarManager : public TObject
     // FIT detector variables
     kAmplitudeFT0A,
     kAmplitudeFT0C,
+    kAmplitudeFT0M,
     kTimeFT0A,
     kTimeFT0C,
     kTriggerMaskFT0,
+    kFT0OrA,
+    kFT0OrC,
     kAmplitudeFDDA,
     kAmplitudeFDDC,
     kTimeFDDA,
@@ -1126,6 +1134,7 @@ class VarManager : public TObject
   enum EfficiencyType {
     kNone = 0,
     kPairPtCentFT0cCosThetaStarFT0c,
+    kPairPtCentFT0cCosThetaStarRandom,
     // Add more efficiency types as needed
     kNEfficiencyTypes
   };
@@ -1384,6 +1393,8 @@ class VarManager : public TObject
   static void FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <int pairType, uint32_t fillMap, typename T1, typename T2>
+  static void FillPairRotation(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
   static void FillPairCollision(C const& collision, T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2, typename M, typename P>
@@ -1392,6 +1403,8 @@ class VarManager : public TObject
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <typename T>
+  static void FillPairMEAcrossTFs(T const& t1, T const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int candidateType, typename T1, typename T2, typename T3>
@@ -2272,8 +2285,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ1Y0B] = -999;
     values[kQ1X0C] = -999;
     values[kQ1Y0C] = -999;
-    values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
-    values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    // values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    // values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
+    values[kQ2X0A] = event.qvecBAllRe();
+    values[kQ2Y0A] = event.qvecBAllIm();
     values[kQ2X0APOS] = event.qvecBPosRe();
     values[kQ2Y0APOS] = event.qvecBPosIm();
     values[kQ2X0ANEG] = event.qvecBNegRe();
@@ -2300,6 +2315,19 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ4X0C] = -999;
     values[kQ4Y0C] = -999;
 
+    values[kQ2YYAB] = values[kQ2Y0A] * values[kQ2Y0B];
+    values[kQ2XXAB] = values[kQ2X0A] * values[kQ2X0B];
+    values[kQ2XYAB] = values[kQ2X0A] * values[kQ2Y0B];
+    values[kQ2YXAB] = values[kQ2Y0A] * values[kQ2X0B];
+    values[kQ2YYAC] = values[kQ2Y0A] * values[kQ2Y0C];
+    values[kQ2XXAC] = values[kQ2X0A] * values[kQ2X0C];
+    values[kQ2XYAC] = values[kQ2X0A] * values[kQ2Y0C];
+    values[kQ2YXAC] = values[kQ2Y0A] * values[kQ2X0C];
+    values[kQ2YYBC] = values[kQ2Y0B] * values[kQ2Y0C];
+    values[kQ2XXBC] = values[kQ2X0B] * values[kQ2X0C];
+    values[kQ2XYBC] = values[kQ2X0B] * values[kQ2Y0C];
+    values[kQ2YXBC] = values[kQ2Y0B] * values[kQ2X0C];
+
     EventPlaneHelper epHelper;
     float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
     float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
@@ -2314,14 +2342,22 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kPsi2C] = Psi2C;
 
     float R2SP_AB = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
+    float R2SP_APOSB = (values[kQ2X0APOS] * values[kQ2X0B] + values[kQ2Y0APOS] * values[kQ2Y0B]);
+    float R2SP_ANEGB = (values[kQ2X0ANEG] * values[kQ2X0B] + values[kQ2Y0ANEG] * values[kQ2Y0B]);
     float R2SP_AC = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);
+    float R2SP_APOSC = (values[kQ2X0APOS] * values[kQ2X0C] + values[kQ2Y0APOS] * values[kQ2Y0C]);
+    float R2SP_ANEGC = (values[kQ2X0ANEG] * values[kQ2X0C] + values[kQ2Y0ANEG] * values[kQ2Y0C]);
     float R2SP_BC = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
     float R2SP_AB_Im = (values[kQ2Y0A] * values[kQ2X0B] - values[kQ2X0A] * values[kQ2Y0B]);
     float R2SP_AC_Im = (values[kQ2Y0A] * values[kQ2X0C] - values[kQ2X0A] * values[kQ2Y0C]);
     float R2SP_BC_Im = (values[kQ2Y0B] * values[kQ2X0C] - values[kQ2X0B] * values[kQ2Y0C]);
     values[kR2SP_AB] = std::isnan(R2SP_AB) || std::isinf(R2SP_AB) ? 0. : R2SP_AB;
+    values[kR2SP_FT0CTPCPOS] = std::isnan(R2SP_APOSB) || std::isinf(R2SP_APOSB) ? 0. : R2SP_APOSB;
+    values[kR2SP_FT0CTPCNEG] = std::isnan(R2SP_ANEGB) || std::isinf(R2SP_ANEGB) ? 0. : R2SP_ANEGB;
     values[kWR2SP_AB] = std::isnan(R2SP_AB) || std::isinf(R2SP_AB) ? 0. : 1.0;
     values[kR2SP_AC] = std::isnan(R2SP_AC) || std::isinf(R2SP_AC) ? 0. : R2SP_AC;
+    values[kR2SP_FT0ATPCPOS] = std::isnan(R2SP_APOSC) || std::isinf(R2SP_APOSC) ? 0. : R2SP_APOSC;
+    values[kR2SP_FT0ATPCNEG] = std::isnan(R2SP_ANEGC) || std::isinf(R2SP_ANEGC) ? 0. : R2SP_ANEGC;
     values[kWR2SP_AC] = std::isnan(R2SP_AC) || std::isinf(R2SP_AC) ? 0. : 1.0;
     values[kR2SP_BC] = std::isnan(R2SP_BC) || std::isinf(R2SP_BC) ? 0. : R2SP_BC;
     values[kWR2SP_BC] = std::isnan(R2SP_BC) || std::isinf(R2SP_BC) ? 0. : 1.0;
@@ -2402,9 +2438,12 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & ReducedFit) > 0) {
     values[kAmplitudeFT0A] = event.amplitudeFT0A();
     values[kAmplitudeFT0C] = event.amplitudeFT0C();
+    values[kAmplitudeFT0M] = values[kAmplitudeFT0A] + values[kAmplitudeFT0C];
     values[kTimeFT0A] = event.timeFT0A();
     values[kTimeFT0C] = event.timeFT0C();
     values[kTriggerMaskFT0] = event.triggerMaskFT0();
+    values[kFT0OrA] = TESTBIT(event.triggerMaskFT0(), o2::fit::Triggers::bitA);
+    values[kFT0OrC] = TESTBIT(event.triggerMaskFT0(), o2::fit::Triggers::bitC);
     values[kNFiredChannelsFT0A] = event.nFiredChannelsFT0A();
     values[kNFiredChannelsFT0C] = event.nFiredChannelsFT0C();
     values[kAmplitudeFDDA] = event.amplitudeFDDA();
@@ -3780,6 +3819,68 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
+// change_start: rotation pair
+template <int pairType, uint32_t fillMap, typename T1, typename T2>
+void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
+  if constexpr (pairType == kDecayToMuMu) {
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
+  }
+
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = o2::constants::physics::MassPionCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
+
+  if constexpr (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+    // Make the TPC information of the kaon available for pair histograms
+    values[kPin_leg1] = t1.tpcInnerParam();
+    values[kTPCnSigmaKa_leg1] = t1.tpcNSigmaKa();
+  }
+
+  if constexpr (pairType == kElectronMuon) {
+    m2 = o2::constants::physics::MassMuon;
+  }
+
+  double dphi = gRandom->Uniform(0., 2. * TMath::Pi());
+  double rotationphi2 = t2.phi() + dphi;
+
+  if (rotationphi2 > 2. * TMath::Pi())
+    rotationphi2 -= 2. * TMath::Pi();
+
+  values[kCharge] = t1.sign() + t2.sign();
+  values[kCharge1] = t1.sign();
+  values[kCharge2] = t2.sign();
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), rotationphi2, m2);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  // values[kPhi] = v12.Phi();
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
+
+  values[kPt1] = t1.pt();
+  values[kEta1] = t1.eta();
+  values[kPhi1] = t1.phi();
+  values[kPt2] = t2.pt();
+  values[kEta2] = t2.eta();
+  values[kPhi2] = rotationphi2;
+}
+
 template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
 void VarManager::FillPairCollision(const C& collision, T1 const& t1, T2 const& t2, float* values)
 {
@@ -4208,6 +4309,24 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
+}
+
+template <typename T>
+void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1 = o2::constants::physics::MassElectron;
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt, t1.eta, t1.phi, m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt, t2.eta, t2.phi, m1);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kRap] = -v12.Rapidity();
 }
 
 template <int pairType, typename T1, typename T2>
@@ -5751,6 +5870,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton vn could be accessible after dividing this product with the R factor
   values[kU2Q2] = values[kQ2X0A] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0A] * TMath::Sin(2 * v12.Phi());
+  values[kU2Q2POS] = values[kQ2X0APOS] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0APOS] * TMath::Sin(2 * v12.Phi());
+  values[kU2Q2NEG] = values[kQ2X0ANEG] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0ANEG] * TMath::Sin(2 * v12.Phi());
   values[kU3Q3] = values[kQ3X0A] * TMath::Cos(3 * v12.Phi()) + values[kQ3Y0A] * TMath::Sin(3 * v12.Phi());
   values[kR2SP_AB] = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
   values[kR2SP_AC] = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);
@@ -5758,12 +5879,16 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
 
   float Psi2A = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
+  float Psi2APOS = getEventPlane(2, values[kQ2X0APOS], values[kQ2Y0APOS]);
+  float Psi2ANEG = getEventPlane(2, values[kQ2X0ANEG], values[kQ2Y0ANEG]);
   float Psi3A = getEventPlane(3, values[kQ3X0A], values[kQ3Y0A]);
   float Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   float Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
   float Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
   float Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
   values[kCos2DeltaPhi] = TMath::Cos(2 * (v12.Phi() - Psi2A));
+  values[kCos2DeltaPhiPOS] = TMath::Cos(2 * (v12.Phi() - Psi2APOS));
+  values[kCos2DeltaPhiNEG] = TMath::Cos(2 * (v12.Phi() - Psi2ANEG));
   values[kCos3DeltaPhi] = TMath::Cos(3 * (v12.Phi() - Psi3A));
   values[kR2EP_AB] = TMath::Cos(2 * (Psi2A - Psi2B));
   values[kR2EP_AC] = TMath::Cos(2 * (Psi2A - Psi2C));
@@ -6679,9 +6804,12 @@ void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& 
   // Fill FT0 information
   values[kAmplitudeFT0A] = fitInfo.ampFT0A;
   values[kAmplitudeFT0C] = fitInfo.ampFT0C;
+  values[kAmplitudeFT0M] = values[kAmplitudeFT0A] + values[kAmplitudeFT0C];
   values[kTimeFT0A] = fitInfo.timeFT0A;
   values[kTimeFT0C] = fitInfo.timeFT0C;
   values[kTriggerMaskFT0] = static_cast<float>(fitInfo.triggerMaskFT0);
+  values[kFT0OrA] = TESTBIT(fitInfo.triggerMaskFT0, o2::fit::Triggers::bitA);
+  values[kFT0OrC] = TESTBIT(fitInfo.triggerMaskFT0, o2::fit::Triggers::bitC);
   const auto ft0Index = bc.ft0Id();
   if (ft0Index < 0 || ft0Index >= ft0s.size()) {
     values[kNFiredChannelsFT0A] = -1;

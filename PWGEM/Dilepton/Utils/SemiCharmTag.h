@@ -23,8 +23,6 @@
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
-// #include <ReconstructionDataFormats/Track.h>
-// #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 #include <ReconstructionDataFormats/V0.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -38,7 +36,11 @@ namespace o2::aod::pwgem::dilepton::utils
 struct LHPair { // struct to store electron-hadron pair information
   float mass{-999.f};
   float pt{-999.f};
+  float p{-999.f};
+  float deta{-999.f};
+  float dphi{-999.f};
   float dca2legs{-999.f};
+  float chi2PCA{-999.f};
   float cospa{-999.f};
   float cospaXY{-999.f};
   float cospaRZ{-999.f};
@@ -53,6 +55,20 @@ struct LHPair { // struct to store electron-hadron pair information
   float impParCYY{-999.f};
   float impParCZY{-999.f};
   float impParCZZ{-999.f};
+
+  // float ptSVL{-999.f};
+  // float plSVL{-999.f};
+  // float ptSVH{-999.f};
+  // float plSVH{-999.f};
+
+  // float ptFDL{-999.f};
+  // float plFDL{-999.f};
+  // float ptFDH{-999.f};
+  // float plFDH{-999.f};
+
+  // float ptFD{-999.f};
+  // float plFD{-999.f};
+
   bool isOK{false};
 };
 
@@ -95,36 +111,51 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   fitter.getTrack(1).getPxPyPzGlo(pvec1); // track
   std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
+  // pair.ptSVL = RecoDecay::sqrtSumOfSquares(pvec0[0], pvec0[1]);
+  // pair.ptSVH = RecoDecay::sqrtSumOfSquares(pvec1[0], pvec1[1]);
+  // pair.plSVL = pvec0[2];
+  // pair.plSVH = pvec1[2];
+
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
   pair.cospaRZ = RecoDecay::cpaRZ(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
+  pair.chi2PCA = fitter.getChi2AtPCACandidate();
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
   pair.lz = svpos[2] - collision.posZ();
   pair.lxyz = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
 
   auto primaryVertex = getPrimaryVertex(collision);
-  std::array<float, 6> covVtxLK = fitter.calcPCACovMatrixFlat();
-  double phiLH{}, thetaLK{};
-  getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, svpos, phiLH, thetaLK);
-  pair.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLH, thetaLK) + getRotatedCovMatrixXX(covVtxLK, phiLH, thetaLK));
-  pair.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLH, 0.) + getRotatedCovMatrixXX(covVtxLK, phiLH, 0.));
-  pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLK) + getRotatedCovMatrixXX(covVtxLK, 0, thetaLK));
+  std::array<float, 6> covVtxLH = fitter.calcPCACovMatrixFlat();
+  double phiLH{}, thetaLH{};
+  getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, svpos, phiLH, thetaLH);
+  pair.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLH, thetaLH) + getRotatedCovMatrixXX(covVtxLH, phiLH, thetaLH));
+  pair.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLH, 0.) + getRotatedCovMatrixXX(covVtxLH, phiLH, 0.));
+  pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLH) + getRotatedCovMatrixXX(covVtxLH, 0, thetaLH));
 
-  // propagate the 2 prongs to the secondary vertex
-  leptonParCov.propagateTo(vtx[0], fitter.getBz());
-  trackParCov.propagateTo(vtx[0], fitter.getBz());
+  // std::array<float, 3> uvFD = {(svpos[0] - collision.posX()) / pair.lxyz, (svpos[1] - collision.posY()) / pair.lxyz, (svpos[2] - collision.posZ()) / pair.lxyz}; // unit vector of flight direction
+  // pair.plFD = RecoDecay::dotProd(pvecSum, uvFD);
+  // pair.ptFD = RecoDecay::sqrtSumOfSquares(pvecSum[0] - pair.plFD * uvFD[0], pvecSum[1] - pair.plFD * uvFD[1], pvecSum[2] - pair.plFD * uvFD[2]);
 
-  // calculate impact parameter
-  o2::dataformats::DCA dcaLH;
-  auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, trackParCov);
-  trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+  // pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
+  // pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
+  // pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
+  // pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
 
-  pair.impParXY = dcaLH.getY();
-  pair.impParZ = dcaLH.getZ();
-  pair.impParCYY = dcaLH.getSigmaY2();
-  pair.impParCZY = dcaLH.getSigmaYZ();
-  pair.impParCZZ = dcaLH.getSigmaZ2();
+  // // propagate the 2 prongs to the secondary vertex
+  // leptonParCov.propagateTo(vtx[0], fitter.getBz());
+  // trackParCov.propagateTo(vtx[0], fitter.getBz());
+
+  // // calculate impact parameter
+  // o2::dataformats::DCA dcaLH;
+  // auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, trackParCov);
+  // trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+
+  // pair.impParXY = dcaLH.getY();
+  // pair.impParZ = dcaLH.getZ();
+  // pair.impParCYY = dcaLH.getSigmaY2();
+  // pair.impParCZY = dcaLH.getSigmaYZ();
+  // pair.impParCZZ = dcaLH.getSigmaZ2();
 
   // LOGF(info, "fitter.getBz() = %f, dcaLH.getY() = %f, dcaLH.getZ() = %f", fitter.getBz(), dcaLH.getY(), dcaLH.getZ());
 
@@ -139,11 +170,13 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
     return pair;
   }
 
-  ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassPionCharged);
+  ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassKaonCharged);
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
   pair.pt = v12.Pt();
-
+  pair.p = v12.P();
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                           // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI, 1U); // lepton - hadron
   pair.isOK = true;
   return pair;
 }
@@ -193,14 +226,20 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   for (int i = 0; i < 3; i++) {
     svpos[i] = vtx[i];
   }
-  fitter.getTrack(0).getPxPyPzGlo(pvec0); // electron
+  fitter.getTrack(0).getPxPyPzGlo(pvec0); // lepton
   fitter.getTrack(1).getPxPyPzGlo(pvec1); // v0
   std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
+
+  // pair.ptSVL = RecoDecay::sqrtSumOfSquares(pvec0[0], pvec0[1]);
+  // pair.ptSVH = RecoDecay::sqrtSumOfSquares(pvec1[0], pvec1[1]);
+  // pair.plSVL = pvec0[2];
+  // pair.plSVH = pvec1[2];
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
   pair.cospaRZ = RecoDecay::cpaRZ(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
+  pair.chi2PCA = fitter.getChi2AtPCACandidate();
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
   pair.lz = svpos[2] - collision.posZ();
   pair.lxyz = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
@@ -213,20 +252,29 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   pair.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLV0, 0.) + getRotatedCovMatrixXX(covVtxLV0, phiLV0, 0.));
   pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLV0) + getRotatedCovMatrixXX(covVtxLV0, 0, thetaLV0));
 
-  // propagate the 2 prongs to the secondary vertex
-  leptonParCov.propagateTo(vtx[0], fitter.getBz());
-  v0ParCov.propagateTo(vtx[0], fitter.getBz());
+  // std::array<float, 3> uvFD = {(svpos[0] - collision.posX()) / pair.lxyz, (svpos[1] - collision.posY()) / pair.lxyz, (svpos[2] - collision.posZ()) / pair.lxyz}; // unit vector of flight direction
+  // pair.plFD = RecoDecay::dotProd(pvecSum, uvFD);
+  // pair.ptFD = RecoDecay::sqrtSumOfSquares(pvecSum[0] - pair.plFD * uvFD[0], pvecSum[1] - pair.plFD * uvFD[1], pvecSum[2] - pair.plFD * uvFD[2]);
 
-  // calculate impact parameter
-  o2::dataformats::DCA dcaLH;
-  auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, v0ParCov);
-  trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+  // pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
+  // pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
+  // pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
+  // pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
 
-  pair.impParXY = dcaLH.getY();
-  pair.impParZ = dcaLH.getZ();
-  pair.impParCYY = dcaLH.getSigmaY2();
-  pair.impParCZY = dcaLH.getSigmaYZ();
-  pair.impParCZZ = dcaLH.getSigmaZ2();
+  // // propagate the 2 prongs to the secondary vertex
+  // leptonParCov.propagateTo(vtx[0], fitter.getBz());
+  // v0ParCov.propagateTo(vtx[0], fitter.getBz());
+
+  // // calculate impact parameter
+  // o2::dataformats::DCA dcaLH;
+  // auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, v0ParCov);
+  // trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+
+  // pair.impParXY = dcaLH.getY();
+  // pair.impParZ = dcaLH.getZ();
+  // pair.impParCYY = dcaLH.getSigmaY2();
+  // pair.impParCZY = dcaLH.getSigmaYZ();
+  // pair.impParCZZ = dcaLH.getSigmaZ2();
 
   ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
   if (leptonId == o2::track::PID::Electron) {
@@ -253,6 +301,9 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
   pair.pt = v12.Pt();
+  pair.p = v12.P();
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                           // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI, 1U); // lepton - hadron
   pair.isOK = true;
 
   return pair;
@@ -307,14 +358,20 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   for (int i = 0; i < 3; i++) {
     svpos[i] = vtx[i];
   }
-  fitter.getTrack(0).getPxPyPzGlo(pvec0); // electron
-  fitter.getTrack(1).getPxPyPzGlo(pvec1); // v0
+  fitter.getTrack(0).getPxPyPzGlo(pvec0); // lepton
+  fitter.getTrack(1).getPxPyPzGlo(pvec1); // cascade
   std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
+
+  // pair.ptSVL = RecoDecay::sqrtSumOfSquares(pvec0[0], pvec0[1]);
+  // pair.ptSVH = RecoDecay::sqrtSumOfSquares(pvec1[0], pvec1[1]);
+  // pair.plSVL = pvec0[2];
+  // pair.plSVH = pvec1[2];
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
   pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
   pair.cospaRZ = RecoDecay::cpaRZ(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
+  pair.chi2PCA = fitter.getChi2AtPCACandidate();
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
   pair.lz = svpos[2] - collision.posZ();
   pair.lxyz = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
@@ -327,20 +384,29 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   pair.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, thetaLC) + getRotatedCovMatrixXX(covVtxLC, 0, thetaLC));
   pair.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiLC, thetaLC) + getRotatedCovMatrixXX(covVtxLC, phiLC, thetaLC));
 
-  // propagate the 2 prongs to the secondary vertex
-  leptonParCov.propagateTo(vtx[0], fitter.getBz());
-  cascParCov.propagateTo(vtx[0], fitter.getBz());
+  // std::array<float, 3> uvFD = {(svpos[0] - collision.posX()) / pair.lxyz, (svpos[1] - collision.posY()) / pair.lxyz, (svpos[2] - collision.posZ()) / pair.lxyz}; // unit vector of flight direction
+  // pair.plFD = RecoDecay::dotProd(pvecSum, uvFD);
+  // pair.ptFD = RecoDecay::sqrtSumOfSquares(pvecSum[0] - pair.plFD * uvFD[0], pvecSum[1] - pair.plFD * uvFD[1], pvecSum[2] - pair.plFD * uvFD[2]);
 
-  // calculate impact parameter
-  o2::dataformats::DCA dcaLH;
-  auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, cascParCov);
-  trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+  // pair.plFDL = RecoDecay::dotProd(pvec0, uvFD);
+  // pair.plFDH = RecoDecay::dotProd(pvec1, uvFD);
+  // pair.ptFDL = RecoDecay::sqrtSumOfSquares(pvec0[0] - pair.plFDL * uvFD[0], pvec0[1] - pair.plFDL * uvFD[1], pvec0[2] - pair.plFDL * uvFD[2]);
+  // pair.ptFDH = RecoDecay::sqrtSumOfSquares(pvec1[0] - pair.plFDH * uvFD[0], pvec1[1] - pair.plFDH * uvFD[1], pvec1[2] - pair.plFDH * uvFD[2]);
 
-  pair.impParXY = dcaLH.getY();
-  pair.impParZ = dcaLH.getZ();
-  pair.impParCYY = dcaLH.getSigmaY2();
-  pair.impParCZY = dcaLH.getSigmaYZ();
-  pair.impParCZZ = dcaLH.getSigmaZ2();
+  // // propagate the 2 prongs to the secondary vertex
+  // leptonParCov.propagateTo(vtx[0], fitter.getBz());
+  // cascParCov.propagateTo(vtx[0], fitter.getBz());
+
+  // // calculate impact parameter
+  // o2::dataformats::DCA dcaLH;
+  // auto trackParCovLH = o2::dataformats::V0(fitter.getPCACandidatePos(), pvecSum, fitter.calcPCACovMatrixFlat(), leptonParCov, cascParCov);
+  // trackParCovLH.propagateToDCA(primaryVertex, fitter.getBz(), &dcaLH);
+
+  // pair.impParXY = dcaLH.getY();
+  // pair.impParZ = dcaLH.getZ();
+  // pair.impParCYY = dcaLH.getSigmaY2();
+  // pair.impParCZY = dcaLH.getSigmaYZ();
+  // pair.impParCZZ = dcaLH.getSigmaZ2();
 
   ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
   if (leptonId == o2::track::PID::Electron) {
@@ -365,9 +431,11 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   }
 
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
-
   pair.mass = v12.M();
   pair.pt = v12.Pt();
+  pair.p = v12.P();
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                           // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI, 1U); // lepton - hadron
   pair.isOK = true;
 
   return pair;
