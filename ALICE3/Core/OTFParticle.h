@@ -58,6 +58,9 @@ class OTFParticle
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
+    if (particle.has_daughters()) {
+      mIndicesDaughter = {particle.daughtersIds().front(), particle.daughtersIds().back()};
+    }
     if constexpr (requires { particle.decayerBits(); }) {
       mBits = particle.decayerBits();
     } else {
@@ -87,6 +90,14 @@ class OTFParticle
     mPy = py;
     mPz = pz;
     mE = e;
+  }
+  void setIndexOffset(const std::size_t offset)
+  {
+    static constexpr int NotFound = -1;
+    mIndicesMother[0] = (mIndicesMother[0] >= 0) ? mIndicesMother[0] + static_cast<int>(offset) : NotFound;
+    mIndicesMother[1] = (mIndicesMother[1] >= 0) ? mIndicesMother[1] + static_cast<int>(offset) : NotFound;
+    mIndicesDaughter[0] = (mIndicesDaughter[0] >= 0) ? mIndicesDaughter[0] + static_cast<int>(offset) : NotFound;
+    mIndicesDaughter[1] = (mIndicesDaughter[1] >= 0) ? mIndicesDaughter[1] + static_cast<int>(offset) : NotFound;
   }
 
   // Getters
@@ -147,8 +158,8 @@ class OTFParticle
   std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
 
   // Checks
-  bool hasDaughters() const { return (mIndicesDaughter[0] > 0); }
-  bool hasMothers() const { return (mIndicesMother[0] > 0); }
+  bool hasDaughters() const { return (mIndicesDaughter[0] >= 0); }
+  bool hasMothers() const { return (mIndicesMother[0] >= 0); }
   bool hasNaN() const
   {
     return std::isnan(mPx) || std::isnan(mPy) || std::isnan(mPz) || std::isnan(mE) ||
@@ -171,7 +182,7 @@ class OTFParticle
 
  private:
   int mPdgCode{}, mGlobalIndex{-1};
-  int mCollisionId{};
+  int mCollisionId{-1};
   float mVx{}, mVy{}, mVz{}, mVt{};
   float mPx{}, mPy{}, mPz{}, mE{};
   bool mIsAlive{}, mIsFromMcParticles{false};

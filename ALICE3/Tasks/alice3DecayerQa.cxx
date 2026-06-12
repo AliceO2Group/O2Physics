@@ -163,8 +163,8 @@ struct Alice3DecayerQa {
         histos.fill(HIST("K0S/hHasDecayed"), 1);
         auto daughters = particle.daughtersIds();
         if (daughters.size() == NV0Daughters) {
-          auto dau0 = particles.rawIteratorAt(daughters.front());
-          auto dau1 = particles.rawIteratorAt(daughters.back());
+          auto dau0 = particles.rawIteratorAt(daughters.front() - particles.offset());
+          auto dau1 = particles.rawIteratorAt(daughters.back() - particles.offset());
 
           // K0S -> pi+ pi-
           const bool k0sDecay = (dau0.pdgCode() == PDG_t::kPiPlus && dau1.pdgCode() == PDG_t::kPiMinus) ||
@@ -187,8 +187,8 @@ struct Alice3DecayerQa {
         histos.fill(HIST("Lambda/hHasDecayed"), 1);
         auto daughters = particle.daughtersIds();
         if (daughters.size() == NV0Daughters) {
-          auto dau0 = particles.rawIteratorAt(daughters[0]);
-          auto dau1 = particles.rawIteratorAt(daughters[1]);
+          auto dau0 = particles.rawIteratorAt(daughters[0] - particles.offset());
+          auto dau1 = particles.rawIteratorAt(daughters[1] - particles.offset());
 
           // Lambda -> p pi-
           const bool lambdaDecay = (dau0.pdgCode() == PDG_t::kProton && dau1.pdgCode() == PDG_t::kPiMinus) ||
@@ -211,8 +211,8 @@ struct Alice3DecayerQa {
         histos.fill(HIST("XiMinus/hHasDecayed"), 1);
         auto daughters = particle.daughtersIds();
         if (daughters.size() == NCascadeDaughters) {
-          auto dau0 = particles.rawIteratorAt(daughters.front());
-          auto dau1 = particles.rawIteratorAt(daughters.back());
+          auto dau0 = particles.rawIteratorAt(daughters.front() - particles.offset());
+          auto dau1 = particles.rawIteratorAt(daughters.back() - particles.offset());
 
           // Xi- -> Lambda pi-
           const bool xiDecay = (dau0.pdgCode() == PDG_t::kLambda0 && dau1.pdgCode() == PDG_t::kPiMinus) ||
@@ -228,8 +228,8 @@ struct Alice3DecayerQa {
             if (v0.has_daughters()) {
               auto v0daughters = v0.daughtersIds();
               if (v0daughters.size() == NV0Daughters) {
-                auto v0dau0 = particles.rawIteratorAt(v0daughters.front());
-                auto v0dau1 = particles.rawIteratorAt(v0daughters.back());
+                auto v0dau0 = particles.rawIteratorAt(v0daughters.front() - particles.offset());
+                auto v0dau1 = particles.rawIteratorAt(v0daughters.back() - particles.offset());
                 const bool lambdaDecay = (v0dau0.pdgCode() == PDG_t::kProton && v0dau1.pdgCode() == PDG_t::kPiMinus) ||
                                          (v0dau0.pdgCode() == PDG_t::kPiMinus && v0dau1.pdgCode() == PDG_t::kProton);
                 if (lambdaDecay) {
