@@ -350,7 +350,6 @@ struct ZdcQVectors {
         registry.add<TH2>("QA/ZNC_pm2_vs_Centrality", "ZNC_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
         registry.add<TH2>("QA/ZNC_pm3_vs_Centrality", "ZNC_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
         registry.add<TH2>("QA/ZNC_pm4_vs_Centrality", "ZNC_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-
       }
 
       // Tower mean energies vs. centrality used for tower gain equalisation
@@ -378,8 +377,8 @@ struct ZdcQVectors {
         registry.add<TProfile2D>("CutAnalysis/hvertex_vy", "hvertex_vy", kTProfile2D, {{1, 0., 1.}, {nEventSelections + 5, 0, nEventSelections + 5}});
         registry.add<TProfile2D>("CutAnalysis/hvertex_vz", "hvertex_vz", kTProfile2D, {{1, 0., 1.}, {nEventSelections + 5, 0, nEventSelections + 5}});
       }
-      registry.addClone("recentering/before/", "recentering/after/"); 
-      registry.addClone("QA/before/", "QA/after/"); 
+      registry.addClone("recentering/before/", "recentering/after/");
+      registry.addClone("QA/before/", "QA/after/");
     }
   }
 
@@ -755,7 +754,7 @@ struct ZdcQVectors {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     runnumber = foundBC.runNumber();
 
-    if (cfgFillHistRegistry && !cfgFillNothing){
+    if (cfgFillHistRegistry && !cfgFillNothing) {
       registry.fill(HIST("QA/centrality_before"), cent);
     }
 
@@ -841,7 +840,8 @@ struct ZdcQVectors {
     }
 
     // load the calibration histos for iteration 0 step 0 (Energy Calibration)
-    if(!cfgNoGain) loadCalibrations<kEnergyCal>(cfgEnergyCal.value);
+    if (!cfgNoGain)
+      loadCalibrations<kEnergyCal>(cfgEnergyCal.value);
     // load the calibrations for the mean v
     loadCalibrations<kMeanv>(cfgMeanv.value);
 
@@ -869,25 +869,25 @@ struct ZdcQVectors {
 
     // Now start gain equalisation!
     // Fill the list with calibration constants.
-    if(!cfgNoGain){
+    if (!cfgNoGain) {
       for (int tower = 0; tower < (nTowers + 2); tower++) {
-          meanEZN[tower] = getCorrection<TProfile2D, kEnergyCal>(namesEcal[tower].Data());
-        }
-    } 
+        meanEZN[tower] = getCorrection<TProfile2D, kEnergyCal>(namesEcal[tower].Data());
+      }
+    }
 
     // Use the calibration constants but now only loop over towers 1-4
     int calibtower = 0;
     std::vector<int> towersNocom = {1, 2, 3, 4, 6, 7, 8, 9};
 
     for (const auto& tower : towersNocom) {
-       if(cfgNoGain) {
-        e[calibtower] = eZN[calibtower]; 
-       } else {
+      if (cfgNoGain) {
+        e[calibtower] = eZN[calibtower];
+      } else {
         if (meanEZN[tower] > 0) {
           double ecommon = (tower > nTowersPerSide) ? meanEZN[5] : meanEZN[0];
           e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
         }
-       }
+      }
       calibtower++;
     }
 
@@ -918,7 +918,6 @@ struct ZdcQVectors {
 
         registry.fill(HIST("QA/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
         registry.fill(HIST("QA/ZNC_pmSUM_vs_Centrality"), centrality, sumZNC);
-  
 
         registry.fill(HIST("QA/ZNA_pm1_vs_Centrality"), centrality, e[0] / sumZNA);
         registry.fill(HIST("QA/ZNA_pm2_vs_Centrality"), centrality, e[1] / sumZNA);
@@ -1002,13 +1001,12 @@ struct ZdcQVectors {
         corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 1));
         corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 1));
         corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 1));
-       
 
         if (cfgFillHistRegistry && !cfgFillNothing) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
         }
         pb++;
 
@@ -1023,7 +1021,7 @@ struct ZdcQVectors {
             registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-        }
+          }
 
           pb++;
         }
@@ -1039,7 +1037,7 @@ struct ZdcQVectors {
             registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-        }       
+          }
           pb++;
         }
       }
