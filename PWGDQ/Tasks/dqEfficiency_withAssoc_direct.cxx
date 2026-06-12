@@ -1640,7 +1640,7 @@ struct AnalysisSameEventPairing {
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks, typename TEventsMC>
-  void runSameEventPairing(TEvents const& events, BCsWithTimestamps const& bcs, Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>>& preslice, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs, TTracks const& tracks, TEventsMC const& mcEvents, McParticles const& /*mcTracks*/)
+  void runSameEventPairing(TEvents const& events, BCsWithTimestamps const& bcs, Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>>& preslice, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs, TTracks const& tracks, TEventsMC const& mcEvents, McParticles const& mcTracks)
   {
     cout << "AnalysisSameEventPairing::runSameEventPairing() called" << endl;
     if (events.size() == 0) {
@@ -1672,6 +1672,7 @@ struct AnalysisSameEventPairing {
 
     // estimate reserved size
     int64_t reserveSize = 0;
+    int64_t reserveSizeGen = mcTracks.size();
     for (auto& event : events) {
       if (event.isEventSelected_bit(0)) {
         auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
@@ -1700,7 +1701,7 @@ struct AnalysisSameEventPairing {
       dielectronAllList.reserve(reserveSize);
     }
     if (fConfigOptions.fConfigMiniTree) {
-      dileptonMiniTreeGen.reserve(reserveSize);
+      dileptonMiniTreeGen.reserve(reserveSizeGen);
       dileptonMiniTreeRec.reserve(reserveSize);
     }
 
