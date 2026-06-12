@@ -206,8 +206,11 @@ struct FemtoUniverseEfficiencyBase {
     trackHistoPartOneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartOne, confIsDebug);
     registryMCOrigin.add("part1/hRecoPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
     registryMCOrigin.add("part1/hTruthPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
-    registryTOFMatch.add("part1/hTofMatchPtBeforePID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
-    registryTOFMatch.add("part1/hTofMatchPtAfterPID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtBeforePIDAllPart", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtBeforePIDPartWithTof", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtAfterPIDAllPart", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtAfterPIDPartWithTof", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+    registryTOFMatch.add("part1/hTofMatchPtAfterPIDPrimaryWithTof", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
     registryTOFMatch.add("part1/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
     registryPDG.add("part1/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
     registryPDG.add("part1/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
@@ -234,8 +237,11 @@ struct FemtoUniverseEfficiencyBase {
       trackHistoPartTwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartTwo, confIsDebug);
       registryMCOrigin.add("part2/hRecoPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
       registryMCOrigin.add("part2/hTruthPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
-      registryTOFMatch.add("part2/hTofMatchPtBeforePID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
-      registryTOFMatch.add("part2/hTofMatchPtAfterPID", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtBeforePIDAllPart", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtBeforePIDPartWithTof", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtAfterPIDAllPart", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtAfterPIDPartWithTof", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
+      registryTOFMatch.add("part2/hTofMatchPtAfterPIDPrimaryWithTof", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
       registryTOFMatch.add("part2/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
       registryPDG.add("part2/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
       registryPDG.add("part2/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
@@ -644,7 +650,11 @@ struct FemtoUniverseEfficiencyBase {
         continue;
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 3);
-      registryTOFMatch.fill(HIST("part1/hTofMatchPtBeforePID"), part.pt());
+      // TOF Matching efficiency before PID
+      registryTOFMatch.fill(HIST("part1/hTofMatchPtBeforePIDAllPart"), part.pt());
+      if (part.mLambda() == 1) {
+        registryTOFMatch.fill(HIST("part1/hTofMatchPtBeforePIDPartWithTof"), part.pt());
+      }
 
       if (!ConfTracksPid.trkUsePassPIDSelection) {
         if (!isParticleNSigma(confPDGCodePartOne, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
@@ -660,9 +670,10 @@ struct FemtoUniverseEfficiencyBase {
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 4);
 
-      // TOF Matching efficiency
+      // TOF Matching efficiency after PID
+      registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPIDAllPart"), part.pt());
       if (part.mLambda() == 1) {
-        registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPID"), part.pt());
+        registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPIDPartWithTof"), part.pt());
       } else {
         registryTOFMatch.fill(HIST("part1/hTpcPt"), part.pt());
       }
@@ -671,6 +682,11 @@ struct FemtoUniverseEfficiencyBase {
       const auto mcParticle = part.fdMCParticle();
 
       registryPDG.fill(HIST("part1/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
+
+      // Primary particles which have TOF after PID
+      if (part.mLambda() == 1 && mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
+        registryTOFMatch.fill(HIST("part1/hTofMatchPtAfterPIDPrimaryWithTof"), part.pt());
+      }
 
       if (fillSecTrkContHistos) {
         if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
@@ -723,7 +739,11 @@ struct FemtoUniverseEfficiencyBase {
           continue;
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 3);
-        registryTOFMatch.fill(HIST("part2/hTofMatchPtBeforePID"), part.pt());
+        // TOF Matching efficiency before PID
+        registryTOFMatch.fill(HIST("part2/hTofMatchPtBeforePIDAllPart"), part.pt());
+        if (part.mLambda() == 1) {
+          registryTOFMatch.fill(HIST("part2/hTofMatchPtBeforePIDPartWithTof"), part.pt());
+        }
 
         if (!ConfTracksPid.trkUsePassPIDSelection) {
           if (!isParticleNSigma(confPDGCodePartTwo, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
@@ -739,9 +759,10 @@ struct FemtoUniverseEfficiencyBase {
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 4);
 
-        // TOF Matching efficiency
+        // TOF Matching efficiency after PID
+        registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPIDAllPart"), part.pt());
         if (part.mLambda() == 1) {
-          registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPID"), part.pt());
+          registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPIDPartWithTof"), part.pt());
         } else {
           registryTOFMatch.fill(HIST("part2/hTpcPt"), part.pt());
         }
@@ -750,6 +771,11 @@ struct FemtoUniverseEfficiencyBase {
         const auto mcParticle = part.fdMCParticle();
 
         registryPDG.fill(HIST("part2/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
+
+        // Primary particles which have TOF after PID
+        if (part.mLambda() == 1 && mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
+          registryTOFMatch.fill(HIST("part2/hTofMatchPtAfterPIDPrimaryWithTof"), part.pt());
+        }
 
         if (fillSecTrkContHistos) {
           if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {

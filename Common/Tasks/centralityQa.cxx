@@ -14,6 +14,12 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/BunchFilling.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <DataFormatsParameters/GRPECSObject.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -24,19 +30,25 @@
 #include <TProfile.h>
 
 #include <cstdlib>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 
 struct CentralityQa {
   HistogramRegistry histos{"histos"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> collidingBunch;
 
   bool isRun2 = false;
   bool isMC = false;
+  int runNumber{};
+  uint64_t startOfRunTimestamp{};
 
   Configurable<int> nBins{"nBins", 1050, "number of bins"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {1000, 0, 1000}, "Multiplicity"};
   ConfigurableAxis axisMultiplicityPV{"axisMultiplicityPV", {1000, 0, 1000}, "Multiplicity PV"};
+  ConfigurableAxis axisChannelAmplitude{"axisChannelAmplitude", {5000, 0, 5000}, "Channel Amplitude"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
@@ -85,8 +97,24 @@ struct CentralityQa {
     Configurable<bool> requireNoSPDClsVsTklBG{"requireNoSPDClsVsTklBG", true, "reject events tagged as beam-gas and pileup according to cluster-vs-tracklet correlation (Run 2 only)"};
   } eventSelections;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "bcsel";
+    Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "select colliding BCs"};
+    Configurable<bool> selectTVX{"selectTVX", true, "select TVX"};
+    Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "select FV0 or A"};
+    Configurable<bool> selectVertexZwithT0{"selectVertexZwithT0", false, "select vertex Z with T0"};
+    Configurable<float> vertexZwithT0{"vertexZwithT0", 1000, "vertex Z with T0"};
+    Configurable<bool> selectBBT0{"selectBBT0", false, "select BBT0"};
+    Configurable<bool> rejectZNAC{"rejectZNAC", false, "reject ZNAC"};
+    Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "reject is flange event"};
+  } bcsel;
+
   void init(o2::framework::InitContext& /*initContext*/)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
     if (doprocessRun2PP ||
         doprocessRun2PPb ||
         doprocessRun2PbPb) {
@@ -110,66 +138,80 @@ struct CentralityQa {
     }
 
     if (isRun2) {
-      histos.add("hCentRun2V0M", "V0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2V0A", "V0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2SPDTks", "SPD tracklet centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2SPDCls", "SPD cluster centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2CL0", "CL0 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2CL1", "CL1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentRun2V0M", ";V0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentRun2V0A", ";V0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentRun2SPDTks", ";SPD tracklet centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentRun2SPDCls", ";SPD cluster centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentRun2CL0", ";CL0 centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentRun2CL1", ";CL1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
     } else {
-      histos.add("hCentFV0A", "FV0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0M", "FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0A", "FT0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0C", "FT0C centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0CVar1", "FT0CVar1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0CVar2", "FT0CVar2 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFDDM", "FDDM centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentNTPV", "NTPV centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentNGlobal", "NGlobal centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentMFT", "MFT centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFV0A", ";FV0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0M", ";FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0A", ";FT0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0C", ";FT0C centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0CVar1", ";FT0CVar1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0CVar2", ";FT0CVar2 centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFDDM", ";FDDM centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentNTPV", ";NTPV centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentNGlobal", ";NGlobal centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentMFT", ";MFT centrality (%)", kTH1D, {{nBins, 0, 105.}});
 
       // profiles of midrapidity multiplicity density
-      histos.add("hCentProfileFV0A", "FV0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0M", "FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0A", "FT0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0C", "FT0C centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0CVar1", "FT0CVar1 centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0CVar2", "FT0CVar2 centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFDDM", "FDDM centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileNTPV", "NTPV centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileNGlobal", "NGlobal centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileMFT", "MFT centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFV0A", ";FV0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0M", ";FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0A", ";FT0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0C", ";FT0C centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0CVar1", ";FT0CVar1 centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0CVar2", ";FT0CVar2 centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFDDM", ";FDDM centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileNTPV", ";NTPV centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileNGlobal", ";NGlobal centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileMFT", ";MFT centrality (%)", kTProfile, {{nBins, 0, 105.}});
 
-      histos.add("hMultEta05VsCentFV0A", "FV0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0M", "FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0A", "FT0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0C", "FT0C centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0CVar1", "FT0CVar1 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0CVar2", "FT0CVar2 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFDDM", "FDDM centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentNTPV", "NTPV centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentNGlobal", "NGlobal centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentMFT", "MFT centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFV0A", ";FV0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0M", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0A", ";FT0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0C", ";FT0C centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0CVar1", ";FT0CVar1 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0CVar2", ";FT0CVar2 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFDDM", ";FDDM centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentNTPV", ";NTPV centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentNGlobal", ";NGlobal centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentMFT", ";MFT centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
 
       if (isMC) {
-        histos.add("hMultEta05VsGenMultFV0A", "Multiplicity FV0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0M", "Multiplicity FT0M; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0A", "Multiplicity FT0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0C", "Multiplicity FT0C; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0CVar1", "Multiplicity FT0CVar1; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0CVar2", "Multiplicity FT0CVar2; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFDDM", "Multiplicity FDDM; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultNTPV", "Multiplicity NTPV; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultNGlobal", "Multiplicity NGlobal; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultMFT", "Multiplicity MFT; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFV0A", ";Multiplicity FV0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0M", ";Multiplicity FT0M; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0A", ";Multiplicity FT0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0C", ";Multiplicity FT0C; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0CVar1", ";Multiplicity FT0CVar1; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0CVar2", ";Multiplicity FT0CVar2; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFDDM", ";Multiplicity FDDM; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultNTPV", ";Multiplicity NTPV; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultNGlobal", ";Multiplicity NGlobal; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultMFT", ";Multiplicity MFT; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
       }
+    }
+
+    if (doprocessBunchCrossings) {
+      histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(1, "All BCs");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(2, "Colliding BCs");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(3, "TVX");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(4, "FV0OrA");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(5, "FT0PosZ");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(6, "BB with FT0");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(7, "zdc rej");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(8, "isFlangeEvent");
+      histos.add("hAmpVsChFT0A", "hAmpVsChFT0A;Channel; Amplitude", kTH2D, {{96, -0.5, 95.5}, axisChannelAmplitude});
+      histos.add("hAmpVsChFT0C", "hAmpVsChFT0C;Channel; Amplitude", kTH2D, {{112, -0.5, 111.5}, axisChannelAmplitude});
     }
 
     histos.print();
   }
 
   template <typename TCollision>
-  bool isEventAccepted(TCollision const& collision)
+  bool isCollisionAccepted(TCollision const& collision)
   // check whether the collision passes our collision selections
   {
     if constexpr (
@@ -359,9 +401,109 @@ struct CentralityQa {
     return true;
   }
 
+  template <typename TBunchCrossing>
+  bool isBunchCrossingAccepted(const TBunchCrossing& bc, bool fillHistograms = false)
+  {
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 0); // all BCs
+    }
+
+    if (bc.runNumber() != runNumber) {
+      runNumber = bc.runNumber();
+      o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", runNumber);
+      startOfRunTimestamp = grpo->getTimeStart();
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", startOfRunTimestamp);
+      collidingBunch = grplhcif->getBunchFilling().getBCPattern();
+    }
+
+    const int localBC = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
+    const bool collidingBC = collidingBunch.test(localBC);
+
+    if (bcsel.selectCollidingBCs && !collidingBC) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 1); // colliding
+    }
+
+    if (bcsel.selectTVX && !bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 2); // TVX
+    }
+
+    bool isFV0OrA = false;
+    if (bc.has_fv0a()) {
+      const auto& fv0 = bc.fv0a();
+      std::bitset<8> fv0TriggerMask = fv0.triggerMask();
+      isFV0OrA = fv0TriggerMask[o2::fit::Triggers::bitA];
+    }
+
+    if (bcsel.selectFV0OrA && !isFV0OrA) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 3); // FV0OrA
+    }
+
+    const float largeVertexZ = 100.0f;
+    if (bcsel.selectVertexZwithT0 && bcsel.vertexZwithT0 < largeVertexZ) {
+      if (bc.has_ft0()) {
+        const auto& ft0 = bc.ft0();
+        if (!ft0.isValidTime()) {
+          return false;
+        }
+        if (std::abs(ft0.posZ()) > bcsel.vertexZwithT0) {
+          return false;
+        }
+      }
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 4); // FT0PosZ
+    }
+
+    if (bcsel.selectBBT0 && !bc.selection_bit(o2::aod::evsel::kIsBBT0A) && !bc.selection_bit(o2::aod::evsel::kIsBBT0C)) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 5); // t0ac time
+    }
+
+    if (bcsel.rejectZNAC && !bc.selection_bit(o2::aod::evsel::kIsBBZNA) && !bc.selection_bit(o2::aod::evsel::kIsBBZNC)) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 6); // znac time
+    }
+
+    if (bcsel.rejectIsFlangeEvent) {
+      if (bc.has_ft0()) {
+        const auto& ft0 = bc.ft0();
+        constexpr int IsFlangeEventId = 7;
+        std::bitset<8> ft0TriggerMask = ft0.triggerMask();
+        if (ft0TriggerMask[IsFlangeEventId]) {
+          return false;
+        }
+      }
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 7); // isFlangeEvent
+    }
+
+    return true;
+  }
+
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::Mults>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     LOGF(debug, "centV0M=%.0f", col.centRun2V0M());
@@ -376,7 +518,7 @@ struct CentralityQa {
 
   void processRun2PbPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     LOGF(debug, "centV0M=%.0f", col.centRun2V0M());
@@ -393,7 +535,7 @@ struct CentralityQa {
 
   void processRun2PPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0As, aod::Mults>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     LOGF(debug, "centV0A=%.0f", col.centRun2V0A());
@@ -404,7 +546,7 @@ struct CentralityQa {
 
   void processRun3_FV0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     LOGF(debug, "centFV0A=%.0f", col.centFV0A());
@@ -416,7 +558,7 @@ struct CentralityQa {
 
   void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     LOGF(debug, "centFT0M=%.0f", col.centFT0M());
@@ -428,7 +570,7 @@ struct CentralityQa {
 
   void processRun3_FT0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0As>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentFT0A"), col.centFT0A());
@@ -439,7 +581,7 @@ struct CentralityQa {
 
   void processRun3_FT0C(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentFT0C"), col.centFT0C());
@@ -450,7 +592,7 @@ struct CentralityQa {
 
   void processRun3_FT0CVar1(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0CVariant1s>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentFT0CVar1"), col.centFT0CVariant1());
@@ -461,7 +603,7 @@ struct CentralityQa {
 
   void processRun3_FT0CVar2(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0CVariant2s>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentFT0CVar2"), col.centFT0CVariant2());
@@ -472,7 +614,7 @@ struct CentralityQa {
 
   void processRun3_FDDM(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFDDMs>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentFDDM"), col.centFDDM());
@@ -483,7 +625,7 @@ struct CentralityQa {
 
   void processRun3_NTPV(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentNTPVs>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentNTPV"), col.centNTPV());
@@ -494,7 +636,7 @@ struct CentralityQa {
 
   void processRun3_NGlobal(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentNGlobals>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentNGlobal"), col.centNGlobal());
@@ -505,7 +647,7 @@ struct CentralityQa {
 
   void processRun3_MFT(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentMFTs>::iterator const& col)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     histos.fill(HIST("hCentMFT"), col.centMFT());
@@ -518,7 +660,7 @@ struct CentralityQa {
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -535,7 +677,7 @@ struct CentralityQa {
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -552,7 +694,7 @@ struct CentralityQa {
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -568,7 +710,7 @@ struct CentralityQa {
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -584,7 +726,7 @@ struct CentralityQa {
                                       soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                       soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -600,7 +742,7 @@ struct CentralityQa {
                                       soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                       soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -616,7 +758,7 @@ struct CentralityQa {
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -632,7 +774,7 @@ struct CentralityQa {
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -648,7 +790,7 @@ struct CentralityQa {
                                      soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                      soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
@@ -664,7 +806,7 @@ struct CentralityQa {
                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
-    if (!isEventAccepted(col)) {
+    if (!isCollisionAccepted(col)) {
       return;
     }
     // const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>(); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
@@ -675,6 +817,26 @@ struct CentralityQa {
     // histos.fill(HIST("hMultEta05VsGenMultMFT"), mcCol.multMCMFT(), col.multNTracksPVetaHalf()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_MFT, "Process with Run 3 MFT estimator", false);
+
+  using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+  void processBunchCrossings(soa::Join<BCsWithRun3Matchings, aod::BCFlags, aod::BcSels>::iterator const& bc, aod::FT0s const&, aod::FV0As const&)
+  {
+    if (!isBunchCrossingAccepted(bc, true)) {
+      return;
+    }
+
+    if (bc.has_ft0()) {
+      const auto& ft0 = bc.ft0();
+      for (size_t ii{0}; ii < ft0.channelA().size(); ++ii) {
+        histos.fill(HIST("hAmpVsChFT0A"), ft0.channelA()[ii], ft0.amplitudeA()[ii]);
+      }
+
+      for (size_t ii{0}; ii < ft0.channelC().size(); ++ii) {
+        histos.fill(HIST("hAmpVsChFT0C"), ft0.channelC()[ii], ft0.amplitudeC()[ii]);
+      }
+    }
+  }
+  PROCESS_SWITCH(CentralityQa, processBunchCrossings, "Process with Run 3 BC table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

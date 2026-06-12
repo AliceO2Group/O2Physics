@@ -354,7 +354,7 @@ struct HfCandidateCreatorBToJpsiReduced {
                         soa::Join<aod::HfRedJpsis, aod::HfRedJpsiCov> const& candsJpsi,
                         soa::Join<aod::HfRedBach0Bases, aod::HfRedBach0Cov> const& tracksKaon,
                         aod::HfOrigColCounts const& collisionsCounter,
-                        aod::HfCfgBpToJpsi const& configs)
+                        aod::HfCfgBpToJpsis const& configs)
   {
     // Jpsi K invariant-mass window cut
     for (const auto& config : configs) {

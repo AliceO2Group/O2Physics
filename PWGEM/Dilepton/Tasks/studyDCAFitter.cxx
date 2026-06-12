@@ -625,30 +625,6 @@ struct studyDCAFitter {
             fRegistry.fill(HIST("Pair/SV/Zboson/lsmm/hChi2PCA"), std::log10(chi2PCA));
           }
           break;
-        case 113: // rho0
-          keepSignal = true;
-          if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
-            dileptonType = 1;
-          } else { // nonprompt
-            dileptonType = 2;
-          }
-          break;
-        case 223: // omega
-          keepSignal = true;
-          if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
-            dileptonType = 1;
-          } else { // nonprompt
-            dileptonType = 2;
-          }
-          break;
-        case 333: // phi
-          keepSignal = true;
-          if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
-            dileptonType = 1;
-          } else { // nonprompt
-            dileptonType = 2;
-          }
-          break;
         case 443:
           keepSignal = true;
           if (IsFromCharm(cmp, mcParticles) < 0 && IsFromBeauty(cmp, mcParticles) < 0) { // prompt
@@ -882,25 +858,19 @@ struct studyDCAFitter {
         } // end of electron loop
       } // end of positron loop
 
-      for (const auto& posId1 : positronIds) {
-        auto pos1 = tracks.rawIteratorAt(posId1);
-        for (const auto& posId2 : positronIds) {
-          auto pos2 = tracks.rawIteratorAt(posId2);
-          if (pos1.globalIndex() == pos2.globalIndex()) {
-            continue;
-          }
+      for (size_t i = 0; i < positronIds.size(); i++) {
+        auto pos1 = tracks.rawIteratorAt(positronIds[i]);
+        for (size_t j = i + 1; j < positronIds.size(); j++) {
+          auto pos2 = tracks.rawIteratorAt(positronIds[j]);
           runSVFinder<1>(collision, pos1, pos2, mcParticles);
           runPairingAtPV<1>(pos1, pos2, mcParticles);
         } // end of positron loop
       } // end of positron loop
 
-      for (const auto& eleId1 : electronIds) {
-        auto ele1 = tracks.rawIteratorAt(eleId1);
-        for (const auto& eleId2 : electronIds) {
-          auto ele2 = tracks.rawIteratorAt(eleId2);
-          if (ele1.globalIndex() == ele2.globalIndex()) {
-            continue;
-          }
+      for (size_t i = 0; i < electronIds.size(); i++) {
+        auto ele1 = tracks.rawIteratorAt(electronIds[i]);
+        for (size_t j = i + 1; j < electronIds.size(); j++) {
+          auto ele2 = tracks.rawIteratorAt(electronIds[j]);
           runSVFinder<2>(collision, ele1, ele2, mcParticles);
           runPairingAtPV<2>(ele1, ele2, mcParticles);
         } // end of electron loop
