@@ -489,12 +489,16 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       if (n >= 0) {
         return mcc.fQvectorBefore[n][p];
       }
-      return TComplex::Conjugate(mcc.fQvectorBefore[-n][p]);
-    } else if (eba == eAfter) {
+      else {
+        return TComplex::Conjugate(mcc.fQvectorBefore[-n][p]);
+      }
+    } else {
       if (n >= 0) {
         return mcc.fQvectorAfter[n][p];
       }
-      return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
+      else {
+        return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
+      }
     }
   }
 
@@ -725,7 +729,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       return;
     }
 
-    TH1F* histAcceptanceWeight = wt.fWeightHistograms[1];
+    // TH1F* histAcceptanceWeight = wt.fWeightHistograms[1];
 
     for (int h = 0; h < mcc.MaxHarmonic; h++) {
       for (int p = 0; p < mcc.MaxPower; p++) {
