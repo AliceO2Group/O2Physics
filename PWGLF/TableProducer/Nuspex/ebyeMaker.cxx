@@ -259,6 +259,7 @@ struct EbyeMaker {
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
   Configurable<bool> kUsePileUpCut{"kUsePileUpCut", false, "toggle strong correlation cuts (Run 2)"};
   Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
+  Configurable<bool> kUsePID{"kUsePID", true, "use PID information in the analysis"};
 
   Configurable<float> kCentCutMax{"kCentCutMax", 100, "maximum accepted centrality"};
 
@@ -838,7 +839,7 @@ struct EbyeMaker {
         }
         if (mcLab.has_mcParticle()) {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
-          if (std::abs(mcTrack.pdgCode()) != kPartPdg[iP])
+          if (std::abs(mcTrack.pdgCode()) != kPartPdg[iP] && kUsePID)
             continue;
           if ((((mcTrack.flags() & 0x8) || (mcTrack.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
             continue;
@@ -847,7 +848,7 @@ struct EbyeMaker {
             continue;
           if (mcTrack.isPhysicalPrimary())
             candidateTrack.pdgcodemoth = PartTypes::kPhysPrim;
-          else if (mcTrack.has_mothers() && iP == 0)
+          else if (mcTrack.has_mothers() && iP == 0 && kUsePID)
             candidateTrack.pdgcodemoth = getPartTypeMother(mcTrack);
 
           auto genPt = std::hypot(mcTrack.px(), mcTrack.py());
@@ -906,8 +907,9 @@ struct EbyeMaker {
         continue;
       auto pdgCode = mcPart.pdgCode();
       auto genPt = std::hypot(mcPart.px(), mcPart.py());
+      int ch = 0;
       if ((std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton) && mcPart.isPhysicalPrimary() && genPt > ptMin[0] && genPt < ptMax[0]) {
-        int ch = (pdgCode == PDG_t::kPiPlus || pdgCode == -PDG_t::kElectron || pdgCode == -PDG_t::kMuonMinus || pdgCode == PDG_t::kKPlus || pdgCode == PDG_t::kProton) ? 1 : -1;
+        ch = (pdgCode == PDG_t::kPiPlus || pdgCode == -PDG_t::kElectron || pdgCode == -PDG_t::kMuonMinus || pdgCode == PDG_t::kKPlus || pdgCode == PDG_t::kProton) ? 1 : -1;
         if ((ch < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (ch > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll))
           nChPartGen++;
       }
@@ -935,9 +937,9 @@ struct EbyeMaker {
           LOGF(debug, "not found!");
           candidateV0s.emplace_back(candV0);
         }
-      } else if (std::abs(pdgCode) == kPartPdg[0] || std::abs(pdgCode) == kPartPdg[1]) {
+      } else if (((std::abs(pdgCode) == kPartPdg[0] || std::abs(pdgCode) == kPartPdg[1]) && kUsePID) || (std::abs(ch) == 1 && !kUsePID)) {
         int iP = 1;
-        if (std::abs(pdgCode) == kPartPdg[0]) {
+        if ((std::abs(pdgCode) == kPartPdg[0] && kUsePID) || !kUsePID) {
           iP = 0;
         }
         if ((!mcPart.isPhysicalPrimary() && !doprocessMiniMcRun2))
@@ -949,7 +951,7 @@ struct EbyeMaker {
         candTrack.pdgcode = pdgCode;
         if (mcPart.isPhysicalPrimary())
           candTrack.pdgcodemoth = PartTypes::kPhysPrim;
-        else if (mcPart.has_mothers() && iP == 0)
+        else if (mcPart.has_mothers() && iP == 0 && kUsePID)
           candTrack.pdgcodemoth = getPartTypeMother(mcPart);
 
         auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack trk) { return trk.mcIndex == mcPart.globalIndex(); });
