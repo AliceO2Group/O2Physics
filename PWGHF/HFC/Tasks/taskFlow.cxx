@@ -648,7 +648,7 @@ struct HfTaskFlow {
       addHistograms<Data, TpcMft, ChPartChPart>();
       addMftHistograms();
       registry.add("Data/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
-      registry.add("Data/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
+      registry.add("Data/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         registry.add("Trig_hist_TPC_MFT", "", {HistType::kTHnSparseF, {{configAxis.axisSamples, configAxis.axisVertex, configAxis.axisPtTrigger}}});
@@ -869,7 +869,7 @@ struct HfTaskFlow {
     if (doprocessSameMcGen) {
 
       registry.add("MC/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
-      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
+      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
 
       if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
         addHistograms<Mc, TpcTpc, ChPartChPart>();
