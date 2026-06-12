@@ -176,7 +176,7 @@ struct SpectatorPlaneTutorial {
 
     double corrQQx = 1.0;
     double corrQQy = 1.0;
-    double corrQQ = 1.0 ;
+    double corrQQ = 1.0;
     double evPlaneRes = 1.0;
 
     // Get QQ-correlations from CCDB
@@ -209,7 +209,7 @@ struct SpectatorPlaneTutorial {
       double uxMH = std::cos(2 * phi);
       double uyMH = std::sin(2 * phi);
 
-      if(corrQQ==0 || corrQQx==0 || corrQQy==0)
+      if (corrQQ == 0 || corrQQx == 0 || corrQQy == 0)
         continue;
 
       double v1A = (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ));

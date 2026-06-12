@@ -700,10 +700,10 @@ struct FlowSP {
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
       std::vector<double> paramsMultPVCut;
-      std::vector<double> paramsMultCut; 
-      int y2023 = 2023; 
-      int y2024 = 2024; 
-      std::array<int,3> nSigma = {1,2,3}; 
+      std::vector<double> paramsMultCut;
+      int y2023 = 2023;
+      int y2024 = 2024;
+      std::array<int, 3> nSigma = {1, 2, 3};
 
       if (cfg.cUsePredeFinedSigma) {
         if (cfg.cUsePredeFinedSigmaYear == y2023) {
