@@ -14,8 +14,8 @@
 ///
 /// \author Prottay Das <prottay.das@cern.ch>
 
-#ifndef PWGLF_DATAMODEL_LFPHIFLOW_H_
-#define PWGLF_DATAMODEL_LFPHIFLOW_H_
+#ifndef PWGLF_DATAMODEL_LFPHIFLOWTABLES_H_
+#define PWGLF_DATAMODEL_LFPHIFLOWTABLES_H_
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -75,4 +75,4 @@ DECLARE_SOA_TABLE(KaonTracks, "AOD", "KAONTRACK",
 
 using KaonTrack = KaonTracks::iterator;
 } // namespace o2::aod
-#endif // PWGLF_DATAMODEL_LFPHIFLOW_H_
+#endif // PWGLF_DATAMODEL_LFPHIFLOWTABLES_H_
