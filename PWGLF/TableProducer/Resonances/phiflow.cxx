@@ -262,7 +262,7 @@ struct phiflow {
   ROOT::Math::PxPyPzMVector KaonPlus, KaonMinus, PhiMesonMother, PhiVectorDummy, Phid1dummy, Phid2dummy;
   double massKa = o2::constants::physics::MassKPlus;
 
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/)
   {
     o2::aod::ITSResponse itsResponse;
     int numberPhi = 0;
