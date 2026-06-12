@@ -120,6 +120,10 @@ struct OnTheFlyDecayer {
   std::vector<o2::upgrade::OTFParticle> allParticles;
   void decayParticles(const int start, const int stop)
   {
+    if (start >= stop) {
+      return;
+    }
+
     int ndau = 0;
     for (int i = start; i < stop; ++i) {
       o2::upgrade::OTFParticle& particle = allParticles[i];
@@ -134,6 +138,10 @@ struct OnTheFlyDecayer {
 
       particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
       std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
+      if (decayStack.empty()) {
+        continue;
+      }
+
       const float decayRadius = decayer.getDecayRadius();
       const float trackVelocity = o2::upgrade::computeParticleVelocity(particle.p(), pdgDB->GetParticle(particle.pdgCode())->Mass());
       const int charge = pdgDB->GetParticle(particle.pdgCode())->Charge() / 3;
@@ -151,19 +159,15 @@ struct OnTheFlyDecayer {
 
       const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
       particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
-      for (const o2::upgrade::OTFParticle& daughter : decayStack) {
+      for (auto& daughter : decayStack) {
         daughter.setIndicesMother(i, i);
         daughter.setCollisionId(particle.collisionId());
         daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
         daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
         daughter.setProductionTime(trackTimeNS);
         allParticles.push_back(daughter);
-        ndau++;
       }
-    }
-
-    if (start >= stop) {
-      return;
+      ndau += decayStack.size();
     }
 
     decayParticles(stop, stop + ndau);
@@ -172,6 +176,7 @@ struct OnTheFlyDecayer {
   void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>>::iterator const& collision, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
     allParticles.clear();
+    allParticles.reserve(mcParticles.size() * 2);
     if (collision.globalIndex() == 0) {
       indexOffset = 0;
     }
@@ -190,7 +195,8 @@ struct OnTheFlyDecayer {
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    for (const o2::upgrade::OTFParticle& otfParticle : allParticles) {
+    int id = indexOffset;
+    for (auto& otfParticle : allParticles) {
       otfParticle.setIndexOffset(indexOffset);
       if (otfParticle.hasNaN()) {
         histos.fill(HIST("hNaNBookkeeping"), 1);
@@ -199,7 +205,7 @@ struct OnTheFlyDecayer {
       }
 
       tableOTFDecayerBits(otfParticle.getBitsValue());
-      tableMcParticles(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
+      tableMcParticles(tableMcCollisions.lastIndex(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
                        otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
                        otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
                        otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
@@ -208,7 +214,7 @@ struct OnTheFlyDecayer {
     // Particles for later collisions in df's needs to have thier mother
     // and daughter indices adjusted since their global index will be
     // shifted due to the appending of decay products
-    indexOffset += (allParticles.size() - mcParticles.size());
+    indexOffset += allParticles.size();
   }
 };
 

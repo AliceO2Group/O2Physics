@@ -155,8 +155,8 @@ class OTFParticle
   std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
 
   // Checks
-  bool hasDaughters() const { return (mIndicesDaughter[0] > 0); }
-  bool hasMothers() const { return (mIndicesMother[0] > 0); }
+  bool hasDaughters() const { return (mIndicesDaughter[0] >= 0); }
+  bool hasMothers() const { return (mIndicesMother[0] >= 0); }
   bool hasNaN() const
   {
     return std::isnan(mPx) || std::isnan(mPy) || std::isnan(mPz) || std::isnan(mE) ||
