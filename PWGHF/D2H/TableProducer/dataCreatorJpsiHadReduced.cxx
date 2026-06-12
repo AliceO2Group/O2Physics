@@ -299,6 +299,9 @@ struct HfDataCreatorJpsiHadReduced {
     if (doprocessJpsiKData || doprocessJpsiKMc) {
       invMass2JpsiHadMin = (MassBPlus - invMassWindowJpsiHad) * (MassBPlus - invMassWindowJpsiHad);
       invMass2JpsiHadMax = (MassBPlus + invMassWindowJpsiHad) * (MassBPlus + invMassWindowJpsiHad);
+    } else if (doprocessJpsiK0StarData || doprocessJpsiK0StarMc) {
+      invMass2JpsiHadMin = (MassB0 - invMassWindowJpsiHad) * (MassB0 - invMassWindowJpsiHad);
+      invMass2JpsiHadMax = (MassB0 + invMassWindowJpsiHad) * (MassB0 + invMassWindowJpsiHad);
     } else if (doprocessJpsiPhiData || doprocessJpsiPhiMc) {
       invMass2JpsiHadMin = (MassBS - invMassWindowJpsiHad) * (MassBS - invMassWindowJpsiHad);
       invMass2JpsiHadMax = (MassBS + invMassWindowJpsiHad) * (MassBS + invMassWindowJpsiHad);

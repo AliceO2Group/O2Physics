@@ -169,7 +169,7 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bstojpsiphi_lite::ItsChi2NClJpsiDauNeg,
                   hf_cand_bstojpsiphi_lite::TpcChi2NClJpsiDauNeg,
                   hf_cand_bstojpsiphi_lite::AbsEtaJpsiDauNeg,
-                  // kaon features
+                  // phi features
                   hf_cand_bstojpsiphi_lite::PtBach0,
                   hf_cand_bstojpsiphi_lite::ItsNClsLfTrack0,
                   hf_cand_bstojpsiphi_lite::TpcNClsCrossedRowsLfTrack0,
@@ -213,10 +213,10 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
 // string definitions, used for histogram axis labels
 const TString stringPt = "#it{p}_{T} (GeV/#it{c})";
 const TString stringPtJpsi = "#it{p}_{T}(Jpsi) (GeV/#it{c});";
-const TString bSCandTitle = "B_{s}^{0} candidates;";
+const TString bsCandTitle = "B_{s}^{0} candidates;";
 const TString entries = "entries";
-const TString bSCandMatch = "B_{s}^{0} candidates (matched);";
-const TString bSCandUnmatch = "B_{s}^{0} candidates (unmatched);";
+const TString bsCandMatch = "B_{s}^{0} candidates (matched);";
+const TString bsCandUnmatch = "B_{s}^{0} candidates (unmatched);";
 const TString mcParticleMatched = "MC particles (matched);";
 
 /// Bs analysis task
@@ -306,12 +306,11 @@ struct HfTaskBsToJpsiPhiReduced {
     const AxisSpec axisPtJpsi{100, 0., 50.};
     const AxisSpec axisRapidity{100, -2., 2.};
     const AxisSpec axisPtB{(std::vector<double>)binsPt, "#it{p}_{T}^{B_{s}^{0}} (GeV/#it{c})"};
-    const AxisSpec axisPtKa{100, 0.f, 10.f};
     const AxisSpec axisPtPhi{100, 0.f, 10.f};
 
-    registry.add("hMass", bSCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
-    registry.add("hMassJpsi", bSCandTitle + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
-    registry.add("hMassPhi", bSCandTitle + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
+    registry.add("hMass", bsCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
+    registry.add("hMassJpsi", bsCandTitle + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
+    registry.add("hMassPhi", bsCandTitle + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
 
     // histograms processMC
     if (doprocessMc || doprocessMcWithBsMl) {
@@ -319,12 +318,12 @@ struct HfTaskBsToJpsiPhiReduced {
       registry.add("hPtPhiGen", mcParticleMatched + "#phi #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hPtKGen", mcParticleMatched + "Kaon #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hYGenWithProngsInAcceptance", mcParticleMatched + "B_{s}^{0} #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} #it{y}", {HistType::kTH2F, {axisPtProng, axisRapidity}});
-      registry.add("hMassRecSig", bSCandMatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
-      registry.add("hMassJpsiRecSig", bSCandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
-      registry.add("hMassPhiRecSig", bSCandMatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
-      registry.add("hMassRecBg", bSCandUnmatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
-      registry.add("hMassJpsiRecBg", bSCandUnmatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
-      registry.add("hMassPhiRecBg", bSCandMatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
+      registry.add("hMassRecSig", bsCandMatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
+      registry.add("hMassJpsiRecSig", bsCandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
+      registry.add("hMassPhiRecSig", bsCandMatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
+      registry.add("hMassRecBg", bsCandUnmatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
+      registry.add("hMassJpsiRecBg", bsCandUnmatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
+      registry.add("hMassPhiRecBg", bsCandUnmatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});
     }
 
     if (doprocessDataWithBsMl || doprocessMcWithBsMl) {
@@ -390,7 +389,7 @@ struct HfTaskBsToJpsiPhiReduced {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = flagMcMatchRec == o2::hf_decay::hf_cand_beauty::BsToJpsiKK &&
+      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BsToJpsiKK &&
                  flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
     }
 
