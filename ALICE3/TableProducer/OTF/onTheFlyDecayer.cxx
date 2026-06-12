@@ -49,8 +49,8 @@ using namespace o2::framework;
 static constexpr int NumDecays = 7;
 static constexpr int NumParameters = 1;
 static constexpr int DefaultParameters[NumDecays][NumParameters]{{1}, {1}, {1}, {1}, {1}, {1}, {1}};
-static const std::vector<std::string> ParameterNames{"enable"};
-static const std::vector<std::string> ParticleNames{"K0s",
+static const std::vector<std::string> parameterNames{"enable"};
+static const std::vector<std::string> particleNames{"K0s",
                                                     "Lambda",
                                                     "Anti-Lambda",
                                                     "Xi",
@@ -83,10 +83,11 @@ struct OnTheFlyDecayer {
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
-                                                {DefaultParameters[0], NumDecays, NumParameters, ParticleNames, ParameterNames},
+                                                {DefaultParameters[0], NumDecays, NumParameters, particleNames, parameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
 
   std::size_t indexOffset = 0;
+  std::size_t particlesInDataframe = 0;
   static constexpr float PicoToNano = 1.e-3f;
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
@@ -97,7 +98,7 @@ struct OnTheFlyDecayer {
     decayer.setSeed(seed);
     decayer.setBField(magneticField);
     for (int i = 0; i < NumDecays; ++i) {
-      if (enabledDecays->get(ParticleNames[i].c_str(), "enable")) {
+      if (enabledDecays->get(particleNames[i].c_str(), "enable")) {
         LOG(info) << " --- Decay enabled: " << pdgCodes[i];
         mEnabledDecays.push_back(pdgCodes[i]);
       }
@@ -158,9 +159,9 @@ struct OnTheFlyDecayer {
       }
 
       const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
-      particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
+      particle.setIndicesDaughter(particlesInDataframe - indexOffset + allParticles.size(), particlesInDataframe - indexOffset + allParticles.size() + (decayStack.size() - 1));
       for (auto& daughter : decayStack) {
-        daughter.setIndicesMother(i, i);
+        daughter.setIndicesMother(particlesInDataframe - indexOffset + i, particlesInDataframe - indexOffset + i);
         daughter.setCollisionId(particle.collisionId());
         daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
         daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
@@ -178,6 +179,7 @@ struct OnTheFlyDecayer {
     allParticles.clear();
     allParticles.reserve(mcParticles.size() * 2);
     if (collision.globalIndex() == 0) {
+      particlesInDataframe = 0;
       indexOffset = 0;
     }
 
@@ -195,7 +197,7 @@ struct OnTheFlyDecayer {
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    int id = indexOffset;
+    int id = particlesInDataframe;
     for (auto& otfParticle : allParticles) {
       otfParticle.setIndexOffset(indexOffset);
       if (otfParticle.hasNaN()) {
@@ -214,7 +216,7 @@ struct OnTheFlyDecayer {
     // Particles for later collisions in df's needs to have thier mother
     // and daughter indices adjusted since their global index will be
     // shifted due to the appending of decay products
-    indexOffset += allParticles.size();
+    indexOffset += (allParticles.size() - mcParticles.size());
   }
 };
 

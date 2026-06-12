@@ -58,6 +58,9 @@ class OTFParticle
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
+    if (particle.has_daughters()) {
+      mIndicesDaughter = {particle.daughtersIds().front(), particle.daughtersIds().back()};
+    }
     if constexpr (requires { particle.decayerBits(); }) {
       mBits = particle.decayerBits();
     } else {
