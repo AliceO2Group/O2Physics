@@ -216,10 +216,10 @@ struct hadronCut : o2::framework::ConfigurableGroup {
 //   o2::framework::Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
 //   o2::framework::Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
 //   o2::framework::Configurable<float> cfg_min_dcaxy{"cfg_min_dcaxy", 0.1, "min dca XY for v0 legs in cm"};
-// 
+//
 //   o2::framework::Configurable<float> cfg_max_alpha_veto{"cfg_max_alpha_veto", 0.95, "max alpha for photon conversion rejection"};
 //   o2::framework::Configurable<float> cfg_max_qt_veto{"cfg_max_qt_veto", 0.01, "max qT for photon conversion rejection"};
-// 
+//
 //   // for both v0 and cascade
 //   o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3, "min n sigma pi in TPC"};
 //   o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3, "max n sigma pi in TPC"};
@@ -228,7 +228,7 @@ struct hadronCut : o2::framework::ConfigurableGroup {
 //   o2::framework::Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
 //   o2::framework::Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
 // };
-// 
+//
 // struct cascadeCut : o2::framework::ConfigurableGroup {
 //   std::string prefix = "cascadeCut";
 //   o2::framework::Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for lambda in cascade"};
@@ -287,7 +287,7 @@ struct cfgDFeT : o2::framework::ConfigurableGroup {
 //   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 //   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 // };
-// 
+//
 // struct cfgDFeC : o2::framework::ConfigurableGroup {
 //   std::string prefix = "cfgDFeC";
 //   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -324,7 +324,7 @@ class ElectronModule
   //   float phi{1e+10};
   // };
 
-  template <typename TElectronCut, typename TElectronPFCut, typename THadronCut, /*typename TV0Cut, typename TCascadeCut, */typename TDFConfigET, /*typename TDFConfigEV0, typename TDFConfigEC,*/ typename TInitContext, typename TCCDB, typename TTOFResponse>
+  template <typename TElectronCut, typename TElectronPFCut, typename THadronCut, /*typename TV0Cut, typename TCascadeCut, */ typename TDFConfigET, /*typename TDFConfigEV0, typename TDFConfigEC,*/ typename TInitContext, typename TCCDB, typename TTOFResponse>
   void init(TElectronCut const& eCut, TElectronPFCut const& ePFCut, THadronCut const& hCut, /*TV0Cut const& v0Cut, TCascadeCut const& cascadeCut,*/ TDFConfigET const& cfgET, /*TDFConfigEV0 const& cfgEV0, TDFConfigEC const& cfgEC,*/ TInitContext& initContext, TCCDB& ccdb, TTOFResponse const& tofResponse, std::string const& ccdburl)
   {
     mRunNumber = 0;
@@ -1337,8 +1337,8 @@ class ElectronModule
   //   }
   // }
 
-  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, /*typename TV0s, typename TCascades,*/ typename TTrackAssoc, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc/*, typename TPresliceV0, typename TPresliceCascade*/>
-  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, /*TV0s const& v0s, TCascades const& cascades,*/ TTrackAssoc const& trackIndices, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision/*, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc*/)
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, /*typename TV0s, typename TCascades,*/ typename TTrackAssoc, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc /*, typename TPresliceV0, typename TPresliceCascade*/>
+  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, /*TV0s const& v0s, TCascades const& cascades,*/ TTrackAssoc const& trackIndices, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision /*, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc*/)
   {
     if (bcs.size() == 0) {
       return;
