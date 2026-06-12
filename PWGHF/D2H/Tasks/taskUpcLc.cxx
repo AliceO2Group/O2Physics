@@ -92,11 +92,7 @@ DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
 DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::M,
                   full::Pt,
-                  full::BkgScore,
-                  full::AmpFT0A,
-                  full::AmpFT0C,
-                  full::ZdcTimeZNA,
-                  full::ZdcTimeZNC);
+                  full::BkgScore);
 
 DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::M,
@@ -106,11 +102,7 @@ DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::PtProng2,
                   full::Chi2PCA,
                   full::DecayLength,
-                  full::Cpa,
-                  full::AmpFT0A,
-                  full::AmpFT0C,
-                  full::ZdcTimeZNA,
-                  full::ZdcTimeZNC);
+                  full::Cpa);
 } // namespace o2::aod
 
 /// Λc± → p± K∓ π± analysis task
@@ -124,7 +116,9 @@ struct HfTaskUpcLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "Only fill the tree for candidates that pass the single-gap UPC events"};
   Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "Fill Tree for UPC QA"};
+  Configurable<bool> fillHistQa{"fillHistQa", false, "Fill histograms for UPC detector QA"};
   Configurable<bool> verticesWithUpc{"verticesWithUpc", false, "Consider vertices with UPC settings"};
+  Configurable<float> zdcTimeThreshold{"zdcTimeThreshold", 2., "Threshold for ZNA/ZNC time"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
@@ -161,13 +155,14 @@ struct HfTaskUpcLc {
     }
 
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{500, 0., 500}, {500, 0., 500}}});
+    registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{200, 0., 200}, {200, 0., 200}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{100, 0., 10}, {100, 0., 10}}});
     registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{200, -10., 10}, {200, -10., 10}}});
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
     registry.add("Data/hUpcMulti", "Multiplicity of UPC events;Multiplicity;Counts", {HistType::kTH1F, {{200, -0.5, 199.5}}});
     registry.add("Data/hUpcVtz", "Vertex Z position of UPC events;Vz (cm);Counts", {HistType::kTH1F, {{200, -10., 10.}}});
-
+    registry.add("Data/eta_vs_Multi_A", "Eta vs Multiplicity of Gap A Events;Eta;Multiplicity", {HistType::kTH2F, {{20, -1., 1.}, {200, -0.5, 199.5}}});
+    registry.add("Data/eta_vs_Multi_C", "Eta vs Multiplicity of Gap C Events;Eta;Multiplicity", {HistType::kTH2F, {{20, -1., 1.}, {200, -0.5, 199.5}}});
     hfEvSel.addHistograms(registry);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -202,6 +197,9 @@ struct HfTaskUpcLc {
       }
       const auto thisCollId = collision.globalIndex();
       const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
+      if (!fillTreeUpcQa && !fillHistQa && groupedLcCandidates.size() == 0) {
+        continue;
+      }
       const auto numPvContributors = collision.numContrib();
       const auto& bc = collision.template bc_as<BCsType>();
 
@@ -226,26 +224,43 @@ struct HfTaskUpcLc {
       float zdcEnergyZNC = -1.f;
       float zdcTimeZNA = -1.f;
       float zdcTimeZNC = -1.f;
+      bool gapA0nXn = false;
+      bool gapCXn0n = false;
+
       if (verticesWithUpc && !upcFlag) {
         continue;
       }
+
       if (hasZdc) {
         const auto zdc = bcForUPC.zdc();
         zdcEnergyZNA = zdc.energyCommonZNA();
         zdcEnergyZNC = zdc.energyCommonZNC();
         zdcTimeZNA = zdc.timeZNA();
         zdcTimeZNC = zdc.timeZNC();
-        registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
-        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-        registry.fill(HIST("Data/zdc/timeZNA_vs_timeZNC"), zdcTimeZNA, zdcTimeZNC);
+        if (fillHistQa) {
+          registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+          registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
+          registry.fill(HIST("Data/zdc/timeZNA_vs_timeZNC"), zdcTimeZNA, zdcTimeZNC);
+        }
         registry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
       }
-      if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-        registry.fill(HIST("Data/hUpcMulti"), collision.multNTracksPV());
-        registry.fill(HIST("Data/hUpcVtz"), collision.posZ());
-        if (fillTreeUpcQa) {
-          rowUpcQa(numPvContributors, collision.multNTracksPV(), collision.posZ(), fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
-        }
+      const bool ignoreZdcTime = (zdcTimeThreshold < 0.f);
+      const auto multNTracksPV = collision.multNTracksPV();
+      const auto posZ = collision.posZ();
+      if (gap == o2::aod::sgselector::TrueGap::SingleGapA && (ignoreZdcTime || (std::abs(zdcTimeZNA) > zdcTimeThreshold && std::abs(zdcTimeZNC) < zdcTimeThreshold))) {
+        gapA0nXn = true;
+      }
+      if (gap == o2::aod::sgselector::TrueGap::SingleGapC && (ignoreZdcTime || (std::abs(zdcTimeZNA) < zdcTimeThreshold && std::abs(zdcTimeZNC) > zdcTimeThreshold))) {
+        gapCXn0n = true;
+      }
+      if (fillTreeOnlySingleGap && !gapA0nXn && !gapCXn0n) {
+        continue;
+      }
+      registry.fill(HIST("Data/hUpcMulti"), multNTracksPV);
+      registry.fill(HIST("Data/hUpcVtz"), posZ);
+
+      if (fillTreeUpcQa) {
+        rowUpcQa(numPvContributors, multNTracksPV, posZ, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
       }
 
       for (const auto& candidate : groupedLcCandidates) {
@@ -262,34 +277,28 @@ struct HfTaskUpcLc {
         const auto decayLength = candidate.decayLength();
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
+        const auto eta = candidate.eta();
 
         double outputBkg(-1);
+        if (gapA0nXn) {
+          registry.fill(HIST("Data/eta_vs_Multi_A"), eta, multNTracksPV);
+        }
+        if (gapCXn0n) {
+          registry.fill(HIST("Data/eta_vs_Multi_C"), eta, multNTracksPV);
+        }
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
-
           if constexpr (FillMl) {
             const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
             if (mlProb.size() == NumberOfMlClasses) {
               outputBkg = mlProb[MlClassBackground]; /// bkg score
             }
             /// Fill the ML outputScores and variables of candidate
-            if (fillTreeOnlySingleGap) {
-              if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                rowCandUpcBdt(massLc, pt, outputBkg, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
-              }
-            } else {
-              rowCandUpcBdt(massLc, pt, outputBkg, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
-            }
+            rowCandUpcBdt(massLc, pt, outputBkg);
 
           } else {
-            if (fillTreeOnlySingleGap) {
-              if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
-              }
-            } else {
-              rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
-            }
+            rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa);
           }
         };
 

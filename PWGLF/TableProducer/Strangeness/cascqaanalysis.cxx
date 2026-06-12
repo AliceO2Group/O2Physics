@@ -121,6 +121,7 @@ struct Cascqaanalysis {
   Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "TF border cut"};
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "ITS ROF border cut"};
   Configurable<bool> applyBcBorderCutsOnGen{"applyBcBorderCutsOnGen", false, "Apply enabled BC-level TF and ITS ROF border cuts on generated-level MC collisions"};
+  Configurable<bool> applyRCTOnGen{"applyRCTOnGen", false, "Apply enabled BC-level RCT run-condition selection on generated-level MC collisions"};
   Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", 1, "No collisions in +-2us window"};
 
   Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
@@ -223,7 +224,7 @@ struct Cascqaanalysis {
   void init(InitContext const&)
   {
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
-    TString hNEventsMCLabels[7] = {"All", "z vrtx", "BC TF/ITS ROF border", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
+    TString hNEventsMCLabels[8] = {"All", "z vrtx", "BC TF/ITS ROF border", "RCTFlagsChecker", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
     TString hNEventsLabels[14] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "isVertexTOFmatched", "kNoCollInTimeRangeNarrow", "z vrtx", "RCTFlagsChecker", "INEL", "INEL>0", "INEL>1"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{14, 0.f, 14.f}}});
@@ -241,7 +242,7 @@ struct Cascqaanalysis {
       // Rec. lvl
       registry.add("fakeEvents", "fakeEvents", {HistType::kTH1F, {{1, -0.5f, 0.5f}}});
       // Gen. lvl
-      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{7, 0.0f, 7.0f}}});
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{8, 0.0f, 8.0f}}});
       for (int n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
@@ -295,7 +296,7 @@ struct Cascqaanalysis {
       setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0MsignalPVContr"))->GetZaxis());
     }
 
-    rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad, requireRCTFlagChecker || applyRCTOnGen);
     if (cfgEvtRCTFlagCheckerFV0Check) {
       rctChecker.set(o2::aod::rctsel::kFV0Bad);
     }
@@ -496,6 +497,12 @@ struct Cascqaanalysis {
       return false;
     }
     return true;
+  }
+
+  template <typename TBC>
+  bool acceptGeneratedEventRCT(TBC const& bc)
+  {
+    return !applyRCTOnGen || rctChecker(bc);
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels,
@@ -709,28 +716,33 @@ struct Cascqaanalysis {
       return;
     }
     registry.fill(HIST("hNEventsMC"), 1.5);
-    if (!acceptGeneratedEventBcBorderCuts(mcCollision.bc_as<BCsWithBcSels>())) {
+    const auto bc = mcCollision.bc_as<BCsWithBcSels>();
+    if (!acceptGeneratedEventBcBorderCuts(bc)) {
+      return;
+    }
+    registry.fill(HIST("hNEventsMC"), 2.5);
+    if (!acceptGeneratedEventRCT(bc)) {
       return;
     }
     registry.fill(HIST("hZCollisionGen"), mcCollision.posZ());
-    registry.fill(HIST("hNEventsMC"), 2.5);
+    registry.fill(HIST("hNEventsMC"), 3.5);
 
     // Define the type of generated MC collision
     EventTypeBin evType = kINEL;
     uint8_t flagsGen = 0;
     flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
-    registry.fill(HIST("hNEventsMC"), 3.5);
+    registry.fill(HIST("hNEventsMC"), 4.5);
     // Generated collision is INEL>0
     if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
       evType = kINELgt0;
-      registry.fill(HIST("hNEventsMC"), 4.5);
+      registry.fill(HIST("hNEventsMC"), 5.5);
     }
     // Generated collision is INEL>1
     if (pwglf::isINELgtNmc(mcParticles, 1, pdgDB)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
       evType = kINELgt1;
-      registry.fill(HIST("hNEventsMC"), 5.5);
+      registry.fill(HIST("hNEventsMC"), 6.5);
     }
 
     registry.fill(HIST("hCentFT0M_genMC"), mcCollision.centFT0M(), evType);
@@ -805,7 +817,7 @@ struct Cascqaanalysis {
     uint8_t flagsAssoc = 0;
     if (evtReconstructedAndINEL) {
       flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINEL;
-      registry.fill(HIST("hNEventsMC"), 6.5);
+      registry.fill(HIST("hNEventsMC"), 7.5);
     }
     if (evtReconstructedAndINELgt0) {
       flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt0;

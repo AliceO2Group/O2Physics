@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskCd.cxx
-/// \brief Cd± → d± K∓ π±  analysis task
+/// \brief cd± → d± K∓ π±  analysis task
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg Universiity
 
 #include "PWGHF/Core/CentralityEstimation.h"
@@ -104,6 +104,7 @@ DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, float);        //! Number of TP
 DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, float);        //! Number of TPC signas for kaon
 DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, float);        //! Number of ITS signas
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! Candidates falg
+DECLARE_SOA_COLUMN(CandidateSign, candidateSign, int8_t);       //! Candidates sign
 DECLARE_SOA_COLUMN(Cent, cent, float);                          //! Centrality
 DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);                          //! Vertex Z
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                  //! Global index for the collisionAdd commentMore actions
@@ -131,6 +132,7 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
                   full::CandidateSelFlag,
+                  full::CandidateSign,
                   full::Cent);
 
 // full table for local Rotation & Event Mixing
@@ -159,6 +161,7 @@ DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
                   full::NSigmaTpcKa,
                   full::NSigmaTofKa,
                   full::CandidateSelFlag,
+                  full::CandidateSign,
                   full::Cent,
                   full::VtxZ,
                   full::GIndexCol,
@@ -175,6 +178,10 @@ struct HfTaskCd {
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
   Configurable<bool> fillCandLiteTree{"fillCandLiteTree", false, "Flag to fill candiates lite tree"};
   Configurable<bool> fillCandFullTree{"fillCandFullTree", false, "Flag to fill candiates full tree"};
+  Configurable<bool> cfgUseTofPidForDeuteron{"cfgUseTofPidForDeuteron", false, "Use TOF PID for deuteron candidates"};
+  Configurable<bool> cfgCutOnDeuteronDcaOrdering{"cfgCutOnDeuteronDcaOrdering", false, "Require deuteron DCA to be smaller than kaon and pion DCAs"};
+  Configurable<float> cfgMinDeuteronDcaPreselection{"cfgMinDeuteronDcaPreselection", 0.004, "Minimum deuteron DCA for preselection (cm)"};
+  Configurable<float> cfgMaxDeuteronTofPidPreselection{"cfgMaxDeuteronTofPidPreselection", 5, "Maximum |nSigma TOF| for deuteron preselection"};
 
   SliceCache cache;
 
@@ -401,11 +408,13 @@ struct HfTaskCd {
       if (fillCandLiteTree || fillCandFullTree) {
 
         int candFlag = -999;
+        int candSign = -999;
 
         float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f, nSigmaTpcPr = 0.f;
         float nSigmaItsDe = 0.f;
         float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
 
+        float dcaDeuteron = 0.f, dcaKaon = 0.f, dcaPion = 0.f;
         // int itsNClusterSizeDe = 0;
 
         float tpcSignalsDe = 0.f;
@@ -420,8 +429,8 @@ struct HfTaskCd {
         nSigmaTpcKa = candidate.nSigTpcKa1();
         nSigmaTofKa = candidate.nSigTofKa1();
 
-        const bool selDeKPi = (candidate.isSelCdToDeKPi() >= 1);
-        const bool selPiKDe = (candidate.isSelCdToPiKDe() >= 1);
+        const bool selDeKPi = (candidate.isSelCdToDeKPi() >= selectionFlagCd);
+        const bool selPiKDe = (candidate.isSelCdToPiKDe() >= selectionFlagCd);
 
         auto prong0 = candidate.template prong0_as<TrackType>();
         auto prong1 = candidate.template prong1_as<TrackType>();
@@ -429,6 +438,8 @@ struct HfTaskCd {
 
         auto prong0Its = tracksWithItsPid.iteratorAt(candidate.prong0Id() - tracksWithItsPid.offset());
         auto prong2Its = tracksWithItsPid.iteratorAt(candidate.prong2Id() - tracksWithItsPid.offset());
+
+        candSign = static_cast<int8_t>(-prong1.sign());
 
         tpcSignalsKa = prong1.tpcSignal();
 
@@ -446,6 +457,10 @@ struct HfTaskCd {
           tpcSignalsDe = prong0.tpcSignal();
           tpcSignalsPi = prong2.tpcSignal();
           itsSignalsDe = itsSignal(prong0);
+
+          dcaDeuteron = candidate.impactParameter0();
+          dcaKaon = candidate.impactParameter1();
+          dcaPion = candidate.impactParameter2();
         } else if (selPiKDe) {
           candFlag = -1;
           pSignedDe = prong2.tpcInnerParam() * prong2.sign();
@@ -460,6 +475,10 @@ struct HfTaskCd {
           tpcSignalsDe = prong2.tpcSignal();
           tpcSignalsPi = prong0.tpcSignal();
           itsSignalsDe = itsSignal(prong2);
+
+          dcaDeuteron = candidate.impactParameter2();
+          dcaKaon = candidate.impactParameter1();
+          dcaPion = candidate.impactParameter0();
         }
 
         //  PID QA
@@ -476,6 +495,15 @@ struct HfTaskCd {
         registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTpcKa);
         registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
 
+        if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
+          continue;
+        }
+        if (std::abs(dcaDeuteron) < cfgMinDeuteronDcaPreselection) {
+          continue;
+        }
+        if (cfgCutOnDeuteronDcaOrdering && (std::abs(dcaDeuteron) > std::abs(dcaKaon) || std::abs(dcaDeuteron) > std::abs(dcaPion))) {
+          continue;
+        }
         if (fillCandLiteTree) {
 
           rowCandCdLite(
@@ -498,6 +526,7 @@ struct HfTaskCd {
             nSigmaItsDe,
             nSigmaTofDe,
             candFlag,
+            candSign,
             cent);
         }
 
@@ -528,6 +557,7 @@ struct HfTaskCd {
             nSigmaTpcKa,
             nSigmaTofKa,
             candFlag,
+            candSign,
             cent,
             collision.posZ(),
             collision.globalIndex(),

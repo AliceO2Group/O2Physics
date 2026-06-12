@@ -378,7 +378,7 @@ struct QuarkoniaToHyperons {
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // For manual sliceBy
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   enum Selection : uint64_t { selCosPA = 0,
                               selRadius,
@@ -935,7 +935,7 @@ struct QuarkoniaToHyperons {
     histos.print();
   }
 
-  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator or so
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber() || (ccdbConfigurations.useCustomRunNumber && mRunNumber == ccdbConfigurations.customRunNumber)) {
@@ -2497,7 +2497,7 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
   {
     // Custom grouping
     v0sGrouped.clear();
@@ -2674,7 +2674,7 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     // Custom grouping
     v0sGrouped.clear();

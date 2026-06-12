@@ -22,7 +22,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/Core/TrackUtilities.h"
-#include "ALICE3/DataModel/OTFMCParticle.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
@@ -57,6 +56,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -66,7 +66,7 @@ using namespace o2::constants::physics;
 
 using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
 using Alice3TracksACTS = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3, aod::TracksAlice3Pdg>;
-using Alice3TracksOTF = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackWithDauLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3>;
+using Alice3TracksOTF = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3>;
 using Alice3MCParticles = soa::Join<aod::McParticles, aod::MCParticlesExtraA3>;
 
 struct Alice3strangenessFinder {
@@ -270,34 +270,21 @@ struct Alice3strangenessFinder {
   template <typename TTrackType>
   bool checkSameMother(TTrackType const& track1, TTrackType const& track2)
   {
-    // MC label points to McPartWithDaus
-    if constexpr (requires { track1.has_mcPartWithDau(); }) {
-      if (!track1.has_mcPartWithDau() || !track2.has_mcPartWithDau()) {
-        return false;
-      }
-      auto mcParticle1 = track1.template mcPartWithDau_as<aod::McPartWithDaus>();
-      auto mcParticle2 = track2.template mcPartWithDau_as<aod::McPartWithDaus>();
-      if (mcParticle1.mothersIds().empty() || mcParticle2.mothersIds().empty()) {
-        return false;
-      }
-      return mcParticle1.mothersIds()[0] == mcParticle2.mothersIds()[0];
-    } else { // MC label points directly to aod::McParticles
-      bool returnValue = false;
-      if (track1.has_mcParticle() && track2.has_mcParticle()) {
-        auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
-        auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
-        if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
-          for (const auto& m1 : mcParticle1.template mothers_as<aod::McParticles>()) {
-            for (const auto& m2 : mcParticle2.template mothers_as<aod::McParticles>()) {
-              if (m1.globalIndex() == m2.globalIndex()) {
-                returnValue = true;
-              }
+    bool returnValue = false;
+    if (track1.has_mcParticle() && track2.has_mcParticle()) {
+      auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
+      auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
+      if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
+        for (const auto& m1 : mcParticle1.template mothers_as<aod::McParticles>()) {
+          for (const auto& m2 : mcParticle2.template mothers_as<aod::McParticles>()) {
+            if (m1.globalIndex() == m2.globalIndex()) {
+              returnValue = true;
             }
           }
         }
       }
-      return returnValue;
     }
+    return returnValue;
   }
 
   template <typename TTrackType>
@@ -432,7 +419,7 @@ struct Alice3strangenessFinder {
   }
 
   template <typename TCollision, typename TTracksGrouped>
-  void processFindV0CandidateNoPid(TCollision collision, TTracksGrouped negTracksGrouped, TTracksGrouped posTracksGrouped, TTracksGrouped bachTracksGrouped)
+  void processFindV0CandidateNoPid(const TCollision& collision, const TTracksGrouped& negTracksGrouped, const TTracksGrouped& posTracksGrouped, const TTracksGrouped& bachTracksGrouped)
   {
     const std::array<float, 3> vtx = {collision.posX(), collision.posY(), collision.posZ()};
     histos.fill(HIST("hEventCounter"), 1.0);
@@ -465,18 +452,16 @@ struct Alice3strangenessFinder {
         }
 
         // OTF: pdg code from mcParticle table
-        if constexpr (requires { posTrack.has_mcPartWithDau(); }) {
-          if (!posTrack.has_mcPartWithDau() && !negTrack.has_mcPartWithDau()) {
-            continue;
-          }
-          auto mcParticlePos = posTrack.template mcPartWithDau_as<aod::McPartWithDaus>();
-          auto mcParticleNeg = negTrack.template mcPartWithDau_as<aod::McPartWithDaus>();
-          if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
-            continue;
-          }
-          if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
-            continue;
-          }
+        if (!posTrack.has_mcParticle() && !negTrack.has_mcParticle()) {
+          continue;
+        }
+        auto mcParticlePos = posTrack.template mcParticle_as<aod::McParticles>();
+        auto mcParticleNeg = negTrack.template mcParticle_as<aod::McParticles>();
+        if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
+          continue;
+        }
+        if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
+          continue;
         }
 
         histos.fill(HIST("hV0Building"), 2.0);
@@ -682,7 +667,7 @@ struct Alice3strangenessFinder {
     processFindV0CandidateNoPid(collision, negTracksGrouped, posTracksGrouped, bachTracksGrouped);
   }
 
-  void processFindV0CandidateOTF(aod::Collision const& collision, Alice3TracksOTF const&, aod::McPartWithDaus const&)
+  void processFindV0CandidateOTF(aod::Collision const& collision, Alice3TracksOTF const&, aod::McParticles const&)
   {
     auto negTracksGrouped = negativeSecondaryTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto posTracksGrouped = positiveSecondaryTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);

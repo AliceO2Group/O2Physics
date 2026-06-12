@@ -96,7 +96,7 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
     auto const& pid = mPIDspecies->at(speciesIndex);
     auto nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
 
-    if (tofForced && !track.hasTOF()) {
+    if ((track.pt() > ptThreshold) && !track.hasTOF()) {
       return false;
     }
 

@@ -15,8 +15,6 @@
 /// \author Abhi Modak (abhi.modak@cern.ch), Lucas José (lucas.jose.franco.da.silva@cern.ch)
 /// \since September 10, 2025
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -37,6 +35,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TPDGCode.h>
 
 #include <cmath>
 #include <cstdint>

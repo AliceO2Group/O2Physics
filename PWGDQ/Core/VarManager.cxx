@@ -427,6 +427,26 @@ void VarManager::FillEfficiency(float* values)
     // get the efficiency value from the histogram
     values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarFT0c);
     values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
+  } else if (fgEfficiencyType == kPairPtCentFT0cCosThetaStarRandom) {
+    if (!fgEfficiencyHist) {
+      LOG(fatal) << "efficiency histogram not set";
+      return;
+    }
+    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    // Get the bin indices for the efficiency histogram
+    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
+    binPt = (binPt == 0 ? 1 : binPt);
+    binPt = (binPt > efficiencyHist->GetXaxis()->GetNbins() ? efficiencyHist->GetXaxis()->GetNbins() : binPt);
+    int binCent = efficiencyHist->GetYaxis()->FindBin(values[kCentFT0C]);
+    binCent = (binCent == 0 ? 1 : binCent);
+    binCent = (binCent > efficiencyHist->GetYaxis()->GetNbins() ? efficiencyHist->GetYaxis()->GetNbins() : binCent);
+    int binCosThetaStarRandom = efficiencyHist->GetZaxis()->FindBin(values[kCosThetaStarRandom]);
+    binCosThetaStarRandom = (binCosThetaStarRandom == 0 ? 1 : binCosThetaStarRandom);
+    binCosThetaStarRandom = (binCosThetaStarRandom > efficiencyHist->GetZaxis()->GetNbins() ? efficiencyHist->GetZaxis()->GetNbins() : binCosThetaStarRandom);
+
+    // get the efficiency value from the histogram
+    values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarRandom);
+    values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
   } else {
     LOG(warning) << "FillEfficiency: unknown efficiency type " << fgEfficiencyType << ", using default efficiency = 1";
     values[kPairEfficiency] = 1;
@@ -1719,6 +1739,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kAmplitudeFT0A] = "a.u.";
   fgVariableNames[kAmplitudeFT0C] = "FT0C amplitude";
   fgVariableUnits[kAmplitudeFT0C] = "a.u.";
+  fgVariableNames[kAmplitudeFT0M] = "FT0M amplitude";
+  fgVariableUnits[kAmplitudeFT0M] = "a.u.";
   fgVariableNames[kTimeFT0A] = "FT0A time";
   fgVariableUnits[kTimeFT0A] = "ns";
   fgVariableNames[kTimeFT0C] = "FT0C time";
@@ -2638,6 +2660,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
   fgVarNamesMap["kAmplitudeFT0A"] = kAmplitudeFT0A;
   fgVarNamesMap["kAmplitudeFT0C"] = kAmplitudeFT0C;
+  fgVarNamesMap["kAmplitudeFT0M"] = kAmplitudeFT0M;
+  fgVarNamesMap["kFT0OrA"] = kFT0OrA;
+  fgVarNamesMap["kFT0OrC"] = kFT0OrC;
   fgVarNamesMap["kTimeFT0A"] = kTimeFT0A;
   fgVarNamesMap["kTimeFT0C"] = kTimeFT0C;
   fgVarNamesMap["kTriggerMaskFT0"] = kTriggerMaskFT0;

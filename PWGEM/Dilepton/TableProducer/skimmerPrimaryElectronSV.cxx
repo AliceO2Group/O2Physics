@@ -14,59 +14,41 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/ElectronModule.h"
-#include "PWGEM/Dilepton/Utils/MlResponseO2Track.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 #include <PID/PIDTOFParamService.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
 
-#include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdint>
-#include <map>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include <math.h>
 
-struct skimmerPrimaryElectronSCT {
+struct skimmerPrimaryElectronSV {
 
   // using MyBCs = o2::soa::Join<o2::aod::BCsWithTimestamps, o2::aod::BcSels>;
   using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::Timestamps>;
@@ -208,7 +190,7 @@ struct skimmerPrimaryElectronSCT {
     initCCDB(bc);
     electronModule.processWithoutTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, nullptr, products, mRegistry);
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_SA, "process reconstructed info only", true); // standalone
+  PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_SA, "process reconstructed info only", true); // standalone
 
   void processRec_TTCA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
@@ -219,7 +201,7 @@ struct skimmerPrimaryElectronSCT {
     initCCDB(bc);
     electronModule.processWithTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_TTCA, "process reconstructed info only", false); // with TTCA
+  PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_TTCA, "process reconstructed info only", false); // with TTCA
 
   void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
@@ -230,7 +212,7 @@ struct skimmerPrimaryElectronSCT {
     initCCDB(bc);
     electronModule.processWithoutTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, nullptr, products, mRegistry);
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
+  PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
 
   void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
   {
@@ -241,7 +223,7 @@ struct skimmerPrimaryElectronSCT {
     initCCDB(bc);
     electronModule.processWithTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronSCT, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
+  PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
 
   // ---------- for MC ----------
 
@@ -254,7 +236,7 @@ struct skimmerPrimaryElectronSCT {
     initCCDB(bc);
     electronModule.processWithoutTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, mcParticles, products, mRegistry);
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronSCT, processMC_SA, "process reconstructed and MC info ", false); // without TTCA in MC
+  PROCESS_SWITCH(skimmerPrimaryElectronSV, processMC_SA, "process reconstructed and MC info ", false); // without TTCA in MC
 
   void processMC_TTCA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McParticles const& mcParticles)
   {
@@ -265,7 +247,7 @@ struct skimmerPrimaryElectronSCT {
     initCCDB(bc);
     electronModule.processWithTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, mcParticles, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronSCT, processMC_TTCA, "process reconstructed info only", false); // with TTCA in MC
+  PROCESS_SWITCH(skimmerPrimaryElectronSV, processMC_TTCA, "process reconstructed info only", false); // with TTCA in MC
 };
 
 struct associateAmbiguousElectron {
@@ -296,6 +278,6 @@ o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext co
 {
   o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
   return o2::framework::WorkflowSpec{
-    adaptAnalysisTask<skimmerPrimaryElectronSCT>(cfgc, o2::framework::TaskName{"skimmer-primary-electron-sct"}),
+    adaptAnalysisTask<skimmerPrimaryElectronSV>(cfgc, o2::framework::TaskName{"skimmer-primary-electron-sv"}),
     adaptAnalysisTask<associateAmbiguousElectron>(cfgc, o2::framework::TaskName{"associate-ambiguous-electron"})};
 }
