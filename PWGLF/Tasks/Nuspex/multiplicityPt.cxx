@@ -91,10 +91,10 @@ std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
 std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
 std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
 // Total counts
-std::array<std::shared_ptr<TH2>, NCentHists> hTotalMomPosCent{};
-std::array<std::shared_ptr<TH2>, NCentHists> hTotalMomNegCent{};
-std::array<std::shared_ptr<TH2>, NCentHists> hTotalPtPosCent{};
-std::array<std::shared_ptr<TH2>, NCentHists> hTotalPtNegCent{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomPosCent{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomNegCent{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtPosCent{};
+std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtNegCent{};
 // Counts for particles
 std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomPosCent{};
 std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomNegCent{};
