@@ -384,7 +384,7 @@ struct QaEfficiency {
     hPtTrkItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedPrmRecoEv[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated_reco_ev", PDGs[histogramIndex]), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
-    
+
     // Str
     hPtItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
