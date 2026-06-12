@@ -701,28 +701,32 @@ struct FlowSP {
 
       std::vector<double> paramsMultPVCut;
       std::vector<double> paramsMultCut; 
+      int y2023 = 2023; 
+      int y2024 = 2024; 
+      std::array<int> nSigma = {1,2,3}; 
+
       if(cfg.cUsePredeFinedSigma){
-          if(cfg.cUsePredeFinedSigmaYear == 2023) {
-            if(cfg.cUsePredeFinedSigmaNsigma == 1){
+          if(cfg.cUsePredeFinedSigmaYear == y2023) {
+            if(cfg.cUsePredeFinedSigmaNsigma == nSigma[0]){
               paramsMultPVCut = {2615.47, -90.5747, 1.25125, -0.00847075, 2.41183e-05, 3399.72, -121.652, 1.84077, -0.0142886, 4.71449e-05}; 
               paramsMultCut = {1716.84, -56.5663, 0.715202, -0.00426007, 1.05075e-05, 2550.82, -87.4873, 1.22205, -0.00852644, 2.54248e-05 }; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == 2){
+            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[1]){
               paramsMultPVCut = {2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05}; 
               paramsMultCut = {1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == 3){
+            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[2]){
               paramsMultPVCut = {1837.75, -60.852, 0.724331, -0.00366975, 6.47562e-06, 4182.12, -152.459, 2.41955, -0.0199481, 6.93894e-05}; 
               paramsMultCut = {885.976, -26.3397, 0.240114, -0.000496168, -1.82704e-06, 3384.43, -118.377, 1.72823, -0.0127887, 4.03432e-05}; 
             } else { 
               LOGF(fatal, "nSigma can only be 1-3 please reset the variable or give the parameters manually and set cfg.cUsePredeFinedSigma to FALSE");
             }
-          } else if(cfg.cUsePredeFinedSigmaYear == 2024){ 
-            if(cfg.cUsePredeFinedSigmaNsigma == 1){
+          } else if(cfg.cUsePredeFinedSigmaYear == y2024){ 
+            if(cfg.cUsePredeFinedSigmaNsigma == nSigma[0]){
               paramsMultPVCut = {2726.93, -100.128, 1.45046, -0.0099354, 2.71182e-05, 3404.72, -126.569, 1.92500, -0.0142653, 4.31645e-05}; 
               paramsMultCut = {1858.77, -66.6070, 0.929146, -0.00606961, 1.57639e-05 , 2672.43, -96.7708, 1.39109 , -0.00942498, 2.54268e-05}; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == 2){
+            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[1]){
               paramsMultPVCut = {2390.04, -87.3154, 1.23176, -0.00806869, 2.06624e-05, 3744.26, -139.927, 2.16863, -0.0165329, 5.17269e-05}; 
               paramsMultCut = {1451.23, -51.4314, 0.694609, -0.00433959, 1.06698e-05, 3080.42, -112.071, 1.63166 , -0.0112533 , 3.10348e-05}; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == 3){
+            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[2]){
               paramsMultPVCut = {2053.64, -74.5950, 1.01563, -0.00621473, 1.41276e-05, 4083.79, -153.304, 2.41333, -0.0188198, 6.03974e-05}; 
               paramsMultCut = {1042.50, -35.9374, 0.440681, -0.00222218, 3.20643e-06, 3488.53, -127.396, 1.87339 , -0.0131007, 3.67434e-05}; 
             } else { 
