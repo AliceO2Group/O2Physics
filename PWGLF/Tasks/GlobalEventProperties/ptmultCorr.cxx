@@ -121,20 +121,18 @@ AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf
 AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
 AxisSpec axisDeltaPt{50, -1.0, +1.0, "#Delta(pT)"};
-AxisSpec axisDCAxy{100, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
+AxisSpec axisDCAxy{600, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
 AxisSpec axisGenPtVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
 // axisGenTrkType auto-expands: kGenTrkTypeend is now 8, giving 6 bins (kGenAll … kGenAllCharged)
 AxisSpec axisGenTrkType = {kGenTrkTypeend - 1, +kGenTrkTypebegin + 0.5, +kGenTrkTypeend - 0.5, "", "GenTrackTypeAxis"};
 AxisSpec axisRecTrkType = {kRecTrkTypeend - 1, +kRecTrkTypebegin + 0.5, +kRecTrkTypeend - 0.5, "", "RecTrackTypeAxis"};
 AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
 auto static constexpr KminCharge = 3.f;
-auto static constexpr KminPtCut = 0.1f;
 
 struct PtmultCorr {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
-  Service<ccdb::BasicCCDBManager> ccdb;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
   Configurable<float> etaRange{"etaRange", 0.8f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
@@ -146,33 +144,19 @@ struct PtmultCorr {
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
   Configurable<float> extraphicut4{"extraphicut4", 6.253f, "Extra Phi cut 4"};
 
-  // Track quality cuts (matching piKpRAA analysis)
   Configurable<uint8_t> cfgMinNClusITS{"cfgMinNClusITS", 7, "Minimum ITS clusters"};
   Configurable<int16_t> cfgMinNCrossedRows{"cfgMinNCrossedRows", 70, "Minimum TPC crossed rows"};
   Configurable<int16_t> cfgMinNcls{"cfgMinNcls", 130, "Minimum TPC clusters (applied only if cfgApplyNclSel is true)"};
-  Configurable<bool> cfgApplyNclSel{"cfgApplyNclSel", true, "Enable minimum TPC cluster selection"};
+  Configurable<bool> cfgApplyNclSel{"cfgApplyNclSel", false, "Enable minimum TPC cluster selection"};
   Configurable<bool> cfgUseNclsPID{"cfgUseNclsPID", false, "Use NclsPID instead of NclsFound for the Ncls cut"};
   Configurable<float> cfgMinChi2ClsTPC{"cfgMinChi2ClsTPC", 0.5f, "Minimum TPC chi2/cls"};
   Configurable<float> cfgMaxChi2ClsTPC{"cfgMaxChi2ClsTPC", 4.0f, "Maximum TPC chi2/cls"};
   Configurable<float> cfgMaxChi2ClsITS{"cfgMaxChi2ClsITS", 36.0f, "Maximum ITS chi2/cls"};
-  Configurable<float> cfgNSigmaDCAxy{"cfgNSigmaDCAxy", 1.0f, "nSigma scaling for DCAxy cut"};
-  Configurable<float> cfgNSigmaDCAz{"cfgNSigmaDCAz", 1.0f, "nSigma scaling for DCAz cut"};
-
-  // CCDB paths for pT-dependent DCA cuts
-  Configurable<std::string> pathDCAxy{"pathDCAxy", "", "CCDB path for DCAxy parametrisation (leave empty to skip)"};
-  Configurable<std::string> pathDCAz{"pathDCAz", "", "CCDB path for DCAz parametrisation (leave empty to skip)"};
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable CCDB timestamp"};
+  Configurable<float> cfgDCAz{"cfgDCAz", 0.04, "DCAz cut in cm"};
 
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
-
-  // DCA cache (loaded from CCDB)
-  struct ConfigDCA {
-    TH1F* hDCAxy = nullptr;
-    TH1F* hDCAz = nullptr;
-    bool loaded = false;
-  } cfgDCA;
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
@@ -185,25 +169,13 @@ struct PtmultCorr {
   Configurable<bool> isApplyOccuCut{"isApplyOccuCut", false, "Enable occupancy selection"};
 
   // Secondary estimation related configurables
-  Configurable<bool> isApplyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
-  Configurable<bool> isApplyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
-  Configurable<bool> isApplyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyDCACuts{"isApplyDCACuts", true, "Enable DCA cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyITSCuts{"isApplyITSCuts", true, "Enable ITS cuts (set to false for secondary estimation)"};
+  Configurable<bool> isApplyChi2Cuts{"isApplyChi2Cuts", true, "Enable χ² cuts (set to false for secondary estimation)"};
 
   void init(InitContext const&)
   {
-    // Load DCA parametrisations from CCDB (matching piKpRAA)
-    if (!pathDCAxy.value.empty()) {
-      cfgDCA.hDCAxy = ccdb->getForTimeStamp<TH1F>(pathDCAxy, ccdbNoLaterThan);
-      if (cfgDCA.hDCAxy == nullptr)
-        LOGF(fatal, "Could not load DCAxy histogram from %s", pathDCAxy.value.c_str());
-    }
-    if (!pathDCAz.value.empty()) {
-      cfgDCA.hDCAz = ccdb->getForTimeStamp<TH1F>(pathDCAz, ccdbNoLaterThan);
-      if (cfgDCA.hDCAz == nullptr)
-        LOGF(fatal, "Could not load DCAz histogram from %s", pathDCAz.value.c_str());
-    }
-    if (cfgDCA.hDCAxy && cfgDCA.hDCAz)
-      cfgDCA.loaded = true;
+
     AxisSpec centAxis = {centralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
@@ -211,7 +183,6 @@ struct PtmultCorr {
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
     histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
-    histos.add("CentPercentileMCRecHist", "CentPercentileMCRecHist", kTH1D, {axisCent}, false);
     histos.add("PhiVsEtaHistNoCut", "PhiVsEtaHistNoCut", kTH2D, {axisPhi2, axisEta}, false);
     histos.add("PhiVsEtaHistWithCut", "PhiVsEtaHistWithCut", kTH2D, {axisPhi2, axisEta}, false);
 
@@ -265,6 +236,28 @@ struct PtmultCorr {
       histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {axisCent, impactParAxis});
+
+      // CO map: centrality vs generated Nch (for N_rec_at_least_once events)
+      histos.add("hNchVsCent_WithRecoEvt", "hNchVsCent_WithRecoEvt",
+                 kTH2F, {axisCent, {500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+
+      // Event loss denominator: Nch distribution of all generated events
+      histos.add("hNchMC_AllGen", "hNchMC_AllGen",
+                 kTH1F, {{500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+
+      // Event loss numerator: Nch distribution of N_rec_at_least_once events
+      histos.add("hNchMC_WithRecoEvt", "hNchMC_WithRecoEvt",
+                 kTH1F, {{500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+
+      // Event splitting: centrality distributions
+      histos.add("hCent_WRecoEvtWSelCri", "N_rec_at_least_once (with sel)", kTH1F, {axisCent});
+      histos.add("hCent_AllRecoEvt", "N_rec (with sel)", kTH1F, {axisCent});
+
+      // Signal loss: pT vs Nch (2D), for all gen events and N_rec_at_least_once
+      histos.add("hPtVsNchMC_AllGen", "hPtVsNchMC_AllGen",
+                 kTH2F, {{axisPt}, {500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+      histos.add("hPtVsNchMC_WithRecoEvt", "hPtVsNchMC_WithRecoEvt",
+                 kTH2F, {{axisPt}, {500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
     }
 
     auto hstat = histos.get<TH1>(HIST("EventHist"));
@@ -385,14 +378,12 @@ struct PtmultCorr {
       }
 
       // pT-dependent DCA cuts (can be disabled for secondary estimation)
-      if (isApplyDCACuts && cfgDCA.loaded) {
+      if (isApplyDCACuts) {
         const float pt = track.pt();
-        const double dcaXYcut = cfgNSigmaDCAxy * (cfgDCA.hDCAxy->GetBinContent(1) +
-                                                  cfgDCA.hDCAxy->GetBinContent(2) /
-                                                    std::pow(std::abs(pt), cfgDCA.hDCAxy->GetBinContent(3)));
-        const double dcaZcut = cfgNSigmaDCAz * (cfgDCA.hDCAz->GetBinContent(1) +
-                                                cfgDCA.hDCAz->GetBinContent(2) /
-                                                  std::pow(std::abs(pt), cfgDCA.hDCAz->GetBinContent(3)));
+        const double dcaXYcut = (0.0105 + 0.0350 /
+                                            std::pow(std::abs(pt), 1.1));
+
+        const double dcaZcut = cfgDCAz;
         if (std::abs(track.dcaZ()) > dcaZcut || std::abs(track.dcaXY()) > dcaXYcut) {
           return false;
         }
@@ -508,7 +499,7 @@ struct PtmultCorr {
 
   void processMCeffPbPb(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablePbPb const& RecCols, TrackMCTrueTable const& GenParticles, TrackMCRecTable const& RecTracks)
   {
-    auto gencent = -999;
+    float gencent = -999.f;
     bool atLeastOne = false;
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
@@ -556,7 +547,7 @@ struct PtmultCorr {
       histos.fill(HIST("hPbPbGenMCdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
-        if (particle.pt() < KminPtCut) {
+        if (particle.pt() < cfgPtCutMin) {
           histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -695,7 +686,7 @@ struct PtmultCorr {
       histos.fill(HIST("hppGenMCdndpt"), mcCollision.posZ(), particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
-        if (particle.pt() < KminPtCut) {
+        if (particle.pt() < cfgPtCutMin) {
           histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -792,29 +783,46 @@ struct PtmultCorr {
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }
+
+    // Count generated Nch in |eta| < 0.8 for CO map and event loss
+    int nChMC = 0;
+    for (const auto& particle : GenParticles) {
+      if (!particle.isPhysicalPrimary())
+        continue;
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (!pdgParticle)
+        continue;
+      if (std::abs(pdgParticle->Charge()) < KminCharge)
+        continue;
+      if (std::abs(particle.eta()) < etaRange) // fixed to |eta| < 0.8 for CO map, not etaRange
+        nChMC++;
+    }
     bool atLeastOne = false;
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex())
         continue;
-      }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (!isEventSelected(RecCol))
         continue;
-      }
       atLeastOne = true;
     }
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
+    histos.fill(HIST("hNchMC_AllGen"), nChMC); // denominator for event loss
+
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
+      histos.fill(HIST("hNchMC_WithRecoEvt"), nChMC); // numerator for event loss
     }
     for (const auto& particle : GenParticles) {
       if (!isGenTrackSelected(particle)) {
         continue;
       }
       // All generated particles
+      histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC);
       histos.fill(HIST("hgenptBeforeEvtSel"), particle.pt());
       if (atLeastOne) {
         // All generated particles with at least one reconstructed collision (signal loss estimation)
+        histos.fill(HIST("hPtVsNchMC_WithRecoEvt"), particle.pt(), nChMC);
         histos.fill(HIST("hgenptAfterEvtSel"), particle.pt());
       }
     }
@@ -828,34 +836,68 @@ struct PtmultCorr {
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }
-    bool atLeastOne = false;
-    auto centrality = -999.;
-    for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+
+    // count generated Nch in |eta| < 0.8 for CO map and event loss
+    int nChMC = 0;
+    for (const auto& particle : GenParticles) {
+      if (!particle.isPhysicalPrimary())
         continue;
-      }
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (!pdgParticle)
+        continue;
+      if (std::abs(pdgParticle->Charge()) < KminCharge)
+        continue;
+      if (std::abs(particle.eta()) < etaRange)
+        nChMC++;
+    }
+
+    // Event splitting denominator : loop over ALL reco collisions passing selection
+    //(before bestCollisionsIndex filter)- counts N_rec
+
+    for (const auto& RecCol : RecCols) {
+
+      histos.fill(HIST("hCent_AllRecoEvt"), RecCol.centFT0C());
+    }
+
+    // Find best collisions
+    bool atLeastOne = false;
+    auto centrality = -999.f;
+    for (const auto& RecCol : RecCols) {
+
       if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
-      centrality = RecCol.centFT0C();
+
+      if (!isEventSelected(RecCol)) {
+        continue;
+      }
       atLeastOne = true;
+      centrality = RecCol.centFT0C();
+      histos.fill(HIST("hCent_WRecoEvtWSelCri"), RecCol.centFT0C());
     }
-    // All generated events
+
+    // Event loss histograms
     histos.fill(HIST("MCEventHist"), 1);
     histos.fill(HIST("hImpactParameterGen"), mcCollision.impactParameter());
+    histos.fill(HIST("hNchMC_AllGen"), nChMC); // denominator for event loss
+
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
       histos.fill(HIST("hImpactParameterRec"), mcCollision.impactParameter());
       histos.fill(HIST("hImpactParvsCentrRec"), centrality, mcCollision.impactParameter());
+      histos.fill(HIST("hNchMC_WithRecoEvt"), nChMC);                 // numerator for event loss
+      histos.fill(HIST("hNchVsCent_WithRecoEvt"), centrality, nChMC); // CO map
     }
     for (const auto& particle : GenParticles) {
       if (!isGenTrackSelected(particle)) {
         continue;
       }
       // All generated particles
+      histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC);
       histos.fill(HIST("hgenptBeforeEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
       if (atLeastOne) {
         // All generated particles with at least one reconstructed collision (signal loss estimation)
+        histos.fill(HIST("hPtVsNchMC_WithRecoEvt"), particle.pt(), nChMC);
         histos.fill(HIST("hgenptAfterEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
       }
     }
