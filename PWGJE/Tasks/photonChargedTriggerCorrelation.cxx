@@ -30,6 +30,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -52,13 +53,18 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <format>
 #include <functional>
+#include <memory>
 #include <random>
+#include <stdexcept>
 #include <string>
+#include <utility>
+#include <type_traits>
 #include <vector>
 
 const double absEtaMaxDefault = 0.8;
@@ -238,7 +244,7 @@ struct PhotonChargedTriggerCorrelation {
       return n; // overflow
     }
 
-    MixingTriggerMemory(std::vector<double> const binEdgesZPvIn, std::vector<double> const binEdgesMultIn, size_t const nTriggerPerBinLimitIn)
+    MixingTriggerMemory(std::vector<double> const& binEdgesZPvIn, std::vector<double> const& binEdgesMultIn, size_t const nTriggerPerBinLimitIn)
       : binEdgesZPv(binEdgesZPvIn),
         nBinsZPv(binEdgesZPvIn.size() - 1),
         binEdgesMult(binEdgesMultIn),
@@ -398,7 +404,7 @@ struct PhotonChargedTriggerCorrelation {
     histos.add("reco/corr/h3_ptPhiEta_trig", "h3_ptPhiEta_trig", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
 
     auto const add_corrHists =
-      [&](std::string const name_id) {
+      [&](std::string const& name_id) {
         histos.add(std::format("reco/corr/h4_ptTrigPtAssocPhiEta_assoc_{}", name_id).data(), std::format("h4_ptTrigPtAssocPhiEta_assoc_{}", name_id).data(),
                    kTHnSparseD, {axisPtTrig, axisPtAssoc, axisPhi, axisEta}, true);
         histos.add(std::format("reco/corr/h6_corr_{}", name_id).data(), std::format("h6_corr_{}", name_id).data(),
@@ -460,7 +466,7 @@ struct PhotonChargedTriggerCorrelation {
 
     // extra reco correlations with MC info
     auto const addMcRecoCorrHists =
-      [&](std::string const correlationType, std::string const assocName) {
+      [&](std::string const& correlationType, std::string const& assocName) {
         histos.add(std::format("mc/corr/h6_corr_{}_{}", correlationType, assocName).data(), std::format("h6_corr_{}_{}", correlationType, assocName).data(),
                    kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
         histos.add(std::format("mc/corr/h6_mix_{}_{}", correlationType, assocName).data(), std::format("h6_mix_{}_{}", correlationType, assocName).data(),
@@ -485,16 +491,16 @@ struct PhotonChargedTriggerCorrelation {
 
     // mc correction
     auto const addCorrectionHistsResolved =
-      [&](std::string const nameId) {
+      [&](std::string const& nameId) {
         histos.add(std::format("mc/correction/resol/h4_ptTrigPtAssocPhiEta_{}", nameId).data(), std::format("h4_ptTrigPtAssocPhiEta_{}", nameId).data(),
                    kTHnSparseD, {axisPtTrig, axisPtAssoc, axisPhi, axisEta}, true);
         histos.add(std::format("mc/correction/resol/h4_ptTrigPtAssocZPvMult_{}", nameId).data(), std::format("h4_ptTrigPtAssocZPvMult_{}", nameId).data(),
                    kTHnSparseD, {axisPtTrig, axisPtAssoc, axisZPv, axisMult}, true);
       };
     auto const addCorrectionHistsResolvedBasicTypes =
-      [&](std::string const nameReco, std::string const nameTrue) {
-        std::vector<std::string> recoTypes = {"reco", "recoAssocEv", "recoPure"};
-        std::vector<std::string> trueTypes = {"true", "trueAssocEv", "trueAssocEvRecoPtTrig"};
+      [&](std::string const& nameReco, std::string const& nameTrue) {
+        std::vector<std::string> const recoTypes = {"reco", "recoAssocEv", "recoPure"};
+        std::vector<std::string> const trueTypes = {"true", "trueAssocEv", "trueAssocEvRecoPtTrig"};
         for (std::string const& recoType : recoTypes) {
           addCorrectionHistsResolved(std::format("{}_{}", recoType, nameReco));
         }
@@ -504,17 +510,17 @@ struct PhotonChargedTriggerCorrelation {
       };
 
     auto const addCorrectionHistPt =
-      [&](std::string const nameId) {
+      [&](std::string const& nameId) {
         histos.add(std::format("mc/correction/h2_ptTrigPtAssoc_{}", nameId).data(), std::format("h2_ptTrigPtAssoc_{}", nameId).data(),
                    kTHnSparseD, {axisPtTrig, axisPtAssoc}, true);
       };
     auto const addCorrectionHistPtCategories =
-      [&](std::string const nameId) {
+      [&](std::string const& nameId) {
         histos.add(std::format("mc/correction/h3_ptTrigPtAssocCategory_{}", nameId).data(), std::format("h3_ptTrigPtAssocCategory_{}", nameId).data(),
                    kTHnSparseD, {axisPtTrig, axisPtAssoc, axisCategories}, true);
       };
     auto const addCorrectionHistsV0 =
-      [&](std::string const nameReco, std::string const nameTrue) {
+      [&](std::string const& nameReco, std::string const& nameTrue) {
         addCorrectionHistPt(std::format("true_{}", nameTrue).data());
         addCorrectionHistPt(std::format("trueAssocEv_{}", nameTrue).data());
         addCorrectionHistPt(std::format("trueAssocEvRecoPtTrig_{}", nameTrue).data());
@@ -601,9 +607,12 @@ struct PhotonChargedTriggerCorrelation {
     constexpr int NDaughtersToGG = 2;
     if (daughters.size() != NDaughtersToGG)
       return false;
-    for (auto const& daughter : daughters) {
-      if (daughter.pdgCode() != PDG_t::kGamma)
+    auto daughter = daughters.begin();
+    auto daughterEnd = daughters.end();
+    while (daughter != daughterEnd) {
+      if ((*daughter).pdgCode() != PDG_t::kGamma)
         return false;
+      daughter++;
     }
     return true;
   }
@@ -614,30 +623,37 @@ struct PhotonChargedTriggerCorrelation {
     if (!mcParticle.has_mothers())
       return false;
     auto const mothers = mcParticle.template mothers_as<aod::JetParticles>();
-    for (auto const& mother : mothers) {
+    auto mother = mothers.begin();
+    auto motherEnd = mothers.end();
+    while (mother != motherEnd) {
 
       // LOGF(info, "searchPdgCode: %i, current[ pdgCode: %i, status: %i, primary: %i ], mother[ pdgCode: %i, status: %i, primary: %i ]",
       //      pdgCode,
       //      mcParticle.pdgCode(), mcParticle.getGenStatusCode(), mcParticle.isPhysicalPrimary(),
-      //      mother.pdgCode(), mother.getGenStatusCode(), mother.isPhysicalPrimary());
+      //      (*mother).pdgCode(), (*mother).getGenStatusCode(), (*mother).isPhysicalPrimary());
 
-      if (mother.pdgCode() == pdgCode || (checkAntiParticle && mother.pdgCode() == -pdgCode))
+      if ((*mother).pdgCode() == pdgCode || (checkAntiParticle && (*mother).pdgCode() == -pdgCode))
         return true;
-      if (checkForMother(mother, pdgCode, checkAntiParticle))
+      if (checkForMother(*mother, pdgCode, checkAntiParticle))
         return true;
+      mother++;
     }
     return false;
   }
 
   // checks if daughters are in acceptance
   template <typename T_mcParticle>
-  bool checkDaughtersInAcceptance(T_mcParticle const mcParticle, std::pair<double, double> const etaRange, std::pair<double, double> const phiRange = {0, constants::math::TwoPI}) {
+  bool checkDaughtersInAcceptance(T_mcParticle const mcParticle, std::pair<double, double> const etaRange, std::pair<double, double> const phiRange = {0, constants::math::TwoPI})
+  {
     auto const& daughterPhotons = mcParticle.template daughters_as<aod::JetParticles>();
-    for (auto const& daughterPhoton : daughterPhotons) {
-      if (daughterPhoton.eta() < etaRange.first || daughterPhoton.eta() > etaRange.second)
+    auto daughterPhoton = daughterPhotons.begin();
+    auto daughterPhotonEnd = daughterPhotons.end();
+    while (daughterPhoton != daughterPhotonEnd) {
+      if ((*daughterPhoton).eta() < etaRange.first || (*daughterPhoton).eta() > etaRange.second)
         return false;
-      if (daughterPhoton.phi() < phiRange.first || daughterPhoton.phi() > phiRange.second)
+      if ((*daughterPhoton).phi() < phiRange.first || (*daughterPhoton).phi() > phiRange.second)
         return false;
+      daughterPhoton++;
     }
     return true;
   }
@@ -1777,7 +1793,7 @@ struct PhotonChargedTriggerCorrelation {
 
       auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
         // exclude self correlation
-        if (trigger.jetTrackId() == associated.posJetTrack1Id() || trigger.jetTrackId() == associated.negJetTrack1Id(),
+        if (trigger.jetTrackId() == associated.posJetTrack1Id() || trigger.jetTrackId() == associated.negJetTrack1Id() ||
             trigger.jetTrackId() == associated.posJetTrack2Id() || trigger.jetTrackId() == associated.negJetTrack2Id())
           return;
 
