@@ -258,7 +258,7 @@ struct FlowSP {
     double meanPxC = 0;
   } spm;
 
-  struct ptMaps { 
+  struct ptMaps {
     TProfile* meanPTMap = new TProfile("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
     TProfile* meanPTMapPos = new TProfile("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
     TProfile* meanPTMapNeg = new TProfile("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
@@ -271,7 +271,7 @@ struct FlowSP {
 
     TProfile* relPxCNeg = new TProfile("relPxCNeg", "relPxCNeg", 8, -0.8, 0.8);
     TProfile* relPxCPos = new TProfile("relPxCPos", "relPxCPos", 8, -0.8, 0.8);
-  } ptmaps; 
+  } ptmaps;
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   OutputObj<GFWWeights> fWeightsPOS{GFWWeights("weights_positive")};
@@ -700,42 +700,42 @@ struct FlowSP {
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
       std::vector<double> paramsMultPVCut;
-      std::vector<double> paramsMultCut; 
-      int y2023 = 2023; 
-      int y2024 = 2024; 
-      std::array<int> nSigma = {1,2,3}; 
+      std::vector<double> paramsMultCut;
+      int y2023 = 2023;
+      int y2024 = 2024;
+      std::array<int> nSigma = {1, 2, 3};
 
-      if(cfg.cUsePredeFinedSigma){
-          if(cfg.cUsePredeFinedSigmaYear == y2023) {
-            if(cfg.cUsePredeFinedSigmaNsigma == nSigma[0]){
-              paramsMultPVCut = {2615.47, -90.5747, 1.25125, -0.00847075, 2.41183e-05, 3399.72, -121.652, 1.84077, -0.0142886, 4.71449e-05}; 
-              paramsMultCut = {1716.84, -56.5663, 0.715202, -0.00426007, 1.05075e-05, 2550.82, -87.4873, 1.22205, -0.00852644, 2.54248e-05 }; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[1]){
-              paramsMultPVCut = {2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05}; 
-              paramsMultCut = {1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[2]){
-              paramsMultPVCut = {1837.75, -60.852, 0.724331, -0.00366975, 6.47562e-06, 4182.12, -152.459, 2.41955, -0.0199481, 6.93894e-05}; 
-              paramsMultCut = {885.976, -26.3397, 0.240114, -0.000496168, -1.82704e-06, 3384.43, -118.377, 1.72823, -0.0127887, 4.03432e-05}; 
-            } else { 
-              LOGF(fatal, "nSigma can only be 1-3 please reset the variable or give the parameters manually and set cfg.cUsePredeFinedSigma to FALSE");
-            }
-          } else if(cfg.cUsePredeFinedSigmaYear == y2024){ 
-            if(cfg.cUsePredeFinedSigmaNsigma == nSigma[0]){
-              paramsMultPVCut = {2726.93, -100.128, 1.45046, -0.0099354, 2.71182e-05, 3404.72, -126.569, 1.92500, -0.0142653, 4.31645e-05}; 
-              paramsMultCut = {1858.77, -66.6070, 0.929146, -0.00606961, 1.57639e-05 , 2672.43, -96.7708, 1.39109 , -0.00942498, 2.54268e-05}; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[1]){
-              paramsMultPVCut = {2390.04, -87.3154, 1.23176, -0.00806869, 2.06624e-05, 3744.26, -139.927, 2.16863, -0.0165329, 5.17269e-05}; 
-              paramsMultCut = {1451.23, -51.4314, 0.694609, -0.00433959, 1.06698e-05, 3080.42, -112.071, 1.63166 , -0.0112533 , 3.10348e-05}; 
-            } else if(cfg.cUsePredeFinedSigmaNsigma == nSigma[2]){
-              paramsMultPVCut = {2053.64, -74.5950, 1.01563, -0.00621473, 1.41276e-05, 4083.79, -153.304, 2.41333, -0.0188198, 6.03974e-05}; 
-              paramsMultCut = {1042.50, -35.9374, 0.440681, -0.00222218, 3.20643e-06, 3488.53, -127.396, 1.87339 , -0.0131007, 3.67434e-05}; 
-            } else { 
-              LOGF(fatal, "cUsePredeFinedSigmaNsigma can only be 1-3 please reset the variable or give the parameters manually and set cUsePredeFinedSigma to FALSE");
-            }
-          } else { 
-            LOGF(fatal, "cUsePredeFinedSigmaYear can only be 2023/2024 please reset the variable or give the parameters manually and set cUsePredeFinedSigma to FALSE");
+      if (cfg.cUsePredeFinedSigma) {
+        if (cfg.cUsePredeFinedSigmaYear == y2023) {
+          if (cfg.cUsePredeFinedSigmaNsigma == nSigma[0]) {
+            paramsMultPVCut = {2615.47, -90.5747, 1.25125, -0.00847075, 2.41183e-05, 3399.72, -121.652, 1.84077, -0.0142886, 4.71449e-05};
+            paramsMultCut = {1716.84, -56.5663, 0.715202, -0.00426007, 1.05075e-05, 2550.82, -87.4873, 1.22205, -0.00852644, 2.54248e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[1]) {
+            paramsMultPVCut = {2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05};
+            paramsMultCut = {1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[2]) {
+            paramsMultPVCut = {1837.75, -60.852, 0.724331, -0.00366975, 6.47562e-06, 4182.12, -152.459, 2.41955, -0.0199481, 6.93894e-05};
+            paramsMultCut = {885.976, -26.3397, 0.240114, -0.000496168, -1.82704e-06, 3384.43, -118.377, 1.72823, -0.0127887, 4.03432e-05};
+          } else {
+            LOGF(fatal, "nSigma can only be 1-3 please reset the variable or give the parameters manually and set cfg.cUsePredeFinedSigma to FALSE");
           }
-      } else { 
+        } else if (cfg.cUsePredeFinedSigmaYear == y2024) {
+          if (cfg.cUsePredeFinedSigmaNsigma == nSigma[0]) {
+            paramsMultPVCut = {2726.93, -100.128, 1.45046, -0.0099354, 2.71182e-05, 3404.72, -126.569, 1.92500, -0.0142653, 4.31645e-05};
+            paramsMultCut = {1858.77, -66.6070, 0.929146, -0.00606961, 1.57639e-05, 2672.43, -96.7708, 1.39109, -0.00942498, 2.54268e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[1]) {
+            paramsMultPVCut = {2390.04, -87.3154, 1.23176, -0.00806869, 2.06624e-05, 3744.26, -139.927, 2.16863, -0.0165329, 5.17269e-05};
+            paramsMultCut = {1451.23, -51.4314, 0.694609, -0.00433959, 1.06698e-05, 3080.42, -112.071, 1.63166, -0.0112533, 3.10348e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[2]) {
+            paramsMultPVCut = {2053.64, -74.5950, 1.01563, -0.00621473, 1.41276e-05, 4083.79, -153.304, 2.41333, -0.0188198, 6.03974e-05};
+            paramsMultCut = {1042.50, -35.9374, 0.440681, -0.00222218, 3.20643e-06, 3488.53, -127.396, 1.87339, -0.0131007, 3.67434e-05};
+          } else {
+            LOGF(fatal, "cUsePredeFinedSigmaNsigma can only be 1-3 please reset the variable or give the parameters manually and set cUsePredeFinedSigma to FALSE");
+          }
+        } else {
+          LOGF(fatal, "cUsePredeFinedSigmaYear can only be 2023/2024 please reset the variable or give the parameters manually and set cUsePredeFinedSigma to FALSE");
+        }
+      } else {
         paramsMultPVCut = cfg.cEvSelsMultPv;
         paramsMultCut = cfg.cEvSelsMult;
       }
@@ -1192,20 +1192,20 @@ struct FlowSP {
     if (track.eta() < 0)
       scale = -1.0;
 
-    const double invSqrtQQ  = 1.0 / std::sqrt(std::fabs(spm.corrQQ));
+    const double invSqrtQQ = 1.0 / std::sqrt(std::fabs(spm.corrQQ));
     const double invSqrtQQx = 1.0 / std::sqrt(std::fabs(spm.corrQQx));
     const double invSqrtQQy = 1.0 / std::sqrt(std::fabs(spm.corrQQy));
-    const double uqA  = spm.uy * spm.qyA + spm.ux * spm.qxA;
-    const double uqC  = spm.uy * spm.qyC + spm.ux * spm.qxC;
-    const double invMeanPtQQ = 1.0 / spm.meanPtWeight; 
+    const double uqA = spm.uy * spm.qyA + spm.ux * spm.qxA;
+    const double uqC = spm.uy * spm.qyC + spm.ux * spm.qxC;
+    const double invMeanPtQQ = 1.0 / spm.meanPtWeight;
 
     if (cfg.cFillGeneralV1Histos) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (uqA) * invSqrtQQ, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCodd"), track.pt(), track.eta(), spm.centrality, scale * (uqC) * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (uqA)*invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCodd"), track.pt(), track.eta(), spm.centrality, scale * (uqC)*invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnOdd"), track.pt(), track.eta(), spm.centrality, scale * 0.5 * ((uqA) - (uqC)) * invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnEven"), track.pt(), track.eta(), spm.centrality, 0.5 * ((uqA) + (uqC)) * invSqrtQQ, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (uqA) * invSqrtQQ, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (uqC) * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (uqA)*invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (uqC)*invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCSetPlane"), track.pt(), track.eta(), spm.centrality, (spm.uy + spm.ux) * invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnASetPlane"), track.pt(), track.eta(), spm.centrality, (minusQ * spm.ux - spm.uy) * invSqrtQQ, weight);
     }
@@ -1258,7 +1258,7 @@ struct FlowSP {
     if (!cfg.cFillTrackQA)
       return;
 
-    double weight = spm.wacc[ct][par] * spm.weff[ct][par] * spm.centWeight; 
+    double weight = spm.wacc[ct][par] * spm.weff[ct][par] * spm.centWeight;
 
     static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when nocfg.cTrackSelDo) {
@@ -1492,30 +1492,28 @@ struct FlowSP {
       if (centW <= 0) {
         spm.centWeight = 0.;
         LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
-      } else { 
-        spm.centWeight = centW; 
+      } else {
+        spm.centWeight = centW;
       }
     }
 
     // Always fill centrality histogram after event selections!
     histos.fill(HIST("hCentralityCW"), spm.centrality);
 
-
     fillEventQA<kAfter>(collision, tracks);
 
-    ptmaps.meanPTMap->Reset(); 
-    ptmaps.meanPTMapPos->Reset(); 
-    ptmaps.meanPTMapNeg->Reset(); 
+    ptmaps.meanPTMap->Reset();
+    ptmaps.meanPTMapPos->Reset();
+    ptmaps.meanPTMapNeg->Reset();
 
-    ptmaps.relPxA->Reset(); 
-    ptmaps.relPxC->Reset(); 
+    ptmaps.relPxA->Reset();
+    ptmaps.relPxC->Reset();
 
-    ptmaps.relPxANeg->Reset(); 
-    ptmaps.relPxAPos->Reset(); 
+    ptmaps.relPxANeg->Reset();
+    ptmaps.relPxAPos->Reset();
 
-    ptmaps.relPxCNeg->Reset(); 
-    ptmaps.relPxCPos->Reset(); 
-
+    ptmaps.relPxCNeg->Reset();
+    ptmaps.relPxCPos->Reset();
 
     double sumPxAEvent = 0;
     double meanPxEventCount = 0;
@@ -1641,11 +1639,10 @@ struct FlowSP {
 
     } // end of track loop
 
+    double meanPxAEvent = 0;
+    double meanPxCEvent = 0;
 
-    double meanPxAEvent = 0; 
-    double meanPxCEvent = 0; 
-
-    if(meanPxEventCount > 0) { 
+    if (meanPxEventCount > 0) {
       meanPxAEvent = sumPxAEvent / meanPxEventCount;
       meanPxCEvent = sumPxCEvent / meanPxEventCount;
     }
@@ -2061,7 +2058,7 @@ struct FlowSP {
         auto trackSlice = tracks.sliceBy(trackPerCollision, col.globalIndex());
 
         // get filtered tracks that belong to reconstructed collision
-        // mcReco uses filtered tracks 
+        // mcReco uses filtered tracks
         auto filteredTrackSlice = filteredTracks.sliceBy(trackPerCollision, col.globalIndex());
 
         spm.centrality = col.centFT0C();
