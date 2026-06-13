@@ -14,8 +14,8 @@
 // This code runs loop over leptons in MC
 //    Please write to: daiki.sekihata@cern.ch
 
-#ifndef PWGEM_DILEPTON_CORE_DILEPTONMC_H_
-#define PWGEM_DILEPTON_CORE_DILEPTONMC_H_
+#ifndef PWGEM_DILEPTON_CORE_DILEPTONSVMC_H_
+#define PWGEM_DILEPTON_CORE_DILEPTONSVMC_H_
 
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
@@ -28,6 +28,8 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/fwdtrackUtilities.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -38,6 +40,8 @@
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
@@ -80,18 +84,18 @@
 
 #include <math.h>
 
-using MyCollisions = o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>;
+using MyCollisions = o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsCov, o2::aod::EMEventsXY, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyMCCollisions = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::MostProbableEMEventIdsInMC>;
 using MyMCCollision = MyMCCollisions::iterator;
 
-using MyMCElectrons = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>;
+using MyMCElectrons = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronsCov, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = o2::soa::Filtered<MyMCElectrons>;
 using FilteredMyMCElectron = FilteredMyMCElectrons::iterator;
 
-using MyMCMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived, o2::aod::EMPrimaryMuonMCLabels, o2::aod::EMMFTMCLabels>;
+using MyMCMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonsCov, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived, o2::aod::EMPrimaryMuonMCLabels, o2::aod::EMMFTMCLabels>;
 using MyMCMuon = MyMCMuons::iterator;
 using FilteredMyMCMuons = o2::soa::Filtered<MyMCMuons>;
 using FilteredMyMCMuon = FilteredMyMCMuons::iterator;
@@ -104,19 +108,16 @@ using MySmearedMuon = MySmearedMuons::iterator;
 
 // template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, typename... Types>
 template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, typename TLeptons, typename TSmeardMCParitlces>
-struct DileptonMC {
+struct DileptonSVMC {
 
   // Configurables
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   o2::framework::Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   o2::framework::Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
-  o2::framework::Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
   o2::framework::Configurable<bool> cfgFillUnfolding{"cfgFillUnfolding", false, "flag to fill histograms for unfolding"};
   o2::framework::Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
   o2::framework::Configurable<bool> cfgFillSeparateCharmHadronPairs{"cfgFillSeparateCharmHadronPairs", false, "flag to fill different ccbar pairs separately"};
@@ -130,6 +131,7 @@ struct DileptonMC {
   o2::framework::ConfigurableAxis ConfTrackDCA{"ConfTrackDCA", {o2::framework::VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "DCA binning for single tacks"};
 
   o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {1, -1.f, +1.f}, "yll bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfCPABins{"ConfCPABins", {o2::framework::VARIABLE_WIDTH, -1, -0.95, -0.9, -0.85, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1}, "cpa bins for output histograms"};
 
   // o2::framework::ConfigurableAxis ConfMmumuBins{"ConfMmumuBins", {o2::framework::VARIABLE_WIDTH, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11,1.12,1.13,1.14,1.15,1.16,1.17,1.18,1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.10, 5.20, 5.30, 5.40, 5.50, 5.60, 5.70, 5.80, 5.90, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00, 8.10, 8.20, 8.30, 8.40, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.00, 11.50, 12.00}, "mmumu bins for output histograms"}; // for dimuon. one can copy bins here to hyperloop page.
 
@@ -194,14 +196,14 @@ struct DileptonMC {
     o2::framework::Configurable<float> cfg_max_pair_y{"cfg_max_pair_y", +0.8, "max pair rapidity"};
     o2::framework::Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
     o2::framework::Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
-    o2::framework::Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
+    o2::framework::Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut"};
     o2::framework::Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     o2::framework::Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
     o2::framework::Configurable<float> cfg_min_phiv{"cfg_min_phiv", 0.0, "min phiv (constant)"};
     o2::framework::Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv (constant)"};
     o2::framework::Configurable<bool> cfg_apply_detadphi{"cfg_apply_detadphi", false, "flag to apply deta-dphi elliptic cut at PV"};
-    o2::framework::Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 electrons (elliptic cut)"};
-    o2::framework::Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.2, "min dphi between 2 electrons (elliptic cut)"};
+    o2::framework::Configurable<float> cfg_min_deta{"cfg_min_deta", 0.04, "min deta between 2 electrons (elliptic cut)"};
+    o2::framework::Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.12, "min dphi between 2 electrons (elliptic cut)"};
     o2::framework::Configurable<float> cfg_min_opang{"cfg_min_opang", 0.0, "min opening angle"};
     o2::framework::Configurable<float> cfg_max_opang{"cfg_max_opang", 6.4, "max opening angle"};
     // o2::framework::Configurable<bool> cfg_require_diff_sides{"cfg_require_diff_sides", false, "flag to require 2 tracks are from different sides."};
@@ -212,7 +214,7 @@ struct DileptonMC {
     o2::framework::Configurable<bool> cfg_apply_cuts_from_prefilter_derived{"cfg_apply_cuts_from_prefilter_derived", false, "flag to apply phiv cut inherited from prefilter"};
     o2::framework::Configurable<uint16_t> cfg_prefilter_bits_derived{"cfg_prefilter_bits_derived", 0, "prefilter bits [kNone : 0, kMee : 1, kPhiV : 2, kSplitOrMergedTrackLS : 4, kSplitOrMergedTrackULS : 8] Please consider logical-OR among them."}; // see PairUtilities.h
 
-    o2::framework::Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
+    o2::framework::Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.05, "min pT for single track"};
     o2::framework::Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     o2::framework::Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "min eta for single track"};
     o2::framework::Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for single track"};
@@ -239,6 +241,7 @@ struct DileptonMC {
     o2::framework::Configurable<float> cfgRefR{"cfgRefR", 0.50, "ref. radius (m) for calculating phi position"}; // 0.50 +/- 0.06 can be syst. unc.
     o2::framework::Configurable<float> cfg_min_phiposition_track{"cfg_min_phiposition_track", 0.f, "min phi position for single track at certain radius"};
     o2::framework::Configurable<float> cfg_max_phiposition_track{"cfg_max_phiposition_track", 6.3, "max phi position for single track at certain radius"};
+    o2::framework::Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
 
     o2::framework::Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -317,12 +320,39 @@ struct DileptonMC {
     o2::framework::Configurable<bool> acceptOnlyXORMatching{"acceptOnlyXORMatching", false, "flag to accept only correct-wrong XOR pairs between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
   } dimuoncuts;
 
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "dfGroup";
+    o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+    o2::framework::Configurable<double> maxR{"maxR", 10.f, "reject PCA's above this radius"};
+    o2::framework::Configurable<double> maxDZIni{"maxDZIni", 4.f, "reject (if > 0) PCA candidate if tracks DZ exceeds threshold"};
+    o2::framework::Configurable<double> minParamChange{"minParamChange", 1e-3, "stop iterations if largest change of any X is smaller than this"};
+    o2::framework::Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    o2::framework::Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+    o2::framework::Configurable<float> maxLog10Chi2PCA{"maxLog10Chi2PCA", 0, "max. log10(chi2PCA) for dilepton pair"};
+  } dfGroup; // for DCAFitterN
+
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "fdfGroup";
+    o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+    o2::framework::Configurable<double> maxR{"maxR", 10.f, "reject PCA's above this radius"};
+    o2::framework::Configurable<double> maxDXIni{"maxDXIni", 4.f, "reject (if > 0) PCA candidate if tracks DZ exceeds threshold"};
+    o2::framework::Configurable<double> minParamChange{"minParamChange", 1e-3, "stop iterations if largest change of any X is smaller than this"};
+    o2::framework::Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    o2::framework::Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+    o2::framework::Configurable<float> maxLog10Chi2PCA{"maxLog10Chi2PCA", 0, "max. log10(chi2PCA) for dilepton pair"};
+  } fdfGroup; // for FwdDCAFitterN
+
+  o2::vertexing::DCAFitterN<2> mDCAFitter;
+  o2::vertexing::FwdDCAFitterN<2> mFwdDCAFitter;
+
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
-  o2::ccdb::CcdbApi ccdbApi;
+  // o2::ccdb::CcdbApi ccdbApi;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int mRunNumber;
-  float d_bz;
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  int mRunNumber{0};
+  float d_bz{0};
 
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = "mctrackcut_group";
@@ -359,7 +389,7 @@ struct DileptonMC {
   }; // unordered_map is better, but cannot be constexpr.
   static constexpr std::string_view unfolding_dilepton_source_types[3] = {"sm/", "ccbar/", "bbbar/"};
 
-  ~DileptonMC() {}
+  ~DileptonSVMC() {}
 
   void addhistograms()
   {
@@ -378,9 +408,9 @@ struct DileptonMC {
       pair_pt_axis_title = "p_{T,ee} (GeV/c)";
       pair_y_axis_title = "y_{ee}";
       pair_dca_axis_title = "DCA_{ee}^{3D} (#sigma)";
-      if (cfgDCAType == 1) {
+      if (dielectroncuts.cfgDCAType == 1) {
         pair_dca_axis_title = "DCA_{ee}^{XY} (#sigma)";
-      } else if (cfgDCAType == 2) {
+      } else if (dielectroncuts.cfgDCAType == 2) {
         pair_dca_axis_title = "DCA_{ee}^{Z} (#sigma)";
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
@@ -397,6 +427,7 @@ struct DileptonMC {
     const o2::framework::AxisSpec axis_dca{ConfDCAllBins, pair_dca_axis_title};
     const o2::framework::AxisSpec axis_pt_meson{ConfPtllBins, "p_{T}^{VM} (GeV/c)"}; // for omega, phi meson pT spectra
     const o2::framework::AxisSpec axis_y_meson{ConfYllBins, "y^{VM}"};               // for omega, phi meson pT spectra
+    const o2::framework::AxisSpec axis_cpa{ConfCPABins, "cos(#theta_{p})"};
 
     const o2::framework::AxisSpec axis_dca_narrow{ConfDCAllNarrowBins, pair_dca_axis_title};
     const o2::framework::AxisSpec axis_dpt{ConfDPtBins, "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} (GeV/c)"};
@@ -438,6 +469,9 @@ struct DileptonMC {
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/NonPromptPsi2S/");
+    // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon1S/");
+    // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon2S/");
+    // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon3S/");
 
     fRegistry.add("Generated/ccbar/c2l_c2l/uls/hs", "generated dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2l_c2l/uls/", "Generated/ccbar/c2l_c2l/lspp/");
@@ -491,7 +525,7 @@ struct DileptonMC {
     fRegistry.addClone("Generated/VM/All/", "Generated/VM/Acc/");
 
     // reconstructed pair info
-    fRegistry.add("Pair/sm/Photon/uls/hs", "rec. dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/sm/Photon/uls/hs", "rec. dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca, axis_cpa}, true);
 
     fRegistry.addClone("Pair/sm/Photon/uls/", "Pair/sm/Photon/lspp/");
     fRegistry.addClone("Pair/sm/Photon/uls/", "Pair/sm/Photon/lsmm/");
@@ -643,6 +677,21 @@ struct DileptonMC {
       hTVXCounter->GetXaxis()->SetBinLabel(5, "TVX && NoTFB && NoITSROFB");
       hTVXCounter->GetXaxis()->SetBinLabel(6, "TVX && NoTFB && NoITSROFB && GoodRCT");
     }
+
+    mDCAFitter.setPropagateToPCA(dfGroup.propagateToPCA);
+    mDCAFitter.setMaxR(dfGroup.maxR);
+    mDCAFitter.setMaxDZIni(dfGroup.maxDZIni);
+    mDCAFitter.setMinParamChange(dfGroup.minParamChange);
+    mDCAFitter.setMinRelChi2Change(dfGroup.minRelChi2Change);
+    mDCAFitter.setUseAbsDCA(dfGroup.useAbsDCA);
+    mDCAFitter.setWeightedFinalPCA(dfGroup.useWeightedFinalPCA);
+
+    mFwdDCAFitter.setPropagateToPCA(fdfGroup.propagateToPCA);
+    mFwdDCAFitter.setMaxR(fdfGroup.maxR);
+    mFwdDCAFitter.setMaxDXIni(fdfGroup.maxDXIni);
+    mFwdDCAFitter.setMinParamChange(fdfGroup.minParamChange);
+    mFwdDCAFitter.setMinRelChi2Change(fdfGroup.minRelChi2Change);
+    mFwdDCAFitter.setUseAbsDCA(fdfGroup.useAbsDCA);
   }
 
   template <typename TCollision>
@@ -652,23 +701,9 @@ struct DileptonMC {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
-      o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
-      }
-      o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = collision.runNumber();
-      return;
-    }
-
     auto run3grp_timestamp = collision.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
@@ -686,6 +721,9 @@ struct DileptonMC {
     }
     mRunNumber = collision.runNumber();
     fDielectronCut.SetTrackPhiPositionRange(dielectroncuts.cfg_min_phiposition_track, dielectroncuts.cfg_max_phiposition_track, dielectroncuts.cfgRefR, d_bz, dielectroncuts.cfg_mirror_phi_track);
+
+    mDCAFitter.setBz(d_bz);
+    mFwdDCAFitter.setBz(d_bz);
 
     auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", collision.timestamp());
     int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
@@ -750,7 +788,7 @@ struct DileptonMC {
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
     fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size);
-    fDielectronCut.SetTrackMaxDcaSigma(dielectroncuts.cfg_max_dca_sigma, cfgDCAType);
+    fDielectronCut.SetTrackMaxDcaSigma(dielectroncuts.cfg_max_dca_sigma, dielectroncuts.cfgDCAType);
     fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
     fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
     fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
@@ -908,6 +946,129 @@ struct DileptonMC {
     } else {
       return false;
     }
+  }
+
+  struct dileptonSV {
+    float pt1{999};
+    float eta1{999};
+    float phi1{999};
+
+    float pt2{999};
+    float eta2{999};
+    float phi2{999};
+
+    // float mass{999};
+    // float pt{999};
+    // float rapidity{999};
+
+    float chi2PCA{999};
+    float cpa{999};
+    float lxy{999};
+    float lz{999};
+    float lxyz{999};
+    float lxyErr{999};
+    float lzErr{999};
+    float lxyzErr{999};
+  };
+
+  template <typename TCollision, typename TTrackParCov>
+  bool findSV(TCollision const& collision, TTrackParCov const& t1, TTrackParCov const& t2, dileptonSV& candidate)
+  {
+    try {
+      if (mDCAFitter.process(t1, t2) == 0) {
+        return false;
+      }
+    } catch (const std::runtime_error& error) {
+      LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
+      return false;
+    }
+    candidate.chi2PCA = mDCAFitter.getChi2AtPCACandidate();
+    if (dfGroup.maxLog10Chi2PCA < std::log10(candidate.chi2PCA)) {
+      return false;
+    }
+
+    mDCAFitter.propagateTracksToVertex();
+    const auto& secondaryVertex = mDCAFitter.getPCACandidate();
+    auto trackParCov0 = mDCAFitter.getTrack(0);
+    auto trackParCov1 = mDCAFitter.getTrack(1);
+
+    // get track momenta
+    std::array<float, 3> pvertex = {collision.posX(), collision.posY(), collision.posZ()};
+    std::array<float, 3> pvec0{};
+    std::array<float, 3> pvec1{};
+    trackParCov0.getPxPyPzGlo(pvec0);
+    trackParCov1.getPxPyPzGlo(pvec1);
+    std::array<float, 3> momDilepton = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
+    candidate.cpa = RecoDecay::cpa(pvertex, secondaryVertex, momDilepton);
+
+    candidate.lxy = std::sqrt(std::pow(secondaryVertex[0] - collision.posX(), 2) + std::pow(secondaryVertex[1] - collision.posY(), 2));
+    candidate.lz = secondaryVertex[2] - collision.posZ();
+    candidate.lxyz = std::sqrt(std::pow(candidate.lxy, 2) + std::pow(candidate.lz, 2));
+
+    auto primaryVertex = getPrimaryVertex(collision);
+    std::array<float, 6> covVtx = mDCAFitter.calcPCACovMatrixFlat();
+    double phi{0}, theta{0};
+    getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+    candidate.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phi, 0.) + getRotatedCovMatrixXX(covVtx, phi, 0.));
+    candidate.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, theta) + getRotatedCovMatrixXX(covVtx, 0, theta));
+    candidate.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phi, theta) + getRotatedCovMatrixXX(covVtx, phi, theta));
+
+    candidate.pt1 = trackParCov0.getPt();
+    candidate.eta1 = trackParCov0.getEta();
+    candidate.phi1 = RecoDecay::constrainAngle(trackParCov0.getPhi(), 0, 1U); // 0-2pi
+
+    candidate.pt2 = trackParCov1.getPt();
+    candidate.eta2 = trackParCov1.getEta();
+    candidate.phi2 = RecoDecay::constrainAngle(trackParCov1.getPhi(), 0, 1U); // 0-2pi
+
+    return true;
+  }
+
+  template <typename TCollision, typename TTrackParCov>
+  bool findSVFwd(TCollision const& collision, TTrackParCov const& t1, TTrackParCov const& t2, dileptonSV& candidate)
+  {
+    try {
+      if (mFwdDCAFitter.process(t1, t2) == 0) {
+        return false;
+      }
+    } catch (const std::runtime_error& error) {
+      LOG(info) << "Run time error found: " << error.what() << ". FwdDCAFitterN cannot work, skipping the candidate.";
+      return false;
+    }
+    mFwdDCAFitter.FwdpropagateTracksToVertex();
+
+    std::array<float, 3> pvertex = {collision.posX(), collision.posY(), collision.posZ()};
+    const auto& secondaryVertex = mFwdDCAFitter.getPCACandidate();
+    candidate.chi2PCA = mFwdDCAFitter.getChi2AtPCACandidate();
+    if (fdfGroup.maxLog10Chi2PCA < std::log10(candidate.chi2PCA)) {
+      return false;
+    }
+    auto trackParCov0 = mFwdDCAFitter.getTrack(0);
+    auto trackParCov1 = mFwdDCAFitter.getTrack(1);
+    std::array<float, 3> momDilepton = {static_cast<float>(trackParCov0.getPx() + trackParCov1.getPx()), static_cast<float>(trackParCov0.getPy() + trackParCov1.getPy()), static_cast<float>(trackParCov0.getPz() + trackParCov1.getPz())};
+    candidate.cpa = RecoDecay::cpa(pvertex, secondaryVertex, momDilepton);
+
+    candidate.lxy = std::sqrt(std::pow(secondaryVertex[0] - collision.posX(), 2) + std::pow(secondaryVertex[1] - collision.posY(), 2));
+    candidate.lz = secondaryVertex[2] - collision.posZ();
+    candidate.lxyz = std::sqrt(std::pow(candidate.lxy, 2) + std::pow(candidate.lz, 2));
+
+    auto primaryVertex = getPrimaryVertex(collision);
+    std::array<float, 6> covVtx = mFwdDCAFitter.calcPCACovMatrixFlat();
+    double phi{0}, theta{0};
+    getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+    candidate.lxyErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phi, 0.) + getRotatedCovMatrixXX(covVtx, phi, 0.));
+    candidate.lzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), 0, theta) + getRotatedCovMatrixXX(covVtx, 0, theta));
+    candidate.lxyzErr = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phi, theta) + getRotatedCovMatrixXX(covVtx, phi, theta));
+
+    candidate.pt1 = trackParCov0.getPt();
+    candidate.eta1 = trackParCov0.getEta();
+    candidate.phi1 = RecoDecay::constrainAngle(trackParCov0.getPhi(), 0, 1U); // 0-2pi
+
+    candidate.pt2 = trackParCov1.getPt();
+    candidate.eta2 = trackParCov1.getEta();
+    candidate.phi2 = RecoDecay::constrainAngle(trackParCov1.getPhi(), 0, 1U); // 0-2pi
+
+    return true;
   }
 
   template <int sourceId>
@@ -1151,240 +1312,240 @@ struct DileptonMC {
   }
 
   template <int sourceId>
-  void fillRecHistograms(const int sign1, const int sign2, const int pdgMotherC1, const int pdgMotherC2, const float mass, const float pt, const float rapidity, const float dphi, const float deta, const float cos_thetaPol, const float phiPol, const float quadmom, const float aco, const float asym, const float dphi_e_ee, const float pair_dca, const float weight)
+  void fillRecHistograms(const int sign1, const int sign2, const int pdgMotherC1, const int pdgMotherC2, const float mass, const float pt, const float rapidity, const float dphi, const float deta, const float cos_thetaPol, const float phiPol, const float quadmom, const float aco, const float asym, const float dphi_e_ee, const float pair_dca, const float cpa, const float weight)
   {
     if (sign1 * sign2 < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(dilepton_source_types[sourceId]) + HIST("uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+      fRegistry.fill(HIST("Pair/") + HIST(dilepton_source_types[sourceId]) + HIST("uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
     } else if (sign1 > 0 && sign2 > 0) { // LS++
-      fRegistry.fill(HIST("Pair/") + HIST(dilepton_source_types[sourceId]) + HIST("lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+      fRegistry.fill(HIST("Pair/") + HIST(dilepton_source_types[sourceId]) + HIST("lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
     } else if (sign1 < 0 && sign2 < 0) { // LS--
-      fRegistry.fill(HIST("Pair/") + HIST(dilepton_source_types[sourceId]) + HIST("lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+      fRegistry.fill(HIST("Pair/") + HIST(dilepton_source_types[sourceId]) + HIST("lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
     }
 
     if (dilepton_source_types[sourceId].find("ccbar") != std::string_view::npos && cfgFillSeparateCharmHadronPairs) {
       if (std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 411) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dplus_Dminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dplus_Dminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dplus_Dminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dplus_Dminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dplus_Dminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dplus_Dminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if (std::abs(pdgMotherC1) == 421 && std::abs(pdgMotherC2) == 421) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/D0_D0bar/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_D0bar/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/D0_D0bar/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_D0bar/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/D0_D0bar/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_D0bar/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if (std::abs(pdgMotherC1) == 431 && std::abs(pdgMotherC2) == 431) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dsplus_Dsminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dsplus_Dsminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dsplus_Dsminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dsplus_Dsminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dsplus_Dsminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dsplus_Dsminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 421) || (std::abs(pdgMotherC2) == 411 && std::abs(pdgMotherC1) == 421)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_D0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_D0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_D0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_D0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_D0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_D0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 431) || (std::abs(pdgMotherC2) == 411 && std::abs(pdgMotherC1) == 431)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Dspm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Dspm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Dspm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Dspm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Dspm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Dspm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 421 && std::abs(pdgMotherC2) == 431) || (std::abs(pdgMotherC2) == 421 && std::abs(pdgMotherC1) == 431)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/D0_Dspm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Dspm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/D0_Dspm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Dspm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/D0_Dspm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Dspm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if (std::abs(pdgMotherC1) == 4122 && std::abs(pdgMotherC2) == 4122) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Lcplus_Lcminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcplus_Lcminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Lcplus_Lcminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcplus_Lcminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Lcplus_Lcminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcplus_Lcminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if (std::abs(pdgMotherC1) == 4232 && std::abs(pdgMotherC2) == 4232) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Xicplus_Xicminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicplus_Xicminus/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Xicplus_Xicminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicplus_Xicminus/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Xicplus_Xicminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicplus_Xicminus/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if (std::abs(pdgMotherC1) == 4132 && std::abs(pdgMotherC2) == 4132) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Xic0_Xic0bar/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xic0_Xic0bar/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Xic0_Xic0bar/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xic0_Xic0bar/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Xic0_Xic0bar/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xic0_Xic0bar/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if (std::abs(pdgMotherC1) == 4332 && std::abs(pdgMotherC2) == 4332) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Omegac0_Omegac0bar/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Omegac0_Omegac0bar/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Omegac0_Omegac0bar/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Omegac0_Omegac0bar/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Omegac0_Omegac0bar/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Omegac0_Omegac0bar/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 4122 && std::abs(pdgMotherC2) == 4232) || (std::abs(pdgMotherC2) == 4122 && std::abs(pdgMotherC1) == 4232)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 4122 && std::abs(pdgMotherC2) == 4132) || (std::abs(pdgMotherC2) == 4122 && std::abs(pdgMotherC1) == 4132)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 4122 && std::abs(pdgMotherC2) == 4332) || (std::abs(pdgMotherC2) == 4122 && std::abs(pdgMotherC1) == 4332)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Lcpm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 4232 && std::abs(pdgMotherC2) == 4132) || (std::abs(pdgMotherC2) == 4232 && std::abs(pdgMotherC1) == 4132)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 4232 && std::abs(pdgMotherC2) == 4332) || (std::abs(pdgMotherC2) == 4232 && std::abs(pdgMotherC1) == 4332)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xicpm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 4132 && std::abs(pdgMotherC2) == 4332) || (std::abs(pdgMotherC2) == 4132 && std::abs(pdgMotherC1) == 4332)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Xic0_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xic0_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Xic0_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xic0_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Xic0_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Xic0_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 4122) || (std::abs(pdgMotherC2) == 411 && std::abs(pdgMotherC1) == 4122)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Lcpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Lcpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Lcpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Lcpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Lcpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Lcpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 4232) || (std::abs(pdgMotherC2) == 411 && std::abs(pdgMotherC1) == 4232)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 4132) || (std::abs(pdgMotherC2) == 411 && std::abs(pdgMotherC1) == 4132)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 411 && std::abs(pdgMotherC2) == 4332) || (std::abs(pdgMotherC2) == 411 && std::abs(pdgMotherC1) == 4332)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dpm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dpm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 421 && std::abs(pdgMotherC2) == 4122) || (std::abs(pdgMotherC2) == 421 && std::abs(pdgMotherC1) == 4122)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/D0_Lcpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Lcpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/D0_Lcpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Lcpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/D0_Lcpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Lcpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 421 && std::abs(pdgMotherC2) == 4232) || (std::abs(pdgMotherC2) == 421 && std::abs(pdgMotherC1) == 4232)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/D0_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/D0_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/D0_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 421 && std::abs(pdgMotherC2) == 4132) || (std::abs(pdgMotherC2) == 421 && std::abs(pdgMotherC1) == 4132)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/D0_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/D0_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/D0_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 421 && std::abs(pdgMotherC2) == 4332) || (std::abs(pdgMotherC2) == 421 && std::abs(pdgMotherC1) == 4332)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/D0_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/D0_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/D0_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/D0_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 431 && std::abs(pdgMotherC2) == 4122) || (std::abs(pdgMotherC2) == 431 && std::abs(pdgMotherC1) == 4122)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Lcpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Lcpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Lcpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Lcpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Lcpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Lcpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 431 && std::abs(pdgMotherC2) == 4232) || (std::abs(pdgMotherC2) == 431 && std::abs(pdgMotherC1) == 4232)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xicpm/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xicpm/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xicpm/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 431 && std::abs(pdgMotherC2) == 4132) || (std::abs(pdgMotherC2) == 431 && std::abs(pdgMotherC1) == 4132)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xic0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xic0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Xic0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       } else if ((std::abs(pdgMotherC1) == 431 && std::abs(pdgMotherC2) == 4332) || (std::abs(pdgMotherC2) == 431 && std::abs(pdgMotherC1) == 4332)) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Omegac0/uls/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Omegac0/lspp/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/ccbar/Dspm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/ccbar/Dspm_Omegac0/lsmm/hs"), mass, pt, rapidity, dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, dphi_e_ee, pair_dca, cpa, weight);
         }
       }
     }
@@ -1409,6 +1570,7 @@ struct DileptonMC {
       return false;
     }
 
+    dileptonSV candidate;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
         if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
@@ -1419,9 +1581,16 @@ struct DileptonMC {
           return false;
         }
       }
-      if (!cut.IsSelectedPair(t1, t2)) {
+
+      auto trackParCov1 = getTrackParCov(t1);
+      auto trackParCov2 = getTrackParCov(t2);
+      if (!findSV(collision, trackParCov1, trackParCov2, candidate)) {
         return false;
       }
+
+      // if (!cut.IsSelectedPair(t1, t2)) {
+      //   return false;
+      // }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
         return false;
@@ -1429,13 +1598,6 @@ struct DileptonMC {
       if (!map_best_match_globalmuon[t1.globalIndex()] || !map_best_match_globalmuon[t2.globalIndex()]) {
         return false;
       }
-
-      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t1, cut, tracks)) {
-      //   return false;
-      // }
-      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t2, cut, tracks)) {
-      //   return false;
-      // }
 
       bool isCorrectMatch1 = t1.emmcparticleId() == t1.emmftmcparticleId();
       bool isCorrectMatch2 = t2.emmcparticleId() == t2.emmftmcparticleId();
@@ -1464,9 +1626,15 @@ struct DileptonMC {
         }
       }
 
-      if (!cut.IsSelectedPair(t1, t2)) {
+      auto trackParCov1 = o2::aod::fwdtrackutils::getTrackParCovFwd(t1, t1);
+      auto trackParCov2 = o2::aod::fwdtrackutils::getTrackParCovFwd(t2, t2);
+      if (!findSVFwd(collision, trackParCov1, trackParCov2, candidate)) {
         return false;
       }
+
+      // if (!cut.IsSelectedPair(t1, t2)) {
+      //   return false;
+      // }
     }
 
     float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
@@ -1538,9 +1706,9 @@ struct DileptonMC {
     float pair_dca = 999.f;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       pair_dca = o2::aod::pwgem::dilepton::utils::pairutil::pairDCAQuadSum(o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(t1), o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(t2));
-      if (cfgDCAType == 1) {
+      if (dielectroncuts.cfgDCAType == 1) {
         pair_dca = o2::aod::pwgem::dilepton::utils::pairutil::pairDCAQuadSum(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaXYinSigma(t1), o2::aod::pwgem::dilepton::utils::emtrackutil::dcaXYinSigma(t2));
-      } else if (cfgDCAType == 2) {
+      } else if (dielectroncuts.cfgDCAType == 2) {
         pair_dca = o2::aod::pwgem::dilepton::utils::pairutil::pairDCAQuadSum(o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(t1), o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(t2));
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
@@ -1573,29 +1741,29 @@ struct DileptonMC {
       if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                                                                                                          // hh or lh correlated bkg
         if (std::abs(t1mc.pdgCode()) != pdg_lepton && std::abs(t2mc.pdgCode()) != pdg_lepton) {                                                                                                                        // hh correlated bkg
           if (t1.sign() * t2.sign() < 0) {                                                                                                                                                                             // ULS
-            fRegistry.fill(HIST("Pair/corr_bkg_hh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_hh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
           } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-            fRegistry.fill(HIST("Pair/corr_bkg_hh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_hh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
           } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-            fRegistry.fill(HIST("Pair/corr_bkg_hh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_hh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
           }
         } else {                           // lh correlated bkg
           if (t1.sign() * t2.sign() < 0) { // ULS
-            fRegistry.fill(HIST("Pair/corr_bkg_lh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
           } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-            fRegistry.fill(HIST("Pair/corr_bkg_lh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
           } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-            fRegistry.fill(HIST("Pair/corr_bkg_lh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
           }
         }
       }
     } else {                           // true combinatorial bkg
       if (t1.sign() * t2.sign() < 0) { // ULS
-        fRegistry.fill(HIST("Pair/comb_bkg/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+        fRegistry.fill(HIST("Pair/comb_bkg/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-        fRegistry.fill(HIST("Pair/comb_bkg/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+        fRegistry.fill(HIST("Pair/comb_bkg/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-        fRegistry.fill(HIST("Pair/comb_bkg/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+        fRegistry.fill(HIST("Pair/comb_bkg/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight);
       }
     }
 
@@ -1623,8 +1791,8 @@ struct DileptonMC {
           float deltaPt2 = t2mc.pt() - t2.pt();
           switch (std::abs(mcmother.pdgCode())) {
             case 111:
-              if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {           // prompt pi0
-                fillRecHistograms<1>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // prompt pi0
+              if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {                          // prompt pi0
+                fillRecHistograms<1>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // prompt pi0
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                   if (t1.sign() * t2.sign() < 0) { // ULS
                     fRegistry.fill(HIST("Pair/sm/PromptPi0/uls/hMvsPhiV"), phiv, v12.M());
@@ -1640,8 +1808,8 @@ struct DileptonMC {
                     fRegistry.fill(HIST("Pair/sm/PromptPi0/lsmm/hDCAz1vsDCAz2"), o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(t1), o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(t2));
                   }
                 }
-              } else {                                                                                                                                                                             // non-prompt pi0
-                fillRecHistograms<2>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt pi0
+              } else {                                                                                                                                                                                            // non-prompt pi0
+                fillRecHistograms<2>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // non-prompt pi0
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                   if (t1.sign() * t2.sign() < 0) { // ULS
                     fRegistry.fill(HIST("Pair/sm/NonPromptPi0/uls/hMvsPhiV"), phiv, v12.M());
@@ -1660,33 +1828,33 @@ struct DileptonMC {
               }
               break;
             case 221:
-              fillRecHistograms<3>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // eta
+              fillRecHistograms<3>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // eta
               break;
             case 331:
-              fillRecHistograms<4>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // eta'
+              fillRecHistograms<4>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // eta'
               break;
             case 113:
-              fillRecHistograms<5>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // rho
+              fillRecHistograms<5>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // rho
               break;
             case 223:
-              fillRecHistograms<6>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // omega
+              fillRecHistograms<6>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // omega
               if (mcmother.daughtersIds().size() == 2) {
-                if (t1.sign() * t2.sign() < 0) {                                                                                                                                                    // ULS
-                  fRegistry.fill(HIST("Pair/sm/Omega2ll/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // omeag->ee
+                if (t1.sign() * t2.sign() < 0) {                                                                                                                                                                   // ULS
+                  fRegistry.fill(HIST("Pair/sm/Omega2ll/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // omeag->ee
                 }
               }
               break;
             case 333:
-              fillRecHistograms<7>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // phi
+              fillRecHistograms<7>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // phi
               if (mcmother.daughtersIds().size() == 2) {
-                if (t1.sign() * t2.sign() < 0) {                                                                                                                                                  // ULS
-                  fRegistry.fill(HIST("Pair/sm/Phi2ll/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // phi->ee
+                if (t1.sign() * t2.sign() < 0) {                                                                                                                                                                 // ULS
+                  fRegistry.fill(HIST("Pair/sm/Phi2ll/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // phi->ee
                 }
               }
               break;
             case 443:
               if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) {
-                fillRecHistograms<9>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt J/psi
+                fillRecHistograms<9>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // non-prompt J/psi
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                   if (t1.sign() * t2.sign() < 0) { // ULS
                     fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/uls/hDeltaPtvsDCA"), pair_dca, deltaPt1 + deltaPt2);
@@ -1700,7 +1868,7 @@ struct DileptonMC {
                   }
                 }
               } else {
-                fillRecHistograms<8>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // prompt J/psi
+                fillRecHistograms<8>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // prompt J/psi
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                   if (t1.sign() * t2.sign() < 0) { // ULS
                     fRegistry.fill(HIST("Pair/sm/PromptJPsi/uls/hDeltaPtvsDCA"), pair_dca, deltaPt1 + deltaPt2);
@@ -1717,9 +1885,9 @@ struct DileptonMC {
               break;
             case 100443:
               if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) {
-                fillRecHistograms<11>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt psi2S
+                fillRecHistograms<11>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // non-prompt psi2S
               } else {
-                fillRecHistograms<10>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // prompt psi2S
+                fillRecHistograms<10>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // prompt psi2S
               }
               break;
             default:
@@ -1728,7 +1896,7 @@ struct DileptonMC {
         } else if (!(t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && !(t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
           switch (std::abs(mcmother.pdgCode())) {
             case 22:
-              fillRecHistograms<0>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // photon conversion
+              fillRecHistograms<0>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // photon conversion
               if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                 fRegistry.fill(HIST("Pair/sm/Photon/uls/hMvsPhiV"), phiv, v12.M());
                 float rxy_gen = std::sqrt(std::pow(t1mc.vx(), 2) + std::pow(t1mc.vy(), 2));
@@ -1746,19 +1914,19 @@ struct DileptonMC {
         auto mp2 = mcparticles.iteratorAt(t2mc.mothersIds()[0]);
         switch (hfee_type) {
           case static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kCe_Ce):
-            fillRecHistograms<15>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // c2l_c2l
+            fillRecHistograms<15>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // c2l_c2l
             break;
           case static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kBe_Be):
-            fillRecHistograms<16>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2l_b2l
+            fillRecHistograms<16>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // b2l_b2l
             break;
           case static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kBCe_BCe):
-            fillRecHistograms<17>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2c2l
+            fillRecHistograms<17>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // b2c2l_b2c2l
             break;
           case static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kBCe_Be_SameB):
-            fillRecHistograms<18>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2l_sameb
+            fillRecHistograms<18>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // b2c2l_b2l_sameb
             break;
           case static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kBCe_Be_DiffB):
-            fillRecHistograms<19>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2l_diffb
+            fillRecHistograms<19>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, candidate.cpa, weight); // b2c2l_b2l_diffb
             break;
           default:
             break;
@@ -2597,7 +2765,7 @@ struct DileptonMC {
     map_weight.clear();
     map_best_match_globalmuon.clear();
   }
-  PROCESS_SWITCH(DileptonMC, processAnalysis, "run dilepton mc analysis", true);
+  PROCESS_SWITCH(DileptonSVMC, processAnalysis, "run dilepton mc analysis", true);
 
   o2::framework::Partition<MySmearedElectrons> positive_electronsMC_smeared = o2::aod::mcparticle::pdgCode == -11; // e+
   o2::framework::Partition<MySmearedElectrons> negative_electronsMC_smeared = o2::aod::mcparticle::pdgCode == 11;  // e-
@@ -2630,7 +2798,7 @@ struct DileptonMC {
     map_weight.clear();
     map_best_match_globalmuon.clear();
   }
-  PROCESS_SWITCH(DileptonMC, processAnalysis_Smeared, "run dilepton mc analysis with smearing", false);
+  PROCESS_SWITCH(DileptonSVMC, processAnalysis_Smeared, "run dilepton mc analysis with smearing", false);
 
   void processGen_VM(FilteredMyCollisions const& collisions, MyMCCollisions const&, o2::aod::EMMCGenVectorMesons const& mcparticles)
   {
@@ -2682,7 +2850,7 @@ struct DileptonMC {
       } // end of mctracks per mccollision
     } // end of collision loop
   }
-  PROCESS_SWITCH(DileptonMC, processGen_VM, "process generated info for vector mesons", false);
+  PROCESS_SWITCH(DileptonSVMC, processGen_VM, "process generated info for vector mesons", false);
 
   void processNorm(o2::aod::EMEventNormInfos const& collisions)
   {
@@ -2751,7 +2919,7 @@ struct DileptonMC {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
     } // end of collision loop
   }
-  PROCESS_SWITCH(DileptonMC, processNorm, "process normalization info", false);
+  PROCESS_SWITCH(DileptonSVMC, processNorm, "process normalization info", false);
 
   void processBC(o2::aod::EMBCs const& bcs)
   {
@@ -2777,10 +2945,10 @@ struct DileptonMC {
       }
     }
   }
-  PROCESS_SWITCH(DileptonMC, processBC, "process BC counter", false);
+  PROCESS_SWITCH(DileptonSVMC, processBC, "process BC counter", false);
 
   void processDummy(FilteredMyCollisions const&) {}
-  PROCESS_SWITCH(DileptonMC, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DileptonSVMC, processDummy, "Dummy function", false);
 };
 
-#endif // PWGEM_DILEPTON_CORE_DILEPTONMC_H_
+#endif // PWGEM_DILEPTON_CORE_DILEPTONSVMC_H_
