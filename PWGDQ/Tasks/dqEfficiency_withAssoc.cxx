@@ -1977,7 +1977,7 @@ struct AnalysisSameEventPairing {
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
+  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -2008,6 +2008,7 @@ struct AnalysisSameEventPairing {
 
     // estimate reserved size
     int64_t reserveSize = 0;
+    int64_t reserveSizeGen = mcTracks.size();
     for (auto& event : events) {
       if (event.isEventSelected_bit(0)) {
         auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
@@ -2038,7 +2039,7 @@ struct AnalysisSameEventPairing {
       dimuonAllList.reserve(reserveSize);
     }
     if (useMiniTree.fConfigMiniTree) {
-      dileptonMiniTreeGen.reserve(reserveSize);
+      dileptonMiniTreeGen.reserve(reserveSizeGen);
       dileptonMiniTreeRec.reserve(reserveSize);
     }
     if (fConfigOptions.polarTables.value) {

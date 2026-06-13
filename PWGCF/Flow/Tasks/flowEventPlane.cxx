@@ -792,8 +792,8 @@ struct FlowEventPlane {
   Configurable<float> cMinV0Radius{"cMinV0Radius", 0.5, "Minimum V0 radius from PV"};
   Configurable<float> cK0ShortCTau{"cK0ShortCTau", 20.0, "Decay length cut K0Short"};
   Configurable<float> cLambdaCTau{"cLambdaCTau", 30.0, "Decay length cut Lambda"};
-  Configurable<float> cK0ShortCosPA{"cK0ShortCosPA", 0.998, "K0Short CosPA"};
-  Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.998, "Lambda CosPA"};
+  Configurable<float> cK0ShortCosPA{"cK0ShortCosPA", 0.97, "K0Short CosPA"};
+  Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.98, "Lambda CosPA"};
   Configurable<float> cK0SMassRej{"cK0SMassRej", 0.01, "Reject K0Short Candidates"};
   Configurable<float> cArmPodSel{"cArmPodSel", 0.2, "Armentros-Podolanski Selection for K0S"};
   Configurable<float> cV0RapCut{"cV0RapCut", 0.8, "V0 rap cut"};
@@ -810,8 +810,6 @@ struct FlowEventPlane {
   std::array<float, 4> vSP = {0., 0., 0., 0.};
   std::map<ResoType, std::array<float, 2>> mResoDauMass = {{kPhi0, {MassKaonCharged, MassKaonCharged}}, {kKStar, {MassPionCharged, MassKaonCharged}}};
   std::map<ResoType, float> mResoMass = {{kPhi0, MassPhi}, {kKStar, MassKaonCharged}};
-  std::map<V0Type, float> mV0Ctau = {{kK0S, cK0ShortCTau}, {kLambda, cLambdaCTau}, {kAntiLambda, cLambdaCTau}};
-  std::map<V0Type, float> mV0CosPA = {{kK0S, cK0ShortCosPA}, {kLambda, cLambdaCosPA}, {kAntiLambda, cLambdaCosPA}};
 
   void init(InitContext const&)
   {
@@ -1236,7 +1234,7 @@ struct FlowEventPlane {
       float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda0;
 
       // K0Short
-      if (selV0DauTracks<kK0S>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kK0S) && ctauK0Short < mV0Ctau.at(kK0S) && v0.qtarm() >= cArmPodSel * std::abs(v0.alpha()) && v0.pt() >= cK0SMinPt && v0.pt() < cK0SMaxPt) {
+      if (selV0DauTracks<kK0S>(v0, postrack, negtrack) && v0.v0cosPA() > cK0ShortCosPA && ctauK0Short < cK0ShortCTau && v0.qtarm() >= cArmPodSel * std::abs(v0.alpha()) && v0.pt() >= cK0SMinPt && v0.pt() < cK0SMaxPt) {
         fillV0QAHist<kK0S>(collision, v0, tracks);
         histos.fill(HIST("V0/K0Short/hMassVsRap"), cent, v0.mK0Short(), v0.eta());
         histos.fill(HIST("V0/K0Short/Flow/hQuA"), cent, v0.eta(), v0.mK0Short(), v1a);
@@ -1244,7 +1242,7 @@ struct FlowEventPlane {
       }
 
       // Lambda
-      if (selV0DauTracks<kLambda>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kLambda) && ctauLambda < mV0Ctau.at(kLambda) && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
+      if (selV0DauTracks<kLambda>(v0, postrack, negtrack) && v0.v0cosPA() > cLambdaCosPA && ctauLambda < cLambdaCTau && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
         fillV0QAHist<kLambda>(collision, v0, tracks);
         histos.fill(HIST("V0/Lambda/hMassVsRap"), cent, v0.mLambda(), v0.eta());
         histos.fill(HIST("V0/Lambda/Flow/hQuA"), cent, v0.eta(), v0.mLambda(), v1a);
@@ -1255,7 +1253,7 @@ struct FlowEventPlane {
       }
 
       // AntiLambda
-      if (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kAntiLambda) && ctauLambda < mV0Ctau.at(kAntiLambda) && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
+      if (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack) && v0.v0cosPA() > cLambdaCosPA && ctauLambda < cLambdaCTau && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
         fillV0QAHist<kAntiLambda>(collision, v0, tracks);
         histos.fill(HIST("V0/AntiLambda/hMassVsRap"), cent, v0.mAntiLambda(), v0.eta());
         histos.fill(HIST("V0/AntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mAntiLambda(), v1a);
