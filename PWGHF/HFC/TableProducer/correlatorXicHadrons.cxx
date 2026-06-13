@@ -151,14 +151,14 @@ struct HfCorrelatorXicHadronsSelection {
   Filter xicPlusFilter = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
   Filter xic0Filter = aod::hf_sel_toxipi::resultSelections == true;
 
-template <bool IsMc, bool IsXicPlus, typename CollType, typename CandType>
+  template <bool IsMc, bool IsXicPlus, typename CollType, typename CandType>
   void selectionCollision(CollType const& collision, CandType const& candidates)
   {
     bool isSelColl = true;
     bool isCandFound = false;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
-    
+
     if (doSelXicCollision) {
       for (const auto& candidate : candidates) {
         double massCand = -999.;
@@ -182,15 +182,14 @@ template <bool IsMc, bool IsXicPlus, typename CollType, typename CandType>
           continue;
         }
 
-         if constexpr (IsMc) {
+        if constexpr (IsMc) {
           auto const mcFlag = std::abs(candidate.flagMcMatchRec());
 
-          bool  isSignal = (mcFlag == static_cast<int>(o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi))
-                  || (mcFlag == static_cast<int>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi)));
+          bool isSignal = (mcFlag == static_cast<int>(o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) || (mcFlag == static_cast<int>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi)));
 
           if (!isSignal) {
             isCandFound = false;
-            continue; 
+            continue;
           }
         }
         // If it passed both Kinematic and MC checks
@@ -206,12 +205,12 @@ template <bool IsMc, bool IsXicPlus, typename CollType, typename CandType>
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-    
+
     isSelColl = isCandFound && isSel8 && isNosameBunchPileUp;
     candSel(isSelColl);
   }
 
-   template <typename CandType>
+  template <typename CandType>
   void selectionCollisionMcGen(CandType const& mcParticles)
   {
     bool isCandFound = false;
