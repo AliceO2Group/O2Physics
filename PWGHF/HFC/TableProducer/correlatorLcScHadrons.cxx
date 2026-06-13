@@ -143,20 +143,19 @@ struct HfCorrelatorLcScHadronsSelection {
           isCandFound = false;
           continue;
         }
-            if constexpr (IsMc) {
+        if constexpr (IsMc) {
           auto const mcFlag = std::abs(candidate.flagMcMatchRec());
 
           // Cast enums to int to safely compare against the absolute integer flag
-          bool isSc0         = (mcFlag == static_cast<int>(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi));
-          bool isScPlusPlus  = (mcFlag == static_cast<int>(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi));
-          bool isLc          = (mcFlag == static_cast<int>(o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi));
+          bool isSc0 = (mcFlag == static_cast<int>(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi));
+          bool isScPlusPlus = (mcFlag == static_cast<int>(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi));
+          bool isLc = (mcFlag == static_cast<int>(o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi));
 
           if (!(isSc0 || isScPlusPlus || isLc)) {
             isCandFound = false;
             continue;
           }
-
-          }
+        }
         isCandFound = true;
         break;
       }
@@ -564,7 +563,7 @@ struct HfCorrelatorLcScHadrons {
     return y;
   }
 
-    template <typename TCollision, typename V0>
+  template <typename TCollision, typename V0>
   bool selectionV0(TCollision const& collision, V0 const& candidate)
   {
     if (candidate.v0radius() < cfgV0.cfgV0radiusMin) {
@@ -824,11 +823,11 @@ struct HfCorrelatorLcScHadrons {
 
       // Correlate Lc with all Lambda V0 in the same event
       for (const auto& v0 : v0s) {
-    
+
         const int v0Lambda = 1;
         const int v0AntiLambda = -1;
 
-        if (!selectionV0(collision, v0)){
+        if (!selectionV0(collision, v0)) {
           continue;
         }
 
@@ -1014,89 +1013,87 @@ struct HfCorrelatorLcScHadrons {
 
         if (passV0Sel && v0Mc.pdgCode() == kLambda0) {
           if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
-          registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-          registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-          if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
-            registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-            registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-          }
+            registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+            registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
+              registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+              registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            }
 
-          if (passPIDSelection(trackV0Pos, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
-            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            if (passPIDSelection(trackV0Pos, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
+              registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+              registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            }
           }
         }
-      }
         if (passV0Sel && v0Mc.pdgCode() == kLambda0Bar) {
-                  if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
-          registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-          registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+          if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
+            registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+            registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
 
-          if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
-            registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-            registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
-          }
-          if (passPIDSelection(trackV0Neg, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
-            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
-            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+            if (cfgV0.calEffV0 && v0Mc.isPhysicalPrimary() && v0Mc.producedByGenerator()) {
+              registry.fill(HIST("hV0PrimLambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+              registry.fill(HIST("hV0PrimLambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+            }
+            if (passPIDSelection(trackV0Neg, cfgCharmCand.trkPIDspecies, cfgCharmCand.pidTPCMax, cfgCharmCand.pidTOFMax, cfgCharmCand.tofPIDThreshold, cfgCharmCand.forceTOF)) {
+              registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
+              registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
+            }
           }
         }
-      }
-          if (cfgV0.calEffV0 && countV0 == 1) {
+        if (cfgV0.calEffV0 && countV0 == 1) {
           auto genPart = mcParticles.sliceBy(perTrueCollision, v0Mc.mcCollisionId());
 
-        for (const auto& particle : genPart) {
+          for (const auto& particle : genPart) {
 
-          if (std::abs(particle.pdgCode()) != kLambda0) {
-            continue;
-          }
-
-          if (std::abs(particle.y()) > cfgCharmCand.yCandMax) {
-            continue;
-          }
-          if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
-            continue;
-          }
-
-          auto daughterParts = particle.template daughters_as<aod::McParticles>();
-          const int8_t nDaughtersV0 = 2;
-
-          if (daughterParts.size() != nDaughtersV0) {
-            continue;
-          }
-
-          int8_t countPassedDaughter = 0;
-          for (const auto& currentDaughter : daughterParts) {
-
-            if (std::abs(currentDaughter.eta()) > cfgCharmCand.etaTrackMax) {
+            if (std::abs(particle.pdgCode()) != kLambda0) {
               continue;
             }
 
-            if (std::abs(currentDaughter.pdgCode()) == kProton) {
-
-              if (currentDaughter.pt() > cfgV0.cfgV0DaughPrPtMax || currentDaughter.pt() < cfgV0.cfgV0DaughPrPtMin) {
-                continue;
-              }
-
-            } else if (std::abs(currentDaughter.pdgCode()) == kPiPlus) {
-              if (currentDaughter.pt() > cfgV0.cfgV0DaughPiPtMax || currentDaughter.pt() < cfgV0.cfgV0DaughPiPtMin) {
-                continue;
-              }
-
-            } else {
+            if (std::abs(particle.y()) > cfgCharmCand.yCandMax) {
               continue;
             }
-            countPassedDaughter++;
-          }
-          if (countPassedDaughter == nDaughtersV0) {
-            registry.fill(HIST("hV0PtPrimLambdaMcGen"), particle.pt());
+            if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
+              continue;
+            }
+
+            auto daughterParts = particle.template daughters_as<aod::McParticles>();
+            const int8_t nDaughtersV0 = 2;
+
+            if (daughterParts.size() != nDaughtersV0) {
+              continue;
+            }
+
+            int8_t countPassedDaughter = 0;
+            for (const auto& currentDaughter : daughterParts) {
+
+              if (std::abs(currentDaughter.eta()) > cfgCharmCand.etaTrackMax) {
+                continue;
+              }
+
+              if (std::abs(currentDaughter.pdgCode()) == kProton) {
+
+                if (currentDaughter.pt() > cfgV0.cfgV0DaughPrPtMax || currentDaughter.pt() < cfgV0.cfgV0DaughPrPtMin) {
+                  continue;
+                }
+
+              } else if (std::abs(currentDaughter.pdgCode()) == kPiPlus) {
+                if (currentDaughter.pt() > cfgV0.cfgV0DaughPiPtMax || currentDaughter.pt() < cfgV0.cfgV0DaughPiPtMin) {
+                  continue;
+                }
+
+              } else {
+                continue;
+              }
+              countPassedDaughter++;
+            }
+            if (countPassedDaughter == nDaughtersV0) {
+              registry.fill(HIST("hV0PtPrimLambdaMcGen"), particle.pt());
+            }
           }
         }
-      }
         countV0++;
-
       }
-
     }
   }
 
