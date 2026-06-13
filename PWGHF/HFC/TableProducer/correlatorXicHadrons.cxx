@@ -188,7 +188,7 @@ struct HfCorrelatorXicHadronsSelection {
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-    
+
     isSelColl = isCandFound && isSel8 && isNosameBunchPileUp;
 
     candSel(isSelColl);
