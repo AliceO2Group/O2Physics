@@ -442,8 +442,8 @@ struct NetchargeFluctuations {
       ccdb->setLocalObjectValidityChecking();
 
       TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, 1);
-      efficiencyPos = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Run2"));
-      efficiencyNeg = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Run3"));
+      efficiencyPos = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Pos"));
+      efficiencyNeg = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Neg"));
       // Log fatal error if efficiency histogram is not found
       if (!efficiencyPos || !efficiencyNeg) {
         LOGF(info, "FATAL!! Could not find required histograms in CCDB");
@@ -1177,7 +1177,7 @@ struct NetchargeFluctuations {
 
   } // void
 
-  int getCentrality(aod::McParticles const& particles)
+  float getCentrality(aod::McParticles const& particles)
   {
     int multFT0A = 0;
     int multFT0C = 0;
