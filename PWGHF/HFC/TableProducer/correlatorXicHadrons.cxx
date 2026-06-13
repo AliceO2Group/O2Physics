@@ -151,18 +151,20 @@ struct HfCorrelatorXicHadronsSelection {
   Filter xicPlusFilter = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
   Filter xic0Filter = aod::hf_sel_toxipi::resultSelections == true;
 
-  template <bool IsXicPlus, typename CollType, typename CandType>
+template <bool IsMc, bool IsXicPlus, typename CollType, typename CandType>
   void selectionCollision(CollType const& collision, CandType const& candidates)
   {
     bool isSelColl = true;
     bool isCandFound = false;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
-    double yCand = -999.;
-    double massCand = -999.;
-    double ptCand = -999;
+    
     if (doSelXicCollision) {
       for (const auto& candidate : candidates) {
+        double massCand = -999.;
+        double ptCand = -999.;
+        double yCand = -999.;
+
         // For both XicPlus and Xic0
         if constexpr (IsXicPlus) {
           massCand = o2::constants::physics::MassXiCPlus;
@@ -174,27 +176,42 @@ struct HfCorrelatorXicHadronsSelection {
           yCand = candidate.kfRapXic();
         }
 
+        // Kinematic cuts
         if (std::abs(yCand) > yCandMax || ptCand < ptCandMin) {
           isCandFound = false;
           continue;
         }
+
+         if constexpr (IsMc) {
+          auto const mcFlag = std::abs(candidate.flagMcMatchRec());
+
+          bool  isSignal = (mcFlag == static_cast<int>(o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi))
+                  || (mcFlag == static_cast<int>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi)));
+
+          if (!isSignal) {
+            isCandFound = false;
+            continue; 
+          }
+        }
+        // If it passed both Kinematic and MC checks
         isCandFound = true;
         break;
       }
     }
+
+    // Collision-level cuts
     if (useSel8) {
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-
+    
     isSelColl = isCandFound && isSel8 && isNosameBunchPileUp;
-
     candSel(isSelColl);
   }
 
-  template <typename CandType>
+   template <typename CandType>
   void selectionCollisionMcGen(CandType const& mcParticles)
   {
     bool isCandFound = false;
@@ -264,28 +281,28 @@ struct HfCorrelatorXicHadronsSelection {
   void processXicPlusSelection(SelCollisions::iterator const& collision,
                                CandsXicPlusDataFiltered const& candidates)
   {
-    selectionCollision<true>(collision, candidates);
+    selectionCollision<false, true>(collision, candidates);
   }
   PROCESS_SWITCH(HfCorrelatorXicHadronsSelection, processXicPlusSelection, "Process XicPlus Collision Selection for Data", true);
 
   void processXic0Selection(SelCollisions::iterator const& collision,
                             CandsXic0DataFiltered const& candidates)
   {
-    selectionCollision<false>(collision, candidates);
+    selectionCollision<false, false>(collision, candidates);
   }
   PROCESS_SWITCH(HfCorrelatorXicHadronsSelection, processXic0Selection, "Process Xic0 Collision Selection for Data", false);
 
   void processXicPlusSelectionMcRec(SelCollisions::iterator const& collision,
                                     CandsXicPlusMcRecFiltered const& candidates)
   {
-    selectionCollision<true>(collision, candidates);
+    selectionCollision<true, true>(collision, candidates);
   }
   PROCESS_SWITCH(HfCorrelatorXicHadronsSelection, processXicPlusSelectionMcRec, "Process XicPlus Selection McRec", false);
 
   void processXic0SelectionMcRec(SelCollisions::iterator const& collision,
                                  CandsXic0McRecFiltered const& candidates)
   {
-    selectionCollision<false>(collision, candidates);
+    selectionCollision<true, false>(collision, candidates);
   }
   PROCESS_SWITCH(HfCorrelatorXicHadronsSelection, processXic0SelectionMcRec, "Process Xic0 Selection McRec", false);
 
