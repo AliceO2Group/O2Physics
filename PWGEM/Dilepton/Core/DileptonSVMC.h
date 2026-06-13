@@ -1699,8 +1699,10 @@ struct DileptonSVMC {
     }
     // LOGF(info, "t1.sign() = %d, t2.sign() = %d, map_weight[std::make_pair(%d, %d)] = %f", t1.sign(), t2.sign(), t1.globalIndex(), t2.globalIndex(), weight);
 
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
+    // ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
+    // ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
+    ROOT::Math::PtEtaPhiMVector v1(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1);
+    ROOT::Math::PtEtaPhiMVector v2(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
     float pair_dca = 999.f;
