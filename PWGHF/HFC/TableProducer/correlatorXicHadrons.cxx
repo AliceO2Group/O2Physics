@@ -154,6 +154,7 @@ struct HfCorrelatorXicHadronsSelection {
   template <bool IsXicPlus, typename CollType, typename CandType>
   void selectionCollision(CollType const& collision, CandType const& candidates)
   {
+    bool isSelColl = true;
     bool isCandFound = false;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
@@ -187,9 +188,10 @@ struct HfCorrelatorXicHadronsSelection {
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-    if (isCandFound && isSel8 && isNosameBunchPileUp) {
-      candSel(true);
-    }
+    
+    isSelColl = isCandFound && isSel8 && isNosameBunchPileUp;
+
+    candSel(isSelColl);
   }
 
   template <typename CandType>
