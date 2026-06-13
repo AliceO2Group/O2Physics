@@ -98,7 +98,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"}; // example for built-in type (float, string, etc.)
   Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 8.}, "nPtBins, ptMin, ptMax"};                     // example for an array
   Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {360, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
-  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {800, 0., 80.}, "nCentrBins, centrMin, centrMax"};
+  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {80, 0., 80.}, "nCentrBins, centrMin, centrMax"};
   Configurable<std::vector<float>> cfXBins{"cfXBins", {1000, -0.04, -0.01}, "nXBins, xMin, xMax"};
   Configurable<std::vector<float>> cfYBins{"cfYBins", {1000, -0.01, 0.006}, "nYBins, yMin, yMax"};
   Configurable<std::vector<float>> cfZBins{"cfZBins", {1000, -20., 20.}, "nZBins, zMin, zMax"};
@@ -509,7 +509,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
     } // end of for (auto track: tracks)
     // calculate correlations
-    if (M < 4.)
+    float Mmin = 4.;
+    if (M < Mmin)
       return;
     float four32 = Four(3, 2, -3, -2).Re() / Four(0, 0, 0, 0).Re();
     float four42 = Four(4, 2, -4, -2).Re() / Four(0, 0, 0, 0).Re();
