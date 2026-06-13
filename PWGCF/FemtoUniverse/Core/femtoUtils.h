@@ -27,6 +27,8 @@
 #include <iterator>
 #include <vector>
 
+#include <TPDGCode.h>
+
 namespace o2::analysis::femto_universe
 {
 
@@ -100,17 +102,55 @@ bool isFullPIDSelected(aod::femtouniverseparticle::CutContainerType const& pidCu
   return pidSelection;
 };
 
-int checkDaughterType(o2::aod::femtouniverseparticle::ParticleType partType, int motherPDG)
+int checkDaughterType(o2::aod::femtouniverseparticle::ParticleType partType, int motherPDG, int daughterPDG = 0)
 {
   int partOrigin = 0;
+  const auto absMotherPDG = std::abs(motherPDG);
+  const auto absDaughterPDG = std::abs(daughterPDG);
+
+  if (absDaughterPDG == kKPlus && partType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+    switch (absMotherPDG) {
+      case kOmegaMinus:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterOmega;
+        break;
+      default:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;
+    }
+    return partOrigin;
+  }
+
   if (partType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
 
-    switch (std::abs(motherPDG)) {
-      case 3122:
+    switch (absMotherPDG) {
+      case kLambda0:
         partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterLambda;
         break;
-      case 3222:
+      case kSigmaPlus:
         partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaplus;
+        break;
+      case kSigma0:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigma0;
+        break;
+      case kSigmaMinus:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaminus;
+        break;
+      case kXiMinus:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterXi;
+        break;
+      case kOmegaMinus:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterOmega;
+        break;
+      case kK0Long:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterK0Long;
+        break;
+      case kK0Short:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterK0Short;
+        break;
+      case kKPlus:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterKCharged;
+        break;
+      case kPiPlus:
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterPionCharged;
         break;
       default:
         partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;

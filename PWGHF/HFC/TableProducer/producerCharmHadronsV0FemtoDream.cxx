@@ -524,7 +524,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
           // get direct mother
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode());
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode(), pdgCode);
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1

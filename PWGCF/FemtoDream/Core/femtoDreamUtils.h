@@ -102,23 +102,68 @@ inline float getMass(int pdgCode)
   return mass;
 }
 
-inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG)
+inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG, int daughterPDG = 0)
 {
   int partOrigin = 0;
+  const auto absMotherPDG = std::abs(motherPDG);
+  const auto absDaughterPDG = std::abs(daughterPDG);
+  const bool isTrackLike = partType == o2::aod::femtodreamparticle::ParticleType::kTrack ||
+                           partType == o2::aod::femtodreamparticle::ParticleType::kV0Child ||
+                           partType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child ||
+                           partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor;
+
+  if (absDaughterPDG == kKPlus && isTrackLike) {
+    switch (absMotherPDG) {
+      case kOmegaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    }
+    return partOrigin;
+  }
+
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-    switch (std::abs(motherPDG)) {
+    switch (absMotherPDG) {
       case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
       case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
+      case kSigma0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
+        break;
+      case kSigmaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaminus;
+        break;
+      case kXiMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXiMinus;
+        break;
+      case o2::constants::physics::Pdg::kXi0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXi0;
+        break;
+      case kOmegaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
+        break;
+      case kK0Long:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Long;
+        break;
+      case kK0Short:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Short;
+        break;
+      case kKPlus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterKCharged;
+        break;
+      case kPiPlus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterPionCharged;
+        break;
       default:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-    switch (std::abs(motherPDG)) {
+    switch (absMotherPDG) {
       case kSigma0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
         break;
@@ -133,19 +178,46 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     }
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child || partType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child || partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
-    switch (abs(motherPDG)) {
+    switch (absMotherPDG) {
       case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
       case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
+      case kSigma0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
+        break;
+      case kSigmaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaminus;
+        break;
+      case kXiMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXiMinus;
+        break;
+      case o2::constants::physics::Pdg::kXi0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXi0;
+        break;
+      case kOmegaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
+        break;
+      case kK0Long:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Long;
+        break;
+      case kK0Short:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Short;
+        break;
+      case kKPlus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterKCharged;
+        break;
+      case kPiPlus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterPionCharged;
+        break;
       default:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-    switch (std::abs(motherPDG)) {
+    switch (absMotherPDG) {
       case kOmegaMinus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
         break;

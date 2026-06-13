@@ -700,7 +700,7 @@ struct FemtoUniverseEfficiencyBase {
       if (fillSecTrkContHistos) {
         if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
           registrySecTrkCont.fill(HIST("part1/hDCAxy_Primary"), part.pt(), part.tempFitVar());
-        } else if ((mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterLambda) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaplus)) {
+        } else if (aod::femtouniverse_mc_particle::isDaughterOrigin(mcParticle.partOriginMCTruth())) {
           registrySecTrkCont.fill(HIST("part1/hDCAxy_Daughter"), part.pt(), part.tempFitVar());
         } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial) {
           registrySecTrkCont.fill(HIST("part1/hDCAxy_Material"), part.pt(), part.tempFitVar());
@@ -790,7 +790,7 @@ struct FemtoUniverseEfficiencyBase {
         if (fillSecTrkContHistos) {
           if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary) {
             registrySecTrkCont.fill(HIST("part2/hDCAxy_Primary"), part.pt(), part.tempFitVar());
-          } else if ((mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterLambda) || (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaplus)) {
+          } else if (aod::femtouniverse_mc_particle::isDaughterOrigin(mcParticle.partOriginMCTruth())) {
             registrySecTrkCont.fill(HIST("part2/hDCAxy_Daughter"), part.pt(), part.tempFitVar());
           } else if (mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial) {
             registrySecTrkCont.fill(HIST("part2/hDCAxy_Material"), part.pt(), part.tempFitVar());

@@ -321,7 +321,7 @@ struct HfProducerCharmCascadeHadronsTrackFemtoDream {
         } else if (particleMc.getProcess() == TMCProcess::kPDecay && particleMc.getGenStatusCode() == GenFromTransport && !motherparticlesMc.empty()) {
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode());
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode(), pdgCode);
         } else if (particleMc.getProcess() == TMCProcess::kPHInhelastic && particleMc.getGenStatusCode() == GenFromTransport) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
         } else {

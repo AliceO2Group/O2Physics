@@ -269,10 +269,18 @@ enum ParticleOriginMCTruth {
   kMaterial,          //! Particle from a material
   kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
   kFake,              //! Particle, that has NOT the PDG code of the current analysed particle
-  kDaughterLambda,    //! Daughter from a Lambda decay
-  kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
-  kPrompt,            //! Origin for D0/D0bar mesons
-  kNonPrompt,         //! Origin for D0/D0bar mesons
+  kDaughterLambda,      //! Daughter from a Lambda decay
+  kDaughterSigmaplus,   //! Daughter from a Sigma^plus decay
+  kDaughterSigma0,      //! Daughter from a Sigma^0 decay
+  kDaughterSigmaminus,  //! Daughter from a Sigma^- decay
+  kDaughterXi,          //! Daughter from a Xi decay
+  kDaughterOmega,       //! Daughter from an Omega decay
+  kDaughterK0Long,      //! Daughter from a K0 long decay
+  kDaughterK0Short,     //! Daughter from a K0 short decay
+  kDaughterKCharged,    //! Daughter from a charged kaon decay
+  kDaughterPionCharged, //! Daughter from a charged pion decay
+  kPrompt,              //! Origin for D0/D0bar mesons
+  kNonPrompt,           //! Origin for D0/D0bar mesons
   kNOriginMCTruthTypes,
   kElse,
   kWrongCollision //! Origin for the wrong collision
@@ -286,9 +294,27 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_NotPrimary",
   "_Fake",
   "_DaughterLambda",
-  "DaughterSigmaPlus",
+  "_DaughterSigmaplus",
+  "_DaughterSigma0",
+  "_DaughterSigmaminus",
+  "_DaughterXi",
+  "_DaughterOmega",
+  "_DaughterK0Long",
+  "_DaughterK0Short",
+  "_DaughterKCharged",
+  "_DaughterPionCharged",
   "_Prompt",
   "_NonPrompt"};
+
+inline constexpr bool isDaughterOrigin(uint8_t origin)
+{
+  return origin == kDaughter || origin == kDaughterLambda ||
+         origin == kDaughterSigmaplus || origin == kDaughterSigma0 ||
+         origin == kDaughterSigmaminus || origin == kDaughterXi ||
+         origin == kDaughterOmega || origin == kDaughterK0Long ||
+         origin == kDaughterK0Short || origin == kDaughterKCharged ||
+         origin == kDaughterPionCharged;
+}
 
 /// Distinguished between reconstructed and truth
 enum MCType {

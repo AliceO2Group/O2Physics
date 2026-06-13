@@ -14,11 +14,6 @@ o2physics_add_dpl_workflow(task-charm-hadrons-track-femto-dream
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-charm-cascade-hadrons-track-femto-dream
-                    SOURCES taskCharmCascadeHadronsTrackFemtoDream.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(task-charm-hadrons-v0-femto-dream
                     SOURCES taskCharmHadronsV0FemtoDream.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

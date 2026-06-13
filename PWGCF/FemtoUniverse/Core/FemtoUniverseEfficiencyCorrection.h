@@ -167,6 +167,14 @@ class EfficiencyCorrection
         case (o2::aod::femtouniverse_mc_particle::kDaughter):
         case (o2::aod::femtouniverse_mc_particle::kDaughterLambda):
         case (o2::aod::femtouniverse_mc_particle::kDaughterSigmaplus):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterSigma0):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterSigmaminus):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterXi):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterOmega):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterK0Long):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterK0Short):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterKCharged):
+        case (o2::aod::femtouniverse_mc_particle::kDaughterPionCharged):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hSecondary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
