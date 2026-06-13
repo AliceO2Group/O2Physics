@@ -1107,20 +1107,6 @@ struct DileptonSV {
     }
 
     // if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-    //   auto trackParCov1 = getTrackParCov(t1);
-    //   auto trackParCov2 = getTrackParCov(t2);
-    //   if(!findSV(collision, trackParCov1, trackParCov2, candidate)){
-    //     return false;
-    //   }
-    // } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-    //   auto trackParCov1 = o2::aod::fwdtrackutils::getTrackParCovFwd(t1, t1);
-    //   auto trackParCov2 = o2::aod::fwdtrackutils::getTrackParCovFwd(t2, t2);
-    //   if(!findSVFwd(collision, trackParCov1, trackParCov2, candidate)){
-    //     return false;
-    //   }
-    // }
-
-    // if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
     //   if (!cut.IsSelectedPair(t1, t2)) {
     //     return false;
     //   }
