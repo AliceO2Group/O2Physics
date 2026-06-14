@@ -1550,8 +1550,6 @@ struct LambdaR2Correlation {
     static constexpr std::string_view SubDirRecGen[] = {"Reco/", "McGen/"};
     static constexpr std::string_view SubDirHist[] = {"LaP", "LaM", "KaP", "KaM"};
 
-    int ntrk = 0;
-
     for (auto const& track : tracks) {
       // Efficiency Plots
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h2f_n1_centpt_") + HIST(SubDirHist[part]), cent, track.pt());
