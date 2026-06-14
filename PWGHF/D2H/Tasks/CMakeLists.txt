@@ -19,6 +19,11 @@ o2physics_add_dpl_workflow(task-b0-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-b0-to-jpsi-k0star-reduced
+                    SOURCES taskB0ToJpsiK0StarReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-bplus
                     SOURCES taskBplus.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
