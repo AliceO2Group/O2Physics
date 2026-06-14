@@ -157,8 +157,7 @@ static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> 
 // cd+
 
 static const std::unordered_map<DecayChannelMain, const std::vector<int>> daughtersCDeuteronMain{
-  {DecayChannelMain::CDeuteronToDeKPi, {+o2::constants::physics::Pdg::kDeuteron, +PDG_t::kKMinus, +PDG_t::kPiPlus}}
-};
+  {DecayChannelMain::CDeuteronToDeKPi, {+o2::constants::physics::Pdg::kDeuteron, +PDG_t::kKMinus, +PDG_t::kPiPlus}}};
 
 /// resonances in c-deuteron decay are not stored in the particle stack for c-deuteron, but tagged with specific status codes
 static constexpr int statusCodeCDeuteronToDeKstar0{95};
@@ -337,7 +336,7 @@ inline void flipPdgSign(const int pdgMother, const int pdgToFlip, std::array<int
 /// \param pdgToFlip PDG code to be flipped
 /// \param arrPdg array of PDG codes to be modified
 template <typename Part>
-inline int getResonantDecayCDeuteron(Part const& particle) 
+inline int getResonantDecayCDeuteron(Part const& particle)
 {
   auto statusCode = std::abs(particle.getGenStatusCode());
   if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToDeKstar0) {
