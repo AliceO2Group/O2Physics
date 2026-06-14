@@ -301,6 +301,14 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
           flagChannelMain = sign * DecayChannelMain::XicToPKPi;
         }
       }
+
+      // cd± → de± K∓ π±
+      if (flagChannelMain == 0) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kCDeuteron, std::array{+Pdg::kDeuteron, -kKPlus, +kPiPlus}, true, &sign, 1)) {
+          flagChannelMain = sign * DecayChannelMain::CDeuteronToDeKPi;
+          flagChannelResonant = o2::hf_decay::getResonantDecayCDeuteron(particle);
+        }
+      }
     }
 
     // Check whether the particle is non-prompt (from a b quark).
