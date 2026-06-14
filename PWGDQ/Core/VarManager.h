@@ -65,6 +65,7 @@
 #include <TObject.h>
 #include <TRandom.h>
 #include <TString.h>
+#include <TH3.h>
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
