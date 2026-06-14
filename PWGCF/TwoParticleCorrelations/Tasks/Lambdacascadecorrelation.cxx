@@ -897,7 +897,7 @@ struct LambdaTableProducer {
     }
 
     // Get  from CCDB
-    auto ccdbObj = ccdb->getForTimeStamp<TList>(cPathCCDB.value, -1);
+    auto ccdbObj = ccdb->getForTimeStamp<TList>(cPathCCDB.value, 1);
 
     // Check CCDB Object
     if (!ccdbObj) {

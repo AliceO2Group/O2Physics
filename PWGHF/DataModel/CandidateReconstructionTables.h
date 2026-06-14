@@ -23,7 +23,7 @@
 //
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "ALICE3/DataModel/ECAL.h"
+// #include "ALICE3/DataModel/ECAL.h"
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -1732,65 +1732,65 @@ DECLARE_SOA_TABLE(HfCandXicResid, "AOD", "HFCANDXICRESID",
                   hf_cand_xic_to_xi_pi_pi::ZSvPull);
 
 // specific chic candidate properties
-namespace hf_cand_chic
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // Jpsi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
-DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
-} // namespace hf_cand_chic
+// namespace hf_cand_chic
+// {
+// DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // Jpsi index
+// DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
+// DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
+// } // namespace hf_cand_chic
 
-// declare dedicated chi_c candidate table
-DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
-                  // general columns
-                  HFCAND_COLUMNS,
-                  // 2-prong specific columns
-                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
-                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
-                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
-                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_chic::Prong0Id, hf_cand_chic::Prong1Id,
-                  hf_track_index::HFflag, hf_cand_chic::JpsiToMuMuMass,
-                  /* dynamic columns */
-                  hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  /* prong 2 */
-                  //                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
-                  //                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
-                  //                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  /* dynamic columns that use candidate momentum components */
-                  hf_cand::Pt<hf_cand_2prong::Px, hf_cand_2prong::Py>,
-                  hf_cand::Pt2<hf_cand_2prong::Px, hf_cand_2prong::Py>,
-                  hf_cand::P<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::P2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::PVector<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::Cpa<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::CpaXY<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py>,
-                  hf_cand::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::ImpactParameterXY<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand_2prong::MaxNormalisedDeltaIP<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ErrorDecayLengthXY, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PxProng1, hf_cand::PyProng1>,
-                  hf_cand::Eta<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::Phi<hf_cand_2prong::Px, hf_cand_2prong::Py>,
-                  hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::E<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>);
+// // declare dedicated chi_c candidate table
+// DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
+//                   // general columns
+//                   HFCAND_COLUMNS,
+//                   // 2-prong specific columns
+//                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+//                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+//                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
+//                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+//                   hf_cand_chic::Prong0Id, hf_cand_chic::Prong1Id,
+//                   hf_track_index::HFflag, hf_cand_chic::JpsiToMuMuMass,
+//                   /* dynamic columns */
+//                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+//                   hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+//                   /* prong 2 */
+//                   //                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+//                   //                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
+//                   //                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+//                   /* dynamic columns that use candidate momentum components */
+//                   hf_cand::Pt<hf_cand_2prong::Px, hf_cand_2prong::Py>,
+//                   hf_cand::Pt2<hf_cand_2prong::Px, hf_cand_2prong::Py>,
+//                   hf_cand::P<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::P2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::PVector<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::Cpa<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::CpaXY<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py>,
+//                   hf_cand::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::ImpactParameterXY<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand_2prong::MaxNormalisedDeltaIP<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ErrorDecayLengthXY, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PxProng1, hf_cand::PyProng1>,
+//                   hf_cand::Eta<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::Phi<hf_cand_2prong::Px, hf_cand_2prong::Py>,
+//                   hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::E<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+//                   hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>);
 
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfCandChicExt, HfCandChicBase, "HFCANDCHICEXT",
-                                hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
+// // extended table with expression columns that can be used as arguments of dynamic columns
+// DECLARE_SOA_EXTENDED_TABLE_USER(HfCandChicExt, HfCandChicBase, "HFCANDCHICEXT",
+//                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
-using HfCandChic = HfCandChicExt;
+// using HfCandChic = HfCandChicExt;
 
-// table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfCandChicMcRec, "AOD", "HFCANDCHICMCREC", //!
-                  hf_cand_mc_flag::FlagMcMatchRec,
-                  hf_cand_mc_flag::OriginMcRec,
-                  hf_cand_mc_flag::FlagMcDecayChanRec);
+// // table with results of reconstruction level MC matching
+// DECLARE_SOA_TABLE(HfCandChicMcRec, "AOD", "HFCANDCHICMCREC", //!
+//                   hf_cand_mc_flag::FlagMcMatchRec,
+//                   hf_cand_mc_flag::OriginMcRec,
+//                   hf_cand_mc_flag::FlagMcDecayChanRec);
 
-// table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfCandChicMcGen, "AOD", "HFCANDCHICMCGEN", //!
-                  hf_cand_mc_flag::FlagMcMatchGen,
-                  hf_cand_mc_flag::OriginMcGen,
-                  hf_cand_mc_flag::FlagMcDecayChanGen);
+// // table with results of generator level MC matching
+// DECLARE_SOA_TABLE(HfCandChicMcGen, "AOD", "HFCANDCHICMCGEN", //!
+//                   hf_cand_mc_flag::FlagMcMatchGen,
+//                   hf_cand_mc_flag::OriginMcGen,
+//                   hf_cand_mc_flag::FlagMcDecayChanGen);
 
 // specific Lb candidate properties
 namespace hf_cand_lb
@@ -1860,7 +1860,17 @@ DECLARE_SOA_TABLE(HfCandLbMcGen, "AOD", "HFCANDLBMCGEN", //!
 // specific B0 candidate properties
 namespace hf_cand_b0
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0"); // D index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0");    // D index
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Impact parameter product for B0 -> J/Psi K*0
+                           [](float pxJpsiDauPos, float pyJpsiDauPos, float pzJpsiDauPos, float pxJpsiDauNeg, float pyJpsiDauNeg, float pzJpsiDauNeg, float pxLfTrack0, float pyLfTrack0, float pzLfTrack0, float pxLfTrack1, float pyLfTrack1, float pzLfTrack1, float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float {
+                             float impParJpsi = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{pxJpsiDauPos, pyJpsiDauPos, pzJpsiDauPos}, std::array{pxJpsiDauNeg, pyJpsiDauNeg, pzJpsiDauNeg}));
+                             float impParK0Star = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{pxLfTrack0, pyLfTrack0, pzLfTrack0}, std::array{pxLfTrack1, pyLfTrack1, pzLfTrack1}));
+                             return impParJpsi * impParK0Star;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter for Bs -> J/Psi phi
+                           [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, // K*0 impact parameter for B0 -> J/Psi K*0
+                           [](float dcaLfTrack0, float dcaLfTrack1) -> float { return dcaLfTrack0 * dcaLfTrack1; });
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
@@ -2069,6 +2079,61 @@ DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
 DECLARE_SOA_DYNAMIC_COLUMN(CtXY, ctXY, //!
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, float px3, float py3, float pz3, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 4>& m) -> float { return RecoDecay::ctXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}, std::array{px3, py3, pz3}}, m); });
 } // namespace hf_cand_4prong
+
+// declare dedicated B0 -> J/Psi K*0 decay candidate table
+// convention: prongs 0 and 1 should be J/Psi decay products, 2 and 3 should be K*0 decay products
+DECLARE_SOA_TABLE(HfCandB0JPBase, "AOD", "HFCANDB0JPBASE",
+                  // general columns
+                  HFCAND_COLUMNS,
+                  /* prong 2 */ hf_cand::ImpactParameterNormalised2<hf_cand::ImpactParameter2, hf_cand::ErrorImpactParameter2>,
+                  hf_cand::PtProng2<hf_cand::PxProng2, hf_cand::PyProng2>,
+                  hf_cand::Pt2Prong2<hf_cand::PxProng2, hf_cand::PyProng2>,
+                  hf_cand::PVectorProng2<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
+                  /* prong 3 */ hf_cand::ImpactParameterNormalised3<hf_cand::ImpactParameter3, hf_cand::ErrorImpactParameter3>,
+                  hf_cand::PtProng3<hf_cand::PxProng3, hf_cand::PyProng3>,
+                  hf_cand::Pt2Prong3<hf_cand::PxProng3, hf_cand::PyProng3>,
+                  hf_cand::PVectorProng3<hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3>,
+                  // 4-prong specific columns
+                  o2::soa::Index<>,
+                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
+                  hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3,
+                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2, hf_cand::ImpactParameter3,
+                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2, hf_cand::ErrorImpactParameter3,
+                  /* dynamic columns */
+                  hf_cand_4prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3>,
+                  hf_cand_4prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3>,
+                  hf_cand_4prong::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2, hf_cand::ImpactParameter3>,
+                  hf_cand_b0::ImpactParameterProduct<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex>,
+                  hf_cand_b0::ImpactParameterProductJpsi<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand_b0::ImpactParameterProductK0Star<hf_cand::ImpactParameter2, hf_cand::ImpactParameter3>,
+                  /* dynamic columns that use candidate momentum components */
+                  hf_cand::Pt<hf_cand_4prong::Px, hf_cand_4prong::Py>,
+                  hf_cand::Pt2<hf_cand_4prong::Px, hf_cand_4prong::Py>,
+                  hf_cand::P<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::P2<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::PVector<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::Cpa<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::CpaXY<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_4prong::Px, hf_cand_4prong::Py>,
+                  hf_cand::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::ImpactParameterXY<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand_4prong::MaxNormalisedDeltaIP<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ErrorDecayLengthXY, hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1, hf_cand::ImpactParameter2, hf_cand::ErrorImpactParameter2, hf_cand::ImpactParameter3, hf_cand::ErrorImpactParameter3, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PxProng3, hf_cand::PyProng3>,
+                  hf_cand::Eta<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::Phi<hf_cand_4prong::Px, hf_cand_4prong::Py>,
+                  hf_cand::Y<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::E<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand::E2<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
+                  hf_cand_4prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
+
+// extended table with expression columns that can be used as arguments of dynamic columns
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandB0JPExt, HfCandB0JPBase, "HFCANDB0JPEXT",
+                                hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz);
+
+DECLARE_SOA_TABLE(HfCandB0JPDaus, "AOD", "HFCANDB0JPDAUS",
+                  hf_cand_b0::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_track_index::Prong3Id);
+
+using HfCandB0ToJpsi = soa::Join<HfCandB0JPExt, HfCandB0JPDaus>;
 
 // declare dedicated Bs -> J/Psi phi decay candidate table
 // convention: prongs 0 and 1 should be J/Psi decay products, 2 and 3 should be phi decay products

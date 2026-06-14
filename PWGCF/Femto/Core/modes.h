@@ -69,6 +69,7 @@ enum class System : uint32_t {
   kPP_Run3_MC = kPP | kRun3 | kMC,
   kPP_Run2 = kPP | kRun2,
   kPbPb_Run3 = kPbPb | kRun3,
+  kPbPb_Run3_MC = kPbPb | kRun3 | kMC,
   kPbPb_Run2 = kPbPb | kRun2,
 };
 

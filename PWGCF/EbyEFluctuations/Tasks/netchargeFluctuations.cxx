@@ -417,7 +417,7 @@ struct NetchargeFluctuations {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
 
-      TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
+      TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, 1);
       efficiencyPos = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Pos_Run3"));
       efficiencyNeg = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Neg_Run3"));
       // Log fatal error if efficiency histogram is not found

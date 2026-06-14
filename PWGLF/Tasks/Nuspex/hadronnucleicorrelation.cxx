@@ -93,8 +93,10 @@ struct HadronNucleiCorrelation {
   Configurable<float> cutzVertex{"cutzVertex", 10.0, "|vertexZ| value limit"};
 
   // Track selection
+  Configurable<bool> doClosePairRejection{"doClosePairRejection", false, "doClosePairRejection"};
   Configurable<double> par0{"par0", 0.004, "par 0"};
   Configurable<double> par1{"par1", 0.013, "par 1"};
+  Configurable<bool> doDCAZ{"doDCAZ", true, "do DCA z cut"};
   Configurable<int16_t> min_TPC_nClusters{"min_TPC_nClusters", 80, "minimum number of found TPC clusters"};
   Configurable<float> min_TPC_nCrossedRowsOverFindableCls{"min_TPC_nCrossedRowsOverFindableCls", 0.8, "n TPC Crossed Rows Over Findable Cls"};
   Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4.0f, "maximum TPC chi^2/Ncls"};
@@ -546,7 +548,8 @@ struct HadronNucleiCorrelation {
     // pt-dependent selection
     if (std::abs(track.dcaXY()) > (par0 + par1 / track.pt()))
       passcut = false;
-    if (std::abs(track.dcaZ()) > (par0 + par1 / track.pt()))
+
+    if (doDCAZ && std::abs(track.dcaZ()) > (par0 + par1 / track.pt()))
       passcut = false;
 
     return passcut;
@@ -558,6 +561,11 @@ struct HadronNucleiCorrelation {
     Pair->SetPair(&part0, &part1);
     Pair->SetIdentical(isIdentical);
     if (isIdentical && Pair->IsClosePair(dEta, dPhi, radiusTPC)) {
+      QA.fill(HIST("QA/hdEtadPhistar"), Pair->GetPhiStarDiff(radiusTPC), Pair->GetEtaDiff());
+      return;
+    }
+
+    if (doClosePairRejection && Pair->IsClosePair(dEta, dPhi, radiusTPC)) {
       QA.fill(HIST("QA/hdEtadPhistar"), Pair->GetPhiStarDiff(radiusTPC), Pair->GetEtaDiff());
       return;
     }
@@ -611,10 +619,14 @@ struct HadronNucleiCorrelation {
 
         if (ME) {
           hEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt());
-          hCorrEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+          if (corr0 != 0 && corr1 != 0) {
+            hCorrEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+          }
         } else {
           hEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt());
-          hCorrEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+          if (corr0 != 0 && corr1 != 0) {
+            hCorrEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+          }
         } // SE
       } // pT condition
     } // nBinspT loop
@@ -682,7 +694,7 @@ struct HadronNucleiCorrelation {
   float getMCMultiplicity(TParticles const& particles)
   {
     float Ncharged = 0.;
-    for (auto& mcParticle : particles) {
+    for (const auto& mcParticle : particles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;

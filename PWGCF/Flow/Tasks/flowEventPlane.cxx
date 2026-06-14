@@ -47,7 +47,9 @@
 #include <TProfile.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>
@@ -180,6 +182,7 @@ struct SpectatorPlaneTableProducer {
   // CCDB
   Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
   Configurable<std::string> cCcdbPath{"cCcdbPath", "Users/y/ypatley/DFOO", "Path for ccdb-object"};
+  Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
@@ -238,6 +241,8 @@ struct SpectatorPlaneTableProducer {
     // Set CCDB url
     ccdbService->setURL(cCcdbUrl.value);
     ccdbService->setCaching(true);
+    ccdbService->setLocalObjectValidityChecking();
+    ccdbService->setCreatedNotAfter(nolaterthan.value);
 
     // Define axes
     const AxisSpec axisZDCEnergy{500, 0, 500, "ZD[AC] Signal"};
@@ -379,7 +384,7 @@ struct SpectatorPlaneTableProducer {
     // Load ZDC gain calibration
     if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
       CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
       CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
     }
@@ -407,7 +412,7 @@ struct SpectatorPlaneTableProducer {
         std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
 
         // Get object from CCDB
-        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
 
         // Check CCDB Object
         if (!ccdbObject) {
@@ -787,8 +792,8 @@ struct FlowEventPlane {
   Configurable<float> cMinV0Radius{"cMinV0Radius", 0.5, "Minimum V0 radius from PV"};
   Configurable<float> cK0ShortCTau{"cK0ShortCTau", 20.0, "Decay length cut K0Short"};
   Configurable<float> cLambdaCTau{"cLambdaCTau", 30.0, "Decay length cut Lambda"};
-  Configurable<float> cK0ShortCosPA{"cK0ShortCosPA", 0.998, "K0Short CosPA"};
-  Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.998, "Lambda CosPA"};
+  Configurable<float> cK0ShortCosPA{"cK0ShortCosPA", 0.97, "K0Short CosPA"};
+  Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.98, "Lambda CosPA"};
   Configurable<float> cK0SMassRej{"cK0SMassRej", 0.01, "Reject K0Short Candidates"};
   Configurable<float> cArmPodSel{"cArmPodSel", 0.2, "Armentros-Podolanski Selection for K0S"};
   Configurable<float> cV0RapCut{"cV0RapCut", 0.8, "V0 rap cut"};
@@ -805,8 +810,6 @@ struct FlowEventPlane {
   std::array<float, 4> vSP = {0., 0., 0., 0.};
   std::map<ResoType, std::array<float, 2>> mResoDauMass = {{kPhi0, {MassKaonCharged, MassKaonCharged}}, {kKStar, {MassPionCharged, MassKaonCharged}}};
   std::map<ResoType, float> mResoMass = {{kPhi0, MassPhi}, {kKStar, MassKaonCharged}};
-  std::map<V0Type, float> mV0Ctau = {{kK0S, cK0ShortCTau}, {kLambda, cLambdaCTau}, {kAntiLambda, cLambdaCTau}};
-  std::map<V0Type, float> mV0CosPA = {{kK0S, cK0ShortCosPA}, {kLambda, cLambdaCosPA}, {kAntiLambda, cLambdaCosPA}};
 
   void init(InitContext const&)
   {
@@ -823,7 +826,6 @@ struct FlowEventPlane {
     const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
     const AxisSpec axisTrackNSigma{161, -4.025, 4.025, {"n#sigma"}};
 
-    const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
     const AxisSpec axisPhiInvMass{cPhiInvMassBins, 0.99, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
     const AxisSpec axisKStarInvMass{cKStarInvMassBins, 0.8, 1.2, "M_{#piK} (GeV/#it{c}^{2}"};
     const AxisSpec axisMomPID(80, 0, 4, "p_{T} (GeV/#it{c})");
@@ -903,13 +905,13 @@ struct FlowEventPlane {
       histos.add("V0/Lambda/QA/hNegNsigPiVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.addClone("V0/Lambda/", "V0/K0Short/");
       histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisLambdaInvMass, axisTrackEta});
-      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
-      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
       histos.addClone("V0/Lambda/", "V0/AntiLambda/");
       histos.addClone("V0/Lambda/", "V0/LambdaAntiLambda/");
       histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisK0ShortInvMass, axisTrackEta});
-      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
-      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
     }
   }
 
@@ -1232,7 +1234,7 @@ struct FlowEventPlane {
       float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda0;
 
       // K0Short
-      if (selV0DauTracks<kK0S>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kK0S) && ctauK0Short < mV0Ctau.at(kK0S) && v0.qtarm() >= cArmPodSel * std::abs(v0.alpha()) && v0.pt() >= cK0SMinPt && v0.pt() < cK0SMaxPt) {
+      if (selV0DauTracks<kK0S>(v0, postrack, negtrack) && v0.v0cosPA() > cK0ShortCosPA && ctauK0Short < cK0ShortCTau && v0.qtarm() >= cArmPodSel * std::abs(v0.alpha()) && v0.pt() >= cK0SMinPt && v0.pt() < cK0SMaxPt) {
         fillV0QAHist<kK0S>(collision, v0, tracks);
         histos.fill(HIST("V0/K0Short/hMassVsRap"), cent, v0.mK0Short(), v0.eta());
         histos.fill(HIST("V0/K0Short/Flow/hQuA"), cent, v0.eta(), v0.mK0Short(), v1a);
@@ -1240,7 +1242,7 @@ struct FlowEventPlane {
       }
 
       // Lambda
-      if (selV0DauTracks<kLambda>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kLambda) && ctauLambda < mV0Ctau.at(kLambda) && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
+      if (selV0DauTracks<kLambda>(v0, postrack, negtrack) && v0.v0cosPA() > cLambdaCosPA && ctauLambda < cLambdaCTau && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
         fillV0QAHist<kLambda>(collision, v0, tracks);
         histos.fill(HIST("V0/Lambda/hMassVsRap"), cent, v0.mLambda(), v0.eta());
         histos.fill(HIST("V0/Lambda/Flow/hQuA"), cent, v0.eta(), v0.mLambda(), v1a);
@@ -1251,7 +1253,7 @@ struct FlowEventPlane {
       }
 
       // AntiLambda
-      if (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kAntiLambda) && ctauLambda < mV0Ctau.at(kAntiLambda) && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
+      if (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack) && v0.v0cosPA() > cLambdaCosPA && ctauLambda < cLambdaCTau && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
         fillV0QAHist<kAntiLambda>(collision, v0, tracks);
         histos.fill(HIST("V0/AntiLambda/hMassVsRap"), cent, v0.mAntiLambda(), v0.eta());
         histos.fill(HIST("V0/AntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mAntiLambda(), v1a);

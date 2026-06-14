@@ -69,22 +69,22 @@ class DimuonCut : public TNamed
     kNCuts
   };
 
-  template <typename TPair>
-  bool IsSelected(TPair const& pair) const
-  {
-    auto t1 = std::get<0>(pair);
-    auto t2 = std::get<1>(pair);
+  // template <typename TPair>
+  // bool IsSelected(TPair const& pair) const
+  // {
+  //   auto t1 = std::get<0>(pair);
+  //   auto t2 = std::get<1>(pair);
 
-    if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
-      return false;
-    }
+  //   if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
+  //     return false;
+  //   }
 
-    if (!IsSelectedPair(t1, t2)) {
-      return false;
-    }
+  //   if (!IsSelectedPair(t1, t2)) {
+  //     return false;
+  //   }
 
-    return true;
-  }
+  //   return true;
+  // }
 
   template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2) const

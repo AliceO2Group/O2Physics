@@ -64,7 +64,7 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMBCs_001> embc;
   Produces<o2::aod::EMEvents> event;
   Produces<o2::aod::EMEventsXY> eventXY;
-  // Produces<o2::aod::EMEventsCov> eventcov;
+  Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   // Produces<o2::aod::EMEventsQvec> event_qvec;
@@ -170,7 +170,7 @@ struct CreateEMEventDilepton {
 
       eventXY(collision.posX(), collision.posY());
 
-      // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV() /*, collision.multNTracksGlobal()*/);
 
