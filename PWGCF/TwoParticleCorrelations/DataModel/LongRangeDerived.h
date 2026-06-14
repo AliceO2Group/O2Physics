@@ -117,7 +117,8 @@ DECLARE_SOA_TABLE(UpcLRCollisions, "AOD", "UPCLRCOLLISION",
                   lrcorrcolltable::Multiplicity,
                   lrcorrcolltable::TotalFT0AmplitudeA,
                   lrcorrcolltable::TotalFT0AmplitudeC,
-                  lrcorrcolltable::TotalFV0AmplitudeA);
+                  lrcorrcolltable::TotalFV0AmplitudeA,
+                  timestamp::Timestamp);
 using UpcLRCollision = UpcLRCollisions::iterator;
 
 DECLARE_SOA_TABLE(UpcSgLRCollisions, "AOD", "UPCSGLRCOLLISION",
@@ -159,6 +160,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsCA, isCA, bool);
 DECLARE_SOA_COLUMN(IsReassigned, isReassigned, bool);
+DECLARE_SOA_COLUMN(IsTrackFT0Outer, isTrackFT0Outer, bool);
 
 enum TrackPid {
   kSpCharge,
@@ -193,7 +195,8 @@ DECLARE_SOA_TABLE(LRFt0aTracks, "AOD", "LRFT0ATRACK",
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
                   lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
+                  lrcorrtrktable::Phi,
+                  lrcorrtrktable::IsTrackFT0Outer);
 using LRFt0aTrack = LRFt0aTracks::iterator;
 
 DECLARE_SOA_TABLE(LRFt0cTracks, "AOD", "LRFT0CTRACK",
@@ -202,7 +205,8 @@ DECLARE_SOA_TABLE(LRFt0cTracks, "AOD", "LRFT0CTRACK",
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
                   lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
+                  lrcorrtrktable::Phi,
+                  lrcorrtrktable::IsTrackFT0Outer);
 using LRFt0cTrack = LRFt0cTracks::iterator;
 
 DECLARE_SOA_TABLE(LRV0Tracks, "AOD", "LRV0TRACK",
@@ -250,7 +254,8 @@ DECLARE_SOA_TABLE(UpcLRFt0aTracks, "AOD", "UPCLRFT0ATRACK",
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
                   lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
+                  lrcorrtrktable::Phi,
+                  lrcorrtrktable::IsTrackFT0Outer);
 using UpcLRFt0aTrack = UpcLRFt0aTracks::iterator;
 
 DECLARE_SOA_TABLE(UpcLRFt0cTracks, "AOD", "UPCLRFT0CTRACK",
@@ -259,7 +264,8 @@ DECLARE_SOA_TABLE(UpcLRFt0cTracks, "AOD", "UPCLRFT0CTRACK",
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
                   lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi);
+                  lrcorrtrktable::Phi,
+                  lrcorrtrktable::IsTrackFT0Outer);
 using UpcLRFt0cTrack = UpcLRFt0cTracks::iterator;
 
 DECLARE_SOA_TABLE(UpcLRV0Tracks, "AOD", "UPCLRV0TRACK",
