@@ -1497,7 +1497,7 @@ struct doublephimeson {
 
     // --- phi multiplicity with PID ---
     int phimult = 0;
-    int nBestPairingRejected = 0;
+    // int nBestPairingRejected = 0;
     for (auto const& t : phitracks) {
       const double kpluspt = std::hypot(t.phid1Px(), t.phid1Py());
       const double kminuspt = std::hypot(t.phid2Px(), t.phid2Py());
@@ -1661,7 +1661,7 @@ struct doublephimeson {
         const double dMCross = deltaMPhiNominal(mCross12, mCross21);
         // Reject this candidate only if the crossed assignment is more phi-like
         if (dMCross > 1.01 && dMCross < 1.03) {
-          ++nBestPairingRejected;
+          // ++nBestPairingRejected;
           /*
           LOGF(info,
                "Best-pairing rejected: dMNominal = %.6f, dMCross = %.6f, "
