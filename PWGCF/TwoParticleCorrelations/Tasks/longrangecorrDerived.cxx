@@ -432,10 +432,10 @@ struct LongrangecorrDerived {
       }
 
       if constexpr (requires { triggerTrack.channelID(); }) {
-	      if (cfgSel.cfgRequireFt0aOuterRing && !triggerTrack.isTrackFT0Outer())
-	        continue;
-	      if (cfgSel.cfgRequireFt0aInnerRing && triggerTrack.isTrackFT0Outer())
-	        continue;
+        if (cfgSel.cfgRequireFt0aOuterRing && !triggerTrack.isTrackFT0Outer())
+          continue;
+        if (cfgSel.cfgRequireFt0aInnerRing && triggerTrack.isTrackFT0Outer())
+          continue;
         trigAmpl = triggerTrack.amplitude();
       } else {
         trigAmpl = 1.0;
@@ -466,10 +466,10 @@ struct LongrangecorrDerived {
           continue;
 
         if constexpr (requires { assoTrack.channelID(); }) {
-	        if (cfgSel.cfgRequireFt0cOuterRing && !assoTrack.isTrackFT0Outer())
-	          continue;
-	        if (cfgSel.cfgRequireFt0cInnerRing && assoTrack.isTrackFT0Outer())
-	          continue;
+          if (cfgSel.cfgRequireFt0cOuterRing && !assoTrack.isTrackFT0Outer())
+            continue;
+          if (cfgSel.cfgRequireFt0cInnerRing && assoTrack.isTrackFT0Outer())
+            continue;
           assoAmpl = assoTrack.amplitude();
         } else {
           assoAmpl = 1.0f;
