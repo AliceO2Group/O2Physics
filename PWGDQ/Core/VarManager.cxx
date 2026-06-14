@@ -76,6 +76,8 @@ int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 -
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
 TObject* VarManager::fgEfficiencyHist = nullptr;      // histogram for efficiency
+TH3F* VarManager::fgObjQvec = nullptr;
+bool VarManager::fgApplyQVectorCorrection = false;
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -2484,6 +2486,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCATrackVtxProd"] = kDCATrackVtxProd;
   fgVarNamesMap["kV2SP"] = kV2SP;
   fgVarNamesMap["kV2EP"] = kV2EP;
+  fgVarNamesMap["kA2EP_PP_TPC"] = kA2EP_PP_TPC;
+  fgVarNamesMap["kA2EP_PP_FT0A"] = kA2EP_PP_FT0A;
+  fgVarNamesMap["kA2EP_PP_FT0C"] = kA2EP_PP_FT0C;
+  fgVarNamesMap["kA2EP_RP_TPC"] = kA2EP_RP_TPC;
+  fgVarNamesMap["kA2EP_RP_FT0A"] = kA2EP_RP_FT0A;
+  fgVarNamesMap["kA2EP_RP_FT0C"] = kA2EP_RP_FT0C;
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;

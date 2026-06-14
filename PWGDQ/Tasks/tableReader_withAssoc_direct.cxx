@@ -223,8 +223,11 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
 
 // Using definitions (data-only)
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
+using MyEventsQvectorCentr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts>;
+using MyEventsQvectorCentrSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EventCuts>;
 using MyEventsHashSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts, aod::MixingHashes>;
+using MyEventsHashSelectedQvectorCentr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EventCuts, aod::MixingHashes>;
 
 using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -245,7 +248,9 @@ using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
+constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::CollisionQvectCentr;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapWithCovPIDExtra = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithCovNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackTPCPID | VarManager::ObjTypes::TrackTOFService;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 
@@ -617,9 +622,16 @@ struct AnalysisEventSelection {
     publishSelections<gkEventFillMapWithMults>(events);
   }
 
+  void processDirectWithQvectorCentr(MyEventsQvectorCentr const& events, BCsWithTimestamps const& bcs)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentr>(events, bcs);
+    publishSelections<gkEventFillMapWithQvectorCentr>(events);
+  }
+
   void processDummy(aod::Collisions&) {}
 
   PROCESS_SWITCH(AnalysisEventSelection, processDirect, "Run event selection on framework AO2Ds", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDirectWithQvectorCentr, "Run event selection on skimmed data with Q-vector and centrality", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
@@ -857,7 +869,7 @@ struct AnalysisTrackSelection {
 
   void processWithCov(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCov const& tracks)
   {
-    runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks);
+    runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCovPIDExtra>(assocs, bcs, events, tracks);
   }
 
   void processWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCovNoTOF const& tracks)
@@ -1275,6 +1287,10 @@ struct AnalysisSameEventPairing {
   Produces<aod::ElectronMuons> electronmuonList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
+  TH1D* ResoFlowSP = nullptr;
+  TH1D* ResoFlowEP = nullptr;
+  TH3F* qvecObj = nullptr;
+  TString pathQvecCalib;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
@@ -1309,6 +1325,10 @@ struct AnalysisSameEventPairing {
     Configurable<bool> fConfigMiniTree{"cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
     Configurable<float> fConfigMiniTreeMinMass{"cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
     Configurable<float> fConfigMiniTreeMaxMass{"cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
+    Configurable<bool> useRemoteFlow{"cfgUseRemoteFlow", false, "Use remote flow information from CCDB"};
+    Configurable<bool> useLocalFlow{"cfgUseLocalFlow", false, "Use flow information from local cache"};
+    Configurable<bool> useQvecCalib{"cfgUseQvecCalib", false, "Use flow correction factors for Q-vector recalibration when removing the daughter"};
+    Configurable<bool> useCorrectionForRun{"cfgUseCorrectionForRun", false, "Apply run-by-run correction factors to the flow vectors"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -1316,6 +1336,9 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
+    Configurable<std::string> flowPathLocal{"flowPathLocal", "/lustre/alice/users/ywang/calib/FlowReso.root", "Path to the flow resolution object in the local cache"};
+    Configurable<std::string> QvecCalibPath{"cfgQvecCalibPath", "Users/j/junlee/Qvector/Pass5/QvecShift/v2", "Path to the q vector calibration object"};
   } fConfigCCDB;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -1358,7 +1381,7 @@ struct AnalysisSameEventPairing {
     }
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentr");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonDirect");
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
@@ -1526,9 +1549,15 @@ struct AnalysisSameEventPairing {
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigOptions.fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
+
+    if (fConfigOptions.useQvecCalib) {
+      string tmppathQvecCalib;
+      getTaskOptionValue<string>(context, "q-vectors-table", "cfgQvecCalibPath", tmppathQvecCalib, false);
+      pathQvecCalib = tmppathQvecCalib;
+    }
   }
 
-  void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
+  void initParamsFromCCDB(uint64_t timestamp, int runnumber, bool withTwoProngFitter = true)
   {
     if (fConfigOptions.useRemoteField.value) {
       o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
@@ -1561,6 +1590,41 @@ struct AnalysisSameEventPairing {
         }
       } else {
         VarManager::SetupTwoProngDCAFitter(fConfigOptions.magField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+      }
+    }
+
+    if (fConfigOptions.useRemoteFlow) {
+      TString PathFlow = fConfigCCDB.flowPath.value;
+      TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
+      TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
+      ResoFlowSP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowSP.Data(), timestamp);
+      ResoFlowEP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), timestamp);
+      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+        LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
+      }
+    } else if (fConfigOptions.useLocalFlow) {
+      // LOGP(info, "Developing");
+      TString  pathFlow = fConfigCCDB.flowPathLocal.value;
+      TFile* fileFlow = TFile::Open(pathFlow.Data(), "READ");
+      if (fileFlow == nullptr || fileFlow->IsZombie()) {
+        LOGF(fatal, "Flow resolution file %s cannot be opened", pathFlow.Data());
+      }
+      fileFlow->GetObject("ScalarProduct", ResoFlowSP);
+      fileFlow->GetObject("EventPlane", ResoFlowEP);
+      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+        LOGF(fatal, "Flow resolution histograms not available in file %s", pathFlow.Data());
+      }
+    }
+
+    if (fConfigOptions.useQvecCalib) {
+      TString ccdbPathQvecCalib = Form("%s/v2", pathQvecCalib.Data());
+      if (fConfigOptions.useCorrectionForRun) {
+        qvecObj = fCCDB->getForRun<TH3F>(ccdbPathQvecCalib.Data(), runnumber); // get the object with run dependence if correction for run is needed
+      } else {
+        qvecObj = fCCDB->getForTimeStamp<TH3F>(ccdbPathQvecCalib.Data(), timestamp); // get the object without time dependence if no correction for run is needed
+      }
+      if (qvecObj == nullptr) {
+        LOGF(fatal, "Q-vector calibration object not available in CCDB at timestamp=%llu", timestamp);
       }
     }
   }
@@ -1625,7 +1689,7 @@ struct AnalysisSameEventPairing {
       return;
     }
     if (fCurrentRun != bcs.begin().runNumber()) {
-      initParamsFromCCDB(bcs.begin().timestamp(), TTwoProngFitter);
+      initParamsFromCCDB(bcs.begin().timestamp(), bcs.begin().runNumber(), TTwoProngFitter);
       fCurrentRun = bcs.begin().runNumber();
     }
 
@@ -1662,8 +1726,9 @@ struct AnalysisSameEventPairing {
       dielectronAllList.reserve(reserveSize);
     }
 
-    constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
+    constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0);
+    constexpr bool fillFlowReso = eventHasQvector;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0))
@@ -1679,6 +1744,19 @@ struct AnalysisSameEventPairing {
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0)
         continue;
+
+      if (fillFlowReso) {
+        if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+          LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
+        }
+        VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+        if (fConfigOptions.useQvecCalib) {
+          if (qvecObj == nullptr) {
+            LOGF(fatal, "Q-vector calibration object is not available, cannot fill flow variables!");
+          }
+          VarManager::SetEventQVectorCorrection(qvecObj);
+        }
+      }
 
       for (auto& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
 
@@ -1755,7 +1833,7 @@ struct AnalysisSameEventPairing {
           }
 
           if constexpr (eventHasQvector) {
-            VarManager::FillPairVn<TPairType>(t1, t2);
+            VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
           }
         }
         // Fill normal histograms
@@ -1947,10 +2025,18 @@ struct AnalysisSameEventPairing {
       muonAssocsPerCollision, muonAssocs, muons);
   }
 
+  void processBarrelOnlyWithQvectorCentr(MyEventsQvectorCentrSelected const& events, BCsWithTimestamps const& bcs,
+                                         soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                         MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processDummy(MyEvents&) { /* do nothing */ }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnly, "Run barrel only pairing", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonDirect, "Run electron-muon pairing on AO2D tracks/fwd-tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentr, "Run barrel only pairing with Q-vector and centrality", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function", true);
 };
 

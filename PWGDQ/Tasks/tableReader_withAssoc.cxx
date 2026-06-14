@@ -240,7 +240,7 @@ using MyEventsVtxCovZdcFitSelected = soa::Join<aod::ReducedEvents, aod::ReducedE
 using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsMergingTable>;
 using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 
@@ -1301,6 +1301,9 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsEventInfo> dileptonEventInfoList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
+  TH1D* ResoFlowSP = nullptr;
+  TH1D* ResoFlowEP = nullptr;
+  TH3F* qvecObj = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
@@ -1334,6 +1337,9 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
+    Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
+    Configurable<std::string> flowPathLocal{"flowPathLocal", "/lustre/alice/users/ywang/calib/FlowReso.root", "Path to the flow resolution object in the local cache"};
+    Configurable<std::string> QvecCalibPath{"cfgQvecCalibPath", "Users/j/junlee/Qvector/Pass5/QvecCalib/v2", "Path to the q vector calibration object"};
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -1352,6 +1358,10 @@ struct AnalysisSameEventPairing {
     Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
     Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
     Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
+    Configurable<bool> useRemoteFlow{"cfgUseRemoteFlow", false, "Use remote flow information from CCDB"};
+    Configurable<bool> useLocalFlow{"cfgUseLocalFlow", false, "Use flow information from local cache"};
+    Configurable<bool> useQvecCalib{"cfgUseQvecCalib", false, "Use flow correction factors for Q-vector recalibration when removing the daughter"};
+    Configurable<bool> useCorrectionForRun{"cfgUseCorrectionForRun", false, "Apply run-by-run correction factors to the flow vectors"};
   } fConfigOptions;
   struct : ConfigurableGroup {
     Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
@@ -1797,6 +1807,37 @@ struct AnalysisSameEventPairing {
       auto effList = fCCDB->getForTimeStamp<TList>(fConfigCCDB.efficiencyPath.value, timestamp);
       VarManager::SetEfficiencyObject(fConfigOptions.efficiencyType.value, effList->FindObject("efficiency"));
     }
+
+    if (fConfigOptions.useRemoteFlow) {
+      TString PathFlow = fConfigCCDB.flowPath.value;
+      TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
+      TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
+      ResoFlowSP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowSP.Data(), timestamp);
+      ResoFlowEP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), timestamp);
+      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+        LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
+      }
+    } else if (fConfigOptions.useLocalFlow) {
+      TString  pathFlow = fConfigCCDB.flowPathLocal.value;
+      TFile* fileFlow = TFile::Open(pathFlow.Data(), "READ");
+      if (fileFlow == nullptr || fileFlow->IsZombie()) {
+        LOGF(fatal, "Flow resolution file %s cannot be opened", pathFlow.Data());
+      }
+      fileFlow->GetObject("ScalarProduct", ResoFlowSP);
+      fileFlow->GetObject("EventPlane", ResoFlowEP);
+      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+        LOGF(fatal, "Flow resolution histograms not available in file %s", pathFlow.Data());
+      }
+    }
+
+    if (fConfigOptions.useQvecCalib) {
+      TString pathQvecCalib = fConfigCCDB.QvecCalibPath.value;
+      if (fConfigOptions.useCorrectionForRun) {
+        qvecObj = fCCDB->getForRun<TH3F>(pathQvecCalib.Data(), runNumber);
+      } else {
+        qvecObj = fCCDB->getForTimeStamp<TH3F>(pathQvecCalib.Data(), timestamp);
+      }
+    }
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
@@ -1900,6 +1941,19 @@ struct AnalysisSameEventPairing {
       if (groupedAssocs.size() == 0) {
         continue;
       }
+      
+      if (fillFlowReso) {
+        if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+          LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
+        }
+        VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+        if (fConfigOptions.useQvecCalib) {
+          if (qvecObj == nullptr) {
+            LOGF(fatal, "Q-vector calibration object is not available, cannot fill flow variables!");
+          }
+          VarManager::SetEventQVectorCorrection(qvecObj);
+        }
+      }
 
       bool isFirst = true;
       for (auto& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
@@ -1930,6 +1984,13 @@ struct AnalysisSameEventPairing {
           }
 
           fNPairPerEvent++;
+
+          if (t1.reducedeventId() != event.globalIndex()) {
+            VarManager::fgValues[VarManager::kAmbi1] = 1.;
+          }
+          if (t2.reducedeventId() != event.globalIndex()) {
+            VarManager::fgValues[VarManager::kAmbi2] = 1.;
+          }
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           // compute quantities which depend on the associated collision, such as DCA
           if (fConfigOptions.propTrack) {
@@ -2576,6 +2637,10 @@ struct AnalysisSameEventPairing {
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TAssocs, typename TTracks>
   void runSameSideMixing(TEvents& events, TAssocs const& assocs, TTracks const& tracks, Preslice<TAssocs>& preSlice)
   {
+      LOG(info) << "Flow resolution objects not set, flow will not be filled for mixed events";
+      if (events.size() > 0) {
+        initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), false);
+      }
     events.bindExternalIndices(&assocs);
     int mixingDepth = fConfigMixingDepth.value;
     fAmbiguousPairs.clear();
@@ -2590,6 +2655,10 @@ struct AnalysisSameEventPairing {
       assocs2.bindExternalIndices(&events);
 
       fNPairPerEvent = 0;
+      VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, assocs1, assocs2);
+      if (fConfigOptions.useRemoteFlow || fConfigOptions.useLocalFlow) {
+        VarManager::FillTwoMixEventsFlowResoFactor(ResoFlowSP, ResoFlowEP);
+      }
       runMixedPairing<TPairType, TEventFillMap>(assocs1, assocs2, tracks, tracks);
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
       if (fEnableBarrelMixingHistos && fConfigQA) {
