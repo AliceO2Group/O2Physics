@@ -160,9 +160,9 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> daught
   {DecayChannelMain::CDeuteronToDeKPi, {+o2::constants::physics::Pdg::kDeuteron, +PDG_t::kKMinus, +PDG_t::kPiPlus}}};
 
 /// resonances in c-deuteron decay are not stored in the particle stack for c-deuteron, but tagged with specific status codes
-static constexpr int statusCodeCDeuteronToDeKstar0{95};
-static constexpr int statusCodeCDeuteronToNeDeltaplusK{96};
-static constexpr int statusCodeCDeuteronToNeL1520Pi{97};
+static constexpr int StatusCodeCDeuteronToDeKstar0{95};
+static constexpr int StatusCodeCDeuteronToNeDeltaplusK{96};
+static constexpr int StatusCodeCDeuteronToNeL1520Pi{97};
 
 /// Returns a map of the possible final states for a specific 3-prong particle specie
 /// \param pdgMother PDG code of the mother particle
@@ -339,13 +339,13 @@ template <typename Part>
 inline int getResonantDecayCDeuteron(Part const& particle)
 {
   auto statusCode = std::abs(particle.getGenStatusCode());
-  if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToDeKstar0) {
+  if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToDeKstar0) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToDeKstar0;
   }
-  if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToNeDeltaplusK) {
+  if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToNeDeltaplusK) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToNeDeltaplusK;
   }
-  if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToNeL1520Pi) {
+  if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToNeL1520Pi) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToNeL1520Pi;
   }
   return 0;
