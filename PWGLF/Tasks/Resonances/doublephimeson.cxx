@@ -1655,7 +1655,7 @@ struct doublephimeson {
           // LOGF(info,"track share",t1.phid1Index(),t1.phid2Index(),t2.phid1Index(),t2.phid2Index());
           continue;
         }
-        const double dMNominal = deltaMPhiNominal(phi1.M(), phi2.M());
+        // const double dMNominal = deltaMPhiNominal(phi1.M(), phi2.M());
         const double mCross12 = (k1p + k2m).M(); // K+ from phi1 + K- from phi2
         const double mCross21 = (k2p + k1m).M(); // K+ from phi2 + K- from phi1
         const double dMCross = deltaMPhiNominal(mCross12, mCross21);
