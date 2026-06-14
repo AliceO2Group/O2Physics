@@ -272,11 +272,6 @@ struct Dilepton {
     // o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
     // o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     // o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
-
-    o2::framework::Configurable<std::vector<double>> binsMLSCT{"binsMLSCT", std::vector<double>{0.1, 0.4, 0.6, 0.8, 1, 2, 4, 20.f}, "Bin limits for ML application"};
-    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_prompt_hc{"cutsMLSCTeT_prompt_hc", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for prompt hc"};
-    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_nonprompt_hc{"cutsMLSCTeT_nonprompt_hc", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for nonprompt hc"};
-    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_hb{"cutsMLSCTeT_hb", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for hb"};
   } dielectroncuts;
 
   DimuonCut fDimuonCut;
