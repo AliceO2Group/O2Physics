@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file tripletProcessHelpers.h
-/// \brief process functions used in pair tasks
+/// \brief process functions used in triplet tasks
 /// \author anton.riedel@tum.de, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTO_CORE_TRIPLETPROCESSHELPERS_H_
@@ -30,7 +30,7 @@ namespace tripletprocesshelpers
 
 enum TripletOrder : uint8_t {
   kOrder123, // no swap
-  kOrder213, // first two swap 1&2 so we can use them for the case that particle 1 & 2 are the same species, particle 3 is something else
+  kOrder213, // swap 1&2: for the case that particle 1 & 2 are the same species, particle 3 is something else
   kOrder132, // swap 2&3
   kOrder321, // swap 1&2&3
 };
@@ -89,7 +89,7 @@ void processSameEvent(T1 const& SliceParticle,
         break;
     }
 
-    // fill deta-dphi histograms with !3 cutoff
+    // fill deta-dphi histograms with q3 cutoff
     CtrManager.fill(TripletHistManager.getQ3());
 
     // if triplet cuts are configured check them before filling
@@ -119,7 +119,7 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
                       T7& TripletHistManager,
                       T8& CtrManager,
                       T9& TcManager,
-                      TripletOrder triplerOrder)
+                      TripletOrder tripletOrder)
 {
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
@@ -142,19 +142,18 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
     }
 
     // Randomize triplet order if enabled
-    switch (triplerOrder) {
-      case kOrder123:
-        TripletHistManager.setTriplet(p1, p2, p3, Collision);
-        break;
+    // only kOrder123 and kOrder213 are meaningful here since particle 1 & 2 are the same species
+    switch (tripletOrder) {
       case kOrder213:
-        TripletHistManager.setTriplet(p1, p2, p3, Collision);
+        TripletHistManager.setTriplet(p2, p1, p3, Collision);
         break;
+      case kOrder123:
       default:
         TripletHistManager.setTriplet(p1, p2, p3, Collision);
         break;
     }
 
-    // fill deta-dphi histograms with !3 cutoff
+    // fill deta-dphi histograms with q3 cutoff
     CtrManager.fill(TripletHistManager.getQ3());
 
     // if triplet cuts are configured check them before filling
@@ -214,7 +213,7 @@ void processSameEvent(T1 const& SliceParticle1,
 
     TripletHistManager.setTriplet(p1, p2, p3, Collision);
 
-    // fill deta-dphi histograms with !3 cutoff
+    // fill deta-dphi histograms with q3 cutoff
     CtrManager.fill(TripletHistManager.getQ3());
 
     // if triplet cuts are configured check them before filling
@@ -224,7 +223,7 @@ void processSameEvent(T1 const& SliceParticle1,
   }
 }
 
-// // process same event for 3 identical particles with mc information
+// process same event for 3 identical particles with mc information
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -248,41 +247,42 @@ void processSameEvent(T1 const& SliceParticle,
                       T9& TripletHistManager,
                       T10& CtrManager,
                       T11& TcManager,
-                      int swapTriplet)
+                      TripletOrder tripletOrder)
 {
   for (auto const& part : SliceParticle) {
     ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
-    // check if pair is clean
+    // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
       continue;
     }
-    // check if pair is close
+    // check if triplet is close
     CtrManager.setTriplet(p1, p2, p3, TrackTable);
     if (CtrManager.isCloseTriplet()) {
       continue;
     }
-    // Randomize pair order if enabled
-    //
-    switch (swapTriplet) {
-      case 3:
-        TripletHistManager.setTripletMc(p1, p3, p2, mcParticles, Collision, mcCollisions);
+    // Randomize triplet order if enabled
+    switch (tripletOrder) {
+      case kOrder123:
+        TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
         break;
-      case 2:
+      case kOrder213:
         TripletHistManager.setTripletMc(p2, p1, p3, mcParticles, Collision, mcCollisions);
         break;
-      case 1:
-        TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
+      case kOrder132:
+        TripletHistManager.setTripletMc(p1, p3, p2, mcParticles, Collision, mcCollisions);
+        break;
+      case kOrder321:
+        TripletHistManager.setTripletMc(p3, p2, p1, mcParticles, Collision, mcCollisions);
         break;
       default:
         TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
         break;
     }
-    // float threshold = 0.5f;
     // fill deta-dphi histograms with q3 cutoff
     CtrManager.fill(TripletHistManager.getQ3());
-    // if pair cuts are configured check them before filling
+    // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
     }
@@ -317,7 +317,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T11& TripletHistManager,
                       T12& CtrManager,
                       T13& TcManager,
-                      int swapTriplet)
+                      TripletOrder tripletOrder)
 {
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
@@ -326,38 +326,36 @@ void processSameEvent(T1 const& SliceParticle1,
     ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle1, SliceParticle3))) {
-    // check if pair is clean
+    // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
       continue;
     }
-    // check if pair is close
+    // check if triplet is close
     CtrManager.setTriplet(p1, p2, p3, TrackTable);
     if (CtrManager.isCloseTriplet()) {
       continue;
     }
-    // Randomize pair order if enabled
-    //
-    switch (swapTriplet) {
-      case 2:
+    // Randomize triplet order if enabled
+    // only kOrder123 and kOrder213 are meaningful here since particle 1 & 2 are the same species
+    switch (tripletOrder) {
+      case kOrder213:
         TripletHistManager.setTripletMc(p2, p1, p3, mcParticles, Collision, mcCollisions);
         break;
-      case 1:
-        TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
-        break;
+      case kOrder123:
       default:
         TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
         break;
     }
     // fill deta-dphi histograms with q3 cutoff
     CtrManager.fill(TripletHistManager.getQ3());
-    // if pair cuts are configured check them before filling
+    // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
     }
   }
 }
 
-// process same event for 3 different particles
+// process same event for 3 different particles with mc information
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -400,11 +398,11 @@ void processSameEvent(T1 const& SliceParticle1,
     ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
-    // check if pair is clean
+    // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
       continue;
     }
-    // check if pair is close
+    // check if triplet is close
     CtrManager.setTriplet(p1, p2, p3, TrackTable);
     if (CtrManager.isCloseTriplet()) {
       continue;
@@ -412,7 +410,7 @@ void processSameEvent(T1 const& SliceParticle1,
     TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
     // fill deta-dphi histograms with q3 cutoff
     CtrManager.fill(TripletHistManager.getQ3());
-    // if pair cuts are configured check them before filling
+    // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
     }

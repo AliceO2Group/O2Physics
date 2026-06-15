@@ -131,7 +131,7 @@ struct FemtoTripletTrackTrackV0 {
   o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
   triplethistmanager::ConfMixing confMixing;
 
-  o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrackTrack", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrackV0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
@@ -146,7 +146,7 @@ struct FemtoTripletTrackTrackV0 {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
@@ -189,7 +189,7 @@ struct FemtoTripletTrackTrackV0 {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackV0, processSameEvent, "Enable processing same event processing", true);
 
-  void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdas const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
@@ -201,7 +201,7 @@ struct FemtoTripletTrackTrackV0 {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackV0, processMixedEvent, "Enable processing mixed event processing", true);
 
-  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdas const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles)
+  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
   {
     tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
