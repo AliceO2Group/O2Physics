@@ -98,7 +98,7 @@ namespace testtrack
 {
 
 // Track properties
-DECLARE_SOA_INDEX_COLUMN(TableCol, tablecol);
+DECLARE_SOA_INDEX_COLUMN(TableCol, tableCol);
 DECLARE_SOA_COLUMN(Charge, charge, int16_t);
 DECLARE_SOA_COLUMN(P, p, uint64_t);
 DECLARE_SOA_COLUMN(Dedx, dedx, uint16_t);
