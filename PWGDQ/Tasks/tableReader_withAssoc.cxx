@@ -1399,7 +1399,6 @@ struct AnalysisSameEventPairing {
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
 
   Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
-  Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> trackEmuAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
   Preslice<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> muonAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
 
   void init(o2::framework::InitContext& context)
@@ -2638,9 +2637,8 @@ struct AnalysisSameEventPairing {
 
       // Custom combination policy
       for (auto& [a1, a2] : o2::soa::combinations(soa::CombinationsFullIndexPolicy(groupedAssocs1, groupedAssocs2))) {
-        if (!(a1.isBarrelSelected_raw() & fTrackFilterMask))
+        if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & fTrackFilterMask))
           continue;
-        // if (!a1.isBarrelSelectedPrefilter_raw()) continue;
         if (!(a2.isMuonSelected_raw() & fMuonFilterMask))
           continue;
 
@@ -2652,7 +2650,7 @@ struct AnalysisSameEventPairing {
         twoTrackFilter = 0;
         int minCuts = std::min(fNCutsBarrel, fNCutsMuon);
         for (int i = 0; i < minCuts; ++i) {
-          if ((a1.isBarrelSelected_raw() & (1u << i)) && (a2.isMuonSelected_raw() & (1u << i))) {
+          if ((a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & (1u << i)) && (a2.isMuonSelected_raw() & (1u << i))) {
             twoTrackFilter |= (1u << i);
           }
         }
@@ -2681,7 +2679,7 @@ struct AnalysisSameEventPairing {
                          t1.sign() + t2.sign(), twoTrackFilter, 0);
 
         for (int iTrack = 0; iTrack < fNCutsBarrel; ++iTrack) {
-          if (!(a1.isBarrelSelected_raw() & (1u << iTrack)))
+          if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & (1u << iTrack)))
             continue;
 
           for (int iMuon = 0; iMuon < fNCutsMuon; ++iMuon) {
@@ -2726,7 +2724,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
 
     for (auto& a1 : assocs1) {
-      if (!(a1.isBarrelSelected_raw() & fTrackFilterMask)) {
+      if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & fTrackFilterMask)) {
         continue;
       }
       for (auto& a2 : assocs2) {
@@ -2748,7 +2746,7 @@ struct AnalysisSameEventPairing {
         }
 
         for (int iTrack = 0; iTrack < fNCutsBarrel; ++iTrack) {
-          if (!(a1.isBarrelSelected_raw() & (1u << iTrack))) {
+          if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & (1u << iTrack))) {
             continue;
           }
           for (int iMuon = 0; iMuon < fNCutsMuon; ++iMuon) {
@@ -2887,10 +2885,10 @@ struct AnalysisSameEventPairing {
   }
 
   void processElectronMuonSkimmed(MyEventsVtxCovSelected const& events,
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
                                   soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
-    runEmuSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackEmuAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
+    runEmuSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processMixingAllSkimmed(soa::Filtered<MyEventsHashSelected>& events,
@@ -2932,10 +2930,10 @@ struct AnalysisSameEventPairing {
   }
 
   void processMixingElectronMuonSkimmed(soa::Filtered<MyEventsHashSelected>& events,
-                                        soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs, aod::ReducedTracks const& barrelTracks,
+                                        soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, aod::ReducedTracks const& barrelTracks,
                                         soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
-    runEmuSameSideMixing<gkEventFillMap>(events, trackEmuAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
+    runEmuSameSideMixing<gkEventFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processDummy(MyEventsBasic&)
