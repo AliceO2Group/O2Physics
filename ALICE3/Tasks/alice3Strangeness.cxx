@@ -537,7 +537,6 @@ struct Alice3Strangeness {
         }
 
         auto mcCasc = cascade.template mcParticle_as<aod::McParticles>();
-        // LOG(info) << "Checking cascade pdg code " << mcCasc.pdgCode() << " vs desired code " << analysedCascade.pdgCode;
         if (mcCasc.pdgCode() != analysedCascade.pdgCode) {
           continue;
         }
