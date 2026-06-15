@@ -661,7 +661,7 @@ struct FlowTask {
     gfwConfigs.Print();
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
-    if (!cfgUserPtVnEvWeightEnabled)
+    if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
       fFCpt->setEventWeight(EventWeight::UnityWeight);
     else
       fFCpt->setEventWeight(EventWeight::TupleWeight);
@@ -683,7 +683,7 @@ struct FlowTask {
     if (doprocessMCGen) {
       fFCptgen->setUseCentralMoments(cfgUseCentralMoments);
       fFCptgen->setUseGapMethod(true);
-      if (!cfgUserPtVnEvWeightEnabled)
+      if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
         fFCptgen->setEventWeight(EventWeight::UnityWeight);
       else
         fFCptgen->setEventWeight(EventWeight::TupleWeight);
