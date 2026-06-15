@@ -91,7 +91,7 @@ DECLARE_SOA_TABLE(HfCandFlowInfos, "AOD", "HFCANDFLOWINFO",
                   full::MlScore1,
                   full::ScalarProd,
                   full::Cent);
-DECLARE_SOA_TABLE(HfCandFlowEses, "AOD", "HFCANDFLOWESE", 
+DECLARE_SOA_TABLE(HfCandFlowEses, "AOD", "HFCANDFLOWESE",
                   full::M,
                   full::Pt,
                   full::MlScore0,
