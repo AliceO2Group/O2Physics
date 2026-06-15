@@ -234,8 +234,8 @@ struct JetSpectraEseTask {
   static constexpr EventPlaneFiller PsiFillerEse = {true, false};
   static constexpr EventPlaneFiller PsiFillerFalse = {false, false};
   TRandom3* fRndm = new TRandom3(0);
-  static constexpr int NumSubSmpl = 10;
-  static constexpr int NumSavedRhoFitEvents = 10;
+  static constexpr int NumSubSmpl = 5;
+  static constexpr int NumSavedRhoFitEvents = 5;
   std::array<std::shared_ptr<THnSparse>, NumSubSmpl> hSameSub;
 
   void applySystematicPreset()
@@ -1331,16 +1331,6 @@ struct JetSpectraEseTask {
         return registry.get<TH1>(HIST("rhoPhiFitEvents/event_3"));
       case 4:
         return registry.get<TH1>(HIST("rhoPhiFitEvents/event_4"));
-      case 5:
-        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_5"));
-      case 6:
-        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_6"));
-      case 7:
-        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_7"));
-      case 8:
-        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_8"));
-      case 9:
-        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_9"));
       default:
         return nullptr;
     }
