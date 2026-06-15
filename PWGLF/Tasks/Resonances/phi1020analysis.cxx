@@ -136,6 +136,7 @@ struct Phi1020analysis {
     Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0f, "pidnSigma Cut for pre-selection of tracks"};
     Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                       // By pass TOF PID selection
     Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
+    Configurable<bool> ispTdepPID{"ispTdepPID", false, "enable pT dependent PID"};
 
     // Kaon
     Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5f}, "pT intervals for Kaon TPC PID cuts"};
@@ -576,6 +577,24 @@ struct Phi1020analysis {
     return false;
   }
 
+  template <typename T>
+  bool selectionPID(const T& candidate)
+  {
+    auto vKaonTPCPIDcuts = configPID.kaonTPCPIDcuts.value;
+    auto vKaonTPCTOFCombinedPIDcuts = configPID.kaonTPCTOFCombinedPIDcuts.value;
+
+    if (!configPID.cByPassTOF && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (vKaonTPCTOFCombinedPIDcuts[0] * vKaonTPCTOFCombinedPIDcuts[0])) {
+      return true;
+    }
+    if (!configPID.cByPassTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[0]) {
+      return true;
+    }
+    if (configPID.cByPassTOF && std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[0]) {
+      return true;
+    }
+    return false;
+  }
+
   auto static constexpr MinPtforPionRejection = 1.0f;
   auto static constexpr MaxPtforPionRejection = 2.0f;
   auto static constexpr MaxnSigmaforPionRejection = 2.0f;
@@ -685,7 +704,10 @@ struct Phi1020analysis {
       if (crejectPion && rejectPion(trk2)) // to remove pion contamination from the kaon track
         continue;
 
-      if (!ptDependentPidKaon(trk1) || !ptDependentPidKaon(trk2))
+      if (configPID.ispTdepPID && (!ptDependentPidKaon(trk1) || !ptDependentPidKaon(trk2)))
+        continue;
+
+      if (!configPID.ispTdepPID && (!selectionPID(trk1) || !selectionPID(trk2)))
         continue;
 
       //// QA plots after the selection
