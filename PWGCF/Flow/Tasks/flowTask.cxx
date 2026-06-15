@@ -1281,6 +1281,7 @@ struct FlowTask {
     double nTracksCorrected = 0;
     int magnetfield = 0;
     float independent = cent;
+    float nTracksUncorrected = 0;
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
     if (cfgFuncParas.cfgShowTPCsectorOverlap) {
@@ -1324,6 +1325,7 @@ struct FlowTask {
     for (const auto& track : tracks) {
       if (trackSelectedForNch(track) && setNchEffWeights(weffForNch, track.pt())) {
         nTracksCorrected += weffForNch;
+        nTracksUncorrected++;
       }
       if (!trackSelected(track))
         continue;
@@ -1414,7 +1416,7 @@ struct FlowTask {
       if (!cfgUsePtRef && withinPtPOI)
         fillPtSums<kReco>(track, weff);
     }
-    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+    registry.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
     if (cfgUseNch && cfgUseNchCorrected) {
       independent = nTracksCorrected;
     }
