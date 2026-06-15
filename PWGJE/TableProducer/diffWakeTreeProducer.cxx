@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \file DiffWakeTreeProducer.cxx
+
+/// \file diffWakeTreeProducer.cxx
 /// \brief This task writes a collision and track table which are further used in a diffusion wake analysis
 /// \author Nicola Wilson <nicola.wilson@cern.ch>
 
