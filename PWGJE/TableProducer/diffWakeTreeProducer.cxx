@@ -150,7 +150,7 @@ struct DiffWakeTreeProducer {
                Bcs const&)
   {
     const float maxMomentum = 173.0; // max for px, py, pz
-    const float minMomentum = 0.1; // min for pT
+    const float minMomentum = 0.1;   // min for pT
 
     // Event selection corresponds to sel8FullPbPb
     if (!col.sel8())
