@@ -103,9 +103,8 @@ enum PairHist {
   kTrueCentVsCent,
 
   // mixing qa
-  kSeNpart1VsNpart2, // number of unique particles 1 vs unique number of particles 2 in each same event
-  kMeMixingWindowRaw,
-  // mixing window size
+  kSeNpart1VsNpart2,                         // number of unique particles 1 vs unique number of particles 2 in each same event
+  kMeMixingWindowRaw,                        // mixing window size
   kMeMixingWindowEffective,                  // mixing window size, counting event pairs with particle pairs
   kMeNpart1VsNpart2,                         // number of unique particles 1 vs number of unique particles 2 in each mixed event
   kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, // correlation of event properties in each mixing bin
