@@ -2813,7 +2813,7 @@ struct FemtoUniverseProducerTask {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedCascParts = fullCascades.sliceBy(perCollisionCascs, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-      const auto colcheck = fillCollisionsCentRun3<true>(col); // why is it false in V0?
+      const auto colcheck = fillCollisionsCentRun3<true>(col);
       if (colcheck) {
         mcColIds.insert(col.mcCollisionId());
         fillTracks<true>(groupedTracks);
