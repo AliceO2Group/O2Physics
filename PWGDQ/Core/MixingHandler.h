@@ -81,16 +81,19 @@ class MixingHandler : public TNamed
         if (mask & bitMask) {
           counters[i]++;
           if (counters[i] >= poolDepth) {
-            auto clearExpiredBit = [bitMask](auto& tracks) {
-              for (auto& track : tracks) {
-                track.ClearBit(bitMask);
-              }
-              tracks.erase(std::remove_if(tracks.begin(), tracks.end(),
-                                          [](const MixingTrack& track) { return track.filteringFlags == 0; }),
-                           tracks.end());
-            };
-            clearExpiredBit(tracks1);
-            clearExpiredBit(tracks2);
+            for (auto& track : tracks1) {
+              track.ClearBit(bitMask);
+            }
+            tracks1.erase(std::remove_if(tracks1.begin(), tracks1.end(),
+                                         [](const MixingTrack& track) { return track.filteringFlags == 0; }),
+                          tracks1.end());
+
+            for (auto& track : tracks2) {
+              track.ClearBit(bitMask);
+            }
+            tracks2.erase(std::remove_if(tracks2.begin(), tracks2.end(),
+                                         [](const MixingTrack& track) { return track.filteringFlags == 0; }),
+                          tracks2.end());
             ClearFilteringMask(bitMask);
           }
         }
