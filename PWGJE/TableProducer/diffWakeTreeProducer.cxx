@@ -11,7 +11,7 @@
 
 /// \file diffWakeTreeProducer.cxx
 /// \brief This task writes a collision and track table which are further used in a diffusion wake analysis
-/// \author Nicola Wilson <nicola.wilson@cern.ch>
+/// \authors Nicola Wilson <nicola.wilson@cern.ch> and Nicolas Wirth <nicolas.wirth@cern.ch>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
@@ -126,6 +126,7 @@ struct DiffWakeTreeProducer {
   Configurable<double> ptThresh{"ptThresh", 20.0, "pT threshold"};
   Configurable<float> centMax{"centMax", 10, "centrality"};
   Configurable<float> zVertCut{"zVertCut", 10.0, "z_vertex cut"};
+  Configurable<float> etaCut{"etaCut", 0.9, "eta cut"};
 
   int64_t collisionCounter = 0;
 
@@ -148,7 +149,8 @@ struct DiffWakeTreeProducer {
                soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const& tracks,
                Bcs const&)
   {
-    const float maxMomentum = 173.0;
+    const float maxMomentum = 173.0; // max for px, py, pz
+    const float minMomentum = 0.1; // min for pT
 
     // Event selection corresponds to sel8FullPbPb
     if (!col.sel8())
@@ -176,7 +178,11 @@ struct DiffWakeTreeProducer {
     bool eventHighpT = false;
     for (const auto& track : tracks) {
 
-      if (!track.isGlobalTrack())
+      if (!track.isGlobalTrackWoPtEta())
+        continue;
+      if (track.pt() < minMomentum)
+        continue;
+      if (std::abs(track.eta()) > etaCut)
         continue;
       if (track.pt() > ptThresh) {
         eventHighpT = true;
@@ -204,8 +210,12 @@ struct DiffWakeTreeProducer {
     for (const auto& track : tracks) {
 
       // Track cut
-      if (!track.isGlobalTrack())
-        continue; // General track cuts
+      if (!track.isGlobalTrackWoPtEta())
+        continue; // General track cuts, but pT and eta cut are set manually
+      if (track.pt() < minMomentum)
+        continue;
+      if (std::abs(track.eta()) > etaCut)
+        continue;
 
       if (std::abs(track.px()) > maxMomentum || std::abs(track.py()) > maxMomentum || std::abs(track.pz()) > maxMomentum)
         continue; // to avoid overflow in Substitute_p
