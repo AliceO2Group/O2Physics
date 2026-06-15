@@ -13,7 +13,6 @@
 /// \brief Forward-backward multiplicity correlations for inclusive charged particles.
 /// \author Iwona Sputowska
 
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -27,8 +26,9 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
 #include <TMath.h>
 
 #include <algorithm>
@@ -232,8 +232,6 @@ struct StronglyIntensiveCorr {
     histos.add("trackQA/before/dcaZvsPt", "before;DCA_{z};#it{p}_{T}", kTH2D, {dcaZAxis, ptFullAxis});
     histos.add("trackQA/after/dcaZvsPt", "after;DCA_{z};#it{p}_{T}", kTH2D, {dcaZAxis, ptFullAxis});
 
-
-
     // Chosen centrality binning, default 0-10 ... 70-80.
 
     histos.add("SIcentClass/pNF_cent_etaGap", "<nF>;centrality class (%);#Delta#eta", kTProfile2D, {centClassAxis, etaGapAxis});
@@ -276,29 +274,23 @@ struct StronglyIntensiveCorr {
     histos.add("SubsampleSI3D/SumB20_sub_etaGapPtPhi", "sum nB(nB-1);subsample;#Delta#eta;#it{p}_{T};#varphi", kTHnSparseD, {subsampleAxis, etaGapAxis, ptAxis, phiAxis});
     histos.add("SubsampleSI3D/SumF11_sub_etaGapPtPhi", "sum nF nB;subsample;#Delta#eta;#it{p}_{T};#varphi", kTHnSparseD, {subsampleAxis, etaGapAxis, ptAxis, phiAxis});
 
+    histos.add("Reco/SI3D/pNF_etaGapPtPhi", "<nF> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Reco/SI3D/pNB_etaGapPtPhi", "<nB> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Reco/SI3D/pNF2_etaGapPtPhi", "<nF^{2}> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Reco/SI3D/pNB2_etaGapPtPhi", "<nB^{2}> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Reco/SI3D/pNFNB_etaGapPtPhi", "<nF nB> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
 
+    histos.add("Prim/SI3D/pNF_etaGapPtPhi", "<nF> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Prim/SI3D/pNB_etaGapPtPhi", "<nB> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Prim/SI3D/pNF2_etaGapPtPhi", "<nF^{2}> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Prim/SI3D/pNB2_etaGapPtPhi", "<nB^{2}> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Prim/SI3D/pNFNB_etaGapPtPhi", "<nF nB> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
 
-
-
-
-
-histos.add("Reco/SI3D/pNF_etaGapPtPhi", "<nF> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Reco/SI3D/pNB_etaGapPtPhi", "<nB> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Reco/SI3D/pNF2_etaGapPtPhi", "<nF^{2}> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Reco/SI3D/pNB2_etaGapPtPhi", "<nB^{2}> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Reco/SI3D/pNFNB_etaGapPtPhi", "<nF nB> reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-
-histos.add("Prim/SI3D/pNF_etaGapPtPhi", "<nF> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Prim/SI3D/pNB_etaGapPtPhi", "<nB> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Prim/SI3D/pNF2_etaGapPtPhi", "<nF^{2}> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Prim/SI3D/pNB2_etaGapPtPhi", "<nB^{2}> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Prim/SI3D/pNFNB_etaGapPtPhi", "<nF nB> primary reco;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-
-histos.add("Gen/SI3D/pNF_etaGapPtPhi", "<nF> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Gen/SI3D/pNB_etaGapPtPhi", "<nB> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Gen/SI3D/pNF2_etaGapPtPhi", "<nF^{2}> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Gen/SI3D/pNB2_etaGapPtPhi", "<nB^{2}> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
-histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Gen/SI3D/pNF_etaGapPtPhi", "<nF> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Gen/SI3D/pNB_etaGapPtPhi", "<nB> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Gen/SI3D/pNF2_etaGapPtPhi", "<nF^{2}> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Gen/SI3D/pNB2_etaGapPtPhi", "<nB^{2}> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
+    histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T};#varphi", kTProfile3D, {etaGapAxis, ptAxis, phiAxis});
 
     // Sample-separated MC subsample sums for SI3D.
     // Axes: subsample x eta gap x pT x phi. EventCount is the denominator.
@@ -322,9 +314,6 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
     histos.add("SubsampleGenSI3D/SumNF2_sub_etaGapPtPhi", "sum nF^{2} generated;subsample;#Delta#eta;#it{p}_{T};#varphi", kTHnSparseD, {subsampleAxis, etaGapAxis, ptAxis, phiAxis});
     histos.add("SubsampleGenSI3D/SumNB2_sub_etaGapPtPhi", "sum nB^{2} generated;subsample;#Delta#eta;#it{p}_{T};#varphi", kTHnSparseD, {subsampleAxis, etaGapAxis, ptAxis, phiAxis});
     histos.add("SubsampleGenSI3D/SumNFNB_sub_etaGapPtPhi", "sum nF nB generated;subsample;#Delta#eta;#it{p}_{T};#varphi", kTHnSparseD, {subsampleAxis, etaGapAxis, ptAxis, phiAxis});
-
-
-
   }
 
   // ------------------------------------------------------------------
@@ -413,16 +402,16 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
     return iphi;
   }
 
-    bool isChargedMCParticle(int pdgCode) const
-    {
-      auto* particle = pdg->GetParticle(pdgCode);
-      if (!particle) {
-        return false;
-      }
-
-      constexpr double MinAbsCharge = 0.0;
-      return std::abs(particle->Charge()) > MinAbsCharge;
+  bool isChargedMCParticle(int pdgCode) const
+  {
+    auto* particle = pdg->GetParticle(pdgCode);
+    if (!particle) {
+      return false;
     }
+
+    constexpr double MinAbsCharge = 0.0;
+    return std::abs(particle->Charge()) > MinAbsCharge;
+  }
 
   template <typename C>
   bool selCollision(C const& coll, float& cent)
@@ -459,7 +448,7 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
 
     cent = getCentrality(coll);
     if (!std::isfinite(cent) || cent < MinCentrality || cent >= MaxCentrality) {
-        return false;
+      return false;
     }
     if (cent < cfgCentMin.value || cent >= cfgCentMax.value) {
       return false;
@@ -664,7 +653,6 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
     }
   }
 
-
   void fillCentClassEtaGapMoments(int centClass,
                                   std::array<double, nEtaGaps> const& nF,
                                   std::array<double, nEtaGaps> const& nB)
@@ -703,7 +691,6 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
     }
   }
 
-
   void fillSubsampleCentWindowEtaGapMoments(int isub,
                                             int centWindowClass,
                                             std::array<double, nEtaGaps> const& nF,
@@ -726,7 +713,6 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
       histos.fill(HIST("SubsampleCentWindow/pNFNB_sub_cent_etaGap"), isub, centCenter, gap, nF[i] * nB[i]);
     }
   }
-
 
   void fillDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
                                        EtaPtPhiArray const& nB)
@@ -753,75 +739,75 @@ histos.add("Gen/SI3D/pNFNB_etaGapPtPhi", "<nF nB> generated;#Delta#eta;#it{p}_{T
     }
   }
 
-void fillRecoDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
-                                         EtaPtPhiArray const& nB)
-{
-  for (int igap = 0; igap < nEtaGaps; ++igap) {
-    const double gap = 2.0 * etaMin[igap];
-    for (int ipt = 0; ipt < nPtBins; ++ipt) {
-      const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-      for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-        const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
-        const double nf = nF[igap][ipt][iphi];
-        const double nb = nB[igap][ipt][iphi];
+  void fillRecoDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
+                                           EtaPtPhiArray const& nB)
+  {
+    for (int igap = 0; igap < nEtaGaps; ++igap) {
+      const double gap = 2.0 * etaMin[igap];
+      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+        const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
+        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+          const double nf = nF[igap][ipt][iphi];
+          const double nb = nB[igap][ipt][iphi];
 
-        histos.fill(HIST("Reco/SI3D/pNF_etaGapPtPhi"), gap, ptCenter, phiCenter, nf);
-        histos.fill(HIST("Reco/SI3D/pNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nb);
-        histos.fill(HIST("Reco/SI3D/pNF2_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nf);
-        histos.fill(HIST("Reco/SI3D/pNB2_etaGapPtPhi"), gap, ptCenter, phiCenter, nb * nb);
-        histos.fill(HIST("Reco/SI3D/pNFNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nb);
+          histos.fill(HIST("Reco/SI3D/pNF_etaGapPtPhi"), gap, ptCenter, phiCenter, nf);
+          histos.fill(HIST("Reco/SI3D/pNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nb);
+          histos.fill(HIST("Reco/SI3D/pNF2_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nf);
+          histos.fill(HIST("Reco/SI3D/pNB2_etaGapPtPhi"), gap, ptCenter, phiCenter, nb * nb);
+          histos.fill(HIST("Reco/SI3D/pNFNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nb);
+        }
       }
     }
   }
-}
-void fillPrimDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
-                                         EtaPtPhiArray const& nB)
-{
-  for (int igap = 0; igap < nEtaGaps; ++igap) {
-    const double gap = 2.0 * etaMin[igap];
+  void fillPrimDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
+                                           EtaPtPhiArray const& nB)
+  {
+    for (int igap = 0; igap < nEtaGaps; ++igap) {
+      const double gap = 2.0 * etaMin[igap];
 
-    for (int ipt = 0; ipt < nPtBins; ++ipt) {
-      const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
+      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+        const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
 
-      for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-        const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
 
-        const double nf = nF[igap][ipt][iphi];
-        const double nb = nB[igap][ipt][iphi];
+          const double nf = nF[igap][ipt][iphi];
+          const double nb = nB[igap][ipt][iphi];
 
-        histos.fill(HIST("Prim/SI3D/pNF_etaGapPtPhi"), gap, ptCenter, phiCenter, nf);
-        histos.fill(HIST("Prim/SI3D/pNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nb);
-        histos.fill(HIST("Prim/SI3D/pNF2_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nf);
-        histos.fill(HIST("Prim/SI3D/pNB2_etaGapPtPhi"), gap, ptCenter, phiCenter, nb * nb);
-        histos.fill(HIST("Prim/SI3D/pNFNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nb);
+          histos.fill(HIST("Prim/SI3D/pNF_etaGapPtPhi"), gap, ptCenter, phiCenter, nf);
+          histos.fill(HIST("Prim/SI3D/pNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nb);
+          histos.fill(HIST("Prim/SI3D/pNF2_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nf);
+          histos.fill(HIST("Prim/SI3D/pNB2_etaGapPtPhi"), gap, ptCenter, phiCenter, nb * nb);
+          histos.fill(HIST("Prim/SI3D/pNFNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nb);
+        }
       }
     }
   }
-}
-void fillGenDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
-                                        EtaPtPhiArray const& nB)
-{
-  for (int igap = 0; igap < nEtaGaps; ++igap) {
-    const double gap = 2.0 * etaMin[igap];
+  void fillGenDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
+                                          EtaPtPhiArray const& nB)
+  {
+    for (int igap = 0; igap < nEtaGaps; ++igap) {
+      const double gap = 2.0 * etaMin[igap];
 
-    for (int ipt = 0; ipt < nPtBins; ++ipt) {
-      const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
+      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+        const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
 
-      for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-        const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
 
-        const double nf = nF[igap][ipt][iphi];
-        const double nb = nB[igap][ipt][iphi];
+          const double nf = nF[igap][ipt][iphi];
+          const double nb = nB[igap][ipt][iphi];
 
-        histos.fill(HIST("Gen/SI3D/pNF_etaGapPtPhi"), gap, ptCenter, phiCenter, nf);
-        histos.fill(HIST("Gen/SI3D/pNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nb);
-        histos.fill(HIST("Gen/SI3D/pNF2_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nf);
-        histos.fill(HIST("Gen/SI3D/pNB2_etaGapPtPhi"), gap, ptCenter, phiCenter, nb * nb);
-        histos.fill(HIST("Gen/SI3D/pNFNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nb);
+          histos.fill(HIST("Gen/SI3D/pNF_etaGapPtPhi"), gap, ptCenter, phiCenter, nf);
+          histos.fill(HIST("Gen/SI3D/pNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nb);
+          histos.fill(HIST("Gen/SI3D/pNF2_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nf);
+          histos.fill(HIST("Gen/SI3D/pNB2_etaGapPtPhi"), gap, ptCenter, phiCenter, nb * nb);
+          histos.fill(HIST("Gen/SI3D/pNFNB_etaGapPtPhi"), gap, ptCenter, phiCenter, nf * nb);
+        }
       }
     }
   }
-}
 
   void fillRecoSubsampleDifferentialEtaPtPhiMoments(int isub,
                                                     EtaPtPhiArray const& nF,
