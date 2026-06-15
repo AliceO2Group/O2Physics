@@ -84,16 +84,24 @@ class MixingHandler : public TNamed
             for (auto& track : tracks1) {
               track.ClearBit(bitMask);
             }
-            tracks1.erase(std::remove_if(tracks1.begin(), tracks1.end(),
-                                         [](const MixingTrack& track) { return track.filteringFlags == 0; }),
-                          tracks1.end());
+            for (auto track = tracks1.begin(); track != tracks1.end();) {
+              if (track->filteringFlags == 0) {
+                track = tracks1.erase(track);
+              } else {
+                ++track;
+              }
+            }
 
             for (auto& track : tracks2) {
               track.ClearBit(bitMask);
             }
-            tracks2.erase(std::remove_if(tracks2.begin(), tracks2.end(),
-                                         [](const MixingTrack& track) { return track.filteringFlags == 0; }),
-                          tracks2.end());
+            for (auto track = tracks2.begin(); track != tracks2.end();) {
+              if (track->filteringFlags == 0) {
+                track = tracks2.erase(track);
+              } else {
+                ++track;
+              }
+            }
             ClearFilteringMask(bitMask);
           }
         }
@@ -132,9 +140,13 @@ class MixingHandler : public TNamed
     // check which events in the pool are empty (i.e. no active tracks for mixing) and remove them from the pool
     void CleanPool()
     {
-      events.erase(std::remove_if(events.begin(), events.end(),
-                                  [](const MixingEvent& event) { return event.tracks1.empty() && event.tracks2.empty(); }),
-                   events.end());
+      for (auto event = events.begin(); event != events.end();) {
+        if (event->tracks1.empty() && event->tracks2.empty()) {
+          event = events.erase(event);
+        } else {
+          ++event;
+        }
+      }
     }
     // The function that performs the mixing is called outside this class, but the pool provides the events and tracks to be mixed and takes care of updating the events after mixing
     // (e.g. incrementing the counters and removing the tracks that reached the pool depth for a given cut)
