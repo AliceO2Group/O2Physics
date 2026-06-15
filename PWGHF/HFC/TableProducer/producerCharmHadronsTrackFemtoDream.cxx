@@ -621,6 +621,14 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     bool isSelectedMlD0barToKPi = true;
     bool isSelectedMlDstarToD0Pi = true;
 
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      rowCandCharm3Prong.reserve(candidates.size());
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      rowCandCharm2Prong.reserve(candidates.size());
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      rowCandCharmDstar.reserve(candidates.size());
+    }
+
     for (const auto& candidate : candidates) {
       outputMlD0 = {-1.0f, -1.0f, -1.0f};
       outputMlD0bar = {-1.0f, -1.0f, -1.0f};

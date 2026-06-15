@@ -752,8 +752,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataLcV0(FilteredCollisions const& cols,
                        FDV0Particles const& parts,
-                       FilteredCharmCand3Prongs const&)
+                       FilteredCharmCand3Prongs const& candidates)
   {
+
+    rowFemtoResultCharm3Prong.reserve(candidates.size());
+
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto sliceCharmHad = partitionCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -784,8 +787,10 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataDplusV0(FilteredCollisions const& cols,
                           FDV0Particles const& parts,
-                          FilteredCharmCand3Prongs const&)
+                          FilteredCharmCand3Prongs const& candidates)
   {
+    rowFemtoResultCharm3Prong.reserve(candidates.size());
+
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto sliceCharmHad = partitionCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -816,8 +821,10 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataD0V0(FilteredCollisions const& cols,
                        FDV0Particles const& parts,
-                       FilteredCharmCand2Prongs const&)
+                       FilteredCharmCand2Prongs const& candidates)
   {
+    rowFemtoResultCharm2Prong.reserve(candidates.size());
+
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto sliceCharmHad = partitionCharmHadron2Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -848,8 +855,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataDstarV0(FilteredCollisions const& cols,
                           FDV0Particles const& parts,
-                          FilteredCharmCandDstars const&)
+                          FilteredCharmCandDstars const& candidates)
   {
+
+    rowFemtoResultCharmDstar.reserve(candidates.size());
+
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto sliceCharmHad = partitionCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
