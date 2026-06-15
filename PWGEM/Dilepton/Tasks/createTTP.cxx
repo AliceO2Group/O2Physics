@@ -14,6 +14,7 @@
 // This code creates parameters used in track tuner.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -246,6 +247,8 @@ struct createTTP {
     const AxisSpec axis_eta{cfgNbinsEta, -1, +1, "#eta"};
     const AxisSpec axis_phi{cfgNbinsPhi, 0.0, 2 * M_PI, "#varphi (rad.)"};
     const AxisSpec axis_sign{3, -1.5, +1.5, "sign"};
+    const AxisSpec axis_mass{400, 0, 4, "m_{ee} (GeV/c^{2})"};
+    const AxisSpec axis_ptee{100, 0, 10, "p_{T,ee} (GeV/c)"};
 
     const AxisSpec axis_mean_dcaXY{ConfDCABins, "DCA_{xy} (#mum)"};
     const AxisSpec axis_mean_dcaZ{ConfDCABins, "DCA_{z} (#mum)"};
@@ -255,6 +258,12 @@ struct createTTP {
     fRegistry.add("Track/hs", "electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_sign, axis_mean_dcaXY, axis_mean_dcaZ, axis_pull_dcaXY, axis_pull_dcaZ}, false);
     fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
     fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
+
+    if (doprocessMC) {
+      fRegistry.add("Pair/hMvsPt_omega", "#omega->ee", kTH2D, {axis_mass, axis_ptee}, false);
+      fRegistry.add("Pair/hMvsPt_phi", "#phi->ee", kTH2D, {axis_mass, axis_ptee}, false);
+      fRegistry.add("Pair/hMvsPt_jpsi", "J/#psi->ee", kTH2D, {axis_mass, axis_ptee}, false);
+    }
   }
 
   template <typename TTrack>
@@ -593,13 +602,20 @@ struct createTTP {
   }
   PROCESS_SWITCH(createTTP, processData, "process data", true);
 
+  struct lepton {
+    float pt{0};
+    float eta{0};
+    float phi{0};
+    int mcParticleId{-1};
+  };
+
   using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
   using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
 
   using FilteredMyCollisionsMC = soa::Filtered<MyCollisionsMC>;
   using FilteredMyTracksMC = soa::Filtered<MyTracksMC>;
 
-  void processMC(MyBCs const&, FilteredMyCollisionsMC const& collisions, FilteredMyTracksMC const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  void processMC(MyBCs const&, FilteredMyCollisionsMC const& collisions, FilteredMyTracksMC const& tracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -623,6 +639,9 @@ struct createTTP {
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
+      std::vector<lepton> posLeptons;
+      std::vector<lepton> negLeptons;
+
       o2::dataformats::DCA mDcaInfoCov;
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
@@ -635,6 +654,9 @@ struct createTTP {
           continue;
         }
         if (!(mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator())) {
+          continue;
+        }
+        if (!mcParticle.has_mothers()) {
           continue;
         }
 
@@ -655,7 +677,58 @@ struct createTTP {
 
         fRegistry.fill(HIST("Track/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U), track.sign(), mDcaInfoCov.getY() * 1e+4, mDcaInfoCov.getZ() * 1e+4, mDcaInfoCov.getY() / std::sqrt(trackParCov.getSigmaY2()), mDcaInfoCov.getZ() / std::sqrt(trackParCov.getSigmaZ2()));
 
+        lepton tmp;
+        tmp.pt = trackParCov.getPt();
+        tmp.eta = trackParCov.getEta();
+        tmp.phi = RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U);
+        tmp.mcParticleId = mcParticle.globalIndex();
+
+        if (track.sign() > 0) {
+          posLeptons.emplace_back(tmp);
+        } else {
+          negLeptons.emplace_back(tmp);
+        }
       } // end of track loop
+
+      for (const auto& pos : posLeptons) {
+        for (const auto& neg : negLeptons) {
+          ROOT::Math::PtEtaPhiMVector v1(pos.pt, pos.eta, pos.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(neg.pt, neg.eta, neg.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+          auto posmc = mcParticles.rawIteratorAt(pos.mcParticleId);
+          auto negmc = mcParticles.rawIteratorAt(neg.mcParticleId);
+
+          int omegaId = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(posmc, negmc, -11, 11, 223, mcParticles);
+          int phiId = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(posmc, negmc, -11, 11, 333, mcParticles);
+          int jpsiId = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(posmc, negmc, -11, 11, 443, mcParticles);
+          if (omegaId > 0) {
+            auto mcMother = mcParticles.rawIteratorAt(omegaId);
+            int ndau = mcMother.daughtersIds()[1] - mcMother.daughtersIds()[0] + 1;
+            if (ndau == 2) {
+              fRegistry.fill(HIST("Pair/hMvsPt_omega"), v12.M(), v12.Pt());
+            }
+          } else if (phiId > 0) {
+            auto mcMother = mcParticles.rawIteratorAt(phiId);
+            int ndau = mcMother.daughtersIds()[1] - mcMother.daughtersIds()[0] + 1;
+            if (ndau == 2) {
+              fRegistry.fill(HIST("Pair/hMvsPt_phi"), v12.M(), v12.Pt());
+            }
+          } else if (jpsiId > 0) {
+            auto mcMother = mcParticles.rawIteratorAt(jpsiId);
+            int ndau = mcMother.daughtersIds()[1] - mcMother.daughtersIds()[0] + 1;
+            if (ndau == 2) {
+              fRegistry.fill(HIST("Pair/hMvsPt_jpsi"), v12.M(), v12.Pt());
+            }
+          }
+        } // end of electron loop
+      } // end of positron loop
+
+      posLeptons.clear();
+      posLeptons.shrink_to_fit();
+      negLeptons.clear();
+      negLeptons.shrink_to_fit();
+
     } // end of collision loop
   }
   PROCESS_SWITCH(createTTP, processMC, "process MC", false);
