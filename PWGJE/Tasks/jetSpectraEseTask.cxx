@@ -235,6 +235,7 @@ struct JetSpectraEseTask {
   static constexpr EventPlaneFiller PsiFillerFalse = {false, false};
   TRandom3* fRndm = new TRandom3(0);
   static constexpr int NumSubSmpl = 10;
+  static constexpr int NumSavedRhoFitEvents = 10;
   std::array<std::shared_ptr<THnSparse>, NumSubSmpl> hSameSub;
 
   void applySystematicPreset()
@@ -359,6 +360,10 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("trackQA/hRhoTrackCounter"))->GetXaxis()->SetBinLabel(3, "Tracks for rho(phi)");
 
       registry.add("trackQA/hPhiPtsum", "jet sumpt;sum p_{T};entries", {HistType::kTH1F, {{40, 0., o2::constants::math::TwoPI}}});
+      for (int i = 0; i < NumSavedRhoFitEvents; ++i) {
+        const auto eventName = fmt::format("rhoPhiFitEvents/event_{}", i);
+        registry.add(eventName, "event;#varphi;#Sigma #it{p}_{T} (GeV/#it{c})", HistType::kTH1F, {{1, 0., o2::constants::math::TwoPI}});
+      }
       registry.add("eventQA/hfitPar0", "", {HistType::kTH2F, {{centAxis}, {fitAxis0}}});
       registry.add("eventQA/hfitPar1", "", {HistType::kTH2F, {{centAxis}, {fitAxis13}}});
       registry.add("eventQA/hfitPar2", "", {HistType::kTH2F, {{centAxis}, {fitAxis24}}});
@@ -659,7 +664,8 @@ struct JetSpectraEseTask {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
         continue;
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+      // if (!isAcceptedJet<aod::JetTracks>(jet)) {
+      if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
         continue;
       }
       auto vCorr = corr(collision, jet);
@@ -793,7 +799,7 @@ struct JetSpectraEseTask {
       for (const auto& jet : jets1) {
         if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
           continue;
-        if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
           continue;
         }
         auto vCorr = corr(c1, jet);
@@ -1198,13 +1204,13 @@ struct JetSpectraEseTask {
     auto vec1{qVecNoESE<DetID::FT0A, P.hist>(vec)};
     epMap["FT0A"] = computeEP(vec1, 0, 2.0);
     ep3Map["FT0A"] = computeEP(vec1, 0, 3.0);
+    auto vec2{qVecNoESE<DetID::FT0C, false>(vec)};
+    epMap["FT0C"] = computeEP(vec2, 0, 2.0);
+    ep3Map["FT0C"] = computeEP(vec2, 0, 3.0);
+    epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0, 2.0);
+    epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1, 2.0);
+    epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1, 2.0);
     if constexpr (P.psi) {
-      auto vec2{qVecNoESE<DetID::FT0C, false>(vec)};
-      epMap["FT0C"] = computeEP(vec2, 0, 2.0);
-      ep3Map["FT0C"] = computeEP(vec2, 0, 3.0);
-      epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0, 2.0);
-      epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1, 2.0);
-      epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1, 2.0);
       if constexpr (P.hist)
         fillEP(/*std::make_index_sequence<5>{},*/ vec, epMap);
       auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == InvalidValue || static_cast<double>(psiY) == InvalidValue) ? InvalidValue : std::cos(2.0 * (psiX - psiY)); };
@@ -1312,6 +1318,34 @@ struct JetSpectraEseTask {
       return true;
   }
 
+  std::shared_ptr<TH1> getRhoPhiFitEvent(int eventIndex)
+  {
+    switch (eventIndex) {
+      case 0:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_0"));
+      case 1:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_1"));
+      case 2:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_2"));
+      case 3:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_3"));
+      case 4:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_4"));
+      case 5:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_5"));
+      case 6:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_6"));
+      case 7:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_7"));
+      case 8:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_8"));
+      case 9:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_9"));
+      default:
+        return nullptr;
+    }
+  }
+
   template <bool fillHist, typename Col, typename TTracks, typename Jets>
   std::unique_ptr<TF1> fitRho(const Col& col, const EventPlane& ep, TTracks const& tracks, Jets const& jets)
   {
@@ -1360,7 +1394,7 @@ struct JetSpectraEseTask {
     modulationFit->FixParameter(2, (ep.psi2 < 0) ? RecoDecay::constrainAngle(ep.psi2) : ep.psi2);
     modulationFit->FixParameter(4, (ep.psi3 < 0) ? RecoDecay::constrainAngle(ep.psi3) : ep.psi3);
 
-    hPhiPt->Fit(modulationFit.get(), "Q", "", 0, o2::constants::math::TwoPI);
+    hPhiPt->Fit(modulationFit.get(), "QN", "", 0, o2::constants::math::TwoPI);
 
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hfitPar0"), col.centFT0M(), modulationFit->GetParameter(0));
@@ -1391,6 +1425,56 @@ struct JetSpectraEseTask {
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hPValueCentCDF"), col.centFT0M(), cDF);
       registry.fill(HIST("eventQA/hCentChi2Ndf"), col.centFT0M(), chi2 / (static_cast<float>(nDF)));
+
+      static int numSavedRhoFitEvents{0};
+      if (numSavedRhoFitEvents < NumSavedRhoFitEvents) {
+        auto savedEvent = getRhoPhiFitEvent(numSavedRhoFitEvents);
+        savedEvent->SetBins(hPhiPt->GetNbinsX(), 0., o2::constants::math::TwoPI);
+        for (int bin = 0; bin <= hPhiPt->GetNbinsX() + 1; ++bin) {
+          savedEvent->SetBinContent(bin, hPhiPt->GetBinContent(bin));
+          savedEvent->SetBinError(bin, hPhiPt->GetBinError(bin));
+        }
+        savedEvent->SetEntries(hPhiPt->GetEntries());
+
+        const double rho0 = modulationFit->GetParameter(0);
+        const double v2 = modulationFit->GetParameter(1);
+        const double psi2 = modulationFit->GetParameter(2);
+        const double v3 = modulationFit->GetParameter(3);
+        const double psi3 = modulationFit->GetParameter(4);
+
+        auto rho0Function = std::make_unique<TF1>("rho_0", "pol0", 0., o2::constants::math::TwoPI, TF1::EAddToList::kNo);
+        rho0Function->SetParameter(0, rho0);
+        rho0Function->SetParError(0, modulationFit->GetParError(0));
+        rho0Function->SetParName(0, "rho_0");
+        rho0Function->SetLineStyle(2);
+
+        auto rhoPhiFunction = std::unique_ptr<TF1>(static_cast<TF1*>(modulationFit->Clone("rho_phi")));
+        rhoPhiFunction->SetParNames("rho_0", "v_2", "Psi_2", "v_3", "Psi_3");
+        rhoPhiFunction->SetLineWidth(2);
+        rhoPhiFunction->ResetBit(TF1::kNotDraw);
+
+        auto rhoV2Function = std::make_unique<TF1>("rho_v2", "[0] * (1. + 2. * [1] * std::cos(2. * (x - [2])))", 0., o2::constants::math::TwoPI, TF1::EAddToList::kNo);
+        rhoV2Function->SetParameters(rho0, v2, psi2);
+        rhoV2Function->SetParError(0, modulationFit->GetParError(0));
+        rhoV2Function->SetParError(1, modulationFit->GetParError(1));
+        rhoV2Function->SetParError(2, modulationFit->GetParError(2));
+        rhoV2Function->SetParNames("rho_0", "v_2", "Psi_2");
+        rhoV2Function->SetLineStyle(7);
+
+        auto rhoV3Function = std::make_unique<TF1>("rho_v3", "[0] * (1. + 2. * [1] * std::cos(3. * (x - [2])))", 0., o2::constants::math::TwoPI, TF1::EAddToList::kNo);
+        rhoV3Function->SetParameters(rho0, v3, psi3);
+        rhoV3Function->SetParError(0, modulationFit->GetParError(0));
+        rhoV3Function->SetParError(1, modulationFit->GetParError(3));
+        rhoV3Function->SetParError(2, modulationFit->GetParError(4));
+        rhoV3Function->SetParNames("rho_0", "v_3", "Psi_3");
+        rhoV3Function->SetLineStyle(9);
+
+        savedEvent->GetListOfFunctions()->Add(rho0Function.release());
+        savedEvent->GetListOfFunctions()->Add(rhoPhiFunction.release());
+        savedEvent->GetListOfFunctions()->Add(rhoV2Function.release());
+        savedEvent->GetListOfFunctions()->Add(rhoV3Function.release());
+        ++numSavedRhoFitEvents;
+      }
     }
 
     return modulationFit;
@@ -1622,7 +1706,7 @@ struct JetSpectraEseTask {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
         continue;
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+      if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
         continue;
       }
       auto jetPtBkg = jet.pt() - (collision.rho() * jet.area());
