@@ -2830,7 +2830,7 @@ struct FemtoUniverseProducerTask {
       if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
         continue;
       }
-      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex());// slicing for MC collisions
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex()); // slicing for MC collisions
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());           // slicing for MC particles
       for (const auto& col : groupedCollisions) {
         const auto colcheck = fillMCTruthCollisionsCentRun3(col); // fills the reco collisions for mc collision

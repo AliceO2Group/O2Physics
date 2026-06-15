@@ -97,29 +97,29 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   /// configurations for cascades
   struct : o2::framework::ConfigurableGroup {
-  Configurable<int> confCascPDGCode{"confCascPDGCode", 3312, "Particle 2 (Cascade) - PDG code"};
-  Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade and cascade-cascade combination"};
-  Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
-  Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of cascade"};
-  Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of cascade"};
-  Configurable<float> confmom{"confmom", 0.75, "momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < cascparticleconfigs.confmom"};
-  Configurable<float> confNsigmaTPCParticleChild{"confNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < cascparticleconfigs.confmom"};
-  Configurable<float> confNsigmaTOFParticleChild{"confNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > cascparticleconfigs.confmom"};
-  Configurable<bool> confUseStrangenessTOF{"confUseStrangenessTOF", true, "Enable strangeness TOF for cascade PID"};
-  Configurable<bool> confQARejectByPDG{"confQARejectByPDG", false, "Reject particle 2 by PDG code (only for QA)"};
+    Configurable<int> confCascPDGCode{"confCascPDGCode", 3312, "Particle 2 (Cascade) - PDG code"};
+    Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade and cascade-cascade combination"};
+    Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
+    Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of cascade"};
+    Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of cascade"};
+    Configurable<float> confmom{"confmom", 0.75, "momentum threshold for particle identification using TOF"};
+    Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < cascparticleconfigs.confmom"};
+    Configurable<float> confNsigmaTPCParticleChild{"confNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < cascparticleconfigs.confmom"};
+    Configurable<float> confNsigmaTOFParticleChild{"confNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > cascparticleconfigs.confmom"};
+    Configurable<bool> confUseStrangenessTOF{"confUseStrangenessTOF", true, "Enable strangeness TOF for cascade PID"};
+    Configurable<bool> confQARejectByPDG{"confQARejectByPDG", false, "Reject particle 2 by PDG code (only for QA)"};
   } cascparticleconfigs;
 
   /// configurations for correlation part - CPR
   struct : o2::framework::ConfigurableGroup {
-  Configurable<bool> confIsCPR{"confIsCPR", false, "Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
-  Configurable<bool> confIsSameSignCPR{"confIsSameSignCPR", false, "Close Pair Rejection for same sign children of cascades"};
+    Configurable<bool> confIsCPR{"confIsCPR", false, "Close Pair Rejection"};
+    Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
+    Configurable<bool> confIsSameSignCPR{"confIsSameSignCPR", false, "Close Pair Rejection for same sign children of cascades"};
   } cprconfigs;
 
   /// configurations for correlation part
@@ -172,7 +172,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   /// Partition for cascades using extended table
   Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
-  
+
   /// Partition for cascades using extended MC reco table
   Partition<FemtoRecoFullParticles> partsTwoMCrecoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
@@ -513,7 +513,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       if (mcPartId == -1)
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
-      
+
       if (cascparticleconfigs.confQARejectByPDG && ((cascparticleconfigs.confCascType1 == 0 && mcpart.pdgMCTruth() == kOmegaMinus) || (cascparticleconfigs.confCascType1 == 1 && mcpart.pdgMCTruth() == kXiMinus) || (cascparticleconfigs.confCascType1 == 2 && mcpart.pdgMCTruth() == kOmegaPlusBar) || (cascparticleconfigs.confCascType1 == 3 && mcpart.pdgMCTruth() == kXiPlusBar)))
         continue;
 
@@ -538,7 +538,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         CascQAExtra.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
       }
     }
-
   }
 
   /// track - cascade correlations
@@ -1413,20 +1412,18 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventCascMCgen, "Enable processing mixed event MC truth for cascade - cascade", false);
 
   // WIP: process same event mc truth and reco
-    void processSameEventMCReco(FilteredFDCollision const& col, FemtoRecoFullParticles const& parts, aod::FdMCParticles const& mcparts)
+  void processSameEventMCReco(FilteredFDCollision const& col, FemtoRecoFullParticles const& parts, aod::FdMCParticles const& mcparts)
   {
     doSameEvent(col, parts, partsTrackOneFullMc, partsTwoMCrecoFull, mcparts);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCReco, "Enable processing same event for track - V0 MC Reco", false);
 
-
   // WIP: process mixed event mc truth and reco
-    void processMixedEventMCReco(FilteredFDCollisions const& cols, FemtoRecoFullParticles const& parts, aod::FdMCParticles const& mcparts)
+  void processMixedEventMCReco(FilteredFDCollisions const& cols, FemtoRecoFullParticles const& parts, aod::FdMCParticles const& mcparts)
   {
     doMixedEvent(cols, parts, partsTrackOneFullMc, partsTwoMCrecoFull, mcparts);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventMCReco, "Enable processing mixed event for track - V0 for MC Reco", false);
-
 
   /// This function fills MC truth particles from derived MC table
   void processMCgen(aod::FDParticles const& parts)
