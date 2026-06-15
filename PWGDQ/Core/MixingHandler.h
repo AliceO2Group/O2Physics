@@ -24,6 +24,7 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <map>
@@ -39,8 +40,8 @@ class MixingHandler : public TNamed
     float eta;
     float phi;
     uint32_t filteringFlags;
-    // flip a bit to zero (needed when a track was already used in mixing for that bit for the required pool depth)
-    void FlipBit(int64_t mask) { filteringFlags ^= mask; }
+    // Clear a bit once the track was used in mixing for that bit for the required pool depth.
+    void ClearBit(uint32_t mask) { filteringFlags &= ~mask; }
     void Print() const
     {
       std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", filteringFlags: " << filteringFlags << std::endl;
@@ -68,32 +69,29 @@ class MixingHandler : public TNamed
       tracks2.push_back(track);
       filteringMask |= track.filteringFlags;
     }
-    // flip bits in the filtering mask
-    void FlipFilteringMask(int64_t mask) { filteringMask ^= mask; }
+    // Clear bits in the filtering mask.
+    void ClearFilteringMask(uint32_t mask) { filteringMask &= ~mask; }
     // 1) increment the counters for a given track cut bit mask and if the counters reached the pool depth,
-    // 2) flip the corresponding bit in the tracks filtering flags to exclude them from further mixing
+    // 2) clear the corresponding bit in the tracks filtering flags to exclude them from further mixing
     // 3) for each track, if there are no more active bits in the filtering mask, then remove the track from the event
     void IncrementCounters(uint32_t mask, short poolDepth)
     {
       for (int i = 0; i < 32; i++) {
-        if (mask & (1ULL << i)) {
+        uint32_t bitMask = (static_cast<uint32_t>(1) << i);
+        if (mask & bitMask) {
           counters[i]++;
           if (counters[i] >= poolDepth) {
-            for (auto& track : tracks1) {
-              track.FlipBit(1ULL << i);
-              if (track.filteringFlags == 0) {
-                track = tracks1.back();
-                tracks1.pop_back();
+            auto clearExpiredBit = [bitMask](auto& tracks) {
+              for (auto& track : tracks) {
+                track.ClearBit(bitMask);
               }
-            }
-            for (auto& track : tracks2) {
-              track.FlipBit(1ULL << i);
-              if (track.filteringFlags == 0) {
-                track = tracks2.back();
-                tracks2.pop_back();
-              }
-            }
-            FlipFilteringMask(1ULL << i);
+              tracks.erase(std::remove_if(tracks.begin(), tracks.end(),
+                                          [](const MixingTrack& track) { return track.filteringFlags == 0; }),
+                           tracks.end());
+            };
+            clearExpiredBit(tracks1);
+            clearExpiredBit(tracks2);
+            ClearFilteringMask(bitMask);
           }
         }
       }
