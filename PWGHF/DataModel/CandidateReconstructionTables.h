@@ -1867,9 +1867,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Im
                              float impParK0Star = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{pxLfTrack0, pyLfTrack0, pzLfTrack0}, std::array{pxLfTrack1, pyLfTrack1, pzLfTrack1}));
                              return impParJpsi * impParK0Star;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter for Bs -> J/Psi phi
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter product for B0 -> J/Psi K*0
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
-DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, // K*0 impact parameter for B0 -> J/Psi K*0
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, // K*0 impact parameter product for B0 -> J/Psi K*0
                            [](float dcaLfTrack0, float dcaLfTrack1) -> float { return dcaLfTrack0 * dcaLfTrack1; });
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
