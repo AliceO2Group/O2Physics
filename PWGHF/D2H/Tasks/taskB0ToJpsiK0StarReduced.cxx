@@ -133,6 +133,8 @@ DECLARE_SOA_COLUMN(CpaJpsi, cpaJpsi, float);                                    
 DECLARE_SOA_COLUMN(CpaXYJpsi, cpaXYJpsi, float);                                       //! Cosine pointing angle in transverse plane of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                 //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                     //! ML score for signal class
+DECLARE_SOA_COLUMN(IsSelB0KPi, isSelB0KPi, int8_t);                                    //! Selection-step bitmask passed under the KPi K*0 mass hypothesis (see SelectionStep)
+DECLARE_SOA_COLUMN(IsSelB0PiK, isSelB0PiK, int8_t);                                    //! Selection-step bitmask passed under the PiK K*0 mass hypothesis (see SelectionStep)
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                    //! Flag for association with wrong collision
 } // namespace hf_cand_b0tojpsik0star_lite
 
@@ -155,7 +157,8 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::ImpactParameterProductK0Star,
                   hf_cand_b0tojpsik0star_lite::MaxNormalisedDeltaIP,
                   hf_cand_b0tojpsik0star_lite::MlScoreSig,
-                  // hf_sel_candidate_bplus::IsSelBsToJpsiPi,
+                  hf_cand_b0tojpsik0star_lite::IsSelB0KPi,
+                  hf_cand_b0tojpsik0star_lite::IsSelB0PiK,
                   //  Jpsi meson features
                   hf_cand_b0tojpsik0star_lite::MJpsi,
                   hf_cand_b0tojpsik0star_lite::PtJpsi,
@@ -403,8 +406,10 @@ struct HfTaskB0ToJpsiK0StarReduced {
                  flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
     }
 
-    bool isSelectedKPi{selectionFlagB0 < BIT(SelectionStep::RecoSkims) * 2 - 1};
-    bool isSelectedPiK{selectionFlagB0 < BIT(SelectionStep::RecoSkims) * 2 - 1};
+    int8_t statusB0KPi{0};
+    int8_t statusB0PiK{0};
+    SETBIT(statusB0KPi, SelectionStep::RecoSkims);
+    SETBIT(statusB0PiK, SelectionStep::RecoSkims);
 
     // topological selection for the two K*0 mass hypotheses
     bool selKPi = HfHelper::selectionB0ToJpsiK0StarTopol(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, true);
@@ -413,11 +418,11 @@ struct HfTaskB0ToJpsiK0StarReduced {
     if (!selKPi && !selPiK && selectionFlagB0 >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
     }
-    if (selKPi && selectionFlagB0 < BIT(SelectionStep::RecoTopol) * 2 - 1) {
-      isSelectedKPi = true;
+    if (selKPi) {
+      SETBIT(statusB0KPi, SelectionStep::RecoTopol);
     }
-    if (selPiK && selectionFlagB0 < BIT(SelectionStep::RecoTopol) * 2 - 1) {
-      isSelectedPiK = true;
+    if (selPiK) {
+      SETBIT(statusB0PiK, SelectionStep::RecoTopol);
     }
 
     // track-level PID selection
@@ -450,11 +455,11 @@ struct HfTaskB0ToJpsiK0StarReduced {
       if (!selKPi && !selPiK && selectionFlagB0 >= BIT(SelectionStep::RecoPID) * 2 - 1) {
         return;
       }
-      if (selKPi && selectionFlagB0 < BIT(SelectionStep::RecoPID) * 2 - 1) {
-        isSelectedKPi = true;
+      if (selKPi) {
+        SETBIT(statusB0KPi, SelectionStep::RecoPID);
       }
-      if (selPiK && selectionFlagB0 < BIT(SelectionStep::RecoPID) * 2 - 1) {
-        isSelectedPiK = true;
+      if (selPiK) {
+        SETBIT(statusB0PiK, SelectionStep::RecoPID);
       }
     }
 
@@ -468,6 +473,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
         selKPi = hfMlResponse.isSelectedMl(inputFeaturesKPi, ptCandB0, outputMl);
         if (selKPi) {
           mlScoreSigKPi = outputMl[1];
+          SETBIT(statusB0KPi, SelectionStep::RecoMl);
         }
       }
       if (selPiK) {
@@ -476,6 +482,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
         selPiK = hfMlResponse.isSelectedMl(inputFeaturesPiK, ptCandB0, outputMl);
         if (selPiK) {
           mlScoreSigPiK = outputMl[1];
+          SETBIT(statusB0PiK, SelectionStep::RecoMl);
         }
       }
       if (!selKPi && !selPiK && selectionFlagB0 >= BIT(SelectionStep::RecoMl) * 2 - 1) {
@@ -558,6 +565,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
         candidate.impactParameterProductK0Star(),
         candidate.maxNormalisedDeltaIP(),
         mlScoreSig,
+        isSelKPi ? statusB0KPi : -1,
+        isSelKPi ? -1 : statusB0PiK,
         // J/Psi features
         invMassJpsi,
         ptJpsi,
@@ -609,10 +618,10 @@ struct HfTaskB0ToJpsiK0StarReduced {
         ptMother);
     };
 
-    if (selKPi) {
+    if (statusB0KPi >= selectionFlagB0) {
       fillTable(true);
     }
-    if (selPiK) {
+    if (statusB0PiK >= selectionFlagB0) {
       fillTable(false);
     }
   }
