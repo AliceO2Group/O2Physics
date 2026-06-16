@@ -1343,6 +1343,7 @@ struct HfCandidateCreator3ProngExpressions {
           if (indexRec > -1) {
             flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::CDeuteronToDeKPi);
             auto particle = mcParticles.rawIteratorAt(indexRec);
+            // particular treatment for c-deuteron resonant decay channels, as resonances are not stored in the stack
             flagChannelResonant = hf_decay::getResonantDecayCDeuteron(particle);
           }
         }
