@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(cksspinalignder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phiflowder
+    SOURCES phiflowder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(k892analysis
     SOURCES k892analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

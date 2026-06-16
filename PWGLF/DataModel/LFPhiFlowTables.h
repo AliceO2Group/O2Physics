@@ -54,8 +54,8 @@ DECLARE_SOA_COLUMN(D2Px, d2Px, float);                  //! Bachelor Kaon Px
 DECLARE_SOA_COLUMN(D2Py, d2Py, float);                  //! Bachelor Kaon Py
 DECLARE_SOA_COLUMN(D2Pz, d2Pz, float);                  //! Bachelor Kaon Pz
 DECLARE_SOA_COLUMN(PhiM, phiM, float);                  //! Phi Mass
-DECLARE_SOA_COLUMN(KaonIndex1, kaonIndex1, int);        //! Daughter Kaon index1
-DECLARE_SOA_COLUMN(KaonIndex2, kaonIndex2, int);        //! Daughter Kaon index2
+DECLARE_SOA_COLUMN(KaonIndex1, kaonIndex1, int64_t);    //! Daughter Kaon index1
+DECLARE_SOA_COLUMN(KaonIndex2, kaonIndex2, int64_t);    //! Daughter Kaon index2
 DECLARE_SOA_COLUMN(KaonPidMask, kaonPidMask, uint16_t); //! bitmask for PID selections
 } // namespace kaonkaonpair
 
