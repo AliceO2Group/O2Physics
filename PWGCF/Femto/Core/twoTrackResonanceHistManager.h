@@ -46,12 +46,12 @@ enum TwoTrackResonanceHist {
   kEta,
   kPhi,
   kMass,
+  kPtVsMass,
   kSign,
   // 2d qa
   kPtVsEta,
   kPtVsPhi,
   kPhiVsEta,
-  kPtVsMass,
   kTwoTrackResonanceHistLast
 };
 
@@ -89,30 +89,33 @@ constexpr std::array<histmanager::HistInfo<TwoTrackResonanceHist>, kTwoTrackReso
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
    {kPtVsMass, o2::framework::HistType::kTH2F, "hPtVsMass", "p_{T} vs invariant mass; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})"}}};
 
+#define TWOTRACKRESONANCE_HIST_ANALYSIS_MAP(conf) \
+  {kPt, {conf.pt}},                               \
+    {kEta, {conf.eta}},                           \
+    {kPhi, {conf.phi}},                           \
+    {kMass, {conf.mass}},                         \
+    {kSign, {conf.sign}},                         \
+    {kPtVsMass, {conf.pt, conf.mass}},
+
+#define TWOTRACKRESONANCE_HIST_QA_MAP(conf) \
+  {kPtVsEta, {conf.pt, conf.eta}},          \
+    {kPtVsPhi, {conf.pt, conf.phi}},        \
+    {kPhiVsEta, {conf.phi, conf.eta}},      \
+    {kPtVsMass, {conf.pt, conf.mass}},
+
 template <typename T>
 std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
-    {kPt, {confBinningAnalysis.pt}},
-    {kEta, {confBinningAnalysis.eta}},
-    {kPhi, {confBinningAnalysis.phi}},
-    {kMass, {confBinningAnalysis.mass}},
-    {kSign, {confBinningAnalysis.sign}}};
+    TWOTRACKRESONANCE_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 };
 
 template <typename T>
 auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
-    {kPt, {confBinningAnalysis.pt}},
-    {kEta, {confBinningAnalysis.eta}},
-    {kPhi, {confBinningAnalysis.phi}},
-    {kMass, {confBinningAnalysis.mass}},
-    {kSign, {confBinningAnalysis.sign}},
-    {kPtVsEta, {confBinningAnalysis.pt, confBinningAnalysis.eta}},
-    {kPtVsPhi, {confBinningAnalysis.pt, confBinningAnalysis.phi}},
-    {kPhiVsEta, {confBinningAnalysis.phi, confBinningAnalysis.eta}},
-    {kPtVsMass, {confBinningAnalysis.pt, confBinningAnalysis.mass}}};
+    TWOTRACKRESONANCE_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      TWOTRACKRESONANCE_HIST_QA_MAP(confBinningAnalysis)};
 };
 
 constexpr char PrefixRho[] = "Rho0/";
@@ -253,6 +256,7 @@ class TwoTrackResonanceHistManager
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {ResoSpecs.at(kPhi)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {ResoSpecs.at(kMass)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {ResoSpecs.at(kSign)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPtVsMass, HistTable), getHistDesc(kPtVsMass, HistTable), getHistType(kPtVsMass, HistTable), {ResoSpecs.at(kPtVsMass)});
   }
   void initQa(std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
   {
@@ -260,7 +264,6 @@ class TwoTrackResonanceHistManager
     mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {ResoSpecs.at(kPtVsEta)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {ResoSpecs.at(kPtVsPhi)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {ResoSpecs.at(kPhiVsEta)});
-    mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMass, HistTable), getHistDesc(kPtVsMass, HistTable), getHistType(kPtVsMass, HistTable), {ResoSpecs.at(kPtVsMass)});
   }
 
   template <typename T>
@@ -270,6 +273,7 @@ class TwoTrackResonanceHistManager
     mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), resonance.eta());
     mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), resonance.phi());
     mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), resonance.mass());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPtVsMass, HistTable)), resonance.pt(), resonance.mass());
     if constexpr (modes::isEqual(reso, modes::TwoTrackResonance::kPhi) || modes::isEqual(reso, modes::TwoTrackResonance::kRho0)) {
       mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), 0);
     }
@@ -284,7 +288,6 @@ class TwoTrackResonanceHistManager
     mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), resonance.pt(), resonance.eta());
     mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), resonance.pt(), resonance.phi());
     mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), resonance.phi(), resonance.eta());
-    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMass, HistTable)), resonance.pt(), resonance.mass());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;

@@ -557,6 +557,8 @@ struct PidFlowPtCorr {
     oba4Ch->Add(new TNamed("hMeanPtWeightOne", "hMeanPtWeightOne"));
     oba4Ch->Add(new TNamed("ptAveWeightOne", "ptAveWeightOne"));
     oba4Ch->Add(new TNamed("ptSquareAveWeightOne", "ptSquareAveWeightOne"));
+
+    oba4Ch->Add(new TNamed("hMeanPtWeightFull", "hMeanPtWeightFull"));
     // end fill TObjArray for charged
 
     // init fFCCh
@@ -571,6 +573,8 @@ struct PidFlowPtCorr {
     oba4PID->Add(new TNamed("c32pure", "c32pure"));
     oba4PID->Add(new TNamed("covV2PtPID", "covV2PtPID"));
     oba4PID->Add(new TNamed("c22TrackWeightPID", "c22TrackWeightPID"));
+
+    oba4PID->Add(new TNamed("hMeanPtWeightCharged", "hMeanPtWeightCharged"));
 
     fFCPi->SetName("FlowContainerPi");
     fFCPi->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
@@ -1082,6 +1086,8 @@ struct PidFlowPtCorr {
 
     registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
     registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, 1.);
+
+    fFCCh->FillProfile("hMeanPtWeightFull", cent, (ptSum / nch), nch * dnx, rndm);
   }
 
   /**
@@ -1124,6 +1130,9 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
         registry.fill(HIST("meanptCentNbs/hPionMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
 
+        fFCPi->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
+        fFCPi->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
+
         if (switchsOpts.cfgClosureTest.value != 0) {
           double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, true).real();
           if (npair4c22pure > minVal4Float)
@@ -1159,6 +1168,9 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
         registry.fill(HIST("meanptCentNbs/hKaonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
 
+        fFCKa->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
+        fFCKa->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
+
         break;
         // end kaon
 
@@ -1175,6 +1187,9 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
         registry.fill(HIST("meanptCentNbs/hProtonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+
+        fFCPr->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
+        fFCPr->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
 
         break;
         // end proton

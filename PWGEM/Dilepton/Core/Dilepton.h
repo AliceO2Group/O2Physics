@@ -94,11 +94,6 @@ using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = o2::soa::Filtered<MyElectrons>;
 using FilteredMyElectron = FilteredMyElectrons::iterator;
 
-using MyElectronsSCT = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronsBDTSCT>;
-using MyElectronSCT = MyElectronsSCT::iterator;
-using FilteredMyElectronsSCT = o2::soa::Filtered<MyElectronsSCT>;
-using FilteredMyElectronSCT = FilteredMyElectronsSCT::iterator;
-
 using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived>;
 using MyMuon = MyMuons::iterator;
 using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
@@ -107,7 +102,7 @@ using FilteredMyMuon = FilteredMyMuons::iterator;
 using MyEMH_electron = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>;
 using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
 
-template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, bool withSCT, typename TEMH, typename... Types>
+template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, typename TEMH, typename... Types>
 struct Dilepton {
 
   // Configurables
@@ -272,11 +267,6 @@ struct Dilepton {
     // o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
     // o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     // o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
-
-    o2::framework::Configurable<std::vector<double>> binsMLSCT{"binsMLSCT", std::vector<double>{0.1, 0.4, 0.6, 0.8, 1, 2, 4, 20.f}, "Bin limits for ML application"};
-    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_prompt_hc{"cutsMLSCTeT_prompt_hc", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for prompt hc"};
-    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_nonprompt_hc{"cutsMLSCTeT_nonprompt_hc", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for nonprompt hc"};
-    o2::framework::Configurable<std::vector<double>> cutsMLSCTeT_hb{"cutsMLSCTeT_hb", std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8}, "ML cuts per bin for hb"};
   } dielectroncuts;
 
   DimuonCut fDimuonCut;
@@ -849,26 +839,6 @@ struct Dilepton {
     fDimuonCut.EnableTTCA(dimuoncuts.enableTTCA);
   }
 
-  template <typename TTrack>
-  bool foundHFSV(TTrack const& track)
-  {
-    int ptbin = lower_bound(dielectroncuts.binsMLSCT.value.begin(), dielectroncuts.binsMLSCT.value.end(), track.pt()) - dielectroncuts.binsMLSCT.value.begin() - 1;
-    if (ptbin < 0) {
-      ptbin = 0;
-    } else if (static_cast<int>(dielectroncuts.binsMLSCT.value.size()) - 2 < ptbin) {
-      ptbin = static_cast<int>(dielectroncuts.binsMLSCT.value.size()) - 2;
-    }
-
-    for (int i = 0; i < static_cast<int>(track.nSV()); i++) {
-      auto probaSCT = track.probaSCT(i);
-      // LOGF(info, "track.globalIndex() = %d, pt = %f, i = %d, probaSCT[0] = %f, probaSCT[1] = %f, probaSCT[2] = %f, probaSCT[3] = %f", track.globalIndex(), track.pt(), i, probaSCT[0], probaSCT[1], probaSCT[2], probaSCT[3]);
-      if (probaSCT[1] > dielectroncuts.cutsMLSCTeT_prompt_hc.value[ptbin] || probaSCT[2] > dielectroncuts.cutsMLSCTeT_nonprompt_hc.value[ptbin] || probaSCT[3] > dielectroncuts.cutsMLSCTeT_hb.value[ptbin]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   template <typename TQvectors>
   bool isGoodQvector(TQvectors const& qvectors)
   {
@@ -918,11 +888,6 @@ struct Dilepton {
           }
         } else { // cut-based
           if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
-            return false;
-          }
-        }
-        if constexpr (withSCT) {
-          if (foundHFSV(t1) || foundHFSV(t2)) {
             return false;
           }
         }
@@ -1587,13 +1552,6 @@ struct Dilepton {
           return false;
         }
       }
-
-      if constexpr (withSCT) {
-        if (foundHFSV(t1) || foundHFSV(t2)) {
-          return false;
-        }
-      }
-
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.IsSelectedTrack(t1) || !cut.IsSelectedTrack(t2)) {
         return false;
@@ -1601,13 +1559,6 @@ struct Dilepton {
       if (!map_best_match_globalmuon[t1.globalIndex()] || !map_best_match_globalmuon[t2.globalIndex()]) {
         return false;
       }
-
-      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch(t1, cut, tracks)) {
-      //   return false;
-      // }
-      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch(t2, cut, tracks)) {
-      //   return false;
-      // }
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {

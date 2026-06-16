@@ -37,6 +37,7 @@ BG_HOVER = "#3a3a50"
 ACCENT = "#89b4fa"  # blue  – minimal
 ACCENT_OPT = "#a6e3a1"  # green – optional
 ACCENT_REJ = "#f38ba8"  # red   – rejection / neutral
+ACCENT_ALWAYS = "#cba6f7"  # purple – loosest/always-true (no bit set)
 FG = "#cdd6f4"
 FG_DIM = "#6c7086"
 BORDER = "#45475a"
@@ -81,6 +82,17 @@ def bin_type(b):
     return "neutral"
 
 
+def has_only_skipped_minimal_bins(group):
+    """
+    Returns True when a group has at least one minimal bin but ALL of them have
+    BitPosition=="X" — meaning the cut is the loosest (always-true) selection
+    and no bit needs to be set. The group should still be displayed so the
+    user knows the cut exists.
+    """
+    minimal = [b for b in group if b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0"]
+    return bool(minimal) and all(b.get("BitPosition", "X").upper() == "X" for b in minimal)
+
+
 def load_bins_from_hist(hist):
     nbins = hist.GetNbinsX()
     bins = []
@@ -105,8 +117,8 @@ class CutCulatorApp(tk.Tk):
         super().__init__()
         self.title("CutCulator")
         self.configure(bg=BG)
-        self.geometry("920x720")
-        self.minsize(780, 560)
+        self.geometry("980x820")
+        self.minsize(780, 600)
         self.resizable(True, True)
 
         self._rootfile_path = rootfile
@@ -153,14 +165,23 @@ class CutCulatorApp(tk.Tk):
         # ── legend ──
         legend = tk.Frame(self, bg=BG, pady=4, padx=18)
         legend.pack(fill="x")
-        for color, label in [(ACCENT, "Minimal"), (ACCENT_OPT, "Optional"), (ACCENT_REJ, "Neutral")]:
+        for color, label in [
+            (ACCENT, "Minimal"),
+            (ACCENT_OPT, "Optional"),
+            (ACCENT_REJ, "Neutral"),
+            (ACCENT_ALWAYS, "Loosest (no bit set)"),
+        ]:
             dot = tk.Label(legend, text="●", font=FONT_BODY, bg=BG, fg=color)
             dot.pack(side="left")
             tk.Label(legend, text=label, font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=(2, 12))
 
+        # ── main paned area: selection list (top) + summary (bottom) ──
+        paned = tk.PanedWindow(self, orient="vertical", bg=BORDER, sashwidth=4, sashrelief="flat")
+        paned.pack(fill="both", expand=True, padx=12, pady=4)
+
         # ── scrollable selection area ──
-        outer = tk.Frame(self, bg=BG)
-        outer.pack(fill="both", expand=True, padx=12, pady=4)
+        outer = tk.Frame(paned, bg=BG)
+        paned.add(outer, stretch="always", minsize=200)
 
         self._canvas = tk.Canvas(outer, bg=BG, highlightthickness=0, bd=0)
         vsb = ttk.Scrollbar(outer, orient="vertical", command=self._canvas.yview)
@@ -175,6 +196,32 @@ class CutCulatorApp(tk.Tk):
         self._canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self._canvas.bind_all("<Button-4>", self._on_mousewheel)
         self._canvas.bind_all("<Button-5>", self._on_mousewheel)
+
+        # ── summary panel ──
+        summary_outer = tk.Frame(paned, bg=BG_CARD)
+        paned.add(summary_outer, stretch="never", minsize=120)
+
+        summary_hdr = tk.Frame(summary_outer, bg=BG_CARD, pady=5, padx=10)
+        summary_hdr.pack(fill="x")
+        tk.Label(summary_hdr, text="Selected cuts", font=FONT_HEAD, bg=BG_CARD, fg=FG).pack(side="left")
+        self._lbl_summary_empty = tk.Label(summary_hdr, text="(none)", font=FONT_SMALL, bg=BG_CARD, fg=FG_DIM)
+        self._lbl_summary_empty.pack(side="left", padx=8)
+
+        tk.Frame(summary_outer, bg=BORDER, height=1).pack(fill="x")
+
+        summary_scroll_outer = tk.Frame(summary_outer, bg=BG_CARD)
+        summary_scroll_outer.pack(fill="both", expand=True)
+
+        self._summary_canvas = tk.Canvas(summary_scroll_outer, bg=BG_CARD, highlightthickness=0, bd=0, height=100)
+        summary_vsb = ttk.Scrollbar(summary_scroll_outer, orient="vertical", command=self._summary_canvas.yview)
+        self._summary_canvas.configure(yscrollcommand=summary_vsb.set)
+        summary_vsb.pack(side="right", fill="y")
+        self._summary_canvas.pack(side="left", fill="both", expand=True)
+
+        self._summary_inner = tk.Frame(self._summary_canvas, bg=BG_CARD)
+        self._summary_canvas_win = self._summary_canvas.create_window((0, 0), window=self._summary_inner, anchor="nw")
+        self._summary_inner.bind("<Configure>", self._on_summary_inner_configure)
+        self._summary_canvas.bind("<Configure>", self._on_summary_canvas_configure)
 
         # ── bottom result bar ──
         bottom = tk.Frame(self, bg=BG_CARD, pady=10, padx=18)
@@ -223,6 +270,12 @@ class CutCulatorApp(tk.Tk):
 
     def _on_canvas_configure(self, e):
         self._canvas.itemconfig(self._canvas_win, width=e.width)
+
+    def _on_summary_inner_configure(self, _e=None):
+        self._summary_canvas.configure(scrollregion=self._summary_canvas.bbox("all"))
+
+    def _on_summary_canvas_configure(self, e):
+        self._summary_canvas.itemconfig(self._summary_canvas_win, width=e.width)
 
     def _on_mousewheel(self, e):
         if e.num == 4:
@@ -292,13 +345,17 @@ class CutCulatorApp(tk.Tk):
         self._on_inner_configure()
 
     def _build_group_card(self, sel_name, group):
-        # categorise
+        # categorise into selectable bins
         minimal = [(i, b) for i, b in enumerate(group) if bin_type(b) == "minimal"]
         optional = [(i, b) for i, b in enumerate(group) if bin_type(b) == "optional"]
         neutral = [(i, b) for i, b in enumerate(group) if bin_type(b) == "neutral"]
 
-        if not (minimal or optional or neutral):
-            return  # nothing to show (all "skip")
+        # detect loosest/always-true: minimal bins exist but all have BitPosition==X
+        loosest_only = has_only_skipped_minimal_bins(group)
+
+        # skip entirely if there is truly nothing to show
+        if not (minimal or optional or neutral or loosest_only):
+            return
 
         card = tk.Frame(self._inner, bg=BG_CARD, bd=0, highlightthickness=1, highlightbackground=BORDER)
         card.pack(fill="x", padx=10, pady=5, ipadx=8, ipady=6)
@@ -308,27 +365,42 @@ class CutCulatorApp(tk.Tk):
         hdr.pack(fill="x", padx=6, pady=(4, 2))
         tk.Label(hdr, text=sel_name, font=FONT_HEAD, bg=BG_CARD, fg=FG).pack(side="left")
 
-        # show the loosest (most permissive) minimal threshold as a hint.
-        # the truly loosest threshold has mSkipMostPermissiveBit=true so its
-        # BitPosition is "X" — it lands in the "skip" category. check there first,
-        # then fall back to the loosest bit-carrying minimal bin.
-        skipped_minimal = [
-            b for b in group if b.get("MinimalCut", "0") == "1" and b.get("BitPosition", "X").upper() == "X"
-        ]
-        if skipped_minimal:
-            loosest_val = format_value_with_comment(skipped_minimal[0])
+        if loosest_only:
+            # All minimal bins are BitPosition==X → loosest cut, no bit set
             tk.Label(
-                hdr, text=f"minimal cut  →  loosest selection: {loosest_val}", font=FONT_SMALL, bg=BG_CARD, fg=FG_DIM
+                hdr,
+                text="loosest selection — no bit set",
+                font=FONT_SMALL,
+                bg=BG_CARD,
+                fg=ACCENT_ALWAYS,
             ).pack(side="left", padx=10)
-        elif minimal:
-            loosest_val = format_value_with_comment(minimal[0][1])
-            tk.Label(
-                hdr, text=f"minimal cut  →  loosest selection: {loosest_val}", font=FONT_SMALL, bg=BG_CARD, fg=FG_DIM
-            ).pack(side="left", padx=10)
-        elif optional:
-            tk.Label(hdr, text="optional", font=FONT_SMALL, bg=BG_CARD, fg=ACCENT_OPT).pack(side="left", padx=10)
-        elif neutral:
-            tk.Label(hdr, text="neutral", font=FONT_SMALL, bg=BG_CARD, fg=ACCENT_REJ).pack(side="left", padx=10)
+        else:
+            # show the loosest (most permissive) minimal threshold as a hint
+            skipped_minimal = [
+                b for b in group if b.get("MinimalCut", "0") == "1" and b.get("BitPosition", "X").upper() == "X"
+            ]
+            if skipped_minimal:
+                loosest_val = format_value_with_comment(skipped_minimal[0])
+                tk.Label(
+                    hdr,
+                    text=f"minimal cut  →  loosest selection: {loosest_val}",
+                    font=FONT_SMALL,
+                    bg=BG_CARD,
+                    fg=FG_DIM,
+                ).pack(side="left", padx=10)
+            elif minimal:
+                loosest_val = format_value_with_comment(minimal[0][1])
+                tk.Label(
+                    hdr,
+                    text=f"minimal cut  →  loosest selection: {loosest_val}",
+                    font=FONT_SMALL,
+                    bg=BG_CARD,
+                    fg=FG_DIM,
+                ).pack(side="left", padx=10)
+            elif optional:
+                tk.Label(hdr, text="optional", font=FONT_SMALL, bg=BG_CARD, fg=ACCENT_OPT).pack(side="left", padx=10)
+            elif neutral:
+                tk.Label(hdr, text="neutral", font=FONT_SMALL, bg=BG_CARD, fg=ACCENT_REJ).pack(side="left", padx=10)
 
         # separator
         tk.Frame(card, bg=BORDER, height=1).pack(fill="x", padx=6, pady=2)
@@ -337,19 +409,41 @@ class CutCulatorApp(tk.Tk):
         bins_frame = tk.Frame(card, bg=BG_CARD)
         bins_frame.pack(fill="x", padx=6, pady=4)
 
-        for i, b in minimal:
-            self._build_bin_row(bins_frame, sel_name, i, b, "minimal")
-        for i, b in optional:
-            self._build_bin_row(bins_frame, sel_name, i, b, "optional")
-        for i, b in neutral:
-            self._build_bin_row(bins_frame, sel_name, i, b, "neutral")
+        if loosest_only:
+            # Display loosest minimal bins as informational rows — no checkbox, no bit
+            for b in group:
+                if b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0":
+                    self._build_loosest_row(bins_frame, b)
+        else:
+            for i, b in minimal:
+                self._build_bin_row(bins_frame, sel_name, i, b, "minimal")
+            for i, b in optional:
+                self._build_bin_row(bins_frame, sel_name, i, b, "optional")
+            for i, b in neutral:
+                self._build_bin_row(bins_frame, sel_name, i, b, "neutral")
+
+    def _build_loosest_row(self, parent, b):
+        """Informational row for a loosest/always-true cut — no checkbox, no bit."""
+        label_text = format_value_with_comment(b)
+
+        row = tk.Frame(parent, bg=BG_CARD)
+        row.pack(fill="x", pady=1)
+
+        tk.Label(row, text="●", font=FONT_BODY, bg=BG_CARD, fg=ACCENT_ALWAYS).pack(side="left", padx=(0, 4))
+        tk.Label(
+            row,
+            text=label_text,
+            font=FONT_BODY,
+            bg=BG_CARD,
+            fg=FG_DIM,  # dimmed to signal non-interactive
+        ).pack(side="left", fill="x", expand=True)
+        # no bit-position badge since it's "X"
 
     def _build_bin_row(self, parent, sel_name, idx, b, kind):
         color = {"minimal": ACCENT, "optional": ACCENT_OPT, "neutral": ACCENT_REJ}[kind]
         label_text = format_value_with_comment(b)
 
         var = tk.BooleanVar(value=False)
-
         self._vars[(sel_name, idx)] = var
 
         row = tk.Frame(parent, bg=BG_CARD)
@@ -358,7 +452,7 @@ class CutCulatorApp(tk.Tk):
         # coloured dot
         tk.Label(row, text="●", font=FONT_BODY, bg=BG_CARD, fg=color).pack(side="left", padx=(0, 4))
 
-        # checkbox styled as a toggle button
+        # checkbox
         cb = tk.Checkbutton(
             row,
             text=label_text,
@@ -382,21 +476,104 @@ class CutCulatorApp(tk.Tk):
         if pos.upper() != "X":
             tk.Label(row, text=f"bit {pos}", font=FONT_SMALL, bg=BG_CARD, fg=FG_DIM, width=8).pack(side="right", padx=4)
 
-    # ── Bitmask computation ───────────────────────────────────────────────────
+    # ── Bitmask computation + summary update ──────────────────────────────────
     def _update_bitmask(self):
         bitmask = 0
+        selected_entries = []  # list of (sel_name, label_text, bit_pos, color, is_loosest)
+
+        # User-selected cuts (from checkboxes)
         for (sel_name, idx), var in self._vars.items():
             if not var.get():
                 continue
             b = self._groups[sel_name][idx]
             pos = b.get("BitPosition", "X")
-            if pos.upper() == "X":
-                continue
-            bitmask |= 1 << int(pos)
+            kind = bin_type(b)
+            color = {"minimal": ACCENT, "optional": ACCENT_OPT, "neutral": ACCENT_REJ}.get(kind, FG_DIM)
+
+            if pos.upper() != "X":
+                bitmask |= 1 << int(pos)
+            label_text = format_value_with_comment(b)
+            selected_entries.append((sel_name, label_text, pos, color, False))
+
+        # Loosest-only cuts: always shown in summary, never set a bit
+        for sel_name, group in self._groups.items():
+            if has_only_skipped_minimal_bins(group):
+                for b in group:
+                    if b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0":
+                        label_text = format_value_with_comment(b)
+                        selected_entries.append((sel_name, label_text, "X", ACCENT_ALWAYS, True))
 
         self._lbl_dec.config(text=str(bitmask))
         self._lbl_hex.config(text=hex(bitmask))
         self._lbl_bin.config(text=bin(bitmask))
+
+        self._rebuild_summary(selected_entries)
+
+    def _rebuild_summary(self, entries):
+        """Rebuild the selected-cuts summary panel."""
+        for w in self._summary_inner.winfo_children():
+            w.destroy()
+
+        if not entries:
+            self._lbl_summary_empty.config(text="(none)")
+            self._on_summary_inner_configure()
+            return
+
+        self._lbl_summary_empty.config(text="")
+
+        # group by selection name, preserving is_loosest flag
+        by_name = {}
+        for sel_name, label_text, pos, color, is_loosest in entries:
+            by_name.setdefault(sel_name, []).append((label_text, pos, color, is_loosest))
+
+        for sel_name, items in by_name.items():
+            block = tk.Frame(self._summary_inner, bg=BG_CARD)
+            block.pack(fill="x", padx=10, pady=(3, 0))
+
+            # name on its own line — no truncation
+            tk.Label(
+                block,
+                text=f"{sel_name}:",
+                font=FONT_BODY,
+                bg=BG_CARD,
+                fg=FG,
+                anchor="w",
+            ).pack(fill="x")
+
+            # values indented below the name
+            values_row = tk.Frame(block, bg=BG_CARD)
+            values_row.pack(fill="x", padx=(16, 0), pady=(0, 2))
+
+            for label_text, pos, color, is_loosest in items:
+                entry_frame = tk.Frame(values_row, bg=BG_CARD)
+                entry_frame.pack(side="left", padx=(0, 12))
+
+                tk.Label(entry_frame, text="●", font=FONT_SMALL, bg=BG_CARD, fg=color).pack(side="left")
+                tk.Label(
+                    entry_frame,
+                    text=label_text,
+                    font=FONT_SMALL,
+                    bg=BG_CARD,
+                    fg=FG_DIM if is_loosest else FG,
+                ).pack(side="left", padx=(2, 0))
+                if is_loosest:
+                    tk.Label(
+                        entry_frame,
+                        text="(no bit)",
+                        font=FONT_SMALL,
+                        bg=BG_CARD,
+                        fg=ACCENT_ALWAYS,
+                    ).pack(side="left", padx=(4, 0))
+                elif pos.upper() != "X":
+                    tk.Label(
+                        entry_frame,
+                        text=f"[bit {pos}]",
+                        font=FONT_SMALL,
+                        bg=BG_CARD,
+                        fg=FG_DIM,
+                    ).pack(side="left", padx=(4, 0))
+
+        self._on_summary_inner_configure()
 
     # ── Utilities ─────────────────────────────────────────────────────────────
     def _copy(self, text):
