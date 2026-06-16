@@ -1604,7 +1604,7 @@ struct AnalysisSameEventPairing {
       }
     } else if (fConfigOptions.useLocalFlow) {
       // LOGP(info, "Developing");
-      TString  pathFlow = fConfigCCDB.flowPathLocal.value;
+      TString pathFlow = fConfigCCDB.flowPathLocal.value;
       TFile* fileFlow = TFile::Open(pathFlow.Data(), "READ");
       if (fileFlow == nullptr || fileFlow->IsZombie()) {
         LOGF(fatal, "Flow resolution file %s cannot be opened", pathFlow.Data());

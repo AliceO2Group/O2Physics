@@ -1830,7 +1830,7 @@ struct AnalysisSameEventPairing {
         LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
       }
     } else if (fConfigOptions.useLocalFlow) {
-      TString  pathFlow = fConfigCCDB.flowPathLocal.value;
+      TString pathFlow = fConfigCCDB.flowPathLocal.value;
       TFile* fileFlow = TFile::Open(pathFlow.Data(), "READ");
       if (fileFlow == nullptr || fileFlow->IsZombie()) {
         LOGF(fatal, "Flow resolution file %s cannot be opened", pathFlow.Data());
@@ -1955,7 +1955,7 @@ struct AnalysisSameEventPairing {
       if (groupedAssocs.size() == 0) {
         continue;
       }
-      
+
       if (fillFlowReso) {
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");

@@ -60,12 +60,12 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH3.h>
 #include <TMath.h>
 #include <TMathBase.h>
 #include <TObject.h>
 #include <TRandom.h>
 #include <TString.h>
-#include <TH3.h>
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
@@ -1549,8 +1549,9 @@ class VarManager : public TObject
     fgEOR = eor;
   }
 
-  static void SetEventQVectorCorrection(TH3F* qvec) { 
-    fgObjQvec = qvec; 
+  static void SetEventQVectorCorrection(TH3F* qvec)
+  {
+    fgObjQvec = qvec;
     fgApplyQVectorCorrection = true;
   }
 
@@ -6080,17 +6081,17 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   if (useCoherentJpsiA2) {
     // remove daughter from TPC Q-vector
     // TODO: remove based on track cut in qVectorTable
-    float Q2X0A = values[kQ2X0A]*values[kMultA];
-    float Q2Y0A = values[kQ2Y0A]*values[kMultA];
+    float Q2X0A = values[kQ2X0A] * values[kMultA];
+    float Q2Y0A = values[kQ2Y0A] * values[kMultA];
     float nNorm = values[kMultA];
 
-    int centBin = static_cast<int>(values[kCentFT0C]) + 1;  // centrality bin
-    int detIdx = 6; // TPC all
+    int centBin = static_cast<int>(values[kCentFT0C]) + 1; // centrality bin
+    int detIdx = 6;                                        // TPC all
     EventPlaneHelper epHelper;
     // checkTrack(t1);
     if (isSelectedinTPC(t1) && values[kAmbi1] > 0) {
-      float qx1 = t1.pt()*TMath::Cos(2. * t1.phi());
-      float qy1 = t1.pt()*TMath::Sin(2. * t1.phi());
+      float qx1 = t1.pt() * TMath::Cos(2. * t1.phi());
+      float qy1 = t1.pt() * TMath::Sin(2. * t1.phi());
       if (fgApplyQVectorCorrection) {
         epHelper.DoRecenter(qx1, qy1, fgObjQvec->GetBinContent(centBin, 1, detIdx + 1), fgObjQvec->GetBinContent(centBin, 2, detIdx + 1));
         epHelper.DoTwist(qx1, qy1, fgObjQvec->GetBinContent(centBin, 3, detIdx + 1), fgObjQvec->GetBinContent(centBin, 4, detIdx + 1));
@@ -6102,8 +6103,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     }
     // checkTrack(t2);
     if (isSelectedinTPC(t2) && values[kAmbi2] > 0) {
-      float qx2 = t2.pt()*TMath::Cos(2. * t2.phi());
-      float qy2 = t2.pt()*TMath::Sin(2. * t2.phi());
+      float qx2 = t2.pt() * TMath::Cos(2. * t2.phi());
+      float qy2 = t2.pt() * TMath::Sin(2. * t2.phi());
       if (fgApplyQVectorCorrection) {
         epHelper.DoRecenter(qx2, qy2, fgObjQvec->GetBinContent(centBin, 1, detIdx + 1), fgObjQvec->GetBinContent(centBin, 2, detIdx + 1));
         epHelper.DoTwist(qx2, qy2, fgObjQvec->GetBinContent(centBin, 3, detIdx + 1), fgObjQvec->GetBinContent(centBin, 4, detIdx + 1));
@@ -6119,9 +6120,9 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
       values[kQ2Y0A] = -999.;
       return;
     }
-  
-    Q2X0A = nNorm > 0 ? Q2X0A/nNorm : NAN;
-    Q2Y0A = nNorm > 0 ? Q2Y0A/nNorm : NAN;
+
+    Q2X0A = nNorm > 0 ? Q2X0A / nNorm : NAN;
+    Q2Y0A = nNorm > 0 ? Q2Y0A / nNorm : NAN;
 
     float Psi2A = getEventPlane(2, Q2X0A, Q2Y0A);
     values[kPsi2A] = Psi2A;
@@ -6154,11 +6155,11 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     float sinPsi2CPP = b_FT0C_RF.Dot(yAxis_RF.Cross(daughterVec_RF));
     float Psi2CPP = sinPsi2CPP > 0 ? TMath::ACos(cosPsi2CPP) : -1. * TMath::ACos(cosPsi2CPP);
     values[kDeltaPhiPP_TPC] = phi_PP > Psi2APP ? phi_PP - Psi2APP : Psi2APP - phi_PP;
-    values[kDeltaPhiPP_TPC]  = values[kDeltaPhiPP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
+    values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
     values[kDeltaPhiPP_FT0A] = phi_PP > Psi2BPP ? phi_PP - Psi2BPP : Psi2BPP - phi_PP;
-    values[kDeltaPhiPP_FT0A]  = values[kDeltaPhiPP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
+    values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
     values[kDeltaPhiPP_FT0C] = phi_PP > Psi2CPP ? phi_PP - Psi2CPP : Psi2CPP - phi_PP;
-    values[kDeltaPhiPP_FT0C]  = values[kDeltaPhiPP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
+    values[kDeltaPhiPP_FT0C] = values[kDeltaPhiPP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
     // fold delta phi to [0, pi/2]
     values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
     values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
@@ -6177,11 +6178,11 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     // reaction plane
     float phi = v_daughter.Phi() > TMath::Pi() ? 2. * TMath::Pi() - v_daughter.Phi() : v_daughter.Phi();
     values[kDeltaPhiRP_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
-    values[kDeltaPhiRP_TPC]  = values[kDeltaPhiRP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
     values[kDeltaPhiRP_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
-    values[kDeltaPhiRP_FT0A]  = values[kDeltaPhiRP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
     values[kDeltaPhiRP_FT0C] = phi > Psi2C ? phi - Psi2C : Psi2C - phi;
-    values[kDeltaPhiRP_FT0C]  = values[kDeltaPhiRP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
     // fold delta phi to [0, pi/2]
     values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
     values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
@@ -7045,7 +7046,8 @@ float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1,
 }
 
 template <typename T>
-bool VarManager::isSelectedinTPC(const T& t) {
+bool VarManager::isSelectedinTPC(const T& t)
+{
   bool trackSelected = false;
   if constexpr (requires { t.hasTPC(); }) {
     trackSelected = true;
