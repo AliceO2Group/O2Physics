@@ -305,7 +305,6 @@ struct HfTaskDeuteronFromLb {
           continue;
         }
         if (mcParticle.isPhysicalPrimary()) {
-          bool isFromBeauty = false;
           int motherPdg = 0;
           if (separateAntideuterons) {
             for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
@@ -396,7 +395,6 @@ struct HfTaskDeuteronFromLb {
           continue;
         }
 
-        bool isFromBeauty = false;
         int motherPdg = 0;
         if (mcParticle.has_mothers()) {
           for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
