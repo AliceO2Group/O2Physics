@@ -363,13 +363,16 @@ struct Kstar892LightIon {
       hMC.add("Rec/h2KstarRecpt2", "pT of kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Rec/h1RecCent", "centrality reconstructed", kTH1F, {centralityAxis});
       hMC.add("Rec/h1KSRecsplit", "KS meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
+
+      hMC.add("Rec/hMassShiftGen", "#Delta M = m_{rec} - m_{gen}; #it{p}_{T}_{gen}; #it{p}_{T}_{rec}; #Delta M", kTH3F, {ptAxis, ptAxis, {1000, -0.5, 0.5}});
+      hMC.add("Rec/hMassShiftPDG", "#Delta M = m_{rec} - m_{PDG}; #it{p}_{T}_{gen}; #it{p}_{T}_{rec}; #Delta M", kTH3F, {ptAxis, ptAxis, {1000, -0.5, 0.5}});
     }
 
     // Signal Loss & Event Loss
     if (doprocessEvtLossSigLossMC) {
       hMC.add("ImpactCorr/hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       hMC.add("ImpactCorr/hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
-      hMC.add("ImpactCorr/hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {{centralityAxis}, impactParAxis});
+      hMC.add("ImpactCorr/hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {centralityAxis, impactParAxis});
       hMC.add("ImpactCorr/hKstarGenBeforeEvtSel", "K*0 before event selections", kTH2F, {ptAxis, impactParAxis});
       hMC.add("ImpactCorr/hKstarGenAfterEvtSel", "K*0 after event selections", kTH2F, {ptAxis, impactParAxis});
     }
@@ -905,6 +908,7 @@ struct Kstar892LightIon {
   //*********Varibles declaration***************
   float centrality{-1.0}, theta2;
   ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, mother, motherRot;
+  double genMass, recMass, recpt;
   bool isMix = false;
 
   template <typename T1, typename T2>
@@ -1870,14 +1874,22 @@ struct Kstar892LightIon {
 
           mother = daughter1 + daughter2; // Kstar meson
 
-          hMC.fill(HIST("Rec/h2KstarRecpt2"), mothertrack1.pt(), centrality, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
-
           if (mother.Rapidity() < selectionConfig.motherRapidityMin || mother.Rapidity() > selectionConfig.motherRapidityMax) {
             continue;
           }
 
-          hMC.fill(HIST("Rec/h1KstarRecMass"), mother.M());
-          hMC.fill(HIST("Rec/h2KstarRecpt1"), mother.Pt(), centrality, mother.M());
+          genMass = std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p());
+          recMass = mother.M();
+          recpt = mother.Pt();
+
+          hMC.fill(HIST("Rec/hMassShiftGen"), mothertrack1.pt(), recpt, recMass - genMass);
+          hMC.fill(HIST("Rec/hMassShiftPDG"), mothertrack1.pt(), recpt, recMass - 0.8955);
+
+          hMC.fill(HIST("Rec/h2KstarRecpt2"), mothertrack1.pt(), centrality, genMass);
+
+          hMC.fill(HIST("Rec/h1KstarRecMass"), recMass);
+
+          hMC.fill(HIST("Rec/h2KstarRecpt1"), recpt, centrality, recMass);
         }
       }
     }
