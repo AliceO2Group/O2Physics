@@ -90,7 +90,7 @@ struct FemtoUniverseProducerMCTruthTask {
   Configurable<bool> confIsRun3{"confIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> confIsMC{"confIsMC", false, "Running on MC; implemented only for Run3"};
   Configurable<bool> confIsForceGRP{"confIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
-  Configurable<std::vector<int>> confPDGCodes{"confPDGCodes", std::vector<int>{kPiPlus, -kPiPlus, kKPlus, kKMinus, kProton, -kProton, Pdg::kPhi}, "PDG of particles to be stored"};
+  Configurable<std::vector<int>> confPDGCodes{"confPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
   Configurable<bool> confAnalysisWithPID{"confAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles"};
 
   /// Event cuts

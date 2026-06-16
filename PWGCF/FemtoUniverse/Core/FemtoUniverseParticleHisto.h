@@ -171,14 +171,6 @@ class FemtoUniverseParticleHisto
         mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_Else").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{6001, -3000.5, 3000.5}});
         mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterLambda").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
         mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterSigmaplus").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterSigma0").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterSigmaminus").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterXi").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterOmega").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterK0Long").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterK0Short").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterKCharged").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_DaughterPionCharged").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
 
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Daughter").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
@@ -188,14 +180,6 @@ class FemtoUniverseParticleHisto
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Else").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterLambda").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterSigmaplus").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterSigma0").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterSigmaminus").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterXi").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterOmega").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterK0Long").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterK0Short").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterKCharged").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterPionCharged").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_NoMCTruthOrigin").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hMisidentification").c_str(), "; #it{p}_{T} (GeV/#it{c}); Particle; Particle", o2::framework::HistType::kTH3F, {{4, 0, 4}, {4, 0, 4}, tempFitVarpTAxis});
 
@@ -211,14 +195,6 @@ class FemtoUniverseParticleHisto
 
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterLambda").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterSigmaplus").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterSigma0").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterSigmaminus").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterXi").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterOmega").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterK0Long").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterK0Short").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterKCharged").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-        mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterPionCharged").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       }
 
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
@@ -431,38 +407,6 @@ class FemtoUniverseParticleHisto
               // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterSigmaplus"), part.fdMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigmaplus"), part.pt(), part.tempFitVar());
               break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterSigma0):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterSigma0"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigma0"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterSigmaminus):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterSigmaminus"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigmaminus"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterXi):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterXi"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterXi"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterOmega):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterOmega"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterOmega"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterK0Long):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterK0Long"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterK0Long"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterK0Short):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterK0Short"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterK0Short"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterKCharged):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterKCharged"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterKCharged"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterPionCharged):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterPionCharged"), part.fdMCParticle().motherPDG());
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterPionCharged"), part.pt(), part.tempFitVar());
-              break;
             case (o2::aod::femtouniverse_mc_particle::kElse):
               // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Else"), part.fdMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Else"), part.pt(), part.tempFitVar());
@@ -493,30 +437,6 @@ class FemtoUniverseParticleHisto
               break;
             case (o2::aod::femtouniverse_mc_particle::kDaughterSigmaplus):
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigmaplus"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterSigma0):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigma0"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterSigmaminus):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigmaminus"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterXi):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterXi"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterOmega):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterOmega"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterK0Long):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterK0Long"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterK0Short):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterK0Short"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterKCharged):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterKCharged"), part.pt(), part.tempFitVar());
-              break;
-            case (o2::aod::femtouniverse_mc_particle::kDaughterPionCharged):
-              mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterPionCharged"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtouniverse_mc_particle::kElse):
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Else"), part.pt(), part.tempFitVar());

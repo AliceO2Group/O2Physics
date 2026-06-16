@@ -131,33 +131,6 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
       case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
-      case kSigma0:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
-        break;
-      case kSigmaMinus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaminus;
-        break;
-      case kXiMinus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXiMinus;
-        break;
-      case o2::constants::physics::Pdg::kXi0:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXi0;
-        break;
-      case kOmegaMinus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
-        break;
-      case kK0Long:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Long;
-        break;
-      case kK0Short:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Short;
-        break;
-      case kKPlus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterKCharged;
-        break;
-      case kPiPlus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterPionCharged;
-        break;
       default:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
     } // switch
@@ -184,33 +157,6 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
         break;
       case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
-        break;
-      case kSigma0:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
-        break;
-      case kSigmaMinus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaminus;
-        break;
-      case kXiMinus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXiMinus;
-        break;
-      case o2::constants::physics::Pdg::kXi0:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXi0;
-        break;
-      case kOmegaMinus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
-        break;
-      case kK0Long:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Long;
-        break;
-      case kK0Short:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterK0Short;
-        break;
-      case kKPlus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterKCharged;
-        break;
-      case kPiPlus:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterPionCharged;
         break;
       default:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;

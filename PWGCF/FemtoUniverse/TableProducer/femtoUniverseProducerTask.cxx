@@ -176,7 +176,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confIsActivatePhi{"confIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
     Configurable<bool> confIsActiveD0{"confIsActiveD0", false, "Activate filling FU tables for D0/D0bar mesons"};
     Configurable<bool> confMCTruthAnalysisWithPID{"confMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
-    Configurable<std::vector<int>> confMCTruthPDGCodes{"confMCTruthPDGCodes", std::vector<int>{kPiPlus, -kPiPlus, kKPlus, kKMinus, kProton, -kProton, Pdg::kPhi}, "PDG of particles to be stored"};
+    Configurable<std::vector<int>> confMCTruthPDGCodes{"confMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
     Configurable<float> confCentFT0Min{"confCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
     Configurable<float> confCentFT0Max{"confCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
     Configurable<bool> confEvIsGoodZvtxFT0vsPV{"confEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
@@ -946,7 +946,7 @@ struct FemtoUniverseProducerTask {
         } else if (!motherparticlesMC.empty()) {
           auto motherparticleMC = motherparticlesMC.front();
           if (motherparticleMC.producedByGenerator()) {
-            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode(), pdgCode);
+            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
           } else {
             particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
           }
@@ -979,7 +979,7 @@ struct FemtoUniverseProducerTask {
         if (!mothers.empty()) {
           auto mother = mothers.front();
           if (mother.producedByGenerator()) {
-            particleOrigin = checkDaughterType(fdparttype, mother.pdgCode(), pdgCode);
+            particleOrigin = checkDaughterType(fdparttype, mother.pdgCode());
           } else {
             particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
           }

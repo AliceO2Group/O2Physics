@@ -674,16 +674,11 @@ enum ParticleOriginMCTruth {
   kSecondaryDaughterLambda,      //! Daughter from a Lambda decay
   kSecondaryDaughterSigmaplus,   //! Daughter from a Sigma^plus decay
   kSecondaryDaughterSigma0,      //! Daughter from a Sigma^0 decay
-  kSecondaryDaughterSigmaminus,  //! Daughter from a Sigma^- decay
   kSecondaryDaughterXiMinus,     //! Daughter from a Xi^- decay
   kSecondaryDaughterXi0,         //! Daughter from a Xi^0 decay
   kSecondaryDaughterOmegaMinus,  //! Daughter from a Omega^- decay
   kSecondaryDaughterXistar0,     //! Daughter from a Xi*^0 decay
   kSecondaryDaughterXistarMinus, //! Daughter from a Xi*^- decay
-  kSecondaryDaughterK0Long,      //! Daughter from a K0 long decay
-  kSecondaryDaughterK0Short,     //! Daughter from a K0 short decay
-  kSecondaryDaughterKCharged,    //! Daughter from a charged kaon decay
-  kSecondaryDaughterPionCharged, //! Daughter from a charged pion decay
   kElse,                         //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
@@ -695,38 +690,8 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_Material",
   "_NotPrimary",
   "_Fake",
-  "_WrongCollision",
   "_SecondaryDaughterLambda",
-  "_SecondaryDaughterSigmaplus",
-  "_SecondaryDaughterSigma0",
-  "_SecondaryDaughterSigmaminus",
-  "_SecondaryDaughterXiMinus",
-  "_SecondaryDaughterXi0",
-  "_SecondaryDaughterOmegaMinus",
-  "_SecondaryDaughterXistar0",
-  "_SecondaryDaughterXistarMinus",
-  "_SecondaryDaughterK0Long",
-  "_SecondaryDaughterK0Short",
-  "_SecondaryDaughterKCharged",
-  "_SecondaryDaughterPionCharged",
-  "_Else"};
-
-inline constexpr bool isSecondaryOrigin(uint8_t origin)
-{
-  return origin == kSecondary || origin == kSecondaryDaughterLambda ||
-         origin == kSecondaryDaughterSigmaplus ||
-         origin == kSecondaryDaughterSigma0 ||
-         origin == kSecondaryDaughterSigmaminus ||
-         origin == kSecondaryDaughterXiMinus ||
-         origin == kSecondaryDaughterXi0 ||
-         origin == kSecondaryDaughterOmegaMinus ||
-         origin == kSecondaryDaughterXistar0 ||
-         origin == kSecondaryDaughterXistarMinus ||
-         origin == kSecondaryDaughterK0Long ||
-         origin == kSecondaryDaughterK0Short ||
-         origin == kSecondaryDaughterKCharged ||
-         origin == kSecondaryDaughterPionCharged;
-}
+  "_SecondaryDaughterSigmaPlus"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {

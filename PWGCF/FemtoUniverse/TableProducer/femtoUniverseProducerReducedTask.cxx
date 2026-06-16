@@ -214,7 +214,7 @@ struct femtoUniverseProducerReducedTask {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary;
         } else if (motherparticleMC.producedByGenerator()) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode(), pdgCode);
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
         } else {
           particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
         }
