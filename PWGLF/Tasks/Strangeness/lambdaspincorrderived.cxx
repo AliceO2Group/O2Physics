@@ -35,7 +35,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4D.h>
 #include <Math/Vector4Dfwd.h>
 #include <TH3.h>
 #include <TMath.h>
@@ -172,15 +172,33 @@ static inline int piIdx(const T& t)
 }
 } // namespace mcacc
 
+// Optional fixed-leg correction pointers kept outside the task struct.
+static TH3D* gFixedLLRep1 = nullptr;
+static TH3D* gFixedULRep1 = nullptr;
+static TH3D* gFixedALALRep1 = nullptr;
+
+static TH3D* gFixedLLRep2 = nullptr;
+static TH3D* gFixedULRep2 = nullptr;
+static TH3D* gFixedALALRep2 = nullptr;
+
 struct lambdaspincorrderived {
   // BinningType colBinning;
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+    Configurable<bool> useFixedWeight{"useFixedWeight", false, "Use additional fixed-leg correction with useweight"};
+    Configurable<std::vector<std::string>> ConfWeightPaths{
+      "ConfWeightPaths",
+      std::vector<std::string>{},
+      "Replaced-leg CCDB paths in order: REP_LL_leg1,REP_UL_leg1,REP_ALAL_leg1,REP_LL_leg2,REP_UL_leg2,REP_ALAL_leg2"};
+    Configurable<std::vector<std::string>> ConfFixedWeightPaths{
+      "ConfFixedWeightPaths",
+      std::vector<std::string>{},
+      "Fixed-leg CCDB paths in order: FIX_LL_forRepLeg1,FIX_UL_forRepLeg1,FIX_ALAL_forRepLeg1,FIX_LL_forRepLeg2,FIX_UL_forRepLeg2,FIX_ALAL_forRepLeg2"};
   } cfgCcdbParam;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis cfgMixRadiusBins{"cfgMixRadiusBins", {VARIABLE_WIDTH, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0}, "Radius bins for V6 radius buffer"};
+    ConfigurableAxis cfgMixRadiusBins{"cfgMixRadiusBins", {VARIABLE_WIDTH, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 33.0}, "Radius bins for V6 radius buffer"};
   } cfgMixRadiusParam;
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
@@ -200,14 +218,6 @@ struct lambdaspincorrderived {
   TH2D* hNUALambda = nullptr;
   TH2D* hNUAAntiLambda = nullptr;
 
-  Configurable<std::string> ConfWeightPathLL{"ConfWeightPathLL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  Configurable<std::string> ConfWeightPathALAL{"ConfWeightPathALAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  Configurable<std::string> ConfWeightPathLAL{"ConfWeightPathLAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  Configurable<std::string> ConfWeightPathALL{"ConfWeightPathALL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  Configurable<std::string> ConfWeightPathLL2{"ConfWeightPathLL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
-  Configurable<std::string> ConfWeightPathALAL2{"ConfWeightPathALAL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
-  Configurable<std::string> ConfWeightPathLAL2{"ConfWeightPathLAL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
-  Configurable<std::string> ConfWeightPathALL2{"ConfWeightPathALL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
   Configurable<bool> useNUA{"useNUA", false, "Apply single-candidate NUA weight in (phi,eta)"};
   Configurable<std::string> ConfNUAPathLambda{"ConfNUAPathLambda", "", "CCDB path for Lambda NUA TH2D(phi,eta)"};
   Configurable<std::string> ConfNUAPathAntiLambda{"ConfNUAPathAntiLambda", "", "CCDB path for AntiLambda NUA TH2D(phi,eta)"};
@@ -238,7 +248,17 @@ struct lambdaspincorrderived {
   Configurable<unsigned> harmonicDphi{"harmonicDphi", 2, "Harmonic delta phi"};
   Configurable<bool> useweight{"useweight", 0, "Use weight"};
   Configurable<bool> usePDGM{"usePDGM", 1, "Use PDG mass"};
-  Configurable<bool> useAdditionalHisto{"useAdditionalHisto", 0, "Use additional histogram"};
+  Configurable<bool> useAdditionalHisto{"useAdditionalHisto", 0, "Backward-compatible switch for extra Rap/Phi/PairMass THnSparse"};
+
+  // Output-control switches.  Keep the final mass-mass-costheta sparse on by default,
+  // but allow heavy QA/additional sparses to be disabled in production.
+  Configurable<bool> fillBasicQAHistos{"fillBasicQAHistos", true, "Fill light QA histograms: pT-y, phi-eta, centrality, dphi, pt/eta vs cent"};
+  Configurable<bool> fillReplacementQAHistos{"fillReplacementQAHistos", true, "Fill raw TGT/REP single-candidate replacement QA maps"};
+  Configurable<bool> fillFixedLegQAHistos{"fillFixedLegQAHistos", false, "Fill fixed-leg TGT/SUC QA maps"};
+  Configurable<bool> fillWeightQAHistos{"fillWeightQAHistos", false, "Fill weighted/final-weighted REP/FIX QA maps"};
+  Configurable<bool> fillAnalysisSparses{"fillAnalysisSparses", false, "Fill extra deltaR/deltaRap/deltaPhi Analysis THnSparse objects"};
+  Configurable<bool> fillAdditionalSparses{"fillAdditionalSparses", false, "Fill extra rapidity/dphi/pair-mass THnSparse objects"};
+
   Configurable<bool> checkDoubleStatus{"checkDoubleStatus", 0, "Check Double status"};
   Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
   Configurable<float> radiusMin{"radiusMin", 3, "Minimum V0 radius"};
@@ -264,6 +284,8 @@ struct lambdaspincorrderived {
   // THnsparse bining
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {50, 1.09, 1.14}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisR{"configThnAxisR", {VARIABLE_WIDTH, 0.0, 8.0}, "#it{R}"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {40, 0.5, 4.5}, "#it{R}"};
+  ConfigurableAxis configThnAxisRap{"configThnAxisRap", {16, -0.8, 0.8}, "#it{R}"};
   ConfigurableAxis configThnAxisPol{"configThnAxisPol", {VARIABLE_WIDTH, 0.0, 8.0}, "cos#it{#theta *}"};
   ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {VARIABLE_WIDTH, 0.0, 80.0}, "Centrality"};
   ConfigurableAxis configThnAxisRapidity{"configThnAxisRapidity", {VARIABLE_WIDTH, 0.0, 1.0}, "Rapidity"};
@@ -278,16 +300,80 @@ struct lambdaspincorrderived {
 
   void init(o2::framework::InitContext&)
   {
-    histos.add("hPtRadiusV0", "V0 QA;#it{p}_{T}^{V0} (GeV/#it{c});V0 decay radius (cm)", kTH2F, {{100, 0.0, 10.0}, {120, 0.0, 45.0}});
-    histos.add("hPtYSame", "hPtYSame", kTH2F, {{100, 0.0, 10.0}, {200, -1.0, 1.0}});
-    histos.add("hPtYMix", "hPtYMix", kTH2F, {{100, 0.0, 10.0}, {200, -1.0, 1.0}});
-    histos.add("hPhiEtaSame", "hPhiEtaSame", kTH2F, {{720, 0.0, 2.0 * TMath::Pi()}, {200, -1.0, 1.0}});
-    histos.add("hPhiEtaMix", "hPhiEtaMix", kTH2F, {{720, 0.0, 2.0 * TMath::Pi()}, {200, -1.0, 1.0}});
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {{configThnAxisCentrality}});
-    histos.add("deltaPhiSame", "deltaPhiSame", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
-    histos.add("deltaPhiMix", "deltaPhiMix", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
-    histos.add("ptCent", "ptCent", HistType::kTH2D, {{100, 0.0, 10.0}, {8, 0.0, 80.0}}, true);
-    histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
+    if (fillBasicQAHistos) {
+      histos.add("hPtRadiusV0", "V0 QA;#it{p}_{T}^{V0} (GeV/#it{c});V0 decay radius (cm)", kTH2F, {{100, 0.0, 10.0}, {120, 0.0, 45.0}});
+      histos.add("hPtYSame", "hPtYSame", kTH2F, {{100, 0.0, 10.0}, {200, -1.0, 1.0}});
+      histos.add("hPtYMix", "hPtYMix", kTH2F, {{100, 0.0, 10.0}, {200, -1.0, 1.0}});
+      histos.add("hPhiEtaSame", "hPhiEtaSame", kTH2F, {{720, 0.0, 2.0 * TMath::Pi()}, {200, -1.0, 1.0}});
+      histos.add("hPhiEtaMix", "hPhiEtaMix", kTH2F, {{720, 0.0, 2.0 * TMath::Pi()}, {200, -1.0, 1.0}});
+      histos.add("hCentrality", "Centrality distribution", kTH1F, {{configThnAxisCentrality}});
+      histos.add("deltaPhiSame", "deltaPhiSame", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
+      histos.add("deltaPhiMix", "deltaPhiMix", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
+      histos.add("ptCent", "ptCent", HistType::kTH2D, {{100, 0.0, 10.0}, {8, 0.0, 80.0}}, true);
+      histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
+    }
+
+    if (fillWeightQAHistos) {
+      // QA for weighting
+      histos.add("REP_LL_leg1_weighted",
+                 "Weighted repl LL leg1;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_LAL_leg1_weighted",
+                 "Weighted repl LAL leg1;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_ALL_leg1_weighted",
+                 "Weighted repl ALL leg1;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_ALAL_leg1_weighted",
+                 "Weighted repl ALAL leg1;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_LL_leg2_weighted",
+                 "Weighted repl LL leg2;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_LAL_leg2_weighted",
+                 "Weighted repl LAL leg2;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_ALL_leg2_weighted",
+                 "Weighted repl ALL leg2;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("REP_ALAL_leg2_weighted",
+                 "Weighted repl ALAL leg2;#phi;y/#eta;p_{T}",
+                 HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    }
+    if (fillFixedLegQAHistos) {
+      // Fixed-leg QA for replacement-leg bias check.
+      // For repLeg1: leg1 is replaced, fixed leg is original leg2.
+      // For repLeg2: leg2 is replaced, fixed leg is original leg1.
+
+      // Target fixed-leg maps: all requested SE pairs
+      histos.add("TGT_FIX_LL_forRepLeg1", "Target fixed LL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_FIX_LAL_forRepLeg1", "Target fixed LAL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_FIX_ALL_forRepLeg1", "Target fixed ALL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_FIX_ALAL_forRepLeg1", "Target fixed ALAL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("TGT_FIX_LL_forRepLeg2", "Target fixed LL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_FIX_LAL_forRepLeg2", "Target fixed LAL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_FIX_ALL_forRepLeg2", "Target fixed ALL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_FIX_ALAL_forRepLeg2", "Target fixed ALAL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      // Successful fixed-leg maps: only pairs where replacement was found
+      histos.add("SUC_FIX_LL_forRepLeg1", "Successful fixed LL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_LAL_forRepLeg1", "Successful fixed LAL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_ALL_forRepLeg1", "Successful fixed ALL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_ALAL_forRepLeg1", "Successful fixed ALAL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("SUC_FIX_LL_forRepLeg2", "Successful fixed LL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_LAL_forRepLeg2", "Successful fixed LAL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_ALL_forRepLeg2", "Successful fixed ALL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_ALAL_forRepLeg2", "Successful fixed ALAL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    }
 
     histos.add("hEtaPhiLambdaRaw", "Lambda raw;#phi;#eta", kTH2D,
                {{360, 0.0, 2.0 * TMath::Pi()}, {32, -0.8, 0.8}});
@@ -297,27 +383,48 @@ struct lambdaspincorrderived {
     histos.add("hNUAWeightLambda", "Lambda NUA weight", kTH1D, {{200, 0.0, 5.0}});
     histos.add("hNUAWeightAntiLambda", "AntiLambda NUA weight", kTH1D, {{200, 0.0, 5.0}});
 
-    // --- target/replacement single-leg occupancy maps for replacement correction
-    histos.add("TGT_LL_leg1", "Target LL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("TGT_LAL_leg1", "Target LAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("TGT_ALL_leg1", "Target ALL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("TGT_ALAL_leg1", "Target ALAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    if (fillReplacementQAHistos) {
+      // --- target/replacement single-leg occupancy maps for replacement correction
+      histos.add("TGT_LL_leg1", "Target LL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_LAL_leg1", "Target LAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_ALL_leg1", "Target ALL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_ALAL_leg1", "Target ALAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
-    histos.add("REP_LL_leg1", "Repl LL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("REP_LAL_leg1", "Repl LAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("REP_ALL_leg1", "Repl ALL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("REP_ALAL_leg1", "Repl ALAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_LL_leg1", "Repl LL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_LAL_leg1", "Repl LAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_ALL_leg1", "Repl ALL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_ALAL_leg1", "Repl ALAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
-    histos.add("TGT_LL_leg2", "Target LL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("TGT_LAL_leg2", "Target LAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("TGT_ALL_leg2", "Target ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("TGT_ALAL_leg2", "Target ALAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_LL_leg2", "Target LL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_LAL_leg2", "Target LAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_ALL_leg2", "Target ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("TGT_ALAL_leg2", "Target ALAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
-    histos.add("REP_LL_leg2", "Repl LL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("REP_LAL_leg2", "Repl LAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("REP_ALL_leg2", "Repl ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
-    histos.add("REP_ALAL_leg2", "Repl ALAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_LL_leg2", "Repl LL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_LAL_leg2", "Repl LAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_ALL_leg2", "Repl ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_ALAL_leg2", "Repl ALAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    }
+    if (fillWeightQAHistos) {
+      // Final-weighted QA: filled with the exact same mixing correction weight
+      // used for the mixed-event sparse, excluding NUA.
+      // Correction categories are LL, UL=(LAL+ALL), ALAL.
+      histos.add("REP_LL_leg1_finalWeighted", "Final weighted REP LL leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_UL_leg1_finalWeighted", "Final weighted REP UL leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_ALAL_leg1_finalWeighted", "Final weighted REP ALAL leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
+      histos.add("REP_LL_leg2_finalWeighted", "Final weighted REP LL leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_UL_leg2_finalWeighted", "Final weighted REP UL leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("REP_ALAL_leg2_finalWeighted", "Final weighted REP ALAL leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("SUC_FIX_LL_forRepLeg1_finalWeighted", "Final weighted fixed LL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_UL_forRepLeg1_finalWeighted", "Final weighted fixed UL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_ALAL_forRepLeg1_finalWeighted", "Final weighted fixed ALAL for rep leg1;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("SUC_FIX_LL_forRepLeg2_finalWeighted", "Final weighted fixed LL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_UL_forRepLeg2_finalWeighted", "Final weighted fixed UL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_FIX_ALAL_forRepLeg2_finalWeighted", "Final weighted fixed ALAL for rep leg2;#phi;y/#eta;p_{T}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    }
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaLambda", "hSparseAntiLambdLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
@@ -328,17 +435,19 @@ struct lambdaspincorrderived {
     histos.add("hSparseAntiLambdaLambdaMixed", "hSparseAntiLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaAntiLambdaMixed", "hSparseAntiLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
 
-    histos.add("hSparseLambdaLambdaAnalysis", "hSparseLambdaLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-    histos.add("hSparseLambdaAntiLambdaAnalysis", "hSparseLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-    histos.add("hSparseAntiLambdaLambdaAnalysis", "hSparseAntiLambdLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-    histos.add("hSparseAntiLambdaAntiLambdaAnalysis", "hSparseAntiLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+    if (fillAnalysisSparses) {
+      histos.add("hSparseLambdaLambdaAnalysis", "hSparseLambdaLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseLambdaAntiLambdaAnalysis", "hSparseLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseAntiLambdaLambdaAnalysis", "hSparseAntiLambdLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseAntiLambdaAntiLambdaAnalysis", "hSparseAntiLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
 
-    histos.add("hSparseLambdaLambdaMixedAnalysis", "hSparseLambdaLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-    histos.add("hSparseLambdaAntiLambdaMixedAnalysis", "hSparseLambdaAntiLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-    histos.add("hSparseAntiLambdaLambdaMixedAnalysis", "hSparseAntiLambdaLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-    histos.add("hSparseAntiLambdaAntiLambdaMixedAnalysis", "hSparseAntiLambdaAntiLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseLambdaLambdaMixedAnalysis", "hSparseLambdaLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseLambdaAntiLambdaMixedAnalysis", "hSparseLambdaAntiLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseAntiLambdaLambdaMixedAnalysis", "hSparseAntiLambdaLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseAntiLambdaAntiLambdaMixedAnalysis", "hSparseAntiLambdaAntiLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+    }
 
-    if (useAdditionalHisto) {
+    if (useAdditionalHisto || fillAdditionalSparses) {
       histos.add("hSparseRapLambdaLambda", "hSparseRapLambdaLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity}, true);
       histos.add("hSparseRapLambdaAntiLambda", "hSparseRapLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity}, true);
       histos.add("hSparseRapAntiLambdaLambda", "hSparseRapAntiLambdLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity}, true);
@@ -374,18 +483,70 @@ struct lambdaspincorrderived {
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    LOGF(info, "Getting alignment offsets from the CCDB...");
+    ccdb->setCreatedNotAfter(cfgCcdbParam.nolaterthan.value);
+    LOGF(info, "Getting alignment offsets from the CCDB (check carefully)...");
     if (useweight) {
-      hweight1 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLL.value, cfgCcdbParam.nolaterthan.value);
-      hweight2 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLAL.value, cfgCcdbParam.nolaterthan.value);
-      hweight3 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALL.value, cfgCcdbParam.nolaterthan.value);
-      hweight4 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALAL.value, cfgCcdbParam.nolaterthan.value);
+      const auto& repPaths = cfgCcdbParam.ConfWeightPaths.value;
+      if (repPaths.size() < 6) {
+        LOGF(fatal, "ConfWeightPaths must contain 6 paths: REP_LL_leg1, REP_UL_leg1, REP_ALAL_leg1, REP_LL_leg2, REP_UL_leg2, REP_ALAL_leg2. Found %zu", repPaths.size());
+      }
+      for (size_t i = 0; i < repPaths.size(); ++i) {
+        LOGF(info, "ConfWeightPaths[%zu] = '%s'", i, repPaths[i].c_str());
+      }
 
-      hweight12 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLL2.value, cfgCcdbParam.nolaterthan.value);
-      hweight22 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLAL2.value, cfgCcdbParam.nolaterthan.value);
-      hweight32 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALL2.value, cfgCcdbParam.nolaterthan.value);
-      hweight42 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALAL2.value, cfgCcdbParam.nolaterthan.value);
+      auto loadRep = [&](int idx, const char* name) -> TH3D* {
+        if (idx < 0 || idx >= static_cast<int>(repPaths.size()) || repPaths[idx].empty()) {
+          LOGF(fatal, "Missing replaced-leg path index %d for %s", idx, name);
+          return nullptr;
+        }
+        auto* h = ccdb->getForTimeStamp<TH3D>(repPaths[idx], cfgCcdbParam.nolaterthan.value);
+        if (!h) {
+          LOGF(fatal, "Could not load replaced-leg weight %s from path %s", name, repPaths[idx].c_str());
+        }
+        return h;
+      };
+
+      hweight1 = loadRep(0, "REP_LL_leg1");
+      hweight2 = loadRep(1, "REP_UL_leg1");
+      hweight4 = loadRep(2, "REP_ALAL_leg1");
+      hweight12 = loadRep(3, "REP_LL_leg2");
+      hweight22 = loadRep(4, "REP_UL_leg2");
+      hweight42 = loadRep(5, "REP_ALAL_leg2");
+
+      // Keep the old ALL pointers as aliases to the UL maps to avoid accidental null access.
+      hweight3 = hweight2;
+      hweight32 = hweight22;
+
+      if (cfgCcdbParam.useFixedWeight) {
+        const auto& fixPaths = cfgCcdbParam.ConfFixedWeightPaths.value;
+        if (fixPaths.size() < 6) {
+          LOGF(fatal, "ConfFixedWeightPaths must contain 6 paths: FIX_LL_forRepLeg1, FIX_UL_forRepLeg1, FIX_ALAL_forRepLeg1, FIX_LL_forRepLeg2, FIX_UL_forRepLeg2, FIX_ALAL_forRepLeg2. Found %zu", fixPaths.size());
+        }
+        for (size_t i = 0; i < fixPaths.size(); ++i) {
+          LOGF(info, "ConfFixedWeightPaths[%zu] = '%s'", i, fixPaths[i].c_str());
+        }
+
+        auto loadFixed = [&](int idx, const char* name) -> TH3D* {
+          if (idx < 0 || idx >= static_cast<int>(fixPaths.size()) || fixPaths[idx].empty()) {
+            LOGF(fatal, "Missing fixed-leg path index %d for %s", idx, name);
+            return nullptr;
+          }
+          auto* h = ccdb->getForTimeStamp<TH3D>(fixPaths[idx], cfgCcdbParam.nolaterthan.value);
+          if (!h) {
+            LOGF(fatal, "Could not load fixed-leg weight %s from path %s", name, fixPaths[idx].c_str());
+          }
+          return h;
+        };
+
+        gFixedLLRep1 = loadFixed(0, "FIX_LL_forRepLeg1");
+        gFixedULRep1 = loadFixed(1, "FIX_UL_forRepLeg1");
+        gFixedALALRep1 = loadFixed(2, "FIX_ALAL_forRepLeg1");
+        gFixedLLRep2 = loadFixed(3, "FIX_LL_forRepLeg2");
+        gFixedULRep2 = loadFixed(4, "FIX_UL_forRepLeg2");
+        gFixedALALRep2 = loadFixed(5, "FIX_ALAL_forRepLeg2");
+
+        LOGF(info, "Fixed-leg weights enabled. Loaded paths: %zu", fixPaths.size());
+      }
     }
     if (useNUA) {
       hNUALambda = ccdb->getForTimeStamp<TH2D>(ConfNUAPathLambda.value, cfgCcdbParam.nolaterthan.value);
@@ -495,10 +656,112 @@ struct lambdaspincorrderived {
     return w;
   }
 
+  int getWeightCategory(int tag1, int tag2) const
+  {
+    // Correction categories:
+    // 0 = LL, 1 = UL = LAL + ALL, 2 = ALAL
+    if (tag1 == 0 && tag2 == 0) {
+      return 0;
+    }
+    if (tag1 == 1 && tag2 == 1) {
+      return 2;
+    }
+    return 1;
+  }
+
+  template <typename LV>
+  void fillFinalWeightedMixingQA(int tag1, int tag2,
+                                 int mapLeg,
+                                 int replacedPos,
+                                 LV const& particle1,
+                                 LV const& particle2,
+                                 double weight)
+  {
+    // This QA is filled with the exact same mixing-correction weight used
+    // for the mixed-event sparse, before the NUA factor is applied.
+    // mapLeg      = physical replacement branch used for the CCDB map (1 or 2)
+    // replacedPos = position of the replaced candidate after possible L#bar{L} reordering (1 or 2)
+    if (!fillWeightQAHistos) {
+      return;
+    }
+    if (!std::isfinite(weight) || weight <= 0.0) {
+      return;
+    }
+    if (mapLeg != 1 && mapLeg != 2) {
+      return;
+    }
+
+    auto getEtaOrY = [&](LV const& p) {
+      return userapidity ? p.Rapidity() : p.Eta();
+    };
+
+    const LV& rep = (replacedPos == 2) ? particle2 : particle1;
+    const LV& fix = (replacedPos == 2) ? particle1 : particle2;
+
+    const double ptRep = rep.Pt();
+    const double phiRep = RecoDecay::constrainAngle(rep.Phi(), 0.0F, harmonic);
+    const double etaRep = getEtaOrY(rep);
+
+    const double ptFix = fix.Pt();
+    const double phiFix = RecoDecay::constrainAngle(fix.Phi(), 0.0F, harmonic);
+    const double etaFix = getEtaOrY(fix);
+
+    // Exact four pair tags are filled for the legacy REP_*_weighted maps.
+    // These are useful because UL can be formed later as LAL+ALL.
+    if (mapLeg == 1) {
+      if (tag1 == 0 && tag2 == 0) {
+        histos.fill(HIST("REP_LL_leg1_weighted"), phiRep, etaRep, ptRep, weight);
+      } else if (tag1 == 0 && tag2 == 1) {
+        histos.fill(HIST("REP_LAL_leg1_weighted"), phiRep, etaRep, ptRep, weight);
+      } else if (tag1 == 1 && tag2 == 0) {
+        histos.fill(HIST("REP_ALL_leg1_weighted"), phiRep, etaRep, ptRep, weight);
+      } else if (tag1 == 1 && tag2 == 1) {
+        histos.fill(HIST("REP_ALAL_leg1_weighted"), phiRep, etaRep, ptRep, weight);
+      }
+    } else { // mapLeg == 2
+      if (tag1 == 0 && tag2 == 0) {
+        histos.fill(HIST("REP_LL_leg2_weighted"), phiRep, etaRep, ptRep, weight);
+      } else if (tag1 == 0 && tag2 == 1) {
+        histos.fill(HIST("REP_LAL_leg2_weighted"), phiRep, etaRep, ptRep, weight);
+      } else if (tag1 == 1 && tag2 == 0) {
+        histos.fill(HIST("REP_ALL_leg2_weighted"), phiRep, etaRep, ptRep, weight);
+      } else if (tag1 == 1 && tag2 == 1) {
+        histos.fill(HIST("REP_ALAL_leg2_weighted"), phiRep, etaRep, ptRep, weight);
+      }
+    }
+
+    // Combined categories are filled for the final-weighted QA maps.
+    const int wcat = getWeightCategory(tag1, tag2); // 0=LL, 1=UL, 2=ALAL
+
+    if (mapLeg == 1) {
+      if (wcat == 0) {
+        histos.fill(HIST("REP_LL_leg1_finalWeighted"), phiRep, etaRep, ptRep, weight);
+        histos.fill(HIST("SUC_FIX_LL_forRepLeg1_finalWeighted"), phiFix, etaFix, ptFix, weight);
+      } else if (wcat == 1) {
+        histos.fill(HIST("REP_UL_leg1_finalWeighted"), phiRep, etaRep, ptRep, weight);
+        histos.fill(HIST("SUC_FIX_UL_forRepLeg1_finalWeighted"), phiFix, etaFix, ptFix, weight);
+      } else if (wcat == 2) {
+        histos.fill(HIST("REP_ALAL_leg1_finalWeighted"), phiRep, etaRep, ptRep, weight);
+        histos.fill(HIST("SUC_FIX_ALAL_forRepLeg1_finalWeighted"), phiFix, etaFix, ptFix, weight);
+      }
+    } else { // mapLeg == 2
+      if (wcat == 0) {
+        histos.fill(HIST("REP_LL_leg2_finalWeighted"), phiRep, etaRep, ptRep, weight);
+        histos.fill(HIST("SUC_FIX_LL_forRepLeg2_finalWeighted"), phiFix, etaFix, ptFix, weight);
+      } else if (wcat == 1) {
+        histos.fill(HIST("REP_UL_leg2_finalWeighted"), phiRep, etaRep, ptRep, weight);
+        histos.fill(HIST("SUC_FIX_UL_forRepLeg2_finalWeighted"), phiFix, etaFix, ptFix, weight);
+      } else if (wcat == 2) {
+        histos.fill(HIST("REP_ALAL_leg2_finalWeighted"), phiRep, etaRep, ptRep, weight);
+        histos.fill(HIST("SUC_FIX_ALAL_forRepLeg2_finalWeighted"), phiFix, etaFix, ptFix, weight);
+      }
+    }
+  }
+
   void fillHistograms(int tag1, int tag2,
                       const ROOT::Math::PtEtaPhiMVector& particle1, const ROOT::Math::PtEtaPhiMVector& particle2,
                       const ROOT::Math::PtEtaPhiMVector& daughpart1, const ROOT::Math::PtEtaPhiMVector& daughpart2,
-                      int datatype, float mixpairweight, int replacedLeg = 1)
+                      int datatype, float mixpairweight, int replacedLeg = 1, int weightMapLeg = -1)
   {
     auto lambda1Mass = 0.0;
     auto lambda2Mass = 0.0;
@@ -576,57 +839,131 @@ struct lambdaspincorrderived {
     double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
     double deltaR = TMath::Sqrt(deltaRap * deltaRap + dphi_pair * dphi_pair);
 
-    double epsWeight1 = 1.0;
-    double epsWeight2 = 1.0;
+    // only for weight lookup; must match fillReplacementControlMap()
+    double yOrEta1_forWeight = deta1;
+    double yOrEta2_forWeight = deta2;
+
+    if (userapidity) {
+      yOrEta1_forWeight = particle1.Rapidity();
+      yOrEta2_forWeight = particle2.Rapidity();
+    }
+
+    // `replacedLeg` is the position of the replaced candidate in the ordered pair
+    // passed to fillHistograms: 1 -> particle1, 2 -> particle2.
+    // `weightMapLeg` is the physical replacement branch used to select the CCDB map:
+    // 1 -> REP_*_leg1, 2 -> REP_*_leg2.  This distinction is needed for unlike-sign
+    // pairs where the pair is reordered to Lambda-AntiLambda before filling.
+    const int replacedPos = replacedLeg;
+    const int ccdbMapLeg = (weightMapLeg > 0) ? weightMapLeg : replacedLeg;
+
+    double epsWeightReplaced = 1.0;
+    double epsWeightFixed = 1.0;
 
     if (useweight && datatype == 1) {
-      if (tag1 == 0 && tag2 == 0) {
-        epsWeight1 = hweight1->GetBinContent(hweight1->FindBin(dphi1, deta1, pt1));
-        epsWeight2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
-      } else if (tag1 == 0 && tag2 == 1) {
-        epsWeight1 = hweight2->GetBinContent(hweight2->FindBin(dphi1, deta1, pt1));
-        epsWeight2 = hweight22->GetBinContent(hweight22->FindBin(dphi2, deta2, pt2));
-      } else if (tag1 == 1 && tag2 == 0) {
-        epsWeight1 = hweight3->GetBinContent(hweight3->FindBin(dphi1, deta1, pt1));
-        epsWeight2 = hweight32->GetBinContent(hweight32->FindBin(dphi2, deta2, pt2));
-      } else if (tag1 == 1 && tag2 == 1) {
-        epsWeight1 = hweight4->GetBinContent(hweight4->FindBin(dphi1, deta1, pt1));
-        epsWeight2 = hweight42->GetBinContent(hweight42->FindBin(dphi2, deta2, pt2));
+      const int wcat = getWeightCategory(tag1, tag2);
+
+      auto getRepEps = [&](int mapLeg, double phi, double yOrEta, double pt) -> double {
+        TH3D* h = nullptr;
+        if (mapLeg == 1) {
+          if (wcat == 0)
+            h = hweight1;
+          else if (wcat == 1)
+            h = hweight2;
+          else if (wcat == 2)
+            h = hweight4;
+        } else if (mapLeg == 2) {
+          if (wcat == 0)
+            h = hweight12;
+          else if (wcat == 1)
+            h = hweight22;
+          else if (wcat == 2)
+            h = hweight42;
+        }
+        if (!h) {
+          return 1.0;
+        }
+        return h->GetBinContent(h->FindBin(phi, yOrEta, pt));
+      };
+
+      auto getFixedEps = [&](int mapLeg, double phi, double yOrEta, double pt) -> double {
+        TH3D* h = nullptr;
+        if (mapLeg == 1) {
+          if (wcat == 0)
+            h = gFixedLLRep1;
+          else if (wcat == 1)
+            h = gFixedULRep1;
+          else if (wcat == 2)
+            h = gFixedALALRep1;
+        } else if (mapLeg == 2) {
+          if (wcat == 0)
+            h = gFixedLLRep2;
+          else if (wcat == 1)
+            h = gFixedULRep2;
+          else if (wcat == 2)
+            h = gFixedALALRep2;
+        }
+        if (!h) {
+          return 1.0;
+        }
+        return h->GetBinContent(h->FindBin(phi, yOrEta, pt));
+      };
+
+      const double phiRep = (replacedPos == 2) ? dphi2 : dphi1;
+      const double yRep = (replacedPos == 2) ? yOrEta2_forWeight : yOrEta1_forWeight;
+      const double ptRep = (replacedPos == 2) ? pt2 : pt1;
+      epsWeightReplaced = getRepEps(ccdbMapLeg, phiRep, yRep, ptRep);
+
+      if (cfgCcdbParam.useFixedWeight) {
+        const int fixedPos = (replacedPos == 2) ? 1 : 2;
+        const double phiFix = (fixedPos == 2) ? dphi2 : dphi1;
+        const double yFix = (fixedPos == 2) ? yOrEta2_forWeight : yOrEta1_forWeight;
+        const double ptFix = (fixedPos == 2) ? pt2 : pt1;
+        epsWeightFixed = getFixedEps(ccdbMapLeg, phiFix, yFix, ptFix);
       }
     }
 
     if (datatype == 0) {
       const double weight = pairNUAWeight;
       if (tag1 == 0 && tag2 == 0) {
-        histos.fill(HIST("hPtYSame"), particle1.Pt(), particle1.Rapidity(), nuaWeight1);
-        histos.fill(HIST("hPhiEtaSame"), dphi1, particle1.Eta(), nuaWeight1);
+        if (fillBasicQAHistos)
+          histos.fill(HIST("hPtYSame"), particle1.Pt(), particle1.Rapidity(), nuaWeight1);
+        if (fillBasicQAHistos)
+          histos.fill(HIST("hPhiEtaSame"), dphi1, particle1.Eta(), nuaWeight1);
         histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseLambdaLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseLambdaLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
         }
       } else if (tag1 == 0 && tag2 == 1) {
         histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseLambdaAntiLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseLambdaAntiLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
         }
       } else if (tag1 == 1 && tag2 == 0) {
         histos.fill(HIST("hSparseAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseAntiLambdaLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseAntiLambdaLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
         }
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseAntiLambdaAntiLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseAntiLambdaAntiLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
@@ -637,25 +974,39 @@ struct lambdaspincorrderived {
       double weight = mixpairweight;
 
       if (useweight) {
-        const double epsWeightReplaced = (replacedLeg == 2) ? epsWeight2 : epsWeight1;
-        if (!std::isfinite(epsWeightReplaced) || epsWeightReplaced <= 0.0) {
+        const double epsWeightTotal = epsWeightReplaced * epsWeightFixed;
+
+        if (!std::isfinite(epsWeightTotal) || epsWeightTotal <= 0.0) {
           return;
         }
-        weight = mixpairweight / epsWeightReplaced;
+        weight = mixpairweight / epsWeightTotal;
       }
+
+      // This is the pure mixing-correction weight.
+      // Do not include NUA here, because TGT/REP/FIX QA maps were filled without NUA.
+      const double weightMixingQA = weight;
+
+      if (useweight) {
+        fillFinalWeightedMixingQA(tag1, tag2, ccdbMapLeg, replacedPos, particle1, particle2, weightMixingQA);
+      }
+
       weight *= pairNUAWeight;
       if (!std::isfinite(weight) || weight <= 0.0) {
         return;
       }
 
       if (tag1 == 0 && tag2 == 0) {
-        if (replacedLeg == 1) {
-          histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), nuaWeight1 * mixpairweight);
-          histos.fill(HIST("hPhiEtaMix"), dphi1, particle1.Eta(), nuaWeight1 * mixpairweight);
+        if (replacedLeg == 1 || replacedLeg == 2) {
+          if (fillBasicQAHistos)
+            histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), nuaWeight1 * mixpairweight);
+          if (fillBasicQAHistos)
+            histos.fill(HIST("hPhiEtaMix"), dphi1, particle1.Eta(), nuaWeight1 * mixpairweight);
         }
         histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseLambdaLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseLambdaLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
@@ -663,24 +1014,30 @@ struct lambdaspincorrderived {
 
       } else if (tag1 == 0 && tag2 == 1) {
         histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseLambdaAntiLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseLambdaAntiLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
         }
       } else if (tag1 == 1 && tag2 == 0) {
         histos.fill(HIST("hSparseAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseAntiLambdaLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseAntiLambdaLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
         }
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
-        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
-        if (useAdditionalHisto) {
+        if (fillAnalysisSparses) {
+          histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
+        }
+        if (useAdditionalHisto || fillAdditionalSparses) {
           histos.fill(HIST("hSparseRapAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
           histos.fill(HIST("hSparsePhiAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, dphi_pair, weight);
           histos.fill(HIST("hSparsePairMassAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
@@ -735,9 +1092,15 @@ struct lambdaspincorrderived {
       if (!selectionV0(v0)) {
         continue;
       }
-      histos.fill(HIST("hPtRadiusV0"), v0.lambdaPt(), v0.v0Radius());
-      histos.fill(HIST("ptCent"), v0.lambdaPt(), centrality);
-      histos.fill(HIST("etaCent"), v0.lambdaEta(), centrality);
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("hPtRadiusV0"), v0.lambdaPt(), v0.v0Radius());
+      }
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("ptCent"), v0.lambdaPt(), centrality);
+      }
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("etaCent"), v0.lambdaEta(), centrality);
+      }
       proton = ROOT::Math::PtEtaPhiMVector(v0.protonPt(), v0.protonEta(), v0.protonPhi(), o2::constants::physics::MassProton);
       lambda = ROOT::Math::PtEtaPhiMVector(v0.lambdaPt(), v0.lambdaEta(), v0.lambdaPhi(), v0.lambdaMass());
       const double phi = RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F, harmonic);
@@ -760,7 +1123,8 @@ struct lambdaspincorrderived {
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
         if ((v0.v0Status() == 0 && v02.v0Status() == 1) || (v0.v0Status() == 1 && v02.v0Status() == 0))
-          histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
+          if (fillBasicQAHistos)
+            histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
         // const int ptype = pairTypeCode(v0.v0Status(), v02.v0Status());
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
@@ -782,6 +1146,9 @@ struct lambdaspincorrderived {
   template <typename LV>
   void fillReplacementControlMap(int tag1, int tag2, int leg, bool isTarget, LV const& particle, float weight)
   {
+    if (!fillReplacementQAHistos) {
+      return;
+    }
     const double pt = particle.Pt();
     const double phi = RecoDecay::constrainAngle(particle.Phi(), 0.0F, harmonic);
 
@@ -803,6 +1170,8 @@ struct lambdaspincorrderived {
     }
 
     if (leg == 1 && !isTarget) {
+
+      // Raw REP map: used to produce CCDB weight.
       if (tag1 == 0 && tag2 == 0)
         histos.fill(HIST("REP_LL_leg1"), phi, etaOrY, pt, weight);
       else if (tag1 == 0 && tag2 == 1)
@@ -811,6 +1180,7 @@ struct lambdaspincorrderived {
         histos.fill(HIST("REP_ALL_leg1"), phi, etaOrY, pt, weight);
       else if (tag1 == 1 && tag2 == 1)
         histos.fill(HIST("REP_ALAL_leg1"), phi, etaOrY, pt, weight);
+      // Correct weighted REP QA is filled in fillHistograms(), after the exact final weight is computed.
       return;
     }
 
@@ -827,6 +1197,8 @@ struct lambdaspincorrderived {
     }
 
     if (leg == 2 && !isTarget) {
+
+      // Raw REP map: used to produce CCDB weight.
       if (tag1 == 0 && tag2 == 0)
         histos.fill(HIST("REP_LL_leg2"), phi, etaOrY, pt, weight);
       else if (tag1 == 0 && tag2 == 1)
@@ -835,10 +1207,76 @@ struct lambdaspincorrderived {
         histos.fill(HIST("REP_ALL_leg2"), phi, etaOrY, pt, weight);
       else if (tag1 == 1 && tag2 == 1)
         histos.fill(HIST("REP_ALAL_leg2"), phi, etaOrY, pt, weight);
+      // Correct weighted REP QA is filled in fillHistograms(), after the exact final weight is computed.
       return;
     }
   }
+  template <typename LV>
+  void fillFixedLegControlMap(int tag1, int tag2,
+                              int repLeg,
+                              bool isTarget,
+                              LV const& fixedParticle,
+                              float weight)
+  {
+    if (!fillFixedLegQAHistos) {
+      return;
+    }
+    const double pt = fixedParticle.Pt();
+    const double phi = RecoDecay::constrainAngle(fixedParticle.Phi(), 0.0F, harmonic);
 
+    double etaOrY = fixedParticle.Eta();
+    if (userapidity) {
+      etaOrY = fixedParticle.Rapidity();
+    }
+
+    if (repLeg == 1) {
+      // leg1 is replaced, fixed leg is original leg2
+      if (isTarget) {
+        if (tag1 == 0 && tag2 == 0)
+          histos.fill(HIST("TGT_FIX_LL_forRepLeg1"), phi, etaOrY, pt, weight);
+        else if (tag1 == 0 && tag2 == 1)
+          histos.fill(HIST("TGT_FIX_LAL_forRepLeg1"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 0)
+          histos.fill(HIST("TGT_FIX_ALL_forRepLeg1"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 1)
+          histos.fill(HIST("TGT_FIX_ALAL_forRepLeg1"), phi, etaOrY, pt, weight);
+      } else {
+        if (tag1 == 0 && tag2 == 0)
+          histos.fill(HIST("SUC_FIX_LL_forRepLeg1"), phi, etaOrY, pt, weight);
+        else if (tag1 == 0 && tag2 == 1)
+          histos.fill(HIST("SUC_FIX_LAL_forRepLeg1"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 0)
+          histos.fill(HIST("SUC_FIX_ALL_forRepLeg1"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 1)
+          histos.fill(HIST("SUC_FIX_ALAL_forRepLeg1"), phi, etaOrY, pt, weight);
+      }
+      return;
+    }
+
+    if (repLeg == 2) {
+      // leg2 is replaced, fixed leg is original leg1
+      if (isTarget) {
+        if (tag1 == 0 && tag2 == 0)
+          histos.fill(HIST("TGT_FIX_LL_forRepLeg2"), phi, etaOrY, pt, weight);
+        else if (tag1 == 0 && tag2 == 1)
+          histos.fill(HIST("TGT_FIX_LAL_forRepLeg2"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 0)
+          histos.fill(HIST("TGT_FIX_ALL_forRepLeg2"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 1)
+          histos.fill(HIST("TGT_FIX_ALAL_forRepLeg2"), phi, etaOrY, pt, weight);
+      } else {
+        if (tag1 == 0 && tag2 == 0)
+          histos.fill(HIST("SUC_FIX_LL_forRepLeg2"), phi, etaOrY, pt, weight);
+        else if (tag1 == 0 && tag2 == 1)
+          histos.fill(HIST("SUC_FIX_LAL_forRepLeg2"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 0)
+          histos.fill(HIST("SUC_FIX_ALL_forRepLeg2"), phi, etaOrY, pt, weight);
+        else if (tag1 == 1 && tag2 == 1)
+          histos.fill(HIST("SUC_FIX_ALAL_forRepLeg2"), phi, etaOrY, pt, weight);
+      }
+      return;
+    }
+  }
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::lambdaevent::Posz, aod::lambdaevent::Cent>;
@@ -879,17 +1317,6 @@ struct lambdaspincorrderived {
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
-        if (doMixLeg1) {
-          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 1, true,
-                                    ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
-                                    1.0f);
-        }
-        if (doMixLeg2) {
-          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 2, true,
-                                    ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
-                                    1.0f);
-        }
-
         struct PV {
           AllTrackCandidates* pool;
           int nRepl1 = 0;
@@ -898,6 +1325,8 @@ struct lambdaspincorrderived {
 
         std::vector<PV> usable;
         int totalRepl = 0;
+        int totalRepl1 = 0;
+        int totalRepl2 = 0;
 
         int mixes = 0;
         for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && mixes < nEvtMixing; ++it, ++mixes) {
@@ -917,13 +1346,15 @@ struct lambdaspincorrderived {
             }
 
             if (doMixLeg1) {
-              if (checkKinematics(t1, tX)) {
+              // Single-track replacement: replace a candidate only by the same species.
+              if (tX.v0Status() == t1.v0Status() && checkKinematics(t1, tX)) {
                 ++nRepl1;
               }
             }
 
             if (doMixLeg2) {
-              if (checkKinematics(t2, tX)) {
+              // Single-track replacement: replace a candidate only by the same species.
+              if (tX.v0Status() == t2.v0Status() && checkKinematics(t2, tX)) {
                 ++nRepl2;
               }
             }
@@ -932,6 +1363,8 @@ struct lambdaspincorrderived {
           if (nRepl1 > 0 || nRepl2 > 0) {
             usable.push_back(PV{&poolB, nRepl1, nRepl2});
             totalRepl += nRepl1 + nRepl2;
+            totalRepl1 += nRepl1;
+            totalRepl2 += nRepl2;
           }
         }
 
@@ -940,6 +1373,28 @@ struct lambdaspincorrderived {
         }
 
         const float wBase = 1.0f / static_cast<float>(totalRepl);
+
+        // Single-track replacement target must use the same branch normalization
+        // as the actually used replacement candidates.  Per SE pair:
+        //   sum REP_leg1 weights = totalRepl1 / totalRepl
+        //   sum REP_leg2 weights = totalRepl2 / totalRepl
+        // Therefore TGT leg1/leg2 are filled with the same weights.
+        if (doMixLeg1 && totalRepl1 > 0) {
+          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 1, true,
+                                    ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                    static_cast<float>(totalRepl1) * wBase);
+          fillFixedLegControlMap(t1.v0Status(), t2.v0Status(), 1, true,
+                                 ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                 static_cast<float>(totalRepl1) * wBase);
+        }
+        if (doMixLeg2 && totalRepl2 > 0) {
+          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 2, true,
+                                    ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                    static_cast<float>(totalRepl2) * wBase);
+          fillFixedLegControlMap(t1.v0Status(), t2.v0Status(), 2, true,
+                                 ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                 static_cast<float>(totalRepl2) * wBase);
+        }
 
         for (auto& pv : usable) {
           auto& poolB = *pv.pool;
@@ -951,7 +1406,7 @@ struct lambdaspincorrderived {
 
             // -------- leg-1 replacement: (tX, t2)
             if (doMixLeg1) {
-              if (checkKinematics(t1, tX)) {
+              if (tX.v0Status() == t1.v0Status() && checkKinematics(t1, tX)) {
                 fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                           ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                           wBase);
@@ -969,7 +1424,8 @@ struct lambdaspincorrderived {
                     RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic),
                   -TMath::Pi(), harmonicDphi);
 
-                histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
+                if (fillBasicQAHistos)
+                  histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
                 fillHistograms(tX.v0Status(), t2.v0Status(),
                                lambda, lambda2, proton, proton2,
                                1, wBase, 1);
@@ -978,7 +1434,7 @@ struct lambdaspincorrderived {
 
             // -------- leg-2 replacement: (t1, tX)
             if (doMixLeg2) {
-              if (checkKinematics(t2, tX)) {
+              if (tX.v0Status() == t2.v0Status() && checkKinematics(t2, tX)) {
                 fillReplacementControlMap(t1.v0Status(), tX.v0Status(), 2, false,
                                           ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                           wBase);
@@ -996,7 +1452,8 @@ struct lambdaspincorrderived {
                     RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic),
                   -TMath::Pi(), harmonicDphi);
 
-                histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
+                if (fillBasicQAHistos)
+                  histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
                 fillHistograms(t1.v0Status(), tX.v0Status(),
                                lambda, lambda2, proton, proton2,
                                1, wBase, 2);
@@ -1270,9 +1727,15 @@ struct lambdaspincorrderived {
       if (!selectionV0MC(v0)) {
         continue;
       }
-      histos.fill(HIST("hPtRadiusV0"), mcacc::lamPt(v0), mcacc::v0Radius(v0));
-      histos.fill(HIST("ptCent"), mcacc::lamPt(v0), centrality);
-      histos.fill(HIST("etaCent"), mcacc::lamEta(v0), centrality);
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("hPtRadiusV0"), mcacc::lamPt(v0), mcacc::v0Radius(v0));
+      }
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("ptCent"), mcacc::lamPt(v0), centrality);
+      }
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("etaCent"), mcacc::lamEta(v0), centrality);
+      }
 
       proton = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(v0), mcacc::prEta(v0), mcacc::prPhi(v0),
                                            o2::constants::physics::MassProton);
@@ -1337,17 +1800,31 @@ struct lambdaspincorrderived {
     return std::abs(deltaPhiMinusPiToPi(phiA, phiB));
   }
 
-  // symmetric neighbors for phi: no wrap at edge
+  // symmetric neighbors for phi with periodic wrap at 0/2pi
   static inline void collectNeighborBinsPhi(int b, int nPhi, int nNeighbor, std::vector<int>& out)
   {
     out.clear();
-    out.reserve(2 * nNeighbor + 1);
-    for (int d = -nNeighbor; d <= nNeighbor; ++d) {
-      const int bb = b + d;
-      if (bb >= 0 && bb < nPhi) {
+    if (nPhi <= 0 || b < 0 || b >= nPhi) {
+      return;
+    }
+
+    if (2 * nNeighbor + 1 >= nPhi) {
+      out.reserve(nPhi);
+      for (int bb = 0; bb < nPhi; ++bb) {
         out.push_back(bb);
       }
+      return;
     }
+
+    out.reserve(2 * nNeighbor + 1);
+    for (int d = -nNeighbor; d <= nNeighbor; ++d) {
+      int bb = (b + d) % nPhi;
+      if (bb < 0) {
+        bb += nPhi;
+      }
+      out.push_back(bb);
+    }
+
     std::sort(out.begin(), out.end());
     out.erase(std::unique(out.begin(), out.end()), out.end());
   }
@@ -1674,6 +2151,26 @@ struct lambdaspincorrderived {
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
+        // Fill TGT maps before searching for replacements.  This makes TGT the
+        // true same-event target phase space for the selected pair, matching the
+        // hPtYSame definition.  REP below is filled only for accepted replacements.
+        if (doMixLeg1) {
+          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 1, true,
+                                    ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                    1.0f);
+          fillFixedLegControlMap(t1.v0Status(), t2.v0Status(), 1, true,
+                                 ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                 1.0f);
+        }
+        if (doMixLeg2) {
+          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 2, true,
+                                    ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                    1.0f);
+          fillFixedLegControlMap(t1.v0Status(), t2.v0Status(), 2, true,
+                                 ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                 1.0f);
+        }
+
         if (doMixLeg1) {
           collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
           limitMatchesToNEvents(matches1, nEvtMixing.value);
@@ -1690,18 +2187,8 @@ struct lambdaspincorrderived {
           matches2.clear();
         }
 
-        // --- fill target distributions for the original SE leg that is to be replaced
-        if (doMixLeg1) {
-          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 1, true,
-                                    ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
-                                    1.0f);
-        }
-
-        if (doMixLeg2) {
-          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 2, true,
-                                    ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
-                                    1.0f);
-        }
+        // Do not fill TGT here. TGT has already been filled above as the
+        // selected same-event target phase space, independent of replacement success.
         int nFill1 = 0;
         int nFill2 = 0;
         // count actual accepted fills for leg-1 replacement
@@ -1709,6 +2196,8 @@ struct lambdaspincorrderived {
           for (auto const& m : matches1) {
             auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
             if (!selectionV0(tX))
+              continue;
+            if (tX.v0Status() != t1.v0Status())
               continue;
             if (!checkKinematics(t1, tX))
               continue;
@@ -1728,9 +2217,11 @@ struct lambdaspincorrderived {
         if (doMixLeg2) {
           for (auto const& m : matches2) {
             auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
-            if (!checkKinematics(t2, tY))
-              continue;
             if (!selectionV0(tY))
+              continue;
+            if (tY.v0Status() != t2.v0Status())
+              continue;
+            if (!checkKinematics(t2, tY))
               continue;
             if (tY.globalIndex() == t2.globalIndex())
               continue;
@@ -1747,8 +2238,23 @@ struct lambdaspincorrderived {
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
         }
-        const int nUse = nFill1 + nFill2;
-        const float wSE = (nUse > 0) ? 1.0f / static_cast<float>(nUse) : 0.0f;
+        // Residual-weight QA needs a leg-specific normalization:
+        // TGT_leg is filled once per same-event target candidate with weight 1.
+        // REP_leg is the average replacement distribution for that same target.
+        const float wSELeg1 = (nFill1 > 0) ? 1.0f / static_cast<float>(nFill1) : 0.0f;
+        const float wSELeg2 = (nFill2 > 0) ? 1.0f / static_cast<float>(nFill2) : 0.0f;
+
+        const int nActiveMixBranches = ((doMixLeg1 && nFill1 > 0) ? 1 : 0) +
+                                       ((doMixLeg2 && nFill2 > 0) ? 1 : 0);
+        const float branchNorm = (cfgMixLegMode.value == 2 && nActiveMixBranches > 0)
+                                   ? 1.0f / static_cast<float>(nActiveMixBranches)
+                                   : 1.0f;
+        const float finalMixWeightLeg1 = branchNorm * wSELeg1;
+        const float finalMixWeightLeg2 = branchNorm * wSELeg2;
+
+        // Do not fill target maps here: TGT has already been filled above,
+        // before searching for replacements, so that TGT represents all selected
+        // same-event targets rather than only targets with successful replacements.
 
         if (doMixLeg1 && nFill1 > 0) {
           for (auto const& m : matches1) {
@@ -1756,6 +2262,8 @@ struct lambdaspincorrderived {
             if (!selectionV0(tX)) {
               continue;
             }
+            if (tX.v0Status() != t1.v0Status())
+              continue;
             if (!checkKinematics(t1, tX))
               continue;
             if (tX.globalIndex() == t1.globalIndex())
@@ -1768,7 +2276,12 @@ struct lambdaspincorrderived {
               continue;
             fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
-                                      wSE);
+                                      wSELeg1);
+            // Fixed leg for leg1 replacement is original t2.
+            // Fill only for successful replacement.
+            fillFixedLegControlMap(tX.v0Status(), t2.v0Status(), 1, false,
+                                   ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                   wSELeg1);
             auto proton = ROOT::Math::PtEtaPhiMVector(tX.protonPt(), tX.protonEta(), tX.protonPhi(), o2::constants::physics::MassProton);
             auto lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass());
             auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
@@ -1776,19 +2289,20 @@ struct lambdaspincorrderived {
 
             // const int ptype = pairTypeCode(tX.v0Status(), t2.v0Status());
 
-            const float meWeight = wSE;
+            const float meWeight = finalMixWeightLeg1;
             const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
             if ((tX.v0Status() == 0 && t2.v0Status() == 1) || (tX.v0Status() == 1 && t2.v0Status() == 0))
-              histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+              if (fillBasicQAHistos)
+                histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = tX.v0Status();
             const int s2 = t2.v0Status();
 
             if (s1 == 0 && s2 == 1) {
-              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 1);
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 2);
+              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 2, 1);
             } else {
-              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 1);
+              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             }
           }
         }
@@ -1799,6 +2313,8 @@ struct lambdaspincorrderived {
             if (!selectionV0(tY)) {
               continue;
             }
+            if (tY.v0Status() != t2.v0Status())
+              continue;
             if (!checkKinematics(t2, tY))
               continue;
             if (tY.globalIndex() == t2.globalIndex())
@@ -1811,24 +2327,30 @@ struct lambdaspincorrderived {
               continue;
             fillReplacementControlMap(t1.v0Status(), tY.v0Status(), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass()),
-                                      wSE);
+                                      wSELeg2);
+            // Fixed leg for leg2 replacement is original t1.
+            // Fill only for successful replacement.
+            fillFixedLegControlMap(t1.v0Status(), tY.v0Status(), 2, false,
+                                   ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                   wSELeg2);
             auto proton = ROOT::Math::PtEtaPhiMVector(t1.protonPt(), t1.protonEta(), t1.protonPhi(), o2::constants::physics::MassProton);
             auto lambda = ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass());
             auto proton2 = ROOT::Math::PtEtaPhiMVector(tY.protonPt(), tY.protonEta(), tY.protonPhi(), o2::constants::physics::MassProton);
             auto lambda2 = ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass());
 
             // const int ptype = pairTypeCode(t1.v0Status(), tY.v0Status());
-            const float meWeight = wSE;
+            const float meWeight = finalMixWeightLeg2;
             const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
-            histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+            if (fillBasicQAHistos)
+              histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = t1.v0Status();
             const int s2 = tY.v0Status();
             if (s1 == 0 && s2 == 1) {
-              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 2);
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 1);
+              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 1, 2);
             } else {
-              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 2);
+              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             }
           }
         }
@@ -2092,6 +2614,25 @@ struct lambdaspincorrderived {
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
+        // Fill MC TGT maps before searching for replacements, same definition as data:
+        // TGT is the selected same-event target phase space, independent of replacement success.
+        if (doMixLeg1) {
+          fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 1, true,
+                                    ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1), mcacc::lamMass(t1)),
+                                    1.0f);
+          fillFixedLegControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 1, true,
+                                 ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2), mcacc::lamEta(t2), mcacc::lamPhi(t2), mcacc::lamMass(t2)),
+                                 1.0f);
+        }
+        if (doMixLeg2) {
+          fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 2, true,
+                                    ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2), mcacc::lamEta(t2), mcacc::lamPhi(t2), mcacc::lamMass(t2)),
+                                    1.0f);
+          fillFixedLegControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 2, true,
+                                 ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1), mcacc::lamMass(t1)),
+                                 1.0f);
+        }
+
         if (doMixLeg1) {
           collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
           limitMatchesToNEvents(matches1, nEvtMixing.value);
@@ -2106,18 +2647,9 @@ struct lambdaspincorrderived {
         } else {
           matches2.clear();
         }
-        if (doMixLeg1) {
-          fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 1, true,
-                                    ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1), mcacc::lamMass(t1)),
-                                    1.0f);
-        }
 
-        if (doMixLeg2) {
-          fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 2, true,
-                                    ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2), mcacc::lamEta(t2), mcacc::lamPhi(t2), mcacc::lamMass(t2)),
-                                    1.0f);
-        }
-
+        // Do not fill TGT here. TGT has already been filled above as the
+        // selected same-event target phase space, independent of replacement success.
         int nFill1 = 0;
         int nFill2 = 0;
 
@@ -2127,6 +2659,8 @@ struct lambdaspincorrderived {
             auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
 
             if (!selectionV0MC(tX))
+              continue;
+            if (mcacc::v0Status(tX) != mcacc::v0Status(t1))
               continue;
             if (!checkKinematicsMC(t1, tX))
               continue;
@@ -2149,6 +2683,8 @@ struct lambdaspincorrderived {
 
             if (!selectionV0MC(tY))
               continue;
+            if (mcacc::v0Status(tY) != mcacc::v0Status(t2))
+              continue;
             if (!checkKinematicsMC(t2, tY))
               continue;
             if (tY.globalIndex() == t2.globalIndex())
@@ -2166,14 +2702,25 @@ struct lambdaspincorrderived {
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
         }
-        const int nUse = nFill1 + nFill2;
-        const float wSE = (nUse > 0) ? 1.0f / static_cast<float>(nUse) : 0.0f;
+        // Residual-weight QA needs the same leg-specific REP normalization in MC.
+        const float wSELeg1 = (nFill1 > 0) ? 1.0f / static_cast<float>(nFill1) : 0.0f;
+        const float wSELeg2 = (nFill2 > 0) ? 1.0f / static_cast<float>(nFill2) : 0.0f;
+
+        const int nActiveMixBranches = ((doMixLeg1 && nFill1 > 0) ? 1 : 0) +
+                                       ((doMixLeg2 && nFill2 > 0) ? 1 : 0);
+        const float branchNorm = (cfgMixLegMode.value == 2 && nActiveMixBranches > 0)
+                                   ? 1.0f / static_cast<float>(nActiveMixBranches)
+                                   : 1.0f;
+        const float finalMixWeightLeg1 = branchNorm * wSELeg1;
+        const float finalMixWeightLeg2 = branchNorm * wSELeg2;
 
         if (doMixLeg1 && nFill1 > 0) {
           for (auto const& m : matches1) {
             auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
 
             if (!selectionV0MC(tX))
+              continue;
+            if (mcacc::v0Status(tX) != mcacc::v0Status(t1))
               continue;
             if (!checkKinematicsMC(t1, tX))
               continue;
@@ -2187,8 +2734,15 @@ struct lambdaspincorrderived {
               continue;
             fillReplacementControlMap(mcacc::v0Status(tX), mcacc::v0Status(t2), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX), mcacc::lamMass(tX)),
-                                      wSE);
-
+                                      wSELeg1);
+            // Fixed leg for MC leg1 replacement is original t2.
+            // Fill only for successful replacement.
+            fillFixedLegControlMap(mcacc::v0Status(tX), mcacc::v0Status(t2), 1, false,
+                                   ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2),
+                                                               mcacc::lamEta(t2),
+                                                               mcacc::lamPhi(t2),
+                                                               mcacc::lamMass(t2)),
+                                   wSELeg1);
             auto pX = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(tX), mcacc::prEta(tX), mcacc::prPhi(tX),
                                                   o2::constants::physics::MassProton);
             auto lX = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX),
@@ -2199,18 +2753,19 @@ struct lambdaspincorrderived {
                                                   mcacc::lamMass(t2));
 
             // const int ptype = pairTypeCode(mcacc::v0Status(tX), mcacc::v0Status(t2));
-            const float meWeight = wSE;
+            const float meWeight = finalMixWeightLeg1;
             const float dPhi = deltaPhiMinusPiToPi((float)lX.Phi(), (float)l2.Phi());
-            histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+            if (fillBasicQAHistos)
+              histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = mcacc::v0Status(tX);
             const int s2 = mcacc::v0Status(t2);
 
             if (s1 == 0 && s2 == 1) {
-              fillHistograms(0, 1, lX, l2, pX, p2, 1, meWeight, 1);
+              fillHistograms(0, 1, lX, l2, pX, p2, 1, meWeight, 1, 1);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, l2, lX, p2, pX, 1, meWeight, 2);
+              fillHistograms(0, 1, l2, lX, p2, pX, 1, meWeight, 2, 1);
             } else {
-              fillHistograms(s1, s2, lX, l2, pX, p2, 1, meWeight, 1);
+              fillHistograms(s1, s2, lX, l2, pX, p2, 1, meWeight, 1, 1);
             }
           }
         }
@@ -2219,6 +2774,8 @@ struct lambdaspincorrderived {
             auto tY = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
 
             if (!selectionV0MC(tY))
+              continue;
+            if (mcacc::v0Status(tY) != mcacc::v0Status(t2))
               continue;
             if (!checkKinematicsMC(t2, tY))
               continue;
@@ -2232,8 +2789,15 @@ struct lambdaspincorrderived {
               continue;
             fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(tY), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tY), mcacc::lamEta(tY), mcacc::lamPhi(tY), mcacc::lamMass(tY)),
-                                      wSE);
-
+                                      wSELeg2);
+            // Fixed leg for MC leg2 replacement is original t1.
+            // Fill only for successful replacement.
+            fillFixedLegControlMap(mcacc::v0Status(t1), mcacc::v0Status(tY), 2, false,
+                                   ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1),
+                                                               mcacc::lamEta(t1),
+                                                               mcacc::lamPhi(t1),
+                                                               mcacc::lamMass(t1)),
+                                   wSELeg2);
             auto p1 = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(t1), mcacc::prEta(t1), mcacc::prPhi(t1),
                                                   o2::constants::physics::MassProton);
             auto l1 = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1),
@@ -2244,18 +2808,19 @@ struct lambdaspincorrderived {
                                                   mcacc::lamMass(tY));
 
             // const int ptype = pairTypeCode(mcacc::v0Status(t1), mcacc::v0Status(tY));
-            const float meWeight = wSE;
+            const float meWeight = finalMixWeightLeg2;
             const float dPhi = deltaPhiMinusPiToPi((float)l1.Phi(), (float)lY.Phi());
-            histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+            if (fillBasicQAHistos)
+              histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = mcacc::v0Status(t1);
             const int s2 = mcacc::v0Status(tY);
 
             if (s1 == 0 && s2 == 1) {
-              fillHistograms(0, 1, l1, lY, p1, pY, 1, meWeight, 2);
+              fillHistograms(0, 1, l1, lY, p1, pY, 1, meWeight, 2, 2);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lY, l1, pY, p1, 1, meWeight, 1);
+              fillHistograms(0, 1, lY, l1, pY, p1, 1, meWeight, 1, 2);
             } else {
-              fillHistograms(s1, s2, l1, lY, p1, pY, 1, meWeight, 2);
+              fillHistograms(s1, s2, l1, lY, p1, pY, 1, meWeight, 2, 2);
             }
           }
         }

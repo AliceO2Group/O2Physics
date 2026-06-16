@@ -224,6 +224,6 @@ class CloseTripletRejectionTrackTrackCascade
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
 };
 
-}; // namespace closetripletrejection
-}; // namespace o2::analysis::femto
+} // namespace closetripletrejection
+} // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_CLOSETRIPLETREJECTION_H_
