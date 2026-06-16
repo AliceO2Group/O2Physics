@@ -45,11 +45,11 @@ struct Alice3Lepton {
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
   Configurable<bool> requireHFE{"requireHFE", false, "Require HFE"};
-  Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
-  Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
-  Configurable<bool> useGen{"use-gen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
+  Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
+  Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"etaMax", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"useGen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
@@ -319,11 +319,11 @@ struct Alice3Dilepton {
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
   Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification for both leptons"};
-  Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
-  Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
-  Configurable<bool> useGen{"use-gen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
+  Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
+  Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"etaMax", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"useGen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};

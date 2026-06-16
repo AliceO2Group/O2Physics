@@ -124,12 +124,12 @@ struct Alice3DileptonPrefilter {
 
   Service<o2::framework::O2DatabasePDG> inspdg;
 
-  Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
-  Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
-  Configurable<float> maxMass{"max-mass", 5.f, "Upper limit in mass"};
-  Configurable<float> maxOp{"max-Op", 5.f, "Upper limit in opening angle"};
+  Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
+  Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"etaMax", 5.f, "Upper limit in eta"};
+  Configurable<float> maxMass{"maxMass", 5.f, "Upper limit in mass"};
+  Configurable<float> maxOp{"maxOp", 5.f, "Upper limit in opening angle"};
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
   Configurable<float> nSigmaPionCutOuterTOF{"nSigmaPionCutOuterTOF", 3., "Pion exclusion in outer TOF"};
@@ -180,10 +180,7 @@ struct Alice3DileptonPrefilter {
       map_pfb[track.globalIndex()] = 0;
     } // end of track loop
 
-    Int_t countercoll = 0;
     for (const auto& collision : collisions) {
-      countercoll++;
-
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
 
@@ -279,9 +276,7 @@ struct Alice3DileptonPrefilter {
       }
     } // end of collision
 
-    Int_t counter = 0;
     for (const auto& track : tracks) {
-      counter++;
       pfb_derived(map_pfb[track.globalIndex()]);
     } // end of track loop
     map_pfb.clear();
