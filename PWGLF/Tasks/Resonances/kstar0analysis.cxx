@@ -1353,22 +1353,6 @@ struct Kstar0analysis {
         // =========================
         if (std::abs(part.pdgCode()) == Pdg::kK0Star892) {
 
-          std::vector<int> daughterPDGs;
-          if (part.has_daughters()) {
-            auto daughter01 = mcParticles.rawIteratorAt(part.daughtersIds()[0] - mcParticles.offset());
-            auto daughter02 = mcParticles.rawIteratorAt(part.daughtersIds()[1] - mcParticles.offset());
-            daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
-          } else {
-            daughterPDGs = {-1, -1};
-          }
-
-          bool pass1 = std::abs(daughterPDGs[0]) == kKPlus || std::abs(daughterPDGs[1]) == kKPlus;   // At least one decay to Kaon
-          bool pass2 = std::abs(daughterPDGs[0]) == kPiPlus || std::abs(daughterPDGs[1]) == kPiPlus; // At least one decay to Pion
-
-          // Checking if we have both decay products
-          if (!pass1 || !pass2)
-            continue;
-
           if (part.pdgCode() > 0)
             histos.fill(HIST("Result/SignalLoss/GenTruek892pt_den"), part.pt(), centrality);
           else
