@@ -1327,6 +1327,26 @@ struct HfCandidateCreator3ProngExpressions {
             }
           }
         }
+
+        // cd± → de± K∓ π±
+        if (flagChannelMain == 0) {
+          auto arrPdgDaughtersCDeuteronToDeKPi{std::array{+Pdg::kDeuteron, -kKPlus, +kPiPlus}};
+          if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kCDeuteron, arrPdgDaughtersCDeuteronToDeKPi, true, &sign, 1, &nKinkedTracks, &nInteractionsWithMaterial);
+          } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kCDeuteron, arrPdgDaughtersCDeuteronToDeKPi, true, &sign, 1, &nKinkedTracks);
+          } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kCDeuteron, arrPdgDaughtersCDeuteronToDeKPi, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+          } else {
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kCDeuteron, arrPdgDaughtersCDeuteronToDeKPi, true, &sign, 1);
+          }
+          if (indexRec > -1) {
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::CDeuteronToDeKPi);
+            auto particle = mcParticles.rawIteratorAt(indexRec);
+            // particular treatment for c-deuteron resonant decay channels, as resonances are not stored in the stack
+            flagChannelResonant = hf_decay::getResonantDecayCDeuteron(particle);
+          }
+        }
       }
 
       // Check whether the particle is non-prompt (from a b quark).
