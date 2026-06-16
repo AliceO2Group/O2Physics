@@ -20,7 +20,7 @@
 #define ALICE3_DATAMODEL_PREFILTERDILEPTON_H_
 
 // O2 includes
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

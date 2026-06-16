@@ -218,7 +218,7 @@ struct Alice3Lepton {
   void processRec(MyFilteredAlice3Collision const& collisions,
                   MyFilteredTracksMC const& tracks,
                   const o2::aod::McCollisions&,
-                  const aod::McParticles& mcParticles)
+                  const aod::McParticles& /*mcParticles*/)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxX"), collision.posX());
@@ -814,7 +814,7 @@ struct Alice3Dilepton {
   Partition<MyFilteredTracksMC> negTracks = o2::aod::track::signed1Pt < 0.f;
 
   void processRec(MyFilteredAlice3Collision const& collisions,
-                  MyFilteredTracksMC const& tracks,
+                  MyFilteredTracksMC const& /*tracks*/,
                   const o2::aod::McCollisions&,
                   const aod::McParticles& mcParticles)
   {

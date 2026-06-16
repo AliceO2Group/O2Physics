@@ -30,7 +30,7 @@
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Utils.h>
 
-#include "Math/GenVector/VectorUtil.h"
+#include <Math/GenVector/VectorUtil.h>
 #include <Math/Vector4D.h>
 
 #include <unordered_map>
@@ -289,9 +289,7 @@ struct Alice3DileptonPrefilter {
 
   void processDummy(MyTracksMCs const& tracks)
   {
-    Int_t counter = 0;
-    for (const auto& track : tracks) {
-      counter++;
+    for (int i = 0; i < tracks.size(); i++) {
       pfb_derived(0);
     }
   }
