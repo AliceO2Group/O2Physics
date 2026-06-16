@@ -2659,10 +2659,12 @@ struct AnalysisSameEventPairing {
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TAssocs, typename TTracks>
   void runSameSideMixing(TEvents& events, TAssocs const& assocs, TTracks const& tracks, Preslice<TAssocs>& preSlice)
   {
+    if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
       LOG(info) << "Flow resolution objects not set, flow will not be filled for mixed events";
       if (events.size() > 0) {
         initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), false);
       }
+    }
     events.bindExternalIndices(&assocs);
     int mixingDepth = fConfigMixingDepth.value;
     fAmbiguousPairs.clear();
