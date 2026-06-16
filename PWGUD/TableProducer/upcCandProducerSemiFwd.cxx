@@ -20,6 +20,10 @@
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
@@ -45,6 +49,7 @@
 #include <TH1.h>
 #include <TMath.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <map>

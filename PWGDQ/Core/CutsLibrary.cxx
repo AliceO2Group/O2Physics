@@ -288,6 +288,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     return cut;
   }
+  if (!nameStr.compare("jpsiKineDcaQualitynoPID2")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    return cut;
+  }
   if (!nameStr.compare("electronSelection1_ionut_withTOFPID")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -4107,6 +4113,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventStandardSel8PbPbQualityCent90")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+    return cut;
+  }
+
   if (!nameStr.compare("eventStandardSel8PbPbQualityGoodITSLayersAll")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -4667,6 +4684,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kMCP2, 1.0, 1000.0);
     cut->AddCut(VarManager::kMCEta1, -0.9, 0.9);
     cut->AddCut(VarManager::kMCEta2, -0.9, 0.9);
+    return cut;
+  }
+
+  if (!nameStr.compare("acceptance_PbPb5360_y08")) {
+    cut->AddCut(VarManager::kMCY, -0.8, 0.8);
+    cut->AddCut(VarManager::kMCP1, 1.0, 1000.0);
+    cut->AddCut(VarManager::kMCP2, 1.0, 1000.0);
+    cut->AddCut(VarManager::kMCEta1, -0.8, 0.8);
+    cut->AddCut(VarManager::kMCEta2, -0.8, 0.8);
     return cut;
   }
 

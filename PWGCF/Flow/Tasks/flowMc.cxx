@@ -21,6 +21,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -59,6 +60,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -100,6 +102,8 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgCentVsIPTruth, std::string, "", "CCDB path to centrality vs IP truth")
   O2_DEFINE_CONFIGURABLE(cfgIsGlobalTrack, bool, false, "Use global tracks instead of hasTPC&&hasITS")
   O2_DEFINE_CONFIGURABLE(cfgK0Lambda0Enabled, bool, false, "Add K0 and Lambda0, for bulk particle efficiency please keep off")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptSecondaries, bool, false, "Accept secondary particles produced from decays")
+  O2_DEFINE_CONFIGURABLE(cfgRequireTOF, bool, false, "Require that reconstructed tracks have TOF for resonance decays")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
@@ -116,6 +120,13 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking', 'CBT_hadronPID' ")
+  O2_DEFINE_CONFIGURABLE(cfgIRFetch, bool, false, "Get interaction rate from CCDB")
+  O2_DEFINE_CONFIGURABLE(cfgIRCutEnabled, bool, false, "Use events with low interaction rate")
+  O2_DEFINE_CONFIGURABLE(cfgIRMax, float, 50.0f, "maximum interaction rate (kHz)")
+  O2_DEFINE_CONFIGURABLE(cfgIRMin, float, 0.0f, "minimum interaction rate (kHz)")
+  O2_DEFINE_CONFIGURABLE(cfgOccupancyEnabled, bool, true, "Occupancy cut")
+  O2_DEFINE_CONFIGURABLE(cfgOccupancyMax, int, 2000, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgOccupancyMin, int, 0, "Low cut on TPC occupancy")
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.6003720411, 0.6152630970, 0.6288860646, 0.6360694031, 0.6409494798, 0.6450540203, 0.6482117301, 0.6512592056, 0.6640008690, 0.6862631416, 0.7005738691, 0.7106567432, 0.7170728333}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-1.007592e-05, -8.932635e-06, -9.114538e-06, -1.054818e-05, -1.220212e-05, -1.312304e-05, -1.376433e-05, -1.412813e-05, -1.289562e-05, -1.050065e-05, -8.635725e-06, -7.380821e-06, -6.201250e-06}, "parameter 1 for track density efficiency correction"};
@@ -179,7 +190,12 @@ struct FlowMc {
   std::vector<GFW::CorrConfig> corrconfigsReco;
   TRandom3* fRndm = new TRandom3(0);
   double epsilon = 1e-6;
-
+  int mRunNumber{-1};
+  uint64_t mSOR{0};
+  double mMinSeconds{-1.};
+  std::unordered_map<int, TH2*> gHadronicRate;
+  ctpRateFetcher mRateFetcher;
+  TH2* gCurrentHadronicRate;
   RCTFlagsChecker rctChecker{"CBT"};
 
   void init(InitContext&)
@@ -238,6 +254,12 @@ struct FlowMc {
     histos.add<TH2>("hPtNchGlobalK0", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH2>("hPtNchGeneratedLambda", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH2>("hPtNchGlobalLambda", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedK0Pions", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalK0Pions", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedLambdaPions", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalLambdaPions", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedLambdaProtons", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalLambdaProtons", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH3>("hEtaPtVtxzMCGen", "Monte Carlo Truth; #eta; p_{T} (GeV/c); V_{z} (cm);", {HistType::kTH3D, {axisEta, axisPt, axisVertex}});
     histos.add<TH1>("hPtMCGlobal", "Monte Carlo Global; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
@@ -434,6 +456,23 @@ struct FlowMc {
     }
   }
 
+  void initHadronicRate(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+      auto runDuration = ccdb->getRunDuration(mRunNumber);
+      mSOR = runDuration.first;
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
+      gHadronicRate[mRunNumber] = histos.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {510, 0., 51.}}).get();
+    }
+    gCurrentHadronicRate = gHadronicRate[mRunNumber];
+  }
+
   template <typename TCollision>
   bool eventSelected(TCollision collision)
   {
@@ -442,6 +481,11 @@ struct FlowMc {
     }
     if (cfgRecoEvSel8 && !collision.sel8()) {
       return 0;
+    }
+    if (cfgOccupancyEnabled) {
+      auto occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy < cfgOccupancyMin || occupancy > cfgOccupancyMax)
+        return 0;
     }
     if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision))
       return 0;
@@ -511,6 +555,14 @@ struct FlowMc {
     float wacc = 1.;
     auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
     loadCorrections(bc.timestamp());
+    if (cfgIRFetch) {
+      initHadronicRate(bc);
+      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgIRCutEnabled && (hadronicRate < cfgIRMin || hadronicRate > cfgIRMax)) // cut on hadronic rate
+        return;
+      gCurrentHadronicRate->Fill(seconds, hadronicRate);
+    }
 
     if (collisions.size() > -1) {
       histos.fill(HIST("numberOfRecoCollisions"), collisions.size()); // number of times coll was reco-ed
@@ -599,8 +651,13 @@ struct FlowMc {
         if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
           continue;
 
-        if (!mcParticle.isPhysicalPrimary())
+        bool isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+        const int producedByDecay = 4;
+        bool isSecondary = (mcParticle.has_mothers() && mcParticle.getProcess() == producedByDecay);
+        bool isAcceptedSecondary = (cfgAcceptSecondaries) ? isSecondary : false;
+        if (!isPhysicalPrimary && !isAcceptedSecondary)
           continue;
+
         if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
           continue;
 
@@ -621,11 +678,23 @@ struct FlowMc {
           histos.fill(HIST("hPtNchGeneratedK0"), mcParticle.pt(), nChGlobal);
         if (pdgCode == PDG_t::kLambda0)
           histos.fill(HIST("hPtNchGeneratedLambda"), mcParticle.pt(), nChGlobal);
-
+        if (mcParticle.has_daughters()) {
+          for (const auto& d : mcParticle.template daughters_as<FilteredMcParticles>()) {
+            if (std::abs(d.pdgCode()) == PDG_t::kPiPlus) {
+              if (pdgCode == PDG_t::kK0Short)
+                histos.fill(HIST("hPtNchGeneratedK0Pions"), d.pt(), nChGlobal);
+              if (pdgCode == PDG_t::kLambda0)
+                histos.fill(HIST("hPtNchGeneratedLambdaPions"), d.pt(), nChGlobal);
+            }
+            if (pdgCode == PDG_t::kLambda0 && std::abs(d.pdgCode()) == PDG_t::kProton)
+              histos.fill(HIST("hPtNchGeneratedLambdaProtons"), d.pt(), nChGlobal);
+          }
+        }
         nCh++;
 
         bool validGlobal = false;
         bool validTrack = false;
+        bool validTOFTrack = false;
         bool validTPCTrack = false;
         bool validITSTrack = false;
         bool validITSABTrack = false;
@@ -643,6 +712,9 @@ struct FlowMc {
             if (!cfgIsGlobalTrack && track.hasTPC() && track.hasITS()) {
               validGlobal = true;
             }
+            if (track.hasTOF() && validGlobal) {
+              validTOFTrack = true;
+            }
             if (track.hasTPC() || track.hasITS()) {
               validTrack = true;
             }
@@ -657,7 +729,6 @@ struct FlowMc {
             }
           }
         }
-
         bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
         bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
         if (cfgOutputNUAWeights && withinPtRef)
@@ -723,6 +794,24 @@ struct FlowMc {
             histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
           if (pdgCode == PDG_t::kLambda0)
             histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
+          if (!cfgRequireTOF || (cfgRequireTOF && validTOFTrack)) {
+            if (mcParticle.has_mothers()) {
+              for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
+                if (!m.isPhysicalPrimary())
+                  continue;
+                if (pdgCode == PDG_t::kPiPlus) {
+                  if (m.pdgCode() == PDG_t::kK0Short) {
+                    histos.fill(HIST("hPtNchGlobalK0Pions"), mcParticle.pt(), nChGlobal);
+                  }
+                  if (m.pdgCode() == PDG_t::kLambda0) {
+                    histos.fill(HIST("hPtNchGlobalLambdaPions"), mcParticle.pt(), nChGlobal);
+                  }
+                }
+                if (pdgCode == PDG_t::kProton && m.pdgCode() == PDG_t::kLambda0)
+                  histos.fill(HIST("hPtNchGlobalLambdaProtons"), mcParticle.pt(), nChGlobal);
+              }
+            }
+          }
         }
         // if any track present, fill
         if (validTrack)

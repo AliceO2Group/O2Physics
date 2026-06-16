@@ -205,9 +205,10 @@ class FemtoUniverseFemtoContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots)
+  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool onlyPrimaryMC = false)
   {
     float femtoObs, femtoObsMC;
+
     // Calculate femto observable and the mT with reconstructed information
     if constexpr (kFemtoObs == femto_universe_femto_container::Observable::kstar) {
       femtoObs = FemtoUniverseMath::getkstar(part1, kMassOne, part2, kMassTwo);
@@ -226,8 +227,10 @@ class FemtoUniverseFemtoContainer
           const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), kMassOne, part2.fdMCParticle(), kMassTwo);
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == std::abs(kPDGOne) && std::abs(part2.fdMCParticle().pdgMCTruth()) == std::abs(kPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots);
-            setPairMC(femtoObsMC, femtoObs, mT, mult);
+            if (!onlyPrimaryMC || (part1.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary && part2.fdMCParticle().partOriginMCTruth() == o2::aod::femtouniverse_mc_particle::kPrimary)) {
+              setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part1.fdMCParticle(), mult, use3dplots);
+              setPairMC(femtoObsMC, femtoObs, mT, mult);
+            }
           } else {
             kHistogramRegistry->fill(HIST(kFolderSuffix[kEventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }

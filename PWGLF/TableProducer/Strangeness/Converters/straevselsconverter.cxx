@@ -24,6 +24,7 @@ struct straevselsconverter {
 
   void process(soa::Join<aod::StraEvSels_000, aod::StraRawCents_004> const& straEvSels_000_RawCents_004)
   {
+    straEvSels_001.reserve(straEvSels_000_RawCents_004.size());
     for (auto& values : straEvSels_000_RawCents_004) {
       straEvSels_001(values.sel8(),
                      values.selection_raw(),

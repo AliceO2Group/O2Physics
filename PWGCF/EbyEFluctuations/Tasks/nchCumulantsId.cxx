@@ -21,19 +21,27 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH2.h>
 #include <TPDGCode.h>
 
-#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -47,6 +55,12 @@ using namespace std;
 #define ID_BIT_PR 2
 #define ID_BIT_EL 3
 #define ID_BIT_DE 4
+
+#define MC_BIT_PI 0 // MC particle identification bits
+#define MC_BIT_KA 1
+#define MC_BIT_PR 2
+#define MC_BIT_EL 3
+#define MC_BIT_DE 4
 
 #define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))  // avoid name bitset as std::bitset is already there
 #define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit))) // bit check will return int value, not bool, use BITCHECK != 0 in Analysi
@@ -106,15 +120,27 @@ struct NchCumulantsId {
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
 
+  ConfigurableAxis axisNch{"axisNch", {1200, -60.0, 60.0}, "Net_charge_dN"};
+  ConfigurableAxis axisPosCh{"axisPosCh", {3010, -0.5, 300.5}, "Pos_charge"};
+  ConfigurableAxis axisNegCh{"axisNegCh", {3010, -0.5, 300.5}, "Neg_charge"};
+  ConfigurableAxis axisNt{"axisNt", {8010, -0.5, 800.5}, "Mult_midRap_Nch"};
+  ConfigurableAxis axisPrCh{"axisPrCh", {3010, -0.5, 300.5}, "Pr_charge"};
+  ConfigurableAxis axisAPrCh{"axisAPrCh", {3010, -0.5, 300.5}, "APr_charge"};
+  ConfigurableAxis axisKaCh{"axisKaCh", {3010, -0.5, 300.5}, "Ka_charge"};
+  ConfigurableAxis axisAKaCh{"axisAKaCh", {3010, -0.5, 300.5}, "AKa_charge"};
+  ConfigurableAxis axisPiCh{"axisPiCh", {3010, -0.5, 300.5}, "Pion_Positive"};
+  ConfigurableAxis axisAPiCh{"axisAPiCh", {3010, -0.5, 300.5}, "Pion_Negative"};
+
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
+  Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
 
   Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
   Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
   Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
 
   // Configurables for particle Identification
-  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
+  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
   Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
   Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
   Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
@@ -149,6 +175,12 @@ struct NchCumulantsId {
   Configurable<float> cfgIdPr07NSigmaTPCHighP{"cfgIdPr07NSigmaTPCHighP", 2.0, "cfgIdPr07NSigmaTPCHighP"};
   Configurable<float> cfgIdPr08NSigmaTOFHighP{"cfgIdPr08NSigmaTOFHighP", 2.0, "cfgIdPr08NSigmaTOFHighP"};
   Configurable<float> cfgIdPr09NSigmaRadHighP{"cfgIdPr09NSigmaRadHighP", 4.0, "cfgIdPr09NSigmaRadHighP"};
+
+  Configurable<float> cfgIdElRejLowNSigma{"cfgIdElRejLowNSigma", -3.0, "cfgIdElRejLowNSigma"};
+  Configurable<float> cfgIdElRejHighNSigma{"cfgIdElRejHighNSigma", 5.0, "cfgIdElRejHighNSigma"};
+  Configurable<float> cfgIdPiRejNSigma{"cfgIdPiRejNSigma", 3.0, "cfgIdPiRejNSigma"};
+  Configurable<float> cfgIdKaRejNSigma{"cfgIdKaRejNSigma", 3.0, "cfgIdKaRejNSigma"};
+  Configurable<float> cfgIdPrRejNSigma{"cfgIdPrRejNSigma", 3.0, "cfgIdPrRejNSigma"};
 
   struct : ConfigurableGroup {
     Configurable<float> cfgVetoId01PiTPC{"cfgVetoId01PiTPC", 3.0, "cfgVetoId01PiTPC"};
@@ -233,19 +265,13 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNch(100, -50, 50, "Net_charge_dN");
-    const AxisSpec axisPosCh(101, -1, 100, "Pos_charge");
-    const AxisSpec axisNegCh(101, -1, 100, "Neg_charge");
-    const AxisSpec axisNt(201, -1, 200, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(101, -1, 100, "Pr_charge");
-    const AxisSpec axisAPrCh(101, -1, 100, "APr_charge");
-    const AxisSpec axisKaCh(101, -1, 100, "Ka_charge");
-    const AxisSpec axisAKaCh(101, -1, 100, "AKa_charge");
-    const AxisSpec axisPiCh(101, -1, 100, "Pion_Positive");
-    const AxisSpec axisAPiCh(101, -1, 100, "Pion_Negative");
+    const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
+    const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
 
     HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPrCh, axisAPrCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
     HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPiCh, axisAPiCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
+    HistogramConfigSpec histTPCPIDSparse({HistType::kTHnSparseD, {axisP, axisTPCNSigma, axisIdTag, axisMcTag}});
+    HistogramConfigSpec histTOFPIDSparse({HistType::kTHnSparseD, {axisP, axisTOFNSigma, axisIdTag, axisMcTag}});
 
     HistogramConfigSpec histPPt({HistType::kTH2F, {axisP, axisPt}});
     HistogramConfigSpec histPTpcInnerParam({HistType::kTH2F, {axisP, axisTPCInnerParam}});
@@ -264,6 +290,17 @@ struct NchCumulantsId {
     HistogramConfigSpec histTpcNSigmaTofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
 
     HistogramConfigSpec histPtMc({HistType::kTH1F, {axisPt}});
+
+    // Register histograms for PID validation
+    // Register TPC spares per species
+    hist.add("PIDValidation/tpcSparse_Pi", "p vs tpcNSigmaPi vs idTag vs mcTag (Pion)", histTPCPIDSparse);
+    hist.add("PIDValidation/tpcSparse_Ka", "p vs tpcNSigmaKa vs idTag vs mcTag (Kaon)", histTPCPIDSparse);
+    hist.add("PIDValidation/tpcSparse_Pr", "p vs tpcNSigmaPr vs idTag vs mcTag (Proton)", histTPCPIDSparse);
+
+    // Register TOF spares per species
+    hist.add("PIDValidation/tofSparse_Pi", "p vs tofNSigmaPi vs idTag vs mcTag (Pion)", histTOFPIDSparse);
+    hist.add("PIDValidation/tofSparse_Ka", "p vs tofNSigmaKa vs idTag vs mcTag (Kaon)", histTOFPIDSparse);
+    hist.add("PIDValidation/tofSparse_Pr", "p vs tofNSigmaPr vs idTag vs mcTag (Proton)", histTOFPIDSparse);
 
     // QA check histos
 
@@ -762,8 +799,44 @@ struct NchCumulantsId {
     }
   }
 
+  template <typename T>
+  int getMCTag(const T& track)
+  {
+    int mcTag = 0;
+    if (!track.has_mcParticle())
+      return mcTag;
+    auto mcPart = track.mcParticle();
+    int pdgCode = std::abs(mcPart.pdgCode());
+
+    if (pdgCode == kPiPlus || pdgCode == kPiMinus)
+      BITSET(mcTag, MC_BIT_PI);
+    else if (pdgCode == kKPlus || pdgCode == kKMinus)
+      BITSET(mcTag, MC_BIT_KA);
+    else if (pdgCode == kProton || pdgCode == kProtonBar)
+      BITSET(mcTag, MC_BIT_PR);
+    else if (pdgCode == kElectron || pdgCode == kPositron)
+      BITSET(mcTag, MC_BIT_EL);
+    else if (pdgCode == kDeuteron || pdgCode == -kDeuteron)
+      BITSET(mcTag, MC_BIT_DE);
+
+    return mcTag;
+  }
   //
   //______________________________Identification Functions________________________________________________________________
+  // Victor slection cuts for electron and other rejections
+  template <typename T>
+  bool selTrackForId(const T& track)
+  {
+    if (cfgIdElRejLowNSigma < track.tpcNSigmaEl() && track.tpcNSigmaEl() < cfgIdElRejHighNSigma &&
+        std::fabs(track.tpcNSigmaPi()) > cfgIdPiRejNSigma &&
+        std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
+        std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   // Pion
   template <typename T>
   bool selPion(const T& track, int& IdMethod)
@@ -1137,6 +1210,11 @@ struct NchCumulantsId {
             nM += hPtEtaForEffCorrection[kCh][kNeg]->GetBinContent(ptEtaBin);
           }
 
+          // Reject electrons first
+          if (cfgDoRejectionForId && !selTrackForId(track)) {
+            continue;
+          }
+
           int idMethod;
           // pion
           if (selPion(track, idMethod)) {
@@ -1235,17 +1313,34 @@ struct NchCumulantsId {
           idMethodKa = kUnidentified;
           idMethodPr = kUnidentified;
 
+          // Get MC tag
+          int mcTag = getMCTag(track);
+
+          // Reject electrons first
+          if (cfgDoRejectionForId && !selTrackForId(track)) {
+            continue;
+          }
+
           if (selPion(track, idMethodPi)) {
             trackIsPion = true;
             BITSET(trackIdTag, ID_BIT_PI);
+            hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
+            if (track.hasTOF())
+              hist.fill(HIST("PIDValidation/tofSparse_Pi"), track.p(), track.tofNSigmaPi(), trackIdTag, mcTag);
           }
           if (selKaon(track, idMethodKa)) {
             trackIsKaon = true;
             BITSET(trackIdTag, ID_BIT_KA);
+            hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
+            if (track.hasTOF())
+              hist.fill(HIST("PIDValidation/tofSparse_Ka"), track.p(), track.tofNSigmaKa(), trackIdTag, mcTag);
           }
           if (selProton(track, idMethodPr)) {
             trackIsProton = true;
             BITSET(trackIdTag, ID_BIT_PR);
+            hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
+            if (track.hasTOF())
+              hist.fill(HIST("PIDValidation/tofSparse_Pr"), track.p(), track.tofNSigmaPr(), trackIdTag, mcTag);
           }
 
           if constexpr (analysisType == doPurityProcessing) {
@@ -1555,6 +1650,8 @@ struct NchCumulantsId {
           continue;
         int pdg = mcPart.pdgCode();
 
+        int mcTag = getMCTag(track);
+
         fillTrackQA<qaTracksPostSel>(track);
 
         trackIsPion = false;
@@ -1565,17 +1662,41 @@ struct NchCumulantsId {
         idMethodKa = kUnidentified;
         idMethodPr = kUnidentified;
 
+        // Reject electrons first
+        if (cfgDoRejectionForId && !selTrackForId(track)) {
+          continue;
+        }
+
+        // Fill separate spares for each species if it passes the cut
         if (selPion(track, idMethodPi)) {
           trackIsPion = true;
           BITSET(trackIdTag, ID_BIT_PI);
+          // Fill TPC sparse for pion
+          hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
+          // Fill TOF sparse for pion if has TOF
+          if (track.hasTOF()) {
+            hist.fill(HIST("PIDValidation/tofSparse_Pi"), track.p(), track.tofNSigmaPi(), trackIdTag, mcTag);
+          }
         }
         if (selKaon(track, idMethodKa)) {
           trackIsKaon = true;
           BITSET(trackIdTag, ID_BIT_KA);
+          // Fill TPC sparse for kaon
+          hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
+          // Fill TOF sparse for kaon if has TOF
+          if (track.hasTOF()) {
+            hist.fill(HIST("PIDValidation/tofSparse_Ka"), track.p(), track.tofNSigmaKa(), trackIdTag, mcTag);
+          }
         }
         if (selProton(track, idMethodPr)) {
           trackIsProton = true;
           BITSET(trackIdTag, ID_BIT_PR);
+          // Fill TPC sparse for proton
+          hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
+          // Fill TOF sparse for proton if has TOF
+          if (track.hasTOF()) {
+            hist.fill(HIST("PIDValidation/tofSparse_Pr"), track.p(), track.tofNSigmaPr(), trackIdTag, mcTag);
+          }
         }
 
         // bool isKnownCharged = (std::abs(pdg) == kPiPlus  ||
@@ -1614,6 +1735,11 @@ struct NchCumulantsId {
             nAPiRec += hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(recoAnalysis, track);
           }
+          // PID band QA for pions
+          if (idMethodPi == kTPCidentified)
+            fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
+          if (idMethodPi == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
         } else if (trackIsKaon) {
           if (track.sign() > 0) {
             nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
@@ -1622,6 +1748,11 @@ struct NchCumulantsId {
             nAKaRec += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
           }
+          // PID band QA for kaons
+          if (idMethodKa == kTPCidentified)
+            fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
+          if (idMethodKa == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
         } else if (trackIsProton) {
           if (track.sign() > 0) {
             nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
@@ -1630,6 +1761,11 @@ struct NchCumulantsId {
             nAPrRec += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
           }
+          // PID band QA for protons
+          if (idMethodPr == kTPCidentified)
+            fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
+          if (idMethodPr == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
         }
         // purity check - check pdg aginst sign
         bool purityPion = false;

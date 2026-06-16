@@ -88,6 +88,8 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
     Configurable<std::vector<float>> confTrkPIDnSigmaMax{"confTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
     Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+    Configurable<bool> confOnlyPrimaryMCPair{"confOnlyPrimaryMCPair", false, "Fill MC pair histograms only with primary particles"};
+
   } twotracksconfigs;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
@@ -536,7 +538,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
         float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
         if (cfgProcessMultBins)
           sameEventMultCont.fill<float>(kstar, multCol, kT);
       }
@@ -583,14 +585,14 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
               float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
               float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
 
-              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
               if (cfgProcessMultBins)
                 sameEventMultContPP.fill<float>(kstar, multCol, kT);
             } else {
               float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
               float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
-              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
               if (cfgProcessMultBins)
                 sameEventMultContPP.fill<float>(kstar, multCol, kT);
             }
@@ -603,14 +605,14 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
               float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
               float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
 
-              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
               if (cfgProcessMultBins)
                 sameEventMultContMM.fill<float>(kstar, multCol, kT);
             } else {
               float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
               float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
-              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
               if (cfgProcessMultBins)
                 sameEventMultContMM.fill<float>(kstar, multCol, kT);
             }
@@ -730,7 +732,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
-          mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+          mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
           if (cfgProcessMultBins)
             mixedEventMultCont.fill<float>(kstar, multCol, kT);
 
@@ -741,14 +743,14 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
             float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
             float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
 
-            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
             if (cfgProcessMultBins)
               mixedEventMultContPP.fill<float>(kstar, multCol, kT);
           } else {
             float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
             float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
-            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
             if (cfgProcessMultBins)
               mixedEventMultContPP.fill<float>(kstar, multCol, kT);
           }
@@ -761,14 +763,14 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
             float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
             float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
 
-            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
             if (cfgProcessMultBins)
               mixedEventMultContMM.fill<float>(kstar, multCol, kT);
           } else {
             float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
             float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
-            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, twotracksconfigs.confOnlyPrimaryMCPair);
             if (cfgProcessMultBins)
               mixedEventMultContMM.fill<float>(kstar, multCol, kT);
           }

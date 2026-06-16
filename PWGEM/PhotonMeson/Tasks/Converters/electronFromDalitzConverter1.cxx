@@ -31,6 +31,7 @@ struct electronFromDalitzConverter1 {
 
   void process(aod::EMPrimaryElectronsFromDalitz_000 const& tracks)
   {
+    electron_001.reserve(tracks.size());
     for (const auto& track : tracks) {
       electron_001(track.collisionId(),
                    track.trackId(),

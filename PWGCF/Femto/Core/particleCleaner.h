@@ -209,8 +209,7 @@ class ParticleCleaner
 
     return hasRequiredPdgCode && !hasRejectedPdgCode &&
            hasMotherWithRequiredPdgCode && !hasMotherWithRejectedPdgCode &&
-           hasPartonicMotherWithRequiredPdgCode &&
-           !hasPartonicMotherWithRejectedPdgCode;
+           hasPartonicMotherWithRequiredPdgCode && !hasPartonicMotherWithRejectedPdgCode;
   }
 
  private:
@@ -218,8 +217,8 @@ class ParticleCleaner
   bool mRejectParticleWithoutMcParticle = true;
   bool mRejectParticleWithoutMcMother = true;
   bool mRejectParticleWithoutMcPartonicMother = true;
-  std::vector<int> mRequiredPdgCodes = {};
-  std::vector<int> mRejectedPdgCodes = {};
+  std::vector<int> mRequiredPdgCodes{};
+  std::vector<int> mRejectedPdgCodes{};
   std::vector<int> mRequiredMotherPdgCodes{};
   std::vector<int> mRejectedMotherPdgCodes{};
   std::vector<int> mRequiredPartonicMotherPdgCodes{};
