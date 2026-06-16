@@ -94,11 +94,6 @@ using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = o2::soa::Filtered<MyElectrons>;
 using FilteredMyElectron = FilteredMyElectrons::iterator;
 
-using MyElectronsSCT = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronsBDTSCT>;
-using MyElectronSCT = MyElectronsSCT::iterator;
-using FilteredMyElectronsSCT = o2::soa::Filtered<MyElectronsSCT>;
-using FilteredMyElectronSCT = FilteredMyElectronsSCT::iterator;
-
 using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived>;
 using MyMuon = MyMuons::iterator;
 using FilteredMyMuons = o2::soa::Filtered<MyMuons>;

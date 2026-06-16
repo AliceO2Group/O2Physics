@@ -87,6 +87,9 @@ struct createTTP {
   ConfigurableAxis ConfDCABins{"ConfDCABins", {200, -1000, +1000}, "DCA bins for output histograms"};
   ConfigurableAxis ConfDCASigmaBins{"ConfDCASigmaBins", {200, -10, +10}, "DCA in sigma bins for output histograms"};
 
+  o2::framework::ConfigurableAxis ConfMllBins{"ConfMllBins", {400, 0, 4}, "mll bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {o2::framework::VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTll bins for output histograms"};
+
   struct : ConfigurableGroup {
     std::string prefix = "eventCut";
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10, "min. Zvtx"};
@@ -165,11 +168,16 @@ struct createTTP {
 
   struct : ConfigurableGroup {
     std::string prefix = "pairCut";
-    Configurable<float> minMee{"minMee", 0.00, "min mee for pi0 -> ee"};
-    Configurable<float> maxMee{"maxMee", 0.01, "max mee for pi0 -> ee"};
-    Configurable<float> minPhiV{"minPhiV", 0.f, "min phiv for pi0 -> ee"};
-    Configurable<float> maxPhiV{"maxPhiV", M_PI / 2, "max phiv for pi0 -> ee"};
+    Configurable<float> minMee{"minMee", 0.00, "min mee of pi0 -> ee"};
+    Configurable<float> maxMee{"maxMee", 0.01, "max mee of pi0 -> ee"};
+    Configurable<float> minPhiV{"minPhiV", 0.f, "min phiv of pi0 -> ee"};
+    Configurable<float> maxPhiV{"maxPhiV", M_PI / 2, "max phiv of pi0 -> ee"};
   } pairCut;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "pfGroup";
+    Configurable<float> maxMee{"maxMee", 0.06, "max mee of pi0 -> ee for prefilter to improve S/B for peak extraction of VMs"};
+  } pfGroup;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
@@ -247,17 +255,20 @@ struct createTTP {
     const AxisSpec axis_eta{cfgNbinsEta, -1, +1, "#eta"};
     const AxisSpec axis_phi{cfgNbinsPhi, 0.0, 2 * M_PI, "#varphi (rad.)"};
     const AxisSpec axis_sign{3, -1.5, +1.5, "sign"};
-    const AxisSpec axis_mass{400, 0, 4, "m_{ee} (GeV/c^{2})"};
-    const AxisSpec axis_ptee{100, 0, 10, "p_{T,ee} (GeV/c)"};
+    const AxisSpec axis_mass{ConfMllBins, "m_{ee} (GeV/c^{2})"};
+    const AxisSpec axis_ptee{ConfPtllBins, "p_{T,ee} (GeV/c)"};
 
     const AxisSpec axis_mean_dcaXY{ConfDCABins, "DCA_{xy} (#mum)"};
     const AxisSpec axis_mean_dcaZ{ConfDCABins, "DCA_{z} (#mum)"};
     const AxisSpec axis_pull_dcaXY{ConfDCASigmaBins, "DCA_{xy}/#sigma_{xy}^{DCA}"};
     const AxisSpec axis_pull_dcaZ{ConfDCASigmaBins, "DCA_{z}/#sigma_{z}^{DCA}"};
 
-    fRegistry.add("Track/hs", "electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_sign, axis_mean_dcaXY, axis_mean_dcaZ, axis_pull_dcaXY, axis_pull_dcaZ}, false);
+    fRegistry.add("Track/hs", "probe electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_sign, axis_mean_dcaXY, axis_mean_dcaZ, axis_pull_dcaXY, axis_pull_dcaZ}, false);
     fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
-    fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
+    fRegistry.add("Pair/uls/hMvsPt", "dielectron", kTH2D, {axis_mass, axis_ptee}, false);
+    fRegistry.addClone("Pair/uls/", "Pair/lspp/");
+    fRegistry.addClone("Pair/uls/", "Pair/lsmm/");
+    fRegistry.add("TAP/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
 
     if (doprocessMC) {
       fRegistry.add("Pair/hMvsPt_omega", "#omega->ee", kTH2D, {axis_mass, axis_ptee}, false);
@@ -270,10 +281,6 @@ struct createTTP {
   bool isTag(TTrack const& track, const float pt, const float eta, const float dcaXY, const float dcaZ, const float cYY, const float cZZ, const float cZY)
   {
     if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
-
-    if (!isTagElectron(track)) {
       return false;
     }
 
@@ -330,10 +337,6 @@ struct createTTP {
   bool isProbe(TTrack const& track, const float pt, const float eta, const float dcaXY, const float dcaZ)
   {
     if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
-
-    if (!isProbeElectron(track)) {
       return false;
     }
 
@@ -464,13 +467,19 @@ struct createTTP {
     }
   }
 
+  struct lepton {
+    float pt{0};
+    float eta{0};
+    float phi{0};
+    int globalIndex{-1};
+    int mcParticleId{-1};
+  };
+
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-
   using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                             aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                             aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                             aod::pidTPCFullEl, /*aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,*/
+                             aod::pidTOFFullEl /*, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta*/>;
 
   Filter collisionFilter_zvtx = eventCut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventCut.cfgZvtxMax;
   Filter collisionFilter_centrality = (eventCut.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventCut.cfgCentMax) || (eventCut.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventCut.cfgCentMax) || (eventCut.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventCut.cfgCentMax);
@@ -513,6 +522,7 @@ struct createTTP {
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      // LOGF(info, "posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", posTracks_per_coll.size(), negTracks_per_coll.size());
 
       o2::dataformats::DCA mDcaInfoCov;
       for (const auto& tag : posTracks_per_coll) { // positron is tag
@@ -523,7 +533,7 @@ struct createTTP {
         if (!isPropOK) {
           continue;
         }
-        if (!isTag(tag, tagParCov.getPt(), tagParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ(), tagParCov.getSigmaY2(), tagParCov.getSigmaZ2(), tagParCov.getSigmaZY())) {
+        if (!isTag(tag, tagParCov.getPt(), tagParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ(), tagParCov.getSigmaY2(), tagParCov.getSigmaZ2(), tagParCov.getSigmaZY()) || !isTagElectron(tag)) {
           continue;
         }
 
@@ -535,7 +545,7 @@ struct createTTP {
           if (!isPropOK) {
             continue;
           }
-          if (!isProbe(probe, probeParCov.getPt(), probeParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ())) {
+          if (!isProbe(probe, probeParCov.getPt(), probeParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ()) || !isProbeElectron(probe)) {
             continue;
           }
 
@@ -544,7 +554,7 @@ struct createTTP {
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float mee = v12.M();
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(v1.Px(), v1.Py(), v1.Pz(), v2.Px(), v2.Py(), v2.Pz(), tag.sign(), probe.sign(), d_bz);
-          fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
+          fRegistry.fill(HIST("TAP/hMvsPhiV"), phiv, mee);
 
           if ((pairCut.minMee < mee && mee < pairCut.maxMee) && (pairCut.minPhiV < phiv && phiv < pairCut.maxPhiV)) {
             fRegistry.fill(HIST("Track/hs"), probeParCov.getPt(), probeParCov.getEta(), RecoDecay::constrainAngle(probeParCov.getPhi(), 0, 1U), probe.sign(), mDcaInfoCov.getY() * 1e+4, mDcaInfoCov.getZ() * 1e+4, mDcaInfoCov.getY() / std::sqrt(probeParCov.getSigmaY2()), mDcaInfoCov.getZ() / std::sqrt(probeParCov.getSigmaZ2()));
@@ -562,7 +572,7 @@ struct createTTP {
         if (!isPropOK) {
           continue;
         }
-        if (!isTag(tag, tagParCov.getPt(), tagParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ(), tagParCov.getSigmaY2(), tagParCov.getSigmaZ2(), tagParCov.getSigmaZY())) {
+        if (!isTag(tag, tagParCov.getPt(), tagParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ(), tagParCov.getSigmaY2(), tagParCov.getSigmaZ2(), tagParCov.getSigmaZY()) || !isTagElectron(tag)) {
           continue;
         }
 
@@ -574,7 +584,7 @@ struct createTTP {
           if (!isPropOK) {
             continue;
           }
-          if (!isProbe(probe, probeParCov.getPt(), probeParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ())) {
+          if (!isProbe(probe, probeParCov.getPt(), probeParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ()) || !isProbeElectron(probe)) {
             continue;
           }
 
@@ -583,7 +593,7 @@ struct createTTP {
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float mee = v12.M();
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(v1.Px(), v1.Py(), v1.Pz(), v2.Px(), v2.Py(), v2.Pz(), tag.sign(), probe.sign(), d_bz);
-          fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
+          fRegistry.fill(HIST("TAP/hMvsPhiV"), phiv, mee);
 
           if ((pairCut.minMee < mee && mee < pairCut.maxMee) && (pairCut.minPhiV < phiv && phiv < pairCut.maxPhiV)) {
             fRegistry.fill(HIST("Track/hs"), probeParCov.getPt(), probeParCov.getEta(), RecoDecay::constrainAngle(probeParCov.getPhi(), 0, 1U), probe.sign(), mDcaInfoCov.getY() * 1e+4, mDcaInfoCov.getZ() * 1e+4, mDcaInfoCov.getY() / std::sqrt(probeParCov.getSigmaY2()), mDcaInfoCov.getZ() / std::sqrt(probeParCov.getSigmaZ2()));
@@ -593,6 +603,109 @@ struct createTTP {
         } // end of positron loop
       } // end of electron loop
 
+      // for VM peak analyses
+      std::vector<lepton> posLeptons;
+      std::vector<lepton> negLeptons;
+      posLeptons.reserve(posTracks_per_coll.size());
+      negLeptons.reserve(negTracks_per_coll.size());
+
+      for (const auto& track : posTracks_per_coll) {
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
+        auto trackParCov = getTrackParCov(track);
+        trackParCov.setPID(o2::track::PID::Electron);
+        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (!isPropOK) {
+          continue;
+        }
+        if (isProbe(track, trackParCov.getPt(), trackParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ()) && isTagElectron(track)) {
+          lepton tmp;
+          tmp.pt = trackParCov.getPt();
+          tmp.eta = trackParCov.getEta();
+          tmp.phi = RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U);
+          tmp.globalIndex = track.globalIndex();
+          tmp.mcParticleId = -1;
+          posLeptons.emplace_back(tmp);
+        }
+      } // end of positron loop
+
+      for (const auto& track : negTracks_per_coll) {
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
+        auto trackParCov = getTrackParCov(track);
+        trackParCov.setPID(o2::track::PID::Electron);
+        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (!isPropOK) {
+          continue;
+        }
+        if (isProbe(track, trackParCov.getPt(), trackParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ()) && isTagElectron(track)) {
+          lepton tmp;
+          tmp.pt = trackParCov.getPt();
+          tmp.eta = trackParCov.getEta();
+          tmp.phi = RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U);
+          tmp.globalIndex = track.globalIndex();
+          tmp.mcParticleId = -1;
+          negLeptons.emplace_back(tmp);
+        }
+      } // end of electron loop
+
+      std::vector<int> trackIdsFromPi0;
+      trackIdsFromPi0.reserve(posLeptons.size() + negLeptons.size());
+
+      for (const auto& t1 : posLeptons) {
+        for (const auto& t2 : negLeptons) {
+          ROOT::Math::PtEtaPhiMVector v1(t1.pt, t1.eta, t1.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(t2.pt, t2.eta, t2.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          if (v12.M() < pfGroup.maxMee) {
+            trackIdsFromPi0.emplace_back(t1.globalIndex);
+            trackIdsFromPi0.emplace_back(t2.globalIndex);
+            continue;
+          }
+          fRegistry.fill(HIST("Pair/uls/hMvsPt"), v12.M(), v12.Pt());
+        } // end of electron loop
+      } // end of positron loop
+
+      for (size_t i = 0; i < posLeptons.size(); i++) {
+        auto t1 = posLeptons[i];
+        for (size_t j = i + 1; j < posLeptons.size(); j++) {
+          auto t2 = posLeptons[j];
+          if (std::find(trackIdsFromPi0.begin(), trackIdsFromPi0.end(), t1.globalIndex) != trackIdsFromPi0.end()) {
+            continue;
+          }
+          if (std::find(trackIdsFromPi0.begin(), trackIdsFromPi0.end(), t2.globalIndex) != trackIdsFromPi0.end()) {
+            continue;
+          }
+          ROOT::Math::PtEtaPhiMVector v1(t1.pt, t1.eta, t1.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(t2.pt, t2.eta, t2.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          fRegistry.fill(HIST("Pair/lspp/hMvsPt"), v12.M(), v12.Pt());
+
+        } // end of positron loop
+      } // end of positron loop
+
+      for (size_t i = 0; i < negLeptons.size(); i++) {
+        auto t1 = negLeptons[i];
+        for (size_t j = i + 1; j < negLeptons.size(); j++) {
+          auto t2 = negLeptons[j];
+          if (std::find(trackIdsFromPi0.begin(), trackIdsFromPi0.end(), t1.globalIndex) != trackIdsFromPi0.end()) {
+            continue;
+          }
+          if (std::find(trackIdsFromPi0.begin(), trackIdsFromPi0.end(), t2.globalIndex) != trackIdsFromPi0.end()) {
+            continue;
+          }
+          ROOT::Math::PtEtaPhiMVector v1(t1.pt, t1.eta, t1.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(t2.pt, t2.eta, t2.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          fRegistry.fill(HIST("Pair/lsmm/hMvsPt"), v12.M(), v12.Pt());
+        } // end of electron loop
+      } // end of electron loop
+
+      posLeptons.clear();
+      posLeptons.shrink_to_fit();
+      negLeptons.clear();
+      negLeptons.shrink_to_fit();
+      trackIdsFromPi0.clear();
+      trackIdsFromPi0.shrink_to_fit();
+
     } // end of collision loop
   } // end of runTAP
 
@@ -601,13 +714,6 @@ struct createTTP {
     runTAP(bcs, collisions, tracks);
   }
   PROCESS_SWITCH(createTTP, processData, "process data", true);
-
-  struct lepton {
-    float pt{0};
-    float eta{0};
-    float phi{0};
-    int mcParticleId{-1};
-  };
 
   using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
   using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
@@ -639,11 +745,13 @@ struct createTTP {
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
+      auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       std::vector<lepton> posLeptons;
       std::vector<lepton> negLeptons;
+      posLeptons.reserve(tracks_per_coll.size());
+      negLeptons.reserve(tracks_per_coll.size());
 
       o2::dataformats::DCA mDcaInfoCov;
-      auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
         if (!track.has_mcParticle()) {
           continue;
@@ -671,7 +779,7 @@ struct createTTP {
         if (!isPropOK) {
           continue;
         }
-        if (!isProbe(track, trackParCov.getPt(), trackParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ())) {
+        if (!isProbe(track, trackParCov.getPt(), trackParCov.getEta(), mDcaInfoCov.getY(), mDcaInfoCov.getZ())) { // PID cut is not necessary, because this is true electron.
           continue;
         }
 
@@ -681,6 +789,7 @@ struct createTTP {
         tmp.pt = trackParCov.getPt();
         tmp.eta = trackParCov.getEta();
         tmp.phi = RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U);
+        tmp.globalIndex = track.globalIndex();
         tmp.mcParticleId = mcParticle.globalIndex();
 
         if (track.sign() > 0) {
