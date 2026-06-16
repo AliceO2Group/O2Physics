@@ -49,6 +49,7 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TMath.h>
@@ -1921,6 +1922,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+    constexpr bool fillFlowReso = eventHasQvector || eventHasQvectorCentr;
     bool isSelectedBDT = false;
     fNPairPerEvent = 0;
 
@@ -1985,6 +1987,8 @@ struct AnalysisSameEventPairing {
 
           fNPairPerEvent++;
 
+          VarManager::fgValues[VarManager::kAmbi1] = -999.;
+          VarManager::fgValues[VarManager::kAmbi2] = -999.;
           if (t1.reducedeventId() != event.globalIndex()) {
             VarManager::fgValues[VarManager::kAmbi1] = 1.;
           }
