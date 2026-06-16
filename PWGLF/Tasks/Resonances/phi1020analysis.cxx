@@ -1192,19 +1192,6 @@ struct Phi1020analysis {
         // =========================
         if (std::abs(part.pdgCode()) == Pdg::kPhi) {
 
-          std::vector<int> daughterPDGs;
-          if (part.has_daughters()) {
-            auto daughter01 = mcParticles.rawIteratorAt(part.daughtersIds()[0] - mcParticles.offset());
-            auto daughter02 = mcParticles.rawIteratorAt(part.daughtersIds()[1] - mcParticles.offset());
-            daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
-          } else {
-            daughterPDGs = {-1, -1};
-          }
-
-          if (std::abs(daughterPDGs[0]) != PDG_t::kKPlus || std::abs(daughterPDGs[1]) != PDG_t::kKPlus) { // At least one decay to Kaon
-            continue;
-          }
-
           histos.fill(HIST("Result/SignalLoss/GenTruephi1020pt_den"), part.pt(), centrality);
         }
       }
