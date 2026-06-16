@@ -94,11 +94,6 @@ o2physics_add_dpl_workflow(producer-charm-hadrons-track-femto-dream
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(producer-charm-cascade-hadrons-track-femto-dream
-                    SOURCES producerCharmCascadeHadronsTrackFemtoDream.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(producer-charm-hadrons-v0-femto-dream
                     SOURCES producerCharmHadronsV0FemtoDream.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
