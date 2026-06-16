@@ -240,6 +240,15 @@ struct mftMchMatcher {
   Configurable<float> fzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
 
   Configurable<float> fSamplingFraction{"cfgSamplingFraction", 1.f, "Fraction of randomly selected events to be processed"};
+  Configurable<float> fSamplingFractionTrueLeadingMatches{"cfgSamplingFractionTrueLeadingMatches", 1.f, "Fraction of randomly selected leading true matches to be processed"};
+  Configurable<float> fSamplingFractionWrongLeadingMatches{"cfgSamplingFractionWrongLeadingMatches", 1.f, "Fraction of randomly selected leading wrong matches to be processed"};
+  Configurable<float> fSamplingFractionDecayLeadingMatches{"cfgSamplingFractionDecayLeadingMatches", 1.f, "Fraction of randomly selected leading decay matches to be processed"};
+  Configurable<float> fSamplingFractionFakeLeadingMatches{"cfgSamplingFractionFakeLeadingMatches", 1.f, "Fraction of randomly selected leading fake matches to be processed"};
+  Configurable<float> fSamplingFractionTrueNonLeadingMatches{"cfgSamplingFractionTrueNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading true matches to be processed"};
+  Configurable<float> fSamplingFractionWrongNonLeadingMatches{"cfgSamplingFractionWrongNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading wrong matches to be processed"};
+  Configurable<float> fSamplingFractionDecayNonLeadingMatches{"cfgSamplingFractionDecayNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading decay matches to be processed"};
+  Configurable<float> fSamplingFractionFakeNonLeadingMatches{"cfgSamplingFractionFakeNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading fake matches to be processed"};
+  Configurable<int> fSamplingBcOddness{"cfgSamplingBcOddness", -1, "Select only events with even (0) or odd (1) global BCs"};
 
   ////   Variables for ccdb
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -430,6 +439,17 @@ struct mftMchMatcher {
     hMatchType->GetXaxis()->SetBinLabel(7, "decay (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(8, "fake (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(9, "undefined");
+
+    auto hMatchTypeAccepted = std::get<std::shared_ptr<TH1>>(registry.add("matchTypeAccepted", "Match type (accepted)", {HistType::kTH1F, {matchTypeAxis}}));
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(1, "true (leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(2, "wrong (leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(3, "decay (leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(4, "fake (leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(5, "true (non leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(7, "decay (non leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+    hMatchTypeAccepted->GetXaxis()->SetBinLabel(9, "undefined");
   }
 
   template <typename TMuons>
@@ -603,8 +623,6 @@ struct mftMchMatcher {
       mftCovIndexes[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
     }
 
-    fwdMatchMLCandidates.reserve(muonTracks.size());
-
     for (auto muon : muonTracks) {
       // only consider global MFT-MCH-MID matches
       if (static_cast<int>(muon.trackType()) != 0) {
@@ -669,6 +687,50 @@ struct mftMchMatcher {
       }
 
       registry.get<TH1>(HIST("matchType"))->Fill(static_cast<int>(matchType));
+
+      // skipp odd/even BCs if requested
+      if (fSamplingBcOddness.value >= 0 && (static_cast<int>((bc_coll.globalBC() % 2)) != fSamplingBcOddness.value)) {
+        continue;
+      }
+
+      float matchTypeSamplingFraction = 1.0;
+      switch (matchType) {
+        case kMatchTypeTrueLeading:
+          matchTypeSamplingFraction = fSamplingFractionTrueLeadingMatches;
+          break;
+        case kMatchTypeTrueNonLeading:
+          matchTypeSamplingFraction = fSamplingFractionTrueNonLeadingMatches;
+          break;
+        case kMatchTypeWrongLeading:
+          matchTypeSamplingFraction = fSamplingFractionWrongLeadingMatches;
+          break;
+        case kMatchTypeWrongNonLeading:
+          matchTypeSamplingFraction = fSamplingFractionWrongNonLeadingMatches;
+          break;
+        case kMatchTypeDecayLeading:
+          matchTypeSamplingFraction = fSamplingFractionDecayLeadingMatches;
+          break;
+        case kMatchTypeDecayNonLeading:
+          matchTypeSamplingFraction = fSamplingFractionDecayNonLeadingMatches;
+          break;
+        case kMatchTypeFakeLeading:
+          matchTypeSamplingFraction = fSamplingFractionFakeLeadingMatches;
+          break;
+        case kMatchTypeFakeNonLeading:
+          matchTypeSamplingFraction = fSamplingFractionFakeNonLeadingMatches;
+          break;
+        default:
+          break;
+      }
+
+      if (matchTypeSamplingFraction < 1.0) {
+        double rnd = mDistribution(mGenerator);
+        if (rnd > matchTypeSamplingFraction) {
+          continue;
+        }
+      }
+
+      registry.get<TH1>(HIST("matchTypeAccepted"))->Fill(static_cast<int>(matchType));
 
       fwdMatchMLCandidates(
         muonprop.getX(),
