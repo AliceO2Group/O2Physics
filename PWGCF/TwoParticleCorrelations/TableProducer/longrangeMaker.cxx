@@ -112,6 +112,7 @@ struct LongrangeMaker {
   } cfgCcdbParam;
 
   struct : ConfigurableGroup {
+    std::string prefix = "EventSelection_group";
     Configurable<bool> isApplyTrigTvx{"isApplyTrigTvx", false, "Enable Ft0a and Ft0c coincidence"};
     Configurable<bool> isApplyTfborder{"isApplyTfborder", false, "Enable TF border cut"};
     Configurable<bool> isApplyItsRofborder{"isApplyItsRofborder", false, "Enable ITS ROF border cut"};
@@ -138,10 +139,12 @@ struct LongrangeMaker {
   } cfgevtsel;
 
   struct : ConfigurableGroup {
+    std::string prefix = "MidTrackSelection_group";
     Configurable<float> cfgEtaCut{"cfgEtaCut", 0.8f, "Eta range to consider"};
     Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.2f, "minimum accepted track pT"};
     Configurable<float> cfgPtCutMax{"cfgPtCutMax", 10.0f, "maximum accepted track pT"};
-    Configurable<float> cfgPtCutMult{"cfgPtCutMult", 3.0f, "maximum track pT for multiplicity classification"};
+    Configurable<float> cfgPtCutMinForMult{"cfgPtCutMinForMult", 0.2f, "minimum track pT for multiplicity classification"};
+    Configurable<float> cfgPtCutMaxForMult{"cfgPtCutMaxForMult", 3.0f, "maximum track pT for multiplicity classification"};
     Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "cut on minimum number of TPC crossed rows"};
     Configurable<float> minTPCNClsFound{"minTPCNClsFound", 50.f, "cut on minimum value of TPC found clusters"};
     Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "cut on minNCrossedRowsOverFindableClustersTPC"};
@@ -155,6 +158,7 @@ struct LongrangeMaker {
   } cfgtrksel;
 
   struct : ConfigurableGroup {
+    std::string prefix = "MftTrackSelection_group";
     Configurable<bool> cfgUseChi2Cut{"cfgUseChi2Cut", false, "Use condition on MFT track: chi2/Nclusters"};
     Configurable<bool> useMftPtCut{"useMftPtCut", true, "Choose to apply MFT track pT cut"};
     Configurable<int> cfgMftCluster{"cfgMftCluster", 5, "cut on MFT Cluster"};
@@ -168,6 +172,7 @@ struct LongrangeMaker {
   } cfgmfttrksel;
 
   struct : ConfigurableGroup {
+    std::string prefix = "FitTrackSelection_group";
     Configurable<float> cfgFt0aEtaMax{"cfgFt0aEtaMax", 4.9f, "Maximum FT0A eta cut"};
     Configurable<float> cfgFt0aEtaMin{"cfgFt0aEtaMin", 3.5f, "Minimum FT0A eta cut"};
     Configurable<float> cfgFt0cEtaMax{"cfgFt0cEtaMax", -2.1f, "Maximum FT0C eta cut"};
@@ -180,6 +185,7 @@ struct LongrangeMaker {
   } cfgfittrksel;
 
   struct : ConfigurableGroup {
+    std::string prefix = "V0TrackSelection_group";
     Configurable<float> minTPCcrossedrows{"minTPCcrossedrows", 70.f, "cut on minimum number of crossed rows in TPC"};
     Configurable<float> minTPCcrossedrowsoverfindcls{"minTPCcrossedrowsoverfindcls", 0.8f, "cut on minimum value of the ratio between crossed rows and findable clusters in the TPC"};
     Configurable<float> v0etaCut{"v0etaCut", 0.8f, "maximum v0 track pseudorapidity"};
@@ -207,6 +213,7 @@ struct LongrangeMaker {
   } cfgv0trksel;
 
   struct : ConfigurableGroup {
+    std::string prefix = "ConfigAxis_group";
     ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
     ConfigurableAxis axisChannel{"axisChannel", {208, 0, 208}, "FT0 channel"};
     ConfigurableAxis axisMFTAmbDegree{"axisMFTAmbDegree", {50, -0.5, 49.5}, "Track Ambiguity axis"};
@@ -775,7 +782,7 @@ struct LongrangeMaker {
   {
     auto multiplicity = 0;
     for (const auto& particle : mcparticles) {
-      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMin || particle.pt() > cfgtrksel.cfgPtCutMult)
+      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMinForMult || particle.pt() > cfgtrksel.cfgPtCutMaxForMult)
         continue;
       multiplicity++;
     }
@@ -967,7 +974,7 @@ struct LongrangeMaker {
     for (const auto& particle : mcparticles) {
       if (!isGenPartSelected(particle))
         continue;
-      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMult)
+      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMinForMult && particle.pt() < cfgtrksel.cfgPtCutMaxForMult)
         multiplicity++;
       if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
         multMCFT0C++;
@@ -1085,7 +1092,7 @@ struct LongrangeMaker {
         continue;
       if (!myTrackFilter.IsSelected(track))
         continue;
-      if (track.pt() < cfgtrksel.cfgPtCutMin || track.pt() > cfgtrksel.cfgPtCutMult) {
+      if (track.pt() < cfgtrksel.cfgPtCutMinForMult || track.pt() > cfgtrksel.cfgPtCutMaxForMult) {
         continue;
       }
       float trkeff = 1.0f;
