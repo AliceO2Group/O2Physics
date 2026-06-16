@@ -36,6 +36,7 @@ struct TracksExtraV002Converter {
 
   void processV000ToV002(aod::TracksExtra_000 const& tracksExtra_000)
   {
+    tracksExtra_002.reserve(tracksExtra_000.size());
 
     for (const auto& track0 : tracksExtra_000) {
 
@@ -75,6 +76,7 @@ struct TracksExtraV002Converter {
 
   void processV001ToV002(aod::TracksExtra_001 const& tracksExtra_001)
   {
+    tracksExtra_002.reserve(tracksExtra_001.size());
 
     for (const auto& track1 : tracksExtra_001) {
 

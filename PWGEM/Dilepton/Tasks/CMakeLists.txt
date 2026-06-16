@@ -55,6 +55,11 @@ o2physics_add_dpl_workflow(table-reader-barrel
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(create-ttp
+                    SOURCES createTTP.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(event-qc
                     SOURCES eventQC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
@@ -88,6 +93,16 @@ o2physics_add_dpl_workflow(dielectron
 o2physics_add_dpl_workflow(dielectron-mc
                     SOURCES dielectronMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dielectron-sv
+                    SOURCES dielectronSV.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dielectron-sv-mc
+                    SOURCES dielectronSVMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dimuon

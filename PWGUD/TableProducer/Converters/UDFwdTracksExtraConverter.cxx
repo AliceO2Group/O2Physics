@@ -41,6 +41,7 @@ struct UDFwdTracksExtraConverter {
   {
     int trkType = 3; // trackType of MCH-MID tracks is 3
 
+    udFwdTracksExtra_001.reserve(tracks.size());
     for (const auto& track : tracks) {
 
       if (track.chi2MatchMCHMID() > 0)

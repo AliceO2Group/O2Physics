@@ -59,25 +59,48 @@ struct centralityStudy {
   uint64_t startOfRunTimestamp;
 
   // vertex Z equalization
-  TList* hCalibObjects;
-  TProfile* hVtxZFV0A;
-  TProfile* hVtxZFT0A;
-  TProfile* hVtxZFT0C;
-  TProfile* hVtxZNTracks;
-  TProfile* hVtxZNGlobals;
-  TProfile* hVtxZMFT;
-  TProfile* hVtxZFDDA;
-  TProfile* hVtxZFDDC;
+  TProfile* hVtxZFV0A = nullptr;
+  TProfile* hVtxZFT0A = nullptr;
+  TProfile* hVtxZFT0C = nullptr;
+  TProfile* hVtxZNTracks = nullptr;
+  TProfile* hVtxZNGlobals = nullptr;
+  TProfile* hVtxZMFT = nullptr;
+  TProfile* hVtxZFDDA = nullptr;
+  TProfile* hVtxZFDDC = nullptr;
+
+  // calibration histograms
+  TH1* hCentralityFV0A = nullptr;
+  TH1* hCentralityFT0A = nullptr;
+  TH1* hCentralityFT0C = nullptr;
+  TH1* hCentralityFT0M = nullptr;
+  TH1* hCentralityFDDM = nullptr;
+  TH1* hCentralityNTPV = nullptr;
+  TH1* hCentralityNGlo = nullptr;
+  TH1* hCentralityMFT = nullptr;
+
+  float centFV0A = 105.f;
+  float centFT0A = 105.f;
+  float centFT0C = 105.f;
+  float centFT0M = 105.f;
+  float centFDDM = 105.f;
+  float centNTPV = 105.f;
+  float centNGlo = 105.f;
+  float centMFT = 105.f;
 
   // Configurables
   Configurable<bool> applyVertexZEqualization{"applyVertexZEqualization", false, "0 - no, 1 - yes"};
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
 
-  Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
-  Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
-  Configurable<std::string> pathVertexZ{"pathVertexZ", "Users/d/ddobrigk/Centrality/Calibration", "Path to vertexZ profiles"};
-  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate: (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
-  Configurable<bool> irCrashOnNull{"irCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
+  struct : ConfigurableGroup {
+    std::string prefix = "ccdbSettings";
+    Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
+    Configurable<std::string> pathCentrality{"pathCentrality", "Centrality/Estimators", "path to centrality calibration if fetchCentralityCalibration is enabled"};
+    Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
+    Configurable<std::string> pathVertexZ{"pathVertexZ", "Users/d/ddobrigk/Centrality/Calibration", "Path to vertexZ profiles"};
+    Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate: (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+    Configurable<bool> irCrashOnNull{"irCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
+    Configurable<bool> fetchCentralityCalibration{"fetchCentralityCalibration", false, "Flag to fetch the centrality calibration within the task instead of the centrality table"};
+  } ccdbSettings;
 
   // _______________________________________
   // Configurable group
@@ -127,7 +150,6 @@ struct centralityStudy {
     Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
     Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
-
   } bcsel;
 
   // _______________________________________
@@ -202,17 +224,7 @@ struct centralityStudy {
 
   void init(InitContext&)
   {
-    hCalibObjects = nullptr;
-    hVtxZFV0A = nullptr;
-    hVtxZFT0A = nullptr;
-    hVtxZFT0C = nullptr;
-    hVtxZNTracks = nullptr;
-    hVtxZNGlobals = nullptr;
-    hVtxZMFT = nullptr;
-    hVtxZFDDA = nullptr;
-    hVtxZFDDC = nullptr;
-
-    ccdb->setURL(ccdbURL);
+    ccdb->setURL(ccdbSettings.ccdbURL);
     // ccdb->setCaching(true);
     // ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -244,6 +256,7 @@ struct centralityStudy {
       histos.add("hNGlobalTracks", "hNGlobalTracks", kTH1D, {axisMultUltraFineGlobalTracks});
       histos.add("hNMFTTracks", "hNMFTTracks", kTH1D, {axisMultUltraFineMFTTracks});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
+      histos.add("hInteractionRate", "hInteractionRate", kTH1D, {axisInteractionRate});
 
       histos.add("hFT0CvsPVz_Collisions", "hFT0CvsPVz_Collisions", kTProfile, {axisPVz});
       histos.add("hFT0AvsPVz_Collisions", "hFT0AvsPVz_Collisions", kTProfile, {axisPVz});
@@ -290,7 +303,7 @@ struct centralityStudy {
         histos.add("hFT0COccupancyVsNGlobalTracksVsFT0C", "hFT0COccupancyVsNGlobalTracksVsFT0C", kTH3F, {axisFT0COccupancy, axisMultGlobalTracks, axisMultFT0C});
       }
 
-      if (doprocessCollisionsWithCentrality) {
+      if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
         // in case requested: do vs centrality debugging
         histos.add("hCentrality", "hCentrality", kTH1F, {axisCentrality});
         histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
@@ -300,6 +313,7 @@ struct centralityStudy {
         histos.add("hNMFTTracksVsCentrality", "hNMFTTracksVsCentrality", kTH2F, {axisCentrality, axisMultMFTTracks});
         histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
         histos.add("hDeltaTimeVsCentrality", "hDeltaTimeVsCentrality", kTH2F, {axisCentrality, axisDeltaTime});
+        histos.add("hInteractionRateVsCentrality", "hInteractionRateVsCentrality", kTH2F, {axisCentrality, axisInteractionRate});
 
         if (studies.doOccupancyStudyVsCentrality2d) {
           histos.add("hNcontribsProfileVsTrackOccupancyVsCentrality", "hNcontribsProfileVsTrackOccupancyVsCentrality", kTProfile2D, {axisTrackOccupancy, axisCentrality});
@@ -330,8 +344,12 @@ struct centralityStudy {
 
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0A_BCs", "hFT0A_BCs", kTH1D, {axisMultUltraFineFT0A});
+      histos.add("hFT0AOuter_BCs", "hFT0AOuter_BCs", kTH1D, {axisMultUltraFineFT0A});
       histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
+      histos.add("hFT0MOuterA_BCs", "hFT0MOuterA_BCs", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
+      histos.add("hInteractionRate_BCs", "hInteractionRate_BCs", kTH1D, {axisInteractionRate});
+
       histos.add("hFV0AT0C_BCs", "hFV0AT0C_BCs", kTH1D, {axisMultUltraFineFV0AT0C});
       histos.add("hScaledFT0M_BCs", "hScaledFT0M_BCs", kTH1D, {axisMultUltraFineScaledFT0M});
       histos.add("hScaledFV0AT0C_BCs", "hScaledFV0AT0C_BCs", kTH1D, {axisMultUltraFineScaledFV0AT0C});
@@ -376,26 +394,96 @@ struct centralityStudy {
     LOGF(info, "Setting up for run: %i", mRunNumber);
 
     // only get object when switching runs
-    o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(pathGRPECSObject, mRunNumber);
+    o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(ccdbSettings.pathGRPECSObject, mRunNumber);
     startOfRunTimestamp = grpo->getTimeStart();
 
     if (applyVertexZEqualization.value) {
       // acquire vertex-Z equalization histograms if requested
       LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
-      hCalibObjects = ccdb->getForRun<TList>(pathVertexZ, mRunNumber);
+      TList* hCalibObjects = ccdb->getForRun<TList>(ccdbSettings.pathVertexZ, mRunNumber);
 
-      hVtxZFV0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
-      hVtxZFT0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
-      hVtxZFT0C = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
-      // hVtxZFDDA = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
-      // hVtxZFDDC = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
-      hVtxZNTracks = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
-      hVtxZNGlobals = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
-      hVtxZMFT = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
+      hVtxZFV0A = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
+      hVtxZFT0A = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
+      hVtxZFT0C = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
+      // hVtxZFDDA = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
+      // hVtxZFDDC = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
+      hVtxZNTracks = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
+      hVtxZNGlobals = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
+      hVtxZMFT = dynamic_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
 
       // Capture error
       if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks || !hVtxZNGlobals || !hVtxZMFT) {
         LOGF(error, "Problem loading CCDB objects! Please check");
+      }
+    }
+
+    if (ccdbSettings.fetchCentralityCalibration) {
+      LOGF(info, "Acquiring centrality calibration for run %i", mRunNumber);
+      TList* hCentralityObjects = ccdb->getForRun<TList>(ccdbSettings.pathCentrality, mRunNumber);
+      hCentralityFV0A = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFV0"));
+      hCentralityFT0A = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0A"));
+      hCentralityFT0C = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0C"));
+      hCentralityFT0M = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFT0"));
+      hCentralityFDDM = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqFDD"));
+      hCentralityNTPV = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqNTracksPV"));
+      hCentralityNGlo = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqNGlobal"));
+      hCentralityMFT = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
+
+      // won't capture null pointers -> explicitly check for those when attempting to evaluate
+      auto reportSuccess = [](TH1* hist, const std::string& name) {
+        if (!hist) {
+          LOGF(info, "Calibration missing for %s", name);
+        } else {
+          LOGF(info, "Calibration loaded for %s", name);
+        }
+      };
+
+      reportSuccess(hCentralityFV0A, "FV0A");
+      reportSuccess(hCentralityFT0A, "FT0A");
+      reportSuccess(hCentralityFT0C, "FT0C");
+      reportSuccess(hCentralityFT0M, "FT0M");
+      reportSuccess(hCentralityFDDM, "FDDM");
+      reportSuccess(hCentralityNTPV, "NTPV");
+      reportSuccess(hCentralityNGlo, "NGlobals");
+      reportSuccess(hCentralityMFT, "MFT");
+
+      LOGF(info, "Centrality calibration loading done.");
+      auto getCent = [](TH1* hist, float mult) -> float {
+        return hist ? hist->GetBinContent(mult) : 0.0;
+      };
+
+      centFV0A = getCent(hCentralityFV0A, collision.multFV0A());
+      centFT0A = getCent(hCentralityFT0A, collision.multFT0A());
+      centFT0C = getCent(hCentralityFT0C, collision.multFT0C());
+      centFT0M = getCent(hCentralityFT0M, collision.multFT0A() + collision.multFT0C());
+      centFDDM = getCent(hCentralityFDDM, collision.multFDDA() + collision.multFDDC());
+      centNTPV = getCent(hCentralityNTPV, collision.multNTracksPV());
+      centNGlo = getCent(hCentralityNGlo, collision.multNTracksGlobal());
+      centMFT = getCent(hCentralityMFT, collision.mftNtracks());
+    } else if (doprocessCollisionsWithCentrality) {
+      if constexpr (requires { collision.centFV0A(); }) {
+        centFV0A = collision.centFV0A();
+      }
+      if constexpr (requires { collision.centFT0A(); }) {
+        centFT0A = collision.centFT0A();
+      }
+      if constexpr (requires { collision.centFT0C(); }) {
+        centFT0C = collision.centFT0C();
+      }
+      if constexpr (requires { collision.centFT0M(); }) {
+        centFT0M = collision.centFT0M();
+      }
+      if constexpr (requires { collision.centFDDM(); }) {
+        centFDDM = collision.centFDDM();
+      }
+      if constexpr (requires { collision.centNTPV(); }) {
+        centNTPV = collision.centNTPV();
+      }
+      if constexpr (requires { collision.centNGlobal(); }) {
+        centNGlo = collision.centNGlobal();
+      }
+      if constexpr (requires { collision.centMFT(); }) {
+        centMFT = collision.centMFT();
       }
     }
 
@@ -431,6 +519,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
       histPointers.insert({histPath + "hNMFTTracks", histos.add((histPath + "hNMFTTracks").c_str(), "hNMFTTracks", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
       histPointers.insert({histPath + "hNPVContributors", histos.add((histPath + "hNPVContributors").c_str(), "hNPVContributors", {kTH1D, {{axisMultUltraFinePVContributors}}})});
+      histPointers.insert({histPath + "hInteractionRate", histos.add((histPath + "hInteractionRate").c_str(), "hInteractionRate", {kTH1D, {{axisInteractionRate}}})});
 
       if (applyVertexZEqualization) {
         histPointers.insert({histPath + "hFT0C_Collisions_Unequalized", histos.add((histPath + "hFT0C_Collisions_Unequalized").c_str(), "hFT0C_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0C}}})});
@@ -461,7 +550,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hFDDCVsFT0C", histos.add((histPath + "hFDDCVsFT0C").c_str(), "hFDDCVsFT0C", {kTH2F, {{axisMultFT0C, axisMultFDDC}}})});
     }
 
-    if (doprocessCollisionsWithCentrality) {
+    if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
       // in case requested: do vs centrality debugging
       histPointers.insert({histPath + "hCentrality", histos.add((histPath + "hCentrality").c_str(), "hCentrality", {kTH1F, {{axisCentrality}}})});
       histPointers.insert({histPath + "hNContribsVsCentrality", histos.add((histPath + "hNContribsVsCentrality").c_str(), "hNContribsVsCentrality", {kTH2F, {{axisCentrality, axisMultPVContributors}}})});
@@ -471,6 +560,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNMFTTracksVsCentrality", histos.add((histPath + "hNMFTTracksVsCentrality").c_str(), "hNMFTTracksVsCentrality", {kTH2F, {{axisCentrality, axisMultMFTTracks}}})});
       histPointers.insert({histPath + "hPVChi2VsCentrality", histos.add((histPath + "hPVChi2VsCentrality").c_str(), "hPVChi2VsCentrality", {kTH2F, {{axisCentrality, axisPVChi2}}})});
       histPointers.insert({histPath + "hDeltaTimeVsCentrality", histos.add((histPath + "hDeltaTimeVsCentrality").c_str(), "hDeltaTimeVsCentrality", {kTH2F, {{axisCentrality, axisDeltaTime}}})});
+      histPointers.insert({histPath + "hInteractionRateVsCentrality", histos.add((histPath + "hInteractionRateVsCentrality").c_str(), "hInteractionRateVsCentrality", {kTH2F, {{axisCentrality, axisInteractionRate}}})});
     }
 
     if (studies.doNGlobalTracksVsRawSignals) {
@@ -648,7 +738,7 @@ struct centralityStudy {
       float timeToNeighbour = TMath::Min(
         std::abs(collision.timeToNext()),
         std::abs(collision.timeToPrevious()));
-      histos.fill(HIST("hDeltaTimeVsCentrality"), collision.centFT0C(), timeToNeighbour);
+      histos.fill(HIST("hDeltaTimeVsCentrality"), centFT0C, timeToNeighbour);
       if (timeToNeighbour < minTimeDelta) {
         return;
       }
@@ -707,14 +797,18 @@ struct centralityStudy {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(15);
     }
     if (evsel.rejectIsFlangeEvent) {
-      if constexpr (requires { collision.ft0TriggerMask(); }) {
-        constexpr int IsFlangeEventId = 7;
-        std::bitset<8> ft0TriggerMask = collision.ft0TriggerMask();
-        if (ft0TriggerMask[IsFlangeEventId]) {
-          return;
+      if constexpr (requires { collision.has_multBC(); }) {
+        if (collision.has_multBC()) {
+          auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
+          constexpr int IsFlangeEventId = 7;
+          std::bitset<8> ft0TriggerMask = multbc.multT0triggerBits();
+          if (ft0TriggerMask[IsFlangeEventId]) {
+            return;
+          }
         }
       }
     }
+
     histos.fill(HIST("hCollisionSelection"), 16 /* reject flange events */);
     if (studies.doRunByRunHistograms) {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(16);
@@ -826,80 +920,88 @@ struct centralityStudy {
     }
 
     // if the table has centrality information
-    if constexpr (requires { collision.centFT0C(); }) {
-      // process FT0C centrality plots
-      histos.fill(HIST("hCentrality"), collision.centFT0C());
-      histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C(), collision.multPVTotalContributors());
-      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSTPC());
-      histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
-      histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNMFTTracksVsCentrality"), collision.centFT0C(), collision.mftNtracks());
-      histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C(), collision.multPVChi2());
+    // process FT0C centrality plots
+    if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
+      histos.fill(HIST("hCentrality"), centFT0C);
+      histos.fill(HIST("hNContribsVsCentrality"), centFT0C, collision.multPVTotalContributors());
+      histos.fill(HIST("hNITSTPCTracksVsCentrality"), centFT0C, collision.multNTracksITSTPC());
+      histos.fill(HIST("hNITSOnlyTracksVsCentrality"), centFT0C, collision.multNTracksITSOnly());
+      histos.fill(HIST("hNGlobalTracksVsCentrality"), centFT0C, collision.multNTracksGlobal());
+      histos.fill(HIST("hNMFTTracksVsCentrality"), centFT0C, collision.mftNtracks());
+      histos.fill(HIST("hPVChi2VsCentrality"), centFT0C, collision.multPVChi2());
       if (studies.doRunByRunHistograms) {
-        getHist(TH1, histPath + "hCentrality")->Fill(collision.centFT0C());
-        getHist(TH2, histPath + "hNContribsVsCentrality")->Fill(collision.centFT0C(), collision.multPVTotalContributors());
-        getHist(TH2, histPath + "hNITSTPCTracksVsCentrality")->Fill(collision.centFT0C(), collision.multNTracksITSTPC());
-        getHist(TH2, histPath + "hNITSOnlyTracksVsCentrality")->Fill(collision.centFT0C(), collision.multNTracksITSOnly());
-        getHist(TH2, histPath + "hNGlobalTracksVsCentrality")->Fill(collision.centFT0C(), collision.multNTracksGlobal());
-        getHist(TH2, histPath + "hNMFTTracksVsCentrality")->Fill(collision.centFT0C(), collision.mftNtracks());
-        getHist(TH2, histPath + "hPVChi2VsCentrality")->Fill(collision.centFT0C(), collision.multPVChi2());
+        getHist(TH1, histPath + "hCentrality")->Fill(centFT0C);
+        getHist(TH2, histPath + "hNContribsVsCentrality")->Fill(centFT0C, collision.multPVTotalContributors());
+        getHist(TH2, histPath + "hNITSTPCTracksVsCentrality")->Fill(centFT0C, collision.multNTracksITSTPC());
+        getHist(TH2, histPath + "hNITSOnlyTracksVsCentrality")->Fill(centFT0C, collision.multNTracksITSOnly());
+        getHist(TH2, histPath + "hNGlobalTracksVsCentrality")->Fill(centFT0C, collision.multNTracksGlobal());
+        getHist(TH2, histPath + "hNMFTTracksVsCentrality")->Fill(centFT0C, collision.mftNtracks());
+        getHist(TH2, histPath + "hPVChi2VsCentrality")->Fill(centFT0C, collision.multPVChi2());
       }
       if (studies.doOccupancyStudyVsCentrality2d) {
-        histos.fill(HIST("hNcontribsProfileVsTrackOccupancyVsCentrality"), collision.trackOccupancyInTimeRange(), collision.centFT0C(), collision.multPVTotalContributors());
-        histos.fill(HIST("hNGlobalTracksProfileVsTrackOccupancyVsCentrality"), collision.trackOccupancyInTimeRange(), collision.centFT0C(), collision.multNTracksGlobal());
-        histos.fill(HIST("hNcontribsProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.centFT0C(), collision.multPVTotalContributors());
-        histos.fill(HIST("hNGlobalTracksProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.centFT0C(), collision.multNTracksGlobal());
+        histos.fill(HIST("hNcontribsProfileVsTrackOccupancyVsCentrality"), collision.trackOccupancyInTimeRange(), centFT0C, collision.multPVTotalContributors());
+        histos.fill(HIST("hNGlobalTracksProfileVsTrackOccupancyVsCentrality"), collision.trackOccupancyInTimeRange(), centFT0C, collision.multNTracksGlobal());
+        histos.fill(HIST("hNcontribsProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), centFT0C, collision.multPVTotalContributors());
+        histos.fill(HIST("hNGlobalTracksProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), centFT0C, collision.multNTracksGlobal());
       }
 
       if (studies.doOccupancyStudyVsCentrality3d) {
-        histos.fill(HIST("hTrackOccupancyVsNContribsVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.centFT0C());
-        histos.fill(HIST("hTrackOccupancyVsNGlobalTracksVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.centFT0C());
-        histos.fill(HIST("hFT0COccupancyVsNContribsVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.centFT0C());
-        histos.fill(HIST("hFT0COccupancyVsNGlobalTracksVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.centFT0C());
+        histos.fill(HIST("hTrackOccupancyVsNContribsVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multPVTotalContributors(), centFT0C);
+        histos.fill(HIST("hTrackOccupancyVsNGlobalTracksVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multNTracksGlobal(), centFT0C);
+        histos.fill(HIST("hFT0COccupancyVsNContribsVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multPVTotalContributors(), centFT0C);
+        histos.fill(HIST("hFT0COccupancyVsNGlobalTracksVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multNTracksGlobal(), centFT0C);
       }
     }
 
     if constexpr (requires { collision.has_multBC(); }) {
       if (collision.has_multBC()) {
-        initRun(collision);
-        auto multbc = collision.template multBC_as<aod::MultBCs>();
-        uint64_t bcTimestamp = multbc.timestamp();
-        const float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
-        const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
-
-        if (studies.doTimeStudies && studies.doRunByRunHistograms) {
-          getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
-          getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
-          getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
-          getHist(TH2, histPath + "hFV0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0A());
-          getHist(TH2, histPath + "hFV0AOuterVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0AOuter());
-          getHist(TH2, histPath + "hMFTTracksVsTime")->Fill(hoursAfterStartOfRun, collision.mftNtracks());
-          getHist(TH2, histPath + "hNGlobalVsTime")->Fill(hoursAfterStartOfRun, collision.multNTracksGlobal());
-          getHist(TH2, histPath + "hNTPVContributorsVsTime")->Fill(hoursAfterStartOfRun, collision.multPVTotalContributors());
-          getHist(TProfile, histPath + "hPVzProfileCoVsTime")->Fill(hoursAfterStartOfRun, collision.multPVz());
-          getHist(TProfile, histPath + "hPVzProfileBcVsTime")->Fill(hoursAfterStartOfRun, multbc.multFT0PosZ());
-          getHist(TProfile, histPath + "hIRProfileVsTime")->Fill(hoursAfterStartOfRun, interactionRate);
+        auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
+        const uint64_t bcTimestamp = multbc.timestamp();
+        const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
+        histos.fill(HIST("hInteractionRate"), interactionRate);
+        if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
+          histos.fill(HIST("hInteractionRateVsCentrality"), centFT0C, interactionRate);
+        }
+        if (studies.doRunByRunHistograms) {
+          getHist(TH2, histPath + "hInteractionRateVsCentrality")->Fill(centFT0C, interactionRate);
+        }
+        if (studies.doRunByRunHistograms) {
+          getHist(TH1, histPath + "hInteractionRate")->Fill(interactionRate);
+          if (studies.doTimeStudies) {
+            const float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+            getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
+            getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
+            getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
+            getHist(TH2, histPath + "hFV0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0A());
+            getHist(TH2, histPath + "hFV0AOuterVsTime")->Fill(hoursAfterStartOfRun, multbc.multFV0AOuter());
+            getHist(TH2, histPath + "hMFTTracksVsTime")->Fill(hoursAfterStartOfRun, collision.mftNtracks());
+            getHist(TH2, histPath + "hNGlobalVsTime")->Fill(hoursAfterStartOfRun, collision.multNTracksGlobal());
+            getHist(TH2, histPath + "hNTPVContributorsVsTime")->Fill(hoursAfterStartOfRun, collision.multPVTotalContributors());
+            getHist(TProfile, histPath + "hPVzProfileCoVsTime")->Fill(hoursAfterStartOfRun, collision.multPVz());
+            getHist(TProfile, histPath + "hPVzProfileBcVsTime")->Fill(hoursAfterStartOfRun, multbc.multFT0PosZ());
+            getHist(TProfile, histPath + "hIRProfileVsTime")->Fill(hoursAfterStartOfRun, interactionRate);
+          }
         }
       }
     }
   }
 
-  void processCollisions(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisions(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC>::iterator const& collision, soa::Join<aod::MultBCs, aod::MultBcSel> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
+  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC>::iterator const& collision, soa::Join<aod::MultBCs, aod::MultBcSel> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::FITExtraMults>::iterator const& collision)
+  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }
@@ -992,7 +1094,7 @@ struct centralityStudy {
     return true;
   }
 
-  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal> const&)
   {
     // process BCs, calculate FT0C distribution
     for (const auto& multbc : multbcs) {
@@ -1003,9 +1105,15 @@ struct centralityStudy {
       // if we got here, we also finally fill the FT0C histogram, please
       histos.fill(HIST("hFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C);
       histos.fill(HIST("hFT0A_BCs"), multbc.multFT0A() * scale.factorFT0A);
+      histos.fill(HIST("hFT0AOuter_BCs"), multbc.multFT0AOuter() * scale.factorFT0A);
       histos.fill(HIST("hFT0M_BCs"), (multbc.multFT0A() + multbc.multFT0C()) * scale.factorFT0M);
+      histos.fill(HIST("hFT0MOuterA_BCs"), (multbc.multFT0AOuter() + multbc.multFT0C()) * scale.factorFT0M);
       histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scale.factorFV0A);
       histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scale.factorFV0AT0C);
+
+      const uint64_t bcTimestamp = multbc.timestamp();
+      const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
+      histos.fill(HIST("hInteractionRate_BCs"), interactionRate);
 
       if (studies.do2DPlots) {
         histos.fill(HIST("hFT0AVsFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C, multbc.multFT0A() * scale.factorFT0A);
@@ -1024,7 +1132,7 @@ struct centralityStudy {
       }
 
       if (multbc.has_ft0Mult()) {
-        auto multco = multbc.ft0Mult_as<soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
+        auto multco = multbc.ft0Mult_as<soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal>>();
         if (multbc.multFT0PosZValid()) {
           histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multFT0PosZ());
         }

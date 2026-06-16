@@ -31,6 +31,7 @@ struct trackConverter1 {
 
   void process(aod::EMPrimaryTracks_000 const& tracks)
   {
+    track_001.reserve(tracks.size());
     for (const auto& track : tracks) {
       track_001(
         // track.collisionId(),

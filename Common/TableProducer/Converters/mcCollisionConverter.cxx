@@ -21,6 +21,7 @@ struct mcCollisionConverter {
 
   void process(aod::McCollisions_000 const& mcCollisionTable)
   {
+    mcCollisions_001.reserve(mcCollisionTable.size());
     for (auto& mcCollision : mcCollisionTable) {
 
       // Repopulate new table

@@ -31,6 +31,11 @@ o2physics_add_dpl_workflow(skimmer-primary-electron
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(skimmer-primary-electron-sv
+                    SOURCES skimmerPrimaryElectronSV.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(skimmer-primary-electron-qc
                     SOURCES skimmerPrimaryElectronQC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore

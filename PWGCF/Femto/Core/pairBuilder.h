@@ -820,6 +820,130 @@ class PairTrackTwoTrackResonanceBuilder
   int mMixingDepth = 5;
 };
 
+template <const char* prefixV0,
+          const char* prefixV0PosDau,
+          const char* prefixV0NegDau,
+          const char* prefixResonance,
+          const char* prefixResonancePosDau,
+          const char* prefixResonanceNegDau,
+          const char* prefixSe,
+          const char* prefixMe,
+          const char* prefixCprPosSe,
+          const char* prefixCprNegSe,
+          const char* prefixCprPosMe,
+          const char* prefixCprNegMe,
+          modes::V0 v0Type,
+          modes::TwoTrackResonance resonanceType>
+class PairV0TwoTrackResonanceBuilder
+{
+ public:
+  PairV0TwoTrackResonanceBuilder() = default;
+  ~PairV0TwoTrackResonanceBuilder() = default;
+
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
+            typename T1,
+            typename T2,
+            typename T3,
+            typename T4,
+            typename T5,
+            typename T6,
+            typename T7,
+            typename T8,
+            typename T9,
+            typename T10,
+            typename T11,
+            typename T12,
+            typename T13,
+            typename T14,
+            typename T15,
+            typename T16,
+            typename T17,
+            typename T18>
+  void init(o2::framework::HistogramRegistry* registry,
+            T1 const& confCollisionBinning,
+            T2 const& confV0Selection,
+            T3 const& confResonanceSelection,
+            T4 const& confCprPos,
+            T5 const& confCprNeg,
+            T6 const& confMixing,
+            T7 const& confPairBinning,
+            T8 const& confPairCuts,
+            std::map<T9, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& v0HistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& V0posDauHistSpec,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& V0negDauHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& resonanceHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& ResonancePosDauHistSpec,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& ResonanceNegDauHistSpec,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpecPos,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg)
+  {
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+
+    mV0HistManager.template init<modeSe>(registry, v0HistSpec, confV0Selection, V0posDauHistSpec, V0negDauHistSpec);
+    mResonanceHistManager.template init<modeSe>(registry, resonanceHistSpec, confResonanceSelection, ResonancePosDauHistSpec, ResonanceNegDauHistSpec);
+
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.setMass(confV0Selection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
+    mPairHistManagerSe.setCharge(1, 1); // set charge to 1
+    mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
+
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.setMass(confV0Selection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
+    mPairHistManagerMe.setCharge(1, 1); // set charge to 1
+    mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
+
+    // setup mixing
+    mMixingPolicy = static_cast<pairhistmanager::MixingPolicy>(confMixing.policy.value);
+    mMixingDepth = confMixing.depth.value;
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processSameEvent(T1 const& col, T2& trackTable, T3& v0Partition, T4& resonancePartition, T5& cache)
+  {
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto resonanaceSlice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (v0Slice.size() < nLimitPartitionParticles || resonanaceSlice.size() < nLimitPartitionParticles) {
+      return;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    pairprocesshelpers::processSameEvent<mode>(v0Slice, resonanaceSlice, trackTable, col, mV0HistManager, mResonanceHistManager, mPairHistManagerSe, mCprSe, mPc);
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& v0Partition, T4& resonancePartition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  {
+    switch (mMixingPolicy) {
+      case static_cast<int>(pairhistmanager::kVtxMult):
+        pairprocesshelpers::processMixedEvent<mode>(cols, v0Partition, resonancePartition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxCent):
+        pairprocesshelpers::processMixedEvent<mode>(cols, v0Partition, resonancePartition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxMultCent):
+        pairprocesshelpers::processMixedEvent<mode>(cols, v0Partition, resonancePartition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+
+ private:
+  colhistmanager::CollisionHistManager mColHistManager;
+  v0histmanager::V0HistManager<prefixV0, prefixV0PosDau, prefixV0NegDau, v0Type> mV0HistManager;
+  twotrackresonancehistmanager::TwoTrackResonanceHistManager<prefixResonance, prefixResonancePosDau, prefixResonanceNegDau, resonanceType> mResonanceHistManager;
+  pairhistmanager::PairHistManager<prefixSe, modes::Particle::kV0, modes::Particle::kTwoTrackResonance> mPairHistManagerSe;
+  pairhistmanager::PairHistManager<prefixMe, modes::Particle::kV0, modes::Particle::kTwoTrackResonance> mPairHistManagerMe;
+  closepairrejection::ClosePairRejectionV0V0<prefixCprPosSe, prefixCprNegSe> mCprSe; // cpr for twotrackresonances and v0 work the same way
+  closepairrejection::ClosePairRejectionV0V0<prefixCprPosMe, prefixCprNegMe> mCprMe; // cpr for twotrackresonances and v0 work the same way
+  paircleaner::V0V0PairCleaner mPc;                                                  // pc for twotrackresonances and v0 work the same way
+  pairhistmanager::MixingPolicy mMixingPolicy = pairhistmanager::MixingPolicy::kVtxMult;
+  int mMixingDepth = 5;
+};
+
 template <const char* prefixTrack,
           const char* prefixKink,
           const char* prefixChaDau,

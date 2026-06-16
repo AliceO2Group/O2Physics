@@ -101,7 +101,7 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotQ3VsMtVsMult{"plotQ3VsMtVsMult", false, "Enable 3D histogram (Q3 vs Mt vs Mult)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsMultVsCent{"plotQ3VsMtVsMultVsCent", false, "Enable 4D histogram (Q3 vs Mt vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMult{"plotQ3VsMtVsPt1VsPt2VsPt3VsMult", false, "Enable 6D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult)"};
-  o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent{"plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", false, "Enable 3D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult vs Cent)"};
+  o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent{"plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", false, "Enable 7D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult vs Cent)"};
   o2::framework::ConfigurableAxis q3{"q3", {{600, 0, 6}}, "q3"};
   o2::framework::ConfigurableAxis mt{"mt", {{500, 0.8, 5.8}}, "mt"};
   o2::framework::ConfigurableAxis multiplicity{"multiplicity", {{50, 0, 200}}, "multiplicity"};
@@ -133,20 +133,20 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       {kQ3, o2::framework::HistType::kTH1F, "hQ3", "Q_{3}; Q_{3} (GeV/#it{c}); Entries"},
       {kMt, o2::framework::HistType::kTH1F, "hMt", "transverse mass; m_{T} (GeV/#it{c}^{2}); Entries"},
       // 2D
-      {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", " p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", "p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt2VsQ3, o2::framework::HistType::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
-      {kPt3VsQ3, o2::framework::HistType::kTH2F, "hPt3VsQ3", "p_{T,3} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kPt3VsQ3, o2::framework::HistType::kTH2F, "hPt3VsQ3", "p_{T,3} vs Q_{3}; p_{T,3} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kQ3VsMt, o2::framework::HistType::kTH2F, "hQ3VsMt", "Q_{3} vs m_{T}; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2})"},
       {kQ3VsMult, o2::framework::HistType::kTH2F, "hQ3VsMult", "Q_{3} vs Multiplicity; Q_{3} (GeV/#it{c}); Multiplicity"},
       {kQ3VsCent, o2::framework::HistType::kTH2F, "hQ3VsCent", "Q_{3} vs Centrality; Q_{3} (GeV/#it{c}); Centrality"},
       // n-D
-      {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "k* vs m_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
-      {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c})"},
+      {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "p_{T,1} vs p_{T,2} vs p_{T,3}; p_{T,1} (GeV/#it{c});p_{T,2} (GeV/#it{c});p_{T,3} (GeV/#it{c});"},
+      {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c});"},
       {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
-      {kQ3VsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality"},
+      {kQ3VsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with mass
-      {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}) ; Multiplicity"},
-      {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}) vs multiplicity vs centrality"},
+      {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}); Multiplicity;"},
+      {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}); Multiplicity; Centrality (%);"},
       {kTrueQ3VsQ3, o2::framework::HistType::kTH2F, "hTrueQ3VsQ3", "Q_{3,True} vs Q_{3}; Q_{3,true} (GeV/#it{c});  Q_{3} (GeV/#it{c})"},
       {kTrueMtVsMt, o2::framework::HistType::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T} (GeV/#it{c}^{2})"},
       {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
@@ -198,6 +198,9 @@ constexpr char PrefixTrackTrackTrackMe[] = "TrackTrackTrack/ME/";
 
 constexpr char PrefixTrackTrackLambdaSe[] = "TrackTrackLambda/SE/";
 constexpr char PrefixTrackTrackLambdaMe[] = "TrackTrackLambda/ME/";
+
+constexpr char PrefixTrackTrackCascadeSe[] = "TrackTrackCascade/SE/";
+constexpr char PrefixTrackTrackCascadeMe[] = "TrackTrackCascade/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
@@ -356,7 +359,7 @@ class TripletHistManager
     mHasMcCol = true;
     auto mcCol1 = col1.template fMcCol_as<T6>();
     auto mcCol2 = col2.template fMcCol_as<T6>();
-    auto mcCol3 = col2.template fMcCol_as<T6>();
+    auto mcCol3 = col3.template fMcCol_as<T6>();
     mTrueMult = (mcCol1.mult() + mcCol2.mult() + mcCol3.mult()) / 3.f;
     mTrueCent = (mcCol1.cent() + mcCol2.cent() + mcCol3.cent()) / 3.f;
   }
@@ -562,8 +565,6 @@ class TripletHistManager
   bool mHasMcCol = false;
   float mQ3Min = -1.f;
   float mQ3Max = -1.f;
-  float mKtMin = -1.f;
-  float mKtMax = -1.f;
   float mMtMin = -1.f;
   float mMtMax = -1.f;
 
@@ -579,6 +580,6 @@ class TripletHistManager
   bool mPlotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent = false;
 };
 
-}; // namespace triplethistmanager
-}; // namespace o2::analysis::femto
+} // namespace triplethistmanager
+} // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_

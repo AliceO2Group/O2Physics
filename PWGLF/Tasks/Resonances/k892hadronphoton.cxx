@@ -78,7 +78,7 @@ struct k892hadronphoton {
   //__________________________________________________
   // For manual sliceBy
   // SliceCache cache;
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -1241,18 +1241,18 @@ struct k892hadronphoton {
     }
   }
 
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, KStars const& fullKStars)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, KStars const& fullKStars)
   {
     analyzeRecoeKStars(collisions, fullKStars);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, MCKStars const& fullKStars)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, MCKStars const& fullKStars)
   {
     analyzeRecoeKStars(collisions, fullKStars);
   }
 
   // Simulated processing in Run 3
-  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::KStarGens, aod::KStarGenCollRef> const& KStarGens)
+  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::KStarGens, aod::KStarGenCollRef> const& KStarGens)
   {
     analyzeGenerated(mcCollisions, collisions, KStarGens);
   }

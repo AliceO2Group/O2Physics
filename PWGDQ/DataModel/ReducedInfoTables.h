@@ -152,6 +152,11 @@ DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float);             //!  Ref Flow correla
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);                 //!  Weighted multiplicity of <<2>> for reference flow
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float);             //!  Weighted multiplicity of <<4>> for reference flow
 DECLARE_SOA_COLUMN(M11REFetagap, m11refetagap, float);     //!  Weighted multiplicity of <<2>>  etagap for reference flow
+
+DECLARE_SOA_COLUMN(Psi2Random, psi2random, float); //!  Event plane angle from random subevent
+DECLARE_SOA_COLUMN(Psi2A, psi2a, float);           //!  Event plane angle from Q-vector A
+DECLARE_SOA_COLUMN(Psi2B, psi2b, float);           //!  Event plane angle from Q-vector B
+DECLARE_SOA_COLUMN(Psi2C, psi2c, float);           //!  Event plane angle from Q-vector C
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
@@ -993,6 +998,9 @@ DECLARE_SOA_TABLE(DileptonsPolarization, "AOD", "RTDILPOLAR", //!
                   reducedpair::CosThetaRM,
                   reducedpair::CosThetaStarTPC, reducedpair::CosThetaStarFT0A, reducedpair::CosThetaStarFT0C);
 
+DECLARE_SOA_TABLE(DileptonsEventInfo, "AOD", "RTDILEVENTINFO", //!
+                  cent::CentFT0C, collision::PosZ, collision::NumContrib, reducedevent::Psi2Random, reducedevent::Psi2A, reducedevent::Psi2B, reducedevent::Psi2C);
+
 using Dielectron = Dielectrons::iterator;
 using StoredDielectron = StoredDielectrons::iterator;
 using Dimuon = Dimuons::iterator;
@@ -1007,6 +1015,7 @@ using DileptonMiniTree = DileptonsMiniTree::iterator;
 using DileptonMiniTreeGen = DileptonsMiniTreeGen::iterator;
 using DileptonMiniTreeRec = DileptonsMiniTreeRec::iterator;
 using DileptonPolarization = DileptonsPolarization::iterator;
+using DileptonEventInfo = DileptonsEventInfo::iterator;
 
 // Tables for using analysis-dilepton-track with analysis-asymmetric-pairing
 DECLARE_SOA_TABLE(Ditracks, "AOD", "RTDITRACK", //!
