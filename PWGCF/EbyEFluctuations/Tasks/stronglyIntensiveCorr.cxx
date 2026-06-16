@@ -45,7 +45,6 @@ struct StronglyIntensiveCorr {
   // ------------------------------------------------------------------
   // Configurables
   // ------------------------------------------------------------------
-  Configurable<bool> cfgIsMC{"cfgIsMC", false, "Run MC histograms/processes"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute eta cut"};
@@ -65,7 +64,7 @@ struct StronglyIntensiveCorr {
 
   Configurable<float> cfgCentMin{"cfgCentMin", 0.0f, "Minimum centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 90.0f, "Maximum centrality"};
-  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Centrality estimator: 0=FT0C, 1=FT0A, 2=FT0M, 3=FV0A"};
+  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Centrality estimator: 0=FT0C, 1=FT0M"};
   Configurable<float> cfgCentWindowWidth{"cfgCentWindowWidth", 10.0f, "Centrality window width around class centers"};
 
   Configurable<int> cfgNSubsamples{"cfgNSubsamples", 20, "Number of subsamples; max is nSubsamplesMax"};
@@ -89,7 +88,7 @@ struct StronglyIntensiveCorr {
 
   // F = (etaMin[i], etaMax[i]), B = (-etaMax[i], -etaMin[i])
   // Gap = 2*etaMin[i]. Last two bins are adjacent narrow windows around midrapidity.
-  std::array<double, nEtaGaps> etaMin = {0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0.0};
+  std::array<double, nEtaGaps> etaMin = {0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0, -0.1};
   std::array<double, nEtaGaps> etaMax = {0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
 
   std::array<double, nPtBins + 1> ptEdges = {0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0};
@@ -639,17 +638,10 @@ struct StronglyIntensiveCorr {
                                   std::array<double, nEtaGaps> const& nB)
   {
     for (int i = 0; i < nEtaGaps; ++i) {
-      const double gap = 2.0 * etaMin[i];
 
       histos.fill(HIST("QA/hNF"), nF[i]);
       histos.fill(HIST("QA/hNB"), nB[i]);
       histos.fill(HIST("QA/hNFvsNB"), nF[i], nB[i]);
-
-      histos.fill(HIST("SI/pNF_etaGap"), gap, nF[i]);
-      histos.fill(HIST("SI/pNB_etaGap"), gap, nB[i]);
-      histos.fill(HIST("SI/pNF2_etaGap"), gap, nF[i] * nF[i]);
-      histos.fill(HIST("SI/pNB2_etaGap"), gap, nB[i] * nB[i]);
-      histos.fill(HIST("SI/pNFNB_etaGap"), gap, nF[i] * nB[i]);
     }
   }
 
