@@ -141,6 +141,8 @@ struct EmcalCorrectionTask {
   Configurable<bool> applySoftwareTriggerSelection{"applySoftwareTriggerSelection", false, "Apply software trigger selection"};
   Configurable<std::string> softwareTriggerSelection{"softwareTriggerSelection", "fGammaHighPtEMCAL,fGammaHighPtDCAL", "Default: fGammaHighPtEMCAL,fGammaHighPtDCAL"};
   Configurable<bool> storePerDFInfo{"storePerDFInfo", false, "store addition information per DF."};
+  ConfigurableAxis thConfigAxisClusters{"thConfigAxisClusters", {1000, 0.5f, 1000.5f}, ""};
+  ConfigurableAxis thConfigAxisCells{"thConfigAxisCells", {1000, 0.5f, 1000.5f}, ""};
   // cross talk emulation configs
   EmcCrossTalkConf emcCrossTalkConf;
 
@@ -311,11 +313,12 @@ struct EmcalCorrectionTask {
       sigmaLongAxis{100, 0., 1.0, "#sigma^{2}_{long}"},
       sigmaShortAxis{100, 0., 1.0, "#sigma^{2}_{short}"},
       nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"},
-      nClusterAxis{10001, -0.5, 10000.5, "#it{N}_{cluster}"},
       energyDenseAxis = {7000, 0.f, 70.f, "#it{E}_{cell} (GeV)"};
     o2::framework::AxisSpec axisDeltaEta{400, -0.2, 0.2, "#Delta#eta"};
     o2::framework::AxisSpec axisDeltaPhi{400, -0.2, 0.2, "#Delta#varphi (rad)"};
     o2::framework::AxisSpec axisNCluster{1000, 0, 1000, "#it{N}_{clus.}"};
+    const o2::framework::AxisSpec nClusterDFAxis{thConfigAxisClusters, "#it{N}_{cluster}"};
+    const o2::framework::AxisSpec nCellsDFAxis{thConfigAxisCells, "#it{N}_{cells}"};
     mHistManager.add("hCellE", "hCellE", O2HistType::kTH1D, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", O2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
@@ -388,9 +391,9 @@ struct EmcalCorrectionTask {
     mExtraTimeShiftRunRanges.emplace_back(559544, 559856); // PbPb 2024
 
     if (storePerDFInfo.value) {
-      mHistManager.add("hNClusterDF", "hNClusterDF", O2HistType::kTH1D, {nClusterAxis});
-      mHistManager.add("hNClusterAmbigousDF", "hNClusterAmbigousDF", O2HistType::kTH1D, {nClusterAxis});
-      mHistManager.add("hNCellDF", "hNCellDF", O2HistType::kTH1D, {nClusterAxis});
+      mHistManager.add("hNClusterDF", "hNClusterDF", O2HistType::kTH1D, {nClusterDFAxis});
+      mHistManager.add("hNClusterAmbigousDF", "hNClusterAmbigousDF", O2HistType::kTH1D, {nClusterDFAxis});
+      mHistManager.add("hNCellDF", "hNCellDF", O2HistType::kTH1D, {nCellsDFAxis});
     }
   }
 

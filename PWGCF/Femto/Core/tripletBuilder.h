@@ -124,7 +124,7 @@ class TripletTrackTrackTrackBuilder
     } else if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
       mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager3.template init<mode>(registry, trackHistSpec3, confTrackSelection2);
+      mTrackHistManager3.template init<mode>(registry, trackHistSpec3, confTrackSelection3);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confTrackSelection3.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection3.chargeAbs.value);
@@ -268,7 +268,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
@@ -282,7 +282,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -296,7 +296,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -316,7 +316,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
@@ -330,7 +330,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -344,7 +344,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -553,7 +553,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -567,7 +567,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -587,7 +587,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -601,7 +601,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -688,17 +688,17 @@ class TripletTrackTrackCascadeBuilder
             T10 const& confMixing,
             T11 const& confTripletBinning,
             T12 const& confTripletCuts,
-            std::map<T13, std::vector<o2::framework::AxisSpec>>& colHistSpec,
-            std::map<T14, std::vector<o2::framework::AxisSpec>>& trackHistSpec1,
-            std::map<T15, std::vector<o2::framework::AxisSpec>>& trackHistSpec2,
-            std::map<T16, std::vector<o2::framework::AxisSpec>>& cascadeHistSpec,
-            std::map<T17, std::vector<o2::framework::AxisSpec>>& bachelorHistSpec,
-            std::map<T18, std::vector<o2::framework::AxisSpec>>& posDauHistSpec,
-            std::map<T19, std::vector<o2::framework::AxisSpec>>& negDauHistSpec,
-            std::map<T20, std::vector<o2::framework::AxisSpec>>& tripletHistSpec,
-            std::map<T21, std::vector<o2::framework::AxisSpec>>& cprHistSpecBachelor,
-            std::map<T22, std::vector<o2::framework::AxisSpec>>& cprHistSpecV0Daughter,
-            std::map<T23, std::vector<o2::framework::AxisSpec>>& ctrHistSpec)
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& cascadeHistSpec,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& bachelorHistSpec,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& posDauHistSpec,
+            std::map<T19, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
+            std::map<T20, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
+            std::map<T21, std::vector<o2::framework::AxisSpec>> const& cprHistSpecBachelor,
+            std::map<T22, std::vector<o2::framework::AxisSpec>> const& cprHistSpecV0Daughter,
+            std::map<T23, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
@@ -827,7 +827,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -841,7 +841,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -861,7 +861,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -875,7 +875,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }

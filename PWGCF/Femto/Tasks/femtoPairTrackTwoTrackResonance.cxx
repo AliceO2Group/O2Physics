@@ -152,12 +152,12 @@ struct FemtoPairTrackTwoTrackResonance {
   {
 
     if (((doprocessPhiSameEvent || doprocessPhiMixedEvent) + (doprocessKstar0SameEvent || doprocessKstar0MixedEvent)) + (doprocessRho0SameEvent || doprocessRho0MixedEvent) > 1) {
-      LOG(fatal) << "Can only process phi-tracks, rho-tracks or k0*-tracks";
+      LOG(fatal) << "Can only process SE/ME for phi-tracks, rho-tracks or k0*-tracks";
     }
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 

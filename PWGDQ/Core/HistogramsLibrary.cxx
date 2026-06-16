@@ -1373,6 +1373,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         }
       }
       if (subGroupStr.Contains("globalpolarization")) {
+        hm->AddHistogram(histClass, "RandomPlaneAngle", "", false, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kRandomPsi2);
         hm->AddHistogram(histClass, "CosThetaStarRandom", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarRandom);
         hm->AddHistogram(histClass, "Cos2ThetaStarRandom_Mass", "", true, 50, 2.0, 4.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos2ThetaStarRandom);
         if (subGroupStr.Contains("tpc")) {

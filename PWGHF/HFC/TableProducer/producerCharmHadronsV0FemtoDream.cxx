@@ -727,14 +727,6 @@ struct HfProducerCharmHadronsV0FemtoDream {
       fillMcCollision(col);
     }
 
-    // Filling candidate properties
-    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
-      rowCandCharm3Prong.reserve(sizeCand);
-    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-      rowCandCharm2Prong.reserve(sizeCand);
-    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      rowCandCharmDstar.reserve(sizeCand);
-    }
     bool isV0Filled = false;
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;

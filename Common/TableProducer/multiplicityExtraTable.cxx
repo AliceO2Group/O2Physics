@@ -155,6 +155,8 @@ struct MultiplicityExtraTable {
       float multFV0A = 0.f;
       float multFDDA = 0.f;
       float multFDDC = 0.f;
+      float multFT0AOuter = 0.f;
+      float multFV0AOuter = 0.f;
 
       // ZDC amplitudes
       float multZEM1 = -1.f;
@@ -195,8 +197,11 @@ struct MultiplicityExtraTable {
         multFT0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
 
         // calculate T0 charge
-        for (auto amplitude : ft0.amplitudeA()) {
-          multFT0A += amplitude;
+        for (size_t ii = 0; ii < ft0.amplitudeA().size(); ++ii) {
+          multFT0A += ft0.amplitudeA()[ii];
+          if (ft0.channelA()[ii] > 31) {
+            multFT0AOuter += ft0.amplitudeA()[ii];
+          }
         }
         for (auto amplitude : ft0.amplitudeC()) {
           multFT0C += amplitude;
@@ -212,8 +217,13 @@ struct MultiplicityExtraTable {
         std::bitset<8> fV0Triggers = fv0.triggerMask();
         multFV0TriggerBits = static_cast<uint8_t>(fV0Triggers.to_ulong());
 
-        for (auto amplitude : fv0.amplitude()) {
+        for (size_t ii = 0; ii < fv0.amplitude().size(); ii++) {
+          auto amplitude = fv0.amplitude()[ii];
+          auto channel = fv0.channel()[ii];
           multFV0A += amplitude;
+          if (channel > 7) {
+            multFV0AOuter += amplitude;
+          }
         }
         isFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
       } else {
@@ -254,15 +264,34 @@ struct MultiplicityExtraTable {
 
       bc2mult(bc2multArray[bc.globalIndex()]);
       multBC(
-        tru(multFT0A), tru(multFT0C),
-        tru(posZFT0), posZFT0valid, tru(multFV0A),
-        tru(multFDDA), tru(multFDDC), tru(multZNA), tru(multZNC), tru(multZEM1),
-        tru(multZEM2), tru(multZPA), tru(multZPC), Tvx, isFV0OrA,
-        multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
-        bc.timestamp(),
-        bc.flags());
+        tru(multFT0A),
+        tru(multFT0C),
+        tru(multFV0A),
+        tru(multFDDA),
+        tru(multFDDC),
+        tru(multZNA),
+        tru(multZNC),
+        tru(multZEM1),
+        tru(multZEM2),
+        tru(multZPA),
+        tru(multZPC),
+        tru(multFV0AOuter),
+        tru(multFT0AOuter));
 
-      multBcSel(bc.selection_raw());
+      multBcSel(
+        bc.selection_raw(),
+        bc.rct_raw(),
+        bc.flags(),
+        bc.timestamp(),
+        tru(posZFT0),
+        posZFT0valid,
+        multFV0TriggerBits,
+        multFT0TriggerBits,
+        multFDDTriggerBits,
+        multBCTriggerMask,
+        collidingBC,
+        Tvx,
+        isFV0OrA);
     }
   }
 

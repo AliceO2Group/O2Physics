@@ -111,7 +111,6 @@ struct prefilterDielectron {
 
     // for phiv prefilter
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut for ULS"};      // region to be rejected
-    Configurable<bool> cfg_apply_phiv_ls{"cfg_apply_phiv_ls", false, "flag to apply phiv cut for LS"}; // region to be rejected
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};              // region to be rejected
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"}; // region to be rejected
     Configurable<float> cfg_min_phiv{"cfg_min_phiv", -1.f, "min phiv"};                                // region to be rejected
@@ -120,8 +119,6 @@ struct prefilterDielectron {
     // for deta-dphi prefilter
     Configurable<bool> cfg_apply_detadphi_uls{"cfg_apply_detadphi_uls", false, "flag to apply deta-dphi elliptic cut in ULS"};                         // region to be rejected
     Configurable<bool> cfg_apply_detadphi_ls{"cfg_apply_detadphi_ls", false, "flag to apply deta-dphi elliptic cut in LS"};                            // region to be rejected
-    Configurable<bool> cfg_apply_detadphiPosition_uls{"cfg_apply_detadphiPosition_uls", false, "flag to apply deta-dphiPosition elliptic cut in ULS"}; // region to be rejected
-    Configurable<bool> cfg_apply_detadphiPosition_ls{"cfg_apply_detadphiPosition_ls", false, "flag to apply deta-dphiPosition elliptic cut in LS"};    // region to be rejected
     Configurable<float> cfg_min_deta_ls{"cfg_min_deta_ls", 0.04, "deta between 2 electrons (elliptic cut)"};                                           // region to be rejected
     Configurable<float> cfg_min_dphi_ls{"cfg_min_dphi_ls", 0.2, "dphi between 2 electrons (elliptic cut)"};                                            // region to be rejected
     Configurable<float> cfg_min_deta_uls{"cfg_min_deta_uls", 0.04, "deta between 2 electrons (elliptic cut)"};                                         // region to be rejected
@@ -200,13 +197,6 @@ struct prefilterDielectron {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-
-    if (dielectroncuts.cfg_apply_detadphi_uls && dielectroncuts.cfg_apply_detadphiPosition_uls) {
-      LOG(fatal) << "cfg_apply_detadphi_uls and cfg_apply_detadphiPosition_uls cannot be used simultaneously. Please select only one.";
-    }
-    if (dielectroncuts.cfg_apply_detadphi_ls && dielectroncuts.cfg_apply_detadphiPosition_ls) {
-      LOG(fatal) << "cfg_apply_detadphi_ls and cfg_apply_detadphiPosition_ls cannot be used simultaneously. Please select only one.";
-    }
   }
 
   template <typename TCollision>
@@ -263,7 +253,6 @@ struct prefilterDielectron {
     fRegistry.add("Pair/before/uls/hMvsPt", "m_{ee} vs. p_{T,ee}", kTH2D, {axis_mass, axis_pair_pt}, true);
     fRegistry.add("Pair/before/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {axis_phiv, {200, 0, 1}}, true);
     fRegistry.add("Pair/before/uls/hDeltaEtaDeltaPhi", "#Delta#eta-#Delta#varphi between 2 tracks;#Delta#varphi (rad.);#Delta#eta;", kTH2D, {{180, -M_PI, M_PI}, {400, -2, +2}}, true);
-    fRegistry.add("Pair/before/uls/hDeltaEtaDeltaPhiPos", Form("#Delta#eta-#Delta#varphi* between 2 tracks at r_{xy} = %3.2f m;#Delta#varphi* (rad.);#Delta#eta;", dielectroncuts.cfgRefR.value), kTH2D, {{180, -M_PI, M_PI}, {400, -2, +2}}, true);
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lspp/");
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lsmm/");
     fRegistry.addClone("Pair/before/", "Pair/after/");
@@ -394,15 +383,9 @@ struct prefilterDielectron {
         float dphi = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos.phi() + std::asin(pos.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele.phi() + std::asin(ele.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele.pt())), 0, 1U); // 0-2pi
-        float dphiPosition = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
-        dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-
         fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
         fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/before/uls/hDeltaEtaDeltaPhi"), dphi, deta);
-        fRegistry.fill(HIST("Pair/before/uls/hDeltaEtaDeltaPhiPos"), dphiPosition, deta);
 
         if (dielectroncuts.cfg_min_mass < v12.M() && v12.M() < dielectroncuts.cfg_max_mass) {
           map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee);
@@ -419,10 +402,6 @@ struct prefilterDielectron {
           map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
         }
 
-        if (dielectroncuts.cfg_apply_detadphiPosition_uls && std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphiPosition / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
-          map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULSAtRefR);
-          map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULSAtRefR);
-        }
       } // end of ULS pairing
 
       for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
@@ -439,29 +418,13 @@ struct prefilterDielectron {
         float dphi = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos1.phi() + std::asin(pos1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(pos2.phi() + std::asin(pos2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos2.pt())), 0, 1U); // 0-2pi
-        float dphiPosition = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
-        dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-
         fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
         fRegistry.fill(HIST("Pair/before/lspp/hDeltaEtaDeltaPhi"), dphi, deta);
-        fRegistry.fill(HIST("Pair/before/lspp/hDeltaEtaDeltaPhiPos"), dphiPosition, deta);
-
-        if (dielectroncuts.cfg_apply_phiv_ls && ((v12.M() < dielectroncuts.cfg_phiv_slope * phiv + dielectroncuts.cfg_phiv_intercept) && (dielectroncuts.cfg_min_phiv < phiv && phiv < dielectroncuts.cfg_max_phiv))) {
-          map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiVLS);
-          map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiVLS);
-        }
 
         if (dielectroncuts.cfg_apply_detadphi_ls && std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
           map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
           map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
-        }
-
-        if (dielectroncuts.cfg_apply_detadphiPosition_ls && std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphiPosition / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
-          map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLSAtRefR);
-          map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLSAtRefR);
         }
 
       } // end of LS++ pairing
@@ -480,30 +443,15 @@ struct prefilterDielectron {
         float dphi = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(ele1.phi() + std::asin(ele1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele2.phi() + std::asin(ele2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele2.pt())), 0, 1U); // 0-2pi
-        float dphiPosition = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
-        dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-
         fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
         fRegistry.fill(HIST("Pair/before/lsmm/hDeltaEtaDeltaPhi"), dphi, deta);
-        fRegistry.fill(HIST("Pair/before/lsmm/hDeltaEtaDeltaPhiPos"), dphiPosition, deta);
-
-        if (dielectroncuts.cfg_apply_phiv_ls && ((v12.M() < dielectroncuts.cfg_phiv_slope * phiv + dielectroncuts.cfg_phiv_intercept) && (dielectroncuts.cfg_min_phiv < phiv && phiv < dielectroncuts.cfg_max_phiv))) {
-          map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiVLS);
-          map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiVLS);
-        }
 
         if (dielectroncuts.cfg_apply_detadphi_ls && std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
           map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
           map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
         }
 
-        if (dielectroncuts.cfg_apply_detadphiPosition_ls && std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphiPosition / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
-          map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLSAtRefR);
-          map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLSAtRefR);
-        }
       } // end of LS-- pairing
     } // end of collision loop
 
@@ -542,15 +490,9 @@ struct prefilterDielectron {
         float dphi = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos.phi() + std::asin(pos.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele.phi() + std::asin(ele.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele.pt())), 0, 1U); // 0-2pi
-        float dphiPosition = pos.sign() * v1.Pt() > ele.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
-        dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-
         fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
         fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/after/uls/hDeltaEtaDeltaPhi"), dphi, deta);
-        fRegistry.fill(HIST("Pair/after/uls/hDeltaEtaDeltaPhiPos"), dphiPosition, deta);
       }
 
       for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
@@ -569,15 +511,9 @@ struct prefilterDielectron {
         float dphi = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(pos1.phi() + std::asin(pos1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(pos2.phi() + std::asin(pos2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * pos2.pt())), 0, 1U); // 0-2pi
-        float dphiPosition = pos1.sign() * v1.Pt() > pos2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
-        dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-
         fRegistry.fill(HIST("Pair/after/lspp/hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/after/lspp/hMvsPhiV"), phiv, v12.M());
         fRegistry.fill(HIST("Pair/after/lspp/hDeltaEtaDeltaPhi"), dphi, deta);
-        fRegistry.fill(HIST("Pair/after/lspp/hDeltaEtaDeltaPhiPos"), dphiPosition, deta);
       }
 
       for (const auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
@@ -596,15 +532,9 @@ struct prefilterDielectron {
         float dphi = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
         dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
 
-        float phiPosition1 = RecoDecay::constrainAngle(ele1.phi() + std::asin(ele1.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele1.pt())), 0, 1U); // 0-2pi
-        float phiPosition2 = RecoDecay::constrainAngle(ele2.phi() + std::asin(ele2.sign() * 0.30282 * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * ele2.pt())), 0, 1U); // 0-2pi
-        float dphiPosition = ele1.sign() * v1.Pt() > ele2.sign() * v2.Pt() ? phiPosition1 - phiPosition2 : phiPosition2 - phiPosition1;
-        dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-
         fRegistry.fill(HIST("Pair/after/lsmm/hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/after/lsmm/hMvsPhiV"), phiv, v12.M());
         fRegistry.fill(HIST("Pair/after/lsmm/hDeltaEtaDeltaPhi"), dphi, deta);
-        fRegistry.fill(HIST("Pair/after/lsmm/hDeltaEtaDeltaPhiPos"), dphiPosition, deta);
       }
 
     } // end of collision loop

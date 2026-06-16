@@ -1977,7 +1977,7 @@ struct AnalysisSameEventPairing {
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
+  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -2005,23 +2005,47 @@ struct AnalysisSameEventPairing {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     bool isCorrectAssoc_leg1 = false;
     bool isCorrectAssoc_leg2 = false;
-    dielectronList.reserve(1);
-    dimuonList.reserve(1);
-    dielectronsExtraList.reserve(1);
-    dimuonsExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dileptonInfoList.reserve(1);
+
+    // estimate reserved size
+    int64_t reserveSize = 0;
+    int64_t reserveSizeGen = mcTracks.size();
+    for (auto& event : events) {
+      if (event.isEventSelected_bit(0)) {
+        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+        size_t nGood = 0;
+        for (auto const& t : groupedAssocs) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            if (t.isBarrelSelected_raw()) {
+              nGood++;
+            }
+          } else if constexpr (TPairType == VarManager::kDecayToMuMu) {
+            if (t.isMuonSelected_raw()) {
+              nGood++;
+            }
+          }
+        }
+        reserveSize += nGood * (nGood - 1) / 2;
+      }
+    }
+
+    dielectronList.reserve(reserveSize);
+    dimuonList.reserve(reserveSize);
+    dielectronsExtraList.reserve(reserveSize);
+    dimuonsExtraList.reserve(reserveSize);
+    dielectronInfoList.reserve(reserveSize);
+    dileptonInfoList.reserve(reserveSize);
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
-      dimuonAllList.reserve(1);
+      dielectronAllList.reserve(reserveSize);
+      dimuonAllList.reserve(reserveSize);
     }
     if (useMiniTree.fConfigMiniTree) {
-      dileptonMiniTreeGen.reserve(1);
-      dileptonMiniTreeRec.reserve(1);
+      dileptonMiniTreeGen.reserve(reserveSizeGen);
+      dileptonMiniTreeRec.reserve(reserveSize);
     }
     if (fConfigOptions.polarTables.value) {
-      dileptonPolarList.reserve(1);
+      dileptonPolarList.reserve(reserveSize);
     }
+
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 

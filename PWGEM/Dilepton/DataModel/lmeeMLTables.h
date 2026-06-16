@@ -355,6 +355,7 @@ DECLARE_SOA_COLUMN(ImpParCYY1, impParCYY1, float);                  //! sigma of
 DECLARE_SOA_COLUMN(ImpParCZY1, impParCZY1, float);                  //! sigma of impact parameter for lepton1, correlaion term
 DECLARE_SOA_COLUMN(ImpParCZZ1, impParCZZ1, float);                  //! sigma of impact parameter for lepton1 in Z
 DECLARE_SOA_COLUMN(IsCorrectCollision1, isCorrectCollision1, bool); //! lepton1 is associated to correct collision.
+DECLARE_SOA_COLUMN(IsReassociated1, isReassociated1, bool);         //! lepton1 is reassociated.
 DECLARE_SOA_COLUMN(PdgCodeMother1, pdgCodeMother1, int);            //! pdg code of mother of lepton1
 
 DECLARE_SOA_COLUMN(Signed1Pt2, signed1Pt2, float);                  //! q/pt of lepton2 at PV
@@ -365,6 +366,7 @@ DECLARE_SOA_COLUMN(ImpParCYY2, impParCYY2, float);                  //! sigma of
 DECLARE_SOA_COLUMN(ImpParCZY2, impParCZY2, float);                  //! sigma of impact parameter for lepton2, correlaion term
 DECLARE_SOA_COLUMN(ImpParCZZ2, impParCZZ2, float);                  //! sigma of impact parameter for lepton2 in Z
 DECLARE_SOA_COLUMN(IsCorrectCollision2, isCorrectCollision2, bool); //! lepton is associated to correct collision.
+DECLARE_SOA_COLUMN(IsReassociated2, isReassociated2, bool);         //! lepton2 is reassociated.
 DECLARE_SOA_COLUMN(PdgCodeMother2, pdgCodeMother2, int);            //! pdg code of mother of lepton1
 
 DECLARE_SOA_COLUMN(Mass, mass, float);         //! invariant mass of dilepton
@@ -388,8 +390,8 @@ DECLARE_SOA_COLUMN(PdgCodeCommonMother, pdgCodeCommonMother, int); //! pdg code 
 
 DECLARE_SOA_TABLE(EMMLDielectronsAtSV, "AOD", "EMMLEESV", //!
                   emmldilepton::EMMLEventId,
-                  emmldilepton::Signed1Pt1, emmldilepton::Eta1, emmldilepton::ImpParXY1, emmldilepton::ImpParZ1, emmldilepton::ImpParCYY1, emmldilepton::ImpParCZY1, emmldilepton::ImpParCZZ1, emmldilepton::IsCorrectCollision1, emmldilepton::PdgCodeMother1,
-                  emmldilepton::Signed1Pt2, emmldilepton::Eta2, emmldilepton::ImpParXY2, emmldilepton::ImpParZ2, emmldilepton::ImpParCYY2, emmldilepton::ImpParCZY2, emmldilepton::ImpParCZZ2, emmldilepton::IsCorrectCollision2, emmldilepton::PdgCodeMother2,
+                  emmldilepton::Signed1Pt1, emmldilepton::Eta1, emmldilepton::ImpParXY1, emmldilepton::ImpParZ1, emmldilepton::ImpParCYY1, emmldilepton::ImpParCZY1, emmldilepton::ImpParCZZ1, emmldilepton::IsCorrectCollision1, emmldilepton::IsReassociated1, emmldilepton::PdgCodeMother1,
+                  emmldilepton::Signed1Pt2, emmldilepton::Eta2, emmldilepton::ImpParXY2, emmldilepton::ImpParZ2, emmldilepton::ImpParCYY2, emmldilepton::ImpParCZY2, emmldilepton::ImpParCZZ2, emmldilepton::IsCorrectCollision2, emmldilepton::IsReassociated2, emmldilepton::PdgCodeMother2,
                   emmldilepton::Mass, emmldilepton::Pt, emmldilepton::Rapidity,
                   emmldilepton::Chi2PCA,
                   emmldilepton::CPA, emmldilepton::CPAXY, emmldilepton::CPARZ,

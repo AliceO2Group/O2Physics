@@ -595,6 +595,8 @@ struct studyDCAFitter {
     auto t2mc = t2.template mcParticle_as<aod::McParticles>(); // true lepton
     bool isCorrectCollision1 = t1mc.mcCollisionId() == collision.mcCollisionId();
     bool isCorrectCollision2 = t2mc.mcCollisionId() == collision.mcCollisionId();
+    bool isReassociated1 = !(t1.collisionId() == collision.globalIndex());
+    bool isReassociated2 = !(t2.collisionId() == collision.globalIndex());
     int pdgCodeMother1 = 0;
     int pdgCodeMother2 = 0;
 
@@ -768,8 +770,8 @@ struct studyDCAFitter {
       }
 
       dileptonTable(eventTable.lastIndex() + 1,
-                    signed1Pt1, eta1, dcaXY1, dcaZ1, CYY1, CZY1, CZZ1, isCorrectCollision1, pdgCodeMother1,
-                    signed1Pt2, eta2, dcaXY2, dcaZ2, CYY2, CZY2, CZZ2, isCorrectCollision2, pdgCodeMother2,
+                    signed1Pt1, eta1, dcaXY1, dcaZ1, CYY1, CZY1, CZZ1, isCorrectCollision1, isReassociated1, pdgCodeMother1,
+                    signed1Pt2, eta2, dcaXY2, dcaZ2, CYY2, CZY2, CZZ2, isCorrectCollision2, isReassociated2, pdgCodeMother2,
                     meeAtSV, pteeAtSV, yeeAtSV,
                     chi2PCA,
                     cpa, cpaXY, cpaRZ,

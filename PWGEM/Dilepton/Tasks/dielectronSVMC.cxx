@@ -11,10 +11,10 @@
 //
 // ========================
 //
-// This code is for dielectron analyses.
+// This code runs loop over electron table and make pairs.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/Dilepton/Core/Dilepton.h"
+#include "PWGEM/Dilepton/Core/DileptonSVMC.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include <Framework/AnalysisTask.h>
@@ -25,5 +25,5 @@ using namespace o2::framework;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, true, MyEMH_electron, FilteredMyElectronsSCT>>(cfgc, TaskName{"dielectron-sct"})};
+    adaptAnalysisTask<DileptonSVMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, FilteredMyMCElectrons, MySmearedElectrons>>(cfgc, TaskName{"dielectron-sv-mc"})};
 }

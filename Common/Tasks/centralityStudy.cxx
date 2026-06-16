@@ -344,7 +344,9 @@ struct centralityStudy {
 
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0A_BCs", "hFT0A_BCs", kTH1D, {axisMultUltraFineFT0A});
+      histos.add("hFT0AOuter_BCs", "hFT0AOuter_BCs", kTH1D, {axisMultUltraFineFT0A});
       histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
+      histos.add("hFT0MOuterA_BCs", "hFT0MOuterA_BCs", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
       histos.add("hInteractionRate_BCs", "hInteractionRate_BCs", kTH1D, {axisInteractionRate});
 
@@ -795,14 +797,18 @@ struct centralityStudy {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(15);
     }
     if (evsel.rejectIsFlangeEvent) {
-      if constexpr (requires { collision.ft0TriggerMask(); }) {
-        constexpr int IsFlangeEventId = 7;
-        std::bitset<8> ft0TriggerMask = collision.ft0TriggerMask();
-        if (ft0TriggerMask[IsFlangeEventId]) {
-          return;
+      if constexpr (requires { collision.has_multBC(); }) {
+        if (collision.has_multBC()) {
+          auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
+          constexpr int IsFlangeEventId = 7;
+          std::bitset<8> ft0TriggerMask = multbc.multT0triggerBits();
+          if (ft0TriggerMask[IsFlangeEventId]) {
+            return;
+          }
         }
       }
     }
+
     histos.fill(HIST("hCollisionSelection"), 16 /* reject flange events */);
     if (studies.doRunByRunHistograms) {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(16);
@@ -949,7 +955,7 @@ struct centralityStudy {
 
     if constexpr (requires { collision.has_multBC(); }) {
       if (collision.has_multBC()) {
-        auto multbc = collision.template multBC_as<aod::MultBCs>();
+        auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
         const uint64_t bcTimestamp = multbc.timestamp();
         const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
@@ -967,7 +973,7 @@ struct centralityStudy {
             getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
             getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
             getHist(TH2, histPath + "hFV0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0A());
-            getHist(TH2, histPath + "hFV0AOuterVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0AOuter());
+            getHist(TH2, histPath + "hFV0AOuterVsTime")->Fill(hoursAfterStartOfRun, multbc.multFV0AOuter());
             getHist(TH2, histPath + "hMFTTracksVsTime")->Fill(hoursAfterStartOfRun, collision.mftNtracks());
             getHist(TH2, histPath + "hNGlobalVsTime")->Fill(hoursAfterStartOfRun, collision.multNTracksGlobal());
             getHist(TH2, histPath + "hNTPVContributorsVsTime")->Fill(hoursAfterStartOfRun, collision.multPVTotalContributors());
@@ -980,22 +986,22 @@ struct centralityStudy {
     }
   }
 
-  void processCollisions(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisions(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC>::iterator const& collision, soa::Join<aod::MultBCs, aod::MultBcSel> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
+  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC>::iterator const& collision, soa::Join<aod::MultBCs, aod::MultBcSel> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::FITExtraMults>::iterator const& collision)
+  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }
@@ -1088,7 +1094,7 @@ struct centralityStudy {
     return true;
   }
 
-  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal> const&)
   {
     // process BCs, calculate FT0C distribution
     for (const auto& multbc : multbcs) {
@@ -1099,7 +1105,9 @@ struct centralityStudy {
       // if we got here, we also finally fill the FT0C histogram, please
       histos.fill(HIST("hFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C);
       histos.fill(HIST("hFT0A_BCs"), multbc.multFT0A() * scale.factorFT0A);
+      histos.fill(HIST("hFT0AOuter_BCs"), multbc.multFT0AOuter() * scale.factorFT0A);
       histos.fill(HIST("hFT0M_BCs"), (multbc.multFT0A() + multbc.multFT0C()) * scale.factorFT0M);
+      histos.fill(HIST("hFT0MOuterA_BCs"), (multbc.multFT0AOuter() + multbc.multFT0C()) * scale.factorFT0M);
       histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scale.factorFV0A);
       histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scale.factorFV0AT0C);
 
@@ -1124,7 +1132,7 @@ struct centralityStudy {
       }
 
       if (multbc.has_ft0Mult()) {
-        auto multco = multbc.ft0Mult_as<soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
+        auto multco = multbc.ft0Mult_as<soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal>>();
         if (multbc.multFT0PosZValid()) {
           histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multFT0PosZ());
         }

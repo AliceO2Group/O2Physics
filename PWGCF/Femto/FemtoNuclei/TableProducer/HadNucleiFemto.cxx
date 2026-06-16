@@ -288,7 +288,7 @@ struct HadNucleiFemto {
      {"hdcaxyHad", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazHad", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-     {"hHadPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hHadPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{160, -4.0f, 4.0f}}}},
      {"hSingleHadPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHadPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
      {"hHadEta", "eta distribution; #eta(had)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
@@ -350,6 +350,10 @@ struct HadNucleiFemto {
      {"hkStaVsmT_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hkStaVsmT_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hkStaVsmT_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
+     {"hkStaVsCent_LS_M", ";kStar (GeV/c);Centrality", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsCent_LS_A", ";kStar (GeV/c);Centrality", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsCent_US_M", ";kStar (GeV/c);Centrality", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsCent_US_A", ";kStar (GeV/c);Centrality", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
      {"hNuHadtInvMass", "; M(Nu + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
 
      // Mixed-event
@@ -1450,23 +1454,27 @@ struct HadNucleiFemto {
   }
 
   template <typename Tcoll>
-  void fillKstar(const HadNucandidate& hadNucand, const Tcoll& /*collision*/)
+  void fillKstar(const HadNucandidate& hadNucand, const Tcoll& collision)
   {
     if (hadNucand.isBkgUS == 0) {
       if (hadNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_LS_M"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_LS_M"), hadNucand.kstar, hadNucand.mT);
+        mQaRegistry.fill(HIST("hkStaVsCent_LS_M"), hadNucand.kstar, collision.centFT0C());
       } else {
         mQaRegistry.fill(HIST("hkStar_LS_A"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_LS_A"), hadNucand.kstar, hadNucand.mT);
+        mQaRegistry.fill(HIST("hkStaVsCent_LS_A"), hadNucand.kstar, collision.centFT0C());
       }
     } else {
       if (hadNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_US_M"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_US_M"), hadNucand.kstar, hadNucand.mT);
+        mQaRegistry.fill(HIST("hkStaVsCent_US_M"), hadNucand.kstar, collision.centFT0C());
       } else {
         mQaRegistry.fill(HIST("hkStar_US_A"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_US_A"), hadNucand.kstar, hadNucand.mT);
+        mQaRegistry.fill(HIST("hkStaVsCent_US_A"), hadNucand.kstar, collision.centFT0C());
       }
     }
   }

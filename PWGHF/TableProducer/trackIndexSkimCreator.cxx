@@ -3299,7 +3299,7 @@ struct HfTrackIndexSkimCreator {
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     FilteredTrackAssocSel const& trackIndices,
-    aod::TracksWCovDcaExtra const& tracks)
+    aod::TracksWCovDca const& tracks)
   {
     run2And3Prongs<false, false>(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
