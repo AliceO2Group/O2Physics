@@ -865,6 +865,6 @@ struct Alice3Dilepton {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Alice3Lepton>(cfgc, TaskName{"alice3-lepton"}),
-    adaptAnalysisTask<Alice3Dilepton>(cfgc, TaskName{"alice3-dilepton"})};
+    adaptAnalysisTask<Alice3Lepton>(cfgc),
+    adaptAnalysisTask<Alice3Dilepton>(cfgc)};
 }

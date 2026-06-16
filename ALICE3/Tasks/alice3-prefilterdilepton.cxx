@@ -296,6 +296,6 @@ struct Alice3DileptonPrefilter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Alice3DileptonEventCentSelection>(cfgc, TaskName{"alice3-dilepton-event-cent-selection"}),
-    adaptAnalysisTask<Alice3DileptonPrefilter>(cfgc, TaskName{"alice3-dilepton-prefilter"})};
+    adaptAnalysisTask<Alice3DileptonEventCentSelection>(cfgc),
+    adaptAnalysisTask<Alice3DileptonPrefilter>(cfgc)};
 }
