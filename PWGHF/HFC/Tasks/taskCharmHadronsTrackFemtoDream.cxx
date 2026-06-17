@@ -165,7 +165,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   using FilteredCharmCand3Prongs = soa::Filtered<aod::FDHfCand3Prong>;
   using FilteredCharmCand3Prong = FilteredCharmCand3Prongs::iterator;
 
-  using FilteredCharmCand3ProngsXic = soa::Filtered<soa::Join<aod::FDHfCand3Prong, aod::FDHfCand3ProngXic>>;
+  using FilteredCharmCand3ProngsXic = soa::Filtered<aod::FDHfCand3ProngXic>;
   using FilteredCharmCand3ProngXic = FilteredCharmCand3ProngsXic::iterator;
 
   using FilteredCharmCand2Prongs = soa::Filtered<aod::FDHfCand2Prong>;
@@ -177,7 +177,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   using FilteredCharmMcCand3Prongs = soa::Filtered<soa::Join<aod::FDHfCand3Prong, aod::FDHfCandMC>>;
   using FilteredCharmMcCand3Prong = FilteredCharmMcCand3Prongs::iterator;
 
-  using FilteredCharmMcCand3ProngsXic = soa::Filtered<soa::Join<aod::FDHfCand3Prong, aod::FDHfCand3ProngXic, aod::FDHfCandMC>>;
+  using FilteredCharmMcCand3ProngsXic = soa::Filtered<soa::Join<aod::FDHfCand3ProngXic, aod::FDHfCandMC>>;
   using FilteredCharmMcCand3ProngXic = FilteredCharmMcCand3ProngsXic::iterator;
 
   using FilteredCharmMcCand2Prongs = soa::Filtered<soa::Join<aod::FDHfCand2Prong, aod::FDHfCandMC>>;
@@ -402,7 +402,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         return mDstar - mD0;
       }
     } else if constexpr (Channel == DecayChannel::XicToXiPiPi) {
-      return cand.invMassCharm();
+      invMass = cand.m(std::array{MassXiMinus, MassPiPlus, MassPiPlus});
+      return invMass;
     }
     // Add more channels as needed
     return 0.f;
@@ -527,7 +528,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::XicToXiPiPi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id() ||
+        if (p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id() ||
+            p1.trackId() == p2.cascBachelorTrackId() ||
             p1.trackId() == p2.cascPosTrackId() || p1.trackId() == p2.cascNegTrackId()) {
           continue;
         }
@@ -535,10 +537,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           if (pairCloseRejectionSE3Prong.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
-        }
-
-        if (!pairCleaner3Prong.isCleanPair(p1, p2, parts)) {
-          continue;
         }
       }
 
@@ -659,7 +657,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           }
         }
 
-        if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::XicToXiPiPi) {
+        if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
           if (pairQASetting.useCPR.value) {
             if (pairCloseRejectionME3Prong.isClosePair(p1, p2, parts, collision1.magField())) {
@@ -669,6 +667,14 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
           if (!pairCleaner3Prong.isCleanPair(p1, p2, parts)) {
             continue;
+          }
+        }
+
+        if constexpr (Channel == DecayChannel::XicToXiPiPi) {
+          if (pairQASetting.useCPR.value) {
+            if (pairCloseRejectionME3Prong.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
           }
         }
 
@@ -764,7 +770,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       timeStamp = part.timeStamp();
 
-      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::XicToXiPiPi) {
+      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -774,6 +780,21 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.eta(),
           part.phi(),
           part.prong0Id(),
+          part.prong1Id(),
+          part.prong2Id(),
+          part.charge(),
+          part.bdtBkg(),
+          part.bdtPrompt(),
+          part.bdtFD());
+      } else if constexpr (Channel == DecayChannel::XicToXiPiPi) {
+        rowFemtoResultCharm3Prong(
+          col.globalIndex(),
+          timeStamp,
+          invMass,
+          part.pt(),
+          part.eta(),
+          part.phi(),
+          part.xiProngId(),
           part.prong1Id(),
           part.prong2Id(),
           part.charge(),

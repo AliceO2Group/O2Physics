@@ -118,6 +118,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Produces<aod::FDColMasks> rowMasks;
     Produces<aod::FDHfCand3Prong> rowCandCharm3Prong;
     Produces<aod::FDHfCand3ProngXic> rowCandCharm3ProngXic;
+    Produces<aod::FDHfCand3ProngXicQa> rowCandCharm3ProngXicQa;
     Produces<aod::FDHfCand2Prong> rowCandCharm2Prong;
     Produces<aod::FDHfCandDstar> rowCandCharmDstar;
     Produces<aod::FDHfCandMC> rowCandMcCharmHad;
@@ -935,8 +936,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       fillMcCollision(col);
     }
 
-    tables.rowCandCharm3Prong.reserve(sizeCand);
-    tables.rowCandCharm3ProngXic.reserve(sizeCand);
     bool isTrackFilled = false;
     int nSelectedXic = 0;
 
@@ -976,14 +975,20 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       const auto phi0 = static_cast<float>(RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0()));
       const auto phi1 = static_cast<float>(RecoDecay::phi(candidate.pxProng1(), candidate.pyProng1()));
       const auto phi2 = static_cast<float>(RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2()));
+      const auto cascBachelorTrack = tracks.rawIteratorAt(candidate.bachelorId());
+      const auto cascPosTrack = tracks.rawIteratorAt(candidate.posTrackId());
+      const auto cascNegTrack = tracks.rawIteratorAt(candidate.negTrackId());
 
-      tables.rowCandCharm3Prong(
+      tables.rowCandCharm3ProngXic(
         tables.outputCollision.lastIndex(),
         timeStamp,
         candidate.sign(),
+        candidate.cascadeId(),
         candidate.pi0Id(),
         candidate.pi1Id(),
         candidate.bachelorId(),
+        candidate.posTrackId(),
+        candidate.negTrackId(),
         candidate.ptProng0(),
         candidate.ptProng1(),
         candidate.ptProng2(),
@@ -998,10 +1003,16 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         outputMlXic.at(1),
         outputMlXic.at(2));
 
-      tables.rowCandCharm3ProngXic(
-        candidate.invMassXicPlus(),
-        candidate.posTrackId(),
-        candidate.negTrackId());
+      tables.rowCandCharm3ProngXicQa(
+        cascBachelorTrack.pt(),
+        cascBachelorTrack.phi(),
+        cascBachelorTrack.eta(),
+        cascPosTrack.pt(),
+        cascPosTrack.phi(),
+        cascPosTrack.eta(),
+        cascNegTrack.pt(),
+        cascNegTrack.phi(),
+        cascNegTrack.eta());
 
       ++nSelectedXic;
       if constexpr (IsMc) {
