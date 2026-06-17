@@ -104,13 +104,13 @@ struct HadronNucleiCorrelation {
   Configurable<double> dcaPar0{"dcaPar0", 0.004, "par 0"};
   Configurable<double> dcaPar1{"dcaPar1", 0.013, "par 1"};
   Configurable<bool> doDCAZ{"doDCAZ", true, "do DCA z cut"};
-  Configurable<int16_t> min_TPC_nClusters{"min_TPC_nClusters", 80, "minimum number of found TPC clusters"};
-  Configurable<float> min_TPC_nCrossedRowsOverFindableCls{"min_TPC_nCrossedRowsOverFindableCls", 0.8, "n TPC Crossed Rows Over Findable Cls"};
-  Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4.0f, "maximum TPC chi^2/Ncls"};
-  Configurable<float> max_chi2_ITS{"max_chi2_ITS", 36.0f, "maximum ITS chi^2/Ncls"};
+  Configurable<int16_t> minTPCnClusters{"minTPCnClusters", 80, "minimum number of found TPC clusters"};
+  Configurable<float> minTPCnCrossedRowsOverFindableCls{"minTPCnCrossedRowsOverFindableCls", 0.8, "n TPC Crossed Rows Over Findable Cls"};
+  Configurable<float> maxchi2TPC{"maxchi2TPC", 4.0f, "maximum TPC chi^2/Ncls"};
+  Configurable<float> maxchi2ITS{"maxchi2ITS", 36.0f, "maximum ITS chi^2/Ncls"};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
-  Configurable<float> max_DCAxy{"max_DCAxy", 0.14f, "Maximum DCAxy"};
-  Configurable<float> max_DCAz{"max_DCAz", 0.1f, "Maximum DCAz"};
+  Configurable<float> maxDCAxy{"maxDCAxy", 0.14f, "Maximum DCAxy"};
+  Configurable<float> maxDCAz{"maxDCAz", 0.1f, "Maximum DCAz"};
   Configurable<float> nsigmaTPC{"nsigmaTPC", 3.0f, "cut nsigma TPC"};
   Configurable<float> nsigmaElPr{"nsigmaElPr", 1.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaElDe{"nsigmaElDe", 3.0f, "cut nsigma TPC El for protons"};
@@ -118,13 +118,13 @@ struct HadronNucleiCorrelation {
   Configurable<float> nsigmaITSPr{"nsigmaITSPr", -2.0f, "cut nsigma ITS Pr"};
   Configurable<float> nsigmaITSDe{"nsigmaITSDe", -2.0f, "cut nsigma ITS De"};
   Configurable<bool> doITSPID{"doITSPID", true, "do ITS PID"};
-  Configurable<float> pTthrpr_TOF{"pTthrpr_TOF", 0.8f, "threshold pT proton to use TOF"};
-  Configurable<float> pTthrpr_TPCEl{"pTthrpr_TPCEl", 1.0f, "threshold pT proton to use TPC El rejection"};
-  Configurable<float> pTthrde_TOF{"pTthrde_TOF", 1.0f, "threshold pT deuteron to use TOF"};
-  Configurable<float> pTthrde_TPCEl{"pTthrde_TPCEl", 1.0f, "threshold pT deuteron to use TPC El rejection"};
+  Configurable<float> pTthrprTOF{"pTthrprTOF", 0.8f, "threshold pT proton to use TOF"};
+  Configurable<float> pTthrprTPCEl{"pTthrprTPCEl", 1.0f, "threshold pT proton to use TPC El rejection"};
+  Configurable<float> pTthrdeTOF{"pTthrdeTOF", 1.0f, "threshold pT deuteron to use TOF"};
+  Configurable<float> pTthrdeTPCEl{"pTthrdeTPCEl", 1.0f, "threshold pT deuteron to use TPC El rejection"};
   Configurable<bool> rejectionEl{"rejectionEl", true, "use TPC El rejection"};
-  Configurable<float> max_tpcSharedCls{"max_tpcSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
-  Configurable<int> min_itsNCls{"min_itsNCls", 0, "minimum allowed number of ITS clasters"};
+  Configurable<float> maxtpcSharedCls{"maxtpcSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
+  Configurable<int> minitsNCls{"minitsNCls", 0, "minimum allowed number of ITS clasters"};
   Configurable<int> maxmixcollsGen{"maxmixcollsGen", 100, "maxmixcollsGen"};
   Configurable<float> radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
   Configurable<float> dEta{"dEta", 0.01, "minimum allowed difference in eta between two tracks in a pair"};
@@ -421,12 +421,12 @@ struct HadronNucleiCorrelation {
 
   // Filters
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) <= cutzVertex;
-  Filter trackFilter = o2::aod::singletrackselector::tpcNClsFound >= min_TPC_nClusters &&
-                       o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) <= max_chi2_TPC &&
-                       o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) >= min_TPC_nCrossedRowsOverFindableCls &&
-                       o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) <= max_chi2_ITS &&
-                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_DCAxy &&
-                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_DCAz &&
+  Filter trackFilter = o2::aod::singletrackselector::tpcNClsFound >= minTPCnClusters &&
+                       o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) <= maxchi2TPC &&
+                       o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) >= minTPCnCrossedRowsOverFindableCls &&
+                       o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) <= maxchi2ITS &&
+                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= maxDCAxy &&
+                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= maxDCAz &&
                        nabs(o2::aod::singletrackselector::eta) <= etaCut;
 
   Filter simvertexFilter = nabs(o2::aod::mccollision::posZ) <= cutzVertex;
@@ -437,11 +437,11 @@ struct HadronNucleiCorrelation {
     bool isProton = false;
     bool isTPCPID = std::abs(track.tpcNSigmaPr()) < nsigmaTPC;
     bool isTOFPID = std::abs(track.tofNSigmaPr()) < nsigmaTOF;
-    bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrpr_TPCEl && track.tpcNSigmaEl() >= nsigmaElPr;
+    bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrprTPCEl && track.tpcNSigmaEl() >= nsigmaElPr;
     bool isITSPID = track.itsNSigmaPr() > nsigmaITSPr;
 
     if (isTPCPID) {
-      if (track.pt() < pTthrpr_TOF) {
+      if (track.pt() < pTthrprTOF) {
         if (!doITSPID || isITSPID) {
           if (sign > 0) {
             if (track.sign() > 0) {
@@ -496,11 +496,11 @@ struct HadronNucleiCorrelation {
     bool isDeuteron = false;
     bool isTPCPID = std::abs(track.tpcNSigmaDe()) < nsigmaTPC;
     bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF;
-    bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrde_TPCEl && track.tpcNSigmaEl() >= nsigmaElDe;
+    bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrdeTPCEl && track.tpcNSigmaEl() >= nsigmaElDe;
     bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe;
 
     if (isTPCPID) {
-      if (track.pt() < pTthrde_TOF) {
+      if (track.pt() < pTthrdeTOF) {
         if (!doITSPID || isITSPID) {
           if (sign > 0) {
             if (track.sign() > 0) {
@@ -733,9 +733,9 @@ struct HadronNucleiCorrelation {
       if (removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
         continue;
 
-      if (track.tpcFractionSharedCls() > max_tpcSharedCls)
+      if (track.tpcFractionSharedCls() > maxtpcSharedCls)
         continue;
-      if (track.itsNCls() < min_itsNCls)
+      if (track.itsNCls() < minitsNCls)
         continue;
 
       if (IsProton(track, +1))
@@ -809,13 +809,13 @@ struct HadronNucleiCorrelation {
         if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
           continue;
 
-        if (part0.tpcFractionSharedCls() > max_tpcSharedCls)
+        if (part0.tpcFractionSharedCls() > maxtpcSharedCls)
           continue;
-        if (part0.itsNCls() < min_itsNCls)
+        if (part0.itsNCls() < minitsNCls)
           continue;
-        if (part1.tpcFractionSharedCls() > max_tpcSharedCls)
+        if (part1.tpcFractionSharedCls() > maxtpcSharedCls)
           continue;
-        if (part1.itsNCls() < min_itsNCls)
+        if (part1.itsNCls() < minitsNCls)
           continue;
 
         if (!applyDCAcut(part0))
@@ -854,13 +854,13 @@ struct HadronNucleiCorrelation {
         if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
           continue;
 
-        if (part0.tpcFractionSharedCls() > max_tpcSharedCls)
+        if (part0.tpcFractionSharedCls() > maxtpcSharedCls)
           continue;
-        if (part0.itsNCls() < min_itsNCls)
+        if (part0.itsNCls() < minitsNCls)
           continue;
-        if (part1.tpcFractionSharedCls() > max_tpcSharedCls)
+        if (part1.tpcFractionSharedCls() > maxtpcSharedCls)
           continue;
-        if (part1.itsNCls() < min_itsNCls)
+        if (part1.itsNCls() < minitsNCls)
           continue;
 
         if (!applyDCAcut(part0))
@@ -945,13 +945,13 @@ struct HadronNucleiCorrelation {
         if (removeSameBunchPileup && !part1.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
           continue;
 
-        if (part0.tpcFractionSharedCls() > max_tpcSharedCls)
+        if (part0.tpcFractionSharedCls() > maxtpcSharedCls)
           continue;
-        if (part0.itsNCls() < min_itsNCls)
+        if (part0.itsNCls() < minitsNCls)
           continue;
-        if (part1.tpcFractionSharedCls() > max_tpcSharedCls)
+        if (part1.tpcFractionSharedCls() > maxtpcSharedCls)
           continue;
-        if (part1.itsNCls() < min_itsNCls)
+        if (part1.itsNCls() < minitsNCls)
           continue;
 
         if (!applyDCAcut(part0))
@@ -1031,9 +1031,9 @@ struct HadronNucleiCorrelation {
       if (std::abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzVertex)
         continue;
 
-      if (track.tpcFractionSharedCls() > max_tpcSharedCls)
+      if (track.tpcFractionSharedCls() > maxtpcSharedCls)
         continue;
-      if (track.itsNCls() < min_itsNCls)
+      if (track.itsNCls() < minitsNCls)
         continue;
 
       if (IsProton(track, +1) && track.pdgCode() == PDG_t::kProton) {
