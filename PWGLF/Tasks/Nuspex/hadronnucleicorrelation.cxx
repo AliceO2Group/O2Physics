@@ -90,7 +90,7 @@ struct HadronNucleiCorrelation {
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
-  Configurable<bool> removeSameBunchPileup{"removeSameBunchPileup", false, "remove Same Bunch Pileup"};
+  Configurable<bool> doQuadraticPID{"doQuadraticPID", false, "do PID with sum in quadrature of TOF and TPC"};
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -98,6 +98,7 @@ struct HadronNucleiCorrelation {
 
   // Event selection
   Configurable<float> cutzVertex{"cutzVertex", 10.0, "|vertexZ| value limit"};
+  Configurable<bool> removeSameBunchPileup{"removeSameBunchPileup", false, "remove Same Bunch Pileup"};
 
   // Track selection
   Configurable<bool> doClosePairRejection{"doClosePairRejection", false, "doClosePairRejection"};
@@ -281,6 +282,8 @@ struct HadronNucleiCorrelation {
       QA.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
       QA.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA z (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
       QA.add("QA/TPCChi2VsPZ", "TPCChi2VsPZ", {HistType::kTH2D, {{100, 0.f, 10.f, "p_{TPC}/Z (GeV/c)"}, {120, 0.f, 6.f, "TPC Chi2"}}});
+      QA.add("QA/h2dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
+      QA.add("QA/h2dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
       QA.add("QA/hnSigmaTPCVsPt_El", "n#sigma TPC vs p_{T} for e hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
       QA.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
       QA.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
@@ -306,6 +309,8 @@ struct HadronNucleiCorrelation {
         QA.add("QA/hnSigmaTOFVsPt_De_AfterSel", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {pTAxis, axisNSigma}});
         QA.add("QA/hnSigmaITSVsPt_Pr_AfterSel", "n#sigma ITS vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, axisNSigma}});
         QA.add("QA/hnSigmaITSVsPt_De_AfterSel", "n#sigma ITS vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, axisNSigma}});
+        QA.add("QA/h2dTPCTOF_Pr_AfterSel", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
+        QA.add("QA/h2dTPCTOF_AntiPr_AfterSel", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
       }
     }
 
@@ -435,14 +440,47 @@ struct HadronNucleiCorrelation {
   bool IsProton(Type const& track, int sign)
   {
     bool isProton = false;
+
     bool isTPCPID = std::abs(track.tpcNSigmaPr()) < nsigmaTPC;
     bool isTOFPID = std::abs(track.tofNSigmaPr()) < nsigmaTOF;
     bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrprTPCEl && track.tpcNSigmaEl() >= nsigmaElPr;
     bool isITSPID = track.itsNSigmaPr() > nsigmaITSPr;
 
-    if (isTPCPID) {
-      if (track.pt() < pTthrprTOF) {
-        if (!doITSPID || isITSPID) {
+    bool isQuadraticPID = TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr()) < nsigmaTPC;
+
+    if (!doQuadraticPID) {
+      if (isTPCPID) {
+        if (track.pt() < pTthrprTOF) {
+          if (!doITSPID || isITSPID) {
+            if (sign > 0) {
+              if (track.sign() > 0) {
+                isProton = true;
+              } else if (track.sign() < 0) {
+                isProton = false;
+              }
+            } else if (sign < 0) {
+              if (track.sign() > 0) {
+                isProton = false;
+              } else if (track.sign() < 0) {
+                isProton = true;
+              }
+            }
+          }
+        } else if (isTPCElRejection) {
+          if (sign > 0) {
+            if (track.sign() > 0) {
+              isProton = true;
+            } else if (track.sign() < 0) {
+              isProton = false;
+            }
+          } else if (sign < 0) {
+            if (track.sign() > 0) {
+              isProton = false;
+            } else if (track.sign() < 0) {
+              isProton = true;
+            }
+          }
+        } else if (isTOFPID) {
           if (sign > 0) {
             if (track.sign() > 0) {
               isProton = true;
@@ -457,32 +495,40 @@ struct HadronNucleiCorrelation {
             }
           }
         }
-      } else if (isTPCElRejection) {
-        if (sign > 0) {
-          if (track.sign() > 0) {
-            isProton = true;
-          } else if (track.sign() < 0) {
-            isProton = false;
-          }
-        } else if (sign < 0) {
-          if (track.sign() > 0) {
-            isProton = false;
-          } else if (track.sign() < 0) {
-            isProton = true;
+      }
+    } else {
+      if (track.pt() < pTthrprTOF) {
+        if (isTPCPID) {
+          if (!doITSPID || isITSPID) {
+            if (sign > 0) {
+              if (track.sign() > 0) {
+                isProton = true;
+              } else if (track.sign() < 0) {
+                isProton = false;
+              }
+            } else if (sign < 0) {
+              if (track.sign() > 0) {
+                isProton = false;
+              } else if (track.sign() < 0) {
+                isProton = true;
+              }
+            }
           }
         }
-      } else if (isTOFPID) {
-        if (sign > 0) {
-          if (track.sign() > 0) {
-            isProton = true;
-          } else if (track.sign() < 0) {
-            isProton = false;
-          }
-        } else if (sign < 0) {
-          if (track.sign() > 0) {
-            isProton = false;
-          } else if (track.sign() < 0) {
-            isProton = true;
+      } else if (isQuadraticPID) {
+        if (!doITSPID || isITSPID) {
+          if (sign > 0) {
+            if (track.sign() > 0) {
+              isProton = true;
+            } else if (track.sign() < 0) {
+              isProton = false;
+            }
+          } else if (sign < 0) {
+            if (track.sign() > 0) {
+              isProton = false;
+            } else if (track.sign() < 0) {
+              isProton = true;
+            }
           }
         }
       }
@@ -767,6 +813,8 @@ struct HadronNucleiCorrelation {
         QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
         QA.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
         QA.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
+        QA.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+        QA.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
 
         if (IsProton(track, -1)) {
           QA.fill(HIST("QA/hEtaAntiPr"), track.eta());
@@ -774,6 +822,7 @@ struct HadronNucleiCorrelation {
           QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
+          QA.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (IsProton(track, +1)) {
           QA.fill(HIST("QA/hEtaPr"), track.eta());
@@ -781,6 +830,7 @@ struct HadronNucleiCorrelation {
           QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
+          QA.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (IsDeuteron(track, -1)) {
           QA.fill(HIST("QA/hEtaAntiDe"), track.eta());
