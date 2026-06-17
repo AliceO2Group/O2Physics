@@ -1727,7 +1727,7 @@ struct HfTrackIndexSkimCreator {
         } else {
           hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
         }
-        hfMlResponse3Prongs.cacheInputFeaturesIndices(inputFeatures3Prongs);
+        hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3Prongs);
         hfMlResponse3Prongs[iDecay3P].init();
       }
     }
