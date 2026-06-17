@@ -126,17 +126,6 @@ struct DileptonSV {
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
 
-  // for mixing
-  o2::framework::Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
-  o2::framework::Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
-  o2::framework::Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  o2::framework::Configurable<int> ndepth{"ndepth", 1000, "depth for event mixing"};
-  o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
-  o2::framework::ConfigurableAxis ConfVtxBins{"ConfVtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  o2::framework::ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
-  o2::framework::ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {o2::framework::VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
-
   o2::framework::Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   o2::framework::Configurable<int> cfgPolarizationFrame{"cfgPolarizationFrame", 0, "frame of polarization. 0:CS, 1:HX, else:FATAL"};
 
@@ -155,14 +144,27 @@ struct DileptonSV {
 
   o2::framework::Configurable<int> cfgNumBootstrapSamples{"cfgNumBootstrapSamples", 1, "Number of Bootstrap Samples"};
 
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "mixingGroup";
+    o2::framework::Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
+    o2::framework::Configurable<int> cfgEP2Estimator{"cfgEP2Estimator", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
+    o2::framework::Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
+    o2::framework::Configurable<int> ndepth{"ndepth", 1000, "depth for event mixing"};
+    o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
+    o2::framework::ConfigurableAxis ConfVtxBins{"ConfVtxBins", {20, -10.0f, 10.f}, "Mixing bins - z-vertex"};
+    o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 110.f}, "Mixing bins - centrality"};
+    o2::framework::ConfigurableAxis ConfEPBins{"ConfEPBins", {1, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
+    o2::framework::ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {o2::framework::VARIABLE_WIDTH, -2, 1e+10}, "Mixing bins - occupancy"};
+  } mixingGroup;
+
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = "eventcut_group";
     o2::framework::Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
     o2::framework::Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
-    o2::framework::Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    o2::framework::Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
     o2::framework::Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
-    o2::framework::Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+    o2::framework::Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
     o2::framework::Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
     o2::framework::Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     o2::framework::Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
@@ -410,77 +412,77 @@ struct DileptonSV {
     ccdb->setFatalWhenNull(false);
     rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
-    if (ConfVtxBins.value[0] == o2::framework::VARIABLE_WIDTH) {
-      zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
+    if (mixingGroup.ConfVtxBins.value[0] == o2::framework::VARIABLE_WIDTH) {
+      zvtx_bin_edges = std::vector<float>(mixingGroup.ConfVtxBins.value.begin(), mixingGroup.ConfVtxBins.value.end());
       zvtx_bin_edges.erase(zvtx_bin_edges.begin());
-      for (const auto& edge : zvtx_bin_edges) {
-        LOGF(info, "o2::framework::VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
-      }
+      // for (const auto& edge : zvtx_bin_edges) {
+      //   LOGF(info, "o2::framework::VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
+      // }
     } else {
-      int nbins = static_cast<int>(ConfVtxBins.value[0]);
-      float xmin = static_cast<float>(ConfVtxBins.value[1]);
-      float xmax = static_cast<float>(ConfVtxBins.value[2]);
+      int nbins = static_cast<int>(mixingGroup.ConfVtxBins.value[0]);
+      float xmin = static_cast<float>(mixingGroup.ConfVtxBins.value[1]);
+      float xmax = static_cast<float>(mixingGroup.ConfVtxBins.value[2]);
       zvtx_bin_edges.resize(nbins + 1);
       for (int i = 0; i < nbins + 1; i++) {
         zvtx_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: zvtx_bin_edges[%d] = %f", i, zvtx_bin_edges[i]);
+        // LOGF(info, "FIXED_WIDTH: zvtx_bin_edges[%d] = %f", i, zvtx_bin_edges[i]);
       }
     }
 
-    if (ConfCentBins.value[0] == o2::framework::VARIABLE_WIDTH) {
-      cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
+    if (mixingGroup.ConfCentBins.value[0] == o2::framework::VARIABLE_WIDTH) {
+      cent_bin_edges = std::vector<float>(mixingGroup.ConfCentBins.value.begin(), mixingGroup.ConfCentBins.value.end());
       cent_bin_edges.erase(cent_bin_edges.begin());
-      for (const auto& edge : cent_bin_edges) {
-        LOGF(info, "o2::framework::VARIABLE_WIDTH: cent_bin_edges = %f", edge);
-      }
+      // for (const auto& edge : cent_bin_edges) {
+      //   LOGF(info, "o2::framework::VARIABLE_WIDTH: cent_bin_edges = %f", edge);
+      // }
     } else {
-      int nbins = static_cast<int>(ConfCentBins.value[0]);
-      float xmin = static_cast<float>(ConfCentBins.value[1]);
-      float xmax = static_cast<float>(ConfCentBins.value[2]);
+      int nbins = static_cast<int>(mixingGroup.ConfCentBins.value[0]);
+      float xmin = static_cast<float>(mixingGroup.ConfCentBins.value[1]);
+      float xmax = static_cast<float>(mixingGroup.ConfCentBins.value[2]);
       cent_bin_edges.resize(nbins + 1);
       for (int i = 0; i < nbins + 1; i++) {
         cent_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: cent_bin_edges[%d] = %f", i, cent_bin_edges[i]);
+        // LOGF(info, "FIXED_WIDTH: cent_bin_edges[%d] = %f", i, cent_bin_edges[i]);
       }
     }
 
-    if (ConfEPBins.value[0] == o2::framework::VARIABLE_WIDTH) {
-      ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
+    if (mixingGroup.ConfEPBins.value[0] == o2::framework::VARIABLE_WIDTH) {
+      ep_bin_edges = std::vector<float>(mixingGroup.ConfEPBins.value.begin(), mixingGroup.ConfEPBins.value.end());
       ep_bin_edges.erase(ep_bin_edges.begin());
-      for (const auto& edge : ep_bin_edges) {
-        LOGF(info, "o2::framework::VARIABLE_WIDTH: ep_bin_edges = %f", edge);
-      }
+      // for (const auto& edge : ep_bin_edges) {
+      //   LOGF(info, "o2::framework::VARIABLE_WIDTH: ep_bin_edges = %f", edge);
+      // }
     } else {
-      int nbins = static_cast<int>(ConfEPBins.value[0]);
-      float xmin = static_cast<float>(ConfEPBins.value[1]);
-      float xmax = static_cast<float>(ConfEPBins.value[2]);
+      int nbins = static_cast<int>(mixingGroup.ConfEPBins.value[0]);
+      float xmin = static_cast<float>(mixingGroup.ConfEPBins.value[1]);
+      float xmax = static_cast<float>(mixingGroup.ConfEPBins.value[2]);
       ep_bin_edges.resize(nbins + 1);
       for (int i = 0; i < nbins + 1; i++) {
         ep_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: ep_bin_edges[%d] = %f", i, ep_bin_edges[i]);
+        // LOGF(info, "FIXED_WIDTH: ep_bin_edges[%d] = %f", i, ep_bin_edges[i]);
       }
     }
 
-    LOGF(info, "cfgOccupancyEstimator = %d", cfgOccupancyEstimator.value);
-    if (ConfOccupancyBins.value[0] == o2::framework::VARIABLE_WIDTH) {
-      occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
+    // LOGF(info, "mixingGroup.cfgOccupancyEstimator = %d", mixingGroup.cfgOccupancyEstimator.value);
+    if (mixingGroup.ConfOccupancyBins.value[0] == o2::framework::VARIABLE_WIDTH) {
+      occ_bin_edges = std::vector<float>(mixingGroup.ConfOccupancyBins.value.begin(), mixingGroup.ConfOccupancyBins.value.end());
       occ_bin_edges.erase(occ_bin_edges.begin());
-      for (const auto& edge : occ_bin_edges) {
-        LOGF(info, "o2::framework::VARIABLE_WIDTH: occ_bin_edges = %f", edge);
-      }
+      // for (const auto& edge : occ_bin_edges) {
+      //   LOGF(info, "o2::framework::VARIABLE_WIDTH: occ_bin_edges = %f", edge);
+      // }
     } else {
-      int nbins = static_cast<int>(ConfOccupancyBins.value[0]);
-      float xmin = static_cast<float>(ConfOccupancyBins.value[1]);
-      float xmax = static_cast<float>(ConfOccupancyBins.value[2]);
+      int nbins = static_cast<int>(mixingGroup.ConfOccupancyBins.value[0]);
+      float xmin = static_cast<float>(mixingGroup.ConfOccupancyBins.value[1]);
+      float xmax = static_cast<float>(mixingGroup.ConfOccupancyBins.value[2]);
       occ_bin_edges.resize(nbins + 1);
       for (int i = 0; i < nbins + 1; i++) {
         occ_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: occ_bin_edges[%d] = %f", i, occ_bin_edges[i]);
+        // LOGF(info, "FIXED_WIDTH: occ_bin_edges[%d] = %f", i, occ_bin_edges[i]);
       }
     }
 
-    emh_pos = new TEMH(ndepth);
-    emh_neg = new TEMH(ndepth);
+    emh_pos = new TEMH(mixingGroup.ndepth);
+    emh_neg = new TEMH(mixingGroup.ndepth);
 
     DefineEMEventCut();
     addhistograms();
@@ -494,7 +496,12 @@ struct DileptonSV {
       leptonM2 = o2::constants::physics::MassMuon;
     }
 
-    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Event/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, false);
+    const o2::framework::AxisSpec axis_mix_zvtx{mixingGroup.ConfVtxBins, "Z_{vtx} (cm)"};
+    const o2::framework::AxisSpec axis_mix_cent{mixingGroup.ConfCentBins, "centrality (%)"};
+    const o2::framework::AxisSpec axis_mix_ep2{mixingGroup.ConfEPBins, "event plane of 2nd harmonics (rad.)"};
+    const o2::framework::AxisSpec axis_mix_occ{mixingGroup.ConfOccupancyBins, "occupancy"};
+    fRegistry.add("Event/hsMixCounter", "mixed event counter", o2::framework::HistType::kTHnSparseD, {axis_mix_zvtx, axis_mix_cent, axis_mix_ep2, axis_mix_occ}, false);
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
@@ -760,8 +767,8 @@ struct DileptonSV {
     } else {
       o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
     }
-    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[mixingGroup.cfgEP2Estimator].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[mixingGroup.cfgEP2Estimator].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
   }
 
   void DefineEMEventCut()
@@ -1347,7 +1354,7 @@ struct DileptonSV {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t1.globalIndex()) == used_trackIds_per_col.end()) {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
-          if (cfgDoMix) {
+          if (mixingGroup.cfgDoMix) {
             if (t1.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), t1.cYY(), t1.cZY(), t1.cZZ()));
               // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrackWithCov(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), t1.cYY(), t1.cZY(), t1.cZZ(),
@@ -1367,7 +1374,7 @@ struct DileptonSV {
         }
         if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t2.globalIndex()) == used_trackIds_per_col.end()) {
           used_trackIds_per_col.emplace_back(t2.globalIndex());
-          if (cfgDoMix) {
+          if (mixingGroup.cfgDoMix) {
             if (t2.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), t2.cYY(), t2.cZY(), t2.cZZ()));
               // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrackWithCov(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), t2.cYY(), t2.cZY(), t2.cZZ(),
@@ -1388,7 +1395,7 @@ struct DileptonSV {
       } else if (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
         if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t1.globalIndex()) == used_trackIds_per_col.end()) {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
-          if (cfgDoMix) {
+          if (mixingGroup.cfgDoMix) {
             if (t1.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
               // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY(),
@@ -1409,7 +1416,7 @@ struct DileptonSV {
         }
         if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t2.globalIndex()) == used_trackIds_per_col.end()) {
           used_trackIds_per_col.emplace_back(t2.globalIndex());
-          if (cfgDoMix) {
+          if (mixingGroup.cfgDoMix) {
             if (t2.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
               // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY(),
@@ -1505,7 +1512,7 @@ struct DileptonSV {
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
       std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       const float eventplanes_2_for_mix[7] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg(), collision.ep2fv0a()};
-      float ep2 = eventplanes_2_for_mix[cfgEP2Estimator_for_Mix];
+      float ep2 = eventplanes_2_for_mix[mixingGroup.cfgEP2Estimator];
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
@@ -1609,7 +1616,7 @@ struct DileptonSV {
       used_trackIds_per_col.clear();
       used_trackIds_per_col.shrink_to_fit();
 
-      if (!cfgDoMix || !(nuls > 0 || nlspp > 0 || nlsmm > 0)) {
+      if (!mixingGroup.cfgDoMix || !(nuls > 0 || nlspp > 0 || nlsmm > 0)) {
         continue;
       }
 
@@ -1635,15 +1642,8 @@ struct DileptonSV {
         epbin = static_cast<int>(ep_bin_edges.size()) - 2;
       }
 
-      int occbin = -1;
-      if (cfgOccupancyEstimator == 0) {
-        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
-      } else if (cfgOccupancyEstimator == 1) {
-        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
-      } else {
-        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
-      }
-
+      float occupancy = std::array<float, 2>{collision.ft0cOccupancyInTimeRange(), static_cast<float>(collision.trackOccupancyInTimeRange())}[mixingGroup.cfgOccupancyEstimator];
+      int occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), occupancy) - occ_bin_edges.begin() - 1;
       if (occbin < 0) {
         occbin = 0;
       } else if (static_cast<int>(occ_bin_edges.size()) - 2 < occbin) {
@@ -1672,10 +1672,11 @@ struct DileptonSV {
 
         auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
         uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
-        fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
-        if (diffBC < ndiff_bc_mix) {
+        fRegistry.fill(HIST("Event/hDiffBC"), diffBC);
+        if (diffBC < mixingGroup.ndiff_bc_mix) {
           continue;
         }
+        fRegistry.fill(HIST("Event/hsMixCounter"), collision.posZ(), centrality, ep2, occupancy);
 
         auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
         auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
