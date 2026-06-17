@@ -112,3 +112,9 @@ o2physics_add_dpl_workflow(corr-fit
                            SOURCES corrFit.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(casc-di-hadron-corr
+                           SOURCES cascDiHadronCorr.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+                           
