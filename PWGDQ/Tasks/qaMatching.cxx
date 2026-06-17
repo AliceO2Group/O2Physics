@@ -20,6 +20,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FwdTrackReAlignTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
@@ -178,6 +179,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Candidate, candidate, int32_t, o2::aod::QaM
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
+using MyMuonsReAlign = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign>;
 using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyMFTs = aod::MFTTracks;
 using MyMFTCovariances = aod::MFTTracksCov;
@@ -3249,6 +3251,33 @@ struct QaMatching {
   }
 
   PROCESS_SWITCH(QaMatching, processQA, "processQA", false);
+
+  void processQAReAlign(MyEvents const& collisions,
+                        aod::BCsWithTimestamps const& bcs,
+                        MyMuonsReAlign const& muonTracks,
+                        MyMFTs const& mftTracks,
+                        MyMFTCovariances const& mftCovs)
+  {
+    auto bc = bcs.begin();
+    initCcdb(bc);
+
+    for (const auto& muon : muonTracks) {
+      registry.get<TH1>(HIST("nTracksPerType"))->Fill(static_cast<int>(muon.trackType()));
+    }
+
+    mftTrackCovs.clear();
+    for (const auto& mftTrackCov : mftCovs) {
+      mftTrackCovs[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
+    }
+
+    fillCollisions<false>(collisions, bcs, muonTracks, mftTracks, mftCovs, fCollisionInfos);
+
+    for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
+      processCollision<false>(collisionInfo, collisions, bcs, muonTracks, mftTracks, mftCovs);
+    }
+  }
+
+  PROCESS_SWITCH(QaMatching, processQAReAlign, "processQAReAlign", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
