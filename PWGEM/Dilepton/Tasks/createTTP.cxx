@@ -85,7 +85,7 @@ struct createTTP {
   ConfigurableAxis ConfPtBins{"ConfPtBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.5, 6.0, 7.5, 7.0, 7.5, 8.0, 9.0, 10.0, 15, 20}, "pT bins for output histograms"};
   Configurable<int> cfgNbinsEta{"cfgNbinsEta", 20, "number of eta bins for output histograms"};
   Configurable<int> cfgNbinsPhi{"cfgNbinsPhi", 36, "number of phi bins for output histograms"};
-  ConfigurableAxis ConfDCABins{"ConfDCABins", {200, -1000, +1000}, "DCA bins for output histograms"};
+  ConfigurableAxis ConfDCABins{"ConfDCABins", {2000, -1000, +1000}, "DCA bins for output histograms"};
   ConfigurableAxis ConfDCASigmaBins{"ConfDCASigmaBins", {200, -10, +10}, "DCA in sigma bins for output histograms"};
 
   o2::framework::ConfigurableAxis ConfMllBins{"ConfMllBins", {400, 0, 4}, "mll bins for output histograms"};
