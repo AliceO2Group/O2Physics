@@ -258,7 +258,7 @@ struct FlowSP {
     double meanPxC = 0;
   } spm;
 
-  struct ptMaps {
+  struct PtMaps {
     std::unique_ptr<TProfile> meanPTMap = std::make_unique<TProfile>("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
     std::unique_ptr<TProfile> meanPTMapPos = std::make_unique<TProfile>("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
     std::unique_ptr<TProfile> meanPTMapNeg = std::make_unique<TProfile>("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
