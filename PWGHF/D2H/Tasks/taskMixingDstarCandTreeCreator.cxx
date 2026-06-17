@@ -75,12 +75,12 @@ DECLARE_SOA_COLUMN(ZVec, zVec, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
 DECLARE_SOA_COLUMN(Occupancy, occupancy, int);
-DECLARE_SOA_COLUMN(XQvec, xqVec, float);
-DECLARE_SOA_COLUMN(YQvec, yqVec, float);
+DECLARE_SOA_COLUMN(XQVec, xQVec, float);
+DECLARE_SOA_COLUMN(YQVec, yQVec, float);
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
 // Tracks
-DECLARE_SOA_COLUMN(MinAbsEtaTrack, MinabsEtaTrack, float);
+DECLARE_SOA_COLUMN(MinAbsEtaTrack, minAbsEtaTrack, float);
 DECLARE_SOA_COLUMN(MinNumItsCls, minNumItsCls, int);
 DECLARE_SOA_COLUMN(MinNumTpcCls, minNumTpcCls, int);
 } // namespace mixing_dstar
@@ -107,8 +107,8 @@ DECLARE_SOA_TABLE(HfCandDstMix, "AOD", "HFCANDDSTMIX",
                   mixing_dstar::Centrality,
                   // mixing_dstar::Multiplicity,
                   mixing_dstar::Occupancy,
-                  mixing_dstar::XQvec,
-                  mixing_dstar::YQvec,
+                  mixing_dstar::XQVec,
+                  mixing_dstar::YQVec,
                   mixing_dstar::MinAbsEtaTrack,
                   mixing_dstar::MinNumItsCls,
                   mixing_dstar::MinNumTpcCls,
