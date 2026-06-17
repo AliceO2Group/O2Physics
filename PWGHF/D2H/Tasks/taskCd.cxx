@@ -253,7 +253,7 @@ struct HfTaskCd {
 
   constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
   constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
-  const float cmToMum = 1.e4; 
+  const float cmToMum = 1.e4;
 
   enum SignalClasses : int {
     Signal = 0,
