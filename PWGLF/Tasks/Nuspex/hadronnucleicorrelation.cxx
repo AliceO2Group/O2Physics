@@ -83,7 +83,7 @@ struct HadronNucleiCorrelation {
 
   Configurable<int> mode{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p, 7: p-antip"};
 
-  Configurable<bool> dorapidity{"dorapidity", false, "do rapidity dependent analysis"};
+  Configurable<bool> doRapidity{"doRapidity", false, "do rapidity dependent analysis"};
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
   Configurable<bool> doMCQA{"doMCQA", false, "save MC QA histograms"};
   Configurable<bool> isMC{"isMC", false, "is MC"};
@@ -101,8 +101,8 @@ struct HadronNucleiCorrelation {
 
   // Track selection
   Configurable<bool> doClosePairRejection{"doClosePairRejection", false, "doClosePairRejection"};
-  Configurable<double> par0{"par0", 0.004, "par 0"};
-  Configurable<double> par1{"par1", 0.013, "par 1"};
+  Configurable<double> dcaPar0{"dcaPar0", 0.004, "par 0"};
+  Configurable<double> dcaPar1{"dcaPar1", 0.013, "par 1"};
   Configurable<bool> doDCAZ{"doDCAZ", true, "do DCA z cut"};
   Configurable<int16_t> min_TPC_nClusters{"min_TPC_nClusters", 80, "minimum number of found TPC clusters"};
   Configurable<float> min_TPC_nCrossedRowsOverFindableCls{"min_TPC_nCrossedRowsOverFindableCls", 0.8, "n TPC Crossed Rows Over Findable Cls"};
@@ -129,7 +129,7 @@ struct HadronNucleiCorrelation {
   Configurable<float> radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
   Configurable<float> dEta{"dEta", 0.01, "minimum allowed difference in eta between two tracks in a pair"};
   Configurable<float> dPhi{"dPhi", 0.01, "minimum allowed difference in phi_star between two tracks in a pair"};
-  Configurable<float> rap{"rap", 0.5, "rapidity"};
+  Configurable<float> yRap{"yRap", 0.5, "rapidity"};
 
   // Mixing parameters
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 50.0f, 100.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -238,7 +238,7 @@ struct HadronNucleiCorrelation {
     if (!isMC) {
       for (int i = 0; i < nBinspT; i++) {
 
-        if (dorapidity) {
+        if (doRapidity) {
 
           auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
           auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
@@ -554,10 +554,10 @@ struct HadronNucleiCorrelation {
   {
     bool passcut = true;
     // pt-dependent selection
-    if (std::abs(track.dcaXY()) > (par0 + par1 / track.pt()))
+    if (std::abs(track.dcaXY()) > (dcaPar0 + dcaPar1 / track.pt()))
       passcut = false;
 
-    if (doDCAZ && std::abs(track.dcaZ()) > (par0 + par1 / track.pt()))
+    if (doDCAZ && std::abs(track.dcaZ()) > (dcaPar0 + dcaPar1 / track.pt()))
       passcut = false;
 
     return passcut;
@@ -1415,10 +1415,10 @@ struct HadronNucleiCorrelation {
         registry.fill(HIST("Generated/hQADeuterons"), 1.5);
       }
 
-      if (particle.pdgCode() == o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < rap) {
+      if (particle.pdgCode() == o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < yRap) {
         registry.fill(HIST("Generated/hDeuteronsVsPt"), particle.pt());
       }
-      if (particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < rap) {
+      if (particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < yRap) {
         registry.fill(HIST("Generated/hAntiDeuteronsVsPt"), particle.pt());
       }
 
