@@ -1171,7 +1171,9 @@ struct HadronNucleiCorrelation {
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
 
-      if (std::abs(magFieldTesla1 - magFieldTesla2) > 1e-4) {
+      const float limit = 1e-4;
+
+      if (std::abs(magFieldTesla1 - magFieldTesla2) > limit) {
         continue;
       }
 
