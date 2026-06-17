@@ -106,10 +106,10 @@ struct ZdcQVectors {
   Produces<aod::SPTableZDC> spTableZDC;
 
   struct : ConfigurableGroup {
-    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", true, "Evt sel: use RCT flag checker"};
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"}; // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
-    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", true, "Evt sel: RCT flag checker ZDC check"};
-    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctFlags;
 
   RCTFlagsChecker rctChecker;
@@ -271,17 +271,17 @@ struct ZdcQVectors {
         registry.add<TH2>(Form("QA/before/hSPplaneC"), "hSPplaneC", kTH2D, {axisPsiC, axisCent10});
         registry.add<TH2>(Form("QA/before/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -PI, PI}, axisCent10});
         for (const auto& side : sides) {
-          registry.add<TH2>(Form("recentering/before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
+          registry.add<TH2>(Form("QA/before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
         }
 
         for (const auto& COORD1 : capCOORDS) {
           for (const auto& COORD2 : capCOORDS) {
             // Now we get: <XX> <XY> & <YX> <YY> vs. Centrality
-            registry.add<TProfile>(Form("recentering/before/hQ%sA_Q%sC_vs_cent", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent});
-            registry.add<TProfile>(Form("recentering/before/hQ%sA_Q%sC_vs_vx", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_vx", COORD1, COORD2), kTProfile, {axisVx});
-            registry.add<TProfile>(Form("recentering/before/hQ%sA_Q%sC_vs_vy", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_vy", COORD1, COORD2), kTProfile, {axisVy});
-            registry.add<TProfile>(Form("recentering/before/hQ%sA_Q%sC_vs_vz", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_vz", COORD1, COORD2), kTProfile, {axisVz});
-            registry.add<TProfile>(Form("recentering/before/hQ%sA_Q%sC_vs_timestamp", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_timestamp", COORD1, COORD2), kTProfile, {axisTimestamp});
+            registry.add<TProfile>(Form("QA/before/hQ%sA_Q%sC_vs_cent", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent});
+            registry.add<TProfile>(Form("QA/before/hQ%sA_Q%sC_vs_vx", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_vx", COORD1, COORD2), kTProfile, {axisVx});
+            registry.add<TProfile>(Form("QA/before/hQ%sA_Q%sC_vs_vy", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_vy", COORD1, COORD2), kTProfile, {axisVy});
+            registry.add<TProfile>(Form("QA/before/hQ%sA_Q%sC_vs_vz", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_vz", COORD1, COORD2), kTProfile, {axisVz});
+            registry.add<TProfile>(Form("QA/before/hQ%sA_Q%sC_vs_timestamp", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_timestamp", COORD1, COORD2), kTProfile, {axisTimestamp});
           }
         }
 
@@ -289,19 +289,14 @@ struct ZdcQVectors {
         // Sides is {A,C} and capcoords is {X,Y}
         for (const auto& side : sides) {
           for (const auto& coord : capCOORDS) {
-            registry.add(Form("recentering/before/hQ%s%s_vs_cent", coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
-            registry.add(Form("recentering/before/hQ%s%s_vs_vx", coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
-            registry.add(Form("recentering/before/hQ%s%s_vs_vy", coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
-            registry.add(Form("recentering/before/hQ%s%s_vs_vz", coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
-            registry.add(Form("recentering/before/hQ%s%s_vs_timestamp", coord, side), Form("hQ%s%s_vs_timestamp", coord, side), {HistType::kTProfile, {axisTimestamp}});
-            registry.add(Form("recentering/Q%s%s_vs_iteration", coord, side), Form("hQ%s%s_vs_iteration", coord, side), {HistType::kTH2D, {{35, 0, 35}, axisQ}});
+            registry.add(Form("QA/before/hQ%s%s_vs_cent", coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
+            registry.add(Form("QA/before/hQ%s%s_vs_vx", coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
+            registry.add(Form("QA/before/hQ%s%s_vs_vy", coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
+            registry.add(Form("QA/before/hQ%s%s_vs_vz", coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
+            registry.add(Form("QA/before/hQ%s%s_vs_timestamp", coord, side), Form("hQ%s%s_vs_timestamp", coord, side), {HistType::kTProfile, {axisTimestamp}});
+            registry.add(Form("QA/Q%s%s_vs_iteration", coord, side), Form("hQ%s%s_vs_iteration", coord, side), {HistType::kTH2D, {{25, 0, 25}, axisQ}});
           } // end of capCOORDS
         } // end of sides
-
-        registry.add<TH2>("recentering/before/ZNA_Qx_vs_Centrality", "ZNA_Qx_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
-        registry.add<TH2>("recentering/before/ZNA_Qy_vs_Centrality", "ZNA_Qy_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
-        registry.add<TH2>("recentering/before/ZNC_Qx_vs_Centrality", "ZNC_Qx_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
-        registry.add<TH2>("recentering/before/ZNC_Qy_vs_Centrality", "ZNC_Qy_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
 
         registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{100, 0, 100}});
         registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{100, 0, 100}});
@@ -320,36 +315,48 @@ struct ZdcQVectors {
         registry.add<TH2>("QA/shift/DeltaPsiZDCC", "DeltaPsiZDCC", kTH2D, {axisPsiCShifted, axisPsiC});
         registry.add<TH2>("QA/shift/DeltaPsiZDCAC", "DeltaPsiZDCAC", kTH2D, {axisPsiA, axisPsiC});
 
-        registry.add<TProfile>("QA/ZNA_pmC", "ZNA_pmC", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNA_pm2", "ZNA_pm2", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNA_pm3", "ZNA_pm3", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNA_pm4", "ZNA_pm4", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNA_pmC", "ZNA_pmC", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNA_pm2", "ZNA_pm2", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNA_pm3", "ZNA_pm3", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNA_pm4", "ZNA_pm4", kTProfile, {{1, 0, 1.}});
 
-        registry.add<TProfile>("QA/ZNC_pmC", "ZNC_pmC", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNC_pm1", "ZNC_pm1", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNC_pm2", "ZNC_pm2", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNC_pm3", "ZNC_pm3", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/ZNC_pm4", "ZNC_pm4", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_pmC", "ZNC_pmC", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_pm1", "ZNC_pm1", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_pm2", "ZNC_pm2", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_pm3", "ZNC_pm3", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_pm4", "ZNC_pm4", kTProfile, {{1, 0, 1.}});
 
         registry.add<TProfile>("QA/before/ZNA_Qx", "ZNA_Qx", kTProfile, {{1, 0, 1.}});
         registry.add<TProfile>("QA/before/ZNA_Qy", "ZNA_Qy", kTProfile, {{1, 0, 1.}});
         registry.add<TProfile>("QA/before/ZNC_Qx", "ZNC_Qx", kTProfile, {{1, 0, 1.}});
         registry.add<TProfile>("QA/before/ZNC_Qy", "ZNC_Qy", kTProfile, {{1, 0, 1.}});
 
-        registry.add<TH2>("QA/ZNA_pmC_vs_Centrality", "ZNA_pmC_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
-        registry.add<TH2>("QA/ZNA_pmSUM_vs_Centrality", "ZNA_pmSUM_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
-        registry.add<TH2>("QA/ZNA_pm1_vs_Centrality", "ZNA_pm1_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-        registry.add<TH2>("QA/ZNA_pm2_vs_Centrality", "ZNA_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-        registry.add<TH2>("QA/ZNA_pm3_vs_Centrality", "ZNA_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-        registry.add<TH2>("QA/ZNA_pm4_vs_Centrality", "ZNA_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNA_Qx_vs_Centrality", "ZNA_Qx_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+        registry.add<TH2>("QA/before/ZNA_Qy_vs_Centrality", "ZNA_Qy_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+        registry.add<TH2>("QA/before/ZNC_Qx_vs_Centrality", "ZNC_Qx_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+        registry.add<TH2>("QA/before/ZNC_Qy_vs_Centrality", "ZNC_Qy_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
 
-        registry.add<TH2>("QA/ZNC_pmC_vs_Centrality", "ZNC_pmC_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
-        registry.add<TH2>("QA/ZNC_pmSUM_vs_Centrality", "ZNC_pmSUM_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
-        registry.add<TH2>("QA/ZNC_pm1_vs_Centrality", "ZNC_pm1_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-        registry.add<TH2>("QA/ZNC_pm2_vs_Centrality", "ZNC_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-        registry.add<TH2>("QA/ZNC_pm3_vs_Centrality", "ZNC_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
-        registry.add<TH2>("QA/ZNC_pm4_vs_Centrality", "ZNC_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNA_pmC_vs_Centrality", "ZNA_pmC_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+        registry.add<TH2>("QA/before/ZNA_pmSUM_vs_Centrality", "ZNA_pmSUM_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+        registry.add<TH2>("QA/before/ZNA_pm1_vs_Centrality", "ZNA_pm1_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNA_pm2_vs_Centrality", "ZNA_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNA_pm3_vs_Centrality", "ZNA_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNA_pm4_vs_Centrality", "ZNA_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+
+        registry.add<TH2>("QA/before/ZNC_pmC_vs_Centrality", "ZNC_pmC_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+        registry.add<TH2>("QA/before/ZNC_pmSUM_vs_Centrality", "ZNC_pmSUM_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+        registry.add<TH2>("QA/before/ZNC_pm1_vs_Centrality", "ZNC_pm1_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNC_pm2_vs_Centrality", "ZNC_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNC_pm3_vs_Centrality", "ZNC_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+        registry.add<TH2>("QA/before/ZNC_pm4_vs_Centrality", "ZNC_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+
+        registry.addClone("QA/before/", "QA/after/");
+
+        registry.add<TProfile>("QA/before/ZNA_Qx_noEq", "ZNA_Qx_noEq", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNA_Qy_noEq", "ZNA_Qy_noEq", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_Qx_noEq", "ZNC_Qx_noEq", kTProfile, {{1, 0, 1.}});
+        registry.add<TProfile>("QA/before/ZNC_Qy_noEq", "ZNC_Qy_noEq", kTProfile, {{1, 0, 1.}});
       }
 
       // Tower mean energies vs. centrality used for tower gain equalisation
@@ -377,8 +384,6 @@ struct ZdcQVectors {
         registry.add<TProfile2D>("CutAnalysis/hvertex_vy", "hvertex_vy", kTProfile2D, {{1, 0., 1.}, {nEventSelections + 5, 0, nEventSelections + 5}});
         registry.add<TProfile2D>("CutAnalysis/hvertex_vz", "hvertex_vz", kTProfile2D, {{1, 0., 1.}, {nEventSelections + 5, 0, nEventSelections + 5}});
       }
-      registry.addClone("recentering/before/", "recentering/after/");
-      registry.addClone("QA/before/", "QA/after/");
     }
   }
 
@@ -535,63 +540,63 @@ struct ZdcQVectors {
       return;
     static constexpr std::string_view Time[] = {"before", "after"};
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hZNA_Qx_vs_Qy"), qxa, qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hZNC_Qx_vs_Qy"), qxc, qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hZNA_Qx_vs_Qy"), qxa, qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hZNC_Qx_vs_Qy"), qxc, qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_cent"), centrality, qxa * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_cent"), centrality, qya * qyc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_cent"), centrality, qya * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_cent"), centrality, qxa * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_cent"), centrality, qxa * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_cent"), centrality, qya * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_cent"), centrality, qya * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_cent"), centrality, qxa * qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_vs_cent"), centrality, qxa);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_vs_cent"), centrality, qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXC_vs_cent"), centrality, qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYC_vs_cent"), centrality, qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_cent"), centrality, qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_cent"), centrality, qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_cent"), centrality, qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_cent"), centrality, qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_vs_vx"), v[0], qxa);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_vs_vx"), v[0], qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXC_vs_vx"), v[0], qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYC_vs_vx"), v[0], qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_vx"), v[0], qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_vx"), v[0], qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_vx"), v[0], qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_vx"), v[0], qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_vx"), v[0], qxa * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vx"), v[0], qya * qyc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vx"), v[0], qya * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vx"), v[0], qxa * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_vx"), v[0], qxa * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vx"), v[0], qya * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vx"), v[0], qya * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vx"), v[0], qxa * qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_vs_vy"), v[1], qxa);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_vs_vy"), v[1], qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXC_vs_vy"), v[1], qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYC_vs_vy"), v[1], qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_vy"), v[1], qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_vy"), v[1], qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_vy"), v[1], qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_vy"), v[1], qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_vy"), v[1], qxa * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vy"), v[1], qya * qyc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vy"), v[1], qya * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vy"), v[1], qxa * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_vy"), v[1], qxa * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vy"), v[1], qya * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vy"), v[1], qya * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vy"), v[1], qxa * qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_vs_vz"), v[2], qxa);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_vs_vz"), v[2], qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXC_vs_vz"), v[2], qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYC_vs_vz"), v[2], qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_vz"), v[2], qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_vz"), v[2], qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_vz"), v[2], qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_vz"), v[2], qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_vz"), v[2], qxa * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vz"), v[2], qya * qyc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vz"), v[2], qya * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vz"), v[2], qxa * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_vz"), v[2], qxa * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vz"), v[2], qya * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vz"), v[2], qya * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vz"), v[2], qxa * qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_vs_timestamp"), rsTimestamp, qxa);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_vs_timestamp"), rsTimestamp, qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXC_vs_timestamp"), rsTimestamp, qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYC_vs_timestamp"), rsTimestamp, qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_timestamp"), rsTimestamp, qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_timestamp"), rsTimestamp, qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_timestamp"), rsTimestamp, qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_timestamp"), rsTimestamp, qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_timestamp"), rsTimestamp, qxa * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_timestamp"), rsTimestamp, qya * qyc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_timestamp"), rsTimestamp, qya * qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_timestamp"), rsTimestamp, qxa * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_timestamp"), rsTimestamp, qxa * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_timestamp"), rsTimestamp, qya * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_timestamp"), rsTimestamp, qya * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_timestamp"), rsTimestamp, qxa * qyc);
 
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/ZNA_Qx_vs_Centrality"), centrality, qxa);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/ZNA_Qy_vs_Centrality"), centrality, qya);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/ZNC_Qx_vs_Centrality"), centrality, qxc);
-    registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/ZNC_Qy_vs_Centrality"), centrality, qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNA_Qx_vs_Centrality"), centrality, qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNA_Qy_vs_Centrality"), centrality, qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNC_Qx_vs_Centrality"), centrality, qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNC_Qy_vs_Centrality"), centrality, qyc);
 
     // add psi!!
     double psiA = 1.0 * std::atan2(qxc, qxa);
@@ -754,9 +759,8 @@ struct ZdcQVectors {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     runnumber = foundBC.runNumber();
 
-    if (cfgFillHistRegistry && !cfgFillNothing) {
+    if (cfgFillHistRegistry && !cfgFillNothing)
       registry.fill(HIST("QA/centrality_before"), cent);
-    }
 
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
 
@@ -840,8 +844,13 @@ struct ZdcQVectors {
     }
 
     // load the calibration histos for iteration 0 step 0 (Energy Calibration)
-    if (!cfgNoGain)
-      loadCalibrations<kEnergyCal>(cfgEnergyCal.value);
+    loadCalibrations<kEnergyCal>(cfgEnergyCal.value);
+
+    if (!cal.calibfilesLoaded[0]) {
+      if (counter < 1) {
+        LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
+      }
+    }
     // load the calibrations for the mean v
     loadCalibrations<kMeanv>(cfgMeanv.value);
 
@@ -867,12 +876,19 @@ struct ZdcQVectors {
       }
     }
 
+    // Do not continue if Energy calibration is not loaded
+    if (!cal.calibfilesLoaded[0]) {
+      counter++;
+      isSelected = false;
+      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, isSelected, eventSelectionFlags);
+      lastRunNumber = runnumber;
+      return;
+    }
+
     // Now start gain equalisation!
     // Fill the list with calibration constants.
-    if (!cfgNoGain) {
-      for (int tower = 0; tower < (nTowers + 2); tower++) {
-        meanEZN[tower] = getCorrection<TProfile2D, kEnergyCal>(namesEcal[tower].Data());
-      }
+    for (int tower = 0; tower < (nTowers + 2); tower++) {
+      meanEZN[tower] = getCorrection<TProfile2D, kEnergyCal>(namesEcal[tower].Data());
     }
 
     // Use the calibration constants but now only loop over towers 1-4
@@ -880,13 +896,9 @@ struct ZdcQVectors {
     std::vector<int> towersNocom = {1, 2, 3, 4, 6, 7, 8, 9};
 
     for (const auto& tower : towersNocom) {
-      if (cfgNoGain) {
-        e[calibtower] = eZN[calibtower];
-      } else {
-        if (meanEZN[tower] > 0) {
-          double ecommon = (tower > nTowersPerSide) ? meanEZN[5] : meanEZN[0];
-          e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
-        }
+      if (meanEZN[tower] > 0) {
+        double ecommon = (tower > nTowersPerSide) ? meanEZN[5] : meanEZN[0];
+        e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
       }
       calibtower++;
     }
@@ -899,35 +911,60 @@ struct ZdcQVectors {
         registry.fill(HIST("QA/ZNC_Energy"), bincenter, eZN[i + 4]);
         registry.fill(HIST("QA/ZNC_Energy"), bincenter + 4, e[i + 4]);
 
-        registry.get<TProfile>(HIST("QA/ZNA_pmC"))->Fill(Form("%d", runnumber), zdcCol.energyCommonZNA());
-        registry.get<TProfile>(HIST("QA/ZNC_pmC"))->Fill(Form("%d", runnumber), zdcCol.energyCommonZNC());
-        registry.get<TProfile>(HIST("QA/ZNA_pm1"))->Fill(Form("%d", runnumber), e[0]);
-        registry.get<TProfile>(HIST("QA/ZNA_pm2"))->Fill(Form("%d", runnumber), e[1]);
-        registry.get<TProfile>(HIST("QA/ZNA_pm3"))->Fill(Form("%d", runnumber), e[2]);
-        registry.get<TProfile>(HIST("QA/ZNA_pm4"))->Fill(Form("%d", runnumber), e[3]);
-        registry.get<TProfile>(HIST("QA/ZNC_pm1"))->Fill(Form("%d", runnumber), e[4]);
-        registry.get<TProfile>(HIST("QA/ZNC_pm2"))->Fill(Form("%d", runnumber), e[5]);
-        registry.get<TProfile>(HIST("QA/ZNC_pm3"))->Fill(Form("%d", runnumber), e[6]);
-        registry.get<TProfile>(HIST("QA/ZNC_pm4"))->Fill(Form("%d", runnumber), e[7]);
+        registry.get<TProfile>(HIST("QA/before/ZNA_pmC"))->Fill(Form("%d", runnumber), meanEZN[0]);
+        registry.get<TProfile>(HIST("QA/before/ZNA_pm1"))->Fill(Form("%d", runnumber), eZN[0]);
+        registry.get<TProfile>(HIST("QA/before/ZNA_pm2"))->Fill(Form("%d", runnumber), eZN[1]);
+        registry.get<TProfile>(HIST("QA/before/ZNA_pm3"))->Fill(Form("%d", runnumber), eZN[2]);
+        registry.get<TProfile>(HIST("QA/before/ZNA_pm4"))->Fill(Form("%d", runnumber), eZN[3]);
 
-        double sumZNA = e[0] + e[1] + e[2] + e[3];
-        double sumZNC = e[4] + e[5] + e[6] + e[7];
+        registry.get<TProfile>(HIST("QA/before/ZNC_pmC"))->Fill(Form("%d", runnumber), meanEZN[5]);
+        registry.get<TProfile>(HIST("QA/before/ZNC_pm1"))->Fill(Form("%d", runnumber), eZN[4]);
+        registry.get<TProfile>(HIST("QA/before/ZNC_pm2"))->Fill(Form("%d", runnumber), eZN[5]);
+        registry.get<TProfile>(HIST("QA/before/ZNC_pm3"))->Fill(Form("%d", runnumber), eZN[6]);
+        registry.get<TProfile>(HIST("QA/before/ZNC_pm4"))->Fill(Form("%d", runnumber), eZN[7]);
 
-        registry.fill(HIST("QA/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
-        registry.fill(HIST("QA/ZNA_pmSUM_vs_Centrality"), centrality, sumZNA);
+        registry.get<TProfile>(HIST("QA/after/ZNA_pm1"))->Fill(Form("%d", runnumber), e[0]);
+        registry.get<TProfile>(HIST("QA/after/ZNA_pm2"))->Fill(Form("%d", runnumber), e[1]);
+        registry.get<TProfile>(HIST("QA/after/ZNA_pm3"))->Fill(Form("%d", runnumber), e[2]);
+        registry.get<TProfile>(HIST("QA/after/ZNA_pm4"))->Fill(Form("%d", runnumber), e[3]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_pm1"))->Fill(Form("%d", runnumber), e[4]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_pm2"))->Fill(Form("%d", runnumber), e[5]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_pm3"))->Fill(Form("%d", runnumber), e[6]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_pm4"))->Fill(Form("%d", runnumber), e[7]);
 
-        registry.fill(HIST("QA/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
-        registry.fill(HIST("QA/ZNC_pmSUM_vs_Centrality"), centrality, sumZNC);
+        double sumZNAbefore = eZN[0] + eZN[1] + eZN[2] + eZN[3];
+        double sumZNAafter = e[0] + e[1] + e[2] + e[3];
 
-        registry.fill(HIST("QA/ZNA_pm1_vs_Centrality"), centrality, e[0] / sumZNA);
-        registry.fill(HIST("QA/ZNA_pm2_vs_Centrality"), centrality, e[1] / sumZNA);
-        registry.fill(HIST("QA/ZNA_pm3_vs_Centrality"), centrality, e[2] / sumZNA);
-        registry.fill(HIST("QA/ZNA_pm4_vs_Centrality"), centrality, e[3] / sumZNA);
+        double sumZNCbefore = eZN[4] + eZN[5] + eZN[6] + eZN[7];
+        double sumZNCafter = e[4] + e[5] + e[6] + e[7];
 
-        registry.fill(HIST("QA/ZNC_pm1_vs_Centrality"), centrality, e[4] / sumZNC);
-        registry.fill(HIST("QA/ZNC_pm2_vs_Centrality"), centrality, e[5] / sumZNC);
-        registry.fill(HIST("QA/ZNC_pm3_vs_Centrality"), centrality, e[6] / sumZNC);
-        registry.fill(HIST("QA/ZNC_pm4_vs_Centrality"), centrality, e[7] / sumZNC);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNAbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm1_vs_Centrality"), centrality, eZN[0] / sumZNAbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm2_vs_Centrality"), centrality, eZN[1] / sumZNAbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm3_vs_Centrality"), centrality, eZN[2] / sumZNAbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm4_vs_Centrality"), centrality, eZN[3] / sumZNAbefore);
+
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNCbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm1_vs_Centrality"), centrality, eZN[4] / sumZNCbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm2_vs_Centrality"), centrality, eZN[5] / sumZNCbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm3_vs_Centrality"), centrality, eZN[6] / sumZNCbefore);
+        registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm4_vs_Centrality"), centrality, eZN[7] / sumZNCbefore);
+
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNAafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm1_vs_Centrality"), centrality, e[0] / sumZNAafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm2_vs_Centrality"), centrality, e[1] / sumZNAafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm3_vs_Centrality"), centrality, e[2] / sumZNAafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm4_vs_Centrality"), centrality, e[3] / sumZNAafter);
+
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNCafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm1_vs_Centrality"), centrality, e[4] / sumZNCafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm2_vs_Centrality"), centrality, e[5] / sumZNCafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm3_vs_Centrality"), centrality, e[6] / sumZNCafter);
+        registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm4_vs_Centrality"), centrality, e[7] / sumZNCafter);
       }
     }
 
@@ -939,6 +976,12 @@ struct ZdcQVectors {
       sumZN[side] += energy;
       xEnZN[side] += (side == 0) ? -1.0 * pxZDC[sector] * energy : pxZDC[sector] * energy;
       yEnZN[side] += pyZDC[sector] * energy;
+
+      // Also calculate the Q-vector for the non-equalized energy
+      double energyNoEq = std::pow(eZN[tower], alphaZDC);
+      sumZN_noEq[side] += energyNoEq;
+      xEnZN_noEq[side] += (side == 0) ? -1.0 * pxZDC[sector] * energyNoEq : pxZDC[sector] * energyNoEq;
+      yEnZN_noEq[side] += pyZDC[sector] * energyNoEq;
     }
 
     // "QXA", "QYA", "QXC", "QYC"
@@ -948,6 +991,10 @@ struct ZdcQVectors {
         q[i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
         q[i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
       }
+      if (sumZN_noEq[i] > 0) {
+        qNoEq[i * 2] = xEnZN_noEq[i] / sumZN_noEq[i];     // for QXA[0] and QXC[2]
+        qNoEq[i * 2 + 1] = yEnZN_noEq[i] / sumZN_noEq[i]; // for QYA[1] and QYC[3]
+      }
     }
 
     if (cfgFillHistRegistry && !cfgFillNothing) {
@@ -955,6 +1002,15 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("QA/before/ZNA_Qy"))->Fill(Form("%d", runnumber), q[1]);
       registry.get<TProfile>(HIST("QA/before/ZNC_Qx"))->Fill(Form("%d", runnumber), q[2]);
       registry.get<TProfile>(HIST("QA/before/ZNC_Qy"))->Fill(Form("%d", runnumber), q[3]);
+
+      registry.get<TProfile>(HIST("QA/before/ZNA_Qx_noEq"))->Fill(Form("%d", runnumber), qNoEq[0]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[1]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_Qx_noEq"))->Fill(Form("%d", runnumber), qNoEq[2]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[3]);
+    }
+
+    if (cfgNoGain) {
+      q = qNoEq;
     }
 
     if (cal.calibfilesLoaded[1]) {
@@ -1001,13 +1057,6 @@ struct ZdcQVectors {
         corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 1));
         corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 1));
         corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 1));
-
-        if (cfgFillHistRegistry && !cfgFillNothing) {
-          registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-          registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-          registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-          registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-        }
         pb++;
 
         for (int step = 2; step <= nSteps; step++) {
@@ -1015,14 +1064,6 @@ struct ZdcQVectors {
           corrQyA.push_back(getCorrection<TProfile, kRec>(names[step - 1][1].Data(), it, step));
           corrQxC.push_back(getCorrection<TProfile, kRec>(names[step - 1][2].Data(), it, step));
           corrQyC.push_back(getCorrection<TProfile, kRec>(names[step - 1][3].Data(), it, step));
-
-          if (cfgFillHistRegistry && !cfgFillNothing) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-          }
-
           pb++;
         }
 
@@ -1031,13 +1072,6 @@ struct ZdcQVectors {
           corrQyA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[1].Data(), it, 6));
           corrQxC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[2].Data(), it, 6));
           corrQyC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[3].Data(), it, 6));
-
-          if (cfgFillHistRegistry && !cfgFillNothing) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-          }
           pb++;
         }
       }
@@ -1051,6 +1085,15 @@ struct ZdcQVectors {
       qRec[1] -= totalCorrectionQyA;
       qRec[2] -= totalCorrectionQxC;
       qRec[3] -= totalCorrectionQyC;
+
+      if (cfgFillHistRegistry && !cfgFillNothing) {
+        for (int cor = 0; cor < pb; cor++) {
+          registry.get<TH2>(HIST("QA/QXA_vs_iteration"))->Fill(cor, qRec[0]);
+          registry.get<TH2>(HIST("QA/QYA_vs_iteration"))->Fill(cor, qRec[1]);
+          registry.get<TH2>(HIST("QA/QXC_vs_iteration"))->Fill(cor, qRec[2]);
+          registry.get<TH2>(HIST("QA/QYC_vs_iteration"))->Fill(cor, qRec[3]);
+        }
+      }
 
       // do shift for psi.
       double psiZDCA = 1.0 * std::atan2(qRec[1], qRec[0]);
