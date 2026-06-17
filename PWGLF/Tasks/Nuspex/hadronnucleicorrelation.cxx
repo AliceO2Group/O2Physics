@@ -144,7 +144,7 @@ struct HadronNucleiCorrelation {
   ConfigurableAxis deltaPhiAxis = {"deltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta#phi (rad)"};
 
   using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
-  using FilteredCollisionsExtra = soa::Filtered<aod::SingleCollSels, aod::SingleCollExtras>;
+  using FilteredCollisionsExtra = soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>>;
   using SimCollisions = soa::Filtered<aod::McCollisions>;
   using SimParticles = aod::McParticles;
   using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>;                      // new tables (v3)
@@ -1004,7 +1004,7 @@ struct HadronNucleiCorrelation {
 
     for (const auto& track : tracks) {
 
-      if (removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisionsExtra>>().isNoSameBunchPileup())
+      if (removeSameBunchPileup && !track.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup())
         continue;
 
       if (track.tpcFractionSharedCls() > maxtpcSharedCls)
@@ -1084,7 +1084,7 @@ struct HadronNucleiCorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
-        if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisionsExtra>>().isNoSameBunchPileup())
+        if (removeSameBunchPileup && !part0.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup())
           continue;
 
         if (part0.tpcFractionSharedCls() > maxtpcSharedCls)
@@ -1129,7 +1129,7 @@ struct HadronNucleiCorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
 
-        if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisionsExtra>>().isNoSameBunchPileup())
+        if (removeSameBunchPileup && !part0.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup())
           continue;
 
         if (part0.tpcFractionSharedCls() > maxtpcSharedCls)
@@ -1324,9 +1324,9 @@ struct HadronNucleiCorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
-        if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisionsExtra>>().isNoSameBunchPileup())
+        if (removeSameBunchPileup && !part0.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup())
           continue;
-        if (removeSameBunchPileup && !part1.template singleCollSel_as<soa::Filtered<FilteredCollisionsExtra>>().isNoSameBunchPileup())
+        if (removeSameBunchPileup && !part1.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup())
           continue;
 
         if (part0.tpcFractionSharedCls() > maxtpcSharedCls)
