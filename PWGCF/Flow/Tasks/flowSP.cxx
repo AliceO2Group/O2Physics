@@ -259,18 +259,18 @@ struct FlowSP {
   } spm;
 
   struct ptMaps {
-    TProfile* meanPTMap = new TProfile("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
-    TProfile* meanPTMapPos = new TProfile("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
-    TProfile* meanPTMapNeg = new TProfile("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> meanPTMap = std::make_unique<TProfile>("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> meanPTMapPos = std::make_unique<TProfile>("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> meanPTMapNeg = std::make_unique<TProfile>("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
 
-    TProfile* relPxA = new TProfile("relPxA", "relPxA", 8, -0.8, 0.8);
-    TProfile* relPxC = new TProfile("relPxC", "relPxC", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxA = std::make_unique<TProfile>("relPxA", "relPxA", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxC = std::make_unique<TProfile>("relPxC", "relPxC", 8, -0.8, 0.8);
 
-    TProfile* relPxANeg = new TProfile("relPxANeg", "relPxANeg", 8, -0.8, 0.8);
-    TProfile* relPxAPos = new TProfile("relPxAPos", "relPxAPos", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxANeg = std::make_unique<TProfile>("relPxANeg", "relPxANeg", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxAPos = std::make_unique<TProfile>("relPxAPos", "relPxAPos", 8, -0.8, 0.8);
 
-    TProfile* relPxCNeg = new TProfile("relPxCNeg", "relPxCNeg", 8, -0.8, 0.8);
-    TProfile* relPxCPos = new TProfile("relPxCPos", "relPxCPos", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxCNeg = std::make_unique<TProfile>("relPxCNeg", "relPxCNeg", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxCPos = std::make_unique<TProfile>("relPxCPos", "relPxCPos", 8, -0.8, 0.8);
   } ptmaps;
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
@@ -281,13 +281,13 @@ struct FlowSP {
   HistogramRegistry histos{"QAhistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Event selection cuts
-  TF1* fPhiCutLow = nullptr;
-  TF1* fPhiCutHigh = nullptr;
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
+  std::unique_ptr<TF1> fPhiCutLow = nullptr;
+  std::unique_ptr<TF1> fPhiCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultPVCutLow = nullptr;
+  std::unique_ptr<TF1> fMultPVCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultCutLow = nullptr;
+  std::unique_ptr<TF1> fMultCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultMultPVCut = nullptr;
 
   enum SelectionCriteria {
     evSel_FilteredEvent,
@@ -694,10 +694,10 @@ struct FlowSP {
     }
 
     if (cfg.cEvSelsUseAdditionalEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultPVCutLow = std::make_unique<TF1>("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultPVCutHigh = std::make_unique<TF1>("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultCutLow = std::make_unique<TF1>("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultCutHigh = std::make_unique<TF1>("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
       std::vector<double> paramsMultPVCut;
       std::vector<double> paramsMultCut;
@@ -756,8 +756,8 @@ struct FlowSP {
     }
 
     if (cfg.cTrackSelsUseAdditionalTrackCut) {
-      fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+      fPhiCutLow = std::make_unique<TF1>("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
+      fPhiCutHigh = std::make_unique<TF1>("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
   } // end of init
 
