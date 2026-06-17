@@ -69,6 +69,12 @@ enum Modes {
   kPPbar
 };
 
+enum Origin {
+  kPrimary = 0,
+  kWeakDecay,
+  kMaterial
+};
+
 struct HadronNucleiCorrelation {
 
   static constexpr int betahasTOFthr = -100;
@@ -85,7 +91,6 @@ struct HadronNucleiCorrelation {
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
   Configurable<bool> removeSameBunchPileup{"removeSameBunchPileup", false, "remove Same Bunch Pileup"};
-
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -124,6 +129,7 @@ struct HadronNucleiCorrelation {
   Configurable<float> radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
   Configurable<float> dEta{"dEta", 0.01, "minimum allowed difference in eta between two tracks in a pair"};
   Configurable<float> dPhi{"dPhi", 0.01, "minimum allowed difference in phi_star between two tracks in a pair"};
+  Configurable<float> rap{"rap", 0.5, "rapidity"};
 
   // Mixing parameters
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 50.0f, 100.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -584,35 +590,35 @@ struct HadronNucleiCorrelation {
 
         if (doCorrection) { // Apply corrections
           switch (mode) {
-            case 0:
+            case kDbarPbar:
               corr0 = hEffpTEta_antideuteron->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 1:
+            case kDP:
               corr0 = hEffpTEta_deuteron->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 2:
+            case kDbarP:
               corr0 = hEffpTEta_antideuteron->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 3:
+            case kDPbar:
               corr0 = hEffpTEta_deuteron->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 4:
+            case kPbarP:
               corr0 = hEffpTEta_antiproton->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 5:
+            case kPbarPbar:
               corr0 = hEffpTEta_antiproton->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 6:
+            case kPP:
               corr0 = hEffpTEta_proton->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
               break;
-            case 7:
+            case kPPbar:
               corr0 = hEffpTEta_proton->Interpolate(part0.pt(), part0.eta());
               corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
               break;
@@ -1032,38 +1038,38 @@ struct HadronNucleiCorrelation {
 
       if (IsProton(track, +1) && track.pdgCode() == PDG_t::kProton) {
         registry.fill(HIST("hPrDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 0)
+        if (track.origin() == kPrimary)
           registry.fill(HIST("hPrimPrDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 1)
+        if (track.origin() == kWeakDecay)
           registry.fill(HIST("hSecWeakPrDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 2)
+        if (track.origin() == kMaterial)
           registry.fill(HIST("hSecMatPrDCAxy"), track.dcaXY(), track.pt());
       }
       if (IsProton(track, -1) && track.pdgCode() == -PDG_t::kProton) {
         registry.fill(HIST("hAntiPrDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 0)
+        if (track.origin() == kPrimary)
           registry.fill(HIST("hPrimAntiPrDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 1)
+        if (track.origin() == kWeakDecay)
           registry.fill(HIST("hSecWeakAntiPrDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 2)
+        if (track.origin() == kMaterial)
           registry.fill(HIST("hSecMatAntiPrDCAxy"), track.dcaXY(), track.pt());
       }
       if (IsDeuteron(track, +1) && track.pdgCode() == o2::constants::physics::Pdg::kDeuteron) {
         registry.fill(HIST("hDeDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 0)
+        if (track.origin() == kPrimary)
           registry.fill(HIST("hPrimDeDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 1)
+        if (track.origin() == kWeakDecay)
           registry.fill(HIST("hSecWeakDeDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 2)
+        if (track.origin() == kMaterial)
           registry.fill(HIST("hSecMatDeDCAxy"), track.dcaXY(), track.pt());
       }
       if (IsDeuteron(track, -1) && track.pdgCode() == -o2::constants::physics::Pdg::kDeuteron) {
         registry.fill(HIST("hAntiDeDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 0)
+        if (track.origin() == kPrimary)
           registry.fill(HIST("hPrimAntiDeDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 1)
+        if (track.origin() == kWeakDecay)
           registry.fill(HIST("hSecWeakAntiDeDCAxy"), track.dcaXY(), track.pt());
-        if (track.origin() == 2)
+        if (track.origin() == kMaterial)
           registry.fill(HIST("hSecMatAntiDeDCAxy"), track.dcaXY(), track.pt());
       }
 
@@ -1097,13 +1103,13 @@ struct HadronNucleiCorrelation {
 
       if (isPr) {
         registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * +1);
-        if (track.origin() == 1 || track.origin() == 2) { // secondaries
+        if (track.origin() == kWeakDecay || track.origin() == kMaterial) { // secondaries
           registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * +1);
         }
       }
       if (isAntiPr) {
         registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
-        if (track.origin() == 1 || track.origin() == 2) {
+        if (track.origin() == kWeakDecay || track.origin() == kMaterial) {
           registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
         }
       }
@@ -1409,10 +1415,10 @@ struct HadronNucleiCorrelation {
         registry.fill(HIST("Generated/hQADeuterons"), 1.5);
       }
 
-      if (particle.pdgCode() == o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < 0.5) {
+      if (particle.pdgCode() == o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < rap) {
         registry.fill(HIST("Generated/hDeuteronsVsPt"), particle.pt());
       }
-      if (particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < 0.5) {
+      if (particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron && std::abs(particle.y()) < rap) {
         registry.fill(HIST("Generated/hAntiDeuteronsVsPt"), particle.pt());
       }
 
