@@ -516,19 +516,17 @@ struct HadronNucleiCorrelation {
           }
         }
       } else if (isQuadraticPID) {
-        if (!doITSPID || isITSPID) {
-          if (sign > 0) {
-            if (track.sign() > 0) {
-              isProton = true;
-            } else if (track.sign() < 0) {
-              isProton = false;
-            }
-          } else if (sign < 0) {
-            if (track.sign() > 0) {
-              isProton = false;
-            } else if (track.sign() < 0) {
-              isProton = true;
-            }
+        if (sign > 0) {
+          if (track.sign() > 0) {
+            isProton = true;
+          } else if (track.sign() < 0) {
+            isProton = false;
+          }
+        } else if (sign < 0) {
+          if (track.sign() > 0) {
+            isProton = false;
+          } else if (track.sign() < 0) {
+            isProton = true;
           }
         }
       }
