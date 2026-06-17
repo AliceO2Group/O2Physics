@@ -84,6 +84,8 @@ struct HadronNucleiCorrelation {
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
+  Configurable<bool> removeSameBunchPileup{"removeSameBunchPileup", false, "remove Same Bunch Pileup"};
+
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -721,6 +723,10 @@ struct HadronNucleiCorrelation {
     registry.fill(HIST("hMult"), collision.mult());
 
     for (const auto& track : tracks) {
+
+      if (removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
+        continue;
+
       if (track.tpcFractionSharedCls() > max_tpcSharedCls)
         continue;
       if (track.itsNCls() < min_itsNCls)
@@ -794,6 +800,9 @@ struct HadronNucleiCorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
+        if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
+          continue;
+
         if (part0.tpcFractionSharedCls() > max_tpcSharedCls)
           continue;
         if (part0.itsNCls() < min_itsNCls)
@@ -835,6 +844,9 @@ struct HadronNucleiCorrelation {
     } else {
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+
+        if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
+          continue;
 
         if (part0.tpcFractionSharedCls() > max_tpcSharedCls)
           continue;
@@ -921,6 +933,11 @@ struct HadronNucleiCorrelation {
       Pair->SetMagField2(magFieldTesla2);
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+
+        if (removeSameBunchPileup && !part0.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
+          continue;
+        if (removeSameBunchPileup && !part1.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
+          continue;
 
         if (part0.tpcFractionSharedCls() > max_tpcSharedCls)
           continue;
