@@ -117,6 +117,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! Resonant
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! MC origin for generated particles
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! Resonant MC decay channel for generated candidates
 DECLARE_SOA_COLUMN(CtGen, ctGen, float);                            //! Generated ct computed wrt to c-deuteron production vertex, which can be either PV (prompt) or B-hadron decay vertex (non-prompt)
+DECLARE_SOA_COLUMN(CtRec, ctRec, float);                            //! Reconstructed ct computed wrt to PV
 DECLARE_SOA_COLUMN(Cent, cent, float);                              //! Centrality
 DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);                              //! Vertex Z
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                      //! Global index for the collision
@@ -144,6 +145,7 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::NSigmaTpcPr,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
+                  full::CtRec,
                   full::CandidateSelFlag,
                   full::CandidateSign,
                   full::FlagMc,
@@ -177,6 +179,7 @@ DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
                   full::NSigmaTofPi,
                   full::NSigmaTpcKa,
                   full::NSigmaTofKa,
+                  full::CtRec,
                   full::CandidateSelFlag,
                   full::CandidateSign,
                   full::FlagMc,
@@ -588,6 +591,7 @@ struct HfTaskCd {
             nSigmaTpcPr,
             nSigmaItsDe,
             nSigmaTofDe,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             candidate.flagMcMatchRec(),
@@ -622,6 +626,7 @@ struct HfTaskCd {
             nSigmaTofPi,
             nSigmaTpcKa,
             nSigmaTofKa,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             candidate.flagMcMatchRec(),
@@ -940,6 +945,7 @@ struct HfTaskCd {
             nSigmaTpcPr,
             nSigmaItsDe,
             nSigmaTofDe,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             0,
@@ -975,6 +981,7 @@ struct HfTaskCd {
             nSigmaTofPi,
             nSigmaTpcKa,
             nSigmaTofKa,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             0,
