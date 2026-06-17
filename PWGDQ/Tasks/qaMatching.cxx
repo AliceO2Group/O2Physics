@@ -996,7 +996,7 @@ struct QaMatching {
 
   void createDimuonHistos()
   {
-    AxisSpec invMassAxis = {400, 1, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
+    AxisSpec invMassAxis = {500, 0, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
     AxisSpec invMassCorrelationAxis = {400, 0, 8, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
     AxisSpec invMassAxisFull = {5000, 0, 100, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
     int matchTypeCombMax = (static_cast<int>(kMatchTypeTrueNonLeading) - 1) * 10 + static_cast<int>(kMatchTypeTrueNonLeading) - 1;
@@ -1022,6 +1022,16 @@ struct QaMatching {
     registryDimuon.add("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches", "#mu^{+}#mu^{-} invariant mass (global muon cuts, rescaled MFT, good matches)", {HistType::kTH1F, {invMassAxis}});
     // MFT-MCH-MID tracks with MFT acceptance cuts vs. muon tracks match type, good matches
     registryDimuon.add("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches_vs_match_type", "#mu^{+}#mu^{-} invariant mass vs. match tye (global muon cuts, rescaled MFT, good matches)", {HistType::kTH2F, {invMassAxis, matchTypeAxis}});
+
+    // global kinematics as stored in candidates
+    // MFT-MCH-MID tracks with MFT acceptance cuts
+    registryDimuon.add("dimuon/invariantMass_GlobalKine_GlobalMuonCuts", "#mu^{+}#mu^{-} invariant mass (global muon cuts, global kine)", {HistType::kTH1F, {invMassAxis}});
+    // MCH-MID tracks with MFT acceptance cuts vs. muon tracks match type
+    registryDimuon.add("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_vs_match_type", "#mu^{+}#mu^{-} invariant mass vs. match tye (global muon cuts, global kine)", {HistType::kTH2F, {invMassAxis, matchTypeAxis}});
+    // MFT-MCH-MID tracks with MFT acceptance cuts, good matches
+    registryDimuon.add("dimuon/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches", "#mu^{+}#mu^{-} invariant mass (global muon cuts, global kine, good matches)", {HistType::kTH1F, {invMassAxis}});
+    // MFT-MCH-MID tracks with MFT acceptance cuts vs. muon tracks match type, good matches
+    registryDimuon.add("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches_vs_match_type", "#mu^{+}#mu^{-} invariant mass vs. match tye (global muon cuts, global kine, good matches)", {HistType::kTH2F, {invMassAxis, matchTypeAxis}});
   }
 
   void initMatchingFunctions()
@@ -2664,18 +2674,24 @@ struct QaMatching {
 
       double massMCH = getMuMuInvariantMass(propagateToVertexMch(mchTrack1, collision),
                                             propagateToVertexMch(mchTrack2, collision));
-      double mass = getMuMuInvariantMass(propagateToVertexMft(mftTrack1, mchTrack1, collision),
-                                         propagateToVertexMft(mftTrack2, mchTrack2, collision));
+      double massRescaledKine = getMuMuInvariantMass(propagateToVertexMft(mftTrack1, mchTrack1, collision),
+                                                     propagateToVertexMft(mftTrack2, mchTrack2, collision));
+      double massGlobalKine = getMuMuInvariantMass(propagateToVertexMft(muonTrack1, collision),
+                                                   propagateToVertexMft(muonTrack2, collision));
       registryDimuon.get<TH1>(HIST("dimuon/invariantMass_MuonKine_GlobalMuonCuts"))->Fill(massMCH);
-      registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts"))->Fill(mass);
+      registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts"))->Fill(massRescaledKine);
+      registryDimuon.get<TH1>(HIST("dimuon/invariantMass_GlobalKine_GlobalMuonCuts"))->Fill(massGlobalKine);
       registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_MuonKine_GlobalMuonCuts_vs_match_type"))->Fill(massMCH, matchType);
-      registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_vs_match_type"))->Fill(mass, matchType);
+      registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_vs_match_type"))->Fill(massRescaledKine, matchType);
+      registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_vs_match_type"))->Fill(massGlobalKine, matchType);
 
       if (goodGlobalMuonMatches) {
         registryDimuon.get<TH1>(HIST("dimuon/invariantMass_MuonKine_GlobalMuonCuts_GoodMatches"))->Fill(massMCH);
-        registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches"))->Fill(mass);
+        registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches"))->Fill(massRescaledKine);
+        registryDimuon.get<TH1>(HIST("dimuon/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches"))->Fill(massGlobalKine);
         registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_MuonKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(massMCH, matchType);
-        registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(mass, matchType);
+        registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(massRescaledKine, matchType);
+        registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(massGlobalKine, matchType);
       }
     }
   }
