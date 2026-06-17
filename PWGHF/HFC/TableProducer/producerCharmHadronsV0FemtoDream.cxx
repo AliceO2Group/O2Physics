@@ -1124,7 +1124,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    rowCandCharmHadGen.reserve(particles.size());
+    rowCandCharmHadGen.reserve(rowCandCharmHadGen.lastIndex() + particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
