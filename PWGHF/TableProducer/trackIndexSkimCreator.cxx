@@ -1693,6 +1693,15 @@ struct HfTrackIndexSkimCreator {
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
       const std::array<LabeledArray<double>, kN3ProngDecaysUsedMlForHfFilters> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
+      const std::vector<std::string> inputFeatures2Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1"};
+      std::vector<std::string> inputFeatures3Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2"};
+      if (doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt || doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) {
+        inputFeatures3Prongs.push_back("tpcNSigmaPrProng0");
+        inputFeatures3Prongs.push_back("tpcNSigmaPrProng2");
+        inputFeatures3Prongs.push_back("tpcNSigmaPiProng0");
+        inputFeatures3Prongs.push_back("tpcNSigmaPiProng2");
+        inputFeatures3Prongs.push_back("tpcNSigmaKaProng1");
+      }
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1702,6 +1711,7 @@ struct HfTrackIndexSkimCreator {
       } else {
         hfMlResponse2Prongs.setModelPathsLocal(onnxFileNames2Prongs);
       }
+      hfMlResponse2Prongs.cacheInputFeaturesIndices(inputFeatures2Prongs);
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
@@ -1717,6 +1727,7 @@ struct HfTrackIndexSkimCreator {
         } else {
           hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
         }
+        hfMlResponse3Prongs.cacheInputFeaturesIndices(inputFeatures2Prongs);
         hfMlResponse3Prongs[iDecay3P].init();
       }
     }
