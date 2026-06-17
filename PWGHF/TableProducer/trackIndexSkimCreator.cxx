@@ -1693,6 +1693,9 @@ struct HfTrackIndexSkimCreator {
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
       const std::array<LabeledArray<double>, kN3ProngDecaysUsedMlForHfFilters> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
+      const std::vector<std::string> inputFeatures2Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1"};
+      const std::vector<std::string> inputFeatures3Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2"};
+      const std::vector<std::string> inputFeatures3ProngsWithPid = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2", "tpcNSigmaPrProng0", "tpcNSigmaPrProng2", "tpcNSigmaPiProng0", "tpcNSigmaPiProng2", "tpcNSigmaKaProng1"};
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1702,6 +1705,7 @@ struct HfTrackIndexSkimCreator {
       } else {
         hfMlResponse2Prongs.setModelPathsLocal(onnxFileNames2Prongs);
       }
+      hfMlResponse2Prongs.cacheInputFeaturesIndices(inputFeatures2Prongs);
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
@@ -1716,6 +1720,11 @@ struct HfTrackIndexSkimCreator {
           hfMlResponse3Prongs[iDecay3P].setModelPathsCCDB(onnxFileNames3Prongs[iDecay3P], ccdbApi, mlModelPathCcdb3Prongs[iDecay3P], config.timestampCcdbForHfFilters);
         } else {
           hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
+        }
+        if ((doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt || doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) && iDecay3P == aod::hf_cand_3prong::DecayType::LcToPKPi) {
+          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3ProngsWithPid);
+        } else {
+          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3Prongs);
         }
         hfMlResponse3Prongs[iDecay3P].init();
       }
