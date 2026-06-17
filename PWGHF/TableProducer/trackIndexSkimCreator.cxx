@@ -3453,7 +3453,7 @@ struct HfTrackIndexSkimCreatorCascades {
   void processCascades(SelectedCollisions const& collisions,
                        soa::Join<aod::V0Datas, aod::V0Covs> const& v0s,
                        FilteredTrackAssocSel const& trackIndices,
-                       aod::TracksWCovDcaExtra const&,
+                       aod::TracksWCovDca const&,
                        aod::BCsWithTimestamps const&)
   {
     // set the magnetic field from CCDB
@@ -3472,7 +3472,7 @@ struct HfTrackIndexSkimCreatorCascades {
       // fist we loop over the bachelor candidate
       for (const auto& bachIdx : groupedBachTrackIndices) {
 
-        const auto bach = bachIdx.track_as<aod::TracksWCovDcaExtra>();
+        const auto bach = bachIdx.track_as<aod::TracksWCovDca>();
         std::array pVecBach{bach.pVector()};
         auto trackBach = getTrackParCov(bach);
         if (thisCollId != bach.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
@@ -3484,8 +3484,8 @@ struct HfTrackIndexSkimCreatorCascades {
         // now we loop over the V0s
         for (const auto& v0 : groupedV0s) {
           // selections on the V0 daughters
-          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
-          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
+          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDca>(); // only the global index is read here; track-quality cuts are applied upstream in tag-sel-tracks
+          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDca>(); // only the global index is read here; track-quality cuts are applied upstream in tag-sel-tracks
 
           // check not to take the same track twice (as bachelor and V0 daughter)
           if (trackV0DaughPos.globalIndex() == bach.globalIndex() || trackV0DaughNeg.globalIndex() == bach.globalIndex()) {
