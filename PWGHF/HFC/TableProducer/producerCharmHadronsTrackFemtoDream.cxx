@@ -628,11 +628,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
       rowCandCharmDstar.reserve(rowCandCharmDstar.lastIndex() + sizeCand + 1);
     }
-    if (sizeCand > 0) {
-      LOGP(info, "Last index {} candidate size {}, reserved memory {}", rowCandCharm3Prong.lastIndex(), sizeCand, rowCandCharm3Prong.lastIndex() + sizeCand + 1);
-    }
 
-    int iCand{0};
     for (const auto& candidate : candidates) {
       outputMlD0 = {-1.0f, -1.0f, -1.0f};
       outputMlD0bar = {-1.0f, -1.0f, -1.0f};
@@ -642,7 +638,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
-      LOGP(info, "Filling candidate number {}", iCand);
 
       auto bc = col.template bc_as<aod::BCsWithTimestamps>();
       int64_t timeStamp = bc.timestamp();
@@ -863,7 +858,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         }
         fillTable(2, candidate.isSelDstarToD0Pi(), outputMlDstar.at(0), outputMlDstar.at(1), outputMlDstar.at(2));
       }
-      iCand++;
     }
     isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
 
