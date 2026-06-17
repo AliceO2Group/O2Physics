@@ -65,7 +65,8 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuo
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 
-using MyPairCandidatesSelected = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
+// using MyPairCandidatesSelected = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
+using MyPairCandidatesSelected = soa::Join<aod::Dimuons, aod::DimuonsExtra, aod::DimuonsAll>;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMuonAssocsSelected = soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>;
 
@@ -86,8 +87,8 @@ struct DqJPsiMuonCorrelations {
   Configurable<float> fConfigBackgroundHighMass{"cfgBackgroundHighMass", 3.7, "High mass cut for the background used in analysis"};
 
   // Configurables for the dilepton and associated muon cuts
-  Configurable<float> fConfigDileptonPtMin{"cfgDileptonPtMin", 1.0, "Minimum pT cut for the associated muons"};
-  Configurable<float> fConfigDileptonPtMax{"cfgDileptonPtMax", 20.0, "Maximum pT cut for the associated muons"};
+  Configurable<float> fConfigDileptonPtMin{"cfgDileptonPtMin", 1.0, "Minimum pT cut for the dilepton"};
+  Configurable<float> fConfigDileptonPtMax{"cfgDileptonPtMax", 20.0, "Maximum pT cut for the dilepton"};
   Configurable<float> fConfigDileptonEtaMin{"cfgDileptonEtaMin", -4.0, "Minimum eta cut for the dileptons"};
   Configurable<float> fConfigDileptonEtaMax{"cfgDileptonEtaMax", -2.5, "Maximum eta cut for the dileptons"};
   Configurable<float> fConfigMuonEtaMin{"cfgMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
@@ -172,6 +173,13 @@ struct DqJPsiMuonCorrelations {
         // Dilepton kinematic cuts
         if ((dilepton.eta() < fConfigDileptonEtaMin || dilepton.eta() > fConfigDileptonEtaMax) ||
             (dilepton.pt() < fConfigDileptonPtMin || dilepton.pt() > fConfigDileptonPtMax)) {
+continue;
+        }
+        // Dilepton leg kinematic cuts
+        if ((dilepton.eta1() < fConfigMuonEtaMin || dilepton.eta1() > fConfigMuonEtaMax) ||
+            (dilepton.pt1() < axisPt.value[1] || dilepton.pt1() > axisPt.value.back()) ||
+            (dilepton.eta2() < fConfigMuonEtaMin || dilepton.eta2() > fConfigMuonEtaMax) ||
+            (dilepton.pt2() < axisPt.value[1] || dilepton.pt2() > axisPt.value.back())) {
           continue;
         }
 
