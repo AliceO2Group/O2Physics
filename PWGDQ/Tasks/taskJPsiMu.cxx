@@ -215,14 +215,14 @@ struct DqJPsiMuonCorrelations {
         // Dilepton kinematic cuts
         if ((dilepton.eta() < fConfigDileptonEtaMin || dilepton.eta() > fConfigDileptonEtaMax) ||
             (dilepton.pt() < fConfigDileptonPtMin || dilepton.pt() > fConfigDileptonPtMax)) {
-continue;
+          continue;
         }
         // Dilepton leg kinematic cuts
         if ((dilepton.eta1() < fConfigMuonEtaMin || dilepton.eta1() > fConfigMuonEtaMax) ||
             (dilepton.pt1() < axisPt.value[1] || dilepton.pt1() > axisPt.value.back()) ||
             (dilepton.eta2() < fConfigMuonEtaMin || dilepton.eta2() > fConfigMuonEtaMax) ||
             (dilepton.pt2() < axisPt.value[1] || dilepton.pt2() > axisPt.value.back())) {
-          continue;
+           continue;
         }
 
         // Fill invariant mass vs pT histogram for the dileptons and for trigger counting
@@ -308,7 +308,7 @@ double getWeight(const double pT, const std::vector<double>& pT_bins, const std:
             break;
         }
     }
-if ((efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min))) == 0) {
+    if ((efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min))) == 0) {
       LOG(info) << "Efficiency correction factor is zero for pT: " << pT << ", efficiency: " << efficiency[eff_bin] << ", eta range: [" << eta_min << ", " << eta_max << "].";
     }
     return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
