@@ -1992,6 +1992,21 @@ struct QaMatching {
     return attempts;
   }
 
+  template <class TMUON>
+  void getMatchChi2AndScore(TMUON const& muonTrack, float& matchChi2, float& matchScore)
+  {
+    matchChi2 = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
+    matchScore = muonTrack.matchScoreMCHMFT();
+    if (matchScore >= 0 && matchChi2 < 0) {
+      // match score from ML-based matching, we compute a chi2-like value from the score
+      float matchScoreInv = (matchScore > 0) ? 1.0 / matchScore : std::numeric_limits<float>::max();
+      matchChi2 = matchScoreInv - 1.f;
+    } else {
+      // we assume a standard chi2-based matching, and compute the score value from the chi2
+      matchScore = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
+    }
+  }
+
   template <bool isMC, class EVT, class BC, class TMUON, class TMFT>
   void fillCollisions(EVT const& collisions,
                       BC const& bcs,
@@ -2045,8 +2060,10 @@ struct QaMatching {
         } else {
           // global muon tracks (MFT-MCH or MFT-MCH-MID)
           int64_t muonTrackIndex = muonTrack.globalIndex();
-          double matchChi2 = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
-          double matchScore = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
+          float matchChi2{-1};
+          float matchScore{-1};
+          getMatchChi2AndScore(muonTrack, matchChi2, matchScore);
+
           auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUON>();
           int64_t mchTrackIndex = mchTrack.globalIndex();
           auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
@@ -2881,8 +2898,12 @@ struct QaMatching {
         std::vector<float> inputML = mlResponse.getInputFeatures(muonTrack, mftTrack, mchTrack, mftTrackProp, mchTrackProp, collision);
         mlResponse.isSelectedMl(inputML, 0, output);
         float matchScore = output[0];
-        float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
-        float matchScoreProd = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
+        float matchScoreInv = (matchScore > 0) ? 1.0 / matchScore : std::numeric_limits<float>::max();
+        float matchChi2 = matchScoreInv - 1.f;
+
+        float matchChi2Prod{-1};
+        float matchScoreProd{-1};
+        getMatchChi2AndScore(muonTrack, matchChi2Prod, matchScoreProd);
 
         // check if a vector of global muon candidates is already available for the current MCH index
         // if not, initialize a new one and add the current global muon track
@@ -2897,7 +2918,7 @@ struct QaMatching {
             mftTrackProp,
             mchTrackProp,
             matchScore,
-            -1,
+            matchChi2,
             -1,
             matchScoreProd,
             matchChi2Prod,
@@ -2913,7 +2934,7 @@ struct QaMatching {
             mftTrackProp,
             mchTrackProp,
             matchScore,
-            -1,
+            matchChi2,
             -1,
             matchScoreProd,
             matchChi2Prod,
