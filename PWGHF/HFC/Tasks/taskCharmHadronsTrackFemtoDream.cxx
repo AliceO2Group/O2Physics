@@ -839,7 +839,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                         FilteredFDParticles const& parts,
                         FilteredCharmCand3Prongs const& candidates)
   {
-    rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
+    rowFemtoResultCharm3Prong.reserve(2 * candidates.size() + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
@@ -879,7 +880,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                            FilteredFDParticles const& parts,
                            FilteredCharmCand3Prongs const& candidates)
   {
-    rowFemtoResultCharm2Prong.reserve(candidates.size() + 1);
+    rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
@@ -921,6 +923,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                         FilteredCharmCand2Prongs const& candidates)
   {
     rowFemtoResultCharm2Prong.reserve(candidates.size() * 2 + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
@@ -961,6 +964,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                            FilteredCharmCandDstars const& candidates)
   {
     rowFemtoResultCharmDstar.reserve(candidates.size() + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
