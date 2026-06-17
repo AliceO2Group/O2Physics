@@ -1004,7 +1004,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                       FilteredFDMcParts const& parts,
                       o2::aod::FDMCParticles const&,
                       o2::aod::FDExtMCParticles const&,
-                      FilteredCharmMcCand3Prongs const& candidates)
+                      FilteredCharmMcCand3Prongs const&)
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
