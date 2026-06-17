@@ -544,9 +544,41 @@ struct HadronNucleiCorrelation {
     bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrdeTPCEl && track.tpcNSigmaEl() >= nsigmaElDe;
     bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe;
 
-    if (isTPCPID) {
-      if (track.pt() < pTthrdeTOF) {
-        if (!doITSPID || isITSPID) {
+    bool isQuadraticPID = TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()) < nsigmaTPC;
+
+    if (!doQuadraticPID) {
+      if (isTPCPID) {
+        if (track.pt() < pTthrdeTOF) {
+          if (!doITSPID || isITSPID) {
+            if (sign > 0) {
+              if (track.sign() > 0) {
+                isDeuteron = true;
+              } else if (track.sign() < 0) {
+                isDeuteron = false;
+              }
+            } else if (sign < 0) {
+              if (track.sign() > 0) {
+                isDeuteron = false;
+              } else if (track.sign() < 0) {
+                isDeuteron = true;
+              }
+            }
+          }
+        } else if (isTPCElRejection) {
+          if (sign > 0) {
+            if (track.sign() > 0) {
+              isDeuteron = true;
+            } else if (track.sign() < 0) {
+              isDeuteron = false;
+            }
+          } else if (sign < 0) {
+            if (track.sign() > 0) {
+              isDeuteron = false;
+            } else if (track.sign() < 0) {
+              isDeuteron = true;
+            }
+          }
+        } else if (isTOFPID) {
           if (sign > 0) {
             if (track.sign() > 0) {
               isDeuteron = true;
@@ -561,21 +593,27 @@ struct HadronNucleiCorrelation {
             }
           }
         }
-      } else if (isTPCElRejection) {
-        if (sign > 0) {
-          if (track.sign() > 0) {
-            isDeuteron = true;
-          } else if (track.sign() < 0) {
-            isDeuteron = false;
-          }
-        } else if (sign < 0) {
-          if (track.sign() > 0) {
-            isDeuteron = false;
-          } else if (track.sign() < 0) {
-            isDeuteron = true;
+      }
+    } else {
+      if (track.pt() < pTthrprTOF) {
+        if (isTPCPID) {
+          if (!doITSPID || isITSPID) {
+            if (sign > 0) {
+              if (track.sign() > 0) {
+                isDeuteron = true;
+              } else if (track.sign() < 0) {
+                isDeuteron = false;
+              }
+            } else if (sign < 0) {
+              if (track.sign() > 0) {
+                isDeuteron = false;
+              } else if (track.sign() < 0) {
+                isDeuteron = true;
+              }
+            }
           }
         }
-      } else if (isTOFPID) {
+      } else if (isQuadraticPID) {
         if (sign > 0) {
           if (track.sign() > 0) {
             isDeuteron = true;
