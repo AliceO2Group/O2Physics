@@ -622,13 +622,17 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     bool isSelectedMlDstarToD0Pi = true;
 
     if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
-      rowCandCharm3Prong.reserve(rowCandCharm3Prong.lastIndex() + sizeCand + 1);
+      rowCandCharm3Prong.reserve(rowCandCharm3Prong.lastIndex() + sizeCand * 2 + 1);
     } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-      rowCandCharm2Prong.reserve(rowCandCharm2Prong.lastIndex() + sizeCand + 1);
+      rowCandCharm2Prong.reserve(rowCandCharm2Prong.lastIndex() + sizeCand * 2 + 1);
     } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
       rowCandCharmDstar.reserve(rowCandCharmDstar.lastIndex() + sizeCand + 1);
     }
+    if (sizeCand > 0) {
+      LOGP(info, "Last index {} candidate size {}, reserved memory {}", rowCandCharm3Prong.lastIndex(), sizeCand, rowCandCharm3Prong.lastIndex() + sizeCand + 1);
+    }
 
+    int iCand{0};
     for (const auto& candidate : candidates) {
       outputMlD0 = {-1.0f, -1.0f, -1.0f};
       outputMlD0bar = {-1.0f, -1.0f, -1.0f};
@@ -638,6 +642,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
+      LOGP(info, "Filling candidate number {}", iCand);
 
       auto bc = col.template bc_as<aod::BCsWithTimestamps>();
       int64_t timeStamp = bc.timestamp();
@@ -858,6 +863,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         }
         fillTable(2, candidate.isSelDstarToD0Pi(), outputMlDstar.at(0), outputMlDstar.at(1), outputMlDstar.at(2));
       }
+      iCand++;
     }
     isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
 
@@ -902,7 +908,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    rowCandCharmHadGen.reserve(particles.size());
+    rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {

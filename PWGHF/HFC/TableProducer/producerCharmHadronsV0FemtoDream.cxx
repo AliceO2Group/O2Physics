@@ -722,6 +722,14 @@ struct HfProducerCharmHadronsV0FemtoDream {
       return;
     }
 
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      rowCandCharm3Prong.reserve(rowCandCharm3Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      rowCandCharm2Prong.reserve(rowCandCharm2Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      rowCandCharmDstar.reserve(rowCandCharmDstar.lastIndex() + sizeCand + 1);
+    }
+
     outputCollision(vtxZ, mult, multNtr, spher, magField);
     if constexpr (IsMc) {
       fillMcCollision(col);
@@ -1124,7 +1132,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    rowCandCharmHadGen.reserve(rowCandCharmHadGen.lastIndex() + particles.size() + 1);
+    rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
