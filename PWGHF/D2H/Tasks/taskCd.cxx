@@ -681,7 +681,7 @@ struct HfTaskCd {
   void fillHistosMcGen(CandCdMcGen const& mcParticles, Coll const& recoCollisions)
   {
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::CDeuteronToDeKPi) {
+      if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::CDeuteronToDeKPi) {
         continue;
       }
       const auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassCDeuteron);
