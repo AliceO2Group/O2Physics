@@ -150,6 +150,17 @@ struct DqJPsiMuonCorrelations {
     registry.add("h2dDimuonMuonDeltaPhiVsMuonPtSignal", "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
     registry.add("h2dDimuonMuonDeltaEtaVsMuonPtBackground", "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
     registry.add("h2dDimuonMuonDeltaPhiVsMuonPtBackground", "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
+
+    // QA histograms
+    registry.add("hEventPosZ", "hEventPosZ", kTH1D, {{50, -25, 25}});
+    registry.add("hEventPosZDilepton", "hEventPosZDilepton", kTH1D, {{50, -25, 25}});
+    registry.add("hEventPosZMuon", "hEventPosZMuon", kTH1D, {{50, -25, 25}});
+    registry.add("hEventPosZMuonSel", "hEventPosZMuonSel", kTH1D, {{50, -25, 25}});
+    registry.add("hEventPosZThreeMuon", "hEventPosZThreeMuon", kTH1D, {{50, -25, 25}});
+    registry.add("hEventPosZThreeMuonSel", "hEventPosZThreeMuonSel", kTH1D, {{50, -25, 25}});
+
+    registry.add("hReducedIdMuon", "hReducedIdMuon", kTH1D, {{100, -4.0, 0.0}});
+    registry.add("hReducedIdMuonSel", "hReducedIdMuonSel", kTH1D, {{100, -4.0, 0.0}});
   }
 
   // Template function to run pair - muon combinations
@@ -166,7 +177,38 @@ struct DqJPsiMuonCorrelations {
       return;
     }
 
+    registry.fill(HIST("hEventPosZ"), event.posZ());
+    if (assocs.size() > 0) {
+      registry.fill(HIST("hEventPosZMuon"), event.posZ());
+
+      int nSelected = 0;
+      for (auto& assoc : assocs) {
+        registry.fill(HIST("hReducedIdMuon"), assoc.reducedmuonId());
+        if (assoc.isMuonSelected_bit(0)) {
+          registry.fill(HIST("hReducedIdMuonSel"), assoc.reducedmuonId());
+          nSelected++;
+        }
+      }
+      if (nSelected > 0) {
+        registry.fill(HIST("hEventPosZMuonSel"), event.posZ());
+      }
+    }
+    if (assocs.size() > 2) {
+      registry.fill(HIST("hEventPosZThreeMuon"), event.posZ());
+
+      int nSelected = 0;
+      for (auto& assoc : assocs) {
+        if (assoc.isMuonSelected_bit(0)) {
+          nSelected++;
+        }
+      }
+      if (nSelected > 2) {
+        registry.fill(HIST("hEventPosZThreeMuonSel"), event.posZ());
+      }
+    }
     if (dileptons.size() > 0) {
+      registry.fill(HIST("hEventPosZDilepton"), event.posZ());
+
       for (auto& dilepton : dileptons) {
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
 
