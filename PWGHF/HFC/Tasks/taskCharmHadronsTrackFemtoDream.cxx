@@ -837,8 +837,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   void processDataLcTrk(FilteredCollisions const& cols,
                         FilteredFDParticles const& parts,
-                        FilteredCharmCand3Prongs const&)
+                        FilteredCharmCand3Prongs const& candidates)
   {
+    rowFemtoResultCharm3Prong.reserve(2 * candidates.size() + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
@@ -876,8 +878,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   void processDataDplusTrk(FilteredCollisions const& cols,
                            FilteredFDParticles const& parts,
-                           FilteredCharmCand3Prongs const&)
+                           FilteredCharmCand3Prongs const& candidates)
   {
+    rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
@@ -916,8 +920,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   void processDataD0Trk(FilteredCollisions const& cols,
                         FilteredFDParticles const& parts,
-                        FilteredCharmCand2Prongs const&)
+                        FilteredCharmCand2Prongs const& candidates)
   {
+    rowFemtoResultCharm2Prong.reserve(candidates.size() * 2 + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
@@ -955,8 +961,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   void processDataDstarTrk(FilteredCollisions const& cols,
                            FilteredFDParticles const& parts,
-                           FilteredCharmCandDstars const&)
+                           FilteredCharmCandDstars const& candidates)
   {
+    rowFemtoResultCharmDstar.reserve(candidates.size() + 1);
+    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionTrk1;
