@@ -755,7 +755,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                        FilteredCharmCand3Prongs const& candidates)
   {
 
-    rowFemtoResultCharm3Prong.reserve(rowFemtoResultCharm3Prong.lastIndex() + candidates.size() + 1);
+    rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
 
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -789,7 +789,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                           FDV0Particles const& parts,
                           FilteredCharmCand3Prongs const& candidates)
   {
-    rowFemtoResultCharm3Prong.reserve(rowFemtoResultCharm3Prong.lastIndex() + candidates.size() + 1);
+    rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
 
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -823,7 +823,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                        FDV0Particles const& parts,
                        FilteredCharmCand2Prongs const& candidates)
   {
-    rowFemtoResultCharm2Prong.reserve(rowFemtoResultCharm2Prong.lastIndex() + candidates.size() + 1);
+    rowFemtoResultCharm2Prong.reserve(candidates.size() + 1);
 
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -858,7 +858,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                           FilteredCharmCandDstars const& candidates)
   {
 
-    rowFemtoResultCharmDstar.reserve(rowFemtoResultCharmDstar.lastIndex() + candidates.size() + 1);
+    rowFemtoResultCharmDstar.reserve(candidates.size() + 1);
 
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
