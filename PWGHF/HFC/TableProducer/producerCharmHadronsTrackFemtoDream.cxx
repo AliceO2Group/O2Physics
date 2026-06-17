@@ -936,6 +936,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       fillMcCollision(col);
     }
 
+    tables.rowCandCharm3ProngXic.reserve(tables.rowCandCharm3ProngXic.lastIndex() + sizeCand + 1);
+    tables.rowCandCharm3ProngXicQa.reserve(tables.rowCandCharm3ProngXicQa.lastIndex() + sizeCand + 1);
+
     bool isTrackFilled = false;
     int nSelectedXic = 0;
 
