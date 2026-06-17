@@ -456,7 +456,8 @@ struct PhotonChargedTriggerCorrelation {
     }
 
     // decay correlation extra info (just true level)
-    const std::vector<std::string> assocMcCorrNamesMcDecayAddition = {"photonDecay", "photonDirect", "photonPi0", "photonEta", "omega", "photonOmega", "photonOtherMother"};
+    const std::vector<std::string> assocMcCorrNamesMcDecayAddition = {"photonDecay", "photonDirect", "photonPi0", "photonEta",
+                                                                      "omega", "photonOmega", "etaPrime", "photonEtaPrime", "photonOtherMother"};
     for (auto const& assocName : assocMcCorrNamesMcDecayAddition) {
       histos.add(std::format("mc/corr/h6_corr_true_{}", assocName).data(), std::format("h6_corr_true_{}", assocName).data(),
                  kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinningMcTrue, axisMultBinningMcTrue}, true);
@@ -1239,48 +1240,50 @@ struct PhotonChargedTriggerCorrelation {
                                      PhotonEta = 8,
                                      Omega = 9,
                                      PhotonOmega = 10,
-                                     PhotonOtherMother = 11 };
-  static constexpr const char* McTrueCorrHistPaths[5][2][12] = {
+                                     EtaPrime = 11,
+                                     PhotonEtaPrime = 12,
+                                     PhotonOtherMother = 13 };
+  static constexpr const char* McTrueCorrHistPaths[5][2][14] = {
     {{"mc/corr/h6_corr_true_hadron", "mc/corr/h6_corr_true_pipm",
       "mc/corr/h6_corr_true_photon", "mc/corr/h6_corr_true_photonDecay", "mc/corr/h6_corr_true_photonDirect",
       "mc/corr/h6_corr_true_pi0", "mc/corr/h6_corr_true_photonPi0", "mc/corr/h6_corr_true_eta", "mc/corr/h6_corr_true_photonEta",
-      "mc/corr/h6_corr_true_omega", "mc/corr/h6_corr_true_photonOmega", "mc/corr/h6_corr_true_photonOtherMother"},
+      "mc/corr/h6_corr_true_omega", "mc/corr/h6_corr_true_photonOmega", "mc/corr/h6_corr_true_etaPrime", "mc/corr/h6_corr_true_photonEtaPrime", "mc/corr/h6_corr_true_photonOtherMother"},
      {"mc/corr/h6_mix_true_hadron", "mc/corr/h6_mix_true_pipm",
       "mc/corr/h6_mix_true_photon", "mc/corr/h6_mix_true_photonDecay", "mc/corr/h6_mix_true_photonDirect",
       "mc/corr/h6_mix_true_pi0", "mc/corr/h6_mix_true_photonPi0", "mc/corr/h6_mix_true_eta", "mc/corr/h6_mix_true_photonEta",
-      "mc/corr/h6_mix_true_omega", "mc/corr/h6_mix_true_photonOmega", "mc/corr/h6_mix_true_photonOtherMother"}},
+      "mc/corr/h6_mix_true_omega", "mc/corr/h6_mix_true_photonOmega", "mc/corr/h6_mix_true_etaPrime", "mc/corr/h6_mix_true_photonEtaPrime", "mc/corr/h6_mix_true_photonOtherMother"}},
     {{"mc/corr/h6_corr_trueAssocEv_hadron", "mc/corr/h6_corr_trueAssocEv_pipm",
       "mc/corr/h6_corr_trueAssocEv_photon", "", "",
       "mc/corr/h6_corr_trueAssocEv_pi0", "", "mc/corr/h6_corr_trueAssocEv_eta", "",
-      "", "", ""},
+      "", "", "", "", ""},
      {"mc/corr/h6_mix_trueAssocEv_hadron", "mc/corr/h6_mix_trueAssocEv_pipm",
       "mc/corr/h6_mix_trueAssocEv_photon", "", "",
       "mc/corr/h6_mix_trueAssocEv_pi0", "", "mc/corr/h6_mix_trueAssocEv_eta", "",
-      "", "", ""}},
+      "", "", "", "", ""}},
     {{"mc/corr/h6_corr_trueAssocEvRecoPtTrig_hadron", "mc/corr/h6_corr_trueAssocEvRecoPtTrig_pipm",
       "mc/corr/h6_corr_trueAssocEvRecoPtTrig_photon", "", "",
       "mc/corr/h6_corr_trueAssocEvRecoPtTrig_pi0", "", "mc/corr/h6_corr_trueAssocEvRecoPtTrig_eta", "",
-      "", "", ""},
+      "", "", "", "", ""},
      {"mc/corr/h6_mix_trueAssocEvRecoPtTrig_hadron", "mc/corr/h6_mix_trueAssocEvRecoPtTrig_pipm",
       "mc/corr/h6_mix_trueAssocEvRecoPtTrig_photon", "", "",
       "mc/corr/h6_mix_trueAssocEvRecoPtTrig_pi0", "", "mc/corr/h6_mix_trueAssocEvRecoPtTrig_eta", "",
-      "", "", ""}},
+      "", "", "", "", ""}},
     {{"", "",
       "", "", "",
       "mc/corr/h6_corr_trueMeasDecay_pi0", "", "", "",
-      "", "", ""},
+      "", "", "", "", ""},
      {"", "",
       "", "", "",
       "mc/corr/h6_mix_trueMeasDecay_pi0", "", "", "",
-      "", "", ""}},
+      "", "", "", "", ""}},
     {{"", "",
       "", "", "",
       "mc/corr/h6_corr_trueGeoAcc_pi0", "", "", "",
-      "", "", ""},
+      "", "", "", "", ""},
      {"", "",
       "", "", "",
       "mc/corr/h6_mix_trueGeoAcc_pi0", "", "", "",
-      "", "", ""}}};
+      "", "", "", "", ""}}};
   static constexpr const char* getMcTrueCorrHistPath(McCorrTruthLevel truthLevel, McCorrCorrelationType correlationType, McCorrAssocType assocType)
   {
     return McTrueCorrHistPaths[static_cast<int>(truthLevel)][static_cast<int>(correlationType)][static_cast<int>(assocType)];
@@ -1380,6 +1383,10 @@ struct PhotonChargedTriggerCorrelation {
               histos.fill(HIST(getMcTrueCorrHistPath(truthLevel, correlationType, McCorrAssocType::PhotonOmega)),
                           dPhi, dEta, ptTrig, ptAssoc, posZ, mult, weight);
               break;
+            case constants::physics::Pdg::kEtaPrime:
+              histos.fill(HIST(getMcTrueCorrHistPath(truthLevel, correlationType, McCorrAssocType::PhotonEtaPrime)),
+                          dPhi, dEta, ptTrig, ptAssoc, posZ, mult, weight);
+              break;
             default:
               histos.fill(HIST(getMcTrueCorrHistPath(truthLevel, correlationType, McCorrAssocType::PhotonOtherMother)),
                           dPhi, dEta, ptTrig, ptAssoc, posZ, mult, weight);
@@ -1433,6 +1440,12 @@ struct PhotonChargedTriggerCorrelation {
     // omega
     if (associated.pdgCode() == constants::physics::Pdg::kOmega) {
       histos.fill(HIST(getMcTrueCorrHistPath(truthLevel, correlationType, McCorrAssocType::Omega)),
+                  dPhi, dEta, ptTrig, ptAssoc, posZ, mult, weight);
+      return;
+    }
+    // etaPrime
+    if (associated.pdgCode() == constants::physics::Pdg::kEtaPrime) {
+      histos.fill(HIST(getMcTrueCorrHistPath(truthLevel, correlationType, McCorrAssocType::EtaPrime)),
                   dPhi, dEta, ptTrig, ptAssoc, posZ, mult, weight);
       return;
     }
