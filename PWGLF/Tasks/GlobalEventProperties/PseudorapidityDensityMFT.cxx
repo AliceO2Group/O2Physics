@@ -102,8 +102,6 @@ AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
 AxisSpec deltaVxAxis = {400, -0.5, 0.5, "#DeltaV_{x} = V_{x}^{rec}-V_{x}^{true} (cm)"};
 AxisSpec deltaVyAxis = {400, -0.5, 0.5, "#DeltaV_{y} = V_{y}^{rec}-V_{y}^{true} (cm)"};
 
-
-
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
   TrackSelectionFlags::kITSHits;
@@ -633,21 +631,21 @@ struct PseudorapidityDensityMFT {
       registry.add({"Purity/reco/PNchMFT_afterCuts",
                     ";N_{trk}^{MFT} (selected);events",
                     {HistType::kTH1F, {multAxis}}});
-                    // MC P(Nch) objects for MFT multiplicity unfolding/correction.
-// Generator multiplicity: primary charged particles in the MFT acceptance,
-// with generated INEL>0 defined from the central estimator.
-// Reco multiplicity: selected reassociated MFT tracks for matched accepted reco events.
-registry.add({"PNchMC/gen_inelgt0",
-              ";N_{ch}^{gen,MFT};events",
-              {HistType::kTH1F, {multAxisGenMFT}}});
+      // MC P(Nch) objects for MFT multiplicity unfolding/correction.
+      // Generator multiplicity: primary charged particles in the MFT acceptance,
+      // with generated INEL>0 defined from the central estimator.
+      // Reco multiplicity: selected reassociated MFT tracks for matched accepted reco events.
+      registry.add({"PNchMC/gen_inelgt0",
+                    ";N_{ch}^{gen,MFT};events",
+                    {HistType::kTH1F, {multAxisGenMFT}}});
 
-registry.add({"PNchMC/reco_sel8_inelgt0",
-              ";N_{ch}^{reco,MFT};events",
-              {HistType::kTH1F, {multAxisRecoMFT}}});
+      registry.add({"PNchMC/reco_sel8_inelgt0",
+                    ";N_{ch}^{reco,MFT};events",
+                    {HistType::kTH1F, {multAxisRecoMFT}}});
 
-registry.add({"PNchMC/responseMatrix",
-              ";N_{ch}^{reco,MFT};N_{ch}^{gen,MFT};events",
-              {HistType::kTH2F, {multAxisRecoMFT, multAxisGenMFT}}});
+      registry.add({"PNchMC/responseMatrix",
+                    ";N_{ch}^{reco,MFT};N_{ch}^{gen,MFT};events",
+                    {HistType::kTH2F, {multAxisRecoMFT, multAxisGenMFT}}});
 
       registry.add({"Purity/DCAyVsDCAx_Right",
                     ";DCA_{x} (cm);DCA_{y} (cm)",
@@ -2296,7 +2294,6 @@ registry.add({"PNchMC/responseMatrix",
       acceptedRecoCols.insert(recoCol);
       recoCollisionIds.insert(recoCol);
       trueMCCollisionIds.insert(mcCol);
-      
 
       if (mcCol >= 0) {
         recoToMc[recoCol] = mcCol;
@@ -2478,7 +2475,6 @@ registry.add({"PNchMC/responseMatrix",
     bool atLeastOneSel8VzGt0 = false; // EtaZvtxGen_gt0
     bool hasRecoCollisionForPNch{false};
 
-
     const auto fillGenRecoCut = [&](GenRecoCutBin bin) {
       registry.fill(HIST("EventsRecoCuts_GenReco"), static_cast<int>(bin));
     };
@@ -2607,7 +2603,6 @@ registry.add({"PNchMC/responseMatrix",
         atLeastOneSel8VzGt0 = true;
         registry.fill(HIST("EventsNtrkZvtxGen_gt0"),
                       perCollisionSample.size(), collision.posZ());
-                      
       }
       registry.fill(HIST("EventsZposDiff"),
                     collision.posZ() - mcCollision.posZ());
