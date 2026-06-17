@@ -16,9 +16,9 @@
 ///
 /// \author Mingze li <mingze.li@cern.ch>, CCNU/UniTo
 
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/D2H/Utils/utilsFlow.h"
-#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -82,7 +82,7 @@ DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
 // Tracks
 DECLARE_SOA_COLUMN(MinAbsEtaTrack, MinabsEtaTrack, float);
 DECLARE_SOA_COLUMN(MinNumItsCls, minNumItsCls, int);
-DECLARE_SOA_COLUMN(MinNumTpcCls, minNumTpcCls, int); 
+DECLARE_SOA_COLUMN(MinNumTpcCls, minNumTpcCls, int);
 } // namespace mixing_dstar
 
 DECLARE_SOA_TABLE(HfCandDstMix, "AOD", "HFCANDDSTMIX",
@@ -126,7 +126,6 @@ struct HfTaskMixingDstarCandTreeCreator {
   Configurable<int> qVecDetector{"qVecDetector", 2, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0C: 2)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimator ((None: 0, FT0C: 2, FT0M: 3))"};
   Configurable<int> occEstimator{"occEstimator", 2, "If enabled, replace number of PV contributors with occupancy estimation (0: don't use, 1: ITS, 2: FT0C)"};
-
 
   using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
@@ -235,7 +234,7 @@ struct HfTaskMixingDstarCandTreeCreator {
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         fillCandidateTable(collision, dstarCandidate, tracks, bcWithTimeStamps);
-      }  
+      }
     }
   }
   PROCESS_SWITCH(HfTaskMixingDstarCandTreeCreator, processData, "Process data", true);
