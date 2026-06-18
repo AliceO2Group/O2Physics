@@ -254,7 +254,7 @@ void processSameEvent(T1 const& SliceParticle,
   }
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
     // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
     }
     // check if triplet is close
@@ -327,7 +327,7 @@ void processSameEvent(T1 const& SliceParticle1,
   }
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle1, SliceParticle3))) {
     // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
     }
     // check if triplet is close
@@ -399,7 +399,7 @@ void processSameEvent(T1 const& SliceParticle1,
   }
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
     // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
     }
     // check if triplet is close

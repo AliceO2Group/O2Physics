@@ -707,15 +707,16 @@ using FOmegaExtras = FOmegaExtras_001;
 
 namespace femtomccollisions
 {
-DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_COLUMN(Cent, cent, float); //! Multiplicity of the event as given by the generator in |eta|<0.8
-                                       //
+// DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
+// DECLARE_SOA_COLUMN(Cent, cent, float);
+//
 } // namespace femtomccollisions
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
                                    o2::soa::Index<>,
-                                   femtomccollisions::Mult,
-                                   femtomccollisions::Cent);
+                                   femtocollisions::PosZ, //! Multiplicity of the event as given by the generator in |eta|<0.8
+                                   femtocollisions::Mult,
+                                   femtocollisions::Cent);
 using FMcCols = FMcCols_001;
 using FMcCol = FMcCols_001::iterator;
 
@@ -746,8 +747,20 @@ using FMcParticles = FMcParticles_001;
 using FMcParticle = FMcParticles::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the monte carlo particle
-                                   o2::soa::Index<>,
-                                   femtomcparticle::PdgCode);
+                                   o2::soa::Index<>, // no collision index needed since the mother is retrieved from the daughter mc particle
+                                   femtomcparticle::Origin,
+                                   femtomcparticle::PdgCode,
+                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;
 
@@ -766,41 +779,24 @@ DECLARE_SOA_INDEX_COLUMN(FMcMother, fMcMother);     //!
 DECLARE_SOA_INDEX_COLUMN(FMcPartMoth, fMcPartMoth); //!
 } // namespace femtolabels
 
-DECLARE_SOA_TABLE(FColLabels, "AOD", "FCOLMCLABEL",
-                  femtolabels::FMcColId);
+DECLARE_SOA_TABLE(FColLabels, "AOD", "FCOLMCLABEL", femtolabels::FMcColId);
 
-DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL",
-                  femtolabels::FMcParticleId,
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL", femtolabels::FMcParticleId);
 
-DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL",
-                  femtolabels::FMcParticleId,
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL", femtolabels::FMcParticleId);
 
-DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL",
-                  femtolabels::FMcParticleId,
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL", femtolabels::FMcParticleId);
 
-DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL",
-                  femtolabels::FMcParticleId,
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL", femtolabels::FMcParticleId);
 
-DECLARE_SOA_TABLE(FSigmaPlusLabels, "AOD", "FSIGMAPLUSLABEL",
-                  femtolabels::FMcParticleId,
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE(FSigmaPlusLabels, "AOD", "FSIGMAPLUSLABEL", femtolabels::FMcParticleId);
 
-DECLARE_SOA_TABLE(FXiLabels, "AOD", "FXILABEL",
-                  femtolabels::FMcParticleId,
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE(FXiLabels, "AOD", "FXILABEL", femtolabels::FMcParticleId);
 
-DECLARE_SOA_TABLE(FOmegaLabels, "AOD", "FOMEGALABEL",
-                  femtolabels::FMcParticleId,
+DECLARE_SOA_TABLE(FOmegaLabels, "AOD", "FOMEGALABEL", femtolabels::FMcParticleId);
+
+// for mc only processing, we also need Labels pointing from mc particles to mothers and partonic mothers
+DECLARE_SOA_TABLE(FMcMotherLabels, "AOD", "FMCMOTHERLABEL",
                   femtolabels::FMcMotherId,
                   femtolabels::FMcPartMothId);
 
