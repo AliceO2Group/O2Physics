@@ -747,8 +747,16 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_Material",
   "_NotPrimary",
   "_Fake",
+  "_WrongCollision",
   "_SecondaryDaughterLambda",
-  "_SecondaryDaughterSigmaPlus"};
+  "_SecondaryDaughterSigmaPlus",
+  "_SecondaryDaughterSigma0",
+  "_SecondaryDaughterXiMinus",
+  "_SecondaryDaughterXi0",
+  "_SecondaryDaughterOmegaMinus",
+  "_SecondaryDaughterXistar0",
+  "_SecondaryDaughterXistarMinus",
+  "_Else"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {
