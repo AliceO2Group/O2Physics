@@ -439,7 +439,7 @@ DECLARE_SOA_TABLE(FDHfCand3Prong, "AOD", "FDHFCAND3PRONG", //! Table to store th
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFCAND3PRONGXIC", //! Table to store the derived data for Xic -> Xi pi pi candidates
+DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFXIC3PRONG", //! Table to store the derived data for Xic -> Xi pi pi candidates
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
                   fdhf::TimeStamp,
@@ -470,7 +470,7 @@ DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFCAND3PRONGXIC", //! Table to st
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDHfCand3ProngXicQa, "AOD", "FDHFCAND3PXICQA", //! QA extension table for Xi daughters in Xic -> Xi pi pi candidates
+DECLARE_SOA_TABLE(FDHfCand3ProngXicQa, "AOD", "FDHFXIC3PQA", //! QA extension table for Xi daughters in Xic -> Xi pi pi candidates
                   o2::soa::Index<>,
                   fdhf::CascBachelorPt,
                   fdhf::CascBachelorPhi,
