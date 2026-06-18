@@ -98,7 +98,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"}; // example for built-in type (float, string, etc.)
   Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 8.}, "nPtBins, ptMin, ptMax"};                     // example for an array
   Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {360, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
-  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {100, 0., 80.}, "nCentrBins, centrMin, centrMax"};
+  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {80, 0., 80.}, "nCentrBins, centrMin, centrMax"};
   Configurable<std::vector<float>> cfXBins{"cfXBins", {1000, -0.04, -0.01}, "nXBins, xMin, xMax"};
   Configurable<std::vector<float>> cfYBins{"cfYBins", {1000, -0.01, 0.006}, "nYBins, yMin, yMax"};
   Configurable<std::vector<float>> cfZBins{"cfZBins", {1000, -20., 20.}, "nZBins, zMin, zMax"};
@@ -117,7 +117,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
 
   Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
-  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile01", "path to external ROOT file which holds all particle weights"};
+  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile05", "path to external ROOT file which holds all particle weights"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -136,6 +136,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TH1F* fHistTracksdcaXY[2] = {NULL};
     TH1F* fHistTracksdcaZ[2] = {NULL};
     TH1F* histWeights = NULL;
+    std::unordered_map<int, TH1F*> weightsmap;
   } pc; // you have to prepend "pc." for all objects name in this group later in the code
 
   struct EventHistograms {
@@ -394,21 +395,27 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // LOGF(info, "Run number: %d", collision.bc().runNumber());
     int currentRun = collision.bc().runNumber();
     auto it = phih.histMap.find(currentRun);
-    float zrec = 0., zsim = 0., centr = 0, M = 0.;
+    auto histweight = pc.weightsmap.find(currentRun);
+    float centr = 0, M = 0.;
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
       event.fHistX[eRec]->Fill(collision.posX());
       event.fHistY[eRec]->Fill(collision.posY());
       event.fHistZ[eRec]->Fill(collision.posZ());
       event.fEventHistograms[eVertexZ][eRec][0]->Fill(collision.posZ());
-      zrec = collision.posZ();
-      event.fHistNContr->Fill(collision.numContrib());
       if (cfCent.value == "FT0C")
         centr = collision.centFT0C();
       else if (cfCent.value == "FT0M")
         centr = collision.centFT0M();
       else if (cfCent.value == "FT0A")
         centr = collision.centFT0A();
+
+      // *) Event cuts:
+      float centrcut = 80.;
+      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
+        return;
+      }
+      event.fEventHistograms[eVertexZ][eRec][1]->Fill(collision.posZ());
       event.fHistCentr[eRec]->Fill(centr);
 
       std::string multType = "TPC";
@@ -423,6 +430,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       else if (cfMult.value == "NTracksPV")
         M = collision.multNTracksPV();
       event.fHistMult[eRec]->Fill(M);
+      event.fHistNContr->Fill(collision.numContrib());
       qa.fQAM_NC->Fill(M, collision.numContrib());
 
       if constexpr (rs == eRecAndSim) {
@@ -432,25 +440,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         event.fHistX[eSim]->Fill(mccollision.posX());
         event.fHistY[eSim]->Fill(mccollision.posY());
         event.fHistZ[eSim]->Fill(mccollision.posZ());
-        event.fEventHistograms[eVertexZ][eSim][0]->Fill(mccollision.posZ());
-        zsim = mccollision.posZ();
+        event.fEventHistograms[eVertexZ][eSim][1]->Fill(mccollision.posZ());
         event.fHistCentr[eSim]->Fill(centrsim);
         qa.fQA->Fill(centrsim, centr);
         centr = centrsim;
       }
-
-      // *) Event cuts:
-      float centrcut = 80.;
-      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
-        return;
-      }
-      event.fEventHistograms[eVertexZ][eRec][1]->Fill(zrec);
-      if constexpr (rs == eRecAndSim)
-        event.fEventHistograms[eVertexZ][eSim][1]->Fill(zsim);
     }
 
     // before loop over particles
-    float phi = 0, weight = 0;
+    float phi = 0, weight = 1.;
     for (int ih = 0; ih < maxHarmonic; ih++) {
       cor.Qvector[ih] = TComplex(0., 0.);
     }
@@ -465,6 +463,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         pc.fHistPt[eRec]->Fill(track.pt());
         event.fEventHistograms[ePt][eRec][0]->Fill(track.pt());
         ptrec = track.pt();
+
+        // *) Particle cuts:
+        if (!ParticleCuts<rs>(track)) { // Main call for particle cuts.
+          continue;                     // not return!!
+        }
+        event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
+
         phi = track.phi();
         if (it != phih.histMap.end()) {
           it->second->Fill(phi);
@@ -475,7 +480,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         pc.fHistTracksdcaXY[eRec]->Fill(track.dcaXY());
         pc.fHistTracksdcaZ[eRec]->Fill(track.dcaZ());
 
-        weight = 1.; // pc.histWeights->GetBinContent(phi);
+        if (histweight != pc.weightsmap.end()) {
+          weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
+        }
 
         // ... and corresponding MC truth simulated:
         // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -489,21 +496,10 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
           pc.fHistPt[eSim]->Fill(mcparticle.pt());
           event.fEventHistograms[ePt][eSim][0]->Fill(mcparticle.pt());
           ptsim = mcparticle.pt();
+          event.fEventHistograms[ePt][eSim][0]->Fill(ptsim);
           phi = mcparticle.phi();
           pc.fHistPhi[eSim]->Fill(mcparticle.phi());
-          // pc.fHistCharge[eSim]->Fill(mcparticle.sign());
-          // pc.fHistTPCncls[eSim]->Fill(mcparticle.tpcNClsFindable());
-          // pc.fHistTracksdcaXY[eSim]->Fill(mcparticle.dcaXY());
-          // pc.fHistTracksdcaZ[eSim]->Fill(mcparticle.dcaZ());
         } // end of if constexpr (rs == eRecAndSim)
-
-        // *) Particle cuts:
-        if (!ParticleCuts<rs>(track)) { // Main call for particle cuts.
-          continue;                     // not return!!
-        }
-        event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
-        if constexpr (rs == eRecAndSim)
-          event.fEventHistograms[ePt][eSim][0]->Fill(ptsim);
 
       } // if constexpr (rs == eRec || rs == eRecAndSim)
 
@@ -513,11 +509,19 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
     } // end of for (auto track: tracks)
     // calculate correlations
+    float Mmin = 4.;
+    if (M < Mmin)
+      return;
     float four32 = Four(3, 2, -3, -2).Re() / Four(0, 0, 0, 0).Re();
     float four42 = Four(4, 2, -4, -2).Re() / Four(0, 0, 0, 0).Re();
     float v22 = (Q(2).Rho2() - M) / (M * (M - 1.));
     float v32 = (Q(3).Rho2() - M) / (M * (M - 1.));
     float v42 = (Q(4).Rho2() - M) / (M * (M - 1.));
+    if (std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)) {
+      LOGF(info, "\033[1;31m%s std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)\033[0m", __FUNCTION__);
+      LOGF(error, "v22 = %f\nv32 = %f\nv42 = %f\nfour32=%f\nv42 = %f\n", v22, v32, v42, four32, four42);
+      return;
+    }
 
     cor.pv22_centr->Fill(centr, v22, M * (M - 1));
     cor.pv32_centr->Fill(centr, v32, M * (M - 1));
@@ -660,8 +664,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eSim]);
     pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eSim]);
 
-    pc.histWeights = GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
-    pc.fParticleHistogramsList->Add(pc.histWeights);
+    for (const int& run : targetRuns) {
+      std::string runStr = std::to_string(run);
+      TH1F* histweights = GetHistogramWithWeights(cfFileWithWeights.value.c_str(), runStr.c_str());
+      if (!histweights) {
+        LOG(fatal) << "Failed to load weights for run " << run;
+        return;
+      }
+
+      pc.weightsmap[run] = histweights;
+    }
 
     event.fHistCentr[eRec] = new TH1F("fHistCentr[eRec]", "centrality distribution for reconstructed particles", nBinscentr, mincentr, maxcentr);
     event.fHistX[eRec] = new TH1F("fHistX[eRec]", "posX distribution for reconstructed particles", nBinsx, minx, maxx);

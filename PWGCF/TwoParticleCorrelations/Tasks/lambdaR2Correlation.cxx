@@ -160,6 +160,18 @@ DECLARE_SOA_TABLE(LambdaTracksExt, "AOD", "LAMBDATRACKSEXT",
 
 using LambdaTrackExt = LambdaTracksExt::iterator;
 
+namespace kaontrackext
+{
+DECLARE_SOA_COLUMN(KaonSharingLambdaDau, kaonSharingLambdaDau, bool);
+DECLARE_SOA_COLUMN(KaonSharingLambdaDauIds, kaonSharingLambdaDauIds, std::vector<int64_t>);
+DECLARE_SOA_COLUMN(TrueKaonFlag, trueKaonFlag, bool);
+} // namespace kaontrackext
+DECLARE_SOA_TABLE(KaonTracksExt, "AOD", "KAONTRACKSEXT",
+                  kaontrackext::KaonSharingLambdaDau,
+                  kaontrackext::KaonSharingLambdaDauIds,
+                  kaontrackext::TrueKaonFlag);
+using KaonTrackExt = KaonTracksExt::iterator;
+
 namespace lambdamcgentrack
 {
 DECLARE_SOA_INDEX_COLUMN(LambdaMcGenCollision, lambdaMcGenCollision);
@@ -1186,12 +1198,15 @@ struct LambdaTableProducer {
 };
 
 struct LambdaTracksExtProducer {
-
+  // Tables
   Produces<aod::LambdaTracksExt> lambdaTrackExtTable;
+  Produces<aod::KaonTracksExt> kaonTrackExtTable;
 
   // Configurables
   Configurable<bool> cAcceptAllLambda{"cAcceptAllLambda", false, "Accept all Lambda"};
   Configurable<bool> cRejAllLambdaShaDau{"cRejAllLambdaShaDau", true, "Reject all Lambda sharing daughters"};
+  Configurable<bool> cAcceptAllKaon{"cAcceptAllKaon", false, "Accept all Kaons"};
+  Configurable<bool> cRejAllKaonShaLaDau{"cRejAllKaonShaLaDau", true, "Reject all Kaons sharing Lambda daughters"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1200,9 +1215,6 @@ struct LambdaTracksExtProducer {
   {
     // Axis Specifications
     const AxisSpec axisMult(10, 0, 10);
-    const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
-    const AxisSpec axisCPA(100, 0.995, 1.0, "cos(#theta_{PA})");
-    const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
     const AxisSpec axisDEta(320, -1.6, 1.6, "#Delta#eta");
     const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
 
@@ -1211,26 +1223,20 @@ struct LambdaTracksExtProducer {
     histos.add("h1i_totantilambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_lambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_antilambda_mult", "Multiplicity", kTH1I, {axisMult});
+
+    histos.add("h1i_totkaplus_mult", "Multiplicity", kTH1I, {axisMult});
+    histos.add("h1i_totkaminus_mult", "Multiplicity", kTH1I, {axisMult});
+    histos.add("h1i_kaplus_mult", "Multiplicity", kTH1I, {axisMult});
+    histos.add("h1i_kaminus_mult", "Multiplicity", kTH1I, {axisMult});
+
     histos.add("h2d_n2_etaphi_LaP_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
     histos.add("h2d_n2_etaphi_LaP_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
     histos.add("h2d_n2_etaphi_LaM_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
 
-    // InvMass, DcaDau and CosPA
-    histos.add("Reco/h1f_lambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
-    histos.add("Reco/h1f_antilambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
-    histos.addClone("Reco/", "SharingDau/");
-  }
-
-  template <ShareDauLambda sd, typename T>
-  void fillHistos(T const& track)
-  {
-    static constexpr std::string_view SubDir[] = {"Reco/", "SharingDau/"};
-
-    if (track.partType() == kLambda) {
-      histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_invmass"), track.mass());
-    } else {
-      histos.fill(HIST(SubDir[sd]) + HIST("h1f_antilambda_invmass"), track.mass());
-    }
+    histos.add("h2d_n2_etaphi_KaP_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_KaP_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_KaM_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_KaM_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
   }
 
   void processDummy(aod::LambdaCollisions::iterator const&) {}
@@ -1273,13 +1279,7 @@ struct LambdaTracksExtProducer {
         }
       }
 
-      // fill QA histograms
-      if (lambdaSharingDauFlag) {
-        fillHistos<kLambdaShareDau>(lambda);
-      } else {
-        fillHistos<kUniqueLambda>(lambda);
-      }
-
+      // Accept/Reject
       if (cAcceptAllLambda) { // Accept all lambda
         trueLambdaFlag = true;
       } else if (cRejAllLambdaShaDau && !lambdaSharingDauFlag) { // Reject all lambda sharing daughter
@@ -1295,7 +1295,7 @@ struct LambdaTracksExtProducer {
         }
       }
 
-      // fill LambdaTrackExt table
+      // Fill LambdaTrackExt table
       lambdaTrackExtTable(lambdaSharingDauFlag, vSharedDauLambdaIndex, trueLambdaFlag);
     }
 
@@ -1318,6 +1318,78 @@ struct LambdaTracksExtProducer {
   }
 
   PROCESS_SWITCH(LambdaTracksExtProducer, processLambdaTrackExt, "Process for lambda track extension", false);
+
+  void processKaonTrackExt(aod::LambdaCollisions::iterator const&, aod::LambdaTracks const& lambdaTracks, aod::KaonTracks const& kaonTracks)
+  {
+    int nTotKaonPlus = 0, nTotKaonMinus = 0, nSelKaonPlus = 0, nSelKaonMinus = 0;
+
+    for (auto const& kaonTrack : kaonTracks) {
+      bool kaonSharingLambdaDauFlag = false, trueKaonFlag = false;
+      std::vector<int64_t> vKaonShareDauLambdaIndex;
+
+      if (kaonTrack.partType() == kKaonPlus) {
+        ++nTotKaonPlus;
+      } else if (kaonTrack.partType() == kKaonMinus) {
+        ++nTotKaonMinus;
+      }
+
+      for (auto const& lambdaTrack : lambdaTracks) {
+        if (kaonTrack.kaonTrackId() == lambdaTrack.posTrackId() || kaonTrack.kaonTrackId() == lambdaTrack.negTrackId()) {
+          vKaonShareDauLambdaIndex.push_back(kaonTrack.kaonTrackId());
+          kaonSharingLambdaDauFlag = true;
+
+          // Fill Deta-Dphi Histogram
+          if (kaonTrack.partType() == kKaonPlus && lambdaTrack.partType() == kLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_KaPLaP"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi()), -PIHalf);
+          } else if (kaonTrack.partType() == kKaonPlus && lambdaTrack.partType() == kAntiLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_KaPLaM"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi()), -PIHalf);
+          } else if (kaonTrack.partType() == kKaonMinus && lambdaTrack.partType() == kLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_KaMLaP"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi()), -PIHalf);
+          } else if (kaonTrack.partType() == kKaonMinus && lambdaTrack.partType() == kAntiLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_KaMLaM"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi()), -PIHalf);
+          }
+        }
+      }
+
+      // Accept / Reject
+      if (cAcceptAllKaon) {
+        trueKaonFlag = true;
+      } else if (cRejAllKaonShaLaDau && !kaonSharingLambdaDauFlag) {
+        trueKaonFlag = true;
+      }
+
+      // Multiplicity of selected kaons
+      if (trueKaonFlag) {
+        if (kaonTrack.partType() == kKaonPlus) {
+          ++nSelKaonPlus;
+        } else if (kaonTrack.partType() == kKaonMinus) {
+          ++nSelKaonMinus;
+        }
+      }
+
+      // Fill LambdaTrackExt table
+      kaonTrackExtTable(kaonSharingLambdaDauFlag, vKaonShareDauLambdaIndex, trueKaonFlag);
+    }
+
+    // Fill multiplicity histograms
+    if (nTotKaonPlus != 0) {
+      histos.fill(HIST("h1i_totkaplus_mult"), nTotKaonPlus);
+    }
+
+    if (nTotKaonMinus != 0) {
+      histos.fill(HIST("h1i_totkaminus_mult"), nTotKaonMinus);
+    }
+
+    if (nSelKaonPlus != 0) {
+      histos.fill(HIST("h1i_kaplus_mult"), nSelKaonPlus);
+    }
+
+    if (nSelKaonMinus != 0) {
+      histos.fill(HIST("h1i_kaminus_mult"), nSelKaonMinus);
+    }
+  }
+
+  PROCESS_SWITCH(LambdaTracksExtProducer, processKaonTrackExt, "Process for kaon track extension", false);
 };
 
 struct LambdaR2Correlation {
@@ -1386,8 +1458,6 @@ struct LambdaR2Correlation {
     histos.add("Event/Reco/h1f_collision_posz", "V_{Z} Distribution", kTH1F, {axisPosZ});
     histos.add("Event/Reco/h1f_ft0m_mult_percentile", "FT0M (%)", kTH1F, {axisCent});
     histos.add("Event/Reco/h2f_Mult_vs_Centrality", "N_{ch} vs FT0M(%)", kTProfile, {axisCent});
-    histos.add("Event/Reco/h2f_lambda_mult", "#Lambda - Multiplicity", kTProfile, {axisCent});
-    histos.add("Event/Reco/h2f_antilambda_mult", "#bar{#Lambda} - Multiplicity", kTProfile, {axisCent});
 
     // Efficiency Histograms
     // Single Particle Efficiencies
@@ -1480,12 +1550,7 @@ struct LambdaR2Correlation {
     static constexpr std::string_view SubDirRecGen[] = {"Reco/", "McGen/"};
     static constexpr std::string_view SubDirHist[] = {"LaP", "LaM", "KaP", "KaM"};
 
-    int ntrk = 0;
-
     for (auto const& track : tracks) {
-      // count tracks
-      ++ntrk;
-
       // Efficiency Plots
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h2f_n1_centpt_") + HIST(SubDirHist[part]), cent, track.pt());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h3f_n1_centptrap_") + HIST(SubDirHist[part]), cent, track.pt(), track.rap());
@@ -1498,15 +1563,6 @@ struct LambdaR2Correlation {
 
       // Rho1 for N1RapPhi
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n1_rapphi_") + HIST(SubDirHist[part]), cent, track.rap(), track.phi(), track.corrFact());
-    }
-
-    // fill multiplicity histograms
-    if (ntrk != 0) {
-      if (part == kLambda) {
-        histos.fill(HIST("Event/") + HIST(SubDirRecGen[rec_gen]) + HIST("h2f_lambda_mult"), cent, ntrk);
-      } else if (part == kAntiLambda) {
-        histos.fill(HIST("Event/") + HIST(SubDirRecGen[rec_gen]) + HIST("h2f_antilambda_mult"), cent, ntrk);
-      }
     }
   }
 
@@ -1526,13 +1582,13 @@ struct LambdaR2Correlation {
 
   using LambdaCollisions = aod::LambdaCollisions;
   using LambdaTracks = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-  using KaonTracks = aod::KaonTracks;
+  using KaonTracks = soa::Join<aod::KaonTracks, aod::KaonTracksExt>;
 
   SliceCache cache;
   Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::partType == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true);
   Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::partType == (int8_t)kAntiLambda) && (aod::lambdatrackext::trueLambdaFlag == true);
-  Partition<KaonTracks> partKaonPlusTracks = (aod::kaontrack::partType == (int8_t)kKaonPlus);
-  Partition<KaonTracks> partKaonMinusTracks = (aod::kaontrack::partType == (int8_t)kKaonMinus);
+  Partition<KaonTracks> partKaonPlusTracks = (aod::kaontrack::partType == (int8_t)kKaonPlus) && (aod::kaontrackext::trueKaonFlag == true);
+  Partition<KaonTracks> partKaonMinusTracks = (aod::kaontrack::partType == (int8_t)kKaonMinus) && (aod::kaontrackext::trueKaonFlag == true);
 
   void processDummy(aod::LambdaCollisions::iterator const&) {}
 

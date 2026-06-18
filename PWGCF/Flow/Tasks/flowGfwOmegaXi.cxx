@@ -1068,7 +1068,7 @@ struct FlowGfwOmegaXi {
     if (evtSeleOpts.cfgDoMultTPCCut.value) {
       if (nMultTPC < fMultPVCutLow->Eval(centrality))
         return false;
-      if (nMultTPC > fMultPVCutLow->Eval(centrality))
+      if (nMultTPC > fMultPVCutHigh->Eval(centrality))
         return false;
     }
 

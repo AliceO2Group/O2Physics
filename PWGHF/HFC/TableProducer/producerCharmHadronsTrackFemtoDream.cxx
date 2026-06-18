@@ -253,8 +253,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     // event QA histograms
-    constexpr int kEventTypes = PairSelected + 1;
-    std::string labels[kEventTypes];
+    constexpr int EventTypes = PairSelected + 1;
+    std::string labels[EventTypes];
     labels[Event::All] = "All events";
     labels[Event::RejEveSel] = "rejected by event selection";
     labels[Event::RejNoTracksAndCharm] = "rejected by no tracks and charm";
@@ -262,9 +262,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     labels[Event::CharmSelected] = "with charm hadrons ";
     labels[Event::PairSelected] = "with pairs";
 
-    static const AxisSpec axisEvents = {kEventTypes, 0.5, kEventTypes + 0.5, ""};
+    static const AxisSpec axisEvents = {EventTypes, 0.5, EventTypes + 0.5, ""};
     qaRegistry.add("hEventQA", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kEventTypes; iBin++) {
+    for (int iBin = 0; iBin < EventTypes; iBin++) {
       qaRegistry.get<TH1>(HIST("hEventQA"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
@@ -613,14 +613,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       fillMcCollision(col);
     }
 
-    // Filling candidate properties
-    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
-      rowCandCharm3Prong.reserve(sizeCand);
-    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-      rowCandCharm2Prong.reserve(sizeCand);
-    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      rowCandCharmDstar.reserve(sizeCand);
-    }
     bool isTrackFilled = false;
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;
@@ -628,6 +620,14 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     bool isSelectedMlD0ToPiK = true;
     bool isSelectedMlD0barToKPi = true;
     bool isSelectedMlDstarToD0Pi = true;
+
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      rowCandCharm3Prong.reserve(rowCandCharm3Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      rowCandCharm2Prong.reserve(rowCandCharm2Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      rowCandCharmDstar.reserve(rowCandCharmDstar.lastIndex() + sizeCand + 1);
+    }
 
     for (const auto& candidate : candidates) {
       outputMlD0 = {-1.0f, -1.0f, -1.0f};
@@ -902,7 +902,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    rowCandCharmHadGen.reserve(particles.size());
+    rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {

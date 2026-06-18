@@ -495,6 +495,7 @@ struct JEPFlowAnalysis {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+    ft0geom.calculateChannelCenter();
 
     detId = getdetId(cfgDetName);
     refAId = getdetId(cfgRefAName);

@@ -99,6 +99,7 @@ struct nucleiQC {
 
   Configurable<bool> cfgFillTable{"cfgFillTable", true, "Fill output tree"};
   Configurable<bool> cfgDoCheckPdgCode{"cfgDoCheckPdgCode", true, "Should you only select tracks associated to a mc particle with the correct PDG code?"};
+  Configurable<bool> cfgSkipNonReconstructedCollisions{"cfgSkipNonReconstructedCollisions", true, "Should you skip collisions for which no particle is reconstructed?"};
   Configurable<bool> cfgFillOnlyPhysicalPrimaries{"cfgFillOnlyPhysicalPrimaries", true, "Should you only select physical primary particles?"};
   Configurable<LabeledArray<int>> cfgSpeciesToProcess{"cfgSpeciesToProcess", {nuclei::speciesToProcessDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"processNucleus"}}, "Nuclei to process"};
   Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
@@ -623,6 +624,9 @@ struct nucleiQC {
       mcIndex++;
       int iSpecies = nuclei::getSpeciesFromPdg(particle.pdgCode());
       if (!mFillSpecies[iSpecies])
+        continue;
+
+      if (cfgSkipNonReconstructedCollisions && reconstructedCollisions.count(particle.mcCollisionId()) == 0)
         continue;
 
       if (reconstructedMcParticles.count(mcIndex) > 0)
