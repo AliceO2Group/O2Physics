@@ -107,60 +107,60 @@ std::unordered_map<int, TH2*> gQyVsTimeZNC;
 std::unordered_map<int, TProfile3D*> gShiftProfileZNA;
 std::unordered_map<int, TProfile3D*> gShiftProfileZNC;
 
-TH1* gCurrentEventCounter;
-TH2* gCurrentCentroidZNA;
-TH2* gCurrentCentroidZNC;
-TH1* gCurrentPmcZNA;
-TH1* gCurrentPm1ZNA;
-TH1* gCurrentPm2ZNA;
-TH1* gCurrentPm3ZNA;
-TH1* gCurrentPm4ZNA;
-TH1* gCurrentSumZNA;
-TH1* gCurrentPmcZNC;
-TH1* gCurrentPm1ZNC;
-TH1* gCurrentPm2ZNC;
-TH1* gCurrentPm3ZNC;
-TH1* gCurrentPm4ZNC;
-TH1* gCurrentSumZNC;
-TH2* gCurrentQxVsCentZNA;
-TH2* gCurrentQyVsCentZNA;
-TH2* gCurrentQxVsVxZNA;
-TH2* gCurrentQyVsVxZNA;
-TH2* gCurrentQxVsVyZNA;
-TH2* gCurrentQyVsVyZNA;
-TH2* gCurrentQxVsVzZNA;
-TH2* gCurrentQyVsVzZNA;
-TH2* gCurrentQxVsCentZNC;
-TH2* gCurrentQyVsCentZNC;
-TH2* gCurrentQxVsVxZNC;
-TH2* gCurrentQyVsVxZNC;
-TH2* gCurrentQxVsVyZNC;
-TH2* gCurrentQyVsVyZNC;
-TH2* gCurrentQxVsVzZNC;
-TH2* gCurrentQyVsVzZNC;
-TH2* gCurrentQxQyVsCent;
-TH2* gCurrentQyQxVsCent;
-TH2* gCurrentQxQxVsCent;
-TH2* gCurrentQyQyVsCent;
+TH1* gCurrentEventCounter{nullptr};
+TH2* gCurrentCentroidZNA{nullptr};
+TH2* gCurrentCentroidZNC{nullptr};
+TH1* gCurrentPmcZNA{nullptr};
+TH1* gCurrentPm1ZNA{nullptr};
+TH1* gCurrentPm2ZNA{nullptr};
+TH1* gCurrentPm3ZNA{nullptr};
+TH1* gCurrentPm4ZNA{nullptr};
+TH1* gCurrentSumZNA{nullptr};
+TH1* gCurrentPmcZNC{nullptr};
+TH1* gCurrentPm1ZNC{nullptr};
+TH1* gCurrentPm2ZNC{nullptr};
+TH1* gCurrentPm3ZNC{nullptr};
+TH1* gCurrentPm4ZNC{nullptr};
+TH1* gCurrentSumZNC{nullptr};
+TH2* gCurrentQxVsCentZNA{nullptr};
+TH2* gCurrentQyVsCentZNA{nullptr};
+TH2* gCurrentQxVsVxZNA{nullptr};
+TH2* gCurrentQyVsVxZNA{nullptr};
+TH2* gCurrentQxVsVyZNA{nullptr};
+TH2* gCurrentQyVsVyZNA{nullptr};
+TH2* gCurrentQxVsVzZNA{nullptr};
+TH2* gCurrentQyVsVzZNA{nullptr};
+TH2* gCurrentQxVsCentZNC{nullptr};
+TH2* gCurrentQyVsCentZNC{nullptr};
+TH2* gCurrentQxVsVxZNC{nullptr};
+TH2* gCurrentQyVsVxZNC{nullptr};
+TH2* gCurrentQxVsVyZNC{nullptr};
+TH2* gCurrentQyVsVyZNC{nullptr};
+TH2* gCurrentQxVsVzZNC{nullptr};
+TH2* gCurrentQyVsVzZNC{nullptr};
+TH2* gCurrentQxQyVsCent{nullptr};
+TH2* gCurrentQyQxVsCent{nullptr};
+TH2* gCurrentQxQxVsCent{nullptr};
+TH2* gCurrentQyQyVsCent{nullptr};
 
-THn* gCurrentQxZNA;
-THn* gCurrentQyZNA;
-THn* gCurrentQxZNC;
-THn* gCurrentQyZNC;
+THn* gCurrentQxZNA{nullptr};
+THn* gCurrentQyZNA{nullptr};
+THn* gCurrentQxZNC{nullptr};
+THn* gCurrentQyZNC{nullptr};
 
-TH1* gCurrentPsiZNA;
-TH1* gCurrentPsiZNC;
+TH1* gCurrentPsiZNA{nullptr} ;
+TH1* gCurrentPsiZNC{nullptr};
 
-TH1* gCurrentVx;
-TH1* gCurrentVy;
+TH1* gCurrentVx{nullptr};
+TH1* gCurrentVy{nullptr};
 
-TH2* gCurrentQxVsTimeZNA;
-TH2* gCurrentQyVsTimeZNA;
-TH2* gCurrentQxVsTimeZNC;
-TH2* gCurrentQyVsTimeZNC;
+TH2* gCurrentQxVsTimeZNA{nullptr};
+TH2* gCurrentQyVsTimeZNA{nullptr};
+TH2* gCurrentQxVsTimeZNC{nullptr};
+TH2* gCurrentQyVsTimeZNC{nullptr};
 
-TProfile3D* gCurrentShiftProfileZNA;
-TProfile3D* gCurrentShiftProfileZNC;
+TProfile3D* gCurrentShiftProfileZNA{nullptr};
+TProfile3D* gCurrentShiftProfileZNC{nullptr};
 
 } // namespace
 
@@ -380,7 +380,7 @@ struct ZdcExtraTableReader {
     calibCache.clear();
   }
 
-  void initHistos(const int& runNumber)
+  void initHistos(const int runNumber)
   {
     if (runNumber == currentRunNumber) {
       return;
@@ -533,14 +533,14 @@ struct ZdcExtraTableReader {
   }
 
   // Optimized method to load ALL calibrations for the new run at once
-  void loadCalibrations(int run)
+  void loadCalibrations(int runNumber)
   {
     clearCache();
 
     // Vertex Calibration
     if (applyBeamSpotCorrection) {
       std::string folder = Form("%s/step0", qRecenteringCcdb.value.c_str());
-      auto* lst = ccdb->getForRun<TList>(folder, run);
+      auto* lst = ccdb->getForRun<TList>(folder, runNumber);
       if (lst) {
         hMeanVx = safeClone<TH1>(lst->FindObject("hMeanVx"));
         hMeanVy = safeClone<TH1>(lst->FindObject("hMeanVy"));
@@ -558,7 +558,7 @@ struct ZdcExtraTableReader {
 
       // Load 5D (Base)
       std::string folderBase = Form("%s/step%d_base", qRecenteringCcdb.value.c_str(), step);
-      auto* lstBase = ccdb->getForRun<TList>(folderBase, run);
+      auto* lstBase = ccdb->getForRun<TList>(folderBase, runNumber);
 
       if (!lstBase) {
         LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folderBase.c_str());
@@ -573,7 +573,7 @@ struct ZdcExtraTableReader {
       // Load 1D (Refine)
       if ((step != calibrationStep) || isFineCalibrationStep) {
         std::string folderRefine = Form("%s/step%d_refine", qRecenteringCcdb.value.c_str(), step);
-        auto* lstRefine = ccdb->getForRun<TList>(folderRefine, run);
+        auto* lstRefine = ccdb->getForRun<TList>(folderRefine, runNumber);
 
         if (!lstRefine) {
           LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folderRefine.c_str());
@@ -605,10 +605,10 @@ struct ZdcExtraTableReader {
     if (applyShiftCorrection) {
       std::string folder = Form("%s/psiHarm", qRecenteringCcdb.value.c_str());
 
-      LOGF(info, "ZDC Analysis: Loading Shift Correction from %s for run %d", folder.c_str(), run);
+      //LOGF(info, "Loading Shift Correction from %s for runNumber %d", folder.c_str(), runNumber);
 
       // Attempt to fetch TList from CCDB
-      auto* lst = ccdb->getForRun<TList>(folder, run);
+      auto* lst = ccdb->getForRun<TList>(folder, runNumber);
 
       if (!lst) {
         LOGF(error, "  >> CCDB TList is NULL for path: %s. Check object type (TList vs TFile).", folder.c_str());
@@ -652,7 +652,7 @@ struct ZdcExtraTableReader {
     ccdb->setFatalWhenNull(false);
   } // end of init()
 
-  void process(aod::ZdcExtras::iterator const& zdc /*collision*/)
+  void process(aod::ZdcExtras::iterator const& zdc)
   {
 
     // Apply event selection
@@ -681,15 +681,6 @@ struct ZdcExtraTableReader {
     if (selectGoodITSLayersAll && !TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll)) {
       return;
     }
-
-    //  LOGF(info, "zvtx       = %d", TESTBIT(zdc.selectionBits(), ZVtxCut));
-    //  LOGF(info, "Sel8       = %d", TESTBIT(zdc.selectionBits(), Sel8));
-    //  LOGF(info, "occupancy  = %d", TESTBIT(zdc.selectionBits(), OccupancyCut));
-    //  LOGF(info, "noSameBC   = %d", TESTBIT(zdc.selectionBits(), NoSameBunchPileup));
-    //  LOGF(info, "FT0vsPV    = %d", TESTBIT(zdc.selectionBits(), IsGoodZvtxFT0vsPV));
-    //  LOGF(info, "noCollTR   = %d", TESTBIT(zdc.selectionBits(), NoCollInTimeRangeStandard));
-    //  LOGF(info, "vtxITSTPC  = %d", TESTBIT(zdc.selectionBits(), IsVertexITSTPC));
-    //  LOGF(info, "ITS layers = %d", TESTBIT(zdc.selectionBits(), IsGoodITSLayersAll));
 
     const int runNumber = zdc.runNumber();
 
@@ -723,7 +714,7 @@ struct ZdcExtraTableReader {
     }
 
     bool isZNChit = false, isZNAhit = false;
-    //
+    
     double tdcZNC = zdc.zncTdc();
     double tdcZNA = zdc.znaTdc();
 
@@ -742,8 +733,7 @@ struct ZdcExtraTableReader {
         isZNAhit = true;
       }
     }
-    //
-
+    
     bool isZNASpDeterminable = false;
     bool isZNCSpDeterminable = false;
 
@@ -789,15 +779,12 @@ struct ZdcExtraTableReader {
 
     double qxZNArec = 0., qyZNArec = 0.;
     double qxZNCrec = 0., qyZNCrec = 0.;
-
-    //
+    
     double cent = zdc.centrality();
     double vx = zdc.vx();
     double vy = zdc.vy();
     double vz = zdc.vz();
 
-    //   double vx_corrected = vx;
-    // double vy_corrected = vy;
 
     if (applyBeamSpotCorrection) {
       // Use cached vertex pointers
@@ -814,8 +801,7 @@ struct ZdcExtraTableReader {
 
       qxZNArec = qx;
       qyZNArec = qy;
-
-      //
+      
       for (int step = 1; step <= calibrationStep; step++) {
 
         int cacheIdx = step - 1;
@@ -937,27 +923,20 @@ struct ZdcExtraTableReader {
 
       qxZNCrec = qx;
       qyZNCrec = qy;
-
-      //   LOGF(info, "Qx init = %f", qxZNCrec);
-
+      
       // Iterate through steps using cached vector
       for (int step = 1; step <= calibrationStep; step++) {
 
         int cacheIdx = step - 1;
         if (cacheIdx >= static_cast<int>(calibCache.size()))
           continue;
-
-        //     LOGF(info, "Go to step = %d", step);
-
+        
         const auto& calib = calibCache[cacheIdx];
 
         // Apply 5D Base calibration
         if (calib.hMeanQxZNC && calib.hMeanQyZNC) {
           qxZNCrec -= getMeanQFromMap(calib.hMeanQxZNC, cent, vx, vy, vz);
           qyZNCrec -= getMeanQFromMap(calib.hMeanQyZNC, cent, vx, vy, vz);
-
-          //  LOGF(info, "Go to base calibration step = %d", step);
-          //  LOGF(info, "Qx after base calibration step %d = %f", step, qxZNCrec);
         }
 
         if ((step != calibrationStep) || isFineCalibrationStep) {
@@ -974,16 +953,12 @@ struct ZdcExtraTableReader {
 
           qxZNCrec -= getMeanQ1D(calib.hMeanQxVyZNC, vy);
           qyZNCrec -= getMeanQ1D(calib.hMeanQyVyZNC, vy);
-          // LOGF(info, "Go to refine calibration step = %d", step);
-          //   LOGF(info, "Qx after fine calibration step %d = %f", step, qxZNCrec);
         }
       }
 
       double valuesQxZNC[5] = {cent, vx, vy, vz, qxZNCrec};
       double valuesQyZNC[5] = {cent, vx, vy, vz, qyZNCrec};
-
-      //    LOGF(info, "Qx cal = %f", qxZNCrec);
-
+      
       gCurrentCentroidZNC->Fill(qxZNCrec, qyZNCrec);
 
       gCurrentQxVsCentZNC->Fill(cent, qxZNCrec);
