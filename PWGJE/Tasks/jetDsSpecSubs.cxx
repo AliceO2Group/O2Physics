@@ -36,8 +36,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TVector3.h>
 #include <TH1.h>
+#include <TVector3.h>
 
 #include <cmath>
 #include <string>
