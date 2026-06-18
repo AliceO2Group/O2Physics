@@ -1138,7 +1138,7 @@ struct ZdcQVectors {
       double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
 
       if (isSelected && cfgFillHistRegistry && !cfgFillNothing) {
-        fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality, rsTimestamp);
+        fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, v, centrality, rsTimestamp);
         registry.fill(HIST("QA/centrality_after"), centrality);
         registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
         registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);

@@ -20,6 +20,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FwdTrackReAlignTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
@@ -178,6 +179,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Candidate, candidate, int32_t, o2::aod::QaM
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
+using MyMuonsReAlign = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign>;
 using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyMFTs = aod::MFTTracks;
 using MyMFTCovariances = aod::MFTTracksCov;
@@ -252,6 +254,7 @@ struct QaMatching {
     int64_t globalTrackId{-1};
     int64_t muonTrackId{-1};
     int64_t mftTrackId{-1};
+    int trackType{-1};
     o2::track::TrackParCovFwd mftTrackProp;
     o2::track::TrackParCovFwd mchTrackProp;
     double matchScore{-1};
@@ -996,7 +999,7 @@ struct QaMatching {
 
   void createDimuonHistos()
   {
-    AxisSpec invMassAxis = {400, 1, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
+    AxisSpec invMassAxis = {500, 0, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
     AxisSpec invMassCorrelationAxis = {400, 0, 8, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
     AxisSpec invMassAxisFull = {5000, 0, 100, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
     int matchTypeCombMax = (static_cast<int>(kMatchTypeTrueNonLeading) - 1) * 10 + static_cast<int>(kMatchTypeTrueNonLeading) - 1;
@@ -1022,6 +1025,16 @@ struct QaMatching {
     registryDimuon.add("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches", "#mu^{+}#mu^{-} invariant mass (global muon cuts, rescaled MFT, good matches)", {HistType::kTH1F, {invMassAxis}});
     // MFT-MCH-MID tracks with MFT acceptance cuts vs. muon tracks match type, good matches
     registryDimuon.add("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches_vs_match_type", "#mu^{+}#mu^{-} invariant mass vs. match tye (global muon cuts, rescaled MFT, good matches)", {HistType::kTH2F, {invMassAxis, matchTypeAxis}});
+
+    // global kinematics as stored in candidates
+    // MFT-MCH-MID tracks with MFT acceptance cuts
+    registryDimuon.add("dimuon/invariantMass_GlobalKine_GlobalMuonCuts", "#mu^{+}#mu^{-} invariant mass (global muon cuts, global kine)", {HistType::kTH1F, {invMassAxis}});
+    // MCH-MID tracks with MFT acceptance cuts vs. muon tracks match type
+    registryDimuon.add("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_vs_match_type", "#mu^{+}#mu^{-} invariant mass vs. match tye (global muon cuts, global kine)", {HistType::kTH2F, {invMassAxis, matchTypeAxis}});
+    // MFT-MCH-MID tracks with MFT acceptance cuts, good matches
+    registryDimuon.add("dimuon/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches", "#mu^{+}#mu^{-} invariant mass (global muon cuts, global kine, good matches)", {HistType::kTH1F, {invMassAxis}});
+    // MFT-MCH-MID tracks with MFT acceptance cuts vs. muon tracks match type, good matches
+    registryDimuon.add("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches_vs_match_type", "#mu^{+}#mu^{-} invariant mass vs. match tye (global muon cuts, global kine, good matches)", {HistType::kTH2F, {invMassAxis, matchTypeAxis}});
   }
 
   void initMatchingFunctions()
@@ -1332,35 +1345,31 @@ struct QaMatching {
     return isGoodMft(mftTrack, cfgTrackChi2MftUp, cfgTrackNClustMftLow);
   }
 
-  template <class TMUON>
-  bool isGoodGlobalMatching(const TMUON& muonTrack,
-                            double matchingScore,
+  bool isGoodGlobalMatching(const MatchingCandidate& candidate,
                             double matchingScoreCut)
   {
-    if (static_cast<int>(muonTrack.trackType()) > GlobalTrackTypeMax)
+    if (static_cast<int>(candidate.trackType) > GlobalTrackTypeMax)
       return false;
 
     // MFT-MCH matching score cut
-    if (matchingScore < matchingScoreCut)
+    if (candidate.matchScore < matchingScoreCut)
       return false;
 
     return true;
   }
 
-  template <class TMUON>
-  bool isGoodGlobalMatching(const TMUON& muonTrack, double matchingScore)
+  bool isGoodGlobalMatching(const MatchingCandidate& candidate)
   {
-    return isGoodGlobalMatching(muonTrack, matchingScore, cfgMatchingChi2ScoreMftMchLow);
+    return isGoodGlobalMatching(candidate, cfgMatchingChi2ScoreMftMchLow);
   }
 
-  template <class TMUON>
-  bool isTrueGlobalMatching(const TMUON& muonTrack, const std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
+  bool isTrueGlobalMatching(const MatchingCandidate& candidate, const std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
-    if (static_cast<int>(muonTrack.trackType()) > GlobalTrackTypeMax)
+    if (candidate.trackType > GlobalTrackTypeMax)
       return false;
 
-    int64_t mchTrackId = static_cast<int64_t>(muonTrack.matchMCHTrackId());
-    int64_t mftTrackId = static_cast<int64_t>(muonTrack.matchMFTTrackId());
+    int64_t mchTrackId = candidate.muonTrackId;
+    int64_t mftTrackId = candidate.mftTrackId;
 
     std::pair<int64_t, int64_t> trackIndexes = std::make_pair(mchTrackId, mftTrackId);
 
@@ -1739,9 +1748,7 @@ struct QaMatching {
     }
   }
 
-  template <class TMUON>
-  int getTrueMatchIndex(TMUON const& muonTracks,
-                        const std::vector<MatchingCandidate>& matchCandidatesVector,
+  int getTrueMatchIndex(const std::vector<MatchingCandidate>& matchCandidatesVector,
                         const std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
     // find the index of the matching candidate that corresponds to the true match
@@ -1749,9 +1756,7 @@ struct QaMatching {
     // index=0 means no candidate was found that corresponds to the true match
     int trueMatchIndex = 0;
     for (size_t i = 0; i < matchCandidatesVector.size(); i++) {
-      auto const& muonTrack = muonTracks.rawIteratorAt(matchCandidatesVector[i].globalTrackId);
-
-      if (isTrueGlobalMatching(muonTrack, matchablePairs)) {
+      if (isTrueGlobalMatching(matchCandidatesVector[i], matchablePairs)) {
         trueMatchIndex = i + 1;
         break;
       }
@@ -1795,20 +1800,20 @@ struct QaMatching {
     return isMuon(mchTrack, mftTrack);
   }
 
-  template <class TMUON, class TMUONS, class TMFTS>
-  MuonMatchType getMatchType(const TMUON& muonTrack,
-                             TMUONS const& /*muonTracks*/,
+  template <class TMUONS, class TMFTS>
+  MuonMatchType getMatchType(const MatchingCandidate& candidate,
+                             TMUONS const& muonTracks,
                              TMFTS const& mftTracks,
                              const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                              int ranking)
   {
-    if (static_cast<int>(muonTrack.trackType()) > GlobalTrackTypeMax)
+    if (candidate.trackType > GlobalTrackTypeMax)
       return kMatchTypeUndefined;
 
-    auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
+    auto const& mchTrack = muonTracks.rawIteratorAt(candidate.muonTrackId);
 
-    bool isPairable = isMatchableMch(mchTrack.globalIndex(), matchablePairs);
-    bool isTrueMatch = isTrueGlobalMatching(muonTrack, matchablePairs);
+    bool isPairable = isMatchableMch(candidate.muonTrackId, matchablePairs);
+    bool isTrueMatch = isTrueGlobalMatching(candidate, matchablePairs);
     int decayRanking = getDecayRanking(mchTrack, mftTracks);
 
     MuonMatchType result{kMatchTypeUndefined};
@@ -1987,6 +1992,21 @@ struct QaMatching {
     return attempts;
   }
 
+  template <class TMUON>
+  void getMatchChi2AndScore(TMUON const& muonTrack, float& matchChi2, float& matchScore)
+  {
+    matchChi2 = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
+    matchScore = muonTrack.matchScoreMCHMFT();
+    if (matchScore >= 0 && matchChi2 < 0) {
+      // match score from ML-based matching, we compute a chi2-like value from the score
+      float matchScoreInv = (matchScore > 0) ? 1.0 / matchScore : std::numeric_limits<float>::max();
+      matchChi2 = matchScoreInv - 1.f;
+    } else {
+      // we assume a standard chi2-based matching, and compute the score value from the chi2
+      matchScore = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
+    }
+  }
+
   template <bool isMC, class EVT, class BC, class TMUON, class TMFT>
   void fillCollisions(EVT const& collisions,
                       BC const& bcs,
@@ -2040,8 +2060,10 @@ struct QaMatching {
         } else {
           // global muon tracks (MFT-MCH or MFT-MCH-MID)
           int64_t muonTrackIndex = muonTrack.globalIndex();
-          double matchChi2 = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
-          double matchScore = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
+          float matchChi2{-1};
+          float matchScore{-1};
+          getMatchChi2AndScore(muonTrack, matchChi2, matchScore);
+
           auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUON>();
           int64_t mchTrackIndex = mchTrack.globalIndex();
           auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
@@ -2069,6 +2091,7 @@ struct QaMatching {
               muonTrackIndex,
               mchTrackIndex,
               mftTrackIndex,
+              static_cast<int>(muonTrack.trackType()),
               mftTrackProp,
               mchTrackProp,
               matchScore,
@@ -2085,6 +2108,7 @@ struct QaMatching {
               muonTrackIndex,
               mchTrackIndex,
               mftTrackIndex,
+              static_cast<int>(muonTrack.trackType()),
               mftTrackProp,
               mchTrackProp,
               matchScore,
@@ -2136,12 +2160,10 @@ struct QaMatching {
         auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
         int ranking = 1;
         for (auto& candidate : globalTracksVector) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-          const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
-
           candidate.matchRanking = ranking;
           candidate.matchRankingProd = ranking;
           if constexpr (isMC) {
-            candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
+            candidate.matchType = getMatchType(candidate, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
           } else {
             candidate.matchType = kMatchTypeUndefined;
           }
@@ -2217,13 +2239,11 @@ struct QaMatching {
 
       // loop over candidates
       for (const auto& candidate : globalTracksVector) {
-        auto const& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
-
         float matchScore = candidate.matchScore;
         float matchChi2 = candidate.matchChi2;
 
-        float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / 5.f;
-        float matchScoreProd = chi2ToScore(muonTrack.chi2MatchMCHMFT(), 5, 50.f);
+        float matchChi2Prod = candidate.matchChi2Prod;
+        float matchScoreProd = candidate.matchScoreProd;
 
         std::get<std::shared_ptr<TH2>>(plotter->fMatchScoreVsProd)->Fill(matchScoreProd, matchScore);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchChi2VsProd)->Fill(matchChi2Prod, matchChi2);
@@ -2275,8 +2295,9 @@ struct QaMatching {
       // find the index of the matching candidate that corresponds to the true match
       // index=1 corresponds to the leading candidate
       // index=0 means no candidate was found that corresponds to the true match
-      int trueMatchIndex = getTrueMatchIndex(muonTracks, globalTracksVector, matchablePairs);
-      int trueMatchIndexProd = getTrueMatchIndex(muonTracks, matchingCandidatesProd.at(mchIndex), matchablePairs);
+      int trueMatchIndex = getTrueMatchIndex(globalTracksVector, matchablePairs);
+      const auto prodCandidatesIt = matchingCandidatesProd.find(mchIndex);
+      int trueMatchIndexProd = (prodCandidatesIt != matchingCandidatesProd.end()) ? getTrueMatchIndex(prodCandidatesIt->second, matchablePairs) : 0;
 
       float mcParticleDz = -1000;
       if (mchTrack.has_mcParticle()) {
@@ -2462,18 +2483,16 @@ struct QaMatching {
       if (globalTracksVector.size() < 1)
         continue;
 
-      int trueMatchIndex = getTrueMatchIndex(muonTracks, globalTracksVector, matchablePairs);
+      int trueMatchIndex = getTrueMatchIndex(globalTracksVector, matchablePairs);
 
       // loop over candidates
       int candidateIndex = 1;
       for (const auto& candidate : globalTracksVector) {
-        auto const& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
-
         float matchScore = candidate.matchScore;
         float matchChi2 = candidate.matchChi2;
 
-        float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / 5.f;
-        float matchScoreProd = chi2ToScore(muonTrack.chi2MatchMCHMFT(), 5, 50.f);
+        float matchChi2Prod = candidate.matchChi2Prod;
+        float matchScoreProd = candidate.matchScoreProd;
 
         std::get<std::shared_ptr<TH2>>(plotter->fMatchScoreVsProd)->Fill(matchScoreProd, matchScore);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchChi2VsProd)->Fill(matchChi2Prod, matchChi2);
@@ -2493,10 +2512,6 @@ struct QaMatching {
       if (globalTracksVector.size() < 1)
         continue;
 
-      // get the leading matching candidate
-      auto const& muonTrack = muonTracks.rawIteratorAt(globalTracksVector[0].globalTrackId);
-      double matchingScore = globalTracksVector[0].matchScore;
-
       // get the standalone MCH and MFT tracks
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
 
@@ -2505,14 +2520,14 @@ struct QaMatching {
         continue;
 
       // skip  candidates that do not pass the matching quality cuts
-      if (!isGoodGlobalMatching(muonTrack, matchingScore, matchingScoreCut))
+      if (!isGoodGlobalMatching(globalTracksVector[0], matchingScoreCut))
         continue;
 
       // check if the matching candidate is a true one
-      bool isTrueMatch = isTrueGlobalMatching(muonTrack, matchablePairs);
+      bool isTrueMatch = isTrueGlobalMatching(globalTracksVector[0], matchablePairs);
 
       // ---- MC ancestry ----
-      auto motherParticles = getMotherParticles(muonTrack);
+      auto motherParticles = getMotherParticles(mchTrack);
       int motherPDG = 0;
       if (motherParticles.size() > 1) {
         motherPDG = motherParticles[1].first;
@@ -2544,15 +2559,10 @@ struct QaMatching {
       if (matchingCandidates.count(matchableMchIndex) > 0) {
         const auto& globalTracksVector = matchingCandidates.at(static_cast<int64_t>(matchableMchIndex));
         if (!globalTracksVector.empty()) {
-          // get the leading matching candidate
-          auto const& muonTrack = muonTracks.rawIteratorAt(globalTracksVector[0].globalTrackId);
-          double matchingScore = globalTracksVector[0].matchScore;
+          // get the standalone MFT track index
+          auto mftIndex = globalTracksVector[0].mftTrackId;
 
-          // get the standalone MFT track
-          auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
-          auto mftIndex = mftTrack.globalIndex();
-
-          goodMatchFound = isGoodGlobalMatching(muonTrack, matchingScore, matchingScoreCut);
+          goodMatchFound = isGoodGlobalMatching(globalTracksVector[0], matchingScoreCut);
           isTrueMatch = (mftIndex == matchableMftIndex);
         }
       }
@@ -2633,8 +2643,6 @@ struct QaMatching {
 
       auto const& muonTrack1 = muonTracks.rawIteratorAt(candidates1[0].globalTrackId);
       auto const& muonTrack2 = muonTracks.rawIteratorAt(candidates2[0].globalTrackId);
-      auto matchScore1 = candidates1[0].matchScore;
-      auto matchScore2 = candidates2[0].matchScore;
       auto const& mchTrack1 = muonTracks.rawIteratorAt(candidates1[0].muonTrackId);
       auto const& mchTrack2 = muonTracks.rawIteratorAt(candidates2[0].muonTrackId);
       auto const& mftTrack1 = mftTracks.rawIteratorAt(candidates1[0].mftTrackId);
@@ -2660,22 +2668,28 @@ struct QaMatching {
         continue;
       }
 
-      bool goodGlobalMuonMatches = (isGoodGlobalMatching(muonTrack1, matchScore1) && isGoodGlobalMatching(muonTrack2, matchScore2));
+      bool goodGlobalMuonMatches = (isGoodGlobalMatching(candidates1[0]) && isGoodGlobalMatching(candidates2[0]));
 
       double massMCH = getMuMuInvariantMass(propagateToVertexMch(mchTrack1, collision),
                                             propagateToVertexMch(mchTrack2, collision));
-      double mass = getMuMuInvariantMass(propagateToVertexMft(mftTrack1, mchTrack1, collision),
-                                         propagateToVertexMft(mftTrack2, mchTrack2, collision));
+      double massRescaledKine = getMuMuInvariantMass(propagateToVertexMft(mftTrack1, mchTrack1, collision),
+                                                     propagateToVertexMft(mftTrack2, mchTrack2, collision));
+      double massGlobalKine = getMuMuInvariantMass(propagateToVertexMft(muonTrack1, collision),
+                                                   propagateToVertexMft(muonTrack2, collision));
       registryDimuon.get<TH1>(HIST("dimuon/invariantMass_MuonKine_GlobalMuonCuts"))->Fill(massMCH);
-      registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts"))->Fill(mass);
+      registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts"))->Fill(massRescaledKine);
+      registryDimuon.get<TH1>(HIST("dimuon/invariantMass_GlobalKine_GlobalMuonCuts"))->Fill(massGlobalKine);
       registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_MuonKine_GlobalMuonCuts_vs_match_type"))->Fill(massMCH, matchType);
-      registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_vs_match_type"))->Fill(mass, matchType);
+      registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_vs_match_type"))->Fill(massRescaledKine, matchType);
+      registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_vs_match_type"))->Fill(massGlobalKine, matchType);
 
       if (goodGlobalMuonMatches) {
         registryDimuon.get<TH1>(HIST("dimuon/invariantMass_MuonKine_GlobalMuonCuts_GoodMatches"))->Fill(massMCH);
-        registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches"))->Fill(mass);
+        registryDimuon.get<TH1>(HIST("dimuon/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches"))->Fill(massRescaledKine);
+        registryDimuon.get<TH1>(HIST("dimuon/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches"))->Fill(massGlobalKine);
         registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_MuonKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(massMCH, matchType);
-        registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(mass, matchType);
+        registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_ScaledMftKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(massRescaledKine, matchType);
+        registryDimuon.get<TH2>(HIST("dimuon/MC/invariantMass_GlobalKine_GlobalMuonCuts_GoodMatches_vs_match_type"))->Fill(massGlobalKine, matchType);
       }
     }
   }
@@ -2747,6 +2761,7 @@ struct QaMatching {
             candidate.globalTrackId,
             mchIndex,
             mftTrack.globalIndex(),
+            candidate.trackType,
             mftTrackProp,
             mchTrackProp,
             matchScore,
@@ -2762,6 +2777,7 @@ struct QaMatching {
             candidate.globalTrackId,
             mchIndex,
             mftTrack.globalIndex(),
+            candidate.trackType,
             mftTrackProp,
             mchTrackProp,
             matchScore,
@@ -2787,11 +2803,9 @@ struct QaMatching {
       auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
       int ranking = 1;
       for (auto& candidate : globalTracksVector) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-        const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
-
         candidate.matchRanking = ranking;
         if constexpr (isMC) {
-          candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+          candidate.matchType = getMatchType(candidate, muonTracks, mftTracks, matchablePairs, ranking);
         } else {
           candidate.matchType = kMatchTypeUndefined;
         }
@@ -2884,8 +2898,12 @@ struct QaMatching {
         std::vector<float> inputML = mlResponse.getInputFeatures(muonTrack, mftTrack, mchTrack, mftTrackProp, mchTrackProp, collision);
         mlResponse.isSelectedMl(inputML, 0, output);
         float matchScore = output[0];
-        float matchChi2Prod = muonTrack.chi2MatchMCHMFT() / MatchingDegreesOfFreedom;
-        float matchScoreProd = chi2ToScore(muonTrack.chi2MatchMCHMFT(), MatchingDegreesOfFreedom, MatchingScoreChi2Max);
+        float matchScoreInv = (matchScore > 0) ? 1.0 / matchScore : std::numeric_limits<float>::max();
+        float matchChi2 = matchScoreInv - 1.f;
+
+        float matchChi2Prod{-1};
+        float matchScoreProd{-1};
+        getMatchChi2AndScore(muonTrack, matchChi2Prod, matchScoreProd);
 
         // check if a vector of global muon candidates is already available for the current MCH index
         // if not, initialize a new one and add the current global muon track
@@ -2896,10 +2914,11 @@ struct QaMatching {
             candidate.globalTrackId,
             mchIndex,
             mftTrack.globalIndex(),
+            candidate.trackType,
             mftTrackProp,
             mchTrackProp,
             matchScore,
-            -1,
+            matchChi2,
             -1,
             matchScoreProd,
             matchChi2Prod,
@@ -2911,10 +2930,11 @@ struct QaMatching {
             candidate.globalTrackId,
             mchIndex,
             mftTrack.globalIndex(),
+            candidate.trackType,
             mftTrackProp,
             mchTrackProp,
             matchScore,
-            -1,
+            matchChi2,
             -1,
             matchScoreProd,
             matchChi2Prod,
@@ -2936,11 +2956,9 @@ struct QaMatching {
       auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
       int ranking = 1;
       for (auto& candidate : globalTracksVector) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-        const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
-
         candidate.matchRanking = ranking;
         if constexpr (isMC) {
-          candidate.matchType = getMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+          candidate.matchType = getMatchType(candidate, muonTracks, mftTracks, matchablePairs, ranking);
         } else {
           candidate.matchType = kMatchTypeUndefined;
         }
@@ -3233,6 +3251,33 @@ struct QaMatching {
   }
 
   PROCESS_SWITCH(QaMatching, processQA, "processQA", false);
+
+  void processQAReAlign(MyEvents const& collisions,
+                        aod::BCsWithTimestamps const& bcs,
+                        MyMuonsReAlign const& muonTracks,
+                        MyMFTs const& mftTracks,
+                        MyMFTCovariances const& mftCovs)
+  {
+    auto bc = bcs.begin();
+    initCcdb(bc);
+
+    for (const auto& muon : muonTracks) {
+      registry.get<TH1>(HIST("nTracksPerType"))->Fill(static_cast<int>(muon.trackType()));
+    }
+
+    mftTrackCovs.clear();
+    for (const auto& mftTrackCov : mftCovs) {
+      mftTrackCovs[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
+    }
+
+    fillCollisions<false>(collisions, bcs, muonTracks, mftTracks, mftCovs, fCollisionInfos);
+
+    for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
+      processCollision<false>(collisionInfo, collisions, bcs, muonTracks, mftTracks, mftCovs);
+    }
+  }
+
+  PROCESS_SWITCH(QaMatching, processQAReAlign, "processQAReAlign", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

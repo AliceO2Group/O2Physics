@@ -649,6 +649,14 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     bool isSelectedMlD0barToKPi = true;
     bool isSelectedMlDstarToD0Pi = true;
 
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      tables.rowCandCharm3Prong.reserve(tables.rowCandCharm3Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      tables.rowCandCharm2Prong.reserve(tables.rowCandCharm2Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      tables.rowCandCharmDstar.reserve(tables.rowCandCharmDstar.lastIndex() + sizeCand + 1);
+    }
+
     for (const auto& candidate : candidates) {
       outputMlD0 = {-1.0f, -1.0f, -1.0f};
       outputMlD0bar = {-1.0f, -1.0f, -1.0f};
@@ -1066,7 +1074,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    tables.rowCandCharmHadGen.reserve(particles.size());
+    tables.rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
@@ -1108,7 +1116,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
   void fillXicMcGen(GeneratedXicMc const& particles)
   {
-    tables.rowCandCharmHadGen.reserve(particles.size());
+    tables.rowCandCharmHadGen.reserve(particles.size() + 1);
     for (const auto& particle : particles) {
       const int absFlag = std::abs(static_cast<int>(particle.flagMcMatchGen()));
       if (absFlag == (1 << o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) ||

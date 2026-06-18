@@ -151,14 +151,8 @@ class MlResponse
   void init(bool enableOptimizations = false, int threads = 0)
   {
     uint8_t counterModel{0};
-    const int numCachedIndices = static_cast<int>(mCachedIndices.size());
     for (const auto& path : mPaths) {
       mModels[counterModel].initModel(path, enableOptimizations, threads);
-      const int numInputNodes = mModels[counterModel].getNumInputNodes();
-      if (numInputNodes != numCachedIndices) {
-        LOG(fatal) << "Number of input nodes in the model " << path << " is different from the number of input features indices (" << numInputNodes << " vs " << numCachedIndices << ")";
-        return;
-      }
       ++counterModel;
     }
   }
@@ -186,6 +180,13 @@ class MlResponse
   {
     if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
       LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const int numInputFeatures = static_cast<int>(input.size());
+
+    if (numInputNodes != numInputFeatures) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
     }
 
     TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);

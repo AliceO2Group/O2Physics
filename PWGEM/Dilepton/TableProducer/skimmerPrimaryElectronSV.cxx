@@ -39,8 +39,6 @@
 #include <Framework/runDataProcessing.h>
 #include <PID/PIDTOFParamService.h>
 
-// #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -53,7 +51,7 @@ struct skimmerPrimaryElectronSV {
   using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMEvSels>;
   using MyCollisionsWithSWT = o2::soa::Join<MyCollisions, o2::aod::EMSWTriggerBitsTMP>;
 
-  using MyTracks = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU,
+  using MyTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov, // use covariance matrix updated by propagationService.
                                  o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                  o2::aod::pidTOFFullEl, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr, o2::aod::pidTOFbeta, o2::aod::TOFSignal, o2::aod::TOFEvTime>;
   using MyTrack = MyTracks::iterator;
@@ -79,7 +77,7 @@ struct skimmerPrimaryElectronSV {
   o2::framework::Service<o2::pid::tof::TOFResponse> mTOFResponse;
 
   o2::framework::SliceCache cache;
-  o2::framework::Preslice<o2::aod::TracksIU> perCol_track = o2::aod::track::collisionId;
+  o2::framework::Preslice<o2::aod::Tracks> perCol_track = o2::aod::track::collisionId;
   o2::framework::Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
   // o2::framework::Preslice<o2::aod::V0Datas> perCol_v0 = o2::aod::v0data::collisionId;
   // o2::framework::Preslice<o2::aod::CascDatas> perCol_casc = o2::aod::cascdata::collisionId;

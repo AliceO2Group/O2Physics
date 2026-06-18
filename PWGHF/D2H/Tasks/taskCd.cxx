@@ -115,6 +115,9 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! MC match
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! MC origin for reconstructed candidates
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! Resonant MC decay channel for reconstructed candidates
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! MC origin for generated particles
+DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! Resonant MC decay channel for generated candidates
+DECLARE_SOA_COLUMN(CtGen, ctGen, float);                            //! Generated ct computed wrt to c-deuteron production vertex, which can be either PV (prompt) or B-hadron decay vertex (non-prompt)
+DECLARE_SOA_COLUMN(CtRec, ctRec, float);                            //! Reconstructed ct computed wrt to PV
 DECLARE_SOA_COLUMN(Cent, cent, float);                              //! Centrality
 DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);                              //! Vertex Z
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                      //! Global index for the collision
@@ -142,11 +145,13 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::NSigmaTpcPr,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
+                  full::CtRec,
                   full::CandidateSelFlag,
                   full::CandidateSign,
                   full::FlagMc,
                   full::OriginMcRec,
                   full::FlagMcDecayChanRec,
+                  full::CtGen,
                   full::Cent);
 
 // full table for local Rotation & Event Mixing
@@ -174,11 +179,13 @@ DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
                   full::NSigmaTofPi,
                   full::NSigmaTpcKa,
                   full::NSigmaTofKa,
+                  full::CtRec,
                   full::CandidateSelFlag,
                   full::CandidateSign,
                   full::FlagMc,
                   full::OriginMcRec,
                   full::FlagMcDecayChanRec,
+                  full::CtGen,
                   full::Cent,
                   full::VtxZ,
                   full::GIndexCol,
@@ -191,6 +198,8 @@ DECLARE_SOA_TABLE(HfCandCdGen, "AOD", "HFCANDCDGEN",
                   full::Y,
                   full::FlagMc,
                   full::OriginMcGen,
+                  full::FlagMcDecayChanGen,
+                  full::CtGen,
                   full::Cent,
                   full::VtxZ,
                   full::McCollisionId);
@@ -243,10 +252,11 @@ struct HfTaskCd {
   ConfigurableAxis thnAxisRapidity{"thnAxisRapidity", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
+  ConfigurableAxis thnConfigAxisCt{"thnConfigAxisCt", {500, 0., 5000.}, ""};
 
-  constexpr static double MassCDeuteron = 3.226;
   constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
   constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
+  const float cmToMum = 1.e4;
 
   enum SignalClasses : int {
     Signal = 0,
@@ -257,30 +267,30 @@ struct HfTaskCd {
   HistogramRegistry registry{
     "registry",
     {/// mass candidate
-     {"Data/hMass", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{400, 2.4, 4.4}}}},
+     {"Data/hMass", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 2.4, 4.4}}}},
      /// pT
-     {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+     {"Data/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+     {"Data/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+     {"Data/hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
      /// DCAxy to prim. vertex prongs
-     {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"Data/hd0Prong1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"Data/hd0Prong2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
+     {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1D, {{600, -0.4, 0.4}}}},
+     {"Data/hd0Prong1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH1D, {{600, -0.4, 0.4}}}},
+     {"Data/hd0Prong2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH1D, {{600, -0.4, 0.4}}}},
      /// decay length candidate
-     {"Data/hDecLength", "3-prong candidates;decay length (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
+     {"Data/hDecLength", "3-prong candidates;decay length (cm);entries", {HistType::kTH1D, {{400, 0., 1.}}}},
      /// decay length xy candidate
-     {"Data/hDecLengthxy", "3-prong candidates;decay length xy (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
+     {"Data/hDecLengthxy", "3-prong candidates;decay length xy (cm);entries", {HistType::kTH1D, {{400, 0., 1.}}}},
      /// cosine of pointing angle
-     {"Data/hCPA", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
+     {"Data/hCPA", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH1D, {{110, -1.1, 1.1}}}},
      /// cosine of pointing angle xy
-     {"Data/hCPAxy", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
+     {"Data/hCPAxy", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH1D, {{110, -1.1, 1.1}}}},
      /// Chi 2 PCA to sec. vertex
-     {"Data/hDca2", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{400, 0., 20.}}}},
+     {"Data/hDca2", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1D, {{400, 0., 20.}}}},
      /// eta
-     {"Data/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+     {"Data/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
      /// phi
-     {"Data/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}}}};
+     {"Data/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1D, {{100, 0., 6.3}}}}}};
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -308,28 +318,28 @@ struct HfTaskCd {
       }
     };
 
-    addHistogramsRec("hMass", "inv. mass (de K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{400, 2.4, 4.4}}});
-    addHistogramsRec("hPt", "#it{p}_{T}^{rec.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
-    addHistogramsGen("hPt", "#it{p}_{T}^{gen.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    addHistogramsRec("hMass", "inv. mass (de K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1D, {{400, 2.4, 4.4}}});
+    addHistogramsRec("hPt", "#it{p}_{T}^{rec.} (GeV/#it{c})", "entries", {HistType::kTH1D, {{360, 0., 36.}}});
+    addHistogramsGen("hPt", "#it{p}_{T}^{gen.} (GeV/#it{c})", "entries", {HistType::kTH1D, {{360, 0., 36.}}});
     if (!isData) {
-      registry.add("MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      registry.add("MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}});
     }
-    addHistogramsRec("hPtProng0", "prong 0 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
-    addHistogramsRec("hPtProng1", "prong 1 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
-    addHistogramsRec("hPtProng2", "prong 2 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
-    addHistogramsRec("hd0Prong0", "prong 0 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1F, {{600, -0.4, 0.4}}});
-    addHistogramsRec("hd0Prong1", "prong 1 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1F, {{600, -0.4, 0.4}}});
-    addHistogramsRec("hd0Prong2", "prong 2 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1F, {{600, -0.4, 0.4}}});
-    addHistogramsRec("hDecLength", "decay length (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
-    addHistogramsRec("hDecLengthxy", "decay length xy (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
-    addHistogramsRec("hCPA", "cosine of pointing angle", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
-    addHistogramsRec("hCPAxy", "cosine of pointing angle xy", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
-    addHistogramsRec("hDca2", "prong Chi2PCA to sec. vertex (cm)", "entries", {HistType::kTH1F, {{400, 0., 20.}}});
-    addHistogramsRec("hEta", "#it{#eta}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
-    addHistogramsGen("hEta", "#it{#eta}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
-    addHistogramsGen("hY", "#it{y}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
-    addHistogramsRec("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
-    addHistogramsGen("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
+    addHistogramsRec("hPtProng0", "prong 0 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1D, {{360, 0., 36.}}});
+    addHistogramsRec("hPtProng1", "prong 1 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1D, {{360, 0., 36.}}});
+    addHistogramsRec("hPtProng2", "prong 2 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1D, {{360, 0., 36.}}});
+    addHistogramsRec("hd0Prong0", "prong 0 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1D, {{600, -0.4, 0.4}}});
+    addHistogramsRec("hd0Prong1", "prong 1 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1D, {{600, -0.4, 0.4}}});
+    addHistogramsRec("hd0Prong2", "prong 2 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1D, {{600, -0.4, 0.4}}});
+    addHistogramsRec("hDecLength", "decay length (cm)", "entries", {HistType::kTH1D, {{400, 0., 1.}}});
+    addHistogramsRec("hDecLengthxy", "decay length xy (cm)", "entries", {HistType::kTH1D, {{400, 0., 1.}}});
+    addHistogramsRec("hCPA", "cosine of pointing angle", "entries", {HistType::kTH1D, {{110, -1.1, 1.1}}});
+    addHistogramsRec("hCPAxy", "cosine of pointing angle xy", "entries", {HistType::kTH1D, {{110, -1.1, 1.1}}});
+    addHistogramsRec("hDca2", "prong Chi2PCA to sec. vertex (cm)", "entries", {HistType::kTH1D, {{400, 0., 20.}}});
+    addHistogramsRec("hEta", "#it{#eta}", "entries", {HistType::kTH1D, {{100, -2., 2.}}});
+    addHistogramsGen("hEta", "#it{#eta}", "entries", {HistType::kTH1D, {{100, -2., 2.}}});
+    addHistogramsGen("hY", "#it{y}", "entries", {HistType::kTH1D, {{100, -2., 2.}}});
+    addHistogramsRec("hPhi", "#it{#Phi}", "entries", {HistType::kTH1D, {{100, 0., 6.3}}});
+    addHistogramsGen("hPhi", "#it{#Phi}", "entries", {HistType::kTH1D, {{100, 0., 6.3}}});
 
     /// mass candidate
     if (isData) {
@@ -398,10 +408,11 @@ struct HfTaskCd {
       const AxisSpec thnAxisCentrality{thnConfigAxisCentrality, "centrality (FT0C)"};
       const AxisSpec thnAxisY{thnAxisRapidity, "rapidity"};
       const AxisSpec thnAxisPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
+      const AxisSpec thnAxisCt{thnConfigAxisCt, "#it{ct} (#mum)"};
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
 
       std::vector axesStd{thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCentrality};
-      std::vector axesGen{thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisPtB};
+      std::vector axesGen{thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisCt, thnAxisPtB};
       registry.add("hnCdVars", isData ? "THn for Reconstructed Cd candidates for data" : "THn for Reconstructed Cd candidates for MC", HistType::kTHnSparseF, axesStd);
       if (!isData) {
         registry.add("hnCdVarsGen", "THn for Generated Cd", HistType::kTHnSparseF, axesGen);
@@ -476,12 +487,26 @@ struct HfTaskCd {
     const int64_t timeStamp = bc.timestamp();
 
     for (const auto& candidate : groupedCdCandidates) {
+      if (candidate.flagMcMatchRec() == 0) { // we skip combinatorial background
+        continue;
+      }
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
         continue;
       }
-      const auto yCd = RecoDecay::y(candidate.pVector(), MassCDeuteron);
+      const auto yCd = RecoDecay::y(candidate.pVector(), o2::constants::physics::MassCDeuteron);
       if (yCandRecoMax >= 0. && std::abs(yCd) > yCandRecoMax) {
         continue;
+      }
+
+      float ctGen{-1.f}, ptGen{-1.f};
+      int pdgCodeProng0{0};
+      if (candidate.flagMcMatchRec() == hf_decay::hf_cand_3prong::DecayChannelMain::CDeuteronToDeKPi) {
+        const auto& mcParticleProng0 = candidate.template prong0_as<HFTracksMc>().template mcParticle_as<CandCdMcGen>();
+        pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+        const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kCDeuteron, true);
+        const auto particleMother = mcParticles.rawIteratorAt(indexMother);
+        ctGen = RecoDecay::ct(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::distance(std::array{particleMother.vx(), particleMother.vy(), particleMother.vz()}, std::array{mcParticleProng0.vx(), mcParticleProng0.vy(), mcParticleProng0.vz()}), o2::constants::physics::MassCDeuteron) * cmToMum;
+        ptGen = particleMother.pt();
       }
 
       if (fillCandLiteTree || fillCandFullTree) {
@@ -566,11 +591,13 @@ struct HfTaskCd {
             nSigmaTpcPr,
             nSigmaItsDe,
             nSigmaTofDe,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             candidate.flagMcMatchRec(),
             candidate.originMcRec(),
             candidate.flagMcDecayChanRec(),
+            ctGen,
             o2::hf_centrality::getCentralityColl(collision));
         }
 
@@ -599,11 +626,13 @@ struct HfTaskCd {
             nSigmaTofPi,
             nSigmaTpcKa,
             nSigmaTofKa,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             candidate.flagMcMatchRec(),
             candidate.originMcRec(),
             candidate.flagMcDecayChanRec(),
+            ctGen,
             o2::hf_centrality::getCentralityColl(collision),
             collision.posZ(),
             collision.globalIndex(),
@@ -615,11 +644,7 @@ struct HfTaskCd {
         continue;
       }
 
-      const auto& mcParticleProng0 = candidate.template prong0_as<HFTracksMc>().template mcParticle_as<McParticles3ProngMatched>();
-      const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
-      const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kCDeuteron, true);
-      const auto particleMother = mcParticles.rawIteratorAt(indexMother);
-      registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt());
+      registry.fill(HIST("MC/generated/signal/hPtGenSig"), ptGen);
 
       fillHistogramsRecSig<Signal>(candidate);
       if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
@@ -664,7 +689,7 @@ struct HfTaskCd {
       if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::CDeuteronToDeKPi) {
         continue;
       }
-      const auto yGen = RecoDecay::y(particle.pVector(), MassCDeuteron);
+      const auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassCDeuteron);
       if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
         continue;
       }
@@ -677,6 +702,8 @@ struct HfTaskCd {
       }
       const float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
       const float ptGenB = particle.originMcGen() == RecoDecay::OriginType::Prompt ? -1.f : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+      const auto firstDau = particle.template daughters_as<CandCdMcGen>().begin();
+      const float ctGen = RecoDecay::ct(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::distance(std::array{particle.vx(), particle.vy(), particle.vz()}, std::array{firstDau.vx(), firstDau.vy(), firstDau.vz()}), o2::constants::physics::MassCDeuteron) * cmToMum;
 
       fillHistogramsGen<Signal>(particle, yGen);
       if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -686,7 +713,7 @@ struct HfTaskCd {
       }
 
       if (fillTHn) {
-        std::vector<double> valuesToFill{particle.pt(), cent, yGen, static_cast<double>(numPvContributors), ptGenB};
+        std::vector<double> valuesToFill{particle.pt(), cent, yGen, static_cast<double>(numPvContributors), ctGen, ptGenB};
         registry.get<THnSparse>(HIST("hnCdVarsGen"))->Fill(valuesToFill.data());
       }
 
@@ -697,6 +724,8 @@ struct HfTaskCd {
         yGen,
         particle.flagMcMatchGen(),
         particle.originMcGen(),
+        particle.flagMcDecayChanGen(),
+        ctGen,
         cent,
         vtxZ,
         particle.mcCollision().globalIndex());
@@ -916,11 +945,13 @@ struct HfTaskCd {
             nSigmaTpcPr,
             nSigmaItsDe,
             nSigmaTofDe,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             0,
             0,
             -1,
+            -1.f,
             cent);
         }
 
@@ -950,11 +981,13 @@ struct HfTaskCd {
             nSigmaTofPi,
             nSigmaTpcKa,
             nSigmaTofKa,
+            candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
             0,
             0,
             -1,
+            -1.f,
             cent,
             collision.posZ(),
             collision.globalIndex(),

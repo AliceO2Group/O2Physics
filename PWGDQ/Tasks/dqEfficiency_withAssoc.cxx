@@ -1186,6 +1186,7 @@ struct AnalysisPrefilterSelection {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
+    VarManager::SetDefaultVarNames();
 
     bool runPrefilter = true;
     // get the list of track cuts to be prefiltered
@@ -1253,7 +1254,6 @@ struct AnalysisPrefilterSelection {
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-    VarManager::SetDefaultVarNames();
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
