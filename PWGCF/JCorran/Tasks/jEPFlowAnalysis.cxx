@@ -164,24 +164,24 @@ struct JEPFlowAnalysis {
 
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
 
-  int detId;
-  int refAId;
-  int refBId;
-  int harmInd;
+  int detId = 0;
+  int refAId = 4;
+  int refBId = 5;
+  int harmInd = 0;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
 
-  float cent;
+  float cent = -1.;
 
   float minQvecAmp = 1e-5;
   float minChg = 0.1;
-  float q2Mag;
+  float q2Mag = -1.;
 
-  float activity;
-  float qOvecM;
-  float highestPt;
-  float hPtPhi;
+  float activity = -1.;
+  float qOvecM = -1.;
+  float highestPt = -1.;
+  float hPtPhi = -999.;
 
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
@@ -696,7 +696,7 @@ struct JEPFlowAnalysis {
         return;
     }
 
-    float cent = coll.centFT0C();
+    cent = coll.centFT0C();
 
     if (cfgEffCor) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
@@ -737,7 +737,7 @@ struct JEPFlowAnalysis {
       }
     }
 
-    float cent = coll.centFT0C();
+    cent = coll.centFT0C();
 
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.eta()) > cfgTrackCuts.cfgEtaMax)
