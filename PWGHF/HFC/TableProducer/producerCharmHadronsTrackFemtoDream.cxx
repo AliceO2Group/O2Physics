@@ -910,8 +910,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
              0);
   }
 
-  template <bool IsMc, bool UseCharmMl, typename TrackType, typename CollisionType, typename CandType>
-  void fillXicHadronTable(CollisionType const& col, TrackType const& tracks, CandType const& candidates)
+  template <bool IsMc, bool UseCharmMl, typename TrackType, typename CollisionType, typename CandType, typename DaughterTrackType>
+  void fillXicHadronTable(CollisionType const& col, TrackType const& tracks, CandType const& candidates, DaughterTrackType const&)
   {
     const auto vtxZ = col.posZ();
     const auto sizeCand = candidates.size();
@@ -986,9 +986,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       const auto phi0 = static_cast<float>(RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0()));
       const auto phi1 = static_cast<float>(RecoDecay::phi(candidate.pxProng1(), candidate.pyProng1()));
       const auto phi2 = static_cast<float>(RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2()));
-      const auto cascBachelorTrack = tracks.rawIteratorAt(candidate.bachelorId());
-      const auto cascPosTrack = tracks.rawIteratorAt(candidate.posTrackId());
-      const auto cascNegTrack = tracks.rawIteratorAt(candidate.negTrackId());
+      const auto cascBachelorTrack = candidate.template bachelor_as<DaughterTrackType>();
+      const auto cascPosTrack = candidate.template posTrack_as<DaughterTrackType>();
+      const auto cascNegTrack = candidate.template negTrack_as<DaughterTrackType>();
 
       tables.rowCandCharm3ProngXic(
         tables.outputCollision.lastIndex(),
@@ -1358,84 +1358,92 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   void processDataXicToXiPiPi(FemtoFullCollision const& col,
                               aod::BCsWithTimestamps const&,
                               FemtoHFTracks const& tracks,
+                              aod::FullTracks const& daughterTracks,
                               soa::Filtered<CandidateXic> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<false, false>(col, tracks, candidates);
+    fillXicHadronTable<false, false>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataXicToXiPiPi, "Data for XicToXiPiPi femto (DCAFitter; no HFCANDXICKF)", false);
 
   void processDataXicToXiPiPiKf(FemtoFullCollision const& col,
                                 aod::BCsWithTimestamps const&,
                                 FemtoHFTracks const& tracks,
+                                aod::FullTracks const& daughterTracks,
                                 soa::Filtered<CandidateXicKf> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<false, false>(col, tracks, candidates);
+    fillXicHadronTable<false, false>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataXicToXiPiPiKf, "Data for XicToXiPiPi femto (KFParticle; requires HFCANDXICKF)", false);
 
   void processDataXicToXiPiPiWithML(FemtoFullCollision const& col,
                                     aod::BCsWithTimestamps const&,
                                     FemtoHFTracks const& tracks,
+                                    aod::FullTracks const& daughterTracks,
                                     soa::Filtered<soa::Join<CandidateXic, aod::HfMlXicToXiPiPi>> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<false, true>(col, tracks, candidates);
+    fillXicHadronTable<false, true>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataXicToXiPiPiWithML, "Data for XicToXiPiPi femto with ML (DCAFitter)", false);
 
   void processDataXicToXiPiPiWithMLKf(FemtoFullCollision const& col,
                                       aod::BCsWithTimestamps const&,
                                       FemtoHFTracks const& tracks,
+                                      aod::FullTracks const& daughterTracks,
                                       soa::Filtered<soa::Join<CandidateXicKf, aod::HfMlXicToXiPiPi>> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<false, true>(col, tracks, candidates);
+    fillXicHadronTable<false, true>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataXicToXiPiPiWithMLKf, "Data for XicToXiPiPi femto with ML (KFParticle)", false);
 
   void processMcXicToXiPiPi(FemtoFullCollisionMc const& col,
                             aod::BCsWithTimestamps const&,
                             FemtoHFMcTracks const& tracks,
+                            aod::FullTracks const& daughterTracks,
                             aod::McParticles const&,
                             soa::Filtered<CandidateXicMc> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<true, false>(col, tracks, candidates);
+    fillXicHadronTable<true, false>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcXicToXiPiPi, "MC for XicToXiPiPi (DCAFitter)", false);
 
   void processMcXicToXiPiPiKf(FemtoFullCollisionMc const& col,
                               aod::BCsWithTimestamps const&,
                               FemtoHFMcTracks const& tracks,
+                              aod::FullTracks const& daughterTracks,
                               aod::McParticles const&,
                               soa::Filtered<CandidateXicKfMc> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<true, false>(col, tracks, candidates);
+    fillXicHadronTable<true, false>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcXicToXiPiPiKf, "MC for XicToXiPiPi (KFParticle)", false);
 
   void processMcXicToXiPiPiWithML(FemtoFullCollisionMc const& col,
                                   aod::BCsWithTimestamps const&,
                                   FemtoHFMcTracks const& tracks,
+                                  aod::FullTracks const& daughterTracks,
                                   aod::McParticles const&,
                                   soa::Filtered<soa::Join<CandidateXicMc, aod::HfMlXicToXiPiPi>> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<true, true>(col, tracks, candidates);
+    fillXicHadronTable<true, true>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcXicToXiPiPiWithML, "MC for XicToXiPiPi with ML (DCAFitter)", false);
 
   void processMcXicToXiPiPiWithMLKf(FemtoFullCollisionMc const& col,
                                     aod::BCsWithTimestamps const&,
                                     FemtoHFMcTracks const& tracks,
+                                    aod::FullTracks const& daughterTracks,
                                     aod::McParticles const&,
                                     soa::Filtered<soa::Join<CandidateXicKfMc, aod::HfMlXicToXiPiPi>> const& candidates)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillXicHadronTable<true, true>(col, tracks, candidates);
+    fillXicHadronTable<true, true>(col, tracks, candidates, daughterTracks);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcXicToXiPiPiWithMLKf, "MC for XicToXiPiPi with ML (KFParticle)", false);
 
