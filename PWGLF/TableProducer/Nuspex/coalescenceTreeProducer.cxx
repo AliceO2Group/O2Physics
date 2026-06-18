@@ -27,7 +27,10 @@
 ///
 /// \author Alberto Calivà <alberto.caliva@cern.ch>
 
-#include <Common/DataModel/Centrality.h>
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/DataModel/Centrality.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -40,7 +43,6 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PWGLF/DataModel/mcCentrality.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
