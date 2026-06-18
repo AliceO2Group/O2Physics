@@ -13,8 +13,8 @@
 /// \brief Ds-tagged jet analysis with substructure histogram outputs
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -36,9 +36,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include "TVector3.h"
-
+#include <TH1.h>
 
 #include <cmath>
 #include <string>
@@ -48,29 +47,26 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 consteval float getValFromBin(int bin)
 {
   return static_cast<float>(bin) - 0.5f;
 }
 
-enum BinExpColCntr {AllCollisions = 1,
-                    Sel8ZCut = 2};
+enum BinExpColCntr { AllCollisions = 1,
+                     Sel8ZCut = 2 };
 
-enum BinExpJetCntr {ChargedJets = 1 };
-enum BinMCColCntr {All = 1,
-                   ZCut = 2,
-                   Matched = 3,
-                   MatchedSel8ZCut = 4
-                  };
-
-enum BinMCJetCntr {DetectorLevelJetInMCCollision = 1,
-                   ParticleLevelJetInMCCollision = 2,
-                   DetectorLevelJetWithMatchedCandidate = 3,
-                   ParticleLevelJetWithMatchedCandidate = 4
+enum BinExpJetCntr { ChargedJets = 1 };
+enum BinMCColCntr { All = 1,
+                    ZCut = 2,
+                    Matched = 3,
+                    MatchedSel8ZCut = 4
 };
 
-
+enum BinMCJetCntr { DetectorLevelJetInMCCollision = 1,
+                    ParticleLevelJetInMCCollision = 2,
+                    DetectorLevelJetWithMatchedCandidate = 3,
+                    ParticleLevelJetWithMatchedCandidate = 4
+};
 
 struct JetDsSpecSubs {
 
@@ -104,8 +100,8 @@ struct JetDsSpecSubs {
   int trackSelection = -1;
 
   // Filters
-  //Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
-  //Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
+  // Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
+  // Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
 
   //=============
   // Histograms
@@ -113,7 +109,8 @@ struct JetDsSpecSubs {
 
   HistogramRegistry registry{
     "registry",
-    { {"h_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}},
+    {
+      {"h_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}},
       {"h_collision_counter_data", ";event counter;entries", {HistType::kTH1F, {{10, 0., 10.}}}},
       {"h_collision_counter_mcd", ";event counter;entries", {HistType::kTH1F, {{10, 0., 10.}}}},
       {"h_collision_counter_mcp", ";event counter;entries", {HistType::kTH1F, {{10, 0., 10.}}}},
@@ -203,7 +200,7 @@ struct JetDsSpecSubs {
     hMcp->GetXaxis()->SetBinLabel(2, "Ds particles");
     hMcp->GetXaxis()->SetBinLabel(3, "Ds jets with >=1 particle");
 
-     // Labels
+    // Labels
     auto mcCollisionCounter = registry.get<TH1>(HIST("McEffCol"));
     mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::All, "mccollisions");
     mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::ZCut, "z_cut");
@@ -215,7 +212,6 @@ struct JetDsSpecSubs {
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetInMCCollision, "detector level");
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
-
   }
   //===============
   // Lambda compute
@@ -298,7 +294,6 @@ struct JetDsSpecSubs {
   }
   PROCESS_SWITCH(JetDsSpecSubs, processCollisions, "collision QA", false);
 
-
   //==============
   // DATA process
   //==============
@@ -316,7 +311,7 @@ struct JetDsSpecSubs {
     registry.fill(HIST("h_collision_counter_data"), 3.0);
 
     for (const auto& jet : jets) {
-      registry.fill(HIST("h_dsjet_counter_data"), 0.5); //DsChargedJets entries
+      registry.fill(HIST("h_dsjet_counter_data"), 0.5); // DsChargedJets entries
 
       registry.fill(HIST("h_jet_pt_data"), jet.pt());
       registry.fill(HIST("h_jet_eta_data"), jet.eta());
@@ -328,7 +323,6 @@ struct JetDsSpecSubs {
       const float lambda12 = computeLambda(jet, jetTracks, 2.f, 1.f);
 
       const float mjet = computeJetMass(jetTracks);
-
 
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
@@ -384,12 +378,10 @@ struct JetDsSpecSubs {
         if (lambda12 >= 0.f) {
           registry.fill(HIST("h_ds_jet_lambda12_data"), lambda12);
         }
-
       }
     }
   }
   PROCESS_SWITCH(JetDsSpecSubs, processDataChargedSubstructure, "Data charged jets", false);
-
 
   //==============
   //  MC function
@@ -477,9 +469,7 @@ struct JetDsSpecSubs {
                         mcdjet.pt(),
                         mcd_zParallel,
                         mcd_deltaR);
-
         }
-
       }
     }
   }
@@ -508,8 +498,6 @@ struct JetDsSpecSubs {
                                                       mcdCandidates,
                                                       mcpCandidates,
                                                       jettracks);
-
-
   }
   PROCESS_SWITCH(JetDsSpecSubs, processMonteCarloEfficiencyDs, "Non-matched and matched MC Ds and jets", false);
 };
