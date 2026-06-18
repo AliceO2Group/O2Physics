@@ -148,7 +148,7 @@ THn* gCurrentQyZNA{nullptr};
 THn* gCurrentQxZNC{nullptr};
 THn* gCurrentQyZNC{nullptr};
 
-TH1* gCurrentPsiZNA{nullptr} ;
+TH1* gCurrentPsiZNA{nullptr};
 TH1* gCurrentPsiZNC{nullptr};
 
 TH1* gCurrentVx{nullptr};
@@ -605,7 +605,7 @@ struct ZdcExtraTableReader {
     if (applyShiftCorrection) {
       std::string folder = Form("%s/psiHarm", qRecenteringCcdb.value.c_str());
 
-      //LOGF(info, "Loading Shift Correction from %s for runNumber %d", folder.c_str(), runNumber);
+      // LOGF(info, "Loading Shift Correction from %s for runNumber %d", folder.c_str(), runNumber);
 
       // Attempt to fetch TList from CCDB
       auto* lst = ccdb->getForRun<TList>(folder, runNumber);
@@ -714,7 +714,7 @@ struct ZdcExtraTableReader {
     }
 
     bool isZNChit = false, isZNAhit = false;
-    
+
     double tdcZNC = zdc.zncTdc();
     double tdcZNA = zdc.znaTdc();
 
@@ -733,7 +733,7 @@ struct ZdcExtraTableReader {
         isZNAhit = true;
       }
     }
-    
+
     bool isZNASpDeterminable = false;
     bool isZNCSpDeterminable = false;
 
@@ -779,12 +779,11 @@ struct ZdcExtraTableReader {
 
     double qxZNArec = 0., qyZNArec = 0.;
     double qxZNCrec = 0., qyZNCrec = 0.;
-    
+
     double cent = zdc.centrality();
     double vx = zdc.vx();
     double vy = zdc.vy();
     double vz = zdc.vz();
-
 
     if (applyBeamSpotCorrection) {
       // Use cached vertex pointers
@@ -801,7 +800,7 @@ struct ZdcExtraTableReader {
 
       qxZNArec = qx;
       qyZNArec = qy;
-      
+
       for (int step = 1; step <= calibrationStep; step++) {
 
         int cacheIdx = step - 1;
@@ -923,14 +922,14 @@ struct ZdcExtraTableReader {
 
       qxZNCrec = qx;
       qyZNCrec = qy;
-      
+
       // Iterate through steps using cached vector
       for (int step = 1; step <= calibrationStep; step++) {
 
         int cacheIdx = step - 1;
         if (cacheIdx >= static_cast<int>(calibCache.size()))
           continue;
-        
+
         const auto& calib = calibCache[cacheIdx];
 
         // Apply 5D Base calibration
@@ -958,7 +957,7 @@ struct ZdcExtraTableReader {
 
       double valuesQxZNC[5] = {cent, vx, vy, vz, qxZNCrec};
       double valuesQyZNC[5] = {cent, vx, vy, vz, qyZNCrec};
-      
+
       gCurrentCentroidZNC->Fill(qxZNCrec, qyZNCrec);
 
       gCurrentQxVsCentZNC->Fill(cent, qxZNCrec);
