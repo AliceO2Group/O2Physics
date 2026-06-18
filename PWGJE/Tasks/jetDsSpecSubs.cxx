@@ -80,12 +80,12 @@ struct JetDsSpecSubs {
 
   using DsDataJets = soa::Join<aod::DsChargedJets, aod::DsChargedJetConstituents>;
   using DsMCDJets = soa::Join<aod::DsChargedMCDetectorLevelJets, aod::DsChargedMCDetectorLevelJetConstituents, aod::DsChargedMCDetectorLevelJetsMatchedToDsChargedMCParticleLevelJets>;
-  //using DsMCPJets = soa::Join<aod::DsChargedMCParticleLevelJets, aod::DsChargedMCParticleLevelJetConstituents, aod::DsChargedMCDetectorLevelJetsMatchedToDsChargedMCParticleLevelJets>;
+  // using DsMCPJets = soa::Join<aod::DsChargedMCParticleLevelJets, aod::DsChargedMCParticleLevelJetConstituents, aod::DsChargedMCDetectorLevelJetsMatchedToDsChargedMCParticleLevelJets>;
 
   // Slices for access to proper HF MCD jet collision that is associated to MCCollision
   PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
   Preslice<DsMCDJets> dsMCDJetsPerEXPCollisionPreslice = aod::jet::collisionId;
-  //Preslice<DsMCPJets> dsMCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
+  // Preslice<DsMCPJets> dsMCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
 
   // Configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -165,21 +165,21 @@ struct JetDsSpecSubs {
       {"hSparse_ds_mcd", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 1.7, 2.1}, {60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
 
       // MC particle-level histograms
-      //{"h_dsjet_counter_mcp", ";type;counts", {HistType::kTH1F, {{3, 0., 3.}}}},
-      //{"h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-      //{"h_jet_eta_mcp", "particle-level jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-      //{"h_jet_phi_mcp", "particle-level jet #phi;#phi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
+      // {"h_dsjet_counter_mcp", ";type;counts", {HistType::kTH1F, {{3, 0., 3.}}}},
+      // {"h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+      // {"h_jet_eta_mcp", "particle-level jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
+      // {"h_jet_phi_mcp", "particle-level jet #phi;#phi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
 
-      //{"h_ds_pt_mcp", ";#it{p}_{T,D_{S}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      //{"h_ds_eta_mcp", ";#eta_{D_{S}}^{part};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      //{"h_ds_phi_mcp", ";#phi_{D_{S}}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
+      // {"h_ds_pt_mcp", ";#it{p}_{T,D_{S}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
+      // {"h_ds_eta_mcp", ";#eta_{D_{S}}^{part};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
+      // {"h_ds_phi_mcp", ";#phi_{D_{S}}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
 
-      //{"h_ds_jet_pt_mcp", ";#it{p}_{T,D_{S} jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      //{"h_ds_jet_eta_mcp", ";#eta_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      //{"h_ds_jet_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
-      //{"h_ds_jet_projection_mcp", ";z^{D_{S},jet}_{||, part};entries", {HistType::kTH1F, {{1000, 0., 2.}}}},
-      //{"h_ds_jet_distance_mcp", ";#DeltaR_{D_{S},jet}^{part};entries", {HistType::kTH1F, {{1000, 0., 1.}}}},
-      //{"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
+      // {"h_ds_jet_pt_mcp", ";#it{p}_{T,D_{S} jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
+      // {"h_ds_jet_eta_mcp", ";#eta_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
+      // {"h_ds_jet_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
+      // {"h_ds_jet_projection_mcp", ";z^{D_{S},jet}_{||, part};entries", {HistType::kTH1F, {{1000, 0., 2.}}}},
+      // {"h_ds_jet_distance_mcp", ";#DeltaR_{D_{S},jet}^{part};entries", {HistType::kTH1F, {{1000, 0., 1.}}}},
+      // {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
     }};
   //========
   // INIT
