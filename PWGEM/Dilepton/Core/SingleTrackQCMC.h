@@ -205,8 +205,8 @@ struct SingleTrackQCMC {
     // configuration for PID ML
     // o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
     // o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-    o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20.f}, "Bin limits for ML application"};
-    o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.98, 0.98, 0.9, 0.9, 0.95, 0.95, 0.8, 0.8, 0.8}, "ML cuts per bin"};
+    o2::framework::Configurable<std::vector<double>> binsMLPID{"binsMLPID", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20.f}, "Bin limits for ML application"};
+    o2::framework::Configurable<std::vector<double>> cutsMLPID{"cutsMLPID", std::vector<double>{0.97, 0.97, 0.97, 0.8, 0.95, 0.95, 0.8, 0.8, 0.8}, "ML cuts per bin"};
     // o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
     // o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
     // o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
@@ -301,7 +301,6 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hsGenRec", "rec. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
       }
       if (cfgFillQA) {
-        fRegistry.add("Track/PromptLF/positive/hPhiPosition", Form("phi position at r_{xy} = %3.2f m", dielectroncuts.cfgRefR.value), o2::framework::HistType::kTH1F, {axis_phiposition}, false);
         fRegistry.add("Track/PromptLF/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", o2::framework::HistType::kTH1F, {{4000, -20, 20}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", o2::framework::HistType::kTH2F, {{200, -1.0f, 1.0f}, {200, -1.f, 1.f}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", o2::framework::HistType::kTH2F, {{400, -20.0f, 20.0f}, {400, -20.0f, 20.0f}}, false);
@@ -315,7 +314,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable;TPC N_{cls}/N_{cls}^{findable}", o2::framework::HistType::kTH1F, {{200, 0, 2}}, false);
         fRegistry.add("Track/PromptLF/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
         fRegistry.add("Track/PromptLF/positive/hNclsITS", "number of ITS clusters;ITS N_{cls}", o2::framework::HistType::kTH1F, {{8, -0.5, 7.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2ITS", "chi2/number of ITS clusters;ITS #chi^{2}/N_{cls}", o2::framework::HistType::kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2ITS", "chi2/number of ITS clusters;ITS #chi^{2}/N_{cls}", o2::framework::HistType::kTH1F, {{400, 0, 40}}, false);
         fRegistry.add("Track/PromptLF/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
         fRegistry.add("Track/PromptLF/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);TOF #chi^{2}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
         fRegistry.add("Track/PromptLF/positive/hITSClusterMap", "ITS cluster map", o2::framework::HistType::kTH1F, {{128, -0.5, 127.5}}, false);
@@ -559,14 +558,14 @@ struct SingleTrackQCMC {
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       std::vector<float> binsML{};
-      binsML.reserve(dielectroncuts.binsMl.value.size());
-      for (size_t i = 0; i < dielectroncuts.binsMl.value.size(); i++) {
-        binsML.emplace_back(dielectroncuts.binsMl.value[i]);
+      binsML.reserve(dielectroncuts.binsMLPID.value.size());
+      for (size_t i = 0; i < dielectroncuts.binsMLPID.value.size(); i++) {
+        binsML.emplace_back(dielectroncuts.binsMLPID.value[i]);
       }
       std::vector<float> thresholdsML{};
-      thresholdsML.reserve(dielectroncuts.cutsMl.value.size());
-      for (size_t i = 0; i < dielectroncuts.cutsMl.value.size(); i++) {
-        thresholdsML.emplace_back(dielectroncuts.cutsMl.value[i]);
+      thresholdsML.reserve(dielectroncuts.cutsMLPID.value.size());
+      for (size_t i = 0; i < dielectroncuts.cutsMLPID.value.size(); i++) {
+        thresholdsML.emplace_back(dielectroncuts.cutsMLPID.value[i]);
       }
       fDielectronCut.SetMLThresholds(binsML, thresholdsML);
     } // end of PID ML
@@ -645,8 +644,6 @@ struct SingleTrackQCMC {
     float dca3D = o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track);
     float dcaXY = o2::aod::pwgem::dilepton::utils::emtrackutil::dcaXYinSigma(track);
     float dcaZ = o2::aod::pwgem::dilepton::utils::emtrackutil::dcaZinSigma(track);
-    float phiPosition = track.phi() + std::asin(-0.30282 * track.sign() * (d_bz * 0.1) * dielectroncuts.cfgRefR / (2.f * track.pt()));
-    o2::math_utils::bringTo02Pi(phiPosition);
 
     float weight = 1.f;
     if (cfgApplyWeightTTCA) {
@@ -664,7 +661,6 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
       }
       if (cfgFillQA) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPhiPosition"), phiPosition);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
@@ -711,7 +707,6 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
       }
       if (cfgFillQA) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPhiPosition"), phiPosition);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
