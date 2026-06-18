@@ -22,13 +22,19 @@
 
 #include "tpcSkimsTableCreator.h"
 
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/DataModel/OccupancyTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Logger.h>
 
 #include <TRandom3.h>
 
 #include <cmath>
+#include <string>
 
 namespace o2::dpg_tpcskimstablecreator
 {
@@ -110,6 +116,26 @@ double tpcSignalGeneric(const TrkType& track)
   } else {
     return track.tpcSignal();
   }
+}
+
+/// Determine inteaction rate source from CCDB
+std::string evaluateIrSource(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp)
+{
+  std::string irSource{};
+  o2::parameters::GRPLHCIFData* genRunParams = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(ccdbPathGrpLhcIf, timestamp);
+  if (genRunParams != nullptr) {
+    o2::common::core::CollisionSystemType::collType collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
+    if (collSys == CollisionSystemType::kCollSyspp) {
+      irSource = "T0VTX";
+    } else {
+      irSource = "ZNC hadronic";
+    }
+    LOG(info) << "irSource determined from General Run Parameters: " << irSource;
+  } else {
+    LOG(info) << "No General Run Parameters object found. irSource will remain undefined";
+  }
+
+  return irSource;
 }
 
 struct OccupancyValues {
