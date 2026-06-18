@@ -814,7 +814,7 @@ struct k892hadronphoton {
 
     //_______________________________________
     // Real Gamma x Real KShort - but not from the same kstar!
-    if ((!fIsKStar)) { //(std::abs(PhotonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) == PDG_t::kK0Short) && 
+    if ((!fIsKStar)) { //(std::abs(PhotonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) == PDG_t::kK0Short) &&
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueDaughters"), kstarpT, kstarMass);
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), KShortPDGCodeMother, PhotonPDGCodeMother);
     }
