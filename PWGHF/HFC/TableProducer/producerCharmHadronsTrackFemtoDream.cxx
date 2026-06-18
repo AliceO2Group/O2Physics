@@ -435,34 +435,34 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   void fillDebugParticle(ParticleType const& particle)
   {
     tables.outputDebugParts(particle.sign(),
-                     (uint8_t)particle.tpcNClsFound(),
-                     particle.tpcNClsFindable(),
-                     (uint8_t)particle.tpcNClsCrossedRows(),
-                     particle.tpcNClsShared(),
-                     particle.tpcInnerParam(),
-                     particle.itsNCls(),
-                     particle.itsNClsInnerBarrel(),
-                     particle.dcaXY(),
-                     particle.dcaZ(),
-                     particle.tpcSignal(),
-                     -999.,
-                     particle.tpcNSigmaPi(),
-                     particle.tpcNSigmaKa(),
-                     particle.tpcNSigmaPr(),
-                     particle.tpcNSigmaDe(),
-                     -999.,
-                     -999.,
-                     -999.,
-                     particle.tofNSigmaPi(),
-                     particle.tofNSigmaKa(),
-                     particle.tofNSigmaPr(),
-                     particle.tofNSigmaDe(),
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999.);
+                            (uint8_t)particle.tpcNClsFound(),
+                            particle.tpcNClsFindable(),
+                            (uint8_t)particle.tpcNClsCrossedRows(),
+                            particle.tpcNClsShared(),
+                            particle.tpcInnerParam(),
+                            particle.itsNCls(),
+                            particle.itsNClsInnerBarrel(),
+                            particle.dcaXY(),
+                            particle.dcaZ(),
+                            particle.tpcSignal(),
+                            -999.,
+                            particle.tpcNSigmaPi(),
+                            particle.tpcNSigmaKa(),
+                            particle.tpcNSigmaPr(),
+                            particle.tpcNSigmaDe(),
+                            -999.,
+                            -999.,
+                            -999.,
+                            particle.tofNSigmaPi(),
+                            particle.tofNSigmaKa(),
+                            particle.tofNSigmaPr(),
+                            particle.tofNSigmaDe(),
+                            -999., -999., -999., -999.,
+                            -999., -999., -999., -999.,
+                            -999., -999., -999., -999.,
+                            -999., -999., -999., -999.,
+                            -999., -999., -999., -999.,
+                            -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -565,22 +565,22 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         const auto pidTrackPassBit = static_cast<aod::femtodreamparticle::cutContainerType>(isTrackKaonPidSelected(track));
 
         tables.outputParts(tables.outputCollision.lastIndex(),
-                    track.pt(),
-                    track.eta(),
-                    track.phi(),
-                    aod::femtodreamparticle::ParticleType::kTrack,
-                    cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-                    pidTrackPassBit,
-                    track.dcaXY(), childIDs, 0, 0);
+                           track.pt(),
+                           track.eta(),
+                           track.phi(),
+                           aod::femtodreamparticle::ParticleType::kTrack,
+                           cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                           pidTrackPassBit,
+                           track.dcaXY(), childIDs, 0, 0);
       } else {
         tables.outputParts(tables.outputCollision.lastIndex(),
-                    track.pt(),
-                    track.eta(),
-                    track.phi(),
-                    aod::femtodreamparticle::ParticleType::kTrack,
-                    cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-                    cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-                    track.dcaXY(), childIDs, 0, 0);
+                           track.pt(),
+                           track.eta(),
+                           track.phi(),
+                           aod::femtodreamparticle::ParticleType::kTrack,
+                           cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                           cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                           track.dcaXY(), childIDs, 0, 0);
       }
 
       fIsTrackFilled = true;
@@ -903,8 +903,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     }
 
     tables.rowMasks(bitTrack,
-             bitCand,
-             0);
+                    bitCand,
+                    0);
   }
 
   template <bool IsMc, bool UseCharmMl, typename TrackType, typename CollisionType, typename CandType, typename DaughterTrackType>

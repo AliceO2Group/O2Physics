@@ -436,7 +436,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         LOG(fatal) << "Invalid PDG code for track mass hypothesis: " << trkPDGCode;
     }
 
-      // D0 -> K pi + track (2-prong)
+    // D0 -> K pi + track (2-prong)
     if constexpr (Channel == DecayChannel::D0ToPiK) {
       const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecTrack};
       std::array<double, 3> massCharmTrk{};
