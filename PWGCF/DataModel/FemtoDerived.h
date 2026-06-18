@@ -260,8 +260,8 @@ DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                       //! Background 
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                 //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                         //! Feed-down score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(CascBachelorTrackId, cascBachelorTrackId, int); //! Bachelor track ID from Xi cascade (Xic -> Xi pi pi)
-DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);        //! Positive track ID from Λ in Ξ cascade (Ξc± → Ξππ)
-DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);       //! Negative track ID from Λ in Ξ cascade (Ξc± → Ξππ)
+DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);        //! Positive track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
+DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);       //! Negative track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
 DECLARE_SOA_COLUMN(CascBachelorPt, cascBachelorPt, float);       //! pT of the bachelor track from the Xi cascade
 DECLARE_SOA_COLUMN(CascBachelorPhi, cascBachelorPhi, float);     //! phi of the bachelor track from the Xi cascade
 DECLARE_SOA_COLUMN(CascBachelorEta, cascBachelorEta, float);     //! eta of the bachelor track from the Xi cascade
@@ -271,7 +271,7 @@ DECLARE_SOA_COLUMN(CascPosEta, cascPosEta, float);               //! eta of the 
 DECLARE_SOA_COLUMN(CascNegPt, cascNegPt, float);                 //! pT of the negative Lambda daughter track from the Xi cascade
 DECLARE_SOA_COLUMN(CascNegPhi, cascNegPhi, float);               //! phi of the negative Lambda daughter track from the Xi cascade
 DECLARE_SOA_COLUMN(CascNegEta, cascNegEta, float);               //! eta of the negative Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, XicToXiPiPi = 1, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                         //! MC matching flag for the selected charm hadron decay channel
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
@@ -283,12 +283,12 @@ DECLARE_SOA_COLUMN(KT, kT, float);                               //! kT distribu
 DECLARE_SOA_COLUMN(MT, mT, float);                               //! Transverse mass distribution
 DECLARE_SOA_COLUMN(CharmM, charmM, float);                       //! Charm hadron mass
 DECLARE_SOA_COLUMN(CharmDaughM, charmDaughM, float);             //! Charm hadron daughter mass
-DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                 //! Charm hadron track mass
+DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                 //! Invariant-mass difference of the charm-track pair
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                     //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                   //! Eta of charm hadron for result task
 DECLARE_SOA_COLUMN(CharmPhi, charmPhi, float);                   //! Phi of charm hadron for result task
 DECLARE_SOA_COLUMN(Mult, mult, int);                             //! Charge particle multiplicity
-DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);       //! Multiplicity precentile
+DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);       //! Multiplicity percentile
 DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                  //! Selection between like sign (1) and unlike sign pair (2)
 DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);           //! Selection between same-event (1), and mixed-event (2)
 DECLARE_SOA_DYNAMIC_COLUMN(M, m,                                 //!

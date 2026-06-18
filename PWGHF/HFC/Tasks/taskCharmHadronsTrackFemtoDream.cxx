@@ -108,7 +108,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   struct : ConfigurableGroup {
     Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
     Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
-    Configurable<int> charmHadMcSel{"charmHadMcSel", DecayChannelMain::LcToPKPi, "charm hadron selection for mc, DplusToPiKPi = 1, XicToXiPiPi = 1, LcToPKPi = 17"};
+    Configurable<int> charmHadMcSel{"charmHadMcSel", DecayChannelMain::LcToPKPi, "MC matching flag for the selected charm hadron decay channel"};
     Configurable<float> charmHadFdBDTmin{"charmHadFdBDTmin", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
     Configurable<float> charmHadFdBDTmax{"charmHadFdBDTmax", 1., "Maximum feed-down bdt score Charm Hadron (particle 2)"};
     Configurable<float> charmHadMaxInvMass{"charmHadMaxInvMass", 2.45, "Maximum invariant mass of Charm Hadron (particle 2)"};
@@ -375,10 +375,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassProton});
       return invMass;
-    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ → π K π (PDG: 411)
+    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ -> pi K pi
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
       return invMass;
-    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 → π K  (PDG: 421)
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 -> pi K
       if (cand.candidateSelFlag() == 1) {
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
@@ -386,7 +386,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         invMass = cand.m(std::array{MassKPlus, MassPiPlus});
         return invMass;
       }
-    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* -> D0 pi
       float mDstar = 0.f;
       float mD0 = 0.f;
       if (cand.charge() > 0.f) {
@@ -436,7 +436,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         LOG(fatal) << "Invalid PDG code for track mass hypothesis: " << trkPDGCode;
     }
 
-    // D0 → K π + track (2-prong)
+      // D0 -> K pi + track (2-prong)
     if constexpr (Channel == DecayChannel::D0ToPiK) {
       const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecTrack};
       std::array<double, 3> massCharmTrk{};
@@ -465,17 +465,17 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       std::array<double, 4> massCharmTrk{};
 
       if constexpr (Channel == DecayChannel::LcToPKPi) {
-        // Λc⁺ → p K π
+        // Lc+ -> p K pi
         if (cand.candidateSelFlag() == 1) {
           massCharmTrk = {MassProton, MassKPlus, MassPiPlus, trackMassHyp};
         } else {
           massCharmTrk = {MassPiPlus, MassKPlus, MassProton, trackMassHyp};
         }
       } else if constexpr (Channel == DecayChannel::DplusToPiKPi) {
-        // D⁺ → π K π
+        // D+ -> pi K pi
         massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        // D* → D0π
+        // D* -> D0 pi
         if (cand.candidateSelFlag() == 1) {
           massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
         } else {
@@ -571,7 +571,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       float deltaInvMassPair = getCharmHadronTrackMass<Channel>(p2, p1, trackSel.pdgCodeTrack1.value) - invMass;
 
-      // proton track charge
+      // associated track charge
       float chargeTrack = 0.;
       if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
         chargeTrack = PositiveCharge;
@@ -708,7 +708,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
         float deltaInvMassPair = getCharmHadronTrackMass<Channel>(p2, p1, trackSel.pdgCodeTrack1.value) - invMass;
 
-        // proton track charge
+        // associated track charge
         float chargeTrack = 0.;
         if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
           chargeTrack = PositiveCharge;

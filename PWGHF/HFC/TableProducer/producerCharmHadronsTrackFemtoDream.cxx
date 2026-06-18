@@ -146,8 +146,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   } ccdbCfg;
 
-  // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
-
   // -------------------------
   // Kaon PID cut parameters
   // -------------------------
@@ -169,7 +167,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   struct : ConfigurableGroup {
     Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
     Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
-    Configurable<int> selectionFlagHadron{"selectionFlagHadron", 1, "Selection Flag for Charm Hadron: 1 for Lc, 7 for Dplus (Topologic and PID cuts)"};
+    Configurable<int> selectionFlagHadron{"selectionFlagHadron", 1, "Selection flag for charm hadrons; applied to D0, Dplus, Lc and Xic selector decisions"};
     Configurable<bool> useCent{"useCent", false, "Enable centrality for Charm Hadron"};
   } generalCfg;
 
@@ -221,7 +219,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   o2::hf_evsel::HfEventSelection hfEvSel;
   Service<o2::ccdb::BasicCCDBManager> ccdb{}; /// Accessing the CCDB
   o2::base::MatLayerCylSet* lut{};
-  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbCfg.ccdbPathLut));} //! may be it useful, will check later
 
   float magField{};
   int runNumber{};
