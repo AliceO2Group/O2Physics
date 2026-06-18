@@ -647,14 +647,14 @@ struct k892hadronphotonBkg {
 
       if (std::abs(static_cast<int64_t>(coll1.globalIndex()) - static_cast<int64_t>(coll2.globalIndex())) < kstarBkgConfig.deltaCollision)
         continue;
-xww
+
       auto const& photons1 = photonPool[coll1.globalIndex()];
       auto const& kshorts1 = kshortPool[coll1.globalIndex()];
       auto const& photons2 = photonPool[coll2.globalIndex()];
       auto const& kshorts2 = kshortPool[coll2.globalIndex()];
 
       // K0s(coll1) × γ(coll2)
-      if (!kshorts1.empty() && !photons2.empty()) {xw
+      if (!kshorts1.empty() && !photons2.empty()) {
         for (int kIdx : kshorts1) {
           auto kshort = fullV0s.rawIteratorAt(kIdx);
           float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
