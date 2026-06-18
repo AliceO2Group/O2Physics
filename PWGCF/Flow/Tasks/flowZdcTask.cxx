@@ -392,7 +392,6 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
     auto zdc = foundBC.zdc();
-    auto cent = collision.centFT0C();
 
     float aT0A = 0., aT0C = 0.;
     if (foundBC.has_ft0()) {
