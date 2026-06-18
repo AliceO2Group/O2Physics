@@ -178,8 +178,3 @@ o2physics_add_dpl_workflow(task-deuteron-from-lb
                     SOURCES taskDeuteronFromLb.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(task-mixing-dstar-cand-tree-creator
-                    SOURCES taskMixingDstarCandTreeCreator.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)

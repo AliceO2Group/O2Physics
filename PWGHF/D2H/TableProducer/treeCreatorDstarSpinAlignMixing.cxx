@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskMixingDstarCandTreeCreator.cxx
+/// \file treeCreatorDstarSpinAlignMixing.cxx
 /// \brief Writer of D*+ → D0 ( → π+ K-) π+ candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for Mix-candidate analysis in spin alignment measurement.
 ///        Serving as a correction for detector acceptance and reconstruction efficiency.
@@ -49,21 +49,21 @@ namespace mixing_dstar
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 // D0 related variables
 DECLARE_SOA_COLUMN(MD0, mD0, float);
-DECLARE_SOA_COLUMN(PtD0, ptD0, float);
-DECLARE_SOA_COLUMN(PD0, pD0, float);
-DECLARE_SOA_COLUMN(EtaD0, etaD0, float);
-DECLARE_SOA_COLUMN(PhiD0, phiD0, float);
-DECLARE_SOA_COLUMN(YD0, yD0, float);
+// DECLARE_SOA_COLUMN(PtD0, ptD0, float);
+// DECLARE_SOA_COLUMN(PD0, pD0, float);
+// DECLARE_SOA_COLUMN(EtaD0, etaD0, float);
+// DECLARE_SOA_COLUMN(PhiD0, phiD0, float);
+// DECLARE_SOA_COLUMN(YD0, yD0, float);
 // soft pion related variables
 DECLARE_SOA_COLUMN(PtSoftPi, ptSoftPi, float);
-DECLARE_SOA_COLUMN(PSoftPi, pSoftPi, float);
+// DECLARE_SOA_COLUMN(PSoftPi, pSoftPi, float);
 DECLARE_SOA_COLUMN(EtaSoftPi, etaSoftPi, float);
 DECLARE_SOA_COLUMN(PhiSoftPi, phiSoftPi, float);
-DECLARE_SOA_COLUMN(YSoftPi, ySoftPi, float);
+// DECLARE_SOA_COLUMN(YSoftPi, ySoftPi, float);
 // Dstar related variables
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(P, p, float);
+// DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
@@ -71,9 +71,9 @@ DECLARE_SOA_COLUMN(MlProbDstarToD0PiBkg, mlProbDstarToD0PiBkg, float);
 DECLARE_SOA_COLUMN(MlProbDstarToD0PiPrompt, mlProbDstarToD0PiPrompt, float);
 DECLARE_SOA_COLUMN(MlProbDstarToD0PiNonPrompt, mlProbDstarToD0PiNonPrompt, float);
 // Events
-DECLARE_SOA_COLUMN(ZVec, zVec, float);
+DECLARE_SOA_COLUMN(ZVtx, zVtx, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
+DECLARE_SOA_COLUMN(NPvContrib, nPvContrib, uint16_t);
 DECLARE_SOA_COLUMN(Occupancy, occupancy, int);
 DECLARE_SOA_COLUMN(XQVec, xQVec, float);
 DECLARE_SOA_COLUMN(YQVec, yQVec, float);
@@ -81,20 +81,15 @@ DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
 // Tracks
 DECLARE_SOA_COLUMN(MinAbsEtaTrack, minAbsEtaTrack, float);
-DECLARE_SOA_COLUMN(MinNumItsCls, minNumItsCls, int);
-DECLARE_SOA_COLUMN(MinNumTpcCls, minNumTpcCls, int);
+DECLARE_SOA_COLUMN(MinNumItsCls, minNumItsCls, uint8_t);
+DECLARE_SOA_COLUMN(MinNumTpcCls, minNumTpcCls, uint8_t);
 } // namespace mixing_dstar
 
 DECLARE_SOA_TABLE(HfCandDstMix, "AOD", "HFCANDDSTMIX",
                   mixing_dstar::MD0,
-                  // mixing_dstar::PtD0,
-                  // mixing_dstar::EtaD0,
-                  // mixing_dstar::PhiD0,
-                  // mixing_dstar::YD0,
                   mixing_dstar::PtSoftPi,
                   mixing_dstar::EtaSoftPi,
                   mixing_dstar::PhiSoftPi,
-                  // mixing_dstar::YSoftPi,
                   mixing_dstar::M,
                   mixing_dstar::Pt,
                   mixing_dstar::Eta,
@@ -103,9 +98,9 @@ DECLARE_SOA_TABLE(HfCandDstMix, "AOD", "HFCANDDSTMIX",
                   mixing_dstar::MlProbDstarToD0PiBkg,
                   mixing_dstar::MlProbDstarToD0PiPrompt,
                   mixing_dstar::MlProbDstarToD0PiNonPrompt,
-                  mixing_dstar::ZVec,
+                  mixing_dstar::ZVtx,
                   mixing_dstar::Centrality,
-                  // mixing_dstar::Multiplicity,
+                  mixing_dstar::NPvContrib,
                   mixing_dstar::Occupancy,
                   mixing_dstar::XQVec,
                   mixing_dstar::YQVec,
@@ -117,11 +112,8 @@ DECLARE_SOA_TABLE(HfCandDstMix, "AOD", "HFCANDDSTMIX",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTaskMixingDstarCandTreeCreator {
+struct HfTreeCreatorDstarSpinAlignMixing {
   Produces<o2::aod::HfCandDstMix> rowCandidateMix;
-
-  Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
-  Configurable<bool> fillMixingCandidateTable{"fillMixingCandidateTable", false, "Switch to fill lite table with candidate properties"};
 
   Configurable<int> qVecDetector{"qVecDetector", 2, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0C: 2)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimator ((None: 0, FT0C: 2, FT0M: 3))"};
@@ -132,7 +124,7 @@ struct HfTaskMixingDstarCandTreeCreator {
   using CandDstarWSelFlag = soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using FilteredCandDstarWSelFlagAndMl = soa::Filtered<soa::Join<CandDstarWSelFlag, aod::HfMlDstarToD0Pi>>;
 
-  Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
+  Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
 
   Preslice<FilteredCandDstarWSelFlagAndMl> dstarWithMlPerCollision = aod::hf_cand::collisionId;
 
@@ -193,35 +185,30 @@ struct HfTaskMixingDstarCandTreeCreator {
     getTrackingInfos(std::vector{trackProng0, trackProng1, trackProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
     std::array<float, 3> const Qvector = getQvec(collision, qVecDetector.value);
 
-    if (fillMixingCandidateTable) {
-      rowCandidateMix(
-        massD0,
-        // candidate.ptD0(),
-        // candidate.etaD0(),
-        // candidate.phiD0(),
-        // candidate.yD0(),
-        candidate.ptSoftPi(),
-        etaSoftPi,
-        phiSoftPi,
-        massDStar,
-        candidate.pt(),
-        candidate.eta(),
-        candidate.phi(),
-        candidate.y(constants::physics::MassDStar),
-        candidate.mlProbDstarToD0Pi()[0],
-        candidate.mlProbDstarToD0Pi()[1],
-        candidate.mlProbDstarToD0Pi()[2],
-        collision.posZ(),
-        getCentralityColl(collision, centEstimator),
-        getOccupancyColl(collision, occEstimator),
-        Qvector[0],
-        Qvector[1],
-        absEtaTrackMin,
-        numItsClsMin,
-        numTpcClsMin,
-        collision.globalIndex(),
-        timeStamp);
-    }
+    rowCandidateMix(
+      massD0,
+      candidate.ptSoftPi(),
+      etaSoftPi,
+      phiSoftPi,
+      massDStar,
+      candidate.pt(),
+      candidate.eta(),
+      candidate.phi(),
+      candidate.y(constants::physics::MassDStar),
+      candidate.mlProbDstarToD0Pi()[0],
+      candidate.mlProbDstarToD0Pi()[1],
+      candidate.mlProbDstarToD0Pi()[2],
+      collision.posZ(),
+      getCentralityColl(collision, centEstimator),
+      collision.numContrib(),
+      getOccupancyColl(collision, occEstimator),
+      Qvector[0],
+      Qvector[1],
+      absEtaTrackMin,
+      numItsClsMin,
+      numTpcClsMin,
+      collision.globalIndex(),
+      timeStamp);
   }
 
   void processData(CollsWithQVecs const& collisions,
@@ -237,10 +224,10 @@ struct HfTaskMixingDstarCandTreeCreator {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskMixingDstarCandTreeCreator, processData, "Process data", true);
+  PROCESS_SWITCH(HfTreeCreatorDstarSpinAlignMixing, processData, "Process data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskMixingDstarCandTreeCreator>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorDstarSpinAlignMixing>(cfgc)};
 }
