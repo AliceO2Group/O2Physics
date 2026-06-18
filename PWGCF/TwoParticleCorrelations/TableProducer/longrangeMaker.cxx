@@ -397,8 +397,11 @@ struct LongrangeMaker {
         ft0gainvalues.push_back(1.);
       }
     }
-    auto multiplicity = countNTracks(tracks, col.posZ());
-    auto centrality = selColCent(col);
+    float multiplicity = countNTracks(tracks, col.posZ());
+    float centrality = selColCent(col);
+    if (cfgfittrksel.cfgVerbosity > 0) {
+      LOGF(info, "Event multiplicity = %f | centrality = %f", multiplicity, centrality);
+    }
     lrcollision(bc.runNumber(), col.posZ(), multiplicity, centrality, bc.timestamp());
 
     // track loop
@@ -621,7 +624,7 @@ struct LongrangeMaker {
 
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
-      auto multiplicity = countNTracks(tracks, col.posZ());
+      float multiplicity = countNTracks(tracks, col.posZ());
       upclrcollision(bc.globalBC(), bc.runNumber(), col.posZ(), multiplicity, fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFV0A, bc.timestamp());
       upcsglrcollision(issgevent);
       if (newbc.has_zdc()) {
@@ -814,8 +817,8 @@ struct LongrangeMaker {
         }
       }
       auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
-      auto multiplicity = countNTracks(recTracksPart, RecCol.posZ());
-      auto centrality = selColCent(RecCol);
+      float multiplicity = countNTracks(recTracksPart, RecCol.posZ());
+      float centrality = selColCent(RecCol);
       lrcollision(bc.runNumber(), RecCol.posZ(), multiplicity, centrality, bc.timestamp());
       lrcollisionMcLabel(RecCol.mcCollisionId());
 
@@ -1084,9 +1087,9 @@ struct LongrangeMaker {
   }
 
   template <typename countTrk>
-  int countNTracks(countTrk const& tracks, float vz)
+  float countNTracks(countTrk const& tracks, float vz)
   {
-    auto nTrk = 0;
+    float nTrk = 0.f;
     for (const auto& track : tracks) {
       if (!track.isGlobalTrack())
         continue;
