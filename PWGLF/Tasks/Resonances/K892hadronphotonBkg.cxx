@@ -552,7 +552,7 @@ struct k892hadronphotonBkg {
 
         for (int irot = 0; irot < kstarBkgConfig.nBkgRot; ++irot) {
           float theta = rotRng.Uniform(o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
-                                        o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
+                                       o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
 
           ROOT::Math::PtEtaPhiMVector kRot(kPt, kEta, kPhi + theta, o2::constants::physics::MassK0Short);
 
