@@ -36,7 +36,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
 #include <TH1.h>
 #include "TVector3.h"
 
