@@ -260,18 +260,18 @@ DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                       //! Background 
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                 //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                         //! Feed-down score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(CascBachelorTrackId, cascBachelorTrackId, int); //! Bachelor track ID from Xi cascade (Xic -> Xi pi pi)
-DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);        //! Positive track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
-DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);       //! Negative track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
-DECLARE_SOA_COLUMN(CascBachelorPt, cascBachelorPt, float);       //! pT of the bachelor track from the Xi cascade
-DECLARE_SOA_COLUMN(CascBachelorPhi, cascBachelorPhi, float);     //! phi of the bachelor track from the Xi cascade
-DECLARE_SOA_COLUMN(CascBachelorEta, cascBachelorEta, float);     //! eta of the bachelor track from the Xi cascade
-DECLARE_SOA_COLUMN(CascPosPt, cascPosPt, float);                 //! pT of the positive Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(CascPosPhi, cascPosPhi, float);               //! phi of the positive Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(CascPosEta, cascPosEta, float);               //! eta of the positive Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(CascNegPt, cascNegPt, float);                 //! pT of the negative Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(CascNegPhi, cascNegPhi, float);               //! phi of the negative Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(CascNegEta, cascNegEta, float);               //! eta of the negative Lambda daughter track from the Xi cascade
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                         //! MC matching flag for the selected charm hadron decay channel
+DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);           //! Positive track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
+DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);           //! Negative track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
+DECLARE_SOA_COLUMN(CascBachelorPt, cascBachelorPt, float);         //! pT of the bachelor track from the Xi cascade
+DECLARE_SOA_COLUMN(CascBachelorPhi, cascBachelorPhi, float);       //! phi of the bachelor track from the Xi cascade
+DECLARE_SOA_COLUMN(CascBachelorEta, cascBachelorEta, float);       //! eta of the bachelor track from the Xi cascade
+DECLARE_SOA_COLUMN(CascPosPt, cascPosPt, float);                   //! pT of the positive Lambda daughter track from the Xi cascade
+DECLARE_SOA_COLUMN(CascPosPhi, cascPosPhi, float);                 //! phi of the positive Lambda daughter track from the Xi cascade
+DECLARE_SOA_COLUMN(CascPosEta, cascPosEta, float);                 //! eta of the positive Lambda daughter track from the Xi cascade
+DECLARE_SOA_COLUMN(CascNegPt, cascNegPt, float);                   //! pT of the negative Lambda daughter track from the Xi cascade
+DECLARE_SOA_COLUMN(CascNegPhi, cascNegPhi, float);                 //! phi of the negative Lambda daughter track from the Xi cascade
+DECLARE_SOA_COLUMN(CascNegEta, cascNegEta, float);                 //! eta of the negative Lambda daughter track from the Xi cascade
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                           //! MC matching flag for the selected charm hadron decay channel
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
@@ -405,10 +405,10 @@ namespace fdhf_xic
 {
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
                            [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::y(RecoDecay::pVec(
-                                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
-                                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
-                                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)),
-                                                                                                                                                                  o2::constants::physics::MassXiCPlus); }); //! Rapidity distribution of Xic candidates
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)),
+                                                                                                                                                                      o2::constants::physics::MassXiCPlus); }); //! Rapidity distribution of Xic candidates
 } // namespace fdhf_xic
 
 DECLARE_SOA_TABLE(FDHfCand3Prong, "AOD", "FDHFCAND3PRONG", //! Table to store the derived data for charm 3prong candidates
