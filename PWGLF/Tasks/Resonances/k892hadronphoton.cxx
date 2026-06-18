@@ -25,6 +25,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -767,7 +768,7 @@ struct k892hadronphoton {
 
     //_______________________________________
     // Gamma MC association
-    if (kstar.photonPDGCode() == PDG_t::kGamma) {
+    if (std::abs(kstar.photonPDGCode()) == PDG_t::kGamma) {
       if (kstar.photonmcpt() > 0) {
         histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), -1 * kstar.photonNegTPCCrossedRows()); // 1/pT resolution
         histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), kstar.photonPosTPCCrossedRows());      // 1/pT resolution
@@ -777,7 +778,7 @@ struct k892hadronphoton {
 
     //_______________________________________
     // KShort MC association
-    if (kstar.kshortPDGCode() == PDG_t::kK0Short) {
+    if (std::abs(kstar.kshortPDGCode()) == PDG_t::kK0Short) {
       if (kstar.kshortmcpt() > 0) {
         histos.fill(HIST("BeforeSel/MC/Reso/h2dKShortPtResolution"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt());                                        // 1/pT resolution
         histos.fill(HIST("BeforeSel/MC/Reso/h3dKShortPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), -1 * kstar.kshortNegTPCCrossedRows()); // 1/pT resolution
@@ -813,24 +814,24 @@ struct k892hadronphoton {
 
     //_______________________________________
     // Real Gamma x Real KShort - but not from the same kstar!
-    if ((PhotonPDGCode == PDG_t::kGamma) && (KShortPDGCode == PDG_t::kK0Short) && (!fIsKStar)) {
+    if ((!fIsKStar)) { //(std::abs(PhotonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) == PDG_t::kK0Short) && 
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueDaughters"), kstarpT, kstarMass);
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), KShortPDGCodeMother, PhotonPDGCodeMother);
     }
 
     //_______________________________________
     // Real Gamma x fake KShort
-    if ((PhotonPDGCode == PDG_t::kGamma) && (KShortPDGCode != PDG_t::kK0Short))
+    if ((std::abs(PhotonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) != PDG_t::kK0Short))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueGammaFakeKShort"), kstarpT, kstarMass);
 
     //_______________________________________
     // Fake Gamma x Real KShort
-    if ((PhotonPDGCode != PDG_t::kGamma) && ((KShortPDGCode == PDG_t::kK0Short)))
+    if ((std::abs(PhotonPDGCode) != PDG_t::kGamma) && ((std::abs(KShortPDGCode) == PDG_t::kK0Short)))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeGammaTrueKShort"), kstarpT, kstarMass);
 
     //_______________________________________
     // Fake Gamma x Fake KShort
-    if ((PhotonPDGCode != PDG_t::kGamma) && (KShortPDGCode != PDG_t::kK0Short))
+    if ((std::abs(PhotonPDGCode) != PDG_t::kGamma) && (std::abs(KShortPDGCode) != PDG_t::kK0Short))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeDaughters"), kstarpT, kstarMass);
   }
 
@@ -997,7 +998,7 @@ struct k892hadronphoton {
                                                            "CosPA", "Y", "TPCCR", "DauITSCls", "Lifetime",
                                                            "TPCTOFPID", "DCADauToPV", "Mass"};
 
-    if (PDGRequired == PDG_t::kGamma) {
+    if (std::abs(PDGRequired) == PDG_t::kGamma) {
       if constexpr (selection_index >= 0 && selection_index < (int)std::size(PhotonSelsLocal)) {
         histos.fill(HIST("Selection/Photon/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Photon/h2d") + HIST(PhotonSelsLocal[selection_index]), kstar.photonPt(), kstar.photonMass());
@@ -1005,7 +1006,7 @@ struct k892hadronphoton {
       }
     }
 
-    if (PDGRequired == PDG_t::kK0Short) {
+    if (std::abs(PDGRequired) == PDG_t::kK0Short) {
       if constexpr (selection_index >= 0 && selection_index < (int)std::size(KShortSelsLocal)) {
         histos.fill(HIST("Selection/KShort/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/KShort/h2d") + HIST(KShortSelsLocal[selection_index]), kstar.kshortPt(), kstar.kshortMass());
@@ -1144,7 +1145,6 @@ struct k892hadronphoton {
     //   return false;
     // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
     //   return false;
-
     // DCA Selection
     fillSelHistos<9>(cand, PDG_t::kK0Short);
     if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.KShortMinDCANegToPv))
