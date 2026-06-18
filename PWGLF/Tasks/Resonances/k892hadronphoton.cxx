@@ -999,7 +999,7 @@ struct k892hadronphoton {
                                                            "TPCTOFPID", "DCADauToPV", "Mass"};
 
     if (std::abs(PDGRequired) == PDG_t::kGamma) {
-      if constexpr (selection_index >= 0 && selection_index < (int)std::size(PhotonSelsLocal)) {
+      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(PhotonSelsLocal))) {
         histos.fill(HIST("Selection/Photon/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Photon/h2d") + HIST(PhotonSelsLocal[selection_index]), kstar.photonPt(), kstar.photonMass());
         histos.fill(HIST("Selection/KStar/h2dPhoton") + HIST(PhotonSelsLocal[selection_index]), kstar.pt(), kstar.kstarMass());
@@ -1007,7 +1007,7 @@ struct k892hadronphoton {
     }
 
     if (std::abs(PDGRequired) == PDG_t::kK0Short) {
-      if constexpr (selection_index >= 0 && selection_index < (int)std::size(KShortSelsLocal)) {
+      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(KShortSelsLocal))) {
         histos.fill(HIST("Selection/KShort/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/KShort/h2d") + HIST(KShortSelsLocal[selection_index]), kstar.kshortPt(), kstar.kshortMass());
         histos.fill(HIST("Selection/KStar/h2dKShort") + HIST(KShortSelsLocal[selection_index]), kstar.pt(), kstar.kstarMass());

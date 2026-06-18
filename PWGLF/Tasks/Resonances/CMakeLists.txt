@@ -310,7 +310,7 @@ o2physics_add_dpl_workflow(k892hadronphoton
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(k892hadronphotonbkg
-    SOURCES K892hadronphotonBkg.cxx
+    SOURCES k892hadronphotonBkg.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 

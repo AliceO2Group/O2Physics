@@ -645,16 +645,16 @@ struct k892hadronphotonBkg {
       histos.fill(HIST("KStarBkg/h2dCentralityCollPair"),
                   getCentralityRun3Bkg(coll1), getCentralityRun3Bkg(coll2));
 
-      if (std::abs(int64_t(coll1.globalIndex()) - int64_t(coll2.globalIndex())) < kstarBkgConfig.deltaCollision)
+      if (std::abs(static_cast<int64_t>(coll1.globalIndex()) - static_cast<int64_t>(coll2.globalIndex())) < kstarBkgConfig.deltaCollision)
         continue;
-
+xww
       auto const& photons1 = photonPool[coll1.globalIndex()];
       auto const& kshorts1 = kshortPool[coll1.globalIndex()];
       auto const& photons2 = photonPool[coll2.globalIndex()];
       auto const& kshorts2 = kshortPool[coll2.globalIndex()];
 
       // K0s(coll1) × γ(coll2)
-      if (!kshorts1.empty() && !photons2.empty()) {
+      if (!kshorts1.empty() && !photons2.empty()) {xw
         for (int kIdx : kshorts1) {
           auto kshort = fullV0s.rawIteratorAt(kIdx);
           float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
