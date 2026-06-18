@@ -465,7 +465,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       std::array<double, 4> massCharmTrk{};
 
       if constexpr (Channel == DecayChannel::LcToPKPi) {
-        // Lc+ -> p K pi
+        // Λc⁺ → p K π
         if (cand.candidateSelFlag() == 1) {
           massCharmTrk = {MassProton, MassKPlus, MassPiPlus, trackMassHyp};
         } else {
