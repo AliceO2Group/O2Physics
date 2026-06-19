@@ -107,6 +107,7 @@ struct TreeWriterTpcV0 {
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+  // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
@@ -422,6 +423,8 @@ struct TreeWriterTpcV0 {
                                               aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
 
+    std::string irSource{};
+    bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
@@ -434,7 +437,10 @@ struct TreeWriterTpcV0 {
       const auto v0s = myV0s.sliceBy(perCollisionV0s, static_cast<int>(collision.globalIndex()));
       const auto cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
       const auto bc = collision.bc_as<BCType>();
-      const std::string irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+      if (isFirstCollision) {
+        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+      }
+      isFirstCollision = false;
       const int runnumber = bc.runNumber();
       const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo : 0.;
       const int bcGlobalIndex = bc.globalIndex();
@@ -637,6 +643,7 @@ struct TreeWriterTpcTof {
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+  // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 
   struct TofTrack {
@@ -804,6 +811,8 @@ struct TreeWriterTpcTof {
         labelTrack2TrackQA.at(trackId) = trackQA.globalIndex();
       }
     }
+    std::string irSource{};
+    bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       const auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
       if (!isEventSelected(collision, applyEvSel)) {
@@ -823,7 +832,10 @@ struct TreeWriterTpcTof {
       }
 
       const auto bc = collision.bc_as<BCType>();
-      const std::string irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+      if (isFirstCollision) {
+        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+      }
+      isFirstCollision = false;
       const int runnumber = bc.runNumber();
       const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo : 0.;
       const int bcGlobalIndex = bc.globalIndex();
