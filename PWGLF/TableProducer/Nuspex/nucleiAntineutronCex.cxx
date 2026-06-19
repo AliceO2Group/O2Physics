@@ -518,7 +518,7 @@ struct NucleiAntineutronCex {
             if (motherPz != 0)
               histos.fill(HIST("cexn_pairmc_pz"), cexPairMcPz / motherPz);
             if (motherP != 0 && pion0)
-              histos.fill(HIST("cexPairMcP_pi0"), cexPairMcP / motherP);
+              histos.fill(HIST("cexn_pairmc_p_pi0"), cexPairMcP / motherP);
           }
           // BG mother
           if (motherPdg != -kNeutron) {
