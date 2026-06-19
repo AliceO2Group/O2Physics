@@ -155,26 +155,26 @@ struct k892hadronphotonBkg {
   // KShort criteria:
   struct : ConfigurableGroup {
     std::string prefix = "kshortSelections"; // JSON group name
-    Configurable<float> kshort_MLThreshold{"KShort_MLThreshold", 0.1, "Decision Threshold value to select kshorts"};
-    Configurable<float> kshortMinDCANegToPv{"KShortMinDCANegToPv", .05, "min DCA Neg To PV (cm)"};
-    Configurable<float> kshortMinDCAPosToPv{"KShortMinDCAPosToPv", .05, "min DCA Pos To PV (cm)"};
-    Configurable<float> kshortMaxDCAV0Dau{"KShortMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
-    Configurable<float> kshortMinv0radius{"KShortMinv0radius", 0.0, "Min V0 radius (cm)"};
-    Configurable<float> kshortMaxv0radius{"KShortMaxv0radius", 40, "Max V0 radius (cm)"};
-    Configurable<float> kshortMinv0cospa{"KShortMinv0cospa", 0.95, "Min V0 CosPA"};
-    Configurable<float> kshortMaxLifeTime{"KShortMaxLifeTime", 20, "Max lifetime"};
-    Configurable<float> kshortWindow{"KShortWindow", 0.015, "Mass window around expected (in GeV/c2). Leave negative to disable"};
-    Configurable<float> kshortMinRapidity{"KShortMinRapidity", -0.5, "v0 min rapidity"};
-    Configurable<float> kshortMaxRapidity{"KShortMaxRapidity", 0.5, "v0 max rapidity"};
-    Configurable<float> kshortDauEtaMin{"KShortDauEtaMin", -0.8, "Min pseudorapidity of daughter tracks"};
-    Configurable<float> kshortDauEtaMax{"KShortDauEtaMax", 0.8, "Max pseudorapidity of daughter tracks"};
-    Configurable<float> kshortMinZ{"KShortMinZ", -240, "Min kshort decay point z value (cm)"};
-    Configurable<float> kshortMaxZ{"KShortMaxZ", 240, "Max kshort decay point z value (cm)"};
-    Configurable<int> kshortMinTPCCrossedRows{"KShortMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
-    Configurable<int> kshortMinITSclusters{"KShortMinITSclusters", 1, "minimum ITS clusters"};
-    Configurable<bool> kshortRejectPosITSafterburner{"KShortRejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
-    Configurable<bool> kshortRejectNegITSafterburner{"KShortRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
-    Configurable<float> kshortArmenterosCoefficient{"KShortArmenterosCoefficient", 0.2, "Armenteros-Podolanski coefficient to reject lambdas"};
+    Configurable<float> kshort_MLThreshold{"kshort_MLThreshold", 0.1, "Decision Threshold value to select kshorts"};
+    Configurable<float> kshortMinDCANegToPv{"kshortMinDCANegToPv", .05, "min DCA Neg To PV (cm)"};
+    Configurable<float> kshortMinDCAPosToPv{"kshortMinDCAPosToPv", .05, "min DCA Pos To PV (cm)"};
+    Configurable<float> kshortMaxDCAV0Dau{"kshortMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
+    Configurable<float> kshortMinv0radius{"kshortMinv0radius", 0.0, "Min V0 radius (cm)"};
+    Configurable<float> kshortMaxv0radius{"kshortMaxv0radius", 40, "Max V0 radius (cm)"};
+    Configurable<float> kshortMinv0cospa{"kshortMinv0cospa", 0.95, "Min V0 CosPA"};
+    Configurable<float> kshortMaxLifeTime{"kshortMaxLifeTime", 20, "Max lifetime"};
+    Configurable<float> kshortWindow{"kshortWindow", 0.015, "Mass window around expected (in GeV/c2). Leave negative to disable"};
+    Configurable<float> kshortMinRapidity{"kshortMinRapidity", -0.5, "v0 min rapidity"};
+    Configurable<float> kshortMaxRapidity{"kshortMaxRapidity", 0.5, "v0 max rapidity"};
+    Configurable<float> kshortDauEtaMin{"kshortDauEtaMin", -0.8, "Min pseudorapidity of daughter tracks"};
+    Configurable<float> kshortDauEtaMax{"kshortDauEtaMax", 0.8, "Max pseudorapidity of daughter tracks"};
+    Configurable<float> kshortMinZ{"kshortMinZ", -240, "Min kshort decay point z value (cm)"};
+    Configurable<float> kshortMaxZ{"kshortMaxZ", 240, "Max kshort decay point z value (cm)"};
+    Configurable<int> kshortMinTPCCrossedRows{"kshortMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
+    Configurable<int> kshortMinITSclusters{"kshortMinITSclusters", 1, "minimum ITS clusters"};
+    Configurable<bool> kshortRejectPosITSafterburner{"kshortRejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
+    Configurable<bool> kshortRejectNegITSafterburner{"kshortRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
+    Configurable<float> kshortArmenterosCoefficient{"kshortArmenterosCoefficient", 0.2, "Armenteros-Podolanski coefficient to reject lambdas"};
   } kshortSelections;
 
   struct : ConfigurableGroup {
