@@ -363,7 +363,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   }
 
   /// Compute the charm hadron candidates mass with the daughter masses
-  /// assumes the candidate is either a D+ or Lc+ or D0 or Dstar or Xic+
+  /// assumes the candidate is either a D+ or Λc+ or D0 or Dstar or Ξc+
   template <DecayChannel Channel, typename Candidate>
   float getCharmHadronMass(const Candidate& cand, bool ReturnDaughMass = false)
   {
@@ -375,10 +375,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassProton});
       return invMass;
-    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ -> pi K pi
+    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ → π K π (PDG: 411)
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
       return invMass;
-    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 -> pi K
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 → π K  (PDG: 421)
       if (cand.candidateSelFlag() == 1) {
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
@@ -386,7 +386,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         invMass = cand.m(std::array{MassKPlus, MassPiPlus});
         return invMass;
       }
-    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* -> D0 pi
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
       float mDstar = 0.f;
       float mD0 = 0.f;
       if (cand.charge() > 0.f) {
@@ -436,7 +436,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         LOG(fatal) << "Invalid PDG code for track mass hypothesis: " << trkPDGCode;
     }
 
-    // D0 -> K pi + track (2-prong)
+    // D0 → K π + track (2-prong)
     if constexpr (Channel == DecayChannel::D0ToPiK) {
       const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecTrack};
       std::array<double, 3> massCharmTrk{};
@@ -450,7 +450,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
     }
 
-    // Xic+ -> Xi pi pi + track
+    // Ξc⁺ → Ξ π π + track
     if constexpr (Channel == DecayChannel::XicToXiPiPi) {
       auto pVecProng2 = RecoDecayPtEtaPhi::pVector(cand.prong2Pt(), cand.prong2Eta(), cand.prong2Phi());
       const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecProng2, pVecTrack};
@@ -458,7 +458,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
     }
 
-    // 3-prong: Lc -> p K pi, D+ -> pi K pi, D* -> D0 pi + track
+    // 3-prong: Λc → p K π, D+ → π K π, D* → D0π + track
     if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::DstarToD0Pi) {
       auto pVecProng2 = RecoDecayPtEtaPhi::pVector(cand.prong2Pt(), cand.prong2Eta(), cand.prong2Phi());
       const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecProng2, pVecTrack};
@@ -472,10 +472,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           massCharmTrk = {MassPiPlus, MassKPlus, MassProton, trackMassHyp};
         }
       } else if constexpr (Channel == DecayChannel::DplusToPiKPi) {
-        // D+ -> pi K pi
+        // D⁺ → π K π
         massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        // D* -> D0 pi
+        // D* → D0π
         if (cand.candidateSelFlag() == 1) {
           massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
         } else {

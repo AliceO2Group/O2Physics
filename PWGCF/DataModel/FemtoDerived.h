@@ -245,7 +245,7 @@ DECLARE_SOA_COLUMN(Charge, charge, int8_t);                      //! Charge of c
 DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                     //! Track id of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                     //! Track id of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                     //! Track id of charm hadron prong2
-DECLARE_SOA_COLUMN(XiProngId, xiProngId, int);                   //! Cascade id of the Xi prong in Xic -> Xi pi pi candidates
+DECLARE_SOA_COLUMN(XiProngId, xiProngId, int);                   //! Cascade id of the Ξ prong in Ξc → Ξππ candidates
 DECLARE_SOA_COLUMN(Prong0Pt, prong0Pt, float);                   //! Track pT of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Pt, prong1Pt, float);                   //! Track pT of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Pt, prong2Pt, float);                   //! Track pT of charm hadron prong2
@@ -259,9 +259,9 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);     //! Selection o
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                       //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                 //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                         //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(CascBachelorTrackId, cascBachelorTrackId, int); //! Bachelor track ID from Xi cascade (Xic -> Xi pi pi)
-DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);           //! Positive track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
-DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);           //! Negative track ID from Lambda in Xi cascade (Xic -> Xi pi pi)
+DECLARE_SOA_COLUMN(CascBachelorTrackId, cascBachelorTrackId, int); //! Bachelor track ID from Ξ cascade (Ξc± → Ξππ)
+DECLARE_SOA_COLUMN(CascPosTrackId, cascPosTrackId, int);           //! Positive track ID from Λ in Ξ cascade (Ξc± → Ξππ)
+DECLARE_SOA_COLUMN(CascNegTrackId, cascNegTrackId, int);           //! Negative track ID from Λ in Ξ cascade (Ξc± → Ξππ)
 DECLARE_SOA_COLUMN(CascBachelorPt, cascBachelorPt, float);         //! pT of the bachelor track from the Xi cascade
 DECLARE_SOA_COLUMN(CascBachelorPhi, cascBachelorPhi, float);       //! phi of the bachelor track from the Xi cascade
 DECLARE_SOA_COLUMN(CascBachelorEta, cascBachelorEta, float);       //! eta of the bachelor track from the Xi cascade
@@ -439,7 +439,7 @@ DECLARE_SOA_TABLE(FDHfCand3Prong, "AOD", "FDHFCAND3PRONG", //! Table to store th
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFXIC3PRONG", //! Table to store the derived data for Xic -> Xi pi pi candidates
+DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFXIC3PRONG", //! Table to store the derived data for Ξc → Ξππ candidates
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
                   fdhf::TimeStamp,
@@ -470,7 +470,7 @@ DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFXIC3PRONG", //! Table to store 
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDHfCand3ProngXicQa, "AOD", "FDHFXIC3PQA", //! QA extension table for Xi daughters in Xic -> Xi pi pi candidates
+DECLARE_SOA_TABLE(FDHfCand3ProngXicQa, "AOD", "FDHFXIC3PQA", //! QA extension table for Ξ daughters in Ξc → Ξππ candidates
                   o2::soa::Index<>,
                   fdhf::CascBachelorPt,
                   fdhf::CascBachelorPhi,
