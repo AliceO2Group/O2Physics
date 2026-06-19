@@ -42,6 +42,8 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -106,11 +108,14 @@ struct TreeWriterTpcV0 {
   // Configurables for output tables reservation size
   Configurable<float> reserveV0Ratio{"reserveV0Ratio", 0.06, "Ratio of how many tracks from V0s are expected in the output table to the input V0 table size"};
   Configurable<float> reserveCascRatio{"reserveCascRatio", 0.003, "Ratio of how many tracks from cascades are expected in the output table to the input Cascade table size"};
+  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+
+  HistogramRegistry registry{"registry", {}};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
   constexpr static float NSigmaTofUnmatched{o2::aod::v0data::kNoTOFValue};
@@ -185,6 +190,11 @@ struct TreeWriterTpcV0 {
     ccdb->setFatalWhenNull(false);
 
     rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+
+    if (saveReserveQaHisto) {
+      registry.add("hV0OutputRatio", "V0 out/in ratio;V0 out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveV0Ratio}}});
+      registry.add("hCascOutputRatio", "Casc out/in ratio;Casc out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveCascRatio}}});
+    }
   }
 
   template <bool IsCorrectedDeDx, typename V0Casc, typename T>
@@ -535,6 +545,11 @@ struct TreeWriterTpcV0 {
     LOG(info) << "nCascEntries = " << nCascEntries;
     LOG(info) << "nV0Entries / V0 table size = " << static_cast<double>(nV0Entries) / myV0s.size();
     LOG(info) << "nCascEntries / Cascade table size = " << static_cast<double>(nCascEntries) / myCascs.size();
+
+    if (saveReserveQaHisto) {
+      registry.fill(HIST("hV0OutputRatio"), static_cast<double>(nV0Entries) / myV0s.size());
+      registry.fill(HIST("hCascOutputRatio"), static_cast<double>(nCascEntries) / myCascs.size());
+    }
   } /// runV0
 
   void processStandard(Colls const& collisions,
@@ -660,11 +675,14 @@ struct TreeWriterTpcTof {
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
   // Configurable for output table reservation size
   Configurable<float> reserveTrackRatio{"reserveTrackRatio", 0.005, "Ratio of how many tracks are expected in the output table to the input Tracks table size"};
+  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+
+  HistogramRegistry registry{"registry", {}};
 
   struct TofTrack {
     bool isApplyHardCutOnly;
@@ -720,6 +738,10 @@ struct TreeWriterTpcTof {
     ccdb->setFatalWhenNull(false);
 
     rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+
+    if (saveReserveQaHisto) {
+      registry.add("hTrackOutputRatio", "Track out/in ratio;Track out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveTrackRatio}}});
+    }
   }
 
   template <bool DoCorrectDeDx, int ModeId, typename T, typename C>
@@ -913,6 +935,10 @@ struct TreeWriterTpcTof {
     LOG(info) << "Track table size = " << myTracks.size();
     LOG(info) << "nTrackEntries = " << rowTPCTOFTree.lastIndex() + 1;
     LOG(info) << "nTrackEntries / Track table size = " << static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size();
+
+    if (saveReserveQaHisto) {
+      registry.fill(HIST("hTrackOutputRatio"), static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size());
+    }
   } /// runTof
 
   void processStandard(Colls const& collisions,
