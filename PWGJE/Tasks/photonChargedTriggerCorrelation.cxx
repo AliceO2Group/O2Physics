@@ -63,8 +63,8 @@
 #include <random>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 const double absEtaMaxDefault = 0.8;
