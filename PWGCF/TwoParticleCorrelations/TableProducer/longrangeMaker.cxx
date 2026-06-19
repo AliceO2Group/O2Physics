@@ -152,9 +152,8 @@ struct LongrangeMaker {
     Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "cut on maximum value of ITS chi2 per cluster"};
     Configurable<float> maxDcaZ{"maxDcaZ", 2.0f, "cut on maximum abs value of DCA z"};
     Configurable<float> maxDcaXY{"maxDcaXY", 1.0f, "cut on maximum abs value of DCA xy"};
-    Configurable<float> cfgLowEffCut{"cfgLowEffCut", 0.001f, "Low efficiency cut"};
     Configurable<bool> applyEffCorr{"applyEffCorr", true, "Enable efficiency correction"};
-    Configurable<std::string> cfgEffccdbPath{"cfgEffccdbPath", "/alice/data/CCDB/Users/a/abmodak/OO/Efficiency", "Browse track eff object from CCDB"};
+    Configurable<std::string> cfgEffccdbPath{"cfgEffccdbPath", "Users/a/abmodak/Efficiency/OO/default", "Browse track eff object from CCDB"};
   } cfgtrksel;
 
   struct : ConfigurableGroup {
@@ -316,6 +315,7 @@ struct LongrangeMaker {
     histos.add("FT0C_Channel_vs_Amp_gaincorrected", "FT0C_Channel_vs_Amp_gaincorrected", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
     histos.add("FT0C_Channel_vs_eta", "FT0C_Channel_vs_eta", kTH2D, {cfgAxis.axisEta, cfgAxis.axisChannel});
     histos.add("FT0C_Channel_vs_phi", "FT0C_Channel_vs_phi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisChannel});
+    histos.add("h3DVtxZetaPhi", "", kTH3D, {{20, -10, 10}, {16, -0.8, +0.8}, {100, 0., TwoPI}});
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny,
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
@@ -432,6 +432,7 @@ struct LongrangeMaker {
                     track.dcaZ(),
                     pid);
       }
+      histos.fill(HIST("h3DVtxZetaPhi"), col.posZ(), track.eta(), track.phi());
     }
 
     // ft0 loop
@@ -855,6 +856,7 @@ struct LongrangeMaker {
                       track.dcaZ(),
                       pid);
         }
+        histos.fill(HIST("h3DVtxZetaPhi"), RecCol.posZ(), track.eta(), track.phi());
       }
 
       // ft0 loop
@@ -1101,7 +1103,7 @@ struct LongrangeMaker {
       float trkeff = 1.0f;
       if (cfgtrksel.applyEffCorr)
         trkeff = getTrkEffCorr(vz, track.eta(), track.pt());
-      nTrk += 1.0 / trkeff;
+      nTrk += trkeff;
     }
     return nTrk;
   }
@@ -1394,19 +1396,17 @@ struct LongrangeMaker {
 
   float getTrkEffCorr(float posZ, float eta, float pt)
   {
-    float eff = 1.;
-    if (hTrkEff) {
-      int zBin = hTrkEff->GetXaxis()->FindBin(posZ);
-      int etaBin = hTrkEff->GetYaxis()->FindBin(eta);
-      int ptBin = hTrkEff->GetZaxis()->FindBin(pt);
-      eff = hTrkEff->GetBinContent(zBin, etaBin, ptBin);
-    } else {
-      eff = 1.0;
+    if (!cfgtrksel.applyEffCorr || !hTrkEff) {
+      return 1.0;
     }
-    if (eff < cfgtrksel.cfgLowEffCut)
-      eff = 1.0;
-
-    return eff;
+    int zBin = hTrkEff->GetXaxis()->FindBin(posZ);
+    int etaBin = hTrkEff->GetYaxis()->FindBin(eta);
+    int ptBin = hTrkEff->GetZaxis()->FindBin(pt);
+    float effweight = 1.0 / hTrkEff->GetBinContent(zBin, etaBin, ptBin);
+    if (!std::isfinite(effweight) || effweight <= 0) {
+      return 1.0;
+    }
+    return effweight;
   }
 
   PROCESS_SWITCH(LongrangeMaker, processData, "process All collisions", false);

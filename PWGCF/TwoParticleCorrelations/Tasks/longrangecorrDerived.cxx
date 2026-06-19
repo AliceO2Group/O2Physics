@@ -87,9 +87,10 @@ struct LongrangecorrDerived {
     Configurable<float> cfgTpcMinNCrossedRows{"cfgTpcMinNCrossedRows", 70.0f, ""};
     Configurable<float> cfgTpcMaxChi2PerCluster{"cfgTpcMaxChi2PerCluster", 4.0f, ""};
     Configurable<float> cfgTpcMaxDcaZ{"cfgTpcMaxDcaZ", 1.0f, ""};
-    Configurable<float> cfgLowEffCut{"cfgLowEffCut", 0.001f, "Low efficiency cut"};
     Configurable<bool> applyEffCorr{"applyEffCorr", true, "Enable efficiency correction"};
+    Configurable<bool> applyAccCorr{"applyAccCorr", false, "Enable NUA correction"};
     Configurable<std::string> cfgEffccdbPath{"cfgEffccdbPath", "Users/a/abmodak/Efficiency/OO/default", "Browse track eff object from CCDB"};
+    Configurable<std::string> cfgAccccdbPath{"cfgAccccdbPath", "Users/a/abmodak/Acceptance/OO/default", "Browse track eff object from CCDB"};
 
     Configurable<int> cfgMftCluster{"cfgMftCluster", 5, "cut on MFT Cluster"};
     Configurable<float> cfgMftDcaxy{"cfgMftDcaxy", 2.0f, "cut on DCA xy for MFT tracks"};
@@ -148,6 +149,7 @@ struct LongrangecorrDerived {
 
   // corrections
   TH3D* hTrkEff = nullptr;
+  TH3D* hTrkAcc = nullptr;
   bool fLoadTrkEffCorr = false;
 
   using CollsTable = aod::LRCollisions;
@@ -216,6 +218,7 @@ struct LongrangecorrDerived {
       histos.add("Trig_eta", "Trig_eta", kTH1D, {cfgAxis.axisEtaTrig});
       histos.add("Trig_eta_corrected", "Trig_eta_corrected", kTH1D, {cfgAxis.axisEtaTrig});
       histos.add("Trig_phi", "Trig_phi", kTH1D, {cfgAxis.axisPhi});
+      histos.add("Trig_phi_corrected", "Trig_phi_corrected", kTH1D, {cfgAxis.axisPhi});
       histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaTrig});
       histos.add("Trig_pt", "Trig_pt", kTH1D, {cfgAxis.axisPtTrigger});
       histos.add("Trig_pt_corrected", "Trig_pt_corrected", kTH1D, {cfgAxis.axisPtTrigger});
@@ -274,23 +277,46 @@ struct LongrangecorrDerived {
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgEffccdbPath.value.c_str(), (void*)hTrkEff);
     }
+
+    if (cfgSel.cfgAccccdbPath.value.empty() == false) {
+      hTrkAcc = ccdb->getForTimeStamp<TH3D>(cfgSel.cfgAccccdbPath, timestamp);
+      if (hTrkAcc == nullptr) {
+        LOGF(fatal, "Could not load NUA histogram for trigger particles from %s", cfgSel.cfgAccccdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgAccccdbPath.value.c_str(), (void*)hTrkAcc);
+    }
+
     fLoadTrkEffCorr = true;
   }
 
   float getTrkEffCorr(float posZ, float eta, float pt)
   {
-    float eff = 1.0f;
-    if (hTrkEff) {
-      int zBin = hTrkEff->GetXaxis()->FindBin(posZ);
-      int etaBin = hTrkEff->GetYaxis()->FindBin(eta);
-      int ptBin = hTrkEff->GetZaxis()->FindBin(pt);
-      eff = hTrkEff->GetBinContent(zBin, etaBin, ptBin);
-    } else {
-      eff = 1.0f;
+    if (!cfgSel.applyEffCorr || !hTrkEff) {
+      return 1.0;
     }
-    if (eff < cfgSel.cfgLowEffCut)
-      eff = 1.0;
-    return 1.0 / eff;
+    int zBin = hTrkEff->GetXaxis()->FindBin(posZ);
+    int etaBin = hTrkEff->GetYaxis()->FindBin(eta);
+    int ptBin = hTrkEff->GetZaxis()->FindBin(pt);
+    float effweight = 1.0 / hTrkEff->GetBinContent(zBin, etaBin, ptBin);
+    if (!std::isfinite(effweight) || effweight <= 0) {
+      return 1.0;
+    }
+    return effweight;
+  }
+
+  float getTrkAccCorr(float posZ, float eta, float phi)
+  {
+    if (!cfgSel.applyAccCorr || !hTrkAcc) {
+      return 1.0;
+    }
+    int zBin = hTrkAcc->GetXaxis()->FindBin(posZ);
+    int etaBin = hTrkAcc->GetYaxis()->FindBin(eta);
+    int phiBin = hTrkAcc->GetZaxis()->FindBin(phi);
+    float nua = hTrkAcc->GetBinContent(zBin, etaBin, phiBin);
+    if (!std::isfinite(nua) || nua <= 0) {
+      return 1.0;
+    }
+    return nua;
   }
 
   template <typename TTrack>
@@ -338,12 +364,13 @@ struct LongrangecorrDerived {
   }
 
   template <typename TTrack>
-  void fillTrigTrackQA(TTrack const& track, float trigAmpl, float trkeff)
+  void fillTrigTrackQA(TTrack const& track, float trigAmpl, float trkeff, float trkAcc)
   {
     histos.fill(HIST("Trig_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Trig_eta"), track.eta());
-    histos.fill(HIST("Trig_eta_corrected"), track.eta(), trkeff);
     histos.fill(HIST("Trig_phi"), track.phi());
+    histos.fill(HIST("Trig_eta_corrected"), track.eta(), trkeff);
+    histos.fill(HIST("Trig_phi_corrected"), track.phi(), trkAcc);
     if constexpr (requires { track.channelID(); }) {
       histos.fill(HIST("Trig_amp"), trigAmpl);
       histos.fill(HIST("Channel_vs_Trig_amp"), track.channelID(), trigAmpl);
@@ -419,6 +446,7 @@ struct LongrangecorrDerived {
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       auto trkeff = 1.0f;
+      auto trkAcc = 1.0f;
 
       if (!isTrackSelected(triggerTrack))
         continue;
@@ -444,19 +472,25 @@ struct LongrangecorrDerived {
       if constexpr (step == CorrelationContainer::kCFStepCorrected) {
         if constexpr (requires { triggerTrack.trackType(); }) {
           trkeff = getTrkEffCorr(vz, triggerTrack.eta(), triggerTrack.pt());
+          trkAcc = getTrkAccCorr(vz, triggerTrack.eta(), triggerTrack.phi());
         } else {
           trkeff = 1.0;
+          trkAcc = 1.0;
         }
       }
 
+      if (cfgSel.cfgVerbosity > 0) {
+        LOGF(info, "NUE correction factor: %f | NUA correction factor: %f", trkeff, trkAcc);
+      }
+
       if (!mixing) {
-        fillTrigTrackQA(triggerTrack, trigAmpl, trkeff);
+        fillTrigTrackQA(triggerTrack, trigAmpl, trkeff, trkAcc);
         if constexpr (requires { triggerTrack.channelID(); }) {
-          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl * trkeff);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl * trkeff * trkAcc);
         } else if constexpr (requires { triggerTrack.invMass(); }) {
-          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl * trkeff);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl * trkeff * trkAcc);
         } else {
-          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl * trkeff);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl * trkeff * trkAcc);
         }
       }
       for (auto const& assoTrack : assocs) {
@@ -479,16 +513,16 @@ struct LongrangecorrDerived {
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (!mixing) {
           fillAssocTrackQA(assoTrack, assoAmpl);
-          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl * trkeff);
+          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         } else {
-          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl * trkeff);
+          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         }
         if constexpr (requires { triggerTrack.channelID(); }) {
-          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl * trkeff);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         } else if constexpr (requires { triggerTrack.invMass(); }) {
-          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl * trkeff);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         } else {
-          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl * trkeff);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         }
       } // associated tracks
     } // trigger tracks
