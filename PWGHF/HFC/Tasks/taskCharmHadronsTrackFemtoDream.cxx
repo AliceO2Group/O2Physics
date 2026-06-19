@@ -794,7 +794,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.pt(),
           part.eta(),
           part.phi(),
-          part.xiProngId(),
+          part.cascId(),
           part.prong1Id(),
           part.prong2Id(),
           part.charge(),
