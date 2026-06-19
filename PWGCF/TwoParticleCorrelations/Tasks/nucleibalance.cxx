@@ -1957,7 +1957,7 @@ struct Lambdastarproxy {
     // This bypasses the extra explicit ITS/TPC/DCA/chi2 cuts below.
     if (lstarOnlyGlobalTrackCuts.value != 0) {
       return true;
-    }    
+    }
 
     if constexpr (requires { trk.itsNCls(); }) {
       if (lstarITSNClusters.value > 0 && trk.itsNCls() < lstarITSNClusters.value) {
@@ -2434,8 +2434,8 @@ struct Lambdastarproxy {
   }
 
   bool passFinalCandidatePID(float pt, float nsTPC, float nsTOF, bool hasTof,
-                           float tpcCut, float tofCut, float circularCut,
-                           float ptRef, bool isDeuteron = false) const
+                             float tpcCut, float tofCut, float circularCut,
+                             float ptRef, bool isDeuteron = false) const
   {
     // Strategy 1: analysis-note style circular TPC+TOF cut
     if (lstarPidStrategy.value == PidStrategyCircularTPCAndTOF) {
