@@ -1505,7 +1505,7 @@ class EventSelectionModule
       // TODO apply other cuts for sel8?
       // TODO introduce array of sel[0]... sel[8] or similar?
       bool sel8 = false;
-      if (lastRun < 568873) // o2-linter: disable=magic-number (pre-2026 data & MC: require all three bits: TVX, TF and ROF border cuts)
+      if (lastRun < 568873 || lastRun >= 572103) // o2-linter: disable=magic-number (pre-2026 and Pb-Pb 2026 (data & MC): require all three bits: TVX, TF and ROF border cuts)
         sel8 = BITCHECK64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && BITCHECK64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
       else // for pp 2026: sel8 without kNoITSROFrameBorder bit, because the cross-ROF reconstruction for ITS will be On (the switch by a runNumber is a temporary solution)
         sel8 = BITCHECK64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder);
