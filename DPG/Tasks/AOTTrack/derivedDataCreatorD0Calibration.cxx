@@ -117,8 +117,9 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-  using TracksWCovExtraPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraTmoPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraTmoPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
@@ -872,7 +873,7 @@ struct DerivedDataCreatorD0Calibration {
   // process functions
   void processWithTrackQa(CollisionsWEvSel const& collisions,
                           aod::TrackAssoc const& trackIndices,
-                          TracksWCovExtraPidAndQa const& tracks,
+                          TracksWCovExtraTmoPidAndQa const& tracks,
                           aod::BCsWithTimestamps const& bcs,
                           TrackMeanOccs const& occ,
                           aod::TracksQAVersion const& trackQa)
@@ -883,7 +884,7 @@ struct DerivedDataCreatorD0Calibration {
 
   void processNoTrackQa(CollisionsWEvSel const& collisions,
                         aod::TrackAssoc const& trackIndices,
-                        TracksWCovExtraPid const& tracks,
+                        TracksWCovExtraTmoPid const& tracks,
                         aod::BCsWithTimestamps const& bcs,
                         TrackMeanOccs const& occ)
   {
