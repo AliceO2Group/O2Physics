@@ -86,8 +86,8 @@ struct k892hadronphotonBkg {
     Configurable<bool> doEvtMixing{"doEvtMixing", false, "Mixed-event background"};
     Configurable<int> nMix{"nMix", 5, "Number of mixed events"};
     Configurable<int> deltaCollision{"deltaCollision", 25, "Min |Δ globalIndex| for mixing"};
-    Configurable<float> KStarMaxOPAngle{"KStarMaxOPAngle", 7.f, "Max opening angle (rad)"};
-    Configurable<float> KStarMaxRap{"KStarMaxRap", 0.5f, "Max |y(K*)|"};
+    Configurable<float> kstarMaxOPAngle{"kstarMaxOPAngle", 7.f, "Max opening angle (rad)"};
+    Configurable<float> kstarMaxRap{"kstarMaxRap", 0.5f, "Max |y(K*)|"};
     Configurable<int> nBkgRot{"nBkgRot", 3, "Rotations per pair (rotational bkg)"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "theta band: [pi - pi/cut, pi + pi/cut]"};
   } kstarBkgConfig;
@@ -127,54 +127,54 @@ struct k892hadronphotonBkg {
   //// Photon criteria:
   struct : ConfigurableGroup {
     std::string prefix = "photonSelections"; // JSON group name
-    Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
-    Configurable<int> Photonv0TypeSel{"Photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};
-    Configurable<float> PhotonMinDCADauToPv{"PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
-    Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
-    Configurable<int> PhotonMinTPCCrossedRows{"PhotonMinTPCCrossedRows", 30, "Min daughter TPC Crossed Rows"};
-    Configurable<float> PhotonMinTPCNSigmas{"PhotonMinTPCNSigmas", -7, "Min TPC NSigmas for daughters"};
-    Configurable<float> PhotonMaxTPCNSigmas{"PhotonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
-    Configurable<float> PhotonMinRapidity{"PhotonMinRapidity", -0.5, "v0 min rapidity"};
-    Configurable<float> PhotonMaxRapidity{"PhotonMaxRapidity", 0.5, "v0 max rapidity"};
-    Configurable<float> PhotonDauEtaMin{"PhotonDauEtaMin", -0.8, "Min pseudorapidity of daughter tracks"};
-    Configurable<float> PhotonDauEtaMax{"PhotonDauEtaMax", 0.8, "Max pseudorapidity of daughter tracks"};
-    Configurable<float> PhotonMinRadius{"PhotonMinRadius", 3.0, "Min photon conversion radius (cm)"};
-    Configurable<float> PhotonMaxRadius{"PhotonMaxRadius", 115, "Max photon conversion radius (cm)"};
-    Configurable<float> PhotonMinZ{"PhotonMinZ", -240, "Min photon conversion point z value (cm)"};
-    Configurable<float> PhotonMaxZ{"PhotonMaxZ", 240, "Max photon conversion point z value (cm)"};
-    Configurable<float> PhotonMaxQt{"PhotonMaxQt", 0.08, "Max photon qt value (AP plot) (GeV/c)"};
-    Configurable<float> PhotonMaxAlpha{"PhotonMaxAlpha", 1.0, "Max photon alpha absolute value (AP plot)"};
-    Configurable<float> PhotonMinV0cospa{"PhotonMinV0cospa", 0.80, "Min V0 CosPA"};
-    Configurable<float> PhotonMaxMass{"PhotonMaxMass", 0.10, "Max photon mass (GeV/c^{2})"};
-    Configurable<float> PhotonPhiMin1{"PhotonPhiMin1", -1, "Phi min value to reject photons, region 1 (leave negative if no selection desired)"};
-    Configurable<float> PhotonPhiMax1{"PhotonPhiMax1", -1, "Phi max value to reject photons, region 1 (leave negative if no selection desired)"};
-    Configurable<float> PhotonPhiMin2{"PhotonPhiMin2", -1, "Phi max value to reject photons, region 2 (leave negative if no selection desired)"};
-    Configurable<float> PhotonPhiMax2{"PhotonPhiMax2", -1, "Phi min value to reject photons, region 2 (leave negative if no selection desired)"};
+    Configurable<float> gamma_MLThreshold{"gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
+    Configurable<int> photonv0TypeSel{"photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};
+    Configurable<float> photonMinDCADauToPv{"photonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
+    Configurable<float> photonMaxDCAV0Dau{"photonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
+    Configurable<int> photonMinTPCCrossedRows{"photonMinTPCCrossedRows", 30, "Min daughter TPC Crossed Rows"};
+    Configurable<float> photonMinTPCNSigmas{"photonMinTPCNSigmas", -7, "Min TPC NSigmas for daughters"};
+    Configurable<float> photonMaxTPCNSigmas{"photonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
+    Configurable<float> photonMinRapidity{"photonMinRapidity", -0.5, "v0 min rapidity"};
+    Configurable<float> photonMaxRapidity{"photonMaxRapidity", 0.5, "v0 max rapidity"};
+    Configurable<float> photonDauEtaMin{"photonDauEtaMin", -0.8, "Min pseudorapidity of daughter tracks"};
+    Configurable<float> photonDauEtaMax{"photonDauEtaMax", 0.8, "Max pseudorapidity of daughter tracks"};
+    Configurable<float> photonMinRadius{"photonMinRadius", 3.0, "Min photon conversion radius (cm)"};
+    Configurable<float> photonMaxRadius{"photonMaxRadius", 115, "Max photon conversion radius (cm)"};
+    Configurable<float> photonMinZ{"photonMinZ", -240, "Min photon conversion point z value (cm)"};
+    Configurable<float> photonMaxZ{"photonMaxZ", 240, "Max photon conversion point z value (cm)"};
+    Configurable<float> photonMaxQt{"photonMaxQt", 0.08, "Max photon qt value (AP plot) (GeV/c)"};
+    Configurable<float> photonMaxAlpha{"photonMaxAlpha", 1.0, "Max photon alpha absolute value (AP plot)"};
+    Configurable<float> photonMinV0cospa{"photonMinV0cospa", 0.80, "Min V0 CosPA"};
+    Configurable<float> photonMaxMass{"photonMaxMass", 0.10, "Max photon mass (GeV/c^{2})"};
+    Configurable<float> photonPhiMin1{"photonPhiMin1", -1, "Phi min value to reject photons, region 1 (leave negative if no selection desired)"};
+    Configurable<float> photonPhiMax1{"photonPhiMax1", -1, "Phi max value to reject photons, region 1 (leave negative if no selection desired)"};
+    Configurable<float> photonPhiMin2{"photonPhiMin2", -1, "Phi max value to reject photons, region 2 (leave negative if no selection desired)"};
+    Configurable<float> photonPhiMax2{"photonPhiMax2", -1, "Phi min value to reject photons, region 2 (leave negative if no selection desired)"};
   } photonSelections;
 
   // KShort criteria:
   struct : ConfigurableGroup {
     std::string prefix = "kshortSelections"; // JSON group name
-    Configurable<float> KShort_MLThreshold{"KShort_MLThreshold", 0.1, "Decision Threshold value to select kshorts"};
-    Configurable<float> KShortMinDCANegToPv{"KShortMinDCANegToPv", .05, "min DCA Neg To PV (cm)"};
-    Configurable<float> KShortMinDCAPosToPv{"KShortMinDCAPosToPv", .05, "min DCA Pos To PV (cm)"};
-    Configurable<float> KShortMaxDCAV0Dau{"KShortMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
-    Configurable<float> KShortMinv0radius{"KShortMinv0radius", 0.0, "Min V0 radius (cm)"};
-    Configurable<float> KShortMaxv0radius{"KShortMaxv0radius", 40, "Max V0 radius (cm)"};
-    Configurable<float> KShortMinv0cospa{"KShortMinv0cospa", 0.95, "Min V0 CosPA"};
-    Configurable<float> KShortMaxLifeTime{"KShortMaxLifeTime", 20, "Max lifetime"};
-    Configurable<float> KShortWindow{"KShortWindow", 0.015, "Mass window around expected (in GeV/c2). Leave negative to disable"};
-    Configurable<float> KShortMinRapidity{"KShortMinRapidity", -0.5, "v0 min rapidity"};
-    Configurable<float> KShortMaxRapidity{"KShortMaxRapidity", 0.5, "v0 max rapidity"};
-    Configurable<float> KShortDauEtaMin{"KShortDauEtaMin", -0.8, "Min pseudorapidity of daughter tracks"};
-    Configurable<float> KShortDauEtaMax{"KShortDauEtaMax", 0.8, "Max pseudorapidity of daughter tracks"};
-    Configurable<float> KShortMinZ{"KShortMinZ", -240, "Min kshort decay point z value (cm)"};
-    Configurable<float> KShortMaxZ{"KShortMaxZ", 240, "Max kshort decay point z value (cm)"};
-    Configurable<int> KShortMinTPCCrossedRows{"KShortMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
-    Configurable<int> KShortMinITSclusters{"KShortMinITSclusters", 1, "minimum ITS clusters"};
-    Configurable<bool> KShortRejectPosITSafterburner{"KShortRejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
-    Configurable<bool> KShortRejectNegITSafterburner{"KShortRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
-    Configurable<float> KShortArmenterosCoefficient{"KShortArmenterosCoefficient", 0.2, "Armenteros-Podolanski coefficient to reject lambdas"};
+    Configurable<float> kshort_MLThreshold{"KShort_MLThreshold", 0.1, "Decision Threshold value to select kshorts"};
+    Configurable<float> kshortMinDCANegToPv{"KShortMinDCANegToPv", .05, "min DCA Neg To PV (cm)"};
+    Configurable<float> kshortMinDCAPosToPv{"KShortMinDCAPosToPv", .05, "min DCA Pos To PV (cm)"};
+    Configurable<float> kshortMaxDCAV0Dau{"KShortMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
+    Configurable<float> kshortMinv0radius{"KShortMinv0radius", 0.0, "Min V0 radius (cm)"};
+    Configurable<float> kshortMaxv0radius{"KShortMaxv0radius", 40, "Max V0 radius (cm)"};
+    Configurable<float> kshortMinv0cospa{"KShortMinv0cospa", 0.95, "Min V0 CosPA"};
+    Configurable<float> kshortMaxLifeTime{"KShortMaxLifeTime", 20, "Max lifetime"};
+    Configurable<float> kshortWindow{"KShortWindow", 0.015, "Mass window around expected (in GeV/c2). Leave negative to disable"};
+    Configurable<float> kshortMinRapidity{"KShortMinRapidity", -0.5, "v0 min rapidity"};
+    Configurable<float> kshortMaxRapidity{"KShortMaxRapidity", 0.5, "v0 max rapidity"};
+    Configurable<float> kshortDauEtaMin{"KShortDauEtaMin", -0.8, "Min pseudorapidity of daughter tracks"};
+    Configurable<float> kshortDauEtaMax{"KShortDauEtaMax", 0.8, "Max pseudorapidity of daughter tracks"};
+    Configurable<float> kshortMinZ{"KShortMinZ", -240, "Min kshort decay point z value (cm)"};
+    Configurable<float> kshortMaxZ{"KShortMaxZ", 240, "Max kshort decay point z value (cm)"};
+    Configurable<int> kshortMinTPCCrossedRows{"KShortMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
+    Configurable<int> kshortMinITSclusters{"KShortMinITSclusters", 1, "minimum ITS clusters"};
+    Configurable<bool> kshortRejectPosITSafterburner{"KShortRejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
+    Configurable<bool> kshortRejectNegITSafterburner{"KShortRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
+    Configurable<float> kshortArmenterosCoefficient{"KShortArmenterosCoefficient", 0.2, "Armenteros-Podolanski coefficient to reject lambdas"};
   } kshortSelections;
 
   struct : ConfigurableGroup {
@@ -390,65 +390,65 @@ struct k892hadronphotonBkg {
   bool processPhotonCandidate(TV0Object const& gamma)
   {
     // V0 type selection
-    if (gamma.v0Type() != photonSelections.Photonv0TypeSel && photonSelections.Photonv0TypeSel > -1)
+    if (gamma.v0Type() != photonSelections.photonv0TypeSel && photonSelections.photonv0TypeSel > -1)
       return false;
 
     float PhotonY = RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma);
 
     if (useMLScores) {
-      if (gamma.gammaBDTScore() <= photonSelections.Gamma_MLThreshold)
+      if (gamma.gammaBDTScore() <= photonSelections.gamma_MLThreshold)
         return false;
 
     } else {
       // Standard selection
       // Gamma basic selection criteria:
-      if ((gamma.mGamma() < 0) || (gamma.mGamma() > photonSelections.PhotonMaxMass))
+      if ((gamma.mGamma() < 0) || (gamma.mGamma() > photonSelections.photonMaxMass))
         return false;
 
-      if ((PhotonY < photonSelections.PhotonMinRapidity) || (PhotonY > photonSelections.PhotonMaxRapidity))
+      if ((PhotonY < photonSelections.photonMinRapidity) || (PhotonY > photonSelections.photonMaxRapidity))
         return false;
 
-      if (gamma.negativeeta() < photonSelections.PhotonDauEtaMin || gamma.negativeeta() > photonSelections.PhotonDauEtaMax)
+      if (gamma.negativeeta() < photonSelections.photonDauEtaMin || gamma.negativeeta() > photonSelections.photonDauEtaMax)
         return false;
 
-      if (gamma.positiveeta() < photonSelections.PhotonDauEtaMin || gamma.positiveeta() > photonSelections.PhotonDauEtaMax)
+      if (gamma.positiveeta() < photonSelections.photonDauEtaMin || gamma.positiveeta() > photonSelections.photonDauEtaMax)
         return false;
 
-      if ((TMath::Abs(gamma.dcapostopv()) < photonSelections.PhotonMinDCADauToPv) || (TMath::Abs(gamma.dcanegtopv()) < photonSelections.PhotonMinDCADauToPv))
+      if ((TMath::Abs(gamma.dcapostopv()) < photonSelections.photonMinDCADauToPv) || (TMath::Abs(gamma.dcanegtopv()) < photonSelections.photonMinDCADauToPv))
         return false;
 
-      if (TMath::Abs(gamma.dcaV0daughters()) > photonSelections.PhotonMaxDCAV0Dau)
+      if (TMath::Abs(gamma.dcaV0daughters()) > photonSelections.photonMaxDCAV0Dau)
         return false;
 
-      if ((gamma.v0radius() < photonSelections.PhotonMinRadius) || (gamma.v0radius() > photonSelections.PhotonMaxRadius))
+      if ((gamma.v0radius() < photonSelections.photonMinRadius) || (gamma.v0radius() > photonSelections.photonMaxRadius))
         return false;
 
-      if ((gamma.z() < photonSelections.PhotonMinZ) || (gamma.z() > photonSelections.PhotonMaxZ))
+      if ((gamma.z() < photonSelections.photonMinZ) || (gamma.z() > photonSelections.photonMaxZ))
         return false;
 
-      if (gamma.v0cosPA() < photonSelections.PhotonMinV0cospa)
+      if (gamma.v0cosPA() < photonSelections.photonMinV0cospa)
         return false;
 
       float PhotonPhi = RecoDecay::phi(gamma.px(), gamma.py());
-      if ((((PhotonPhi > photonSelections.PhotonPhiMin1) && (PhotonPhi < photonSelections.PhotonPhiMax1)) || ((PhotonPhi > photonSelections.PhotonPhiMin2) && (PhotonPhi < photonSelections.PhotonPhiMax2))) && ((photonSelections.PhotonPhiMin1 != -1) && (photonSelections.PhotonPhiMax1 != -1) && (photonSelections.PhotonPhiMin2 != -1) && (photonSelections.PhotonPhiMax2 != -1)))
+      if ((((PhotonPhi > photonSelections.photonPhiMin1) && (PhotonPhi < photonSelections.photonPhiMax1)) || ((PhotonPhi > photonSelections.photonPhiMin2) && (PhotonPhi < photonSelections.photonPhiMax2))) && ((photonSelections.photonPhiMin1 != -1) && (photonSelections.photonPhiMax1 != -1) && (photonSelections.photonPhiMin2 != -1) && (photonSelections.photonPhiMax2 != -1)))
         return false;
 
-      if (gamma.qtarm() > photonSelections.PhotonMaxQt)
+      if (gamma.qtarm() > photonSelections.photonMaxQt)
         return false;
 
-      if (TMath::Abs(gamma.alpha()) > photonSelections.PhotonMaxAlpha)
+      if (TMath::Abs(gamma.alpha()) > photonSelections.photonMaxAlpha)
         return false;
 
       auto posTrackGamma = gamma.template posTrackExtra_as<dauTracks>();
       auto negTrackGamma = gamma.template negTrackExtra_as<dauTracks>();
 
-      if ((posTrackGamma.tpcCrossedRows() < photonSelections.PhotonMinTPCCrossedRows) || (negTrackGamma.tpcCrossedRows() < photonSelections.PhotonMinTPCCrossedRows))
+      if ((posTrackGamma.tpcCrossedRows() < photonSelections.photonMinTPCCrossedRows) || (negTrackGamma.tpcCrossedRows() < photonSelections.photonMinTPCCrossedRows))
         return false;
 
-      if (((posTrackGamma.tpcNSigmaEl() < photonSelections.PhotonMinTPCNSigmas) || (posTrackGamma.tpcNSigmaEl() > photonSelections.PhotonMaxTPCNSigmas)))
+      if (((posTrackGamma.tpcNSigmaEl() < photonSelections.photonMinTPCNSigmas) || (posTrackGamma.tpcNSigmaEl() > photonSelections.photonMaxTPCNSigmas)))
         return false;
 
-      if (((negTrackGamma.tpcNSigmaEl() < photonSelections.PhotonMinTPCNSigmas) || (negTrackGamma.tpcNSigmaEl() > photonSelections.PhotonMaxTPCNSigmas)))
+      if (((negTrackGamma.tpcNSigmaEl() < photonSelections.photonMinTPCNSigmas) || (negTrackGamma.tpcNSigmaEl() > photonSelections.photonMaxTPCNSigmas)))
         return false;
     }
 
@@ -470,53 +470,53 @@ struct k892hadronphotonBkg {
 
     } else {
       // KShort basic selection criteria:
-      if ((TMath::Abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.KShortWindow) && kshortSelections.KShortWindow > 0)
+      if ((TMath::Abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
         return false;
 
-      if ((kshort.yK0Short() < kshortSelections.KShortMinRapidity) || (kshort.yK0Short() > kshortSelections.KShortMaxRapidity))
+      if ((kshort.yK0Short() < kshortSelections.kshortMinRapidity) || (kshort.yK0Short() > kshortSelections.kshortMaxRapidity))
         return false;
 
-      if ((kshort.negativeeta() < kshortSelections.KShortDauEtaMin) || (kshort.negativeeta() > kshortSelections.KShortDauEtaMax))
+      if ((kshort.negativeeta() < kshortSelections.kshortDauEtaMin) || (kshort.negativeeta() > kshortSelections.kshortDauEtaMax))
         return false;
 
-      if ((kshort.positiveeta() < kshortSelections.KShortDauEtaMin) || (kshort.positiveeta() > kshortSelections.KShortDauEtaMax))
+      if ((kshort.positiveeta() < kshortSelections.kshortDauEtaMin) || (kshort.positiveeta() > kshortSelections.kshortDauEtaMax))
         return false;
 
-      if ((TMath::Abs(kshort.dcapostopv()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(kshort.dcanegtopv()) < kshortSelections.KShortMinDCANegToPv))
+      if ((TMath::Abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (TMath::Abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
         return false;
 
-      if ((kshort.v0radius() < kshortSelections.KShortMinv0radius) || (kshort.v0radius() > kshortSelections.KShortMaxv0radius))
+      if ((kshort.v0radius() < kshortSelections.kshortMinv0radius) || (kshort.v0radius() > kshortSelections.kshortMaxv0radius))
         return false;
 
-      if ((kshort.z() < kshortSelections.KShortMinZ) || (kshort.z() > kshortSelections.KShortMaxZ))
+      if ((kshort.z() < kshortSelections.kshortMinZ) || (kshort.z() > kshortSelections.kshortMaxZ))
         return false;
 
-      if (TMath::Abs(kshort.dcaV0daughters()) > kshortSelections.KShortMaxDCAV0Dau)
+      if (TMath::Abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
         return false;
 
-      if (kshort.qtarm() < kshortSelections.KShortArmenterosCoefficient * TMath::Abs(kshort.alpha()))
+      if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * TMath::Abs(kshort.alpha()))
         return false;
 
-      if (kshort.v0cosPA() < kshortSelections.KShortMinv0cospa)
+      if (kshort.v0cosPA() < kshortSelections.kshortMinv0cospa)
         return false;
 
       auto posTrackKShort = kshort.template posTrackExtra_as<dauTracks>();
       auto negTrackKShort = kshort.template negTrackExtra_as<dauTracks>();
 
-      if ((posTrackKShort.tpcCrossedRows() < kshortSelections.KShortMinTPCCrossedRows) || (negTrackKShort.tpcCrossedRows() < kshortSelections.KShortMinTPCCrossedRows))
+      if ((posTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows) || (negTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows))
         return false;
 
       // MinITSCls
       bool posIsFromAfterburner = posTrackKShort.itsChi2PerNcl() < 0;
       bool negIsFromAfterburner = negTrackKShort.itsChi2PerNcl() < 0;
 
-      if (posTrackKShort.itsNCls() < kshortSelections.KShortMinITSclusters && (!kshortSelections.KShortRejectPosITSafterburner || posIsFromAfterburner))
+      if (posTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectPosITSafterburner || posIsFromAfterburner))
         return false;
-      if (negTrackKShort.itsNCls() < kshortSelections.KShortMinITSclusters && (!kshortSelections.KShortRejectNegITSafterburner || negIsFromAfterburner))
+      if (negTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectNegITSafterburner || negIsFromAfterburner))
         return false;
 
       float fKShortLifeTime = kshort.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
-      if (fKShortLifeTime > kshortSelections.KShortMaxLifeTime)
+      if (fKShortLifeTime > kshortSelections.kshortMaxLifeTime)
         return false;
     }
     return true;
@@ -558,7 +558,7 @@ struct k892hadronphotonBkg {
                                                    static_cast<float>(kstar.Py()),
                                                    static_cast<float>(kstar.Pz())},
                                         o2::constants::physics::MassK0Star892);
-          if (std::abs(rapidity) > kstarBkgConfig.KStarMaxRap)
+          if (std::abs(rapidity) > kstarBkgConfig.kstarMaxRap)
             continue;
 
           // Opening angle between photon and rotated K0s (QA only, not used as a cut)
@@ -682,9 +682,9 @@ struct k892hadronphotonBkg {
                                                      static_cast<float>(FourMomKStar.Pz())},
                                           o2::constants::physics::MassK0Star892);
 
-            if (openAngle > kstarBkgConfig.KStarMaxOPAngle)
+            if (openAngle > kstarBkgConfig.kstarMaxOPAngle)
               continue;
-            if (std::abs(rapidity) > kstarBkgConfig.KStarMaxRap)
+            if (std::abs(rapidity) > kstarBkgConfig.kstarMaxRap)
               continue;
 
             histos.fill(HIST("KStarBkg/h2dMixedKStarMassVsPt"), mass, pt);
@@ -729,9 +729,9 @@ struct k892hadronphotonBkg {
                                                      static_cast<float>(FourMomKStar.Pz())},
                                           o2::constants::physics::MassK0Star892);
 
-            if (openAngle > kstarBkgConfig.KStarMaxOPAngle)
+            if (openAngle > kstarBkgConfig.kstarMaxOPAngle)
               continue;
-            if (std::abs(rapidity) > kstarBkgConfig.KStarMaxRap)
+            if (std::abs(rapidity) > kstarBkgConfig.kstarMaxRap)
               continue;
 
             histos.fill(HIST("KStarBkg/h2dMixedKStarMassVsPt"), mass, pt);
