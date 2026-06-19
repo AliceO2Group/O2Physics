@@ -62,7 +62,6 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: If positive, keep 0 = MB, <0 triggered on something"};
 };
 
-
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBits");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all tracks are passed through. Bits for all selections are stored."};
