@@ -60,12 +60,12 @@ using namespace o2::framework::expressions;
 using KStars = soa::Join<aod::KStarCores, aod::KStarPhotonExtras, aod::KShortExtras, aod::KStarCollRef>;
 using MCKStars = soa::Join<aod::KStarCores, aod::KStarPhotonExtras, aod::KShortExtras, aod::KStarMCCores, aod::KStarCollRef>;
 
-static const std::vector<std::string> PhotonSels = {"NoSel", "V0Type", "DCADauToPV",
+static const std::vector<std::string> photonSels = {"NoSel", "V0Type", "DCADauToPV",
                                                     "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
                                                     "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
                                                     "PsiPair", "Phi", "Mass"};
 
-static const std::vector<std::string> KShortSels = {"NoSel", "V0Radius", "DCADau", "Armenteros",
+static const std::vector<std::string> kshortSels = {"NoSel", "V0Radius", "DCADau", "Armenteros",
                                                     "CosPA", "Y", "TPCCR", "DauITSCls", "Lifetime",
                                                     "TPCTOFPID", "DCADauToPV", "Mass"};
 
@@ -121,7 +121,7 @@ struct k892hadronphoton {
   } eventSelections;
 
   // generated
-  Configurable<bool> mc_keepOnlyFromGenerator{"mc_keepOnlyFromGenerator", true, "if true, consider only particles from generator to calculate efficiency."};
+  Configurable<bool> mcKeepOnlyFromGenerator{"mcKeepOnlyFromGenerator", true, "if true, consider only particles from generator to calculate efficiency."};
 
   // QA
   Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study. Only works with MC."};
@@ -134,7 +134,7 @@ struct k892hadronphoton {
 
   //// K0Short criteria:
   struct : ConfigurableGroup {
-    Configurable<float> kshort_MLThreshold{"kshort_MLThreshold", 0.1, "Decision Threshold value to select kshorts"};
+    Configurable<float> kshortMLThreshold{"kshortMLThreshold", 0.1, "Decision Threshold value to select kshorts"};
     Configurable<float> kshortMinDCANegToPv{"kshortMinDCANegToPv", .05, "min DCA Neg To PV (cm)"};
     Configurable<float> kshortMinDCAPosToPv{"kshortMinDCAPosToPv", .05, "min DCA Pos To PV (cm)"};
     Configurable<float> kshortMaxDCAV0Dau{"kshortMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
@@ -162,7 +162,7 @@ struct k892hadronphoton {
 
   //// Photon criteria:
   struct : ConfigurableGroup {
-    Configurable<float> gamma_MLThreshold{"gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
+    Configurable<float> gammaMLThreshold{"gammaMLThreshold", 0.1, "Decision Threshold value to select gammas"};
     Configurable<int> photonv0TypeSel{"photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};
     Configurable<float> photonMinDCADauToPv{"photonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
     Configurable<float> photonMaxDCAV0Dau{"photonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
@@ -408,16 +408,16 @@ struct k892hadronphoton {
       histos.add("Selection/Photon/hCandidateSel", "hCandidateSel", kTH1D, {axisCandSel});
       histos.add("Selection/KShort/hCandidateSel", "hCandidateSel", kTH1D, {axisCandSel});
 
-      for (size_t i = 0; i < PhotonSels.size(); ++i) {
-        const auto& sel = PhotonSels[i];
+      for (size_t i = 0; i < photonSels.size(); ++i) {
+        const auto& sel = photonSels[i];
 
         histos.add(Form("Selection/Photon/h2d%s", sel.c_str()), ("h2d" + sel).c_str(), kTH2D, {axisPt, axisPhotonMass});
         histos.get<TH1>(HIST("Selection/Photon/hCandidateSel"))->GetXaxis()->SetBinLabel(i + 1, sel.c_str());
         histos.add(Form("Selection/KStar/h2dPhoton%s", sel.c_str()), ("h2dPhoton" + sel).c_str(), kTH2D, {axisPt, axisKStarMass});
       }
 
-      for (size_t i = 0; i < KShortSels.size(); ++i) {
-        const auto& sel = KShortSels[i];
+      for (size_t i = 0; i < kshortSels.size(); ++i) {
+        const auto& sel = kshortSels[i];
 
         histos.add(Form("Selection/KShort/h2d%s", sel.c_str()), ("h2d" + sel).c_str(), kTH2D, {axisPt, axisKShortMass});
         histos.get<TH1>(HIST("Selection/KShort/hCandidateSel"))->GetXaxis()->SetBinLabel(i + 1, sel.c_str());
@@ -691,7 +691,7 @@ struct k892hadronphoton {
         continue;
 
       // Selection on the source (generator/transport)
-      if (!genParticle.producedByGenerator() && mc_keepOnlyFromGenerator)
+      if (!genParticle.producedByGenerator() && mcKeepOnlyFromGenerator)
         continue;
 
       // Select corresponding mc collision && Basic event selection
@@ -988,28 +988,28 @@ struct k892hadronphoton {
   void fillSelHistos(TKStarObject const& kstar, int PDGRequired)
   {
 
-    static constexpr std::string_view PhotonSelsLocal[] = {"NoSel", "V0Type", "DCADauToPV",
+    static constexpr std::string_view photonSelsLocal[] = {"NoSel", "V0Type", "DCADauToPV",
                                                            "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
                                                            "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
                                                            "PsiPair", "Phi", "Mass"};
 
-    static constexpr std::string_view KShortSelsLocal[] = {"NoSel", "V0Radius", "DCADau", "Armenteros",
+    static constexpr std::string_view kshortSelsLocal[] = {"NoSel", "V0Radius", "DCADau", "Armenteros",
                                                            "CosPA", "Y", "TPCCR", "DauITSCls", "Lifetime",
                                                            "TPCTOFPID", "DCADauToPV", "Mass"};
 
     if (std::abs(PDGRequired) == PDG_t::kGamma) {
-      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(PhotonSelsLocal))) {
+      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(photonSelsLocal))) {
         histos.fill(HIST("Selection/Photon/hCandidateSel"), selection_index);
-        histos.fill(HIST("Selection/Photon/h2d") + HIST(PhotonSelsLocal[selection_index]), kstar.photonPt(), kstar.photonMass());
-        histos.fill(HIST("Selection/KStar/h2dPhoton") + HIST(PhotonSelsLocal[selection_index]), kstar.pt(), kstar.kstarMass());
+        histos.fill(HIST("Selection/Photon/h2d") + HIST(photonSelsLocal[selection_index]), kstar.photonPt(), kstar.photonMass());
+        histos.fill(HIST("Selection/KStar/h2dPhoton") + HIST(photonSelsLocal[selection_index]), kstar.pt(), kstar.kstarMass());
       }
     }
 
     if (std::abs(PDGRequired) == PDG_t::kK0Short) {
-      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(KShortSelsLocal))) {
+      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(kshortSelsLocal))) {
         histos.fill(HIST("Selection/KShort/hCandidateSel"), selection_index);
-        histos.fill(HIST("Selection/KShort/h2d") + HIST(KShortSelsLocal[selection_index]), kstar.kshortPt(), kstar.kshortMass());
-        histos.fill(HIST("Selection/KStar/h2dKShort") + HIST(KShortSelsLocal[selection_index]), kstar.pt(), kstar.kstarMass());
+        histos.fill(HIST("Selection/KShort/h2d") + HIST(kshortSelsLocal[selection_index]), kstar.kshortPt(), kstar.kshortMass());
+        histos.fill(HIST("Selection/KStar/h2dKShort") + HIST(kshortSelsLocal[selection_index]), kstar.pt(), kstar.kstarMass());
       }
     }
   }

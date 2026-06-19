@@ -20,7 +20,6 @@
 //    oussama.benchikhi@cern.ch
 //
 
-#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -28,6 +27,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -42,11 +42,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include "Framework/BinningPolicy.h" 
 
-#include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
 #include <TH1.h>
-#include <TMath.h>
 #include <TRandom3.h>
 
 #include <array>
@@ -54,6 +53,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <cstddef>
 
 using namespace o2;
 using namespace o2::framework;
@@ -127,7 +127,7 @@ struct k892hadronphotonBkg {
   //// Photon criteria:
   struct : ConfigurableGroup {
     std::string prefix = "photonSelections"; // JSON group name
-    Configurable<float> gamma_MLThreshold{"gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
+    Configurable<float> gammaMLThreshold{"gammaMLThreshold", 0.1, "Decision Threshold value to select gammas"};
     Configurable<int> photonv0TypeSel{"photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};
     Configurable<float> photonMinDCADauToPv{"photonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
     Configurable<float> photonMaxDCAV0Dau{"photonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
@@ -155,7 +155,7 @@ struct k892hadronphotonBkg {
   // KShort criteria:
   struct : ConfigurableGroup {
     std::string prefix = "kshortSelections"; // JSON group name
-    Configurable<float> kshort_MLThreshold{"kshort_MLThreshold", 0.1, "Decision Threshold value to select kshorts"};
+    Configurable<float> kshortMLThreshold{"kshortMLThreshold", 0.1, "Decision Threshold value to select kshorts"};
     Configurable<float> kshortMinDCANegToPv{"kshortMinDCANegToPv", .05, "min DCA Neg To PV (cm)"};
     Configurable<float> kshortMinDCAPosToPv{"kshortMinDCAPosToPv", .05, "min DCA Pos To PV (cm)"};
     Configurable<float> kshortMaxDCAV0Dau{"kshortMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
@@ -249,7 +249,7 @@ struct k892hadronphotonBkg {
   //_______________________________________________
   // Event selection (identical to the builder)
   template <typename TCollision>
-  bool IsEventAccepted(TCollision const& collision, bool fillHists)
+  bool isEventAccepted(TCollision const& collision, bool fillHists)
   {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
@@ -393,10 +393,10 @@ struct k892hadronphotonBkg {
     if (gamma.v0Type() != photonSelections.photonv0TypeSel && photonSelections.photonv0TypeSel > -1)
       return false;
 
-    float PhotonY = RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma);
+    float photonY = RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma);
 
     if (useMLScores) {
-      if (gamma.gammaBDTScore() <= photonSelections.gamma_MLThreshold)
+      if (gamma.gammaBDTScore() <= photonSelections.gammaMLThreshold)
         return false;
 
     } else {
@@ -405,7 +405,7 @@ struct k892hadronphotonBkg {
       if ((gamma.mGamma() < 0) || (gamma.mGamma() > photonSelections.photonMaxMass))
         return false;
 
-      if ((PhotonY < photonSelections.photonMinRapidity) || (PhotonY > photonSelections.photonMaxRapidity))
+      if ((photonY < photonSelections.photonMinRapidity) || (photonY > photonSelections.photonMaxRapidity))
         return false;
 
       if (gamma.negativeeta() < photonSelections.photonDauEtaMin || gamma.negativeeta() > photonSelections.photonDauEtaMax)
@@ -429,8 +429,8 @@ struct k892hadronphotonBkg {
       if (gamma.v0cosPA() < photonSelections.photonMinV0cospa)
         return false;
 
-      float PhotonPhi = RecoDecay::phi(gamma.px(), gamma.py());
-      if ((((PhotonPhi > photonSelections.photonPhiMin1) && (PhotonPhi < photonSelections.photonPhiMax1)) || ((PhotonPhi > photonSelections.photonPhiMin2) && (PhotonPhi < photonSelections.photonPhiMax2))) && ((photonSelections.photonPhiMin1 != -1) && (photonSelections.photonPhiMax1 != -1) && (photonSelections.photonPhiMin2 != -1) && (photonSelections.photonPhiMax2 != -1)))
+      float photonPhi = RecoDecay::phi(gamma.px(), gamma.py());
+      if ((((photonPhi > photonSelections.photonPhiMin1) && (photonPhi < photonSelections.photonPhiMax1)) || ((photonPhi > photonSelections.photonPhiMin2) && (photonPhi < photonSelections.photonPhiMax2))) && ((photonSelections.photonPhiMin1 != -1) && (photonSelections.photonPhiMax1 != -1) && (photonSelections.photonPhiMin2 != -1) && (photonSelections.photonPhiMax2 != -1)))
         return false;
 
       if (gamma.qtarm() > photonSelections.photonMaxQt)
@@ -465,7 +465,7 @@ struct k892hadronphotonBkg {
       return false;
 
     if (useMLScores) {
-      // if (kshort.k0ShortBDTScore() <= kshortSelections.KShort_MLThreshold)
+      // if (kshort.k0ShortBDTScore() <= kshortSelections.kshortMLThreshold)
       return false;
 
     } else {
@@ -600,7 +600,7 @@ struct k892hadronphotonBkg {
     // ── Pass 1: populate pools using single-particle selections ──
     for (const auto& coll : collisions) {
 
-      if (eventSelections.fUseEventSelection && !IsEventAccepted(coll, true))
+      if (eventSelections.fUseEventSelection && !isEventAccepted(coll, true))
         continue;
 
       for (size_t i = 0; i < v0grouped[coll.globalIndex()].size(); i++) {
@@ -654,7 +654,7 @@ struct k892hadronphotonBkg {
         for (int kIdx : kshorts1) {
           auto kshort = fullV0s.rawIteratorAt(kIdx);
           float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
-          ROOT::Math::PxPyPzEVector FourMomKShort(
+          ROOT::Math::PxPyPzEVector fourMomKShort(
             kshort.px(), kshort.py(), kshort.pz(),
             std::sqrt(kP * kP +
                       o2::constants::physics::MassK0Short *
@@ -663,23 +663,23 @@ struct k892hadronphotonBkg {
           for (int pIdx : photons2) {
             auto photon = fullV0s.rawIteratorAt(pIdx);
             float pP = std::hypot(photon.px(), photon.py(), photon.pz());
-            ROOT::Math::PxPyPzEVector FourMomPhoton(
+            ROOT::Math::PxPyPzEVector fourMomPhoton(
               photon.px(), photon.py(), photon.pz(), pP);
 
-            auto FourMomKStar = FourMomPhoton + FourMomKShort;
+            auto fourMomKStar = fourMomPhoton + fourMomKShort;
 
-            double cosOA = FourMomPhoton.Vect().Dot(FourMomKShort.Vect()) /
-                           (FourMomPhoton.P() * FourMomKShort.P());
+            double cosOA = fourMomPhoton.Vect().Dot(fourMomKShort.Vect()) /
+                           (fourMomPhoton.P() * fourMomKShort.P());
             double openAngle = std::acos(cosOA);
-            float mass = FourMomKStar.M();
-            float pt = FourMomKStar.Pt();
+            float mass = fourMomKStar.M();
+            float pt = fourMomKStar.Pt();
             // Rapidity computed under the K*(892) mass hypothesis (NOT the actual pair
             // invariant mass) to match the same-event rotational background and the
             // buildKStar signal selection, so the rapidity acceptance is identical for
             // signal and all backgrounds.
-            float rapidity = RecoDecay::y(std::array{static_cast<float>(FourMomKStar.Px()),
-                                                     static_cast<float>(FourMomKStar.Py()),
-                                                     static_cast<float>(FourMomKStar.Pz())},
+            float rapidity = RecoDecay::y(std::array{static_cast<float>(fourMomKStar.Px()),
+                                                     static_cast<float>(fourMomKStar.Py()),
+                                                     static_cast<float>(fourMomKStar.Pz())},
                                           o2::constants::physics::MassK0Star892);
 
             if (openAngle > kstarBkgConfig.kstarMaxOPAngle)
@@ -701,32 +701,32 @@ struct k892hadronphotonBkg {
         for (int pIdx : photons1) {
           auto photon = fullV0s.rawIteratorAt(pIdx);
           float pP = std::hypot(photon.px(), photon.py(), photon.pz());
-          ROOT::Math::PxPyPzEVector FourMomPhoton(
+          ROOT::Math::PxPyPzEVector fourMomPhoton(
             photon.px(), photon.py(), photon.pz(), pP);
 
           for (int kIdx : kshorts2) {
             auto kshort = fullV0s.rawIteratorAt(kIdx);
             float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
-            ROOT::Math::PxPyPzEVector FourMomKShort(
+            ROOT::Math::PxPyPzEVector fourMomKShort(
               kshort.px(), kshort.py(), kshort.pz(),
               std::sqrt(kP * kP +
                         o2::constants::physics::MassK0Short *
                           o2::constants::physics::MassK0Short));
 
-            auto FourMomKStar = FourMomPhoton + FourMomKShort;
+            auto fourMomKStar = fourMomPhoton + fourMomKShort;
 
-            double cosOA = FourMomPhoton.Vect().Dot(FourMomKShort.Vect()) /
-                           (FourMomPhoton.P() * FourMomKShort.P());
+            double cosOA = fourMomPhoton.Vect().Dot(fourMomKShort.Vect()) /
+                           (fourMomPhoton.P() * fourMomKShort.P());
             double openAngle = std::acos(cosOA);
-            float mass = FourMomKStar.M();
-            float pt = FourMomKStar.Pt();
+            float mass = fourMomKStar.M();
+            float pt = fourMomKStar.Pt();
             // Rapidity computed under the K*(892) mass hypothesis (NOT the actual pair
             // invariant mass) to match the same-event rotational background and the
             // buildKStar signal selection, so the rapidity acceptance is identical for
             // signal and all backgrounds.
-            float rapidity = RecoDecay::y(std::array{static_cast<float>(FourMomKStar.Px()),
-                                                     static_cast<float>(FourMomKStar.Py()),
-                                                     static_cast<float>(FourMomKStar.Pz())},
+            float rapidity = RecoDecay::y(std::array{static_cast<float>(fourMomKStar.Px()),
+                                                     static_cast<float>(fourMomKStar.Py()),
+                                                     static_cast<float>(fourMomKStar.Pz())},
                                           o2::constants::physics::MassK0Star892);
 
             if (openAngle > kstarBkgConfig.kstarMaxOPAngle)
