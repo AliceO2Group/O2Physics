@@ -245,7 +245,7 @@ DECLARE_SOA_COLUMN(Charge, charge, int8_t);                      //! Charge of c
 DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                     //! Track id of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                     //! Track id of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                     //! Track id of charm hadron prong2
-DECLARE_SOA_COLUMN(XiProngId, xiProngId, int);                   //! Cascade id of the Ξ prong in Ξc → Ξππ candidates
+DECLARE_SOA_COLUMN(CascId, cascId, int);                         //! Cascade id of the Ξ prong in Ξc → Ξππ candidates
 DECLARE_SOA_COLUMN(Prong0Pt, prong0Pt, float);                   //! Track pT of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Pt, prong1Pt, float);                   //! Track pT of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Pt, prong2Pt, float);                   //! Track pT of charm hadron prong2
