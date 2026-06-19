@@ -534,11 +534,11 @@ struct k892hadronphotonBkg {
       return;
 
     const float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
-    for (int kIdx : kshortIndices) {
-      auto kshort = fullV0s.rawIteratorAt(kIdx);
+    for (const int& kIdx : kshortIndices) {
+      const auto& kshort = fullV0s.rawIteratorAt(kIdx);
 
-      for (int pIdx : photonIndices) {
-        auto photon = fullV0s.rawIteratorAt(pIdx);
+      for (const int& pIdx : photonIndices) {
+        const auto& photon = fullV0s.rawIteratorAt(pIdx);
 
         // photon as a massless 4-vector
         ROOT::Math::PtEtaPhiMVector pGamma(photon.pt(),
@@ -631,7 +631,7 @@ struct k892hadronphotonBkg {
     // the framework applies JSON overrides), silently ignoring user configuration.
     BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}, true};
 
-    for (auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,
+    for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,
                                                  collisions, collisions)) {
       if (coll1.globalIndex() == coll2.globalIndex())
         continue;
@@ -651,8 +651,8 @@ struct k892hadronphotonBkg {
 
       // K0s(coll1) × γ(coll2)
       if (!kshorts1.empty() && !photons2.empty()) {
-        for (int kIdx : kshorts1) {
-          auto kshort = fullV0s.rawIteratorAt(kIdx);
+        for (const int& kIdx : kshorts1) {
+          const auto& kshort = fullV0s.rawIteratorAt(kIdx);
           float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
           ROOT::Math::PxPyPzEVector fourMomKShort(
             kshort.px(), kshort.py(), kshort.pz(),
@@ -660,8 +660,8 @@ struct k892hadronphotonBkg {
                       o2::constants::physics::MassK0Short *
                         o2::constants::physics::MassK0Short));
 
-          for (int pIdx : photons2) {
-            auto photon = fullV0s.rawIteratorAt(pIdx);
+          for (const int& pIdx : photons2) {
+            const auto& photon = fullV0s.rawIteratorAt(pIdx);
             float pP = std::hypot(photon.px(), photon.py(), photon.pz());
             ROOT::Math::PxPyPzEVector fourMomPhoton(
               photon.px(), photon.py(), photon.pz(), pP);
@@ -698,14 +698,14 @@ struct k892hadronphotonBkg {
 
       // γ(coll1) × K0s(coll2)
       if (!photons1.empty() && !kshorts2.empty()) {
-        for (int pIdx : photons1) {
-          auto photon = fullV0s.rawIteratorAt(pIdx);
+        for (const int pIdx : photons1) {
+          const auto& photon = fullV0s.rawIteratorAt(pIdx);
           float pP = std::hypot(photon.px(), photon.py(), photon.pz());
           ROOT::Math::PxPyPzEVector fourMomPhoton(
             photon.px(), photon.py(), photon.pz(), pP);
 
-          for (int kIdx : kshorts2) {
-            auto kshort = fullV0s.rawIteratorAt(kIdx);
+          for (const int kIdx : kshorts2) {
+            const auto& kshort = fullV0s.rawIteratorAt(kIdx);
             float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
             ROOT::Math::PxPyPzEVector fourMomKShort(
               kshort.px(), kshort.py(), kshort.pz(),

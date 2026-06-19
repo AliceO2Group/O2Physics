@@ -683,7 +683,7 @@ struct k892hadronphoton {
     fillGeneratedEventProperties(mcCollisions, collisions);
     std::vector<int> listBestCollisionIdx = getListOfRecoCollIndices(mcCollisions, collisions);
 
-    for (auto& genParticle : genParticles) {
+    for (const auto& genParticle : genParticles) {
       float centrality = 100.5f;
 
       // Has MC collision
@@ -802,10 +802,10 @@ struct k892hadronphoton {
     static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
 
     bool fIsKStar = kstar.isKStar();
-    int PhotonPDGCode = kstar.photonPDGCode();
-    int PhotonPDGCodeMother = kstar.photonPDGCodeMother();
-    int KShortPDGCode = kstar.kshortPDGCode();
-    int KShortPDGCodeMother = kstar.kshortPDGCodeMother();
+    int photonPDGCode = kstar.photonPDGCode();
+    int photonPDGCodeMother = kstar.photonPDGCodeMother();
+    int kshortPDGCode = kstar.kshortPDGCode();
+    int kshortPDGCodeMother = kstar.kshortPDGCodeMother();
     float kstarpT = kstar.pt();
     float kstarMass = kstar.kstarMass();
 
@@ -813,24 +813,24 @@ struct k892hadronphoton {
 
     //_______________________________________
     // Real Gamma x Real KShort - but not from the same kstar!
-    if ((!fIsKStar)) { //(std::abs(PhotonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) == PDG_t::kK0Short) &&
+    if ((!fIsKStar)) { //(std::abs(photonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) == PDG_t::kK0Short) &&
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueDaughters"), kstarpT, kstarMass);
-      histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), KShortPDGCodeMother, PhotonPDGCodeMother);
+      histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), kshortPDGCodeMother, photonPDGCodeMother);
     }
 
     //_______________________________________
     // Real Gamma x fake KShort
-    if ((std::abs(PhotonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) != PDG_t::kK0Short))
+    if ((std::abs(photonPDGCode) == PDG_t::kGamma) && (std::abs(kshortPDGCode) != PDG_t::kK0Short))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueGammaFakeKShort"), kstarpT, kstarMass);
 
     //_______________________________________
     // Fake Gamma x Real KShort
-    if ((std::abs(PhotonPDGCode) != PDG_t::kGamma) && ((std::abs(KShortPDGCode) == PDG_t::kK0Short)))
+    if ((std::abs(photonPDGCode) != PDG_t::kGamma) && ((std::abs(kshortPDGCode) == PDG_t::kK0Short)))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeGammaTrueKShort"), kstarpT, kstarMass);
 
     //_______________________________________
     // Fake Gamma x Fake KShort
-    if ((std::abs(PhotonPDGCode) != PDG_t::kGamma) && (std::abs(KShortPDGCode) != PDG_t::kK0Short))
+    if ((std::abs(photonPDGCode) != PDG_t::kGamma) && (std::abs(kshortPDGCode) != PDG_t::kK0Short))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeDaughters"), kstarpT, kstarMass);
   }
 
