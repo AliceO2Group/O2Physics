@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.tracktrackv
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -168,8 +168,8 @@ struct FemtoTripletTrackTrackV0 {
       lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
-      tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning);
-      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
+      tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning, confMixing);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kSe_Analysis, modes::Mode::kMe_Analysis>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
@@ -177,33 +177,33 @@ struct FemtoTripletTrackTrackV0 {
       lambdaHistSpec = v0histmanager::makeV0McHistSpecMap(confLambdaBinning);
       posDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
-      tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning);
-      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
+      tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kSe_Analysis_Mc, modes::Mode::kMe_Analysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
     }
     hRegistry.print();
   };
 
   void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
+    tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Analysis>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackV0, processSameEvent, "Enable processing same event processing", true);
 
   void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+    tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Analysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackV0, processSameEventMc, "Enable processing same event processing", false);
 
   void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition1, trackPartition2, lambdaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kMe_Analysis>(cols, tracks, trackPartition1, trackPartition2, lambdaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackV0, processMixedEvent, "Enable processing mixed event processing", true);
 
   void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
   {
-    tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kMe_Analysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackV0, processMixedEventMc, "Enable processing mixed event processing", false);
 };

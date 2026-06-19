@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoAHelpers.h>
+#include <Framework/Logger.h>
 
 #include <cstdint>
 
@@ -53,6 +54,8 @@ void processSameEvent(T1 const& SliceParticle,
                       T7& TcManager,
                       TripletOrder tripletOrder)
 {
+  TripletHistManager.resetTrackedParticlesPerEvent();
+
   for (auto const& part : SliceParticle) {
     ParticleHistManager.template fill<mode>(part, TrackTable);
   }
@@ -95,8 +98,11 @@ void processSameEvent(T1 const& SliceParticle,
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
+      TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
     }
   }
+
+  TripletHistManager.fillMixingQaSe();
 }
 
 // process same event for identical 2 particles and 1 other particle
@@ -114,6 +120,8 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
                       T9& TcManager,
                       TripletOrder tripletOrder)
 {
+  TripletHistManager.resetTrackedParticlesPerEvent();
+
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
   }
@@ -153,9 +161,12 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
       // if triplet cuts are configured check them before filling
       if (TripletHistManager.checkTripletCuts()) {
         TripletHistManager.template fill<mode>();
+        TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
       }
     }
   }
+
+  TripletHistManager.fillMixingQaSe();
 }
 
 // process same event for 3 different particles
@@ -183,6 +194,8 @@ void processSameEvent(T1 const& SliceParticle1,
                       T10& CtrManager,
                       T11& TcManager)
 {
+  TripletHistManager.resetTrackedParticlesPerEvent();
+
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
   }
@@ -214,8 +227,11 @@ void processSameEvent(T1 const& SliceParticle1,
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
+      TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
     }
   }
+
+  TripletHistManager.fillMixingQaSe();
 }
 
 // process same event for 3 identical particles with mc information
@@ -244,9 +260,12 @@ void processSameEvent(T1 const& SliceParticle,
                       T11& TcManager,
                       TripletOrder tripletOrder)
 {
+  TripletHistManager.resetTrackedParticlesPerEvent();
+
   for (auto const& part : SliceParticle) {
     ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
+
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
     // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
@@ -280,8 +299,11 @@ void processSameEvent(T1 const& SliceParticle,
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
+      TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
     }
   }
+
+  TripletHistManager.fillMixingQaSe();
 }
 
 // process same event for 2 identical particles and one other with mc information
@@ -303,6 +325,8 @@ void processSameEvent(T1 const& SliceParticle1,
                       T13& TcManager,
                       TripletOrder tripletOrder)
 {
+  TripletHistManager.resetTrackedParticlesPerEvent();
+
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
@@ -337,9 +361,12 @@ void processSameEvent(T1 const& SliceParticle1,
       // if triplet cuts are configured check them before filling
       if (TripletHistManager.checkTripletCuts()) {
         TripletHistManager.template fill<mode>();
+        TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
       }
     }
   }
+
+  TripletHistManager.fillMixingQaSe();
 }
 
 // process same event for 3 different particles with mc information
@@ -375,6 +402,8 @@ void processSameEvent(T1 const& SliceParticle1,
                       T14& CtrManager,
                       T15& TcManager)
 {
+  TripletHistManager.resetTrackedParticlesPerEvent();
+
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
@@ -384,6 +413,7 @@ void processSameEvent(T1 const& SliceParticle1,
   for (auto const& part : SliceParticle3) {
     ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
+
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
     // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcPartonicMothers)) {
@@ -400,8 +430,11 @@ void processSameEvent(T1 const& SliceParticle1,
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
+      TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
     }
   }
+
+  TripletHistManager.fillMixingQaSe();
 }
 
 // process mixed event
@@ -429,19 +462,47 @@ void processMixedEvent(T1 const& Collisions,
                        T10& CtrManager,
                        T11& TcManager)
 {
+  int64_t lastCollisionIndex = -1;
+  int windowSizeRaw = 0;
+  int windowSizeEffective = 0;
+
   for (auto const& [collision1, collision2, collision3] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions, Collisions)) {
+
+    // --- new window ---
+    if (collision1.globalIndex() != lastCollisionIndex) {
+      if (lastCollisionIndex != -1) {
+        TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
+      }
+      windowSizeRaw = 0;
+      windowSizeEffective = 0;
+      lastCollisionIndex = collision1.globalIndex();
+    }
+
+    ++windowSizeRaw;
+
     if (collision1.magField() != collision2.magField() ||
         collision2.magField() != collision3.magField() ||
         collision1.magField() != collision3.magField()) {
+      LOG(warn) << "Tried mixing events with different magnetic field.";
       continue;
     }
+
     CtrManager.setMagField(collision1.magField());
+
     auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     auto sliceParticle3 = Partition3->sliceByCached(o2::aod::femtobase::stored::fColId, collision3.globalIndex(), cache);
+
+    TripletHistManager.resetTrackedParticlesPerEvent();
+
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0 || sliceParticle3.size() == 0) {
+      TripletHistManager.fillMixingQaMePerEvent();
       continue;
     }
+
+    bool hasValidTriplet = false;
+    TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
+
     for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2, sliceParticle3))) {
       // pair cleaning
       if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
@@ -452,12 +513,27 @@ void processMixedEvent(T1 const& Collisions,
       if (CtrManager.isCloseTriplet()) {
         continue;
       }
+
       TripletHistManager.setTriplet(p1, p2, p3, collision1, collision2, collision3);
       CtrManager.fill(TripletHistManager.getQ3());
+
       if (TripletHistManager.checkTripletCuts()) {
+        hasValidTriplet = true;
+        TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
       }
     }
+
+    if (hasValidTriplet) {
+      ++windowSizeEffective;
+    }
+
+    TripletHistManager.fillMixingQaMePerEvent();
+  }
+
+  // --- final window ---
+  if (windowSizeRaw > 0) {
+    TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
   }
 }
 
@@ -490,19 +566,46 @@ void processMixedEvent(T1 const& Collisions,
                        T12& CtrManager,
                        T13& TcManager)
 {
+  int64_t lastCollisionIndex = -1;
+  int windowSizeRaw = 0;
+  int windowSizeEffective = 0;
+
   for (auto const& [collision1, collision2, collision3] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions, Collisions)) {
+
+    if (collision1.globalIndex() != lastCollisionIndex) {
+      if (lastCollisionIndex != -1) {
+        TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
+      }
+      windowSizeRaw = 0;
+      windowSizeEffective = 0;
+      lastCollisionIndex = collision1.globalIndex();
+    }
+
+    ++windowSizeRaw;
+
     if (collision1.magField() != collision2.magField() ||
         collision2.magField() != collision3.magField() ||
         collision1.magField() != collision3.magField()) {
+      LOG(warn) << "Tried mixing events with different magnetic field.";
       continue;
     }
+
     CtrManager.setMagField(collision1.magField());
+
     auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     auto sliceParticle3 = Partition3->sliceByCached(o2::aod::femtobase::stored::fColId, collision3.globalIndex(), cache);
+
+    TripletHistManager.resetTrackedParticlesPerEvent();
+
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0 || sliceParticle3.size() == 0) {
+      TripletHistManager.fillMixingQaMePerEvent();
       continue;
     }
+
+    bool hasValidTriplet = false;
+    TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
+
     for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2, sliceParticle3))) {
       // pair cleaning
       if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
@@ -513,12 +616,26 @@ void processMixedEvent(T1 const& Collisions,
       if (CtrManager.isCloseTriplet()) {
         continue;
       }
+
       TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, collision1, collision2, collision3, mcCollisions);
       CtrManager.fill(TripletHistManager.getQ3());
+
       if (TripletHistManager.checkTripletCuts()) {
+        hasValidTriplet = true;
+        TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
       }
     }
+
+    if (hasValidTriplet) {
+      ++windowSizeEffective;
+    }
+
+    TripletHistManager.fillMixingQaMePerEvent();
+  }
+
+  if (windowSizeRaw > 0) {
+    TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
   }
 }
 
