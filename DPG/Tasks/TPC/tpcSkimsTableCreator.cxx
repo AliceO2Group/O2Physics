@@ -103,6 +103,9 @@ struct TreeWriterTpcV0 {
   Configurable<float> maxPt4dwnsmplTsalisProtons{"maxPt4dwnsmplTsalisProtons", 100., "Maximum Pt for applying downsampling factor of protons"};
   Configurable<float> maxPt4dwnsmplTsalisElectrons{"maxPt4dwnsmplTsalisElectrons", 100., "Maximum Pt for applying  downsampling factor of electrons"};
   Configurable<float> maxPt4dwnsmplTsalisKaons{"maxPt4dwnsmplTsalisKaons", 100., "Maximum Pt for applying  downsampling factor of kaons"};
+  // Configurables for output tables reservation size
+  Configurable<float> reserveV0Ratio{"reserveV0Ratio", 0.06, "Ratio of how many tracks from V0s are expected in the output table to the input V0 table size"};
+  Configurable<float> reserveCascRatio{"reserveCascRatio", 0.003, "Ratio of how many tracks from cascades are expected in the output table to the input Cascade table size"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
@@ -425,6 +428,13 @@ struct TreeWriterTpcV0 {
     int nV0Entries{0};
     int nCascEntries{0};
 
+    const int64_t expectedOutputTableSize = static_cast<int64_t>(reserveV0Ratio * myV0s.size() + reserveCascRatio * myCascs.size());
+    if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
+      rowTPCTree.reserve(expectedOutputTableSize);
+    } else {
+      rowTPCTreeWithTrkQA.reserve(expectedOutputTableSize);
+    }
+
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
@@ -444,11 +454,9 @@ struct TreeWriterTpcV0 {
       if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
-        rowTPCTree.reserve(2 * v0s.size() + cascs.size());
       } else if constexpr (ModeId == ModeWithTrkQA) {
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();
-        rowTPCTreeWithTrkQA.reserve(2 * v0s.size() + cascs.size());
       }
 
       auto getTrackQA = [&](const TrksType::iterator& track) {
@@ -650,6 +658,8 @@ struct TreeWriterTpcTof {
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
+  // Configurable for output table reservation size
+  Configurable<float> reserveTrackRatio{"reserveTrackRatio", 0.005, "Ratio of how many tracks are expected in the output table to the input Tracks table size"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
@@ -821,6 +831,14 @@ struct TreeWriterTpcTof {
         labelTrack2TrackQA.at(trackId) = trackQA.globalIndex();
       }
     }
+
+    const int64_t expectedOutputTableSize = static_cast<int64_t>(reserveTrackRatio * myTracks.size());
+    if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
+      rowTPCTOFTree.reserve(expectedOutputTableSize);
+    } else {
+      rowTPCTOFTreeWithTrkQA.reserve(expectedOutputTableSize);
+    }
+
     for (const auto& collision : collisions) {
       const auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
       if (!isEventSelected(collision, applyEvSel)) {
@@ -847,11 +865,9 @@ struct TreeWriterTpcTof {
       if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
-        rowTPCTOFTree.reserve(tracks.size());
       } else {
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();
-        rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
       }
       for (auto const& trk : tracksWithITSPid) {
         if (!isTrackSelected(trk, trackSelection)) {
