@@ -1360,8 +1360,7 @@ struct AnalysisSameEventPairing {
     Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
     Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
     Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
-    Configurable<bool> useRemoteFlow{"cfgUseRemoteFlow", false, "Use remote flow information from CCDB"};
-    Configurable<bool> useLocalFlow{"cfgUseLocalFlow", false, "Use flow information from local cache"};
+    Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
     Configurable<bool> useQvecCalib{"cfgUseQvecCalib", false, "Use flow correction factors for Q-vector recalibration when removing the daughter"};
     Configurable<bool> useCorrectionForRun{"cfgUseCorrectionForRun", false, "Apply run-by-run correction factors to the flow vectors"};
   } fConfigOptions;
@@ -1820,7 +1819,7 @@ struct AnalysisSameEventPairing {
       VarManager::SetEfficiencyObject(fConfigOptions.efficiencyType.value, effList->FindObject("efficiency"));
     }
 
-    if (fConfigOptions.useRemoteFlow) {
+    if (fConfigOptions.useFlowReso) {
       TString PathFlow = fConfigCCDB.flowPath.value;
       TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
       TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
@@ -1828,17 +1827,6 @@ struct AnalysisSameEventPairing {
       ResoFlowEP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), timestamp);
       if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
         LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
-      }
-    } else if (fConfigOptions.useLocalFlow) {
-      TString pathFlow = fConfigCCDB.flowPathLocal.value;
-      TFile* fileFlow = TFile::Open(pathFlow.Data(), "READ");
-      if (fileFlow == nullptr || fileFlow->IsZombie()) {
-        LOGF(fatal, "Flow resolution file %s cannot be opened", pathFlow.Data());
-      }
-      fileFlow->GetObject("ScalarProduct", ResoFlowSP);
-      fileFlow->GetObject("EventPlane", ResoFlowEP);
-      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
-        LOGF(fatal, "Flow resolution histograms not available in file %s", pathFlow.Data());
       }
     }
 
@@ -2680,7 +2668,7 @@ struct AnalysisSameEventPairing {
 
       fNPairPerEvent = 0;
       VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, assocs1, assocs2);
-      if (fConfigOptions.useRemoteFlow || fConfigOptions.useLocalFlow) {
+      if (fConfigOptions.useFlowReso) {
         VarManager::FillTwoMixEventsFlowResoFactor(ResoFlowSP, ResoFlowEP);
       }
       runMixedPairing<TPairType, TEventFillMap>(assocs1, assocs2, tracks, tracks);

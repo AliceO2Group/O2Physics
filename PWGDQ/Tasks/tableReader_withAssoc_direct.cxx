@@ -1325,8 +1325,7 @@ struct AnalysisSameEventPairing {
     Configurable<bool> fConfigMiniTree{"cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
     Configurable<float> fConfigMiniTreeMinMass{"cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
     Configurable<float> fConfigMiniTreeMaxMass{"cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
-    Configurable<bool> useRemoteFlow{"cfgUseRemoteFlow", false, "Use remote flow information from CCDB"};
-    Configurable<bool> useLocalFlow{"cfgUseLocalFlow", false, "Use flow information from local cache"};
+    Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
     Configurable<bool> useQvecCalib{"cfgUseQvecCalib", false, "Use flow correction factors for Q-vector recalibration when removing the daughter"};
     Configurable<bool> useCorrectionForRun{"cfgUseCorrectionForRun", false, "Apply run-by-run correction factors to the flow vectors"};
   } fConfigOptions;
@@ -1593,7 +1592,7 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    if (fConfigOptions.useRemoteFlow) {
+    if (fConfigOptions.useFlowReso) {
       TString PathFlow = fConfigCCDB.flowPath.value;
       TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
       TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
@@ -1601,18 +1600,6 @@ struct AnalysisSameEventPairing {
       ResoFlowEP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), timestamp);
       if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
         LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
-      }
-    } else if (fConfigOptions.useLocalFlow) {
-      // LOGP(info, "Developing");
-      TString pathFlow = fConfigCCDB.flowPathLocal.value;
-      TFile* fileFlow = TFile::Open(pathFlow.Data(), "READ");
-      if (fileFlow == nullptr || fileFlow->IsZombie()) {
-        LOGF(fatal, "Flow resolution file %s cannot be opened", pathFlow.Data());
-      }
-      fileFlow->GetObject("ScalarProduct", ResoFlowSP);
-      fileFlow->GetObject("EventPlane", ResoFlowEP);
-      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
-        LOGF(fatal, "Flow resolution histograms not available in file %s", pathFlow.Data());
       }
     }
 
