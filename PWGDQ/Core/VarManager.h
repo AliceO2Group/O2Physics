@@ -1549,12 +1549,6 @@ class VarManager : public TObject
     fgEOR = eor;
   }
 
-  static void SetEventQVectorCorrection(TH3F* qvec)
-  {
-    fgObjQvec = qvec;
-    fgApplyQVectorCorrection = true;
-  }
-
  public:
   VarManager();
   ~VarManager() override;
@@ -1615,8 +1609,6 @@ class VarManager : public TObject
 
   static int fgEfficiencyType;      // type of efficiency correction to apply
   static TObject* fgEfficiencyHist; // histogram for efficiency correction
-  static TH3F* fgObjQvec;
-  static bool fgApplyQVectorCorrection;
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -6085,18 +6077,10 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     float Q2Y0A = values[kQ2Y0A] * values[kMultA];
     float nNorm = values[kMultA];
 
-    int centBin = static_cast<int>(values[kCentFT0C]) + 1; // centrality bin
-    int detIdx = 6;                                        // TPC all
-    EventPlaneHelper epHelper;
     // checkTrack(t1);
     if (isSelectedinTPC(t1) && values[kAmbi1] > 0) {
       float qx1 = t1.pt() * TMath::Cos(2. * t1.phi());
       float qy1 = t1.pt() * TMath::Sin(2. * t1.phi());
-      if (fgApplyQVectorCorrection) {
-        epHelper.DoRecenter(qx1, qy1, fgObjQvec->GetBinContent(centBin, 1, detIdx + 1), fgObjQvec->GetBinContent(centBin, 2, detIdx + 1));
-        epHelper.DoTwist(qx1, qy1, fgObjQvec->GetBinContent(centBin, 3, detIdx + 1), fgObjQvec->GetBinContent(centBin, 4, detIdx + 1));
-        epHelper.DoRescale(qx1, qy1, fgObjQvec->GetBinContent(centBin, 5, detIdx + 1), fgObjQvec->GetBinContent(centBin, 6, detIdx + 1));
-      }
       Q2X0A = Q2X0A - qx1;
       Q2Y0A = Q2Y0A - qy1;
       nNorm = nNorm - 1.;
@@ -6105,11 +6089,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     if (isSelectedinTPC(t2) && values[kAmbi2] > 0) {
       float qx2 = t2.pt() * TMath::Cos(2. * t2.phi());
       float qy2 = t2.pt() * TMath::Sin(2. * t2.phi());
-      if (fgApplyQVectorCorrection) {
-        epHelper.DoRecenter(qx2, qy2, fgObjQvec->GetBinContent(centBin, 1, detIdx + 1), fgObjQvec->GetBinContent(centBin, 2, detIdx + 1));
-        epHelper.DoTwist(qx2, qy2, fgObjQvec->GetBinContent(centBin, 3, detIdx + 1), fgObjQvec->GetBinContent(centBin, 4, detIdx + 1));
-        epHelper.DoRescale(qx2, qy2, fgObjQvec->GetBinContent(centBin, 5, detIdx + 1), fgObjQvec->GetBinContent(centBin, 6, detIdx + 1));
-      }
       Q2X0A = Q2X0A - qx2;
       Q2Y0A = Q2Y0A - qy2;
       nNorm = nNorm - 1.;

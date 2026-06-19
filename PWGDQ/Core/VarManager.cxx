@@ -76,8 +76,6 @@ int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 -
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
 TObject* VarManager::fgEfficiencyHist = nullptr;      // histogram for efficiency
-TH3F* VarManager::fgObjQvec = nullptr;
-bool VarManager::fgApplyQVectorCorrection = false;
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
