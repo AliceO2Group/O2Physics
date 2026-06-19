@@ -57,6 +57,8 @@ struct FemtoCascadeQa {
   using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaLabels>;
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
 
+  using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
+
   o2::framework::SliceCache cache;
 
   // setup collisions
@@ -182,7 +184,7 @@ struct FemtoCascadeQa {
   }
   PROCESS_SWITCH(FemtoCascadeQa, processXi, "Process Xis", true);
 
-  void processXiMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processXiMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     auto xiSlice = xiWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (xiSlice.size() == 0) {
@@ -211,7 +213,7 @@ struct FemtoCascadeQa {
   }
   PROCESS_SWITCH(FemtoCascadeQa, processOmega, "Process Omegas", false);
 
-  void processOmegaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processOmegaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     auto omegaSlice = omegaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (omegaSlice.size() == 0) {

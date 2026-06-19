@@ -53,6 +53,8 @@ struct FemtoTrackQa {
 
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
 
+  using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
+
   o2::framework::SliceCache cache;
 
   // setup collisions
@@ -117,7 +119,7 @@ struct FemtoTrackQa {
   };
   PROCESS_SWITCH(FemtoTrackQa, processData, "Track QA in Data", true);
 
-  void processMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     auto trackSlice = trackWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0) {

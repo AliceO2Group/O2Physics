@@ -63,6 +63,8 @@ struct FemtoTripletTrackTrackCascade {
   using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FLambdaLabels>;
   using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FK0shortLabels>;
 
+  using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
+
   o2::framework::SliceCache cache;
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
@@ -257,7 +259,7 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiSameEvent, "Enable processing same event processing for tracks and xis", true);
 
-  void processXiSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processXiSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     tripletTrackTrackXiBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
@@ -269,7 +271,7 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiMixedEvent, "Enable processing mixed event processing for tracks and xis", true);
 
-  void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
+  void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
   {
     tripletTrackTrackXiBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, xiWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
@@ -281,7 +283,7 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processOmegaSameEvent, "Enable processing same event processing for tracks and omegas", false);
 
-  void processOmegaSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processOmegaSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     tripletTrackTrackOmegaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
@@ -293,7 +295,7 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processOmegaMixedEvent, "Enable processing mixed event processing for tracks and omegas", false);
 
-  void processOmegaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
+  void processOmegaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
   {
     tripletTrackTrackOmegaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, omegaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
