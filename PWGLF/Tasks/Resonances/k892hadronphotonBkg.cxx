@@ -537,10 +537,6 @@ struct k892hadronphotonBkg {
     for (int kIdx : kshortIndices) {
       auto kshort = fullV0s.rawIteratorAt(kIdx);
 
-      float kPt = kshort.pt();
-      float kEta = kshort.eta();
-      float kPhi = kshort.phi();
-
       for (int pIdx : photonIndices) {
         auto photon = fullV0s.rawIteratorAt(pIdx);
 
@@ -554,7 +550,7 @@ struct k892hadronphotonBkg {
           float theta = rotRng.Uniform(o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
                                        o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
 
-          ROOT::Math::PtEtaPhiMVector kRot(kPt, kEta, kPhi + theta, o2::constants::physics::MassK0Short);
+          ROOT::Math::PtEtaPhiMVector kRot(kshort.pt(), kshort.eta(), kshort.phi() + theta, o2::constants::physics::MassK0Short);
 
           auto kstar = pGamma + kRot;
 
@@ -751,7 +747,7 @@ struct k892hadronphotonBkg {
 
   //_______________________________________________
   // Data process: same-event rotational + mixed-event K* background
-  void processKStarBkg(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions,
+  void processKStarBkg(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraEvSelExtras> const& collisions,
                        V0StandardDerivedDatas const& fullV0s,
                        dauTracks const&)
   {
