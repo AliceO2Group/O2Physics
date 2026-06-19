@@ -444,7 +444,7 @@ DECLARE_SOA_TABLE(FDHfCand3ProngXic, "AOD", "FDHFXIC3PRONG", //! Table to store 
                   femtodreamparticle::FDCollisionId,
                   fdhf::TimeStamp,
                   fdhf::Charge,
-                  fdhf::XiProngId,
+                  fdhf::CascId,
                   fdhf::Prong1Id,
                   fdhf::Prong2Id,
                   fdhf::CascBachelorTrackId,
