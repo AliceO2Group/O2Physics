@@ -264,7 +264,7 @@ struct TreeWriterTpcV0 {
   void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame, const OccupancyValues& occValues, const bool isGoodRctEvent)
   {
     const double ncl = track.tpcNClsFound();
-    const double nclPID = track.tpcNClsFindableMinusPID();
+    const double nclPID = track.tpcNClsPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -706,7 +706,7 @@ struct TreeWriterTpcTof {
   void fillSkimmedTpcTofTable(T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const double hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame, const OccupancyValues& occValues, const bool isGoodRctEvent)
   {
     const double ncl = track.tpcNClsFound();
-    const double nclPID = track.tpcNClsFindableMinusPID();
+    const double nclPID = track.tpcNClsPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
