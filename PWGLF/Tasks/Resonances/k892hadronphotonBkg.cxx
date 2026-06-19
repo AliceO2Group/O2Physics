@@ -632,7 +632,7 @@ struct k892hadronphotonBkg {
     BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}, true};
 
     for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,
-                                                 collisions, collisions)) {
+                                                       collisions, collisions)) {
       if (coll1.globalIndex() == coll2.globalIndex())
         continue;
 
