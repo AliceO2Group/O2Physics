@@ -747,7 +747,7 @@ using FMcParticles = FMcParticles_001;
 using FMcParticle = FMcParticles::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the monte carlo particle
-                                   o2::soa::Index<>, // no collision index needed since the mother is retrieved from the daughter mc particle
+                                   o2::soa::Index<>,               // no collision index needed since the mother is retrieved from the daughter mc particle
                                    femtomcparticle::Origin,
                                    femtomcparticle::PdgCode,
                                    femtobase::stored::SignedPt,
