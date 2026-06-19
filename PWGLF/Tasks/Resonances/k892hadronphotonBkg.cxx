@@ -698,13 +698,13 @@ struct k892hadronphotonBkg {
 
       // γ(coll1) × K0s(coll2)
       if (!photons1.empty() && !kshorts2.empty()) {
-        for (const int pIdx : photons1) {
+        for (const int& pIdx : photons1) {
           const auto& photon = fullV0s.rawIteratorAt(pIdx);
           float pP = std::hypot(photon.px(), photon.py(), photon.pz());
           ROOT::Math::PxPyPzEVector fourMomPhoton(
             photon.px(), photon.py(), photon.pz(), pP);
 
-          for (const int kIdx : kshorts2) {
+          for (const int& kIdx : kshorts2) {
             const auto& kshort = fullV0s.rawIteratorAt(kIdx);
             float kP = std::hypot(kshort.px(), kshort.py(), kshort.pz());
             ROOT::Math::PxPyPzEVector fourMomKShort(
