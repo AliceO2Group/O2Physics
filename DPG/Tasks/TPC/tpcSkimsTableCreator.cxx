@@ -422,6 +422,9 @@ struct TreeWriterTpcV0 {
                                               aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
 
+    int nV0Entries{0};
+    int nCascEntries{0};
+
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
@@ -481,7 +484,9 @@ struct TreeWriterTpcV0 {
             evaluateOccupancyVariables(dauTrack, occValues);
           }
           fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
+          return true;
         }
+        return false;
       };
 
       /// Loop over v0 candidates
@@ -493,8 +498,12 @@ struct TreeWriterTpcV0 {
         const auto posTrack = v0.posTrack_as<TrksType>();
         const auto negTrack = v0.negTrack_as<TrksType>();
 
-        fillDaughterTrack(v0, posTrack, v0, true);
-        fillDaughterTrack(v0, negTrack, v0, false);
+        if (fillDaughterTrack(v0, posTrack, v0, true)) {
+          ++nV0Entries;
+        }
+        if (fillDaughterTrack(v0, negTrack, v0, false)) {
+          ++nV0Entries;
+        }
       }
 
       /// Loop over cascade candidates
@@ -506,9 +515,18 @@ struct TreeWriterTpcV0 {
         const auto bachTrack = casc.bachelor_as<TrksType>();
         // Omega and antiomega
         const auto isDaughterPositive = cascId == MotherAntiOmega ? true : false;
-        fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive);
+        if (fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive)) {
+          ++nCascEntries;
+        }
       }
     }
+    LOG(info) << "runV0() summary:";
+    LOG(info) << "V0 table size = " << myV0s.size();
+    LOG(info) << "Cascade table size = " << myCascs.size();
+    LOG(info) << "nV0Entries = " << nV0Entries;
+    LOG(info) << "nCascEntries = " << nCascEntries;
+    LOG(info) << "nV0Entries / V0 table size = " << static_cast<double>(nV0Entries) / myV0s.size();
+    LOG(info) << "nCascEntries / Cascade table size = " << static_cast<double>(nCascEntries) / myCascs.size();
   } /// runV0
 
   void processStandard(Colls const& collisions,
@@ -875,6 +893,10 @@ struct TreeWriterTpcTof {
         }
       } /// Loop tracks
     }
+    LOG(info) << "runTof() summary:";
+    LOG(info) << "Track table size = " << myTracks.size();
+    LOG(info) << "nTrackEntries = " << rowTPCTOFTree.lastIndex() + 1;
+    LOG(info) << "nTrackEntries / Track table size = " << static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size();
   } /// runTof
 
   void processStandard(Colls const& collisions,
