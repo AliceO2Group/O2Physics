@@ -65,7 +65,8 @@ class TripletTrackTrackTrackBuilder
   TripletTrackTrackTrackBuilder() = default;
   ~TripletTrackTrackTrackBuilder() = default;
 
-  template <modes::Mode mode,
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
             typename T1,
             typename T2,
             typename T3,
@@ -104,15 +105,15 @@ class TripletTrackTrackTrackBuilder
       LOG(fatal) << "Option Track 1&2 are identical and Option Track 1&2&3 are identical is activated. Breaking...";
     }
 
-    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
-    mTripletHistManagerSe.template init<mode>(registry, pairHistSpec, confTripletBinning, confTripletCuts);
-    mTripletHistManagerMe.template init<mode>(registry, pairHistSpec, confTripletBinning, confTripletCuts);
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mTripletHistManagerSe.template init<modeSe>(registry, pairHistSpec, confTripletBinning, confTripletCuts, confMixing);
+    mTripletHistManagerMe.template init<modeMe>(registry, pairHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<mode>(confTripletCuts);
+    mTc.template init<modeSe>(confTripletCuts);
 
     if (mTrack1Track2Track3AreSameSpecies) {
       // Track1 & Track2 & Track3 are the same particle species
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
@@ -123,8 +124,8 @@ class TripletTrackTrackTrackBuilder
       mCtrMe.init(registry, cprHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager3.template init<mode>(registry, trackHistSpec3, confTrackSelection3);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager3.template init<modeSe>(registry, trackHistSpec3, confTrackSelection3);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confTrackSelection3.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection3.chargeAbs.value);
@@ -135,9 +136,9 @@ class TripletTrackTrackTrackBuilder
       mCtrMe.init(registry, cprHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection3.chargeAbs.value);
     } else {
       // all three tracks are different
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mTrackHistManager3.template init<mode>(registry, trackHistSpec3, confTrackSelection3);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
+      mTrackHistManager3.template init<modeSe>(registry, trackHistSpec3, confTrackSelection3);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confTrackSelection3.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, confTrackSelection3.chargeAbs.value);
@@ -389,7 +390,8 @@ class TripletTrackTrackV0Builder
   TripletTrackTrackV0Builder() = default;
   ~TripletTrackTrackV0Builder() = default;
 
-  template <modes::Mode mode,
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
             typename T1,
             typename T2,
             typename T3,
@@ -427,16 +429,16 @@ class TripletTrackTrackV0Builder
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
 
-    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
-    mTripletHistManagerSe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
-    mTripletHistManagerMe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mTripletHistManagerSe.template init<modeSe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
+    mTripletHistManagerMe.template init<modeMe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<mode>(confTripletCuts);
+    mTc.template init<modeSe>(confTripletCuts);
 
     if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mV0HistManager.template init<mode>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mV0HistManager.template init<modeSe>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
@@ -447,9 +449,9 @@ class TripletTrackTrackV0Builder
       mCtrMe.init(registry, ctrHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else {
       // all three tracks are different
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mV0HistManager.template init<mode>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
+      mV0HistManager.template init<modeSe>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);
@@ -650,7 +652,8 @@ class TripletTrackTrackCascadeBuilder
   TripletTrackTrackCascadeBuilder() = default;
   ~TripletTrackTrackCascadeBuilder() = default;
 
-  template <modes::Mode mode,
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
             typename T1,
             typename T2,
             typename T3,
@@ -702,15 +705,15 @@ class TripletTrackTrackCascadeBuilder
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
-    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
-    mTripletHistManagerSe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
-    mTripletHistManagerMe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mTripletHistManagerSe.template init<modeSe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
+    mTripletHistManagerMe.template init<modeMe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<mode>(confTripletCuts);
+    mTc.template init<modeSe>(confTripletCuts);
     if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mCascadeHistManager.template init<modeSe>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
       mTrackCleaner.init(confTrackCleaner);
       mCascadeCleaner.init(confCascadeCleaner);
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
@@ -721,9 +724,9 @@ class TripletTrackTrackCascadeBuilder
       mCtrMe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else {
       // all three tracks are different
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
+      mCascadeHistManager.template init<modeSe>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);

@@ -118,6 +118,7 @@ struct electronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> minNelectron{"minNelectron", 0, "min number of electron candidates per collision"};
   o2::framework::Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks only for MC. switch ON only if needed."};
   o2::framework::Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
+  o2::framework::Configurable<bool> useElectronHypothesis{"useElectronHypothesis", true, "force to use trackParCov.setPID(o2::track::PID::Electron)"};
 
   o2::framework::Configurable<uint8_t> dcaType{"dcaType", 0, "type of DCA cut. 0:3D, 1:XY, 2:Z, else:3D"};
   o2::framework::Configurable<float> max_dca_in_sigma{"max_dca_in_sigma", 1e+10, "max dca in sigma for a single track"};
@@ -696,7 +697,7 @@ class ElectronModule
       o2::dataformats::DCA mDcaInfoCov;
       mDcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
-      trackParCov.setPID(o2::track::PID::Electron);
+      trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : track.pidForTracking());
       bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
       if (!isPropOK) {
         return;
@@ -798,7 +799,7 @@ class ElectronModule
     o2::dataformats::DCA mDcaInfoCov;
     mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(o2::track::PID::Electron);
+    trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : track.pidForTracking());
     bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
     if (!isPropOK) {
       return false;
@@ -880,7 +881,7 @@ class ElectronModule
     o2::dataformats::DCA mDcaInfoCov;
     mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(o2::track::PID::Electron);
+    trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : track.pidForTracking());
     bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
     if (!isPropOK) {
       return false;
@@ -1422,6 +1423,30 @@ class ElectronModule
 
       if (fDoSCTwithTracks) {
         hadronIds.reserve(trackIdsThisCollision.size());
+        for (const auto& trackId : trackIdsThisCollision) {
+          auto track = trackId.template track_as<TTracks>();
+          auto trackParCov = getTrackParCov(track);
+          o2::dataformats::DCA mDcaInfoCov;
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          trackParCov.setPID(track.pidForTracking());
+          bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          if (!isPropOK) {
+            continue;
+          }
+          float dcaXY = mDcaInfoCov.getY();
+          float dcaZ = mDcaInfoCov.getZ();
+          if (isSelectedHadron(collision, track, trackParCov, dcaXY, dcaZ)) {
+            float tpcSignal = track.tpcSignal();
+            if constexpr (isMC) {
+              tpcSignal = track.mcTunedTPCSignal();
+            }
+            registry.fill(HIST("SCT/Track/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
+            registry.fill(HIST("SCT/Track/hDCA"), dcaXY, dcaZ);
+            registry.fill(HIST("SCT/Track/hTPCdEdx"), track.tpcInnerParam(), tpcSignal);
+            registry.fill(HIST("SCT/Track/hTOFbeta"), trackParCov.getP(), fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+            hadronIds.emplace_back(track.globalIndex());
+          }
+        } // end of track loop
       }
 
       // if (fDoSCTwithV0s) {
@@ -1543,38 +1568,13 @@ class ElectronModule
       //   } // end of cascade loop
       // }
 
-      for (const auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<TTracks>();
-        auto trackParCov = getTrackParCov(track);
-        o2::dataformats::DCA mDcaInfoCov;
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        trackParCov.setPID(track.pidForTracking());
-        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-        if (!isPropOK) {
-          continue;
-        }
-        float dcaXY = mDcaInfoCov.getY();
-        float dcaZ = mDcaInfoCov.getZ();
-        if (isSelectedHadron(collision, track, trackParCov, dcaXY, dcaZ)) {
-          float tpcSignal = track.tpcSignal();
-          if constexpr (isMC) {
-            tpcSignal = track.mcTunedTPCSignal();
-          }
-          registry.fill(HIST("SCT/Track/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
-          registry.fill(HIST("SCT/Track/hDCA"), dcaXY, dcaZ);
-          registry.fill(HIST("SCT/Track/hTPCdEdx"), track.tpcInnerParam(), tpcSignal);
-          registry.fill(HIST("SCT/Track/hTOFbeta"), trackParCov.getP(), fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
-          hadronIds.emplace_back(track.globalIndex());
-        }
-      } // end of track loop
-
       auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
       for (auto it = range_electrons.first; it != range_electrons.second; it++) {
         auto electron = tracks.rawIteratorAt(it->second);
         o2::dataformats::DCA mDcaInfoCov;
         mDcaInfoCov.set(999, 999, 999, 999, 999);
         auto trackParCov = getTrackParCov(electron);
-        trackParCov.setPID(o2::track::PID::Electron);
+        trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking());
         bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
         if (!isPropOK) {
           continue;
@@ -1596,7 +1596,7 @@ class ElectronModule
           }
 
           auto trackParCov2 = getTrackParCov(looseElectron);
-          trackParCov2.setPID(o2::track::PID::Electron);
+          trackParCov2.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : looseElectron.pidForTracking());
           bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov2, 2.f, matCorr, &mDcaInfoCov);
           if (!isPropOK) {
             continue;
@@ -1655,7 +1655,7 @@ class ElectronModule
           hadronParCov.setPID(hadron.pidForTracking());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, hadronParCov, 2.f, matCorr, &mDcaInfoCov);
 
-          auto eTpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(dfeT, collision, electron, hadron, o2::track::PID::Electron, hadron.pidForTracking());
+          auto eTpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(dfeT, collision, electron, hadron, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), hadron.pidForTracking(), o2::constants::physics::MassElectron);
           registry.fill(HIST("SCT/eT/hDecayLength"), eTpair.lxy, eTpair.lz);
           registry.fill(HIST("SCT/eT/hCosPA"), eTpair.cospa);
           registry.fill(HIST("SCT/eT/hDCA2legs"), eTpair.dca2legs);
@@ -1707,7 +1707,7 @@ class ElectronModule
         //   o2::dataformats::DCA impactParameterV0;
         //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
-        //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::K0);
+        //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::K0, o2::constants::physics::MassElectron);
         //   registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
         //   registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
         //   registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
@@ -1758,7 +1758,7 @@ class ElectronModule
           //   o2::dataformats::DCA impactParameterV0;
           //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
-          //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+          //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::Lambda, o2::constants::physics::MassElectron);
           //   registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
           //   registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
           //   registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
@@ -1809,7 +1809,7 @@ class ElectronModule
           //   o2::dataformats::DCA impactParameterCasc;
           //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::XiMinus, o2::constants::physics::MassElectron);
           //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
           //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
           //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -1860,7 +1860,7 @@ class ElectronModule
           //   o2::dataformats::DCA impactParameterCasc;
           //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::OmegaMinus, o2::constants::physics::MassElectron);
           //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
           //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
           //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -1911,7 +1911,7 @@ class ElectronModule
           //   o2::dataformats::DCA impactParameterV0;
           //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
-          //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+          //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::Lambda, o2::constants::physics::MassElectron);
           //   registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
           //   registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
           //   registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
@@ -1962,7 +1962,7 @@ class ElectronModule
           //   o2::dataformats::DCA impactParameterCasc;
           //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::XiMinus, o2::constants::physics::MassElectron);
           //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
           //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
           //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
@@ -2013,7 +2013,7 @@ class ElectronModule
           //   o2::dataformats::DCA impactParameterCasc;
           //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::OmegaMinus, o2::constants::physics::MassElectron);
           //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
           //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
           //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
