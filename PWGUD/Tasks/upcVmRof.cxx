@@ -16,8 +16,6 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -47,16 +45,13 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::dataformats;
 
-// my shortcuts
 using BCsTSsSels = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColSels = soa::Join<aod::Collisions, aod::EvSels>;
-using TRKs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+using TRKs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl>;
 
-// my shortcuts: iterators
 using ColSel = ColSels::iterator;
 
 namespace o2::aod
@@ -171,7 +166,7 @@ struct UpcVmRof {
   HistogramRegistry colTH1Registry{"colTH1Registry", {}};
   std::map<std::string, std::shared_ptr<TH1>> colTH1Pointers;
 
-  // varibles to store filling scheme info
+  // variables to store filling scheme info
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
@@ -179,10 +174,10 @@ struct UpcVmRof {
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
 
   // constants related to ITS ROFs
-  static const int rofPerOrbit = 6; // valid for pO, OO and PbPb in Run 3
-  static const int rofShift = 64;   // bc shift of ITS. Valid for pO, OO and PbPb in Run 3
+  static constexpr int rofPerOrbit = 6; // valid for pO, OO and PbPb in Run 3
+  static constexpr int rofShift = 64;   // bc shift of ITS. Valid for pO, OO and PbPb in Run 3
 
-  // varibles to store run info
+  // variables to store run info
   int runNumberBc = 0;     // run number used to process BCs
   int runNumberCol = 0;    // run number used to process collisions
   int64_t sor = 0;         // best known timestamp for the start of run
@@ -196,8 +191,12 @@ struct UpcVmRof {
   // constant related to trigger mask indices
   // https://github.com/AliceO2Group/AliceO2/blob/6c0251c35e5cbf6028d2bd6f7e30f9a4fd348e38/DataFormats/Detectors/CTP/src/Configuration.cxx#L1123
   // PbPb triggers: 1ZNC, FV0CH+FT0VTX, OO: 1ZNC, FT0CE+FT0VTX
-  static const int ft0vtxIdx = 2;
-  static const int ft0ceIdx = 4;
+  static constexpr int ft0vtxIdx = 2;
+  static constexpr int ft0ceIdx = 4;
+
+  // number of tracks for the selected event topologies
+  static constexpr int nTrksTwoBody = 2;
+  static constexpr int nTrksFourBody = 4;
 
   // information for selection collisions
   Configurable<float> maxAbsPosZ{"maxAbsPosZ", 10.0, "max |Z| position of vtx"};
@@ -264,7 +263,7 @@ struct UpcVmRof {
   // compute TF for this BC
   int64_t getTimeFrame(int64_t globalBC)
   {
-    return std::floor((globalBC - bcSOR) / nBCsPerTF);
+    return (globalBC - bcSOR) / nBCsPerTF;
   }
 
   //--------------------------------------------------------------------------------
@@ -274,7 +273,7 @@ struct UpcVmRof {
     int64_t bctmp = thisBC - rofShift;
     if (bctmp < 0)
       bctmp = o2::constants::lhc::LHCMaxBunches - rofShift - 1;
-    return std::floor(bctmp / nBCsPerROF);
+    return static_cast<int>(bctmp / nBCsPerROF);
   }
 
   //--------------------------------------------------------------------------------
@@ -484,12 +483,12 @@ struct UpcVmRof {
     colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(11);
 
     // select number of contributors
-    if (!((col.numContrib() == 2) || (col.numContrib() == 4)))
+    if (!((col.numContrib() == nTrksTwoBody) || (col.numContrib() == nTrksFourBody)))
       return;
-    if (col.numContrib() == 2) {
+    if (col.numContrib() == nTrksTwoBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(16);
     }
-    if (col.numContrib() == 4) {
+    if (col.numContrib() == nTrksFourBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(18);
     }
 
@@ -530,15 +529,15 @@ struct UpcVmRof {
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(8);
       selTrks.push_back(track);
     }
-    if (!(((col.numContrib() == 2) && (selTrks.size() == 2)) ||
-          ((col.numContrib() == 4) && (selTrks.size() == 4))))
+    if (!(((col.numContrib() == nTrksTwoBody) && (selTrks.size() == nTrksTwoBody)) ||
+          ((col.numContrib() == nTrksFourBody) && (selTrks.size() == nTrksFourBody))))
       return;
 
     //  selected events
-    if ((col.numContrib() == 2) && (selTrks.size() == 2)) {
+    if ((col.numContrib() == nTrksTwoBody) && (selTrks.size() == nTrksTwoBody)) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(17);
     }
-    if ((col.numContrib() == 4) && (selTrks.size() == 4)) {
+    if ((col.numContrib() == nTrksFourBody) && (selTrks.size() == nTrksFourBody)) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(19);
     }
 
@@ -577,10 +576,10 @@ struct UpcVmRof {
     } // FT0 selection
 
     // final number of selected events
-    if ((col.numContrib() == 2) && (selTrks.size() == 2)) {
+    if ((col.numContrib() == nTrksTwoBody) && (selTrks.size() == nTrksTwoBody)) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(20);
     }
-    if ((col.numContrib() == 4) && (selTrks.size() == 4)) {
+    if ((col.numContrib() == nTrksFourBody) && (selTrks.size() == nTrksFourBody)) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(21);
     }
 
@@ -597,10 +596,10 @@ struct UpcVmRof {
 
     // get FDD info
     float aFDDA = 0;
-    float tFDDA = 33; // default time to mark events without FT0 info
+    float tFDDA = 33; // default time to mark events without FDD info
     int nFDDA = 0;
     float aFDDC = 0;
-    float tFDDC = 33; // default time to mark events without FT0 info
+    float tFDDC = 33; // default time to mark events without FDD info
     int nFDDC = 0;
     if (bc.has_foundFDD()) {
       tFDDA = bc.foundFDD().timeA();
@@ -665,7 +664,7 @@ struct UpcVmRof {
 
     // fill output table
     int recoFlag = (col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
-    if (selTrks.size() == 2) {
+    if (selTrks.size() == nTrksTwoBody) {
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
                   aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
@@ -675,7 +674,7 @@ struct UpcVmRof {
                   selTrks[1].pt(), selTrks[1].eta(), selTrks[1].phi(), selTrks[1].sign(),
                   selTrks[1].tpcNSigmaPi(), selTrks[1].tpcNSigmaEl(), selTrks[1].tpcNSigmaKa(), selTrks[1].tpcNSigmaPr());
     }
-    if (selTrks.size() == 4) {
+    if (selTrks.size() == nTrksFourBody) {
       colTH1Pointers[Form("col/%d/fourTrkTF_H", runNumberCol)]->Fill(thisTF);
       fourTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
                    aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
