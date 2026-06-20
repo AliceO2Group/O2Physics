@@ -57,6 +57,9 @@ struct UpcEventItsRofCounter {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  static constexpr int NCollFillCount = 12; // upper bound of collision-count loop filling the per-ROF histograms (last value goes to overflow of 11-bin histos)
+  static constexpr int DoubleGapSide = 2;   // SGSelector convention: 0=A-gap, 1=C-gap, 2=double-gap
+
   Configurable<int> nTracksForUPCevent{"nTracksForUPCevent", 16, {"Maximum of tracks defining a UPC collision"}};
 
   Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
@@ -158,7 +161,7 @@ struct UpcEventItsRofCounter {
       arrUPCcolls[nUpcCollsInROF]++;
     } // end loop over ITSROFs
 
-    for (int ncol = 0; ncol < 12; ncol++) {
+    for (int ncol = 0; ncol < NCollFillCount; ncol++) {
       histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(ncol, arrAllColls[ncol]);
       histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(ncol, arrUPCcolls[ncol]);
     }
@@ -198,7 +201,7 @@ struct UpcEventItsRofCounter {
     }
 
     if (coll.flags() == 0) {
-      if (gapSide == 2) {
+      if (gapSide == DoubleGapSide) {
         histos.get<TH1>(HIST("Runs/hStdModeCollDG"))->Fill(coll.runNumber());
       } else if (gapSide == 1) {
         histos.get<TH1>(HIST("Runs/hStdModeCollSG1"))->Fill(coll.runNumber());
@@ -208,7 +211,7 @@ struct UpcEventItsRofCounter {
         histos.get<TH1>(HIST("Runs/hStdModeCollNG"))->Fill(coll.runNumber());
       }
     } else {
-      if (gapSide == 2) {
+      if (gapSide == DoubleGapSide) {
         histos.get<TH1>(HIST("Runs/hUpcModeCollDG"))->Fill(coll.runNumber());
       } else if (gapSide == 1) {
         histos.get<TH1>(HIST("Runs/hUpcModeCollSG1"))->Fill(coll.runNumber());
