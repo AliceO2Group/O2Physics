@@ -9,9 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \FIT bits to phi, eta mapping
-// \author Sandor Lokos, sandor.lokos@cern.ch
-// \since  March 2026
+
+/// \file upcTestFitBitMapping.cxx
+/// \brief FIT bits to phi, eta mapping
+/// \author Sandor Lokos, sandor.lokos@cern.ch
+/// \since  March 2026
 
 #include "PWGUD/Core/UDHelpers.h"     // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
 #include "PWGUD/DataModel/UDTables.h" // aod::UDCollisionFITBits
@@ -33,7 +35,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct UpcTestFITBitMapping {
+struct UpcTestFitBitMapping {
   Configurable<int> whichThr{"whichThr", 1, "Use 1=Thr1 bits or 2=Thr2 bits"};
   Configurable<int> maxEvents{"maxEvents", -1, "Process at most this many rows (-1 = all)"};
 
@@ -115,5 +117,5 @@ struct UpcTestFITBitMapping {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcTestFITBitMapping>(cfgc, TaskName{"fitbit-mapping"})};
+    adaptAnalysisTask<UpcTestFitBitMapping>(cfgc)};
 }

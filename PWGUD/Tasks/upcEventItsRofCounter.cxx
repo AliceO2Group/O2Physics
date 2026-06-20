@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file upcEventITSROFcounter.cxx
+/// \file upcEventItsRofCounter.cxx
 /// \brief Personal task to analyze tau events from UPC collisions
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
@@ -51,7 +51,7 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3Match
 using CCs = soa::Join<aod::Collisions, aod::EvSels>;
 using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
 
-struct UpcEventITSROFcounter {
+struct UpcEventItsRofCounter {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   SGSelector sgSelector;
 
@@ -220,12 +220,12 @@ struct UpcEventITSROFcounter {
     }
   }
 
-  PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerITSROF, "Counts number of collisions per ITSROF", false);
-  PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerRun, "Counts number of whatever per RUN", true);
+  PROCESS_SWITCH(UpcEventItsRofCounter, processCounterPerITSROF, "Counts number of collisions per ITSROF", false);
+  PROCESS_SWITCH(UpcEventItsRofCounter, processCounterPerRun, "Counts number of whatever per RUN", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcEventITSROFcounter>(cfgc)};
+    adaptAnalysisTask<UpcEventItsRofCounter>(cfgc)};
 }
