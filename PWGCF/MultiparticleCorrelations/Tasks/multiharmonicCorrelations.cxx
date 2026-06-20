@@ -103,6 +103,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::vector<float>> cfYBins{"cfYBins", {1000, -0.01, 0.006}, "nYBins, yMin, yMax"};
   Configurable<std::vector<float>> cfZBins{"cfZBins", {1000, -20., 20.}, "nZBins, zMin, zMax"};
   Configurable<std::vector<float>> cfMultBins{"cfMultBins", {50, 0, 2e4}, "nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfMselBins{"cfMselBins", {50, 0, 1e3}, "nMselBins, mselMin, mselMax"};
   Configurable<std::vector<float>> cfTPCnclsBins{"cfTPCnclsBins", {100, 0., 200.}, "ntpcnclsBins, tpnclsMin, tpcnclsMax"};
   Configurable<std::vector<float>> cfDCAxyBins{"cfDCAxyBins", {1000, -0.5, 0.5}, "ndcaxyBins, dcaxyMin, dcaxyMax"};
   Configurable<std::vector<float>> cfDCAzBins{"cfDCAzBins", {1000, -3., 3.}, "ndcazBins, dcazMin, dcazMax"};
@@ -111,6 +112,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::string> cfCent{"cfCent", "FT0C", "centrality estimator"};
   Configurable<std::string> cfMult{"cfMult", "TPC", "multiplicity"};
   Configurable<bool> cfQA{"cfQA", true, "quality assurance"};
+  Configurable<bool> cfInitsim{"cfInitsim", false, "init histograms of sim"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
@@ -143,6 +145,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TList* fEventHistogramsList = NULL;
     TH1F* fHistCentr[2] = {NULL};
     TH1I* fHistMult[2] = {NULL};
+    TH1F* fHistMsel = NULL;
     TH1F* fHistX[2] = {NULL};
     TH1F* fHistY[2] = {NULL};
     TH1F* fHistZ[2] = {NULL};
@@ -346,7 +349,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float vertexZmin = static_cast<float>(vertexZ[0]);
     float vertexZmax = static_cast<float>(vertexZ[1]);
     float posZ = collision.posZ();
-    if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()))
+    float NContrcut = 2.;
+    if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()) || collision.numContrib() < NContrcut)
       return false;
     return true;
   }
@@ -396,7 +400,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     int currentRun = collision.bc().runNumber();
     auto it = phih.histMap.find(currentRun);
     auto histweight = pc.weightsmap.find(currentRun);
-    float centr = 0, M = 0.;
+    float centr = 0, M = 0., msel = 0.;
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
       event.fHistX[eRec]->Fill(collision.posX());
@@ -504,30 +508,32 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       } // if constexpr (rs == eRec || rs == eRecAndSim)
 
       // analysis in the loop over particle
+      msel = msel + 1;
       for (int ih = 0; ih < maxHarmonic; ih++) {
         cor.Qvector[ih] += TComplex(weight * TMath::Cos(ih * phi), weight * TMath::Sin(ih * phi));
       }
     } // end of for (auto track: tracks)
+    event.fHistMsel->Fill(msel);
     // calculate correlations
     float Mmin = 4.;
-    if (M < Mmin)
+    if (msel < Mmin)
       return;
     float four32 = Four(3, 2, -3, -2).Re() / Four(0, 0, 0, 0).Re();
     float four42 = Four(4, 2, -4, -2).Re() / Four(0, 0, 0, 0).Re();
-    float v22 = (Q(2).Rho2() - M) / (M * (M - 1.));
-    float v32 = (Q(3).Rho2() - M) / (M * (M - 1.));
-    float v42 = (Q(4).Rho2() - M) / (M * (M - 1.));
+    float v22 = (Q(2).Rho2() - msel) / (msel * (msel - 1.));
+    float v32 = (Q(3).Rho2() - msel) / (msel * (msel - 1.));
+    float v42 = (Q(4).Rho2() - msel) / (msel * (msel - 1.));
     if (std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)) {
       LOGF(info, "\033[1;31m%s std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)\033[0m", __FUNCTION__);
       LOGF(error, "v22 = %f\nv32 = %f\nv42 = %f\nfour32=%f\nv42 = %f\n", v22, v32, v42, four32, four42);
       return;
     }
 
-    cor.pv22_centr->Fill(centr, v22, M * (M - 1));
-    cor.pv32_centr->Fill(centr, v32, M * (M - 1));
-    cor.pv42_centr->Fill(centr, v42, M * (M - 1));
-    cor.pfour32_centr->Fill(centr, four32, M * (M - 1));
-    cor.pfour42_centr->Fill(centr, four42, M * (M - 1));
+    cor.pv22_centr->Fill(centr, v22, msel * (msel - 1));
+    cor.pv32_centr->Fill(centr, v32, msel * (msel - 1));
+    cor.pv42_centr->Fill(centr, v42, msel * (msel - 1));
+    cor.pfour32_centr->Fill(centr, four32, msel * (msel - 1));
+    cor.pfour42_centr->Fill(centr, four42, msel * (msel - 1));
 
   } // end of template <eRecSim rs, typename T1, typename T2> void Steer(T1 const& collision, T2 const& tracks)
 
@@ -583,6 +589,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     vector<float> l_y_bins = cfYBins.value;
     vector<float> l_z_bins = cfZBins.value;
     vector<float> l_mult_bins = cfMultBins.value;
+    vector<float> l_msel_bins = cfMselBins.value;
     vector<float> l_tpcncls_bins = cfTPCnclsBins.value;
     vector<float> l_dcaxy_bins = cfDCAxyBins.value;
     vector<float> l_dcaz_bins = cfDCAzBins.value;
@@ -595,6 +602,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     int nBinsy = static_cast<int>(l_y_bins[0]);
     int nBinsz = static_cast<int>(l_z_bins[0]);
     int nBinsmult = static_cast<int>(l_mult_bins[0]);
+    int nBinsmsel = static_cast<int>(l_msel_bins[0]);
     int nBinscharge = 2;
     int nBinstpcncls = static_cast<int>(l_tpcncls_bins[0]);
     int nBinsdcaxy = static_cast<int>(l_dcaxy_bins[0]);
@@ -615,6 +623,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float maxz = l_z_bins[2];
     float minmult = l_mult_bins[1];
     float maxmult = l_mult_bins[2];
+    float minmsel = l_msel_bins[1];
+    float maxmsel = l_msel_bins[2];
     float mincharge = -2.;
     float maxcharge = 2.;
     float mintpcncls = l_tpcncls_bins[1];
@@ -645,24 +655,43 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eRec]);
     pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eRec]);
 
-    pc.fHistPt[eSim] = new TH1F("fHistPt[eSim]", "pt distribution for simulated particles", nBins, min, max);
-    pc.fHistPhi[eSim] = new TH1F("fHistPhi[eSim]", "phi distribution for simulated particles", nBinsphi, minphi, maxphi);
-    pc.fHistCharge[eSim] = new TH1F("fHistCharge[eSim]", "charge distribution for simulated particles", nBinscharge, mincharge, maxcharge);
-    pc.fHistTPCncls[eSim] = new TH1F("fHistTPCncls[eSim]", "tpcncls distribution for simulated particles", nBinstpcncls, minphi, maxtpcncls);
-    pc.fHistTracksdcaXY[eSim] = new TH1F("fHistTracksdcaXY[eSim]", "dcaxy distribution for simulated particles", nBinsdcaxy, mindcaxy, maxdcaxy);
-    pc.fHistTracksdcaZ[eSim] = new TH1F("fHistTracksdcaZ[eSim]", "dcaz distribution for simulated particles", nBinsdcaz, mindcaz, maxdcaz);
-    pc.fHistPt[eSim]->GetXaxis()->SetTitle("p_{T}");
-    pc.fHistPhi[eSim]->GetXaxis()->SetTitle("phi");
-    pc.fHistCharge[eSim]->GetXaxis()->SetTitle("charge");
-    pc.fHistTPCncls[eSim]->GetXaxis()->SetTitle("TPCNClsFindable");
-    pc.fHistTracksdcaXY[eSim]->GetXaxis()->SetTitle("DCA XY");
-    pc.fHistTracksdcaZ[eSim]->GetXaxis()->SetTitle("DCA Z");
-    pc.fParticleHistogramsList->Add(pc.fHistPt[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistPhi[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistCharge[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistTPCncls[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eSim]);
+    // init of sim histograms
+    if (cfInitsim) {
+      pc.fHistPt[eSim] = new TH1F("fHistPt[eSim]", "pt distribution for simulated particles", nBins, min, max);
+      pc.fHistPhi[eSim] = new TH1F("fHistPhi[eSim]", "phi distribution for simulated particles", nBinsphi, minphi, maxphi);
+      pc.fHistCharge[eSim] = new TH1F("fHistCharge[eSim]", "charge distribution for simulated particles", nBinscharge, mincharge, maxcharge);
+      pc.fHistTPCncls[eSim] = new TH1F("fHistTPCncls[eSim]", "tpcncls distribution for simulated particles", nBinstpcncls, minphi, maxtpcncls);
+      pc.fHistTracksdcaXY[eSim] = new TH1F("fHistTracksdcaXY[eSim]", "dcaxy distribution for simulated particles", nBinsdcaxy, mindcaxy, maxdcaxy);
+      pc.fHistTracksdcaZ[eSim] = new TH1F("fHistTracksdcaZ[eSim]", "dcaz distribution for simulated particles", nBinsdcaz, mindcaz, maxdcaz);
+      pc.fHistPt[eSim]->GetXaxis()->SetTitle("p_{T}");
+      pc.fHistPhi[eSim]->GetXaxis()->SetTitle("phi");
+      pc.fHistCharge[eSim]->GetXaxis()->SetTitle("charge");
+      pc.fHistTPCncls[eSim]->GetXaxis()->SetTitle("TPCNClsFindable");
+      pc.fHistTracksdcaXY[eSim]->GetXaxis()->SetTitle("DCA XY");
+      pc.fHistTracksdcaZ[eSim]->GetXaxis()->SetTitle("DCA Z");
+      pc.fParticleHistogramsList->Add(pc.fHistPt[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistPhi[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistCharge[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistTPCncls[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eSim]);
+
+      event.fHistCentr[eSim] = new TH1F("fHistCentr[eSim]", "centrality distribution for simulated particles", nBinscentr, mincentr, maxcentr);
+      event.fHistX[eSim] = new TH1F("fHistX[eSim]", "posX distribution for simulated particles", nBinsx, minx, maxx);
+      event.fHistY[eSim] = new TH1F("fHistY[eSim]", "posY distribution for simulated particles", nBinsy, miny, maxy);
+      event.fHistZ[eSim] = new TH1F("fHistZ[eSim]", "posZ distribution for simulated particles", nBinsz, minz, maxz);
+      event.fHistMult[eSim] = new TH1I("fHistMult[eSim]", "mult distribution for simulated particles", nBinsmult, minmult, maxmult);
+      event.fHistCentr[eSim]->GetXaxis()->SetTitle("centrality");
+      event.fHistX[eSim]->GetXaxis()->SetTitle("x");
+      event.fHistY[eSim]->GetXaxis()->SetTitle("y");
+      event.fHistZ[eSim]->GetXaxis()->SetTitle("z");
+      event.fHistMult[eSim]->GetXaxis()->SetTitle("multiplicity");
+      event.fEventHistogramsList->Add(event.fHistCentr[eSim]);
+      event.fEventHistogramsList->Add(event.fHistX[eSim]);
+      event.fEventHistogramsList->Add(event.fHistY[eSim]);
+      event.fEventHistogramsList->Add(event.fHistZ[eSim]);
+      event.fEventHistogramsList->Add(event.fHistMult[eSim]);
+    }
 
     for (const int& run : targetRuns) {
       std::string runStr = std::to_string(run);
@@ -671,7 +700,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         LOG(fatal) << "Failed to load weights for run " << run;
         return;
       }
-
       pc.weightsmap[run] = histweights;
     }
 
@@ -680,35 +708,22 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     event.fHistY[eRec] = new TH1F("fHistY[eRec]", "posY distribution for reconstructed particles", nBinsy, miny, maxy);
     event.fHistZ[eRec] = new TH1F("fHistZ[eRec]", "posZ distribution for reconstructed particles", nBinsz, minz, maxz);
     event.fHistMult[eRec] = new TH1I("fHistMult[eRec]", "mult distribution for reconstructed particles", nBinsmult, minmult, maxmult);
+    event.fHistMsel = new TH1F("fHistMsel", "selected tracks", nBinsmsel, minmsel, maxmsel);
     event.fHistNContr = new TH1I("fHistNContr", "NContr distribution", nBinsncontr, minncontr, maxncontr);
     event.fHistCentr[eRec]->GetXaxis()->SetTitle("centrality");
     event.fHistX[eRec]->GetXaxis()->SetTitle("x");
     event.fHistY[eRec]->GetXaxis()->SetTitle("y");
     event.fHistZ[eRec]->GetXaxis()->SetTitle("z");
     event.fHistMult[eRec]->GetXaxis()->SetTitle("multiplicity");
+    event.fHistMsel->GetXaxis()->SetTitle("selected tracks");
     event.fHistNContr->GetXaxis()->SetTitle("numContrib");
     event.fEventHistogramsList->Add(event.fHistCentr[eRec]);
     event.fEventHistogramsList->Add(event.fHistX[eRec]);
     event.fEventHistogramsList->Add(event.fHistY[eRec]);
     event.fEventHistogramsList->Add(event.fHistZ[eRec]);
     event.fEventHistogramsList->Add(event.fHistMult[eRec]);
+    event.fEventHistogramsList->Add(event.fHistMsel);
     event.fEventHistogramsList->Add(event.fHistNContr);
-
-    event.fHistCentr[eSim] = new TH1F("fHistCentr[eSim]", "centrality distribution for simulated particles", nBinscentr, mincentr, maxcentr);
-    event.fHistX[eSim] = new TH1F("fHistX[eSim]", "posX distribution for simulated particles", nBinsx, minx, maxx);
-    event.fHistY[eSim] = new TH1F("fHistY[eSim]", "posY distribution for simulated particles", nBinsy, miny, maxy);
-    event.fHistZ[eSim] = new TH1F("fHistZ[eSim]", "posZ distribution for simulated particles", nBinsz, minz, maxz);
-    event.fHistMult[eSim] = new TH1I("fHistMult[eSim]", "mult distribution for simulated particles", nBinsmult, minmult, maxmult);
-    event.fHistCentr[eSim]->GetXaxis()->SetTitle("centrality");
-    event.fHistX[eSim]->GetXaxis()->SetTitle("x");
-    event.fHistY[eSim]->GetXaxis()->SetTitle("y");
-    event.fHistZ[eSim]->GetXaxis()->SetTitle("z");
-    event.fHistMult[eSim]->GetXaxis()->SetTitle("multiplicity");
-    event.fEventHistogramsList->Add(event.fHistCentr[eSim]);
-    event.fEventHistogramsList->Add(event.fHistX[eSim]);
-    event.fEventHistogramsList->Add(event.fHistY[eSim]);
-    event.fEventHistogramsList->Add(event.fHistZ[eSim]);
-    event.fEventHistogramsList->Add(event.fHistMult[eSim]);
 
     const char* cevent[] = {"vertexZ", "Pt"};
     const char* cpro[] = {"rec", "sim"};
@@ -732,7 +747,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     qa.fQAM_NC = new TH2F("QAM_NC", "quality assurance of mult vs. NContributors", nBinsmult, minmult, maxmult, nBinsncontr, minncontr, maxncontr);
     if (cfQA) {
       qa.fQAList->Add(qa.fQA);
-      qa.fQAList->Add(qa.fQAM_NC);
+      if (cfInitsim)
+        qa.fQAList->Add(qa.fQAM_NC);
     }
 
     // float quantiles[10] = {0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
