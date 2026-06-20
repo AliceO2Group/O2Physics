@@ -600,10 +600,20 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
-      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC) {
+      int flagg1 = 0;
+      if (candidate.tpcNSigmaPi() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaKa() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaPr() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaEl() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+
+      if (!(flagg1 > 1) && !candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC) {
         flag = 1;
       }
-      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF) {
+      if (!(flagg1 > 1) && candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF) {
         flag = 1;
       }
     }
@@ -667,10 +677,21 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
-      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC) {
+
+      int flagg1 = 0;
+      if (candidate.tpcNSigmaPi() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaKa() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaPr() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaEl() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+
+      if (!(flagg1 > 1) && !candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC) {
         flag = 1;
       }
-      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOF) {
+      if (!(flagg1 > 1) && candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOF) {
         flag = 1;
       }
     }
@@ -734,10 +755,21 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
-      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC) {
+
+      int flagg1 = 0;
+      if (candidate.tpcNSigmaPi() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaKa() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaPr() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+      if (candidate.tpcNSigmaEl() < cfgnSigmaOtherParticles)
+        flagg1 += 1;
+
+      if (!(flagg1 > 1) && !candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC) {
         flag = 1;
       }
-      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOF) {
+      if (!(flagg1 > 1) && candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOF) {
         flag = 1;
       }
     }
