@@ -93,7 +93,6 @@ struct TreeWriterTpcV0 {
   Configurable<double> dwnSmplFactorPr{"dwnSmplFactorPr", 1., "downsampling factor for protons, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorEl{"dwnSmplFactorEl", 1., "downsampling factor for electrons, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorKa{"dwnSmplFactorKa", 1., "downsampling factor for kaons, default fraction to keep is 1."};
-  Configurable<float> sqrtSNN{"sqrtSNN", 5360., "sqrt(s_NN), used for downsampling with the Tsallis distribution"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisElectrons{"downsamplingTsalisElectrons", -1., "Downsampling factor to reduce the number of electrons"};
@@ -424,6 +423,7 @@ struct TreeWriterTpcV0 {
                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
 
     std::string irSource{};
+    float sqrtSNN{};
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
@@ -438,7 +438,7 @@ struct TreeWriterTpcV0 {
       const auto cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
       const auto bc = collision.bc_as<BCType>();
       if (isFirstCollision) {
-        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
       }
       isFirstCollision = false;
       const int runnumber = bc.runNumber();
@@ -632,7 +632,6 @@ struct TreeWriterTpcTof {
   Configurable<float> nSigmaTofTpctofPi{"nSigmaTofTpctofPi", 4., "number of sigma for TOF cut for TPC and TOF combined pion"};
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   /// pT dependent downsampling
-  Configurable<float> sqrtSNN{"sqrtSNN", 5360., "sqrt(s_NN), used for downsampling with the Tsallis distribution"};
   Configurable<float> downsamplingTsalisTritons{"downsamplingTsalisTritons", -1., "Downsampling factor to reduce the number of tritons"};
   Configurable<float> downsamplingTsalisDeuterons{"downsamplingTsalisDeuterons", -1., "Downsampling factor to reduce the number of deuterons"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
@@ -812,6 +811,7 @@ struct TreeWriterTpcTof {
       }
     }
     std::string irSource{};
+    float sqrtSNN{};
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       const auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
@@ -833,7 +833,7 @@ struct TreeWriterTpcTof {
 
       const auto bc = collision.bc_as<BCType>();
       if (isFirstCollision) {
-        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
       }
       isFirstCollision = false;
       const int runnumber = bc.runNumber();

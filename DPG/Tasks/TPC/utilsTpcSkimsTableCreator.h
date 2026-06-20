@@ -118,24 +118,25 @@ double tpcSignalGeneric(const TrkType& track)
   }
 }
 
-/// Determine inteaction rate source from CCDB
-std::string evaluateIrSource(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp)
+/// Determine interaction rate source and sqrtSNN from CCDB
+void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp, std::string& irSource, float& sqrtSNN)
 {
-  std::string irSource{};
   o2::parameters::GRPLHCIFData* genRunParams = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(ccdbPathGrpLhcIf, timestamp);
   if (genRunParams != nullptr) {
-    o2::common::core::CollisionSystemType::collType collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
+    const auto collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
     if (collSys == CollisionSystemType::kCollSyspp) {
       irSource = "T0VTX";
     } else {
       irSource = "ZNC hadronic";
     }
+    sqrtSNN = genRunParams->getSqrtS();
     LOG(info) << "irSource determined from General Run Parameters: " << irSource;
+    LOG(info) << "sqrtSNN determined from General Run Parameters: " << sqrtSNN << " GeV";
   } else {
-    LOG(info) << "No General Run Parameters object found. irSource will remain undefined";
+    irSource = "";
+    sqrtSNN = 5360.f;
+    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined, sqrtSNN defaulted to 5360 GeV";
   }
-
-  return irSource;
 }
 
 struct OccupancyValues {
