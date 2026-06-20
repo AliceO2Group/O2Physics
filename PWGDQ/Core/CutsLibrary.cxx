@@ -1595,6 +1595,34 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
   // -------------------------------------------------------------------------------------------------
   //
+  // Q vector contributor cut
+  //
+  if (!nameStr.compare("selTPCCentral")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kEta, -0.8, 0.8);
+    kineCut->AddCut(VarManager::kPt, 0.15, 5);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0., 4.);
+    qualityCuts->AddCut(VarManager::kTPCnCRoverFindCls, 0.8, 1.);
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kITSchi2, 0., 36.);
+
+    AnalysisCut* dcaCuts = new AnalysisCut("dcaCuts", "DCA cuts");
+    std::shared_ptr<TF1> f1dcaxyHigh = std::make_shared<TF1>("f1dcaxy", "[0]+[1]/pow(x,[2])", 0., 10.);
+    f1dcaxyHigh->SetParameters(0.0105, 0.035, 1.1);
+    std::shared_ptr<TF1> f1dcaxyLow = std::make_shared<TF1>("f1dcaxy_low", "[0]+[1]/pow(x,[2])", 0., 10.);
+    f1dcaxyLow->SetParameters(-0.0105, -0.035, 1.1);
+    dcaCuts->AddCut(VarManager::kTrackDCAxy, f1dcaxyLow, f1dcaxyHigh);
+    dcaCuts->AddCut(VarManager::kTrackDCAz, -2., 2.);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(dcaCuts);
+  }
+
+  // -------------------------------------------------------------------------------------------------
+  //
   // LMee cuts
   // List of cuts used for low mass dielectron analyses
   //

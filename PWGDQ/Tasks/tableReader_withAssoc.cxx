@@ -1313,6 +1313,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
     Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
     Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+    Configurable<std::string> qVector{"cfgQvectorTrackCut", "", "Track cut of Q-vector, enable this if you want to remove the auto-correlation in TPC"};
     Configurable<bool> event{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
@@ -1390,6 +1391,7 @@ struct AnalysisSameEventPairing {
 
   uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
   uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  uint32_t fQvectorFilterMask = 0; // mask for the track cuts required to be applied on the tracks used for the Q-vector calculation
   int fNCutsBarrel = 0;
   int fNCutsMuon = 0;
   int fNPairCuts = 0;
@@ -1462,6 +1464,7 @@ struct AnalysisSameEventPairing {
     if (!muonCutsStr.IsNull()) {
       objArrayMuonCuts = muonCutsStr.Tokenize(",");
     }
+    TString qVectorCutStr = fConfigCuts.qVector.value;
 
     if (fConfigML.applyBDT) {
       // BDT cuts via JSON
@@ -1529,6 +1532,9 @@ struct AnalysisSameEventPairing {
       fNCutsBarrel = objArray->GetEntries();
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
+        if (tempStr.CompareTo(qVectorCutStr) == 0) {
+          fQvectorFilterMask |= (static_cast<uint32_t>(1) << icut);
+        }
         fTrackCuts.push_back(tempStr);
         if (objArrayTrackCuts->FindObject(tempStr.Data()) != nullptr) {
           fTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
@@ -1966,13 +1972,17 @@ struct AnalysisSameEventPairing {
 
           fNPairPerEvent++;
 
-          VarManager::fgValues[VarManager::kAmbi1] = -999.;
-          VarManager::fgValues[VarManager::kAmbi2] = -999.;
-          if (t1.reducedeventId() != event.globalIndex()) {
-            VarManager::fgValues[VarManager::kAmbi1] = 1.;
+          VarManager::fgValues[VarManager::kSel1] = -999.;
+          VarManager::fgValues[VarManager::kSel2] = -999.;
+          if (t1.reducedeventId() == event.globalIndex()) {
+            if ((a1.isBarrelSelected_raw() & fQvectorFilterMask) > 0) {
+              VarManager::fgValues[VarManager::kSel1] = 1.;
+            }
           }
-          if (t2.reducedeventId() != event.globalIndex()) {
-            VarManager::fgValues[VarManager::kAmbi2] = 1.;
+          if (t2.reducedeventId() == event.globalIndex()) {
+            if ((a2.isBarrelSelected_raw() & fQvectorFilterMask) > 0) {
+              VarManager::fgValues[VarManager::kSel2] = 1.;
+            }
           }
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           // compute quantities which depend on the associated collision, such as DCA

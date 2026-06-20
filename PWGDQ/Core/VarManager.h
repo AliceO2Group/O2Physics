@@ -823,8 +823,8 @@ class VarManager : public TObject
     kCos2DeltaPhiPP_FT0C,
     kNullA2,
     kInfA2,
-    kAmbi1,
-    kAmbi2,
+    kSel1,
+    kSel2,
     kDeltaPhiPair,
     kOpeningAngle,
     kQuadDCAabsXY,
@@ -1592,8 +1592,6 @@ class VarManager : public TObject
   static float calculatePhiV(const T1& t1, const T2& t2);
   template <typename T1, typename T2>
   static float LorentzTransformJpsihadroncosChi(TString Option, const T1& v1, const T2& v2);
-  template <typename T>
-  static bool isSelectedinTPC(const T& t);
 
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProngBarrel;
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProngBarrel;
@@ -3105,6 +3103,9 @@ void VarManager::FillTrack(T const& track, float* values)
         for (int i = 0; i < 7; ++i) {
           values[kITSncls] += ((track.itsClusterMap() & (1 << i)) ? 1 : 0);
         }
+      }
+      if (fgUsedVars[kTPCnCRoverFindCls]) {
+        values[kTPCnCRoverFindCls] = values[kTPCnclsCR] / values[kTPCncls];
       }
       values[kTrackDCAxy] = track.dcaXY();
       values[kTrackDCAz] = track.dcaZ();
@@ -6078,7 +6079,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     float nNorm = values[kMultA];
 
     // checkTrack(t1);
-    if (isSelectedinTPC(t1) && values[kAmbi1] > 0) {
+    if (values[kSel1] > 0) {
       float qx1 = t1.pt() * TMath::Cos(2. * t1.phi());
       float qy1 = t1.pt() * TMath::Sin(2. * t1.phi());
       Q2X0A = Q2X0A - qx1;
@@ -6086,7 +6087,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
       nNorm = nNorm - 1.;
     }
     // checkTrack(t2);
-    if (isSelectedinTPC(t2) && values[kAmbi2] > 0) {
+    if (values[kSel2] > 0) {
       float qx2 = t2.pt() * TMath::Cos(2. * t2.phi());
       float qy2 = t2.pt() * TMath::Sin(2. * t2.phi());
       Q2X0A = Q2X0A - qx2;
@@ -7022,48 +7023,6 @@ float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1,
     value = v2_boost.E();
   }
   return value;
-}
-
-template <typename T>
-bool VarManager::isSelectedinTPC(const T& t)
-{
-  bool trackSelected = false;
-  if constexpr (requires { t.hasTPC(); }) {
-    trackSelected = true;
-    if (!t.hasTPC()) {
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (std::abs(t.eta()) > 0.8) { // eta cut used in q vector table. Todo: read from config
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (t.pt() < 0.15 || t.pt() > 5.) { // pt cut used in q vector table. Todo: read from config
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (t.tpcNClsCrossedRows() / t.tpcNClsFound() < 0.8 || t.tpcChi2NCl() > 4.) {
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (!((t.itsClusterMap() & (1 << uint8_t(0))) > 0 || (t.itsClusterMap() & (1 << uint8_t(1))) > 0 || (t.itsClusterMap() & (1 << uint8_t(2))) > 0)) {
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (t.itsChi2NCl() > 36.) {
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (t.dcaZ() > 2) {
-      trackSelected = false;
-      return trackSelected;
-    }
-    if (t.dcaXY() > 0.0105 + 0.0350 / std::pow(t.pt(), 1.1)) {
-      trackSelected = false;
-      return trackSelected;
-    }
-  }
-  return trackSelected;
 }
 
 template <typename T1, typename T2, typename T3, typename T4, typename T5>
