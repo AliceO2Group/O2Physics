@@ -113,6 +113,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::string> cfMult{"cfMult", "TPC", "multiplicity"};
   Configurable<bool> cfQA{"cfQA", true, "quality assurance"};
   Configurable<bool> cfInitsim{"cfInitsim", false, "init histograms of sim"};
+  Configurable<bool> cfUseWeights{"cfUseWeights", true, "use weights"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
@@ -484,9 +485,10 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         pc.fHistTracksdcaXY[eRec]->Fill(track.dcaXY());
         pc.fHistTracksdcaZ[eRec]->Fill(track.dcaZ());
 
-        if (histweight != pc.weightsmap.end()) {
+        if (cfUseWeights && histweight != pc.weightsmap.end())
           weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
-        }
+        else
+          weight = 1;
 
         // ... and corresponding MC truth simulated:
         // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -746,9 +748,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     qa.fQA = new TH2F("QA_centr", "quality assurance of centrality", nBinscentr, mincentr, maxcentr, nBinscentr, mincentr, maxcentr);
     qa.fQAM_NC = new TH2F("QAM_NC", "quality assurance of mult vs. NContributors", nBinsmult, minmult, maxmult, nBinsncontr, minncontr, maxncontr);
     if (cfQA) {
-      qa.fQAList->Add(qa.fQA);
       if (cfInitsim)
-        qa.fQAList->Add(qa.fQAM_NC);
+        qa.fQAList->Add(qa.fQA);
+      qa.fQAList->Add(qa.fQAM_NC);
     }
 
     // float quantiles[10] = {0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
