@@ -70,8 +70,6 @@ struct lambda1405candidate {
 
   bool isSigmaPlus = false;   // True if compatible with Sigma+
   bool isSigmaMinus = false;  // True if compatible with Sigma-
-  bool hasPiKink = false;     // True if the Sigma candidate has a kink topology compatible with a pion
-  bool hasPrKink = false;     // True if the Sigma candidate has a kink topology compatible with a proton
   float sigmaMinusMass = -1;  // Invariant mass of the Sigma- candidate
   float sigmaPlusMass = -1;   // Invariant mass of the Sigma+ candidate
   float xiMinusMass = -1;     // Invariant mass of the Xi- candidate
@@ -99,7 +97,6 @@ struct lambda1405candidate {
 
 struct lambda1405analysis {
   int lambda1405PdgCode = 102132;                     // PDG code for Lambda(1405)
-  lambda1405candidate lambda1405Cand;                 // Lambda(1405) candidate structure
   Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
   Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
   Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
@@ -153,7 +150,7 @@ struct lambda1405analysis {
   ConfigurableAxis axisCent{"axisCent", {10000, 0., 100.}, ""};
   ConfigurableAxis axisPtL1405{"axisPtL1405", {100, 0., 10.}, ""};
   ConfigurableAxis axisPCompsL1405{"axisPCompsL1405", {100, -10., 10.}, ""};
-  ConfigurableAxis axisPtKinkDaug{"axisPtKinkDaug", {100, -5., 5.}, ""};
+  ConfigurableAxis axisPtKinkDaug{"axisPtKinkDaug", {100, 0., 10.}, ""};
   ConfigurableAxis axisPtResolution{"axisPtResolution", {100, -0.5, 0.5}, ""};
   ConfigurableAxis axisMassL1405{"axisMassL1405", {100, 1.3, 1.8}, ""};
   ConfigurableAxis axisXi1530Mass{"axisXi1530Mass", {100, 1.4, 1.6}, ""};
@@ -197,48 +194,40 @@ struct lambda1405analysis {
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
 
     // Sigma- candidate properties
-    rSigmaMinus.add("hSigmaMinusMass", "hSigmaMinusMass", {HistType::kTH1D, {sigmaMassAxis}});
-    rSigmaMinus.add("hSigmaPlusMass", "hSigmaPlusMass", {HistType::kTH1D, {sigmaMassAxis}});
     rSigmaMinus.add("hSigmaMinusPt", "hSigmaMinusPt", {HistType::kTH1D, {ptAxis}});
-    rSigmaMinus.add("hMassXiMinusSigmaMinus", "hMassXiMinusSigmaMinus", {HistType::kTH1D, {xiMassAxis}});
+    rSigmaMinus.add("hMassXiMinusSigmaMinus", "hMassXiMinusSigmaMinus", {HistType::kTH2F, {xiMassAxis, sigmaMassAxis}});
     rSigmaMinus.add("h2PtMassSigmaMinusBeforeCuts", "h2PtMassSigmaMinusBeforeCuts", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
     rSigmaMinus.add("h2PtPiKinkNSigBeforeCutsSigmaMinus", "h2PtPiKinkNSigBeforeCutsSigmaMinus", {HistType::kTH2F, {ptAxis, nSigmaAxis}});
     rSigmaMinus.add("h2dPtMassSigmaMinus", "h2dPtMassSigmaMinus", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
-    rSigmaMinus.add("h2SigmaMinusMassVsLambdaMass", "h2SigmaMinusMassVsLambdaMass", {HistType::kTH2F, {lambda1405MassAxis, sigmaMassAxis}});
     rSigmaMinus.add("h2KinkPiPtNSigTofSigmaMinus", "h2KinkPiPtNSigTofSigmaMinus", {HistType::kTH2F, {ptKinkDaugAxis, nSigmaAxis}});
-    rSigmaMinus.add("h2KinkPrPtNSigTofSigmaMinus", "h2KinkPrPtNSigTofSigmaMinus", {HistType::kTH2F, {ptKinkDaugAxis, nSigmaAxis}});
     rSigmaMinus.add("hSigmaMinusArmPod", "hSigmaMinusArmPod", {HistType::kTH2D, {alphaAxis, qtAxis}});
-    rSigmaMinus.add("hSigmaMinusRadius", "hSigmaMinusRadius", {HistType::kTH1D, {sigmaRadiusAxis}});
-    rSigmaMinus.add("hSigmaMinusDcaToPv", "hSigmaMinusDcaToPv", {HistType::kTH1D, {dcaSigmaToPvBinsAxis}});
+    rSigmaMinus.add("hSigmaMinusRadius", "hSigmaMinusRadius", {HistType::kTH2F, {sigmaRadiusAxis, ptAxis}});
+    rSigmaMinus.add("hSigmaMinusDcaToPv", "hSigmaMinusDcaToPv", {HistType::kTH2F, {dcaSigmaToPvBinsAxis, ptAxis}});
     rSigmaMinus.add("hSigmaMinusKinkPt", "hSigmaMinusKinkPt", {HistType::kTH1D, {ptKinkDaugAxis}});
-    rSigmaMinus.add("hSigmaMinusKinkTpcNSigPi", "hSigmaMinusKinkTpcNSigPi", {HistType::kTH1D, {nSigmaAxis}});
-    rSigmaMinus.add("hSigmaMinusKinkTofNSigPi", "hSigmaMinusKinkTofNSigPi", {HistType::kTH1D, {nSigmaAxis}});
-    rSigmaMinus.add("hSigmaMinusDcaKinkDauToPv", "hSigmaMinusDcaKinkDauToPv", {HistType::kTH1D, {dcaKinkToPvBinsAxis}});
+    rSigmaMinus.add("hSigmaMinusKinkTpcNSigPi", "hSigmaMinusKinkTpcNSigPi", {HistType::kTH2F, {nSigmaAxis, ptKinkDaugAxis}});
+    rSigmaMinus.add("hSigmaMinusKinkTofNSigPi", "hSigmaMinusKinkTofNSigPi", {HistType::kTH2F, {nSigmaAxis, ptKinkDaugAxis}});
+    rSigmaMinus.add("hSigmaMinusDcaKinkDauToPv", "hSigmaMinusDcaKinkDauToPv", {HistType::kTH2F, {dcaKinkToPvBinsAxis, ptAxis}});
 
     // Sigma+ candidate properties
-    rSigmaPlus.add("hSigmaMinusMass", "hSigmaMinusMass", {HistType::kTH1D, {sigmaMassAxis}});
-    rSigmaPlus.add("hSigmaPlusMass", "hSigmaPlusMass", {HistType::kTH1D, {sigmaMassAxis}});
     rSigmaPlus.add("hSigmaPlusPt", "hSigmaPlusPt", {HistType::kTH1D, {ptAxis}});
     rSigmaPlus.add("h2PtMassSigmaPlusBeforeCuts", "h2PtMassSigmaPlusBeforeCuts", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
-    rSigmaPlus.add("h2PtPiKinkNSigBeforeCutsSigmaPlus", "h2PtPiKinkNSigBeforeCutsSigmaPlus", {HistType::kTH2F, {ptAxis, nSigmaAxis}});
     rSigmaPlus.add("h2PtPrKinkNSigBeforeCutsSigmaPlus", "h2PtPrKinkNSigBeforeCutsSigmaPlus", {HistType::kTH2F, {ptAxis, nSigmaAxis}});
     rSigmaPlus.add("h2dPtMassSigmaPlus", "h2dPtMassSigmaPlus", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
-    rSigmaPlus.add("h2SigmaPlusMassVsLambdaMass", "h2SigmaPlusMassVsLambdaMass", {HistType::kTH2F, {lambda1405MassAxis, sigmaMassAxis}});
     rSigmaPlus.add("h2KinkPrPtNSigTofSigmaPlus", "h2KinkPrPtNSigTofSigmaPlus", {HistType::kTH2F, {ptKinkDaugAxis, nSigmaAxis}});
-    rSigmaPlus.add("hSigmaPlusArmPod", "hSigmaPlusArmPod", {HistType::kTH2D, {alphaAxis, qtAxis}});
-    rSigmaPlus.add("hSigmaPlusRadius", "hSigmaPlusRadius", {HistType::kTH1D, {sigmaRadiusAxis}});
-    rSigmaPlus.add("hSigmaPlusDcaToPv", "hSigmaPlusDcaToPv", {HistType::kTH1D, {dcaSigmaToPvBinsAxis}});
+    rSigmaPlus.add("hSigmaPlusArmPod", "hSigmaPlusArmPod", {HistType::kTH2F, {alphaAxis, qtAxis}});
+    rSigmaPlus.add("hSigmaPlusRadius", "hSigmaPlusRadius", {HistType::kTH2F, {sigmaRadiusAxis, ptAxis}});
+    rSigmaPlus.add("hSigmaPlusDcaToPv", "hSigmaPlusDcaToPv", {HistType::kTH2F, {dcaSigmaToPvBinsAxis, ptAxis}});
     rSigmaPlus.add("hSigmaPlusKinkPt", "hSigmaPlusKinkPt", {HistType::kTH1D, {ptKinkDaugAxis}});
-    rSigmaPlus.add("hSigmaPlusKinkTpcNSigPi", "hSigmaPlusKinkTpcNSigPi", {HistType::kTH1D, {nSigmaAxis}});
-    rSigmaPlus.add("hSigmaPlusKinkTofNSigPi", "hSigmaPlusKinkTofNSigPi", {HistType::kTH1D, {nSigmaAxis}});
-    rSigmaPlus.add("hSigmaPlusKinkTpcNSigPr", "hSigmaPlusKinkTpcNSigPr", {HistType::kTH1D, {nSigmaAxis}});
-    rSigmaPlus.add("hSigmaPlusKinkTofNSigPr", "hSigmaPlusKinkTofNSigPr", {HistType::kTH1D, {nSigmaAxis}});
-    rSigmaPlus.add("hSigmaPlusDcaKinkDauToPv", "hSigmaPlusDcaKinkDauToPv", {HistType::kTH1D, {dcaKinkToPvBinsAxis}});
-    rSigmaPlus.add("hMassXiMinusSigmaPlus", "hMassXiMinusSigmaPlus", {HistType::kTH1D, {xiMassAxis}});
+    rSigmaPlus.add("hSigmaPlusKinkTpcNSigPr", "hSigmaPlusKinkTpcNSigPr", {HistType::kTH2F, {nSigmaAxis, ptKinkDaugAxis}});
+    rSigmaPlus.add("hSigmaPlusKinkTofNSigPr", "hSigmaPlusKinkTofNSigPr", {HistType::kTH2F, {nSigmaAxis, ptKinkDaugAxis}});
+    rSigmaPlus.add("hSigmaPlusDcaKinkDauToPv", "hSigmaPlusDcaKinkDauToPv", {HistType::kTH2F, {dcaKinkToPvBinsAxis, ptKinkDaugAxis}});
+    rSigmaPlus.add("hMassXiMinusSigmaPlus", "hMassXiMinusSigmaPlus", {HistType::kTH2F, {xiMassAxis, sigmaMassAxis}});
 
     // Mass QA
-    rLambda1405.add("hMassL1405", "hMassL1405", {HistType::kTH1D, {lambda1405MassAxis}});
-    rLambda1405.add("hMassXi1530", "hMassXi1530", {HistType::kTH1D, {xi1530MassAxis}});
+    rLambda1405.add("h2SigmaMinusMassVsLambdaMass", "h2SigmaMinusMassVsLambdaMass", {HistType::kTH2F, {lambda1405MassAxis, sigmaMassAxis}});
+    rLambda1405.add("h2SigmaPlusMassVsLambdaMass", "h2SigmaPlusMassVsLambdaMass", {HistType::kTH2F, {lambda1405MassAxis, sigmaMassAxis}});
+    rLambda1405.add("hMassL1405", "hMassL1405", {HistType::kTH2F, {lambda1405MassAxis, ptAxis}});
+    rLambda1405.add("hMassXi1530", "hMassXi1530", {HistType::kTH2F, {xi1530MassAxis, ptAxis}});
     // Kinematic distributions
     rLambda1405.add("hPx", "hPx;#it{p}_x;Counts", {HistType::kTH1D, {pCompAxisL1405}});
     rLambda1405.add("hPy", "hPy;#it{p}_y;Counts", {HistType::kTH1D, {pCompAxisL1405}});
@@ -247,8 +236,6 @@ struct lambda1405analysis {
     rLambda1405.add("hPhi", "hPhi", {HistType::kTH1D, {{128, -o2::constants::math::PI, o2::constants::math::PI}}});
     // Pion daughter properties
     rLambda1405.add("hBachPiPt", "hBachPiPt", {HistType::kTH1D, {ptKinkDaugAxis}});
-    rLambda1405.add("hBachPiNSigTpc", "hBachPiNSigTpc", {HistType::kTH1D, {nSigmaAxis}});
-    rLambda1405.add("hBachPiNSigTof", "hBachPtNSigTof", {HistType::kTH1D, {nSigmaAxis}});
     rLambda1405.add("h2BachPiPtNSigTof", "h2BachPiPtNSigTof", {HistType::kTH2F, {ptKinkDaugAxis, nSigmaAxis}});
     rLambda1405.add("h2BachPiPtNSigTpc", "h2BachPiPtNSigTpc", {HistType::kTH2F, {ptKinkDaugAxis, nSigmaAxis}});
 
@@ -302,7 +289,7 @@ struct lambda1405analysis {
     rSelections.get<TH1>(HIST("hSelectionsKinkPr"))->GetXaxis()->SetBinLabel(7, "N#sigma Tof sel");
 
     if (doprocessDataWCentQVecs) {
-      rLambda1405.add("hScalarProd", "hScalarProd", {HistType::kTH1D, {scalarProdAxis}});
+      rLambda1405.add("hScalarProd", "hScalarProd", {HistType::kTH2F, {scalarProdAxis, ptAxis}});
       std::vector<AxisSpec> axesFlow = {lambda1405MassAxis, ptAxis, centAxis, scalarProdAxis};
       rLambda1405.add("hSparseFlowL1405", "THn for SP", HistType::kTHnSparseF, axesFlow);
     }
@@ -310,7 +297,7 @@ struct lambda1405analysis {
     if (doprocessMc || doprocessMcWCentSel) {
       // Add MC histograms if needed, to sigmaminus
       rLambda1405.add("hRecoL1405", "hRecoL1405;;Counts", {HistType::kTH2F, {{6, -0.5, 5.5}, ptAxis}});
-      rLambda1405.get<TH2>(HIST("hRecoL1405"))->GetXaxis()->SetBinLabel(1, "Reconstructed #Sigma (1405)");
+      rLambda1405.get<TH2>(HIST("hRecoL1405"))->GetXaxis()->SetBinLabel(1, "Reconstructed #Lambda(1405)");
       rLambda1405.get<TH2>(HIST("hRecoL1405"))->GetXaxis()->SetBinLabel(2, "Has MC particle");
       rLambda1405.get<TH2>(HIST("hRecoL1405"))->GetXaxis()->SetBinLabel(3, "Has #Sigma daug");
       rLambda1405.get<TH2>(HIST("hRecoL1405"))->GetXaxis()->SetBinLabel(4, "Has bach #pi");
@@ -333,11 +320,9 @@ struct lambda1405analysis {
       rLambda1405.add("h2GenSigmaPtVsKinkPtSigmaPlusPiToPiPiP", "h2GenSigmaPtVsKinkPtSigmaPlusPiToPiPiP;#Sigma #it{p}_{T} (GeV/c); Kink #it{p}_{T} (GeV/c)", {HistType::kTH2F, {ptAxis, ptAxis}});
       rLambda1405.add("h2MassResolutionFromSigmaMinus", "h2MassResolutionFromSigmaMinus", {HistType::kTH2F, {lambda1405MassAxis, massResolutionAxis}});
       rLambda1405.add("h2PtResolutionFromSigmaMinus", "h2PtResolutionFromSigmaMinus", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
-      // Add MC histograms if needed, to sigmaplus
       rLambda1405.add("h2MassResolutionFromSigmaPlus", "h2MassResolutionFromSigmaPlus", {HistType::kTH2F, {lambda1405MassAxis, massResolutionAxis}});
       rLambda1405.add("h2PtResolutionFromSigmaPlus", "h2PtResolutionFromSigmaPlus", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
-      // rLambda1405.add("h2PtMassMCWithSigmaDaug", "h2PtMassMCWithSigmaDaug", {HistType::kTH2F, {ptAxis, lambda1405MassAxis}});
-      // rLambda1405.add("h2PtMassMCNoSigmaDaug", "h2PtMassMCNoSigmaDaug", {HistType::kTH2F, {ptAxis, lambda1405MassAxis}});
+      rLambda1405.add("h2PtMassMC", "h2PtMassMC", {HistType::kTH2F, {ptAxis, lambda1405MassAxis}});
     }
 
     // Functional selections
@@ -472,34 +457,32 @@ struct lambda1405analysis {
   void fillHistosSigma(const lambda1405candidate& lambda1405Cand, const TCand& sigmaCand, const TTrack& kinkDauTrack)
   {
 
-    if (sigmaCand.mothSign() > 0) {
-      rSigmaPlus.fill(HIST("hSigmaPlusMass"), sigmaCand.mSigmaPlus());
+    if (lambda1405Cand.isSigmaPlus) {
       rSigmaPlus.fill(HIST("h2dPtMassSigmaPlus"), sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
-      rSigmaPlus.fill(HIST("hMassXiMinusSigmaPlus"), sigmaCand.mXiMinus());
+      rSigmaPlus.fill(HIST("hMassXiMinusSigmaPlus"), sigmaCand.mXiMinus(), sigmaCand.mSigmaPlus());
       rSigmaPlus.fill(HIST("hSigmaPlusArmPod"), lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP);
       rSigmaPlus.fill(HIST("hSigmaPlusPt"), sigmaCand.ptMoth());
-      rSigmaPlus.fill(HIST("hSigmaPlusRadius"), lambda1405Cand.sigmaRadius);
-      rSigmaPlus.fill(HIST("hSigmaPlusDcaToPv"), sigmaCand.dcaMothPv());
-      rSigmaPlus.fill(HIST("hSigmaPlusDcaKinkDauToPv"), sigmaCand.dcaDaugPv());
+      rSigmaPlus.fill(HIST("hSigmaPlusRadius"), lambda1405Cand.sigmaRadius, sigmaCand.ptMoth());
+      rSigmaPlus.fill(HIST("hSigmaPlusDcaToPv"), sigmaCand.dcaMothPv(), sigmaCand.ptMoth());
+      rSigmaPlus.fill(HIST("hSigmaPlusDcaKinkDauToPv"), sigmaCand.dcaDaugPv(), sigmaCand.ptMoth());
+      rSigmaPlus.fill(HIST("h2KinkPrPtNSigTofSigmaPlus"),  lambda1405Cand.kinkPt,  lambda1405Cand.kinkPrNSigTof);
       // Fill QA histos for kink daughter
       rSigmaPlus.fill(HIST("hSigmaPlusKinkPt"), kinkDauTrack.pt());
-      rSigmaPlus.fill(HIST("hSigmaPlusKinkTpcNSigPi"), kinkDauTrack.tpcNSigmaPi());
-      rSigmaPlus.fill(HIST("hSigmaPlusKinkTofNSigPi"), kinkDauTrack.tofNSigmaPi());
-      rSigmaPlus.fill(HIST("hSigmaPlusKinkTpcNSigPr"), kinkDauTrack.tpcNSigmaPr());
-      rSigmaPlus.fill(HIST("hSigmaPlusKinkTofNSigPr"), kinkDauTrack.tofNSigmaPr());
+      rSigmaPlus.fill(HIST("hSigmaPlusKinkTpcNSigPr"), kinkDauTrack.tpcNSigmaPr(), kinkDauTrack.pt());
+      rSigmaPlus.fill(HIST("hSigmaPlusKinkTofNSigPr"), kinkDauTrack.tofNSigmaPr(), kinkDauTrack.pt());
     } else {
-      rSigmaMinus.fill(HIST("hSigmaMinusMass"), sigmaCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2dPtMassSigmaMinus"), sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
-      rSigmaMinus.fill(HIST("hMassXiMinusSigmaMinus"), sigmaCand.mXiMinus());
+      rSigmaMinus.fill(HIST("hMassXiMinusSigmaMinus"), sigmaCand.mXiMinus(), sigmaCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("hSigmaMinusArmPod"), lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP);
       rSigmaMinus.fill(HIST("hSigmaMinusPt"), sigmaCand.ptMoth());
-      rSigmaMinus.fill(HIST("hSigmaMinusRadius"), lambda1405Cand.sigmaRadius);
-      rSigmaMinus.fill(HIST("hSigmaMinusDcaToPv"), sigmaCand.dcaMothPv());
-      rSigmaMinus.fill(HIST("hSigmaMinusDcaKinkDauToPv"), sigmaCand.dcaDaugPv());
+      rSigmaMinus.fill(HIST("hSigmaMinusRadius"), lambda1405Cand.sigmaRadius, sigmaCand.ptMoth());
+      rSigmaMinus.fill(HIST("hSigmaMinusDcaToPv"), sigmaCand.dcaMothPv(), sigmaCand.ptMoth());
+      rSigmaMinus.fill(HIST("hSigmaMinusDcaKinkDauToPv"), sigmaCand.dcaDaugPv(), sigmaCand.ptMoth());
+      rSigmaMinus.fill(HIST("h2KinkPiPtNSigTofSigmaMinus"),  lambda1405Cand.kinkPt,  lambda1405Cand.kinkPiNSigTof);
       // Fill QA histos for kink daughter
       rSigmaMinus.fill(HIST("hSigmaMinusKinkPt"), kinkDauTrack.pt());
-      rSigmaMinus.fill(HIST("hSigmaMinusKinkTpcNSigPi"), kinkDauTrack.tpcNSigmaPi());
-      rSigmaMinus.fill(HIST("hSigmaMinusKinkTofNSigPi"), kinkDauTrack.tofNSigmaPi());
+      rSigmaMinus.fill(HIST("hSigmaMinusKinkTpcNSigPi"), kinkDauTrack.tpcNSigmaPi(), kinkDauTrack.pt());
+      rSigmaMinus.fill(HIST("hSigmaMinusKinkTofNSigPi"), kinkDauTrack.tofNSigmaPi(), kinkDauTrack.pt());
     }
   }
 
@@ -508,8 +491,8 @@ struct lambda1405analysis {
   {
 
     // Fill QA histos for Lambda(1405) candidate
-    rLambda1405.fill(HIST("hMassL1405"), cand.massL1405);
-    rLambda1405.fill(HIST("hMassXi1530"), cand.massXi1530);
+    rLambda1405.fill(HIST("hMassL1405"),  cand.massL1405,  cand.pt());
+    rLambda1405.fill(HIST("hMassXi1530"), cand.massXi1530, cand.pt());
     rLambda1405.fill(HIST("hPx"), cand.px);
     rLambda1405.fill(HIST("hPy"), cand.py);
     rLambda1405.fill(HIST("hPz"), cand.pz);
@@ -517,22 +500,19 @@ struct lambda1405analysis {
     rLambda1405.fill(HIST("hPhi"), cand.phi);
 
     // Bachelor Pi
-    rLambda1405.fill(HIST("hBachPiPt"), piTrack.pt() * (cand.isSigmaPlus ? -1 : 1)); // Invert pt for Sigma+ to have the correct charge correlation
-    rLambda1405.fill(HIST("hBachPiNSigTpc"), piTrack.tpcNSigmaPi());
+    rLambda1405.fill(HIST("hBachPiPt"), piTrack.pt());
     rLambda1405.fill(HIST("h2BachPiPtNSigTpc"), piTrack.pt(), piTrack.tpcNSigmaPi());
-    rLambda1405.fill(HIST("hBachPiNSigTof"), piTrack.tofNSigmaPi());
     rLambda1405.fill(HIST("h2BachPiPtNSigTof"), piTrack.pt(), piTrack.tofNSigmaPi());
   }
 
   void constructCollCandidates(aod::KinkCands::iterator const& sigmaCand, TracksFull const& tracks, std::vector<lambda1405candidate>& selectedCandidates)
   {
-    rSelections.fill(HIST("hSelectionsL1405"), 0); // All candidates
 
-    if (sigmaCand.mothSign() < 0) {
-      rSelections.fill(HIST("hSelectionsSigmaMinus"), 0); // All Sigma- candidates
-    } else {
-      rSelections.fill(HIST("hSelectionsSigmaPlus"), 0); // All Sigma+ candidates
-    }
+    lambda1405candidate lambda1405Cand{};
+
+    rSelections.fill(HIST("hSelectionsL1405"), 0); // All candidates
+    rSelections.fill(HIST("hSelectionsSigmaMinus"), 0); // All Sigma- candidates
+    rSelections.fill(HIST("hSelectionsSigmaPlus"), 0);  // All Sigma+ candidates
 
     auto kinkDauTrack = sigmaCand.trackDaug_as<TracksFull>();
     bool isPiKink = selectPiKink(kinkDauTrack);
@@ -540,46 +520,45 @@ struct lambda1405analysis {
     if (!isPiKink && !isPrKink) {
       return;
     }
-    lambda1405Cand.hasPiKink = isPiKink;
-    lambda1405Cand.hasPrKink = isPrKink;
 
-    if (sigmaCand.mothSign() < 0) {
+    if (isPiKink) {   // Dominated by Sigma-, Sigma+ treated as contamination
+      lambda1405Cand.isSigmaMinus = true;
+      lambda1405Cand.isSigmaPlus  = false;
       rSelections.fill(HIST("hSelectionsSigmaMinus"), 1); // Passed kink sel
-    } else {
+    } else {          // Only Sigma+ can have a proton as kink daughter
+      lambda1405Cand.isSigmaMinus = false;
+      lambda1405Cand.isSigmaPlus  = true;
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 1); // Passed kink sel
     }
 
     // Sigma- or AntiSigma+ candidates
-    if (isPiKink && sigmaCand.mothSign() < 0) {
-      rSigmaMinus.fill(HIST("h2PtMassSigmaMinusBeforeCuts"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
-      rSigmaMinus.fill(HIST("h2PtPiKinkNSigBeforeCutsSigmaMinus"), sigmaCand.mothSign() * kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPi());
+    if (lambda1405Cand.isSigmaMinus) {
+      rSigmaMinus.fill(HIST("h2PtMassSigmaMinusBeforeCuts"), sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
+      rSigmaMinus.fill(HIST("h2PtPiKinkNSigBeforeCutsSigmaMinus"), kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPi());
     }
-    if (isPiKink && sigmaCand.mothSign() > 0) {
-      rSigmaPlus.fill(HIST("h2PtMassSigmaPlusBeforeCuts"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
-      rSigmaPlus.fill(HIST("h2PtPiKinkNSigBeforeCutsSigmaPlus"), sigmaCand.mothSign() * kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPi());
-    }
-    // Only Sigma+ can have a proton as kink daughter
-    if (isPrKink) {
-      rSigmaPlus.fill(HIST("h2PtMassSigmaPlusBeforeCuts"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
-      rSigmaPlus.fill(HIST("h2PtPrKinkNSigBeforeCutsSigmaPlus"), sigmaCand.mothSign() * kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPr());
+    if (lambda1405Cand.isSigmaPlus) {
+      rSigmaPlus.fill(HIST("h2PtMassSigmaPlusBeforeCuts"), sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
+      rSigmaPlus.fill(HIST("h2PtPrKinkNSigBeforeCutsSigmaPlus"), kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPr());
     }
 
-    lambda1405Cand.isSigmaPlus = isPrKink && (sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus - cutSigmaMass && sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus + cutSigmaMass);
-    lambda1405Cand.isSigmaMinus = isPiKink && (sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus - cutSigmaMass && sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus + cutSigmaMass);
-    if (!lambda1405Cand.isSigmaPlus && !lambda1405Cand.isSigmaMinus) {
+    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - cutSigmaMass || 
+                                        sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + cutSigmaMass)) {
       return;
     }
-    if (sigmaCand.mothSign() < 0) {
+    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - cutSigmaMass || 
+                                       sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + cutSigmaMass)) {
+      return;
+    }
+    if (lambda1405Cand.isSigmaMinus) {
       rSelections.fill(HIST("hSelectionsSigmaMinus"), 2); // Passed mass sel
     } else {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 2); // Passed mass sel
     }
 
-    float sigmaRad = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
     if (std::abs(sigmaCand.dcaMothPv()) > cutDCAtoPvSigma) {
       return;
     }
-    if (sigmaCand.mothSign() < 0) {
+    if (lambda1405Cand.isSigmaMinus) {
       rSelections.fill(HIST("hSelectionsSigmaMinus"), 3); // Passed cutDCAtoPvSigma
     } else {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 3); // Passed cutDCAtoPvSigma
@@ -588,43 +567,44 @@ struct lambda1405analysis {
     if (std::abs(sigmaCand.dcaDaugPv()) < cutDCAtoPvPiFromSigma) {
       return;
     }
-    if (sigmaCand.mothSign() < 0) {
+    if (lambda1405Cand.isSigmaMinus) {
       rSelections.fill(HIST("hSelectionsSigmaMinus"), 4); // cutDCAtoPvPiFromSigma
     } else {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 4); // cutDCAtoPvPiFromSigma
     }
 
+    float sigmaRad = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
     if (sigmaRad < cutSigmaRadius) {
       return;
     }
-    if (sigmaCand.mothSign() < 0) {
-      rSelections.fill(HIST("hSelectionsSigmaMinus"), 5); // Passed mass sel
+    if (lambda1405Cand.isSigmaMinus) {
+      rSelections.fill(HIST("hSelectionsSigmaMinus"), 5); // Passed radius sel
     } else {
-      rSelections.fill(HIST("hSelectionsSigmaPlus"), 5); // Passed mass sel
+      rSelections.fill(HIST("hSelectionsSigmaPlus"), 5); // Passed radius sel
     }
 
     auto kinkDauMom = std::array{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
-    auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+    auto sigmaMom   = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
     // Sigma properties
-    lambda1405Cand.sigmaId = sigmaCand.globalIndex();
+    lambda1405Cand.sigmaId        = sigmaCand.globalIndex();
     lambda1405Cand.sigmaMinusMass = sigmaCand.mSigmaMinus();
-    lambda1405Cand.sigmaPlusMass = sigmaCand.mSigmaPlus();
-    lambda1405Cand.xiMinusMass = sigmaCand.mXiMinus();
-    lambda1405Cand.sigmaSign = sigmaCand.mothSign();
-    lambda1405Cand.sigmaAlphaAP = alphaAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaQtAP = qtAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaPt = sigmaCand.ptMoth();
-    lambda1405Cand.sigmaRadius = sigmaRad;
+    lambda1405Cand.sigmaPlusMass  = sigmaCand.mSigmaPlus();
+    lambda1405Cand.xiMinusMass    = sigmaCand.mXiMinus();
+    lambda1405Cand.sigmaSign      = sigmaCand.mothSign();
+    lambda1405Cand.sigmaAlphaAP   = alphaAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaQtAP      = qtAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaPt        = sigmaCand.ptMoth();
+    lambda1405Cand.sigmaRadius    = sigmaRad;
     lambda1405Cand.kinkDcaDauToPv = sigmaCand.dcaDaugPv();
 
     if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP) ||
         lambda1405Cand.sigmaQtAP > funcMaxQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP)) {
       return;
     }
-    if (sigmaCand.mothSign() < 0) {
-      rSelections.fill(HIST("hSelectionsSigmaMinus"), 6); // Passed mass sel
+    if (lambda1405Cand.isSigmaMinus) {
+      rSelections.fill(HIST("hSelectionsSigmaMinus"), 6); // Passed AP sel
     } else {
-      rSelections.fill(HIST("hSelectionsSigmaPlus"), 6); // Passed mass sel
+      rSelections.fill(HIST("hSelectionsSigmaPlus"), 6); // Passed AP sel
     }
 
     // Kink daughter properties
@@ -641,8 +621,17 @@ struct lambda1405analysis {
     for (const auto& piTrack : tracks) {
       rSelections.fill(HIST("hSelectionsBachPi"), 0); // All bachelors
 
-      bool isUnlikeSign = (piTrack.sign() != sigmaCand.mothSign());
-      bool acceptPair = doLikeSignBkg ? !isUnlikeSign : isUnlikeSign;
+      // Needed to avoid spurious correlations in the Like-Sign case
+      if (piTrack.globalIndex() == kinkDauTrack.globalIndex()) {
+        continue; // Skip the kink daughter track
+      }
+
+      bool acceptPair{false};
+      if (doLikeSignBkg) {
+        acceptPair = (piTrack.sign() == sigmaCand.mothSign());
+      } else {
+        acceptPair = (piTrack.sign() != sigmaCand.mothSign());
+      }
       if (!acceptPair) {
         continue;
       }
@@ -725,7 +714,7 @@ struct lambda1405analysis {
   }
 
   template <typename TCollision, typename TCand, typename TTrack>
-  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& kinkDauTrack)
+  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks)
   {
     if constexpr (requires { collision.centFT0C(); }) {
       if (collision.centFT0C() < centralityMin || collision.centFT0C() > centralityMax) {
@@ -738,20 +727,12 @@ struct lambda1405analysis {
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     for (const auto& sigmaCand : sigmaCands) {
       std::vector<lambda1405candidate> selectedCandidates;
-      constructCollCandidates(sigmaCand, kinkDauTrack, selectedCandidates);
+      constructCollCandidates(sigmaCand, tracks, selectedCandidates);
       for (auto& lambda1405Cand : selectedCandidates) {
         if (lambda1405Cand.isSigmaMinus) {
-          rSigmaMinus.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.sigmaSign * lambda1405Cand.sigmaPt, lambda1405Cand.sigmaMinusMass);
-          if (lambda1405Cand.hasPiKink) {
-            rSigmaMinus.fill(HIST("h2KinkPiPtNSigTofSigmaMinus"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.bachPiNSigTof);
-          }
-          if (lambda1405Cand.hasPrKink) {
-            rSigmaMinus.fill(HIST("h2KinkPrPtNSigTofSigmaMinus"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.bachPiNSigTof);
-          }
-        }
-        if (lambda1405Cand.isSigmaPlus) {
-          rSigmaPlus.fill(HIST("h2SigmaPlusMassVsLambdaMass"), lambda1405Cand.sigmaSign * lambda1405Cand.sigmaPt, lambda1405Cand.sigmaPlusMass);
-          rSigmaPlus.fill(HIST("h2KinkPrPtNSigTofSigmaPlus"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.bachPiNSigTof);
+        rLambda1405.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaMinusMass);
+        } else {
+          rLambda1405.fill(HIST("h2SigmaPlusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaPlusMass);
         }
         if (fillOutputTree) {
           float const ptCand = lambda1405Cand.pt();
@@ -778,7 +759,8 @@ struct lambda1405analysis {
           float const sin2Phi = std::sin(2 * lambda1405Cand.phi);
           lambda1405Cand.scalarProd = cos2Phi * xQVec + sin2Phi * yQVec;
           float const ptCand = lambda1405Cand.pt();
-          rLambda1405.fill(HIST("hSparseFlowL1405"), ptCand, lambda1405Cand.massL1405, collision.centFT0C(), lambda1405Cand.scalarProd);
+          rLambda1405.fill(HIST("hScalarProd"), lambda1405Cand.scalarProd, ptCand);
+          rLambda1405.fill(HIST("hSparseFlowL1405"), lambda1405Cand.massL1405, ptCand, collision.centFT0C(), lambda1405Cand.scalarProd);
           if (fillFlowTree) {
             if (downSampleFactor < 1.) {
               float const pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
@@ -902,7 +884,7 @@ struct lambda1405analysis {
       for (const auto& sigmaCand : sigmaCandsPerCol) {
         std::vector<lambda1405candidate> selectedCandidates;
         constructCollCandidates(sigmaCand, tracksPerCol, selectedCandidates);
-        for (const auto& lambda1405Cand : selectedCandidates) {
+        for (auto& lambda1405Cand : selectedCandidates) {
           rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
 
           // Do MC association
@@ -926,6 +908,12 @@ struct lambda1405analysis {
             continue; // Skip if not a valid Sigma kink decay
           }
           rLambda1405.fill(HIST("hRecoL1405"), 2., lambda1405Cand.pt()); // Has kink decay in MC
+
+          // Disentangle the Sigma+ --> npi+, treated as contamination in data
+          if (isSigmaPlusToPiKink) {
+            lambda1405Cand.isSigmaMinus = false;
+            lambda1405Cand.isSigmaPlus = true;
+          }
 
           if (std::abs(mcTrackPi.pdgCode()) != PDG_t::kPiPlus) {
             continue; // Skip if not a valid pion candidate
@@ -955,12 +943,12 @@ struct lambda1405analysis {
           auto lambda1405Mother = particlesMC.rawIteratorAt(lambda1405Id);
           float lambda1405Mass = std::sqrt(lambda1405Mother.e() * lambda1405Mother.e() - lambda1405Mother.p() * lambda1405Mother.p());
           if (lambda1405Cand.isSigmaMinus) {
-            rSigmaMinus.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaMinusMass);
+            rLambda1405.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaMinusMass);
             rLambda1405.fill(HIST("h2MassResolutionFromSigmaMinus"), lambda1405Mass, lambda1405Mass - lambda1405Cand.massL1405);
             rLambda1405.fill(HIST("h2PtResolutionFromSigmaMinus"), lambda1405Cand.pt(), lambda1405Cand.pt() - lambda1405Mother.pt());
           }
           if (lambda1405Cand.isSigmaPlus) {
-            rSigmaPlus.fill(HIST("h2SigmaPlusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaPlusMass);
+            rLambda1405.fill(HIST("h2SigmaPlusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaPlusMass);
             rLambda1405.fill(HIST("h2MassResolutionFromSigmaPlus"), lambda1405Mass, lambda1405Mass - lambda1405Cand.massL1405);
             rLambda1405.fill(HIST("h2PtResolutionFromSigmaPlus"), lambda1405Cand.pt(), lambda1405Cand.pt() - lambda1405Mother.pt());
           }
@@ -999,6 +987,8 @@ struct lambda1405analysis {
       // Generated Armenteros-Podolanski variables
       float genSigmaAlphaAP = alphaAP({sigmaDaug.px(), sigmaDaug.py(), sigmaDaug.pz()}, {sigmaKinkDaug.px(), sigmaKinkDaug.py(), sigmaKinkDaug.pz()});
       float genSigmaQtAP = qtAP({sigmaDaug.px(), sigmaDaug.py(), sigmaDaug.pz()}, {sigmaKinkDaug.px(), sigmaKinkDaug.py(), sigmaKinkDaug.pz()});
+      float mcMass = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
+      rLambda1405.fill(HIST("h2PtMassMC"), mcPart.pt(), mcMass);
       if (decayChannel == kSigmaMinusPiToPiPiNeutron) {
         rLambda1405.fill(HIST("h2GenSigmaMinusArmPod"), genSigmaAlphaAP, genSigmaQtAP);
         rLambda1405.fill(HIST("h2GenPtVsBachPtSigmaMinusPiToPiPiNeutron"), mcPart.pt(), bachPi.pt());
