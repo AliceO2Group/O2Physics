@@ -465,7 +465,7 @@ struct lambda1405analysis {
       rSigmaPlus.fill(HIST("hSigmaPlusRadius"), lambda1405Cand.sigmaRadius, sigmaCand.ptMoth());
       rSigmaPlus.fill(HIST("hSigmaPlusDcaToPv"), sigmaCand.dcaMothPv(), sigmaCand.ptMoth());
       rSigmaPlus.fill(HIST("hSigmaPlusDcaKinkDauToPv"), sigmaCand.dcaDaugPv(), sigmaCand.ptMoth());
-      rSigmaPlus.fill(HIST("h2KinkPrPtNSigTofSigmaPlus"),  lambda1405Cand.kinkPt,  lambda1405Cand.kinkPrNSigTof);
+      rSigmaPlus.fill(HIST("h2KinkPrPtNSigTofSigmaPlus"), lambda1405Cand.kinkPt, lambda1405Cand.kinkPrNSigTof);
       // Fill QA histos for kink daughter
       rSigmaPlus.fill(HIST("hSigmaPlusKinkPt"), kinkDauTrack.pt());
       rSigmaPlus.fill(HIST("hSigmaPlusKinkTpcNSigPr"), kinkDauTrack.tpcNSigmaPr(), kinkDauTrack.pt());
@@ -478,7 +478,7 @@ struct lambda1405analysis {
       rSigmaMinus.fill(HIST("hSigmaMinusRadius"), lambda1405Cand.sigmaRadius, sigmaCand.ptMoth());
       rSigmaMinus.fill(HIST("hSigmaMinusDcaToPv"), sigmaCand.dcaMothPv(), sigmaCand.ptMoth());
       rSigmaMinus.fill(HIST("hSigmaMinusDcaKinkDauToPv"), sigmaCand.dcaDaugPv(), sigmaCand.ptMoth());
-      rSigmaMinus.fill(HIST("h2KinkPiPtNSigTofSigmaMinus"),  lambda1405Cand.kinkPt,  lambda1405Cand.kinkPiNSigTof);
+      rSigmaMinus.fill(HIST("h2KinkPiPtNSigTofSigmaMinus"), lambda1405Cand.kinkPt, lambda1405Cand.kinkPiNSigTof);
       // Fill QA histos for kink daughter
       rSigmaMinus.fill(HIST("hSigmaMinusKinkPt"), kinkDauTrack.pt());
       rSigmaMinus.fill(HIST("hSigmaMinusKinkTpcNSigPi"), kinkDauTrack.tpcNSigmaPi(), kinkDauTrack.pt());
@@ -491,7 +491,7 @@ struct lambda1405analysis {
   {
 
     // Fill QA histos for Lambda(1405) candidate
-    rLambda1405.fill(HIST("hMassL1405"),  cand.massL1405,  cand.pt());
+    rLambda1405.fill(HIST("hMassL1405"), cand.massL1405, cand.pt());
     rLambda1405.fill(HIST("hMassXi1530"), cand.massXi1530, cand.pt());
     rLambda1405.fill(HIST("hPx"), cand.px);
     rLambda1405.fill(HIST("hPy"), cand.py);
@@ -510,7 +510,7 @@ struct lambda1405analysis {
 
     lambda1405candidate lambda1405Cand{};
 
-    rSelections.fill(HIST("hSelectionsL1405"), 0); // All candidates
+    rSelections.fill(HIST("hSelectionsL1405"), 0);      // All candidates
     rSelections.fill(HIST("hSelectionsSigmaMinus"), 0); // All Sigma- candidates
     rSelections.fill(HIST("hSelectionsSigmaPlus"), 0);  // All Sigma+ candidates
 
@@ -521,13 +521,13 @@ struct lambda1405analysis {
       return;
     }
 
-    if (isPiKink) {   // Dominated by Sigma-, Sigma+ treated as contamination
+    if (isPiKink) { // Dominated by Sigma-, Sigma+ treated as contamination
       lambda1405Cand.isSigmaMinus = true;
-      lambda1405Cand.isSigmaPlus  = false;
+      lambda1405Cand.isSigmaPlus = false;
       rSelections.fill(HIST("hSelectionsSigmaMinus"), 1); // Passed kink sel
-    } else {          // Only Sigma+ can have a proton as kink daughter
+    } else {                                              // Only Sigma+ can have a proton as kink daughter
       lambda1405Cand.isSigmaMinus = false;
-      lambda1405Cand.isSigmaPlus  = true;
+      lambda1405Cand.isSigmaPlus = true;
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 1); // Passed kink sel
     }
 
@@ -541,11 +541,11 @@ struct lambda1405analysis {
       rSigmaPlus.fill(HIST("h2PtPrKinkNSigBeforeCutsSigmaPlus"), kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPr());
     }
 
-    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - cutSigmaMass || 
+    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - cutSigmaMass ||
                                         sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + cutSigmaMass)) {
       return;
     }
-    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - cutSigmaMass || 
+    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - cutSigmaMass ||
                                        sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + cutSigmaMass)) {
       return;
     }
@@ -584,17 +584,17 @@ struct lambda1405analysis {
     }
 
     auto kinkDauMom = std::array{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
-    auto sigmaMom   = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+    auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
     // Sigma properties
-    lambda1405Cand.sigmaId        = sigmaCand.globalIndex();
+    lambda1405Cand.sigmaId = sigmaCand.globalIndex();
     lambda1405Cand.sigmaMinusMass = sigmaCand.mSigmaMinus();
-    lambda1405Cand.sigmaPlusMass  = sigmaCand.mSigmaPlus();
-    lambda1405Cand.xiMinusMass    = sigmaCand.mXiMinus();
-    lambda1405Cand.sigmaSign      = sigmaCand.mothSign();
-    lambda1405Cand.sigmaAlphaAP   = alphaAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaQtAP      = qtAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaPt        = sigmaCand.ptMoth();
-    lambda1405Cand.sigmaRadius    = sigmaRad;
+    lambda1405Cand.sigmaPlusMass = sigmaCand.mSigmaPlus();
+    lambda1405Cand.xiMinusMass = sigmaCand.mXiMinus();
+    lambda1405Cand.sigmaSign = sigmaCand.mothSign();
+    lambda1405Cand.sigmaAlphaAP = alphaAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaQtAP = qtAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaPt = sigmaCand.ptMoth();
+    lambda1405Cand.sigmaRadius = sigmaRad;
     lambda1405Cand.kinkDcaDauToPv = sigmaCand.dcaDaugPv();
 
     if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP) ||
@@ -730,7 +730,7 @@ struct lambda1405analysis {
       constructCollCandidates(sigmaCand, tracks, selectedCandidates);
       for (auto& lambda1405Cand : selectedCandidates) {
         if (lambda1405Cand.isSigmaMinus) {
-        rLambda1405.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaMinusMass);
+          rLambda1405.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaMinusMass);
         } else {
           rLambda1405.fill(HIST("h2SigmaPlusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaPlusMass);
         }
