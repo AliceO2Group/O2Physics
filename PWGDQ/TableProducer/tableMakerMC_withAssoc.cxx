@@ -526,12 +526,13 @@ struct TableMakerMC {
 
     // Loop over MC collisions
     for (auto& mcCollision : mcCollisions) {
+      auto bc = mcCollision.template bc_as<BCsWithTimestamps>();
       // Get MC collision information into the VarManager
       VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
       // Fill histograms
       fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
       // Create the skimmed table entry for this collision
-      eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+      eventMC(bc.globalBC(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
               mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), mcCollision.bestCollisionCentFT0C(),
               mcCollision.multMCNParticlesEta05(), mcCollision.multMCNParticlesEta08(), mcCollision.multMCNParticlesEta10());
     }

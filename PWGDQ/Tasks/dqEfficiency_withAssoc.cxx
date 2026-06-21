@@ -28,6 +28,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -76,6 +78,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::common::core;
+
+o2::common::core::MetadataHelper metadataInfo;
 
 // Some definitions
 namespace o2::aod
@@ -297,6 +301,12 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigAddEventMCHistogram{"cfgAddEventMCHistogram", "generator", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Add event histograms defined via JSON formatting (see HistogramsLibrary)"};
 
+  Configurable<int> fConfigITSROFrameStartBorderMargin{"cfgITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> fConfigITSROFrameEndBorderMargin{"cfgITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> fConfigTFStartBorderMargin{"cfgTFStartBorderMargin", -1, "Number of bcs at the start of TF border. Take from CCDB if -1"};
+  Configurable<int> fConfigTFEndBorderMargin{"cfgTFEndBorderMargin", -1, "Number of bcs at the end of TF border. Take from CCDB if -1"};
+  Configurable<int> fConfigNumberOfOrbitsPerTF{"cfgNumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};
+
   Configurable<float> fConfigSplitCollisionsDeltaZ{"splitCollisionsDeltaZ", 1.0, "maximum delta-z (cm) between two collisions to consider them as split candidates"};
   Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"splitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
   Configurable<bool> fConfigCheckSplitCollisions{"checkSplitCollisions", false, "If true, run the split collision check and fill histograms"};
@@ -383,6 +393,21 @@ struct AnalysisEventSelection {
       uint64_t sor = std::atol(fHeader["SOR"].c_str());
       uint64_t eor = std::atol(fHeader["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
+
+      auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", events.begin().timestamp());
+      EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", events.begin().timestamp());
+      int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
+      int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
+      VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
+
+      int timeFrameStartBorderMargin = fConfigTFStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : fConfigTFStartBorderMargin;
+      int timeFrameEndBorderMargin = fConfigTFEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : fConfigTFEndBorderMargin;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), events.begin().runNumber(), metadataInfo.get("LPMProductionTag"));
+      int64_t bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      int64_t nBCsPerTF = fConfigNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches : fConfigNumberOfOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      VarManager::SetTFBorderselection(bcSOR, nBCsPerTF, timeFrameStartBorderMargin, timeFrameEndBorderMargin);
+
+      fCurrentRun = events.begin().runNumber();
     }
 
     fSelMap.clear();
@@ -3188,6 +3213,13 @@ struct AnalysisAsymmetricPairing {
   std::vector<TString> fCommonCutNames;
   std::vector<TString> fRecMCSignalNames;
 
+  // Parameters for TF and ITSROF border checks to be fetched from the event selection task
+  int fITSROFrameStartBorderMargin;
+  int fITSROFrameEndBorderMargin;
+  int fTFStartBorderMargin;
+  int fTFEndBorderMargin;
+  int fNumberOfOrbitsPerTF;
+
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
 
   Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
@@ -3211,6 +3243,12 @@ struct AnalysisAsymmetricPairing {
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    getTaskOptionValue<int>(context, "analysis-event-selection", "cfgITSROFrameStartBorderMargin", fITSROFrameStartBorderMargin, false);
+    getTaskOptionValue<int>(context, "analysis-event-selection", "cfgITSROFrameEndBorderMargin", fITSROFrameEndBorderMargin, false);
+    getTaskOptionValue<int>(context, "analysis-event-selection", "cfgTFStartBorderMargin", fTFStartBorderMargin, false);
+    getTaskOptionValue<int>(context, "analysis-event-selection", "cfgTFEndBorderMargin", fTFEndBorderMargin, false);
+    getTaskOptionValue<int>(context, "analysis-event-selection", "cfgNumberOfOrbitsPerTF", fNumberOfOrbitsPerTF, false);
 
     // Get the leg cut filter masks
     fLegAFilterMask = fConfigLegAFilterMask.value;
@@ -3593,6 +3631,24 @@ struct AnalysisAsymmetricPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
   void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
   {
+    if (events.size() > 0 && events.begin().runNumber() != fCurrentRun) {
+      // Set the TF and ITSROF border configuration to the same values used in the event selection task
+      auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", events.begin().timestamp());
+      EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", events.begin().timestamp());
+      int itsROFrameStartBorderMargin = fITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fITSROFrameStartBorderMargin;
+      int itsROFrameEndBorderMargin = fITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fITSROFrameEndBorderMargin;
+      VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
+
+      int timeFrameStartBorderMargin = fTFStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : fTFStartBorderMargin;
+      int timeFrameEndBorderMargin = fTFEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : fTFEndBorderMargin;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), events.begin().runNumber(), metadataInfo.get("LPMProductionTag"));
+      int64_t bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      int64_t nBCsPerTF = fNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches : fNumberOfOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      VarManager::SetTFBorderselection(bcSOR, nBCsPerTF, timeFrameStartBorderMargin, timeFrameEndBorderMargin);
+
+      fCurrentRun = events.begin().runNumber();
+    }
+
     fPairCount.clear();
 
     if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
@@ -5154,6 +5210,7 @@ struct AnalysisDileptonTrack {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),

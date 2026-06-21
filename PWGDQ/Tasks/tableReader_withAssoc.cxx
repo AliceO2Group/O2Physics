@@ -31,6 +31,7 @@
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsITSMFT/DPLAlpideParam.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
@@ -315,6 +316,9 @@ struct AnalysisEventSelection {
 
   Configurable<int> fConfigITSROFrameStartBorderMargin{"cfgITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> fConfigITSROFrameEndBorderMargin{"cfgITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> fConfigTFStartBorderMargin{"cfgTFStartBorderMargin", -1, "Number of bcs at the start of TF border. Take from CCDB if -1"};
+  Configurable<int> fConfigTFEndBorderMargin{"cfgTFEndBorderMargin", -1, "Number of bcs at the end of TF border. Take from CCDB if -1"};
+  Configurable<int> fConfigNumberOfOrbitsPerTF{"cfgNumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};
 
   Configurable<float> fConfigSplitCollisionsDeltaZ{"cfgSplitCollisionsDeltaZ", 1.0, "maximum delta-z (cm) between two collisions to consider them as split candidates"};
   Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"cfgSplitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
@@ -425,6 +429,14 @@ struct AnalysisEventSelection {
       int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
       int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
       VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
+
+      int timeFrameStartBorderMargin = fConfigTFStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : fConfigTFStartBorderMargin;
+      int timeFrameEndBorderMargin = fConfigTFEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : fConfigTFEndBorderMargin;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), events.begin().runNumber());
+      int64_t bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      int64_t nBCsPerTF = fConfigNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches : fConfigNumberOfOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      VarManager::SetTFBorderselection(bcSOR, nBCsPerTF, timeFrameStartBorderMargin, timeFrameEndBorderMargin);
+
       fCurrentRun = events.begin().runNumber();
     }
 
