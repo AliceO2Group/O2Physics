@@ -1300,6 +1300,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
   Produces<aod::DileptonPolarization> dileptonPolarList;
   Produces<aod::DileptonsEventInfo> dileptonEventInfoList;
+  Produces<aod::DileptonsMiniTree> dileptonMiniTree;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -1362,6 +1363,11 @@ struct AnalysisSameEventPairing {
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   } fConfigML;
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigMiniTree{"useMiniTree.cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
+    Configurable<float> fConfigMiniTreeMinMass{"useMiniTree.cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
+    Configurable<float> fConfigMiniTreeMaxMass{"useMiniTree.cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
+  } useMiniTree;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -1886,6 +1892,9 @@ struct AnalysisSameEventPairing {
       dileptonPolarList.reserve(reserveSize);
       dileptonEventInfoList.reserve(reserveSize);
     }
+    if (useMiniTree.fConfigMiniTree) {
+      dileptonMiniTree.reserve(reserveSize);
+    }
 
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
@@ -2180,6 +2189,25 @@ struct AnalysisSameEventPairing {
                                       isAmbiInBunch, isAmbiOutOfBunch, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
                 fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+                if (useMiniTree.fConfigMiniTree) {
+                  auto t1 = a1.template reducedmuon_as<TTracks>();
+                  auto t2 = a2.template reducedmuon_as<TTracks>();
+
+                  // By default (kPt1, kEta1, kPhi1) are for the positive charge
+                  float dileptonMass = VarManager::fgValues[VarManager::kMass];
+                  if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                    // In the miniTree the positive daughter is positioned as first
+                    if (t1.sign() > 0) {
+                      dileptonMiniTree(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kRap],
+                                       VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                       t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                    } else {
+                      dileptonMiniTree(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kRap],
+                                       VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                       t2.pt(), t2.eta(), t2.phi(), t1.pt(), t1.eta(), t1.phi());
+                    }
+                  }
+                }
                 if (fConfigAmbiguousMuonHistograms) {
                   if (isAmbiInBunch) {
                     fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
