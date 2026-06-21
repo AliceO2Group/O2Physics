@@ -2199,12 +2199,12 @@ struct AnalysisSameEventPairing {
                     // In the miniTree the positive daughter is positioned as first
                     if (t1.sign() > 0) {
                       dileptonMiniTree(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kRap],
-                                      VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kCos2DeltaPhi],
-                                      t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                                       VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                       t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
                     } else {
                       dileptonMiniTree(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kRap],
-                                      VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kCos2DeltaPhi],
-                                      t2.pt(), t2.eta(), t2.phi(), t1.pt(), t1.eta(), t1.phi());
+                                       VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                       t2.pt(), t2.eta(), t2.phi(), t1.pt(), t1.eta(), t1.phi());
                     }
                   }
                 }
