@@ -336,7 +336,8 @@ struct FlowFlucGfwPp {
 
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
-
+  
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   o2::framework::expressions::Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter mcParticlesFilter = (aod::mcparticle::eta > o2::analysis::gfwflowflucpp::etalow && aod::mcparticle::eta < o2::analysis::gfwflowflucpp::etaup && aod::mcparticle::pt > o2::analysis::gfwflowflucpp::ptlow && aod::mcparticle::pt < o2::analysis::gfwflowflucpp::ptup);
 
