@@ -239,7 +239,7 @@ struct k892hadronphotonBkg {
       }
     }
 
-    // Single-particle selection 
+    // Single-particle selection
     histos.add("PhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
     for (size_t i = 0; i < photonSels.size(); ++i)
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(i + 1, photonSels[i].c_str());
@@ -403,7 +403,7 @@ struct k892hadronphotonBkg {
   }
 
   //_______________________________________________
-  // Process v0 photon candidate 
+  // Process v0 photon candidate
   template <typename TV0Object>
   bool processPhotonCandidate(TV0Object const& gamma)
   {
