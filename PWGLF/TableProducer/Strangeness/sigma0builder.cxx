@@ -9,17 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This is a task that employs the standard V0 tables and attempts to combine
-// two V0s into a Sigma0 -> Lambda + gamma candidate.
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//  Sigma0 builder task
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    gianni.shigeru.setoue.liveraro@cern.ch
-//    oussama.benchikhi@cern.ch
-//
+
+/// \file sigma0builder.cxx
+/// \brief This is a task that employs the standard V0 tables and attempts to combine two V0s into a Sigma0 -> Lambda + gamma candidate.
+/// \author Gianni Shigeru Setoue Liveraro
+/// \author Oussama Benchikhi
 
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"

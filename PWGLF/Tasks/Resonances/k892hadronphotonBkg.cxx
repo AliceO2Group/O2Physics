@@ -8,17 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// This is a ask that computes the same-event rotational and the
-// mixed-event combinatorial backgrounds for the K*(892) -> K0S + gamma analysis.
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//  K892 hadron-photon background task
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    oussama.benchikhi@cern.ch
-//
+
+/// \file k892hadronphotonBkg.cxx
+/// \brief This is a ask that computes the same-event rotational and the mixed-event combinatorial backgrounds for the K*(892) -> K0S + gamma analysis.
+/// \author Oussama Benchikhi
+
 
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
