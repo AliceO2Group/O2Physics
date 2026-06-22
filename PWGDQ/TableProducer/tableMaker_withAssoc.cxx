@@ -2066,7 +2066,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processPbPbStreamMuonOnly, "Build muon only DQ skimmed data model for Pb-Pb, with event properties and flow for streaming", false);
   PROCESS_SWITCH(TableMaker, processPbPbRealignedMuonOnly, "Build realigned muon only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbMuonMFT, "Build muon + mft DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
-  //PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false); // removed because the number of process functions reached the limit
+  // PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false); // removed because the number of process functions reached the limit
 };
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
