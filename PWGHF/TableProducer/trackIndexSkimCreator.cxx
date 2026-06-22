@@ -1693,6 +1693,9 @@ struct HfTrackIndexSkimCreator {
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
       const std::array<LabeledArray<double>, kN3ProngDecaysUsedMlForHfFilters> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
+      const std::vector<std::string> inputFeatures2Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1"};
+      const std::vector<std::string> inputFeatures3Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2"};
+      const std::vector<std::string> inputFeatures3ProngsWithPid = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2", "tpcNSigmaPrProng0", "tpcNSigmaPrProng2", "tpcNSigmaPiProng0", "tpcNSigmaPiProng2", "tpcNSigmaKaProng1"};
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1702,6 +1705,7 @@ struct HfTrackIndexSkimCreator {
       } else {
         hfMlResponse2Prongs.setModelPathsLocal(onnxFileNames2Prongs);
       }
+      hfMlResponse2Prongs.cacheInputFeaturesIndices(inputFeatures2Prongs);
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
@@ -1716,6 +1720,11 @@ struct HfTrackIndexSkimCreator {
           hfMlResponse3Prongs[iDecay3P].setModelPathsCCDB(onnxFileNames3Prongs[iDecay3P], ccdbApi, mlModelPathCcdb3Prongs[iDecay3P], config.timestampCcdbForHfFilters);
         } else {
           hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
+        }
+        if ((doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt || doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) && iDecay3P == aod::hf_cand_3prong::DecayType::LcToPKPi) {
+          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3ProngsWithPid);
+        } else {
+          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3Prongs);
         }
         hfMlResponse3Prongs[iDecay3P].init();
       }
@@ -1820,7 +1829,7 @@ struct HfTrackIndexSkimCreator {
   template <typename T1, typename T2, typename T3>
   void applyPreselectionPhiDecay(const int binPt, T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, T2& cutStatus, T3& whichHypo, auto& isSelected)
   {
-    const double deltaMassMax = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(binPt, 4u);
+    const double deltaMassMax = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(binPt, 5u);
     if (TESTBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 0)) {
       const double mass2PhiKKPi = RecoDecay::m2(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][0], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][1]});
       if (mass2PhiKKPi > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || mass2PhiKKPi < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax)) {
@@ -1836,7 +1845,7 @@ struct HfTrackIndexSkimCreator {
     if (whichHypo[hf_cand_3prong::DecayType::DsToKKPi] == 0) {
       CLRBIT(isSelected, hf_cand_3prong::DecayType::DsToKKPi);
       if (config.debug) {
-        cutStatus[hf_cand_3prong::DecayType::DsToKKPi][4] = false;
+        cutStatus[hf_cand_3prong::DecayType::DsToKKPi][5] = false;
       }
     }
   }
@@ -1848,7 +1857,7 @@ struct HfTrackIndexSkimCreator {
   /// \param isIdentifiedPidTrack0 is the flag that tells if the track 0 has been tagged as a proton
   /// \param isIdentifiedPidTrack2 is the flag that tells if the track 2 has been tagged as a proton
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
-  /// \param whichHypo information of the mass hypoteses that were selected
+  /// \param whichHypo information of the mass hypotheses that were selected
   /// \param isSelected is a bitmap with selection outcome
   template <typename T2, typename T3, typename T4>
   void applyPreselection3Prong(T2 const& pVecTrack0, T2 const& pVecTrack1, T2 const& pVecTrack2, const auto isIdentifiedPidTrack0, const auto isIdentifiedPidTrack2, T3& cutStatus, T4& whichHypo, auto& isSelected)
@@ -1889,7 +1898,7 @@ struct HfTrackIndexSkimCreator {
       }
 
       // invariant mass
-      if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+      if (config.debug || TESTBIT(isSelected, iDecay3P)) {
         const double minMass = cut3Prong[iDecay3P].get(binPt, 0u);
         const double maxMass = cut3Prong[iDecay3P].get(binPt, 1u);
         if (minMass >= 0. && maxMass > 0.) { // no need to check isSelected but to avoid mistakes
@@ -2000,7 +2009,7 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3, typename T4>
-  void applySelection3Prong(const T1& pVecCand, const T2& secVtx, const T3& primVtx, T4& cutStatus, auto& isSelected)
+  void applySelection3Prong(const T1& pVecCand, const std::array<float, 3>& ptProngs, const T2& secVtx, const T3& primVtx, T4& cutStatus, auto& isSelected)
   {
     if (config.debug || isSelected > 0) {
 
@@ -2029,12 +2038,23 @@ struct HfTrackIndexSkimCreator {
         }
 
         // decay length
-        if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+        if (config.debug || TESTBIT(isSelected, iDecay3P)) {
           const auto decayLength = RecoDecay::distance(primVtx, secVtx);
           if (decayLength < cut3Prong[iDecay3P].get(binPt, 3u)) { // 3u == decLenIndex[iDecay3P]
             CLRBIT(isSelected, iDecay3P);
             if (config.debug) {
               cutStatus[iDecay3P][3] = false;
+            }
+          }
+        }
+
+        // prong pT
+        if (config.debug || TESTBIT(isSelected, iDecay3P)) {
+          const auto ptProngMin = cut3Prong[iDecay3P].get(binPt, 4u); // 4u == ptProngMinIndex[iDecay3P]
+          if (ptProngs[0] < ptProngMin || ptProngs[1] < ptProngMin || ptProngs[2] < ptProngMin) {
+            CLRBIT(isSelected, iDecay3P);
+            if (config.debug) {
+              cutStatus[iDecay3P][4] = false;
             }
           }
         }
@@ -2784,7 +2804,8 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
-              applySelection3Prong(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
+              const std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackPos2.pt()};
+              applySelection3Prong(pVecCandProng3Pos, ptProngs, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
@@ -3059,7 +3080,8 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
-              applySelection3Prong(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
+              const std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackNeg2.pt()};
+              applySelection3Prong(pVecCandProng3Neg, ptProngs, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs{};
               if (config.applyMlForHfFilters) {
@@ -3286,7 +3308,7 @@ struct HfTrackIndexSkimCreator {
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     FilteredTrackAssocSel const& trackIndices,
-    aod::TracksWCovDcaExtra const& tracks)
+    aod::TracksWCovDca const& tracks)
   {
     run2And3Prongs<false, false>(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
@@ -3348,7 +3370,7 @@ struct HfTrackIndexSkimCreatorCascades {
     // cascade cuts
     Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};                    // PbPb 2018: use 1
     Configurable<double> cutInvMassCascLc{"cutInvMassCascLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
-    Configurable<double> cutInvMassCascCharmNuclei{"cutInvMassCascCharmNuclei", 1., "charm nuclei candidate invariant mass difference wrt mass threshold"};
+    Configurable<double> cutInvMassCascCharmNuclei{"cutInvMassCascCharmNuclei", 0., "charm nuclei candidate invariant mass difference wrt mass threshold"};
 
     // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
     // proton PID
@@ -3440,7 +3462,7 @@ struct HfTrackIndexSkimCreatorCascades {
   void processCascades(SelectedCollisions const& collisions,
                        soa::Join<aod::V0Datas, aod::V0Covs> const& v0s,
                        FilteredTrackAssocSel const& trackIndices,
-                       aod::TracksWCovDcaExtra const&,
+                       aod::TracksWCovDca const&,
                        aod::BCsWithTimestamps const&)
   {
     // set the magnetic field from CCDB
@@ -3459,7 +3481,7 @@ struct HfTrackIndexSkimCreatorCascades {
       // fist we loop over the bachelor candidate
       for (const auto& bachIdx : groupedBachTrackIndices) {
 
-        const auto bach = bachIdx.track_as<aod::TracksWCovDcaExtra>();
+        const auto bach = bachIdx.track_as<aod::TracksWCovDca>();
         std::array pVecBach{bach.pVector()};
         auto trackBach = getTrackParCov(bach);
         if (thisCollId != bach.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
@@ -3471,8 +3493,8 @@ struct HfTrackIndexSkimCreatorCascades {
         // now we loop over the V0s
         for (const auto& v0 : groupedV0s) {
           // selections on the V0 daughters
-          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
-          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
+          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDca>(); // only the global index is read here; track-quality cuts are applied upstream in tag-sel-tracks
+          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDca>(); // only the global index is read here; track-quality cuts are applied upstream in tag-sel-tracks
 
           // check not to take the same track twice (as bachelor and V0 daughter)
           if (trackV0DaughPos.globalIndex() == bach.globalIndex() || trackV0DaughNeg.globalIndex() == bach.globalIndex()) {
@@ -3925,6 +3947,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       // cascade loop
       const auto thisCollId = collision.globalIndex();
       const auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& casc : groupedCascades) {
 
@@ -3982,7 +4005,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
         trackParCovCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
-        const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdCharmBachelor1 = groupedBachTrackIndices.begin(); trackIdCharmBachelor1 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor1) {
 
           hfFlag = 0;
@@ -4118,6 +4140,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
               continue;
             }
 
+            const auto pVecCharmBachelor1 = trackCharmBachelor1.pVector();
+
             // second loop over tracks
             for (auto trackIdCharmBachelor2 = trackIdCharmBachelor1 + 1; trackIdCharmBachelor2 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor2) {
 
@@ -4141,7 +4165,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 continue;
               }
 
-              if (!isPreselectedCandidateXic(pVecCasc, trackCharmBachelor1.pVector(), trackCharmBachelor2.pVector())) {
+              if (!isPreselectedCandidateXic(pVecCasc, pVecCharmBachelor1, trackCharmBachelor2.pVector())) {
                 continue;
               }
 

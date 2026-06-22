@@ -229,6 +229,7 @@ struct DileptonMC {
     o2::framework::Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"};
     o2::framework::Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     o2::framework::Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    o2::framework::Configurable<float> cfg_max_dca_sigma{"cfg_max_dca_sigma", 1e+10, "max dca for single track in sigma"};
     o2::framework::Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     o2::framework::Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     o2::framework::Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
@@ -259,8 +260,8 @@ struct DileptonMC {
     // configuration for PID ML
     o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
     o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-    o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20.f}, "Bin limits for ML application"};
-    o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.98, 0.98, 0.9, 0.9, 0.95, 0.95, 0.8, 0.8}, "ML cuts per bin"};
+    o2::framework::Configurable<std::vector<double>> binsMLPID{"binsMLPID", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20.f}, "Bin limits for ML application"};
+    o2::framework::Configurable<std::vector<double>> cutsMLPID{"cutsMLPID", std::vector<double>{0.97, 0.97, 0.97, 0.8, 0.95, 0.95, 0.8, 0.8, 0.8}, "ML cuts per bin"};
     o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
     o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
     o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
@@ -311,8 +312,9 @@ struct DileptonMC {
     o2::framework::Configurable<float> cfg_max_DPhi_wrt_matchedMCHMID{"cfg_max_DPhi_wrt_matchedMCHMID", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
     o2::framework::Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to apply MFT hit map"};
     o2::framework::Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
-    o2::framework::Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
-    o2::framework::Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between MFT and MCH-MID"};       // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between MFT and MCH-MID"};         // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between MFT and MCH-MID"};               // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> acceptOnlyXORMatching{"acceptOnlyXORMatching", false, "flag to accept only correct-wrong XOR pairs between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
   } dimuoncuts;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -436,9 +438,6 @@ struct DileptonMC {
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/NonPromptPsi2S/");
-    // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon1S/");
-    // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon2S/");
-    // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon3S/");
 
     fRegistry.add("Generated/ccbar/c2l_c2l/uls/hs", "generated dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2l_c2l/uls/", "Generated/ccbar/c2l_c2l/lspp/");
@@ -751,6 +750,7 @@ struct DileptonMC {
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
     fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size);
+    fDielectronCut.SetTrackMaxDcaSigma(dielectroncuts.cfg_max_dca_sigma, cfgDCAType);
     fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
     fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
     fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
@@ -771,14 +771,14 @@ struct DileptonMC {
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       std::vector<float> binsML{};
-      binsML.reserve(dielectroncuts.binsMl.value.size());
-      for (size_t i = 0; i < dielectroncuts.binsMl.value.size(); i++) {
-        binsML.emplace_back(dielectroncuts.binsMl.value[i]);
+      binsML.reserve(dielectroncuts.binsMLPID.value.size());
+      for (size_t i = 0; i < dielectroncuts.binsMLPID.value.size(); i++) {
+        binsML.emplace_back(dielectroncuts.binsMLPID.value[i]);
       }
       std::vector<float> thresholdsML{};
-      thresholdsML.reserve(dielectroncuts.cutsMl.value.size());
-      for (size_t i = 0; i < dielectroncuts.cutsMl.value.size(); i++) {
-        thresholdsML.emplace_back(dielectroncuts.cutsMl.value[i]);
+      thresholdsML.reserve(dielectroncuts.cutsMLPID.value.size());
+      for (size_t i = 0; i < dielectroncuts.cutsMLPID.value.size(); i++) {
+        thresholdsML.emplace_back(dielectroncuts.cutsMLPID.value[i]);
       }
       fDielectronCut.SetMLThresholds(binsML, thresholdsML);
     } // end of PID ML
@@ -1419,7 +1419,7 @@ struct DileptonMC {
           return false;
         }
       }
-      if (!cut.IsSelectedPair(t1, t2, d_bz, 0.0)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
@@ -1436,20 +1436,31 @@ struct DileptonMC {
       // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t2, cut, tracks)) {
       //   return false;
       // }
+
+      bool isCorrectMatch1 = t1.emmcparticleId() == t1.emmftmcparticleId();
+      bool isCorrectMatch2 = t2.emmcparticleId() == t2.emmftmcparticleId();
+
       if (dimuoncuts.acceptOnlyCorrectMatch) {
-        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t1.emmcparticleId() != t1.emmftmcparticleId()) {
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !isCorrectMatch1) {
           return false;
         }
-        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.emmcparticleId() != t2.emmftmcparticleId()) {
+        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !isCorrectMatch2) {
           return false;
         }
       }
-      if (dimuoncuts.acceptOnlyWrongMatch) { // reject correctly matched MFT-MCH-MID for bkg estimation
-        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t1.emmcparticleId() == t1.emmftmcparticleId()) {
+      if (dimuoncuts.acceptOnlyWrongMatch) {
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && isCorrectMatch1) {
           return false;
         }
-        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.emmcparticleId() == t2.emmftmcparticleId()) {
+        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && isCorrectMatch2) {
           return false;
+        }
+      }
+      if (dimuoncuts.acceptOnlyXORMatching) { // this is dummy comment.
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          if (!(isCorrectMatch1 ^ isCorrectMatch2)) {
+            return false;
+          }
         }
       }
 
@@ -2111,6 +2122,12 @@ struct DileptonMC {
       if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
+      if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+        continue;
+      }
+      if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+        continue;
+      }
       fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto posTracks_per_coll = posTracksMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
@@ -2171,7 +2188,7 @@ struct DileptonMC {
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2, d_bz, 0.0)) {
+      if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {

@@ -130,14 +130,6 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
 
     O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
-    O2_DEFINE_CONFIGURABLE(cfgPidEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "Pi, Ka, Pr, CCDB path to PID efficiency(pt, cent) object")
-
-    O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
-    O2_DEFINE_CONFIGURABLE(cfgPidEfficiencyPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "Pi, Ka, Pr, CCDB path to PID efficiency(pt, cent) object")
-
-    O2_DEFINE_CONFIGURABLE(cfgNUEOption, int, 1, "do NUE, 1: use 1D eff, 2: Using Eff(pt, cent), 3: use pid 1D eff, 4: use pid 2D eff, other: dont do NUE")
   } correctionPathOpts;
 
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
@@ -154,8 +146,9 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug");
     O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
     O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
-    O2_DEFINE_CONFIGURABLE(cfgUseITSOnly4MeanPt, bool, false, "use ITS only to calculate mean pt");
     O2_DEFINE_CONFIGURABLE(cfgClosureTest, int, 0, "choose (val) percent particle from charged to pass Pion PID selection");
+
+    O2_DEFINE_CONFIGURABLE(cfgProcessQAOutput, bool, false, "QA plots for processQA");
   } switchsOpts;
 
   /**
@@ -318,13 +311,13 @@ struct PidFlowPtCorr {
     funcFillCorrectionGraph,
     funcProcessReco,
     funcProcessSim,
+    funcProcessQA,
     funcNumber
   };
 
   // graphs for NUE / NUA
   std::vector<GFWWeights*> mAcceptance;
-  std::vector<TH1*> mEfficiency;
-  std::vector<TH1*> mEfficiency4ITSOnly;
+  std::vector<TH2*> mEfficiency;
 
   bool correctionsLoaded = false;
 
@@ -401,12 +394,25 @@ struct PidFlowPtCorr {
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hPhicorr", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhiPi", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorrPi", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhiKa", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorrKa", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhiPr", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorrPr", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {cfgaxisEta}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorr", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtPi", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorrPi", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtKa", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorrKa", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtPr", "", {HistType::kTH1D, {cfgaxisPt}});
+    registry.add("hPtCorrPr", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
 
     registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
@@ -454,7 +460,6 @@ struct PidFlowPtCorr {
       registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       // ITS only
-      registry.add("correction/hPtCentMcRec4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
 
       // hist for Pi eff
       registry.add("correction/hPtCentMcRecPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
@@ -473,8 +478,6 @@ struct PidFlowPtCorr {
       registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
 
-      registry.add("ptSpectra/hPtCentData4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
       registry.add("c22PrimeVsc22/Pi", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
       registry.add("c22PrimeVsc22/Ka", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
       registry.add("c22PrimeVsc22/Pr", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
@@ -483,9 +486,16 @@ struct PidFlowPtCorr {
     if (switchsOpts.cfgOutputrunbyrun.value) {
       // hist for NUA
       registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexPion", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexKaon", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexProton", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+
       // set "correction/hRunNumberPhiEtaVertex" axis0 label
       for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexPion"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexKaon"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexProton"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
       // end set "correction/hRunNumberPhiEtaVertex" axis0 label
     } // cfgooutputrunbyrun
@@ -544,6 +554,14 @@ struct PidFlowPtCorr {
     oba4Ch->Add(new TNamed("ptSquareAve", "ptSquareAve"));
     oba4Ch->Add(new TNamed("ptAve", "ptAve"));
     oba4Ch->Add(new TNamed("hMeanPt", "hMeanPt"));
+
+    oba4Ch->Add(new TNamed("covV2PtWeightOne", "covV2PtWeightOne"));
+    oba4Ch->Add(new TNamed("c22TrackWeightOne", "c22TrackWeightOne"));
+    oba4Ch->Add(new TNamed("hMeanPtWeightOne", "hMeanPtWeightOne"));
+    oba4Ch->Add(new TNamed("ptAveWeightOne", "ptAveWeightOne"));
+    oba4Ch->Add(new TNamed("ptSquareAveWeightOne", "ptSquareAveWeightOne"));
+
+    oba4Ch->Add(new TNamed("hMeanPtWeightFull", "hMeanPtWeightFull"));
     // end fill TObjArray for charged
 
     // init fFCCh
@@ -558,6 +576,8 @@ struct PidFlowPtCorr {
     oba4PID->Add(new TNamed("c32pure", "c32pure"));
     oba4PID->Add(new TNamed("covV2PtPID", "covV2PtPID"));
     oba4PID->Add(new TNamed("c22TrackWeightPID", "c22TrackWeightPID"));
+
+    oba4PID->Add(new TNamed("hMeanPtWeightCharged", "hMeanPtWeightCharged"));
 
     fFCPi->SetName("FlowContainerPi");
     fFCPi->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
@@ -584,7 +604,7 @@ struct PidFlowPtCorr {
     registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hPionMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hPionMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
     if (switchsOpts.cfgClosureTest.value != 0) {
       registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
@@ -595,14 +615,36 @@ struct PidFlowPtCorr {
     registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hKaonMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hKaonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
     registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hProtonMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     // end pid
     // end init tprofile3d for <2'> - meanpt
+
+    /// @note init QA plot for processQA
+    if (switchsOpts.cfgProcessQAOutput.value) {
+      /// @note track QA
+      registry.add("hProcessQA/hDCAz", "DCAz after collision cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -5, 5}, {200, 0, 3}}});
+      registry.add("hProcessQA/hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
+
+      registry.add("hProcessQA/hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+      registry.add("hProcessQA/hChi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
+
+      registry.add("hProcessQA/hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+      registry.add("hProcessQA/hnITSClu", "Number of found ITS clusters", {HistType::kTH1D, {{10, 0, 10}}});
+      registry.add("hProcessQA/hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+      // end track QA
+
+      /// @note evetn QA
+      registry.add("hProcessQA/centVsMult", "cent Vs Mult;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisMultiplicity, cfgaxisNch}});
+      registry.add("hProcessQA/IR", "", {HistType::kTH1D, {{100, 0, 100}}});
+      registry.add("hProcessQA/Occupacy", "", {HistType::kTH1D, {{1000, 0, 10000}}});
+      // end evetn QA
+    }
+    // end init QA plot for processQA
 
     // fgfw set up and correlation config setup
     // Data stored in fGFW
@@ -682,9 +724,9 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", false)); // 30
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "PrPr08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap33", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap33", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap33", false));
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", false)); // 35
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", false));
@@ -957,6 +999,39 @@ struct PidFlowPtCorr {
     }
   }
 
+  /**
+   * @brief Get the Pid, combine square cut && circle cut
+   *
+   * @tparam TrackObject
+   * @param track
+   * @return MyParticleType
+   */
+  template <typename TrackObject>
+  int getPidConfigurable(TrackObject const& track)
+  {
+    int pid = -1;
+    if (circleCutOpts.cfgUseCircleCutPID.value) {
+      // Use circular cut (already handles ambiguity rejection)
+      pid = getPidWithCircleCut(track);
+    } else {
+      // Use normal cut (with manual ambiguity rejection)
+      bool isPi = isPion(track);
+      bool isKa = isKaon(track);
+      bool isPr = isProton(track);
+      int nCandidates = isPi + isKa + isPr;
+      if (nCandidates == 1) {
+        if (isPi)
+          pid = MyParticleType::kPion;
+        else if (isKa)
+          pid = MyParticleType::kKaon;
+        else if (isPr)
+          pid = MyParticleType::kProton;
+      }
+      // else: pid remains -1 (ambiguous or none)
+    }
+    return pid;
+  }
+
   // pid util function
 
   // other utils
@@ -1035,7 +1110,9 @@ struct PidFlowPtCorr {
       return;
 
     registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
-    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, nch * dnx * val);
+    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, 1.);
+
+    fFCCh->FillProfile("hMeanPtWeightFull", cent, (ptSum / nch), nch * dnx, rndm);
   }
 
   /**
@@ -1076,7 +1153,10 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hPionMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+        registry.fill(HIST("meanptCentNbs/hPionMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+
+        fFCPi->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
+        fFCPi->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
 
         if (switchsOpts.cfgClosureTest.value != 0) {
           double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, true).real();
@@ -1111,7 +1191,10 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hKaonMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+        registry.fill(HIST("meanptCentNbs/hKaonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+
+        fFCKa->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
+        fFCKa->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
 
         break;
         // end kaon
@@ -1128,7 +1211,10 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hProtonMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+        registry.fill(HIST("meanptCentNbs/hProtonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+
+        fFCPr->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
+        fFCPr->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
 
         break;
         // end proton
@@ -1207,7 +1293,14 @@ struct PidFlowPtCorr {
     return;
   }
 
-  void fillFCvnpt(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const double& ptSum, const double& nch, const char* tarName)
+  void fillFCvnpt(MyParticleType type,
+                  const GFW::CorrConfig& corrconf,
+                  const double& cent,
+                  const double& rndm,
+                  const double& ptSum,
+                  const double& nch,
+                  const char* tarName,
+                  bool useWeightOne = false)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -1217,17 +1310,17 @@ struct PidFlowPtCorr {
     if (std::fabs(val) < 1) {
       switch (type) {
         case MyParticleType::kCharged:
-          fFCCh->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCCh->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
 
         case MyParticleType::kPion:
-          fFCPi->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCPi->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
         case MyParticleType::kKaon:
-          fFCKa->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCKa->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
         case MyParticleType::kProton:
-          fFCPr->FillProfile(tarName, cent, val * (ptSum / nch), dnx * nch, rndm);
+          fFCPr->FillProfile(tarName, cent, val * (ptSum / nch), useWeightOne ? 1.0 : dnx * nch, rndm);
           break;
 
         default:
@@ -1294,6 +1387,11 @@ struct PidFlowPtCorr {
     if (correctionsLoaded)
       return;
     int nspecies = 1;
+    int totalSpecies = 4;
+    /// @note if put 4 path in cfg then load charged, pi, ka, pr
+    // else only load charegd
+    // if path size != 1 or 4, nothing will be loaded
+
     // load NUA
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
       for (int i = 0; i <= nspecies - 1; i++) {
@@ -1304,213 +1402,151 @@ struct PidFlowPtCorr {
       else
         LOGF(warning, "Could not load acceptance weights");
     }
+
+    if (cfgAcceptance.size() == static_cast<uint64_t>(totalSpecies)) {
+      for (int i = 0; i <= totalSpecies - 1; i++) {
+        mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
+      }
+      if (mAcceptance.size() == static_cast<uint64_t>(totalSpecies))
+        LOGF(info, "Loaded acceptance weights * 4");
+      else
+        LOGF(warning, "Could not load acceptance weights * 4");
+    }
+
     // end load NUA
 
     /// @note dont modify load NUA!, just modify NUE
     // here needs to load 2 NUE graph selected from 6 ccdb path
     /// @note when using eff 2D, convert TH1* to (TH2D *)
     // pid eff is not available now...
-    std::vector<std::string> effPath1D = correctionPathOpts.cfgEfficiencyPath.value;
-    std::vector<std::string> effPath2D = correctionPathOpts.cfgEfficiency2DPath.value;
-    std::vector<std::string> effPathPid = correctionPathOpts.cfgPidEfficiencyPath.value;
+    // Load NUE (PID Efficiency)
+    std::vector<std::string> effPath = correctionPathOpts.cfgEfficiencyPath.value;
 
-    std::vector<std::string> effPath1D4ITSOnly = correctionPathOpts.cfgEfficiencyPath4ITSOnly.value;
-    std::vector<std::string> effPath2D4ITSOnly = correctionPathOpts.cfgEfficiency2DPath4ITSOnly.value;
-    std::vector<std::string> effPathPid4ITSOnly = correctionPathOpts.cfgPidEfficiencyPath4ITSOnly.value;
+    if (effPath.size() == static_cast<uint64_t>(nspecies)) {
+      for (int i = 0; i <= nspecies - 1; i++) {
+        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
+      }
+      if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
+        LOGF(info, "Loaded PID efficiency histogram");
+      else
+        LOGF(warning, "Could not load PID efficiency histogram");
+    }
 
-    switch (correctionPathOpts.cfgNUEOption.value) {
-      case 1: // use 1D eff
-        // load 1d eff for global track
-        if (effPath1D.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path 1d size != 1, skip eff 1d load");
-          break;
-        }
-        mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPath1D[0], timestamp));
-        if (mEfficiency.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load efficiency histogram");
-        }
-        // end load 1d eff for global track
+    if (effPath.size() == static_cast<uint64_t>(totalSpecies)) {
+      for (int i = 0; i <= totalSpecies - 1; i++) {
+        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
+      }
+      if (mEfficiency.size() == static_cast<uint64_t>(totalSpecies))
+        LOGF(info, "Loaded PID efficiency histogram * 4");
+      else
+        LOGF(warning, "Could not load PID efficiency histogram * 4");
+    }
 
-        // load 1d eff for ITS only
-        if (effPath1D4ITSOnly.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path for its 1d size != 1, skip its eff 1d load");
-          break;
-        }
-        mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPath1D4ITSOnly[0], timestamp));
-        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded ITS only efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load ITS only efficiency histogram");
-        }
-        // end load 1d eff for its only
-
-        break;
-        // end use 1d eff
-
-      case 2: // Use 2D eff
-        // load 2d eff for global track
-        if (effPath2D.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path 2d size != 1, skip eff 2d load");
-          break;
-        }
-        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath2D[0], timestamp));
-        if (mEfficiency.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded 2D efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load 2D efficiency histogram");
-        }
-        // end load 2d eff for global track
-
-        // load 2d eff for ITS only
-        if (effPath2D4ITSOnly.size() != static_cast<uint64_t>(1)) {
-          LOGF(warning, "eff path for its 2d size != 1, skip its eff 2d load");
-          break;
-        }
-        mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH2>(effPath2D4ITSOnly[0], timestamp));
-        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(1)) {
-          LOGF(info, "Loaded ITS only 2D efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load ITS only 2D efficiency histogram");
-        }
-        // end load 2d eff for its only
-
-        break;
-        // end use 2d eff
-
-      case 3: // use pid 1D eff
-        // load pid 1d eff for ITS + global track
-        if (effPathPid.size() != static_cast<uint64_t>(3)) {
-          LOGF(warning, "eff path pid 1d size != 3, skip pid eff 1d load");
-          break;
-        }
-        for (std::size_t i = 0; i < NSpecies; i++) {
-          mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPathPid[i], timestamp));
-        }
-        if (mEfficiency.size() == static_cast<uint64_t>(3)) {
-          LOGF(info, "Loaded PID efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load PID efficiency histogram");
-        }
-        // end load pid 1d eff for ITS + global track
-
-        // load pid 1d eff for ITS only
-        if (effPathPid4ITSOnly.size() != static_cast<uint64_t>(3)) {
-          LOGF(warning, "eff path for its pid 1d size != 3, skip its pid eff 1d load");
-          break;
-        }
-        for (std::size_t i = 0; i < NSpecies; i++) {
-          mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPathPid4ITSOnly[i], timestamp));
-        }
-        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(3)) {
-          LOGF(info, "Loaded ITS only PID efficiency histogram");
-        } else {
-          LOGF(fatal, "Could not load ITS only PID efficiency histogram");
-        }
-        // end load pid 1d eff for its only
-
-        break;
-        // end use pid 1d eff
-
-      default: // not do NUE
-        break;
-    } // end switch load eff
+    // End load PID efficiency for ITS + global track
 
     correctionsLoaded = true;
   }
 
+  /**
+   * @brief Set the Particle NUA, note that it works only when macceptance size >= 1,
+   * macceptance size can only be 1 or 4
+   *
+   * @tparam TrackObject
+   * @param weight_nua
+   * @param track
+   * @param vtxz
+   * @return true
+   * @return false
+   */
   template <typename TrackObject>
   bool setParticleNUAWeight(float& weight_nua, TrackObject& track, float vtxz)
   {
-    if (mAcceptance.size() == static_cast<uint64_t>(1))
+    if (mAcceptance.size() == static_cast<uint64_t>(1) || mAcceptance.size() == static_cast<uint64_t>(4))
       weight_nua = mAcceptance[0]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
     return true;
   }
 
-  /**
-   * @brief Set the Particle Nue Weight, for global track and ITS track, use different eff path
-   *
-   * @tparam TrackObject
-   * @param weight_nue
-   * @param track
-   * @param cent
-   * @param isGlobalTrack
-   * @return true weight setted succesfully, note that weight == 1 also return true;
-   * @return false eff got from graph == 0
-   */
   template <typename TrackObject>
-  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent, bool isGlobalTrack)
+  bool setParticleNUAWeight(float& weight_nua, TrackObject& track, float vtxz, int pid)
   {
-    float eff = 1.;
+    if (mAcceptance.size() == static_cast<uint64_t>(4)) {
 
-    uint64_t sizeOfEffVec = mEfficiency.size();
-    uint64_t sizeOfEffVec4ITS = mEfficiency4ITSOnly.size();
-
-    TH2* eff2D = 0;
-    TH2* eff2D4ITS = 0;
-
-    /// @note 1. size check 2. load eff 3. dividezero check
-    switch (correctionPathOpts.cfgNUEOption.value) {
-      case 1: // 1d
-        if (sizeOfEffVec != 1)
+      switch (pid) {
+        case MyParticleType::kPion:
+          weight_nua = mAcceptance[1]->getNUA(track.phi(), track.eta(), vtxz);
           break;
-        if (sizeOfEffVec4ITS != 1)
+        case MyParticleType::kKaon:
+          weight_nua = mAcceptance[2]->getNUA(track.phi(), track.eta(), vtxz);
+          break;
+        case MyParticleType::kProton:
+          weight_nua = mAcceptance[3]->getNUA(track.phi(), track.eta(), vtxz);
           break;
 
-        if (isGlobalTrack)
-          eff = mEfficiency[0]->GetBinContent(mEfficiency[0]->FindBin(track.pt()));
-        else
-          eff = mEfficiency4ITSOnly[0]->GetBinContent(mEfficiency4ITSOnly[0]->FindBin(track.pt()));
-
-        if (eff == 0.)
-          return false;
-
-        break;
-        // end 1d
-
-      case 2: // 2d
-        if (sizeOfEffVec != 1)
+        default:
+          weight_nua = 1;
           break;
-        if (sizeOfEffVec4ITS != 1)
-          break;
+      }
 
-        eff2D = dynamic_cast<TH2*>(mEfficiency[0]);
-        eff2D4ITS = dynamic_cast<TH2*>(mEfficiency4ITSOnly[0]);
-
-        if (!eff2D || !eff2D4ITS) {
-          LOGF(warning, "failed while converting TH1 to TH2! skip eff apply");
-          break;
-        }
-
-        if (isGlobalTrack) {
-          int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
-          int centBin = eff2D->GetYaxis()->FindBin(cent);
-          eff = eff2D->GetBinContent(ptBin, centBin);
-        } else {
-          int ptBin = eff2D4ITS->GetXaxis()->FindBin(track.pt());
-          int centBin = eff2D4ITS->GetYaxis()->FindBin(cent);
-          eff = eff2D4ITS->GetBinContent(ptBin, centBin);
-        }
-
-        if (eff == 0.)
-          return false;
-
-        break;
-        // end 2d
-
-      /// @todo add pid NUE eff
-      case 3: // pid
-        break;
-        // end pid
-
-      default:
-        break;
+    } else {
+      weight_nua = 1;
     }
+    return true;
+  }
 
-    weight_nue = 1. / eff;
+  template <typename TrackObject>
+  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent)
+  {
+    if (mEfficiency.size() == static_cast<uint64_t>(1) || mEfficiency.size() == static_cast<uint64_t>(4)) {
+      TH2* eff2D = mEfficiency[0];
+      int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
+      int centBin = eff2D->GetYaxis()->FindBin(cent);
+      float eff = eff2D->GetBinContent(ptBin, centBin);
+
+      if (eff == 0.) {
+        weight_nue = 1.;
+        return true;
+      }
+      weight_nue = 1. / eff;
+    } else {
+      weight_nue = 1.;
+    }
+    return true;
+  }
+
+  template <typename TrackObject>
+  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent, int pid)
+  {
+    if (mEfficiency.size() == static_cast<uint64_t>(4)) {
+      TH2* eff2D = nullptr;
+      switch (pid) {
+        case MyParticleType::kPion:
+          eff2D = mEfficiency[1];
+          break;
+        case MyParticleType::kKaon:
+          eff2D = mEfficiency[2];
+          break;
+        case MyParticleType::kProton:
+          eff2D = mEfficiency[3];
+          break;
+        default:
+          weight_nue = 1.;
+          return true;
+      }
+
+      int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
+      int centBin = eff2D->GetYaxis()->FindBin(cent);
+      float eff = eff2D->GetBinContent(ptBin, centBin);
+
+      if (eff == 0.) {
+        weight_nue = 1.;
+        return true;
+      }
+      weight_nue = 1. / eff;
+    } else {
+      weight_nue = 1.;
+    }
     return true;
   }
 
@@ -1891,13 +1927,6 @@ struct PidFlowPtCorr {
     for (const auto& track : tracks) {
       float weff = 1;
 
-      // do nue
-      if (switchsOpts.cfgUseITSOnly4MeanPt.value)
-        setParticleNUEWeight(weff, track, cent, false);
-      else
-        setParticleNUEWeight(weff, track, cent, true);
-      // end do nue
-
       // track cut ITS only
       if (!trackSelectedGlobal(track))
         continue;
@@ -1905,21 +1934,16 @@ struct PidFlowPtCorr {
         continue;
       if (!trackSelected4ITS(track))
         continue;
+      if (!track.hasTPC())
+        continue;
+      if (!trackSelected4TPC(track))
+        continue;
 
-      if (switchsOpts.cfgUseITSOnly4MeanPt.value) {
-        if (track.hasTPC())
-          continue;
-      } else {
-        if (!track.hasTPC())
-          continue;
-        if (!trackSelected4TPC(track))
-          continue;
-      }
       // end track cut its only
 
-      if (switchsOpts.cfgOutPutPtSpectra.value) {
-        registry.fill(HIST("ptSpectra/hPtCentData4ITSOnly"), track.pt(), cent);
-      }
+      // do nue
+      setParticleNUEWeight(weff, track, cent);
+      // end do nue
 
       // calculate ncharged(nch with weight) and pt
       if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
@@ -1932,46 +1956,31 @@ struct PidFlowPtCorr {
         // ------------------------------
         // Unified PID logic (configurable)
         // ------------------------------
-        int pid = -1;
-        if (circleCutOpts.cfgUseCircleCutPID.value) {
-          // Use circular cut (already handles ambiguity rejection)
-          pid = getPidWithCircleCut(track);
-        } else {
-          // Use normal cut (with manual ambiguity rejection)
-          bool isPi = isPion(track);
-          bool isKa = isKaon(track);
-          bool isPr = isProton(track);
-          int nCandidates = isPi + isKa + isPr;
-          if (nCandidates == 1) {
-            if (isPi)
-              pid = MyParticleType::kPion;
-            else if (isKa)
-              pid = MyParticleType::kKaon;
-            else if (isPr)
-              pid = MyParticleType::kProton;
-          }
-          // else: pid remains -1 (ambiguous or none)
-        }
+        int pid = getPidConfigurable(track);
+        float weffPid = 1.;
+        // do nue
+        setParticleNUEWeight(weffPid, track, cent, pid);
+        // end do nue
 
         // Fill PID variables based on unified result
         if (pid == MyParticleType::kPion) {
-          nPionWeighted += weff;
-          nPionSquare += weff * weff;
-          pionPtSum += weff * track.pt();
-          pionPtSumw2 += weff * weff * track.pt();
-          pionPtSquareSum += weff * weff * track.pt() * track.pt();
+          nPionWeighted += weffPid;
+          nPionSquare += weffPid * weffPid;
+          pionPtSum += weffPid * track.pt();
+          pionPtSumw2 += weffPid * weffPid * track.pt();
+          pionPtSquareSum += weffPid * weffPid * track.pt() * track.pt();
         } else if (pid == MyParticleType::kKaon) {
-          nKaonWeighted += weff;
-          nKaonSquare += weff * weff;
-          kaonPtSum += weff * track.pt();
-          kaonPtSumw2 += weff * weff * track.pt();
-          kaonPtSquareSum += weff * weff * track.pt() * track.pt();
+          nKaonWeighted += weffPid;
+          nKaonSquare += weffPid * weffPid;
+          kaonPtSum += weffPid * track.pt();
+          kaonPtSumw2 += weffPid * weffPid * track.pt();
+          kaonPtSquareSum += weffPid * weffPid * track.pt() * track.pt();
         } else if (pid == MyParticleType::kProton) {
-          nProtonWeighted += weff;
-          nProtonSquare += weff * weff;
-          protonPtSum += weff * track.pt();
-          protonPtSumw2 += weff * weff * track.pt();
-          protonPtSquareSum += weff * weff * track.pt() * track.pt();
+          nProtonWeighted += weffPid;
+          nProtonSquare += weffPid * weffPid;
+          protonPtSum += weffPid * track.pt();
+          protonPtSumw2 += weffPid * weffPid * track.pt();
+          protonPtSquareSum += weffPid * weffPid * track.pt() * track.pt();
         }
         // else: do nothing (ambiguous or not identified)
       }
@@ -1979,16 +1988,8 @@ struct PidFlowPtCorr {
 
       nchCorrectedPassed += weff;
       nchPassedSelection += 1;
-
-      if (weff == 1. && switchsOpts.cfgDebugMyCode.value) {
-        LOGF(info, "weff is 1, if nue opt is open and this message appears a lot, check!");
-      }
     }
     // end pt calculation using ITS only
-
-    if (switchsOpts.cfgDebugMyCode.value) {
-      LOGF(info, Form("its only track num %f", nchPassedSelection));
-    }
 
     int totalGlobalTrack = 0;
     // calculate number of pid particle
@@ -2004,7 +2005,7 @@ struct PidFlowPtCorr {
 
       // do NUE && NUA
       setParticleNUAWeight(wacc, track, vtxz);
-      setParticleNUEWeight(weff, track, cent, true);
+      setParticleNUEWeight(weff, track, cent);
       // end do NUE && NUA
 
       if (switchsOpts.cfgDoLocDenCorr.value) {
@@ -2051,6 +2052,7 @@ struct PidFlowPtCorr {
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hPt"), track.pt());
+      registry.fill(HIST("hPtCorr"), track.pt(), weff);
       // end fill QA hist
 
       // pt spectra
@@ -2065,39 +2067,39 @@ struct PidFlowPtCorr {
       // ------------------------------
       // Unified PID logic (configurable)
       // ------------------------------
-      int pid = -1;
-      if (circleCutOpts.cfgUseCircleCutPID.value) {
-        // Use circular cut (already handles ambiguity rejection)
-        pid = getPidWithCircleCut(track);
-      } else {
-        // Use normal cut (with manual ambiguity rejection)
-        bool isPi = isPion(track);
-        bool isKa = isKaon(track);
-        bool isPr = isProton(track);
-        int nCandidates = isPi + isKa + isPr;
-        if (nCandidates == 1) {
-          if (isPi)
-            pid = MyParticleType::kPion;
-          else if (isKa)
-            pid = MyParticleType::kKaon;
-          else if (isPr)
-            pid = MyParticleType::kProton;
-        }
-        // else: pid remains -1 (ambiguous or none)
-      }
+      int pid = getPidConfigurable(track);
+      float waccPid = 1;
+      float weffPid = 1;
+      this->setParticleNUAWeight(waccPid, track, vtxz, pid);
+      this->setParticleNUEWeight(weffPid, track, cent, pid);
 
       // Fill GFW and counters based on unified result
       if (pid == MyParticleType::kPion) {
         // bitmask 18: 0010010
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 18);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 2);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 16, wacc * weff);
+        registry.fill(HIST("hPhiPi"), track.phi());
+        registry.fill(HIST("hPhicorrPi"), track.phi(), waccPid);
+        registry.fill(HIST("hPtPi"), track.pt());
+        registry.fill(HIST("hPtCorrPi"), track.pt(), weffPid);
         numOfPi++;
       } else if (pid == MyParticleType::kKaon) {
         // bitmask 36: 0100100
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 36);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 4);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 32, wacc * weff);
+        registry.fill(HIST("hPhiKa"), track.phi());
+        registry.fill(HIST("hPhicorrKa"), track.phi(), waccPid);
+        registry.fill(HIST("hPtKa"), track.pt());
+        registry.fill(HIST("hPtCorrKa"), track.pt(), weffPid);
         numOfKa++;
       } else if (pid == MyParticleType::kProton) {
         // bitmask 72: 1001000
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 72);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 8);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 64, wacc * weff);
+        registry.fill(HIST("hPhiPr"), track.phi());
+        registry.fill(HIST("hPhicorrPr"), track.phi(), waccPid);
+        registry.fill(HIST("hPtPr"), track.pt());
+        registry.fill(HIST("hPtCorrPr"), track.pt(), weffPid);
         numOfPr++;
       }
       // else: do nothing (ambiguous or not identified)
@@ -2174,6 +2176,8 @@ struct PidFlowPtCorr {
         fillFC(MyParticleType::kProton, corrconfigs.at(10), cent, rndm, "c22");
       }
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, nch, nch, "c22TrackWeightOne", true);
+
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(1), cent, rndm, nch, nch, "c24TrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(2), cent, rndm, nch, nch, "c22FullTrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(3), cent, rndm, nch, nch, "c32TrackWeight");
@@ -2188,6 +2192,8 @@ struct PidFlowPtCorr {
       fillFCvnpt(MyParticleType::kProton, corrconfigs.at(34), cent, rndm, nch, nch, "c32TrackWeight");
 
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, ptSum, nch, "covV2PtWeightOne", true);
+
       fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, ptSum, nch, "covV2Pt");
       fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, ptSum, nch, "covV2Pt");
       fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, ptSum, nch, "covV2Pt");
@@ -2241,21 +2247,25 @@ struct PidFlowPtCorr {
       }
 
       fFCCh->FillProfile("hMeanPt", cent, (ptSum / nch), nch, rndm);
+      fFCCh->FillProfile("hMeanPtWeightOne", cent, (ptSum / nch), 1., rndm);
 
       if (nPionWeighted > 0) {
         fFCPi->FillProfile("hMeanPt", cent, (pionPtSum / nPionWeighted), nPionWeighted, rndm);
+        fFCPi->FillProfile("hMeanPtWeightOne", cent, (pionPtSum / nPionWeighted), 1., rndm);
         fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
         fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
       }
 
       if (nKaonWeighted > 0) {
         fFCKa->FillProfile("hMeanPt", cent, (kaonPtSum / nKaonWeighted), nKaonWeighted, rndm);
+        fFCKa->FillProfile("hMeanPtWeightOne", cent, (kaonPtSum / nKaonWeighted), 1., rndm);
         fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
         fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
       }
 
       if (nProtonWeighted > 0) {
         fFCPr->FillProfile("hMeanPt", cent, (protonPtSum / nProtonWeighted), nProtonWeighted, rndm);
+        fFCPr->FillProfile("hMeanPtWeightOne", cent, (protonPtSum / nProtonWeighted), 1., rndm);
         fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
         fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
       }
@@ -2266,9 +2276,17 @@ struct PidFlowPtCorr {
                            (ptSum * ptSum - ptSquareSum) / nchDiff,
                            nchDiff, rndm);
 
+        fFCCh->FillProfile("ptSquareAveWeightOne", cent,
+                           (ptSum * ptSum - ptSquareSum) / nchDiff,
+                           1., rndm);
+
         fFCCh->FillProfile("ptAve", cent,
                            (nch * ptSum - ptSumw2) / nchDiff,
                            nchDiff, rndm);
+
+        fFCCh->FillProfile("ptAveWeightOne", cent,
+                           (nch * ptSum - ptSumw2) / nchDiff,
+                           1., rndm);
       }
 
       double pionDiff = nPionWeighted * nPionWeighted - nPionSquare;
@@ -2277,9 +2295,17 @@ struct PidFlowPtCorr {
                            (pionPtSum * pionPtSum - pionPtSquareSum) / pionDiff,
                            pionDiff, rndm);
 
+        fFCPi->FillProfile("ptSquareAveWeightOne", cent,
+                           (pionPtSum * pionPtSum - pionPtSquareSum) / pionDiff,
+                           1., rndm);
+
         fFCPi->FillProfile("ptAve", cent,
                            (nPionWeighted * pionPtSum - pionPtSumw2) / pionDiff,
                            pionDiff, rndm);
+
+        fFCPi->FillProfile("ptAveWeightOne", cent,
+                           (nPionWeighted * pionPtSum - pionPtSumw2) / pionDiff,
+                           1., rndm);
       }
 
       double kaonDiff = nKaonWeighted * nKaonWeighted - nKaonSquare;
@@ -2288,9 +2314,17 @@ struct PidFlowPtCorr {
                            (kaonPtSum * kaonPtSum - kaonPtSquareSum) / kaonDiff,
                            kaonDiff, rndm);
 
+        fFCKa->FillProfile("ptSquareAveWeightOne", cent,
+                           (kaonPtSum * kaonPtSum - kaonPtSquareSum) / kaonDiff,
+                           1., rndm);
+
         fFCKa->FillProfile("ptAve", cent,
                            (nKaonWeighted * kaonPtSum - kaonPtSumw2) / kaonDiff,
                            kaonDiff, rndm);
+
+        fFCKa->FillProfile("ptAveWeightOne", cent,
+                           (nKaonWeighted * kaonPtSum - kaonPtSumw2) / kaonDiff,
+                           1., rndm);
       }
 
       double protonDiff = nProtonWeighted * nProtonWeighted - nProtonSquare;
@@ -2299,9 +2333,17 @@ struct PidFlowPtCorr {
                            (protonPtSum * protonPtSum - protonPtSquareSum) / protonDiff,
                            protonDiff, rndm);
 
+        fFCPr->FillProfile("ptSquareAveWeightOne", cent,
+                           (protonPtSum * protonPtSum - protonPtSquareSum) / protonDiff,
+                           1., rndm);
+
         fFCPr->FillProfile("ptAve", cent,
                            (nProtonWeighted * protonPtSum - protonPtSumw2) / protonDiff,
                            protonDiff, rndm);
+
+        fFCPr->FillProfile("ptAveWeightOne", cent,
+                           (nProtonWeighted * protonPtSum - protonPtSumw2) / protonDiff,
+                           1., rndm);
       }
 
     } // end fill hist using fillProfile
@@ -2369,11 +2411,88 @@ struct PidFlowPtCorr {
 
       // fill the THn
       registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+
+      int pid = this->getPidConfigurable(track);
+      switch (pid) {
+        case MyParticleType::kPion:
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+          break;
+
+        case MyParticleType::kKaon:
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+          break;
+
+        case MyParticleType::kProton:
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+          break;
+
+        default:
+          break;
+      }
       // end fill the THn
 
     } // end loop all the track
   }
   PROCESS_SWITCH(PidFlowPtCorr, fillCorrectionGraph, "", true);
+
+  void processQA(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  {
+    if (!switchsOpts.cfgProcessQAOutput.value) {
+      LOGF(fatal, "processQAOutput no open!");
+    }
+
+    /// @note init && collision cut
+    int nTot = tracks.size();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
+    double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+    // end init
+
+    /// @note collision cut
+    // include : 1.track.size 2.collision.sel8 3. evenSelected
+    if (nTot < 1)
+      return;
+
+    const auto cent = collision.centFT0C();
+    if (!collision.sel8())
+      return;
+
+    /// @note event qa
+    registry.fill(HIST("hProcessQA/centVsMult"), cent, tracks.size());
+    registry.fill(HIST("hProcessQA/IR"), interactionRate);
+    registry.fill(HIST("hProcessQA/Occupacy"), collision.trackOccupancyInTimeRange());
+    // end event qa
+
+    // i dont want to fill event count again as it's filled in other 5 function
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessQA))
+      return;
+    // end init && collision cut
+
+    /// @note track loop
+    for (const auto& track : tracks) {
+      /// @note select global track
+      // track cut isnt applied, this is track QA function!
+      if (!track.hasITS())
+        continue;
+      if (!track.hasTPC())
+        continue;
+      // end select global track
+
+      /// @note fill QA graphs
+      registry.fill(HIST("hProcessQA/hDCAz"), track.dcaZ(), track.pt());
+      registry.fill(HIST("hProcessQA/hDCAxy"), track.dcaXY(), track.pt());
+
+      registry.fill(HIST("hProcessQA/hChi2prTPCcls"), track.tpcChi2NCl());
+      registry.fill(HIST("hProcessQA/hChi2prITScls"), track.itsChi2NCl());
+
+      registry.fill(HIST("hProcessQA/hnTPCClu"), track.tpcNClsFound());
+      registry.fill(HIST("hProcessQA/hnITSClu"), track.itsNCls());
+      registry.fill(HIST("hProcessQA/hnTPCCrossedRow"), track.tpcNClsCrossedRows());
+      // end fill QA grahps
+    }
+    // end track loop
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processQA, "", true);
 
   /**
    * @brief this main function is used to check the PID performance of ITS TOC TPC, also used to do QA
@@ -2521,26 +2640,7 @@ struct PidFlowPtCorr {
             // ------------------------------
             // Unified PID logic (configurable)
             // ------------------------------
-            int pid = -1;
-            if (circleCutOpts.cfgUseCircleCutPID.value) {
-              // Use circular cut (already handles ambiguity rejection)
-              pid = getPidWithCircleCut(track);
-            } else {
-              // Use normal cut (with manual ambiguity rejection)
-              bool isPi = isPion(track);
-              bool isKa = isKaon(track);
-              bool isPr = isProton(track);
-              int nCandidates = isPi + isKa + isPr;
-              if (nCandidates == 1) {
-                if (isPi)
-                  pid = MyParticleType::kPion;
-                else if (isKa)
-                  pid = MyParticleType::kKaon;
-                else if (isPr)
-                  pid = MyParticleType::kProton;
-              }
-              // else: pid remains -1 (ambiguous or none)
-            }
+            int pid = getPidConfigurable(track);
 
             // Fill MC reco histograms based on unified result
             if (pid == MyParticleType::kPion) {
@@ -2554,12 +2654,6 @@ struct PidFlowPtCorr {
             // end identify particle and fill graph
           }
           // end global track, fill rec hist
-
-          /// @note ITS track. fill rec hist
-          if (track.hasITS() && !track.hasTPC() && trackSelected4ITS(track)) {
-            registry.fill(HIST("correction/hPtCentMcRec4ITSOnly"), track.pt(), cent);
-          }
-          // end ITS track. fill rec hist
         }
         // end fill graph
       }

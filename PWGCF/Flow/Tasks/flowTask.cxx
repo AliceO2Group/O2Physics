@@ -21,6 +21,7 @@
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -75,10 +76,12 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::genericframework;
+using namespace o2::analysis::genericframework::eventweight;
+using namespace o2::aod::rctsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 static constexpr double LongArrayDouble[4][2] = {{-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}};
-static constexpr float TrackCutArray[6][2] = {{2.5f, 2.5f}, {50.0f, 50.0f}, {70.0f, 70.0f}, {5.0f, 5.0f}, {2.0f, 2.0f}, {7.0f, 7.0f}};
+static constexpr float TrackCutArray[7][2] = {{2.5f, 2.5f}, {50.0f, 50.0f}, {70.0f, 70.0f}, {5.0f, 5.0f}, {2.0f, 2.0f}, {7.0f, 7.0f}, {0.f, 0.f}};
 
 struct FlowTask {
 
@@ -97,7 +100,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEtaVnPt, float, 0.4, "eta range for pt in vn-pt correlations")
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
-  Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 6, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
+  Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 7, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma", "DCAz Nsigma(override)"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
   enum TrackCut {
     // enum for labelledArray track selection
     kChi2prTPCcls = 0, // max chi2 per TPC clusters
@@ -105,7 +108,8 @@ struct FlowTask {
     kTPCCrossedRows,   // minimum TPC crossed rows
     kITSclu,           // minimum ITS found clusters
     kDCAz,             // max DCA to vertex z
-    kDCAxyNSigma       // 0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track
+    kDCAxyNSigma,      // 0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track
+    kDCAzNSigma        // 0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction
   };
   enum TrackCutGroup {
     kTrCutNch = 0,
@@ -129,6 +133,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking', 'CBT_hadronPID' ")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
   O2_DEFINE_CONFIGURABLE(cfgCutMaxIR, float, 50.0f, "maximum interaction rate (kHz)")
@@ -154,6 +159,7 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
     O2_DEFINE_CONFIGURABLE(cfgEfficiencyForNch, std::string, "", "CCDB path to efficiency object, only for Nch correction")
     O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+    O2_DEFINE_CONFIGURABLE(cfgUserPtVnEvWeightEnabled, bool, false, "0: use unity weight; 1: use multiplicity weight")
     O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
     O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
     Configurable<std::vector<float>> cfgConsistentEventVector{"cfgConsistentEventVector", std::vector<float>{-0.8, -0.5, -0.4, 0.4, 0.5, 0.8}, "eta regions: left(min,max), mid(min,max), right(min,max)"};
@@ -211,7 +217,10 @@ struct FlowTask {
     // Functional form of pt-dependent DCAxy cut
     TF1* fPtDepDCAxy = nullptr;
     TF1* fPtDepDCAxyForNch = nullptr;
+    TF1* fPtDepDCAz = nullptr;
+    TF1* fPtDepDCAzForNch = nullptr;
     O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+    O2_DEFINE_CONFIGURABLE(cfgDCAzFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAz cut");
   } cfgFuncParas;
 
   struct : ConfigurableGroup {
@@ -316,6 +325,7 @@ struct FlowTask {
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
+  RCTFlagsChecker rctChecker{"CBT"};
 
   // phi-EP correction
   std::vector<TF1*> funcEff;
@@ -346,7 +356,7 @@ struct FlowTask {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after supicious Runs removal");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after additional event cut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after correction loads");
-    registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
+    registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(3, "kNoITSROFrameBorder");
@@ -360,6 +370,7 @@ struct FlowTask {
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "occupancy");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(11, "MultCorrelation");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "cfgEvSelV0AT0ACut");
+    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(13, "RCTflags");
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
@@ -650,6 +661,10 @@ struct FlowTask {
     gfwConfigs.Print();
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
+    if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
+      fFCpt->setEventWeight(EventWeight::UnityWeight);
+    else
+      fFCpt->setEventWeight(EventWeight::TupleWeight);
     fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
     if (cfgEtaGapPtPtEnabled) {
       for (int i = 0; i < 4; ++i) { // o2-linter: disable=magic-number (maximum of 4 subevents)
@@ -668,6 +683,10 @@ struct FlowTask {
     if (doprocessMCGen) {
       fFCptgen->setUseCentralMoments(cfgUseCentralMoments);
       fFCptgen->setUseGapMethod(true);
+      if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
+        fFCptgen->setEventWeight(EventWeight::UnityWeight);
+      else
+        fFCptgen->setEventWeight(EventWeight::TupleWeight);
       fFCptgen->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
       if (cfgEtaGapPtPtEnabled)
         fFCptgen->initialiseSubevent(axisIndependent, cfgMpar, etagapsPtPt.size(), cfgNbootstrap);
@@ -738,6 +757,19 @@ struct FlowTask {
       cfgFuncParas.fPtDepDCAxyForNch = new TF1("ptDepDCAxyForNch", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
       cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]);
       LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
+    }
+    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs]) {
+      cfgFuncParas.fPtDepDCAz = new TF1("ptDepDCAz", Form("[0]*%s", cfgFuncParas.cfgDCAzFunc->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAz->SetParameter(0, cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs]);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs], cfgFuncParas.cfgDCAzFunc->c_str()));
+    }
+    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch]) {
+      cfgFuncParas.fPtDepDCAzForNch = new TF1("ptDepDCAzForNch", Form("[0]*%s", cfgFuncParas.cfgDCAzFunc->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch]);
+      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch], cfgFuncParas.cfgDCAzFunc->c_str()));
+    }
+    if (!cfgEvSelRCTflags.value.empty()) {
+      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
     }
   }
 
@@ -1054,6 +1086,11 @@ struct FlowTask {
     if (cfgFuncParas.cfgEvSelV0AT0ACut)
       registry.fill(HIST("hEventCountSpecific"), 11.5);
 
+    if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision))
+      return 0;
+    if (!cfgEvSelRCTflags.value.empty())
+      registry.fill(HIST("hEventCountSpecific"), 12.5);
+
     return 1;
   }
 
@@ -1076,6 +1113,8 @@ struct FlowTask {
   {
     if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
+    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs] && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutObs]));
   }
 
@@ -1083,6 +1122,8 @@ struct FlowTask {
   bool trackSelectedForNch(TTrack track)
   {
     if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
+      return false;
+    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch] && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
       return false;
     return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutNch]));
   }
@@ -1250,6 +1291,7 @@ struct FlowTask {
     double nTracksCorrected = 0;
     int magnetfield = 0;
     float independent = cent;
+    float nTracksUncorrected = 0;
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
     if (cfgFuncParas.cfgShowTPCsectorOverlap) {
@@ -1293,6 +1335,7 @@ struct FlowTask {
     for (const auto& track : tracks) {
       if (trackSelectedForNch(track) && setNchEffWeights(weffForNch, track.pt())) {
         nTracksCorrected += weffForNch;
+        nTracksUncorrected++;
       }
       if (!trackSelected(track))
         continue;
@@ -1383,7 +1426,7 @@ struct FlowTask {
       if (!cfgUsePtRef && withinPtPOI)
         fillPtSums<kReco>(track, weff);
     }
-    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+    registry.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
     if (cfgUseNch && cfgUseNchCorrected) {
       independent = nTracksCorrected;
     }

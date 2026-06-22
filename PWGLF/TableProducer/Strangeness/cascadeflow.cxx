@@ -67,11 +67,11 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraStamps>::iterator;
-using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0AQVs, aod::StraFT0MQVs, aod::StraFV0AQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
-using CollEventPlaneCentralFWOnlyFT0C = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
-using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
-using CollEventAndSpecPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
+using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraStamps>::iterator;
+using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraFT0CQVs, aod::StraFT0AQVs, aod::StraFT0MQVs, aod::StraFV0AQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
+using CollEventPlaneCentralFWOnlyFT0C = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
+using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
+using CollEventAndSpecPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
 using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
 using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
@@ -1213,7 +1213,7 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
     int counter = 0;
@@ -1269,7 +1269,7 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
 
     if (!AcceptEvent(coll, 1)) {
@@ -2489,7 +2489,7 @@ struct cascadeFlow {
     }
   }
 
-  void processAnalyseMC(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processAnalyseMC(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
 
     if (!AcceptEvent(coll, 1)) {
@@ -2622,6 +2622,19 @@ struct cascadeFlow {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
       }
+      int chargeIndex = 0;
+      if (casc.sign() > 0)
+        chargeIndex = 1;
+      if (std::abs(casc.eta()) < CandidateConfigs.etaCasc) {
+        if (fillingConfigs.isFillTHNXi && fillingConfigs.isFillTHN_Pz) {
+          if (std::abs(pdgCode) == PDG_t::kXiMinus)
+            histos.get<THn>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], 0);
+        }
+        if (fillingConfigs.isFillTHNOmega && fillingConfigs.isFillTHN_Pz) {
+          if (std::abs(pdgCode) == PDG_t::kOmegaMinus)
+            histos.get<THn>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], 0);
+        }
+      }
       if (isStoreTrueCascOnly) {
         if (pdgCode == 0)
           continue;
@@ -2631,7 +2644,7 @@ struct cascadeFlow {
     }
   }
 
-  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MC, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
+  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MC, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
   {
 
     histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
@@ -2760,7 +2773,7 @@ struct cascadeFlow {
     }
   }
 
-  void processMCPrimaryLambdaFraction(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, V0MCCandidates const& V0s, DauTracks const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMCPrimaryLambdaFraction(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras>::iterator const& coll, V0MCCandidates const& V0s, DauTracks const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
 
     Float_t collisionCentrality = 0;

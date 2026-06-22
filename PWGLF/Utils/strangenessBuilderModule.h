@@ -728,10 +728,10 @@ class BuilderModule
     return idx;
   }
 
-  template <typename TCollisions, typename TCCDB>
-  bool initCCDB(TCCDB& ccdb, aod::BCsWithTimestamps const& bcs, TCollisions const& collisions)
+  template <typename TCollisions, typename TCCDB, typename TBCs>
+  bool initCCDB(TCCDB& ccdb, TBCs const& bcs, TCollisions const& collisions)
   {
-    auto bc = collisions.size() ? collisions.begin().template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+    auto bc = collisions.size() ? collisions.begin().template bc_as<TBCs>() : bcs.begin();
     if (!bcs.size()) {
       LOGF(warn, "No BC found, skipping this DF.");
       return false; // signal to skip this DF
@@ -2256,7 +2256,7 @@ class BuilderModule
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (std::abs(dau.pdgCode()) == PDG_t::kProton) {
+                  if (std::abs(dau.pdgCode()) == PDG_t::kLambda0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
                     for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {

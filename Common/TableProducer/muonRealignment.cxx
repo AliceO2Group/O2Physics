@@ -104,7 +104,7 @@ struct MuonRealignment {
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
 
-  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   int GetDetElemId(int iDetElemNumber)
   {

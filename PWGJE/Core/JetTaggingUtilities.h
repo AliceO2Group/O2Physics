@@ -990,12 +990,16 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
   int trkIdx = 0;
   for (auto const& constituent : jet.template tracks_as<AnyTracks>()) {
     if (!constituent.has_mcParticle() || !constituent.template mcParticle_as<AnyParticles>().isPhysicalPrimary() || constituent.pt() < trackPtMin) {
-      trkLabels["trkOrigin"].push_back(0);
+      trkLabels["trkOrigin"].push_back(0); // fake track, non-physical primary track
     } else {
       const auto& particle = constituent.template mcParticle_as<AnyParticles>();
-      int orig = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-      trkLabels["trkOrigin"].push_back((orig > 0) ? orig : (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3
-                                                                                                   : 4);
+      if (particle.mcCollisionId() != collision.globalIndex()) {
+        trkLabels["trkOrigin"].push_back(0); // mismatched coll track
+      } else {
+        int orig = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
+        trkLabels["trkOrigin"].push_back((orig != RecoDecay::OriginType::None) ? static_cast<int>(orig) : (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3
+                                                                                                                                                  : 4); // 1: charm, 2: beauty, 3: primary, 4: other secondary
+      }
     }
 
     trkIdx++;

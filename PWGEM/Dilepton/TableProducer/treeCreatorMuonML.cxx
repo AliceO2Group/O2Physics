@@ -23,6 +23,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -42,7 +43,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MCHTracking/TrackExtrap.h>
-#include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/GlobalFwdTrack.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 
@@ -50,6 +50,7 @@
 #include <TH1.h>
 
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <random>
 #include <string>

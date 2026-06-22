@@ -145,6 +145,9 @@ struct Chk892LI {
     ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
     Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
     Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
+
+    Configurable<std::vector<float>> cfgGenMultCuts{"cfgGenMultCuts", std::vector<float>{500, 300, 200, 120, 80, 50, 30, 10, 0}, "Generated multiplicity lower cuts corresponding to reco centrality bins"};
+    Configurable<std::vector<float>> cfgCentBinCentres{"cfgCentBinCentres", std::vector<float>{2.5, 7.5, 15.0, 25.0, 35.0, 45.0, 55.0, 75.0, 95.0}, "Reco centrality bin centres"};
   } AxisConfig;
 
   /// Event cuts
@@ -251,8 +254,12 @@ struct Chk892LI {
     Configurable<int> cfgNrotBkg{"cfgNrotBkg", 4, "Number of rotated copies (background) per each original candidate"};
   } BkgEstimationConfig;
 
-  Configurable<bool> cfgTruthUseInelGt0{"cfgTruthUseInelGt0", true, "Truth denominator: require INEL>0"};
-  Configurable<bool> cfgTruthIncludeZvtx{"cfgTruthIncludeZvtx", true, "Truth denominator: also require |vtxz|<cfgEvtZvtx"};
+  Configurable<bool> cfgRecoUseInelGt0{"cfgRecoUseInelGt0", false, "Data/Reco require INEL>0"};
+  Configurable<bool> cfgTruthUseInelGt0{"cfgTruthUseInelGt0", false, "Truth denominator: require INEL>0"};
+  Configurable<bool> cfgTruthIncludeZvtx{"cfgTruthIncludeZvtx", false, "Truth denominator: also require |vtxz|<cfgEvtZvtx"};
+
+  Configurable<float> cfgGenMultEtaMax{"cfgGenMultEtaMax", 0.5, "Max Eta for generated mid-rapidity multiplicity"};
+  Configurable<float> cfgGenMultEtaMin{"cfgGenMultEtaMin", -0.5, "Min Eta for generated mid-rapidity multiplicity"};
 
   float lCentrality;
 
@@ -421,6 +428,8 @@ struct Chk892LI {
     // MC
     if (doprocessMC) {
 
+      AxisSpec genMultAxis{500, -0.5, 499.5, "N_{ch}^{gen} (|#eta|<0.5)"};
+
       histos.add("QACent_woCut", "Centrality without cut", HistType::kTH1F, {centAxis});
       histos.add("QACent_woCentCut", "Centrality without cent cut", HistType::kTH1F, {centAxis});
       histos.add("QACent_wCentCut", "Centrality with cent cut", HistType::kTH1F, {centAxis});
@@ -435,6 +444,10 @@ struct Chk892LI {
       histos.add("EffKstar/genKstar_pri", "Gen primary Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/genKstar_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/recoKstar_vsGenMult", "Reco K* vs gen mid-rapidity multiplicity;#it{p}_{T};N_{ch}^{gen}", HistType::kTH2D, {ptAxis, genMultAxis});
+      histos.add("EffKstar/genKstar_vsGenMult", "Gen K* vs gen mid-rapidity multiplicity;#it{p}_{T};N_{ch}^{gen}", HistType::kTH2D, {ptAxis, genMultAxis});
+      histos.add("EffKstar/genKstar_pri_vsGenMult", "Gen primary Kstar (|y|<0.5) vs gen mid-rapidity multiplicity", HistType::kTH2D, {ptAxis, genMultAxis});
+      histos.add("EffKstar/genKstar_pri_pos_vsGenMult", "Gen primary Kstar selected by vertex position (|y|<0.5) vs gen mid-rapidity multiplicity", HistType::kTH2D, {ptAxis, genMultAxis});
 
       histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
@@ -444,7 +457,18 @@ struct Chk892LI {
       histos.add("Correction/sigLoss_num_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
       histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
+      histos.add("Correction/RecoCentVsGenMult", "Reco centrality vs generated mid-rapidity multiplicity", HistType::kTH2F, {centAxis, genMultAxis});
+      histos.add("Correction/sigLoss_num_vsGenMult", "Generated Kstar in selected events vs gen mult", HistType::kTH2F, {ptAxis, genMultAxis});
+      histos.add("Correction/sigLoss_num_vsGenMult_pri", "Generated Kstar in selected events vs gen mult", HistType::kTH2F, {ptAxis, genMultAxis});
+      histos.add("Correction/sigLoss_num_vsGenMult_pri_pos", "Generated Kstar in selected events vs gen mult", HistType::kTH2F, {ptAxis, genMultAxis});
+      histos.add("Correction/sigLoss_den_vsGenMult", "Generated Kstar vs generated mid-rapidity multiplicity", HistType::kTH2F, {ptAxis, genMultAxis});
+      histos.add("Correction/sigLoss_den_vsGenMult_pri", "Generated primary Kstar vs generated mid-rapidity multiplicity", HistType::kTH2F, {ptAxis, genMultAxis});
+      histos.add("Correction/sigLoss_den_vsGenMult_pri_pos", "Generated primary Kstar selected by vertex position vs generated mid-rapidity multiplicity", HistType::kTH2F, {ptAxis, genMultAxis});
+      histos.add("Correction/EF_num_vsGenMult", "Selected reco-associated events vs gen mult", HistType::kTH1F, {genMultAxis});
+      histos.add("Correction/EF_den_vsGenMult", "Truth selected generated events vs generated multiplicity", HistType::kTH1F, {genMultAxis});
+
       histos.add("Correction/MCTruthCent_all", "MC truth FT0M centrality (all mcCollisions)", HistType::kTH1F, {centAxis});
+      histos.add("Correction/MCTruthCent_allowed", "MC truth FT0M centrality (allowed mcCollisions)", HistType::kTH1F, {centAxis});
       histos.add("Correction/MCTruthCent_cut", "MC truth FT0M centrality (truth selection applied)", HistType::kTH1F, {centAxis});
 
       histos.add("Correction/setSizes", "Sizes of sets", HistType::kTH1F, {{4, -0.5, 3.5}});
@@ -493,6 +517,53 @@ struct Chk892LI {
     } else {
       return kInvalidCentrality;
     }
+  }
+
+  template <typename McPartsT>
+  int getGenMidRapMultiplicity(McPartsT const& partsThisMc)
+  {
+    int nCh = 0;
+
+    for (auto const& part : partsThisMc) {
+      if (!part.isPhysicalPrimary()) {
+        continue;
+      }
+      if (part.eta() > cfgGenMultEtaMax || part.eta() < cfgGenMultEtaMin) {
+        continue;
+      }
+
+      auto pdgParticle = pdg->GetParticle(part.pdgCode());
+      if (!pdgParticle) {
+        continue;
+      }
+      if (pdgParticle->Charge() == 0) {
+        continue;
+      }
+
+      nCh++;
+    }
+
+    return nCh;
+  }
+
+  float getCentClassFromGenMult(int nCh)
+  {
+    const auto& cuts = AxisConfig.cfgGenMultCuts.value;
+    const auto& centres = AxisConfig.cfgCentBinCentres.value;
+
+    if (cuts.size() != centres.size()) {
+      LOGF(fatal,
+           "cfgGenMultCuts size (%zu) and cfgCentBinCentres size (%zu) must be same",
+           cuts.size(), centres.size());
+    }
+
+    for (size_t i = 0; i < cuts.size(); ++i) {
+      if (nCh >= cuts[i]) {
+        return centres[i];
+      }
+    }
+
+    return kInvalidCentrality;
   }
 
   // Track selection
@@ -559,8 +630,6 @@ struct Chk892LI {
       return false;
     if (PIDCuts.cfgTPConly)
       return true;
-    //  if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
-    //    return true;
 
     if (candidate.hasTOF()) {
       const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
@@ -719,10 +788,10 @@ struct Chk892LI {
   std::unordered_map<int64_t, float> centTruthByAllowed;
   std::unordered_set<int64_t> refClassIds;
   std::unordered_map<int64_t, float> refCentByMcId;
+  std::unordered_map<int64_t, int> genMultByMcId;
 
-  template <typename McCollsT>
-  // void buildAllowedMcIds(McCollsT const& mcCollisions, RecoEventsT const& events)
-  void buildAllowedMcIds(McCollsT const& mcCollisions, MCEventCandidates const& events)
+  template <typename McCollsT, typename McPartsT>
+  void buildAllowedMcIds(McCollsT const& mcCollisions, MCEventCandidates const& events, McPartsT const& mcparts)
   {
     allowedMcIds.clear();
     centTruthByAllowed.clear();
@@ -761,20 +830,12 @@ struct Chk892LI {
         if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(coll)) {
           continue;
         }
-        if (!coll.isInelGt0()) {
+        if (cfgRecoUseInelGt0 && !coll.isInelGt0()) {
           continue;
         }
 
         if (doprocessMC) {
           histos.fill(HIST("QACent_woCentCut"), lCentrality);
-        }
-
-        if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax) {
-          continue;
-        }
-
-        if (doprocessMC) {
-          histos.fill(HIST("QACent_wCentCut"), lCentrality);
         }
 
         atLeastOneMatch = true;
@@ -791,11 +852,29 @@ struct Chk892LI {
         continue;
       }
 
-      allowedMcIds.insert(mcid);
-      centTruthByAllowed.emplace(mcid, bestCent);
+      auto partsThisMc = mcparts.sliceBy(perMCCollision, mcid);
+      const int genMult = getGenMidRapMultiplicity(partsThisMc);
+      const float genCentClass = getCentClassFromGenMult(genMult);
+
+      if (genCentClass == kInvalidCentrality)
+        continue;
+
+      if (genCentClass < EventCuts.cfgEventCentralityMin || genCentClass > EventCuts.cfgEventCentralityMax) {
+        continue;
+      }
 
       if (doprocessMC) {
-        histos.fill(HIST("QAMCCent_allowed"), bestCent);
+        histos.fill(HIST("QACent_wCentCut"), bestCent);
+      }
+
+      allowedMcIds.insert(mcid);
+      centTruthByAllowed.emplace(mcid, genCentClass);
+      genMultByMcId[mcid] = genMult;
+
+      if (doprocessMC) {
+        histos.fill(HIST("Correction/EF_num_vsGenMult"), genMult);
+        histos.fill(HIST("Correction/RecoCentVsGenMult"), bestCent, genMult);
+        histos.fill(HIST("QAMCCent_allowed"), genCentClass);
       }
     }
   } // buildAllowedMcIds
@@ -807,31 +886,33 @@ struct Chk892LI {
     refCentByMcId.clear();
 
     for (const auto& coll : mccolls) {
-      bool pass = true;
-
-      if (cfgTruthIncludeZvtx && std::abs(coll.posZ()) >= EventCuts.cfgEvtZvtx)
-        pass = false;
-
-      if (pass && cfgTruthUseInelGt0) {
-        auto partsThisMc = mcparts.sliceBy(perMCCollision, coll.globalIndex());
-        if (!pwglf::isINELgtNmc(partsThisMc, 0, pdg))
-          pass = false;
-      }
-
-      if (!pass)
-        continue;
-
       const auto mcid = coll.globalIndex();
 
-      auto it = centTruthByAllowed.find(mcid);
-      if (it == centTruthByAllowed.end()) {
+      if (cfgTruthIncludeZvtx && std::abs(coll.posZ()) >= EventCuts.cfgEvtZvtx) {
+        continue;
+      }
+
+      auto partsThisMc = mcparts.sliceBy(perMCCollision, mcid);
+
+      if (cfgTruthUseInelGt0 && !pwglf::isINELgtNmc(partsThisMc, 0, pdg)) {
+        continue;
+      }
+
+      const int genMult = getGenMidRapMultiplicity(partsThisMc);
+      const float genCentClass = getCentClassFromGenMult(genMult);
+
+      if (genCentClass == kInvalidCentrality) {
+        continue;
+      }
+      if (genCentClass < EventCuts.cfgEventCentralityMin || genCentClass > EventCuts.cfgEventCentralityMax) {
         continue;
       }
 
       refClassIds.insert(mcid);
+      refCentByMcId.emplace(mcid, genCentClass);
+      genMultByMcId[mcid] = genMult;
 
-      const float lCentrality = it->second;
-      refCentByMcId.emplace(mcid, lCentrality);
+      histos.fill(HIST("Correction/EF_den_vsGenMult"), genMult);
 
     } // for
   } // buildReferenceMcIds
@@ -962,7 +1043,7 @@ struct Chk892LI {
         continue;
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
-      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+      if (part.y() < KstarCuts.cfgKstarMinRap || part.y() > KstarCuts.cfgKstarMaxRap)
         continue;
 
       const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
@@ -1007,10 +1088,18 @@ struct Chk892LI {
 
       const float lCentrality = iter->second;
 
+      auto itGenMult = genMultByMcId.find(mcid);
+      if (itGenMult == genMultByMcId.end()) {
+        continue;
+      }
+      const int genMult = itGenMult->second;
+
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+      histos.fill(HIST("EffKstar/genKstar_vsGenMult"), part.pt(), genMult);
 
       if (part.vt() == 0) {
         histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+        histos.fill(HIST("EffKstar/genKstar_pri_vsGenMult"), part.pt(), genMult);
       }
 
       const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
@@ -1023,6 +1112,7 @@ struct Chk892LI {
 
       if (distanceFromPV < fMaxPosPV) {
         histos.fill(HIST("EffKstar/genKstar_pri_pos"), part.pt(), lCentrality);
+        histos.fill(HIST("EffKstar/genKstar_pri_pos_vsGenMult"), part.pt(), genMult);
       }
     }
   } // effKstarProcessGen
@@ -1046,8 +1136,13 @@ struct Chk892LI {
       if (iter == centTruthByAllowed.end()) {
         continue;
       }
-
       const float lCentrality = iter->second;
+
+      auto itGenMult = genMultByMcId.find(mcid);
+      if (itGenMult == genMultByMcId.end()) {
+        continue;
+      }
+      const int genMult = itGenMult->second;
 
       if (!SecondaryCuts.cfgByPassDauPIDSelection) {
         auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
@@ -1057,6 +1152,7 @@ struct Chk892LI {
         if (!selectionPIDPion(negDauTrack))
           continue;
       }
+
       if (!selectionK0s(coll, v0))
         continue;
 
@@ -1078,7 +1174,7 @@ struct Chk892LI {
         const double ptreco = lResoKstar.Pt();
         const double yreco = lResoKstar.Rapidity();
 
-        if (std::abs(yreco) > KstarCuts.cfgKstarMaxRap)
+        if (yreco < KstarCuts.cfgKstarMinRap || yreco > KstarCuts.cfgKstarMaxRap)
           continue;
 
         double ptgen = 0, ygen = 0;
@@ -1086,6 +1182,7 @@ struct Chk892LI {
 
         if (isTrue) {
           histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
+          histos.fill(HIST("EffKstar/recoKstar_vsGenMult"), ptreco, genMult);
           histos.fill(HIST("MCReco/hInvmass_Kstar_true"), lCentrality, ptreco, lResoKstar.M());
         } else {
           histos.fill(HIST("MCReco/hInvmass_Kstar_bkg"), lCentrality, ptreco, lResoKstar.M());
@@ -1101,7 +1198,7 @@ struct Chk892LI {
         continue;
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
-      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+      if (part.y() < KstarCuts.cfgKstarMinRap || part.y() > KstarCuts.cfgKstarMaxRap)
         continue;
 
       const auto mcid = part.mcCollisionId();
@@ -1114,8 +1211,16 @@ struct Chk892LI {
 
       const float lCentrality = iter->second;
 
+      auto itMult = genMultByMcId.find(mcid);
+      if (itMult != genMultByMcId.end()) {
+        histos.fill(HIST("Correction/sigLoss_num_vsGenMult"), part.pt(), itMult->second);
+      }
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
+
       if (part.vt() == 0) {
+        if (itMult != genMultByMcId.end()) {
+          histos.fill(HIST("Correction/sigLoss_num_vsGenMult_pri"), part.pt(), itMult->second);
+        }
         histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
       }
 
@@ -1128,6 +1233,9 @@ struct Chk892LI {
       const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
 
       if (distanceFromPV < fMaxPosPV) {
+        if (itMult != genMultByMcId.end()) {
+          histos.fill(HIST("Correction/sigLoss_num_vsGenMult_pri_pos"), part.pt(), itMult->second);
+        }
         histos.fill(HIST("Correction/sigLoss_num_pri_pos"), part.pt(), lCentrality);
       }
     }
@@ -1140,7 +1248,7 @@ struct Chk892LI {
         continue;
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
-      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+      if (part.y() < KstarCuts.cfgKstarMinRap || part.y() > KstarCuts.cfgKstarMaxRap)
         continue;
 
       const auto mcid = part.mcCollisionId();
@@ -1154,8 +1262,16 @@ struct Chk892LI {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+
+      auto itMult = genMultByMcId.find(mcid);
+      if (itMult != genMultByMcId.end()) {
+        histos.fill(HIST("Correction/sigLoss_den_vsGenMult"), part.pt(), itMult->second);
+      }
       if (part.vt() == 0) {
         histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+        if (itMult != genMultByMcId.end()) {
+          histos.fill(HIST("Correction/sigLoss_den_vsGenMult_pri"), part.pt(), itMult->second);
+        }
       }
 
       const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
@@ -1168,6 +1284,9 @@ struct Chk892LI {
 
       if (distanceFromPV < fMaxPosPV) {
         histos.fill(HIST("Correction/sigLoss_den_pri_pos"), part.pt(), lCentrality);
+        if (itMult != genMultByMcId.end()) {
+          histos.fill(HIST("Correction/sigLoss_den_vsGenMult_pri_pos"), part.pt(), itMult->second);
+        }
       }
     }
   } // fillSigLossDen
@@ -1413,7 +1532,7 @@ struct Chk892LI {
     lCentrality = getCentrality(collision);
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
-    if (!collision.isInelGt0())
+    if (cfgRecoUseInelGt0 && !collision.isInelGt0())
       return;
     colCuts.fillQA(collision);
 
@@ -1427,7 +1546,8 @@ struct Chk892LI {
                  MCEventCandidates const& events,
                  MCTrueEventCandidates const& mccolls)
   {
-    buildAllowedMcIds(mccolls, events);
+    genMultByMcId.clear();
+    buildAllowedMcIds(mccolls, events, mcpart);
     buildReferenceMcIds(mccolls, mcpart);
     effK0sProcessGen(mcpart);
     effK0sProcessReco(v0s);
@@ -1444,6 +1564,7 @@ struct Chk892LI {
       const float lCentrality = iter->second;
       histos.fill(HIST("Correction/EF_den"), lCentrality);
     }
+
     for (const auto& mcid : allowedMcIds) {
       auto iter = centTruthByAllowed.find(mcid);
       if (iter == centTruthByAllowed.end())
@@ -1462,8 +1583,14 @@ struct Chk892LI {
     histos.fill(HIST("Correction/setSizes"), 2.0, nIntersect);
     histos.fill(HIST("Correction/setSizes"), 3.0, allowedMcIds.size() - nIntersect);
 
-    for (auto const& [mcid, lCentrality] : centTruthByAllowed) {
-      histos.fill(HIST("Correction/MCTruthCent_all"), lCentrality);
+    for (auto const& mcc : mccolls) {
+      auto partsThisMc = mcpart.sliceBy(perMCCollision, mcc.globalIndex());
+      const int genMult = getGenMidRapMultiplicity(partsThisMc);
+      const float genCentClass = getCentClassFromGenMult(genMult);
+      if (genCentClass == kInvalidCentrality) {
+        continue;
+      }
+      histos.fill(HIST("Correction/MCTruthCent_all"), genCentClass);
     }
 
     for (const auto& mcid : refClassIds) {
@@ -1487,7 +1614,7 @@ struct Chk892LI {
         histos.fill(HIST("Correction/hNEventsMCTruth"), 2.0);
 
         auto partsThisMc = mcpart.sliceBy(perMCCollision, mcid);
-        if (pwglf::isINELgtNmc(partsThisMc, 0, pdg)) {
+        if (!cfgTruthUseInelGt0 || pwglf::isINELgtNmc(partsThisMc, 0, pdg)) {
           histos.fill(HIST("Correction/hNEventsMCTruth"), 3.0);
         }
       }
@@ -1508,7 +1635,7 @@ struct Chk892LI {
       return;
     if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
-    if (!collision.isInelGt0())
+    if (cfgRecoUseInelGt0 && !collision.isInelGt0())
       return;
     if (!collision.has_mcCollision())
       return;

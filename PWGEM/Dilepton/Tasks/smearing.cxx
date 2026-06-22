@@ -129,8 +129,30 @@ struct ApplySmearing {
   MomentumSmearer smearer_StandaloneMuon;
   MomentumSmearer smearer_GlobalMuon;
   Service<ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber{0};
 
   void init(InitContext&)
+  {
+    mRunNumber = 0;
+    if (fTimestamp < 0) {
+      LOG(fatal) << "Don't use time stamp = -1";
+    }
+    if (doprocessCocktail) {
+      initResolutionMap(fTimestamp);
+    }
+  }
+
+  template <typename TBC>
+  void initCCDB(TBC const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    initResolutionMap(bc.timestamp());
+    mRunNumber = bc.runNumber();
+  }
+
+  void initResolutionMap(const int64_t timestamp)
   {
     smearer_Electron.setNDSmearing(electron_filenames.fConfigNDSmearing.value);
     smearer_Electron.setResFileName(TString(electron_filenames.fConfigResFileName));
@@ -180,19 +202,19 @@ struct ApplySmearing {
       smearer_Electron.setCcdbPathRes(TString(electron_filenames.fConfigCcdbPathRes));
       smearer_Electron.setCcdbPathEff(TString(electron_filenames.fConfigCcdbPathEff));
       smearer_Electron.setCcdbPathDCA(TString(electron_filenames.fConfigCcdbPathDCA));
-      smearer_Electron.setTimestamp(fTimestamp);
+      smearer_Electron.setTimestamp(timestamp);
       smearer_Electron.setCcdb(ccdb);
 
       smearer_StandaloneMuon.setCcdbPathRes(TString(sa_muon_filenames.fConfigCcdbPathRes));
       smearer_StandaloneMuon.setCcdbPathEff(TString(sa_muon_filenames.fConfigCcdbPathEff));
       smearer_StandaloneMuon.setCcdbPathDCA(TString(sa_muon_filenames.fConfigCcdbPathDCA));
-      smearer_StandaloneMuon.setTimestamp(fTimestamp);
+      smearer_StandaloneMuon.setTimestamp(timestamp);
       smearer_StandaloneMuon.setCcdb(ccdb);
 
       smearer_GlobalMuon.setCcdbPathRes(TString(gl_muon_filenames.fConfigCcdbPathRes));
       smearer_GlobalMuon.setCcdbPathEff(TString(gl_muon_filenames.fConfigCcdbPathEff));
       smearer_GlobalMuon.setCcdbPathDCA(TString(gl_muon_filenames.fConfigCcdbPathDCA));
-      smearer_GlobalMuon.setTimestamp(fTimestamp);
+      smearer_GlobalMuon.setTimestamp(timestamp);
       smearer_GlobalMuon.setCcdb(ccdb);
     }
     smearer_Electron.init();
@@ -203,7 +225,7 @@ struct ApplySmearing {
   template <o2::aod::pwgem::dilepton::smearing::EMAnaType type, typename TTracksMC, typename TCollisions, typename TMCCollisions>
   void applySmearing(TTracksMC const& tracksMC, TCollisions const& collisions, TMCCollisions const&)
   {
-    for (auto& mctrack : tracksMC) {
+    for (const auto& mctrack : tracksMC) {
       float ptgen = mctrack.pt();
       float etagen = mctrack.eta();
       float phigen = mctrack.phi();
@@ -269,13 +291,9 @@ struct ApplySmearing {
 
   void processMCanalysisEM(aod::EMMCParticles const& tracksMC, MyCollisions const& collisions, MyMCCollisions const& mccollisions)
   {
+    initCCDB(collisions.iteratorAt(0));
     applySmearing<o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency>(tracksMC, collisions, mccollisions);
   }
-
-  // void processMCanalysisDQ(ReducedMCTracks const& tracksMC)
-  // {
-  //   applySmearing<EMAnaType::kEfficiency>(tracksMC);
-  // }
 
   void processCocktail(aod::McParticles const& tracksMC)
   {
@@ -285,7 +303,7 @@ struct ApplySmearing {
   void processDummyCocktail(aod::McParticles const& tracksMC)
   {
     // don't apply smearing
-    for (auto& mctrack : tracksMC) {
+    for (const auto& mctrack : tracksMC) {
       int pdgCode = mctrack.pdgCode();
       if (std::abs(pdgCode) == 11) {
         smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
@@ -356,7 +374,7 @@ struct CheckSmearing {
   template <o2::aod::pwgem::dilepton::smearing::EMAnaType type, typename TTracksMC, typename TMCCollisions>
   void Check(TTracksMC const& tracksMC, TMCCollisions const&)
   {
-    for (auto& mctrack : tracksMC) {
+    for (const auto& mctrack : tracksMC) {
       if (std::abs(mctrack.pdgCode()) != fPdgCode) {
         continue;
       }

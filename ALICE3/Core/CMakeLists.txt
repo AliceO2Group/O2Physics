@@ -10,8 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(ALICE3Core
-                      SOURCES TOFResoALICE3.cxx
-                              TrackUtilities.cxx
+                      SOURCES TrackUtilities.cxx
                               FlatLutEntry.cxx
                               FlatTrackSmearer.cxx
                               GeometryContainer.cxx
@@ -19,8 +18,7 @@ o2physics_add_library(ALICE3Core
                                             O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(ALICE3Core
-                      HEADERS TOFResoALICE3.h
-                              TrackUtilities.h
+                      HEADERS TrackUtilities.h
                               FlatLutEntry.h
                               GeometryContainer.h
                       LINKDEF ALICE3CoreLinkDef.h)

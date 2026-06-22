@@ -90,7 +90,7 @@ struct UpcCandProducerGlobalMuon {
   Configurable<int> fBcWindowMCH{"fBcWindowMCH", 20, "Time window for MCH-MID to MCH-only matching for Muon candidates"};
   Configurable<float> fMaxFV0Amp{"fMaxFV0Amp", 100.f, "Max FV0 amplitude in the same BC"};
 
-  // NEW: MFT/Global track support configurables
+  // MFT/Global track support configurables
   Configurable<bool> fEnableMFT{"fEnableMFT", true, "Enable MFT/global track processing"};
   Configurable<bool> fSaveMFTClusters{"fSaveMFTClusters", true, "Save MFT cluster information"};
 
@@ -143,10 +143,11 @@ struct UpcCandProducerGlobalMuon {
     // NEW: Add histograms for global track monitoring
     const AxisSpec axisTrackType{5, -0.5, 4.5, "Track Type"};
     histRegistry.add("hTrackTypes", "Track type distribution", kTH1F, {axisTrackType});
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(1, "MuonStandalone");
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(2, "MCHStandalone");
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(3, "GlobalMuon");
-    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(4, "GlobalFwd");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(1, "GlobalMuonTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(2, "GlobalMuonTrackOtherMatch");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(3, "GlobalForwardTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(4, "MuonStandaloneTrack");
+    histRegistry.get<TH1>(HIST("hTrackTypes"))->GetXaxis()->SetBinLabel(5, "MCHStandaloneTrack");
 
     const AxisSpec axisEta{100, -4.0, -2.0, "#eta"};
     histRegistry.add("hEtaGlobal", "Global track eta", kTH1F, {axisEta});
@@ -368,6 +369,7 @@ struct UpcCandProducerGlobalMuon {
     scrollBackForth(inGbc, maxDbc, mapBcs, fillAmps);
   }
 
+  // Propagate MCH track to z = 0
   auto propagateToZero(ForwardTracks::iterator const& muon)
   {
     using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
@@ -389,6 +391,45 @@ struct UpcCandProducerGlobalMuon {
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
     return propmuon;
+  }
+
+  // Propagate MCH track to target z point (set MFT z)
+  auto propagateMCHtoZ(ForwardTracks::iterator const& muon, double targetZ)
+  {
+    using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+    using SMatrix5 = ROOT::Math::SVector<double, 5>;
+    SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
+    std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
+                           muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
+                           muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
+    SMatrix55 tcovs(v1.begin(), v1.end());
+    o2::dataformats::GlobalFwdTrack propmuon;
+    o2::dataformats::GlobalFwdTrack track;
+    track.setParameters(tpars);
+    track.setZ(muon.z());
+    track.setCovariances(tcovs);
+    auto mchTrack = fMatching.FwdtoMCH(track);
+    // Here is different point with propagateToZero
+    o2::mch::TrackExtrap::extrapToVertex(mchTrack, 0., 0., targetZ, 0., 0.);
+    auto proptrack = fMatching.MCHtoFwd(mchTrack);
+    o2::dataformats::GlobalFwdTrack propMuonAtZ;
+    propMuonAtZ.setParameters(proptrack.getParameters());
+    propMuonAtZ.setZ(proptrack.getZ());
+    propMuonAtZ.setCovariances(proptrack.getCovariances());
+    return propMuonAtZ;
+  }
+
+  // Propagate Global track to z = 0
+  auto propagateGlobalFwdToZero(const o2::dataformats::GlobalFwdTrack& globalTrack)
+  {
+    auto mchTrack = fMatching.FwdtoMCH(globalTrack);
+    o2::mch::TrackExtrap::extrapToZCov(mchTrack, 0.);
+    auto proptrack = fMatching.MCHtoFwd(mchTrack);
+    o2::dataformats::GlobalFwdTrack propMuonAtZero;
+    propMuonAtZero.setParameters(proptrack.getParameters());
+    propMuonAtZero.setZ(proptrack.getZ());
+    propMuonAtZero.setCovariances(proptrack.getCovariances());
+    return propMuonAtZero;
   }
 
   bool addToFwdTable(int64_t candId, int64_t trackId, uint64_t gbc, float trackTime,
@@ -413,14 +454,19 @@ struct UpcCandProducerGlobalMuon {
       if (isGlobal && fEnableMFT) {
         // Refit global muon: propagate MCH component to vertex, combine with MFT spatial info
         auto mchTrack = track.matchMCHTrack_as<ForwardTracks>();
-        auto propMuon = propagateToZero(mchTrack);
+        // Propgate to Z of MFT -> z =0
         auto mfttrack = track.matchMFTTrack_as<o2::aod::MFTTracks>();
+        double zMFT = mfttrack.z();
+
+        auto propMuonAtMFT = propagateMCHtoZ(mchTrack, zMFT);
         using SMatrix5 = ROOT::Math::SVector<double, 5>;
         using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
         SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
         SMatrix55 tcovs{};
         o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
-        pft = o2::aod::fwdtrackutils::refitGlobalMuonCov(propMuon, mft);
+        auto refitAtMFT = o2::aod::fwdtrackutils::refitGlobalMuonCov(propMuonAtMFT, mft);
+        // To z = 0
+        pft = propagateGlobalFwdToZero(refitAtMFT);
       } else {
         pft = propagateToZero(track);
       }
