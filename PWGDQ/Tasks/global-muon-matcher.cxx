@@ -96,7 +96,7 @@ namespace globalmuonmatching
 {
 DECLARE_SOA_ARRAY_INDEX_COLUMN(GlobalMuonMatchCandidate, globalMuonMatchCandidate);         //! Array of GlobalMuonMatchCandidates indices
 DECLARE_SOA_INDEX_COLUMN_FULL(FwdTrackRealign, fwdTrackRealign, int, FwdTracksReAlign, ""); //! Index of ambiguous FwdTracksReAlign entry
-DECLARE_SOA_SLICE_INDEX_COLUMN(Bc, bc);                                                     //! BC index slice compatible with the track time window
+DECLARE_SOA_SLICE_INDEX_COLUMN_FULL(Bc, bc, int32_t, BCs, "");                              //! BC index slice compatible with the track time window
 } // namespace globalmuonmatching
 
 DECLARE_SOA_TABLE(FwdTrkMatchCands, "AOD", "FWDTRKMATCHCAND", //! Vectors of match-candidate indices stored per fwdtrack
