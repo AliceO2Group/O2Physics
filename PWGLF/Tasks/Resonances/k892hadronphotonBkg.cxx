@@ -13,7 +13,6 @@
 /// \brief This is a ask that computes the same-event rotational and the mixed-event combinatorial backgrounds for the K*(892) -> K0S + gamma analysis.
 /// \author Oussama Benchikhi
 
-
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
