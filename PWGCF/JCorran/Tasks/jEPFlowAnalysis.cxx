@@ -493,7 +493,7 @@ struct JEPFlowAnalysis {
         } else if (cfgq2analysis == 2) {
           if (q2Mag > q2selHigh) {
             epFlowHistograms.fill(HIST("SPvnxx_q2high"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
-          } else if(q2Mag < q2selLow) {
+          } else if (q2Mag < q2selLow) {
             epFlowHistograms.fill(HIST("SPvnxx_q2low"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
           }
         }
