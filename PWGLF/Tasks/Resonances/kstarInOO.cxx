@@ -1909,7 +1909,6 @@ struct kstarInOO {
             histos.fill(HIST("missed_kpi_INJets_8_infinite"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
 
           histos.fill(HIST("JetMigration"), bestJetpT, recoveredJetpT);
-
         } // cfgJetdRHistos
       } // kaon_out || pion_out
     } // mcParticles
