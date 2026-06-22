@@ -305,7 +305,7 @@ struct GlobalMuonMatching {
   mch::geo::TransformationCreator transformation;
   std::map<int, math_utils::Transform3D> transformRef; // reference geometry w.r.t track data
   std::map<int, math_utils::Transform3D> transformNew; // new geometry
-  double mImproveCutChi2{0.}; // Chi2 cut for track improvement.
+  double mImproveCutChi2{0.};                          // Chi2 cut for track improvement.
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
   globaltracking::MatchGlobalFwd mMatching;
