@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file globalMuonMatching.cxx
-/// \brief Global muon matching
-//
+/// \file global-muon-matcher.cxx
+/// \brief Task for analysis MFT-MCH muon matching
+/// \author Andrea Ferrero
+///
 #include "PWGDQ/Core/MuonMatchingMlResponse.h"
 #include "PWGDQ/Core/VarManager.h"
 
@@ -52,7 +53,6 @@
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
 #include <TGeoGlobalMagField.h>
-#include <TMath.h>
 
 #include <algorithm>
 #include <array>
@@ -96,14 +96,14 @@ namespace globalmuonmatching
 {
 DECLARE_SOA_ARRAY_INDEX_COLUMN(GlobalMuonMatchCandidate, globalMuonMatchCandidate);         //! Array of GlobalMuonMatchCandidates indices
 DECLARE_SOA_INDEX_COLUMN_FULL(FwdTrackRealign, fwdTrackRealign, int, FwdTracksReAlign, ""); //! Index of ambiguous FwdTracksReAlign entry
-DECLARE_SOA_SLICE_INDEX_COLUMN(BC, bc);                                                     //! BC index slice compatible with the track time window
+DECLARE_SOA_SLICE_INDEX_COLUMN(Bc, bc);                                                     //! BC index slice compatible with the track time window
 } // namespace globalmuonmatching
 
 DECLARE_SOA_TABLE(FwdTrkMatchCands, "AOD", "FWDTRKMATCHCAND", //! Vectors of match-candidate indices stored per fwdtrack
                   globalmuonmatching::GlobalMuonMatchCandidateIds, o2::soa::Marker<3>);
 
 DECLARE_SOA_TABLE(AmbiguousFwdTracksReAlign, "AOD", "AMBIGFWDREALIGN", //! FwdTracksReAlign entries without a unique collision association
-                  o2::soa::Index<>, globalmuonmatching::FwdTrackRealignId, globalmuonmatching::BCIdSlice);
+                  o2::soa::Index<>, globalmuonmatching::FwdTrackRealignId, globalmuonmatching::BcIdSlice);
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -115,8 +115,8 @@ using SMatrix55Sym = o2::track::SMatrix55Sym;
 using SMatrix55Std = o2::track::SMatrix55Std;
 using SMatrix5 = o2::track::SMatrix5;
 
-constexpr std::array<int, 10> fgNDetElemCh = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};
-constexpr std::array<int, 11> fgSNDetElemCh = {0, 4, 8, 12, 16, 34, 52, 78, 104, 130, 156};
+constexpr std::array<int, 10> NDetElemCh = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};
+constexpr std::array<int, 11> SNDetElemCh = {0, 4, 8, 12, 16, 34, 52, 78, 104, 130, 156};
 
 struct GlobalMuonMatching {
 
@@ -313,7 +313,7 @@ struct GlobalMuonMatching {
   Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   template <class T>
-  o2::mch::TrackParam FwdtoMCH(const T& fwdtrack)
+  o2::mch::TrackParam fwdToMch(const T& fwdtrack)
   {
     // Convert Forward Track parameters and covariances matrix to the
     // MCH track format.
@@ -323,15 +323,15 @@ struct GlobalMuonMatching {
     const double x3 = fwdtrack.getTanl();
     const double x4 = fwdtrack.getInvQPt();
 
-    const auto sinx2 = TMath::Sin(x2);
-    const auto cosx2 = TMath::Cos(x2);
+    const auto sinX2 = std::sin(x2);
+    const auto cosX2 = std::cos(x2);
 
-    const double alpha1 = cosx2 / x3;
-    const double alpha3 = sinx2 / x3;
-    const double alpha4 = x4 / TMath::Sqrt(x3 * x3 + sinx2 * sinx2);
+    const double alpha1 = cosX2 / x3;
+    const double alpha3 = sinX2 / x3;
+    const double alpha4 = x4 / std::sqrt(x3 * x3 + sinX2 * sinX2);
 
-    auto K = TMath::Sqrt(x3 * x3 + sinx2 * sinx2);
-    auto K3 = K * K * K;
+    const auto kNorm = std::sqrt(x3 * x3 + sinX2 * sinX2);
+    const auto kNorm3 = kNorm * kNorm * kNorm;
 
     // Covariances matrix conversion
     SMatrix55Std jacobian;
@@ -359,17 +359,17 @@ struct GlobalMuonMatching {
 
     jacobian(0, 0) = 1;
 
-    jacobian(1, 2) = -sinx2 / x3;
-    jacobian(1, 3) = -cosx2 / (x3 * x3);
+    jacobian(1, 2) = -sinX2 / x3;
+    jacobian(1, 3) = -cosX2 / (x3 * x3);
 
     jacobian(2, 1) = 1;
 
-    jacobian(3, 2) = cosx2 / x3;
-    jacobian(3, 3) = -sinx2 / (x3 * x3);
+    jacobian(3, 2) = cosX2 / x3;
+    jacobian(3, 3) = -sinX2 / (x3 * x3);
 
-    jacobian(4, 2) = -x4 * sinx2 * cosx2 / K3;
-    jacobian(4, 3) = -x3 * x4 / K3;
-    jacobian(4, 4) = 1 / K;
+    jacobian(4, 2) = -x4 * sinX2 * cosX2 / kNorm3;
+    jacobian(4, 3) = -x3 * x4 / kNorm3;
+    jacobian(4, 4) = 1 / kNorm;
     // jacobian*covariances*jacobian^T
     covariances = ROOT::Math::Similarity(jacobian, covariances);
 
@@ -380,7 +380,7 @@ struct GlobalMuonMatching {
     return {convertedTrack};
   }
 
-  o2::track::TrackParCovFwd MCHtoFwd(const o2::mch::TrackParam& mchParam)
+  o2::track::TrackParCovFwd mchToFwd(const o2::mch::TrackParam& mchParam)
   {
     // Convert a MCH Track parameters and covariances matrix to the
     // Forward track format. Must be called after propagation though the absorber
@@ -392,13 +392,13 @@ struct GlobalMuonMatching {
     const double alpha3 = mchParam.getBendingSlope();
     const double alpha4 = mchParam.getInverseBendingMomentum();
 
-    const double x2 = TMath::ATan2(-alpha3, -alpha1);
-    const double x3 = -1. / TMath::Sqrt(alpha3 * alpha3 + alpha1 * alpha1);
-    const double x4 = alpha4 * -x3 * TMath::Sqrt(1 + alpha3 * alpha3);
+    const double x2 = std::atan2(-alpha3, -alpha1);
+    const double x3 = -1. / std::sqrt(alpha3 * alpha3 + alpha1 * alpha1);
+    const double x4 = alpha4 * -x3 * std::sqrt(1 + alpha3 * alpha3);
 
-    auto K = alpha1 * alpha1 + alpha3 * alpha3;
-    auto K32 = K * TMath::Sqrt(K);
-    auto L = TMath::Sqrt(alpha3 * alpha3 + 1);
+    const auto kNorm = alpha1 * alpha1 + alpha3 * alpha3;
+    const auto kNorm32 = kNorm * std::sqrt(kNorm);
+    const auto slopeLen = std::sqrt(alpha3 * alpha3 + 1);
 
     // Covariances matrix conversion
     SMatrix55Std jacobian;
@@ -428,15 +428,15 @@ struct GlobalMuonMatching {
 
     jacobian(1, 2) = 1;
 
-    jacobian(2, 1) = -alpha3 / K;
-    jacobian(2, 3) = alpha1 / K;
+    jacobian(2, 1) = -alpha3 / kNorm;
+    jacobian(2, 3) = alpha1 / kNorm;
 
-    jacobian(3, 1) = alpha1 / K32;
-    jacobian(3, 3) = alpha3 / K32;
+    jacobian(3, 1) = alpha1 / kNorm32;
+    jacobian(3, 3) = alpha3 / kNorm32;
 
-    jacobian(4, 1) = -alpha1 * alpha4 * L / K32;
-    jacobian(4, 3) = alpha3 * alpha4 * (1 / (TMath::Sqrt(K) * L) - L / K32);
-    jacobian(4, 4) = L / TMath::Sqrt(K);
+    jacobian(4, 1) = -alpha1 * alpha4 * slopeLen / kNorm32;
+    jacobian(4, 3) = alpha3 * alpha4 * (1 / (std::sqrt(kNorm) * slopeLen) - slopeLen / kNorm32);
+    jacobian(4, 4) = slopeLen / std::sqrt(kNorm);
 
     // jacobian*covariances*jacobian^T
     covariances = ROOT::Math::Similarity(jacobian, covariances);
@@ -454,11 +454,11 @@ struct GlobalMuonMatching {
     return convertedTrack;
   }
 
-  int GetDetElemId(int iDetElemNumber)
+  int getDetElemId(int iDetElemNumber)
   {
     // make sure detector number is valid
-    if (iDetElemNumber < fgSNDetElemCh[0] ||
-        iDetElemNumber >= fgSNDetElemCh[NMchChambers]) {
+    if (iDetElemNumber < SNDetElemCh[0] ||
+        iDetElemNumber >= SNDetElemCh[NMchChambers]) {
       LOGF(fatal, "Invalid detector element number: %d", iDetElemNumber);
     }
     /// get det element number from ID
@@ -466,15 +466,15 @@ struct GlobalMuonMatching {
     int iCh = 0;
     int iDet = 0;
     for (int i = 1; i <= NMchChambers; i++) {
-      if (iDetElemNumber < fgSNDetElemCh[i]) {
+      if (iDetElemNumber < SNDetElemCh[i]) {
         iCh = i;
-        iDet = iDetElemNumber - fgSNDetElemCh[i - 1];
+        iDet = iDetElemNumber - SNDetElemCh[i - 1];
         break;
       }
     }
 
     // make sure detector index is valid
-    if (iCh <= 0 || iCh > NMchChambers || iDet >= fgNDetElemCh[iCh - 1]) {
+    if (iCh <= 0 || iCh > NMchChambers || iDet >= NDetElemCh[iCh - 1]) {
       LOGF(fatal, "Invalid detector element id: %d", MchDetElemNumberingBase * iCh + iDet);
     }
 
@@ -482,15 +482,15 @@ struct GlobalMuonMatching {
     return MchDetElemNumberingBase * iCh + iDet;
   }
 
-  bool RemoveTrack(mch::Track& track)
+  bool removeTrack(mch::Track& track)
   {
     // Refit track with re-aligned clusters
-    bool removeTrack = false;
+    bool shouldRemoveTrack = false;
     try {
       trackFitter.fit(track, false);
     } catch (std::exception const& e) {
-      removeTrack = true;
-      return removeTrack;
+      shouldRemoveTrack = true;
+      return shouldRemoveTrack;
     }
 
     auto itStartingParam = std::prev(track.rend());
@@ -500,7 +500,7 @@ struct GlobalMuonMatching {
       try {
         trackFitter.fit(track, true, false, (itStartingParam == track.rbegin()) ? nullptr : &itStartingParam);
       } catch (std::exception const&) {
-        removeTrack = true;
+        shouldRemoveTrack = true;
         break;
       }
 
@@ -522,7 +522,7 @@ struct GlobalMuonMatching {
       }
 
       if (!itWorstParam->isRemovable()) {
-        removeTrack = true;
+        shouldRemoveTrack = true;
         track.removable();
         break;
       }
@@ -532,7 +532,7 @@ struct GlobalMuonMatching {
       itStartingParam = track.rbegin();
 
       if (track.getNClusters() < MinRemovableTrackClusters) {
-        removeTrack = true;
+        shouldRemoveTrack = true;
         break;
       }
       while (itNextToNextParam != track.end()) {
@@ -544,14 +544,14 @@ struct GlobalMuonMatching {
       }
     }
 
-    if (!removeTrack) {
+    if (!shouldRemoveTrack) {
       for (auto& param : track) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
         param.setParameters(param.getSmoothParameters());
         param.setCovariances(param.getSmoothCovariances());
       }
     }
 
-    return removeTrack;
+    return shouldRemoveTrack;
   }
 
   template <typename BC>
@@ -586,7 +586,7 @@ struct GlobalMuonMatching {
       LOGF(fatal, "Reference aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
     }
     for (int i = 0; i < NMchDetElems; i++) {
-      int iDEN = GetDetElemId(i);
+      int iDEN = getDetElemId(i);
       transformRef[iDEN] = transformation(iDEN);
     }
 
@@ -600,7 +600,7 @@ struct GlobalMuonMatching {
       LOGF(fatal, "New aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
     }
     for (int i = 0; i < NMchDetElems; i++) {
-      int iDEN = GetDetElemId(i);
+      int iDEN = getDetElemId(i);
       transformNew[iDEN] = transformation(iDEN);
     }
 
@@ -936,9 +936,9 @@ struct GlobalMuonMatching {
     using o2::aod::fwdtrack::ForwardTrackTypeEnum;
     using o2::aod::fwdtrackutils::propagationPoint;
 
-    constexpr uint8_t candidateTrackType = static_cast<uint8_t>(ForwardTrackTypeEnum::GlobalForwardTrack);
+    constexpr uint8_t CandidateTrackType = static_cast<uint8_t>(ForwardTrackTypeEnum::GlobalForwardTrack);
 
-    auto propmuonAtMft = FwdtoMCH(mchPar);
+    auto propmuonAtMft = fwdToMch(mchPar);
     o2::mch::TrackExtrap::extrapToVertex(propmuonAtMft,
                                          mftPar.getX(),
                                          mftPar.getY(),
@@ -946,7 +946,7 @@ struct GlobalMuonMatching {
                                          mftPar.getSigma2X(),
                                          mftPar.getSigma2Y());
 
-    const auto globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(MCHtoFwd(propmuonAtMft), mftPar);
+    const auto globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(mchToFwd(propmuonAtMft), mftPar);
 
     const auto nClusters = static_cast<int8_t>(std::min(127, mchPar.getNClusters() + mftPar.getNClusters()));
 
@@ -971,7 +971,7 @@ struct GlobalMuonMatching {
 
     gmCandidateFwdTracks(
       collisionId,
-      candidateTrackType,
+      CandidateTrackType,
       globalMuonRefit.getX(),
       globalMuonRefit.getY(),
       globalMuonRefit.getZ(),
@@ -1003,7 +1003,7 @@ struct GlobalMuonMatching {
 
   o2::track::TrackParCovFwd propagateToZMch(const o2::track::TrackParCovFwd& muon, const double z)
   {
-    auto mchTrack = FwdtoMCH(muon);
+    auto mchTrack = fwdToMch(muon);
 
     float absFront = -90.f;
     float absBack = -505.f;
@@ -1016,7 +1016,7 @@ struct GlobalMuonMatching {
       o2::mch::TrackExtrap::extrapToZCov(mchTrack, z);
     }
 
-    return MCHtoFwd(mchTrack);
+    return mchToFwd(mchTrack);
   }
 
   o2::track::TrackParCovFwd propagateToZMft(const o2::track::TrackParCovFwd& mftTrack, const double z)
@@ -1030,14 +1030,14 @@ struct GlobalMuonMatching {
   o2::track::TrackParCovFwd propagateToVertexMch(const TMCH& muon,
                                                  const C& collision)
   {
-    auto mchTrack = FwdtoMCH(fwdtrackutils::getTrackParCovFwd(muon, muon));
+    auto mchTrack = fwdToMch(fwdtrackutils::getTrackParCovFwd(muon, muon));
     o2::mch::TrackExtrap::extrapToVertex(mchTrack,
                                          collision.posX(),
                                          collision.posY(),
                                          collision.posZ(),
                                          collision.covXX(),
                                          collision.covYY());
-    return MCHtoFwd(mchTrack);
+    return mchToFwd(mchTrack);
   }
 
   // tag muons based on the track quality and the track position at the front and back MFT planes
@@ -1206,9 +1206,9 @@ struct GlobalMuonMatching {
   }
 
   template <typename TMFT, typename TMFTCOV>
-  o2::track::TrackParCovFwd TransformMFT(TMFT& mftTrack, TMFTCOV const& mftTrackCov)
+  o2::track::TrackParCovFwd transformMft(TMFT& mftTrack, TMFTCOV const& mftTrackCov)
   {
-    auto track = FwdtoMCH(fwdtrackutils::getTrackParCovFwd(mftTrack, mftTrackCov));
+    auto track = fwdToMch(fwdtrackutils::getTrackParCovFwd(mftTrack, mftTrackCov));
 
     double z = track.getZ();
     // double dZ = zMCH - z;
@@ -1232,7 +1232,7 @@ struct GlobalMuonMatching {
     track.setBendingCoor(y + yCorrection);
     track.setBendingSlope(ySlope + ySlopeCorrection);
 
-    return MCHtoFwd(track);
+    return mchToFwd(track);
   }
 
   template <typename TMFTs, typename TMFTCOVs>
@@ -1245,7 +1245,7 @@ struct GlobalMuonMatching {
       }
 
       auto const& mftTrackCov = mftCovs.rawIteratorAt(mftTrackCovs[mftTrackIndex]);
-      mMftTrackPars[mftTrackIndex] = TransformMFT(mftTrack, mftTrackCov);
+      mMftTrackPars[mftTrackIndex] = transformMft(mftTrack, mftTrackCov);
     }
   }
 
@@ -1289,8 +1289,8 @@ struct GlobalMuonMatching {
         clusterMCH->y = master.y();
         clusterMCH->z = master.z();
 
-        uint32_t ClUId = mch::Cluster::buildUniqueId(static_cast<int>(cluster.deId() / 100) - 1, cluster.deId(), clIndex);
-        clusterMCH->uid = ClUId;
+        const uint32_t clUid = mch::Cluster::buildUniqueId(static_cast<int>(cluster.deId() / 100) - 1, cluster.deId(), clIndex);
+        clusterMCH->uid = clUid;
         clusterMCH->ex = cluster.isGoodX() ? 0.2 : 10.0;
         clusterMCH->ey = cluster.isGoodY() ? 0.2 : 10.0;
 
@@ -1303,7 +1303,7 @@ struct GlobalMuonMatching {
       // Refit the re-aligned track
       int removable = 0;
       if (convertedTrack.getNClusters() != 0) {
-        removable = RemoveTrack(convertedTrack);
+        removable = removeTrack(convertedTrack);
       } else {
         LOGF(fatal, "Muon track %d has no associated clusters.", muon.globalIndex());
       }
@@ -1312,7 +1312,7 @@ struct GlobalMuonMatching {
       mch::TrackParam trackParam = mch::TrackParam(convertedTrack.first());
 
       // Convert MCH track to FWD track and store new parameters after realignment
-      mchTrackParIt->second = MCHtoFwd(mch::TrackParam(convertedTrack.first()));
+      mchTrackParIt->second = mchToFwd(mch::TrackParam(convertedTrack.first()));
       mchTrackParIt->second.setTrackChi2(trackParam.getTrackChi2() / convertedTrack.getNDF());
       mchTrackParIt->second.setNClusters(convertedTrack.getNClusters());
       if (removable) {
