@@ -177,14 +177,14 @@ struct CascDiHadronCorr {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity axis for histograms"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "centrality axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {1, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {1, -2.4, 2.4}, "delta eta axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 10}, "pt associated axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
-  ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 0.0, 5.0}, "invariant mass axis for histograms"};
+  ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "invariant mass axis for histograms"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
@@ -778,7 +778,7 @@ struct CascDiHadronCorr {
     }
   }
 
-    template <CorrelationContainer::CFStep step, typename TTracks, typename TCollision>
+  template <CorrelationContainer::CFStep step, typename TTracks, typename TCollision>
   void fillCorrelationsCasc(TTracks tracks1, TCollision currentCollision, float posX, float posY, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
   {
     float triggerWeight = 1.0f;
@@ -1489,15 +1489,15 @@ struct CascDiHadronCorr {
     if (!cfgCentTableUnavailable) {
       cent = getCentrality(collision);
     }
-    if (cfgUseAdditionalEventCut && !eventSelected(collision,tracks.size(), cent, false))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, false))
       return;
 
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
       return;
-    
+
     float weightCent = 1.0f;
     if (!cfgCentTableUnavailable)
-        getCentralityWeight(weightCent, cent);
+      getCentralityWeight(weightCent, cent);
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
@@ -1542,15 +1542,15 @@ struct CascDiHadronCorr {
     if (!cfgCentTableUnavailable) {
       cent = getCentrality(collision);
     }
-    if (cfgUseAdditionalEventCut && !eventSelected(collision,tracks.size(), cent, false))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, false))
       return;
 
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
       return;
-    
+
     float weightCent = 1.0f;
     if (!cfgCentTableUnavailable)
-        getCentralityWeight(weightCent, cent);
+      getCentralityWeight(weightCent, cent);
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
