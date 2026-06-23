@@ -1762,8 +1762,7 @@ struct kstarInOO {
           if (std::abs(daughter.pdgCode()) != 321)
             skip = true;
         }
-      } // phi(1020)
-      else{
+      } else {
         for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
           if (std::abs(daughter.pdgCode()) == 321)
             ++daughter_kaon;
@@ -1856,8 +1855,7 @@ struct kstarInOO {
               }
             } // INSIDE Jets
           } // pion daughter
-        } // K*(892)0
-        else{
+        } else {
           if (std::abs(daughter.pdgCode()) == 321) {
             double dphi_kaon = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_kaon = bestJetEta - daughter.eta();
