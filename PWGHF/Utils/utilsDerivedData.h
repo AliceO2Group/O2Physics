@@ -230,8 +230,10 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
                           const TMass massParticle)
   {
     // Fill MC collision properties
-    const auto sizeTableMcColl = mcCollisions.size();
-    reserveTablesMcColl(sizeTableMcColl);
+    // const auto sizeTableMcColl = mcCollisions.size();
+    // reserveTablesMcColl(sizeTableMcColl);
+    const auto sizeTablePart = mcParticles.size();
+    reserveTablesParticles(sizeTablePart);
     for (const auto& mcCollision : mcCollisions) {
       const auto thisMcCollId = mcCollision.globalIndex();
       const auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
@@ -247,7 +249,6 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
       fillTablesMcCollision(mcCollision);
 
       // Fill MC particle properties
-      reserveTablesParticles(sizeTablePart);
       for (const auto& particle : particlesThisMcColl) {
         fillTablesParticle(particle, massParticle);
       }

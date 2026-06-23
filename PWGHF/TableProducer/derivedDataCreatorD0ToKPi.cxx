@@ -89,6 +89,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassD0};
+  static constexpr int NHypothesesCand{2}; // Number of possible selection hypotheses per candidate.
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -150,6 +151,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   void fillTablesCandidate(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                            double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
   {
+    LOGF(debug, "Filling candidate at derived index %d", rowsCommon.rowCandidateBase.lastIndex() + 1);
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
@@ -248,12 +250,22 @@ struct HfDerivedDataCreatorD0ToKPi {
         rowsCommon.matchedCollisions.clear();
       }
     }
-    auto sizeTableColl = collisions.size();
-    rowsCommon.reserveTablesColl(sizeTableColl);
+    // const auto sizeTableColl = collisions.size();
+    // rowsCommon.reserveTablesColl(sizeTableColl);
+    const auto sizeTableCand = candidates.size() * NHypothesesCand;
+    rowsCommon.reserveTablesCandidates(sizeTableCand);
+    reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
+    reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
+    reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
+    reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
+    reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
+    if constexpr (IsMc) {
+      reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
+    }
     for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
-      auto sizeTableCand = candidatesThisColl.size();
+      const auto thisCollId = collision.globalIndex();
+      const auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
+      const auto sizeTableCand = candidatesThisColl.size();
       LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCand);
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
@@ -269,15 +281,6 @@ struct HfDerivedDataCreatorD0ToKPi {
       rowsCommon.fillTablesCollision<IsMc>(collision);
 
       // Fill candidate properties
-      rowsCommon.reserveTablesCandidates(sizeTableCand);
-      reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
-      reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
-      reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
-      reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
-      reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
-      if constexpr (IsMc) {
-        reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
-      }
       int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (IsMc) {
