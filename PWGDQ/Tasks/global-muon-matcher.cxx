@@ -275,6 +275,8 @@ struct GlobalMuonMatching {
     void setRemovable() { removable = true; }
     [[nodiscard]] bool isRemovable() const { return removable; }
 
+    [[nodiscard]] o2::track::TrackParCovFwd asTrackParCovFwd() const { return *this; }
+
    private:
     int nClusters{-1};
     bool removable{false};
@@ -1354,8 +1356,8 @@ struct GlobalMuonMatching {
           continue;
         }
 
-        o2::track::TrackParCovFwd mftTrackProp(static_cast<const o2::track::TrackParCovFwd&>(mftTrackParIt->second));
-        o2::track::TrackParCovFwd mchTrackProp(static_cast<const o2::track::TrackParCovFwd&>(mchTrackParIt->second));
+        auto mftTrackProp = mftTrackParIt->second.asTrackParCovFwd();
+        auto mchTrackProp = mchTrackParIt->second.asTrackParCovFwd();
 
         if (matchingPlaneZEffective < 0.) {
           mftTrackProp = propagateToZMft(mftTrackProp, matchingPlaneZ);
@@ -1420,8 +1422,8 @@ struct GlobalMuonMatching {
           continue;
         }
 
-        o2::track::TrackParCovFwd mftTrackProp(static_cast<const o2::track::TrackParCovFwd&>(mftTrackParIt->second));
-        o2::track::TrackParCovFwd mchTrackProp(static_cast<const o2::track::TrackParCovFwd&>(mchTrackParIt->second));
+        auto mftTrackProp = mftTrackParIt->second.asTrackParCovFwd();
+        auto mchTrackProp = mchTrackParIt->second.asTrackParCovFwd();
 
         if (matchingPlaneZ < 0.) {
           mftTrackProp = propagateToZMft(mftTrackProp, matchingPlaneZ);
