@@ -2184,7 +2184,7 @@ struct AntinucleiInJets {
 
             // Fill 2d (pt,eta) distribution of antiprotons
             registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta(), weightJet);
-          }// end if antip
+          } // end if antip
 
           // Fill antideuteron spectra
           if (isAntid) {
@@ -2541,7 +2541,7 @@ struct AntinucleiInJets {
                 }
               }
             }
-          }//end of isAntip
+          } // end of isAntip
 
           // Fill antideuteron spectra
           if (isAntid) {
@@ -2561,7 +2561,7 @@ struct AntinucleiInJets {
                 registryMC.fill(HIST("antideuteron_rec_tof_jet"), pt);
               }
             }
-          }//end of isAntid
+          } // end of isAntid
         }
 
         // Loop over tracks in the underlying event
