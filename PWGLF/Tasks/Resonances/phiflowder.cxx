@@ -37,52 +37,46 @@ using namespace o2::framework::expressions;
 
 struct phiflowder {
 
-  // Event selection
   Configurable<float> centMin{"centMin", 0.f, "Minimum centrality"};
   Configurable<float> centMax{"centMax", 80.f, "Maximum centrality"};
 
-  // PID selection from stored bitmask
-  Configurable<bool> usePID{"usePID", false, "Enable PID selection using stored bitmask"};
-  Configurable<int> pidChoice{"pidChoice", 2, "PID choice: 1, 2, 3, 4"};
-  Configurable<bool> pidExclusive{"pidExclusive", false, "If true require only the chosen PID bit"};
+  Configurable<bool> useStoredPID{"useStoredPID", false, "Apply PID-bit selection using stored kaon PID mask"};
+  Configurable<int> pidChoice{"pidChoice", 2, "PID choice: 1, 2, 3, or 4"};
+  Configurable<bool> pidExclusive{"pidExclusive", false, "Require exactly the selected PID bit"};
 
-  // Event mixing
-  Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {5, -10.0, 10.0}, "Mixing bins in z vertex"};
-  ConfigurableAxis cfgMultBins{"cfgMultBins", {8, 0.0, 80.0}, "Mixing bins in centrality"};
+  Configurable<bool> applyDeepAngle{"applyDeepAngle", false, "Apply minimum opening-angle cut for K+K- pairs"};
+  Configurable<float> deepAngleCut{"deepAngleCut", 0.04f, "Minimum K+K- opening angle"};
 
-  // Histogram axes
-  ConfigurableAxis configAxisInvMass{"configAxisInvMass", {120, 0.9, 1.2}, "#it{M}_{K^{+}K^{-}} (GeV/#it{c}^{2})"};
-  ConfigurableAxis configAxisPt{"configAxisPt", {100, 0.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis configAxisCentrality{"configAxisCentrality", {8, 0.0, 80.0}, "Centrality (%)"};
+  Configurable<float> massMin{"massMin", 0.9f, "Minimum K+K- mass to fill"};
+  Configurable<float> massMax{"massMax", 1.2f, "Maximum K+K- mass to fill"};
+
+  ConfigurableAxis axisInvMass{"axisInvMass", {120, 0.9f, 1.2f}, "#it{M}_{K^{+}K^{-}} (GeV/#it{c}^{2})"};
+  ConfigurableAxis axisPhiPt{"axisPhiPt", {100, 0.f, 10.f}, "#it{p}_{T}^{K^{+}K^{-}} (GeV/#it{c})"};
+  ConfigurableAxis axisCent{"axisCent", {80, 0.f, 80.f}, "Centrality (%)"};
+  ConfigurableAxis axisNKaons{"axisNKaons", {300, 0.f, 300.f}, "Number of stored kaons per event"};
+  ConfigurableAxis axisNPairs{"axisNPairs", {500, 0.f, 5000.f}, "Number of K^{+}K^{-} pairs per event"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // PID bits: same convention as producer
   static constexpr uint8_t kPID1 = 1u << 0;
   static constexpr uint8_t kPID2 = 1u << 1;
   static constexpr uint8_t kPID3 = 1u << 2;
   static constexpr uint8_t kPID4 = 1u << 3;
 
-  struct KaonDaughter {
-    float px;
-    float py;
-    float pz;
-    uint8_t pidMask;
-  };
+  SliceCache cache;
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext const&)
   {
-
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {configAxisCentrality});
-
-    histos.add("hSparseSame", "Same-event sparse", kTHnSparseF,
-               {configAxisInvMass, configAxisPt, configAxisCentrality});
-    histos.add("hSparseMixed", "Mixed-event sparse", kTHnSparseF,
-               {configAxisInvMass, configAxisPt, configAxisCentrality});
+    histos.add("hCentrality", "Centrality distribution", kTH1F, {axisCent});
+    histos.add("hPhiMassSame", "Same-event K^{+}K^{-} invariant mass", kTH1F, {axisInvMass});
+    histos.add("hPhiPtSame", "Same-event K^{+}K^{-} pT", kTH1F, {axisPhiPt});
+    histos.add("hNplusPerEvent", "Number of stored K^{+} per event", kTH1F, {axisNKaons});
+    histos.add("hNminusPerEvent", "Number of stored K^{-} per event", kTH1F, {axisNKaons});
+    histos.add("hNphiSamePerEvent", "Number of same-event K^{+}K^{-} pairs per event", kTH1F, {axisNPairs});
+    histos.add("hSparseSame", "Same-event K^{+}K^{-};M;pT;centrality", kTHnSparseF, {axisInvMass, axisPhiPt, axisCent});
   }
 
-  uint8_t requiredPidBit() const
+  uint8_t getRequiredPidBit() const
   {
     switch (pidChoice.value) {
       case 1:
@@ -94,207 +88,121 @@ struct phiflowder {
       case 4:
         return kPID4;
       default:
-        LOGF(warn, "pidChoice=%d is invalid. Using PID2.", pidChoice.value);
+        LOGF(warn, "Invalid pidChoice=%d. PID2 will be used.", pidChoice.value);
         return kPID2;
     }
   }
 
-  bool passDaughterPID(uint8_t mask) const
+  template <typename T>
+  bool passStoredPID(const T& kaon) const
   {
-    if (!usePID.value) {
+    if (!useStoredPID.value) {
       return true;
     }
 
-    const uint8_t bit = requiredPidBit();
+    const uint16_t mask = kaon.kaonPidMask();
+    const uint8_t requiredBit = getRequiredPidBit();
 
     if (pidExclusive.value) {
-      return mask == bit;
+      return mask == requiredBit;
     }
 
-    return (mask & bit) != 0;
+    return (mask & requiredBit) != 0;
   }
 
-  template <typename TPhi>
-  bool passPairPID(const TPhi& phiCand) const
+  bool passDeepAngle(float px1, float py1, float pz1, float px2, float py2, float pz2) const
   {
-    if (!usePID.value) {
+    if (!applyDeepAngle.value) {
       return true;
     }
 
-    const uint16_t pairMask = phiCand.kaonPidMask();
+    const double p1 = std::sqrt(px1 * px1 + py1 * py1 + pz1 * pz1);
+    const double p2 = std::sqrt(px2 * px2 + py2 * py2 + pz2 * pz2);
 
-    const uint8_t kPlusMask = pairMask & 0xFF;
-    const uint8_t kMinusMask = (pairMask >> 8) & 0xFF;
-
-    return passDaughterPID(kPlusMask) && passDaughterPID(kMinusMask);
-  }
-
-  void collectUniqueKPlusForEvent(const aod::KaonTracks& kaontracks,
-                                  int64_t eventId,
-                                  std::map<int64_t, KaonDaughter>& uniqueKPlus)
-  {
-    uniqueKPlus.clear();
-
-    for (const auto& phiCand : kaontracks) {
-      if (phiCand.kaonkaoneventId() != eventId) {
-        continue;
-      }
-
-      const uint16_t pairMask = phiCand.kaonPidMask();
-      const uint8_t kPlusMask = pairMask & 0xFF;
-
-      if (!passDaughterPID(kPlusMask)) {
-        continue;
-      }
-
-      const int64_t kPlusId = phiCand.kaonIndex1();
-
-      if (uniqueKPlus.find(kPlusId) == uniqueKPlus.end()) {
-        uniqueKPlus[kPlusId] = {
-          phiCand.d1Px(),
-          phiCand.d1Py(),
-          phiCand.d1Pz(),
-          kPlusMask};
-      }
+    if (p1 <= 0.0 || p2 <= 0.0) {
+      return false;
     }
+
+    const double cosAngle = std::clamp((px1 * px2 + py1 * py2 + pz1 * pz2) / (p1 * p2), -1.0, 1.0);
+    const double angle = std::acos(cosAngle);
+
+    return angle >= deepAngleCut.value;
   }
 
-  void collectUniqueKMinusForEvent(const aod::KaonTracks& kaontracks,
-                                   int64_t eventId,
-                                   std::map<int64_t, KaonDaughter>& uniqueKMinus)
-  {
-    uniqueKMinus.clear();
+  Filter centralityFilter = (aod::kaonevent::cent >= centMin) && (aod::kaonevent::cent < centMax);
 
-    for (const auto& phiCand : kaontracks) {
-      if (phiCand.kaonkaoneventId() != eventId) {
-        continue;
-      }
+  using EventCandidates = soa::Filtered<aod::KaonEvents>;
 
-      const uint16_t pairMask = phiCand.kaonPidMask();
-      const uint8_t kMinusMask = (pairMask >> 8) & 0xFF;
+  Partition<aod::KaonTracks> posKaons = aod::kaonpair::charge > int8_t{0};
+  Partition<aod::KaonTracks> negKaons = aod::kaonpair::charge < int8_t{0};
 
-      if (!passDaughterPID(kMinusMask)) {
-        continue;
-      }
-
-      const int64_t kMinusId = phiCand.kaonIndex2();
-
-      if (uniqueKMinus.find(kMinusId) == uniqueKMinus.end()) {
-        uniqueKMinus[kMinusId] = {
-          phiCand.d2Px(),
-          phiCand.d2Py(),
-          phiCand.d2Pz(),
-          kMinusMask};
-      }
-    }
-  }
-
-  // Filter reduced events
-  Filter centralityFilter = (aod::kaonkaonevent::cent >= centMin &&
-                             aod::kaonkaonevent::cent < centMax);
-  using EventCandidates = soa::Filtered<aod::KaonkaonEvents>;
-
-  void processSameData(EventCandidates::iterator const& collision,
-                       aod::KaonTracks const& kaontracks)
+  void processSameData(EventCandidates::iterator const& collision, aod::KaonTracks const& /*kaontracks*/)
   {
     const float centrality = collision.cent();
-    const int64_t eventId = collision.globalIndex();
 
     histos.fill(HIST("hCentrality"), centrality);
 
-    for (const auto& phiCand : kaontracks) {
-      if (phiCand.kaonkaoneventId() != eventId) {
-        continue;
+    auto posThisColl = posKaons->sliceByCached(aod::kaonpair::kaoneventId, collision.globalIndex(), cache);
+    auto negThisColl = negKaons->sliceByCached(aod::kaonpair::kaoneventId, collision.globalIndex(), cache);
+
+    int nPlus = 0;
+    int nMinus = 0;
+    int nPhiSame = 0;
+
+    for (const auto& kPlus : posThisColl) {
+      if (passStoredPID(kPlus)) {
+        nPlus++;
       }
-
-      if (!passPairPID(phiCand)) {
-        continue;
-      }
-
-      ROOT::Math::PxPyPzMVector kPlus(
-        phiCand.d1Px(),
-        phiCand.d1Py(),
-        phiCand.d1Pz(),
-        o2::constants::physics::MassKPlus);
-
-      ROOT::Math::PxPyPzMVector kMinus(
-        phiCand.d2Px(),
-        phiCand.d2Py(),
-        phiCand.d2Pz(),
-        o2::constants::physics::MassKPlus);
-
-      auto phi = kPlus + kMinus;
-
-      const float phiMass = phi.M();
-      const float phiPt = phi.Pt();
-
-      histos.fill(HIST("hSparseSame"), phiMass, phiPt, centrality);
     }
-  }
 
-  PROCESS_SWITCH(phiflowder, processSameData, "Process same-event phi candidates", true);
+    for (const auto& kMinus : negThisColl) {
+      if (passStoredPID(kMinus)) {
+        nMinus++;
+      }
+    }
 
-  using BinningType = ColumnBinningPolicy<aod::kaonkaonevent::Posz,
-                                          aod::kaonkaonevent::Cent>;
+    histos.fill(HIST("hNplusPerEvent"), nPlus);
+    histos.fill(HIST("hNminusPerEvent"), nMinus);
 
-  void processMixedData(EventCandidates const& collisions,
-                        aod::KaonTracks const& kaontracks)
-  {
-
-    BinningType colBinning{{cfgVtxBins, cfgMultBins}, false};
-
-    std::map<int64_t, KaonDaughter> kPlusEvent1;
-    std::map<int64_t, KaonDaughter> kMinusEvent2;
-    // int nMixedEventPairs = 0;
-
-    for (const auto& [collision1, collision2] :
-         selfCombinations(colBinning, nEvtMixing.value, -1, collisions, collisions)) {
-
-      if (collision1.globalIndex() == collision2.globalIndex()) {
+    for (const auto& kPlus : posThisColl) {
+      if (!passStoredPID(kPlus)) {
         continue;
       }
-      // nMixedEventPairs++;
 
-      const float centrality = collision1.cent();
+      ROOT::Math::PxPyPzMVector plusVec(kPlus.px(), kPlus.py(), kPlus.pz(), o2::constants::physics::MassKPlus);
 
-      collectUniqueKPlusForEvent(kaontracks,
-                                 collision1.globalIndex(),
-                                 kPlusEvent1);
-
-      collectUniqueKMinusForEvent(kaontracks,
-                                  collision2.globalIndex(),
-                                  kMinusEvent2);
-
-      // histos.fill(HIST("hNplusUnique"), kPlusEvent1.size());
-      // histos.fill(HIST("hNminusUnique"), kMinusEvent2.size());
-
-      // const int nMixedKPairs = static_cast<int>(kPlusEvent1.size() * kMinusEvent2.size());
-
-      // histos.fill(HIST("hNmixedKPairsPerEventPair"), nMixedKPairs);
-
-      for (const auto& [kPlusId, kPlus] : kPlusEvent1) {
-        ROOT::Math::PxPyPzMVector kPlusVec(
-          kPlus.px,
-          kPlus.py,
-          kPlus.pz,
-          o2::constants::physics::MassKPlus);
-
-        for (const auto& [kMinusId, kMinus] : kMinusEvent2) {
-          ROOT::Math::PxPyPzMVector kMinusVec(
-            kMinus.px,
-            kMinus.py,
-            kMinus.pz,
-            o2::constants::physics::MassKPlus);
-
-          auto phiMix = kPlusVec + kMinusVec;
-
-          histos.fill(HIST("hSparseMixed"), phiMix.M(), phiMix.Pt(), centrality);
+      for (const auto& kMinus : negThisColl) {
+        if (!passStoredPID(kMinus)) {
+          continue;
         }
+
+        if (!passDeepAngle(kPlus.px(), kPlus.py(), kPlus.pz(), kMinus.px(), kMinus.py(), kMinus.pz())) {
+          continue;
+        }
+
+        ROOT::Math::PxPyPzMVector minusVec(kMinus.px(), kMinus.py(), kMinus.pz(), o2::constants::physics::MassKPlus);
+
+        const auto phiCandidate = plusVec + minusVec;
+
+        const float phiMass = phiCandidate.M();
+        const float phiPt = phiCandidate.Pt();
+
+        if (phiMass < massMin || phiMass > massMax) {
+          continue;
+        }
+
+        histos.fill(HIST("hPhiMassSame"), phiMass);
+        histos.fill(HIST("hPhiPtSame"), phiPt);
+        histos.fill(HIST("hSparseSame"), phiMass, phiPt, centrality);
+
+        nPhiSame++;
       }
     }
-    // histos.fill(HIST("hNMixEventPairs"), nMixedEventPairs);
+
+    histos.fill(HIST("hNphiSamePerEvent"), nPhiSame);
   }
-  PROCESS_SWITCH(phiflowder, processMixedData, "Process mixed-event phi candidates", false);
+
+  PROCESS_SWITCH(phiflowder, processSameData, "Process same-event K+K- pairs", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
