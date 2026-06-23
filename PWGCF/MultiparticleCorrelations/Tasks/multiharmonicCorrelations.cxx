@@ -120,7 +120,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
 
   Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
-  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile05", "path to external ROOT file which holds all particle weights"};
+  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile06", "path to external ROOT file which holds all particle weights"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -139,7 +139,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TH1F* fHistTracksdcaXY[2] = {NULL};
     TH1F* fHistTracksdcaZ[2] = {NULL};
     TH1F* histWeights = NULL;
-    std::unordered_map<int, TH1F*> weightsmap;
   } pc; // you have to prepend "pc." for all objects name in this group later in the code
 
   struct EventHistograms {
@@ -161,6 +160,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   } qa;
 
   static constexpr int maxHarmonic = 7;
+  static constexpr int maxPower = 5;
   struct CorrelationVariables {
     TList* fCorrelationVariablesList = NULL;
     TProfile* pv22_centr = NULL;
@@ -168,13 +168,18 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TProfile* pv42_centr = NULL;
     TProfile* pfour32_centr = NULL;
     TProfile* pfour42_centr = NULL;
-    TComplex Qvector[maxHarmonic];
+    TComplex Qvector[maxHarmonic][maxPower];
   } cor;
 
   struct PhiHist {
     TList* fPhiHistList = NULL;
     std::unordered_map<int, TH1F*> histMap;
   } phih;
+
+  struct WeightsHist {
+    TList* fWeightsHistList = NULL;
+    std::unordered_map<int, TH1F*> weightsmap;
+  } wh;
 
   TObject* GetObjectFromList(TList* list, const char* objectName)
   {
@@ -372,21 +377,26 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     return true;
   }
 
-  TComplex Q(Int_t n)
+  TComplex Q(int n, int p)
   {
     // Using the fact that Q{-n,p} = Q{n,p}^*.
     if (n >= 0) {
-      return cor.Qvector[n];
+      return cor.Qvector[n][p];
     }
-    return TComplex::Conjugate(cor.Qvector[-n]);
+    return TComplex::Conjugate(cor.Qvector[-n][p]);
   }
 
+  TComplex Two(Int_t n1, Int_t n2)
+  {
+    // Generic two-particle correlation <exp[i(n1*phi1+n2*phi2)]>.
+    TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
+    return two;
+
+  } // TComplex Two(Int_t n1, Int_t n2)
   TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
   { // Generic four-particle correlation <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4)]>.
-    TComplex four = Q(n1) * Q(n2) * Q(n3) * Q(n4) - Q(n1 + n2) * Q(n3) * Q(n4) - Q(n2) * Q(n1 + n3) * Q(n4) - Q(n1) * Q(n2 + n3) * Q(n4) + 2. * Q(n1 + n2 + n3) * Q(n4) - Q(n2) * Q(n3) * Q(n1 + n4) + Q(n2 + n3) * Q(n1 + n4) - Q(n1) * Q(n3) * Q(n2 + n4) + Q(n1 + n3) * Q(n2 + n4) + 2. * Q(n3) * Q(n1 + n2 + n4) - Q(n1) * Q(n2) * Q(n3 + n4) + Q(n1 + n2) * Q(n3 + n4) + 2. * Q(n2) * Q(n1 + n3 + n4) + 2. * Q(n1) * Q(n2 + n3 + n4) - 6. * Q(n1 + n2 + n3 + n4);
-
+    TComplex four = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
     return four;
-
   } // TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
 
   template <eRecSim rs, typename T1, typename T2>
@@ -400,7 +410,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // LOGF(info, "Run number: %d", collision.bc().runNumber());
     int currentRun = collision.bc().runNumber();
     auto it = phih.histMap.find(currentRun);
-    auto histweight = pc.weightsmap.find(currentRun);
+    auto histweight = wh.weightsmap.find(currentRun);
     float centr = 0, M = 0., msel = 0.;
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
@@ -455,7 +465,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // before loop over particles
     float phi = 0, weight = 1.;
     for (int ih = 0; ih < maxHarmonic; ih++) {
-      cor.Qvector[ih] = TComplex(0., 0.);
+      for (int ip = 0; ip < maxPower; ip++) {
+        cor.Qvector[ih][ip] = TComplex(0., 0.);
+      }
     }
 
     // Main loop over particles:
@@ -485,7 +497,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         pc.fHistTracksdcaXY[eRec]->Fill(track.dcaXY());
         pc.fHistTracksdcaZ[eRec]->Fill(track.dcaZ());
 
-        if (cfUseWeights && histweight != pc.weightsmap.end())
+        if (cfUseWeights && histweight != wh.weightsmap.end())
           weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
         else
           weight = 1;
@@ -512,7 +524,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       // analysis in the loop over particle
       msel = msel + 1;
       for (int ih = 0; ih < maxHarmonic; ih++) {
-        cor.Qvector[ih] += TComplex(weight * TMath::Cos(ih * phi), weight * TMath::Sin(ih * phi));
+        for (int ip = 0; ip < maxPower; ip++) {
+          cor.Qvector[ih][ip] += TComplex(std::pow(weight, ip) * TMath::Cos(ih * phi), std::pow(weight, ip) * TMath::Sin(ih * phi));
+        }
       }
     } // end of for (auto track: tracks)
     event.fHistMsel->Fill(msel);
@@ -520,22 +534,24 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float Mmin = 4.;
     if (msel < Mmin)
       return;
-    float four32 = Four(3, 2, -3, -2).Re() / Four(0, 0, 0, 0).Re();
-    float four42 = Four(4, 2, -4, -2).Re() / Four(0, 0, 0, 0).Re();
-    float v22 = (Q(2).Rho2() - msel) / (msel * (msel - 1.));
-    float v32 = (Q(3).Rho2() - msel) / (msel * (msel - 1.));
-    float v42 = (Q(4).Rho2() - msel) / (msel * (msel - 1.));
+    float wTwo = Two(0, 0).Re();
+    float wFour = Four(0, 0, 0, 0).Re();
+    float four32 = Four(3, 2, -3, -2).Re() / wFour;
+    float four42 = Four(4, 2, -4, -2).Re() / wFour;
+    float v22 = Two(2, -2) / wTwo;
+    float v32 = Two(3, -3) / wTwo;
+    float v42 = Two(4, -4) / wTwo;
     if (std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)) {
       LOGF(info, "\033[1;31m%s std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)\033[0m", __FUNCTION__);
       LOGF(error, "v22 = %f\nv32 = %f\nv42 = %f\nfour32=%f\nv42 = %f\n", v22, v32, v42, four32, four42);
       return;
     }
 
-    cor.pv22_centr->Fill(centr, v22, msel * (msel - 1));
-    cor.pv32_centr->Fill(centr, v32, msel * (msel - 1));
-    cor.pv42_centr->Fill(centr, v42, msel * (msel - 1));
-    cor.pfour32_centr->Fill(centr, four32, msel * (msel - 1));
-    cor.pfour42_centr->Fill(centr, four42, msel * (msel - 1));
+    cor.pv22_centr->Fill(centr, v22, wTwo);
+    cor.pv32_centr->Fill(centr, v32, wTwo);
+    cor.pv42_centr->Fill(centr, v42, wTwo);
+    cor.pfour32_centr->Fill(centr, four32, wFour);
+    cor.pfour42_centr->Fill(centr, four42, wFour);
 
   } // end of template <eRecSim rs, typename T1, typename T2> void Steer(T1 const& collision, T2 const& tracks)
 
@@ -582,6 +598,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     phih.fPhiHistList->SetName("PhiHistograms");
     phih.fPhiHistList->SetOwner(true);
     fBaseList->Add(phih.fPhiHistList);
+
+    wh.fWeightsHistList = new TList();
+    wh.fWeightsHistList->SetName("WeightsHistograms");
+    wh.fWeightsHistList->SetOwner(true);
+    fBaseList->Add(wh.fWeightsHistList);
 
     // *) Book pt distribution with binning defined through configurables in the json file:
     vector<float> l_pt_bins = cfPtBins.value; // define local array and initialize it from an array set in the configurables
@@ -695,6 +716,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       event.fEventHistogramsList->Add(event.fHistMult[eSim]);
     }
 
+    // loading weights
     for (const int& run : targetRuns) {
       std::string runStr = std::to_string(run);
       TH1F* histweights = GetHistogramWithWeights(cfFileWithWeights.value.c_str(), runStr.c_str());
@@ -702,7 +724,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         LOG(fatal) << "Failed to load weights for run " << run;
         return;
       }
-      pc.weightsmap[run] = histweights;
+      wh.fWeightsHistList->Add(histweights);
+      wh.weightsmap[run] = histweights;
     }
 
     event.fHistCentr[eRec] = new TH1F("fHistCentr[eRec]", "centrality distribution for reconstructed particles", nBinscentr, mincentr, maxcentr);
