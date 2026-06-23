@@ -1299,13 +1299,14 @@ struct JetSpectraEseTask {
     return -1;
   }
 
+  const int secondHarmonic{2};
   template <DetID id, bool fill, typename Col>
   std::vector<float> qVecNoESE(Col collision, int nmode = 2)
   {
     int detId{detIDN(id)};
     int detInd{detId * 4 + cfgnTotalSystem * 4 * (nmode - 2)};
     if constexpr (fill) {
-      if (collision.qvecAmp()[detInd] > LowFT0Cut && nmode == 2) {
+      if (collision.qvecAmp()[detInd] > LowFT0Cut && nmode == secondHarmonic) {
         registry.fill(HIST("eventQA/hQvecUncorV2"), collision.centFT0M(), collision.qvecRe()[detInd], collision.qvecIm()[detInd]);
         registry.fill(HIST("eventQA/hQvecRectrV2"), collision.centFT0M(), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1]);
         registry.fill(HIST("eventQA/hQvecTwistV2"), collision.centFT0M(), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2]);
