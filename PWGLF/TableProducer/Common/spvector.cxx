@@ -750,6 +750,10 @@ struct spvector {
         restime = Correcttime(hrecentereTimeSp, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
+      if (restime == 0) {
+        LOG(info) << "Histograms are null";
+      }
+
       histos.fill(HIST("hpQxZDCAvstime"), timeMin, qxZDCA);
       histos.fill(HIST("hpQxZDCCvstime"), timeMin, qxZDCC);
       histos.fill(HIST("hpQyZDCAvstime"), timeMin, qyZDCA);
