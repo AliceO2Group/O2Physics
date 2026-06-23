@@ -224,7 +224,7 @@ struct PidFlowPtCorr {
     ConfigurableAxis cfgaxisBootstrap{"cfgaxisBootstrap", {30, 0, 30}, "cfgaxisBootstrap"};
   } meanptC22GraphOpts;
 
-  AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90}, "Centrality (%)"};
 
   // configurable
 
@@ -232,7 +232,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // data tracks filter
@@ -327,10 +327,6 @@ struct PidFlowPtCorr {
   TF1* fT0AV0ASigma = nullptr;
 
   // Declare the pt, mult and phi Axis;
-  int nPtBins = 0;
-  TAxis* fPtAxis = nullptr;
-
-  TAxis* fMultAxis = nullptr;
 
   std::vector<TF1*> funcEff;
   TH1D* hFindPtBin;
@@ -377,13 +373,6 @@ struct PidFlowPtCorr {
     cfgMultPVCutPara = evtSeleOpts.cfgMultPVCut;
 
     // Set the pt, mult and phi Axis;
-    o2::framework::AxisSpec axisPt = cfgaxisPt;
-    nPtBins = axisPt.binEdges.size() - 1;
-    fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
-
-    o2::framework::AxisSpec axisMult = axisMultiplicity;
-    int nMultBins = axisMult.binEdges.size() - 1;
-    fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
 
     if (dcaCutOpts.cfgDCAxyNSigma) {
       dcaCutOpts.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", dcaCutOpts.cfgDCAxy->c_str()), 0.001, 1000);
@@ -1701,7 +1690,7 @@ struct PidFlowPtCorr {
         break;
 
       default:
-        LOGF(warning, "could not find event count graph");
+        // LOGF(warning, "could not find event count graph");
         break;
     }
   }
