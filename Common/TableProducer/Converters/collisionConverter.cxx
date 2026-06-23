@@ -41,6 +41,7 @@ struct collisionConverter {
   void process(aod::Collisions_000 const& collisionTable)
   {
     float negtolerance = -1.0f * tolerance;
+    Collisions_001.reserve(collisionTable.size());
     for (auto& collision : collisionTable) {
       float lYY = collision.covXZ();
       float lXZ = collision.covYY();

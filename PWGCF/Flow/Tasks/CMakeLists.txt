@@ -26,7 +26,7 @@ o2physics_add_dpl_workflow(flow-runby-run
 
 o2physics_add_dpl_workflow(flow-mc
                     SOURCES flowMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-qa
@@ -114,7 +114,7 @@ o2physics_add_dpl_workflow(pid-flow-pt-corr
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(flow-gpol-ese
+o2physics_add_dpl_workflow(flow-directed-flow-task
                     SOURCES flowDirectedFlowTask.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
