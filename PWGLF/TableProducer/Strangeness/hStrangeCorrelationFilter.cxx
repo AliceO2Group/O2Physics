@@ -123,6 +123,8 @@ struct HStrangeCorrelationFilter {
     Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in assoc tracks"};
     Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
     Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
+    Configurable<bool> requireClusterInITS{"requireClusterInITS", false, "require cluster in ITS for V0 and cascade daughter tracks"};
+    Configurable<int> minITSClustersForDaughterTracks{"minITSClustersForDaughterTracks", 1, "Minimum number of ITS clusters for V0 daughter tracks"};
 
     // Associated pion identification
     Configurable<float> pionMinBayesProb{"pionMinBayesProb", 0.95, "minimal Bayesian probability for pion ID"};
@@ -143,6 +145,7 @@ struct HStrangeCorrelationFilter {
     Configurable<float> dcaPostopv{"dcaPostopv", 0.06, "DCA Pos To PV"};
     Configurable<float> dcaBaryonToPV{"dcaBaryonToPV", 0.2, "DCA of baryon daughter track To PV"};
     Configurable<float> dcaMesonToPV{"dcaMesonToPV", 0.05, "DCA of meson daughter track To PV"};
+    Configurable<float> dcaDaugToPVForK0s{"dcaDaugToPVForK0s", 0, "DCA of K0s daughter tracks To PV"};
     Configurable<float> v0RadiusMin{"v0RadiusMin", 0.5, "v0radius"};
     Configurable<float> v0RadiusMax{"v0RadiusMax", 200, "v0radius"};
 
@@ -764,9 +767,12 @@ struct HStrangeCorrelationFilter {
         continue;
       if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
         continue;
+      if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks))
+        continue;
 
+      float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
       bool isGoodK0Short = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
-                            std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV &&
+                            std::abs(v0.dcapostopv()) > dcaDauCutForK0s && std::abs(v0.dcanegtopv()) > dcaDauCutForK0s &&
                             v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha()));
       bool isGoodLambda = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda &&
                            std::abs(v0.dcapostopv()) > v0Selection.dcaBaryonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV);
@@ -890,9 +896,12 @@ struct HStrangeCorrelationFilter {
         continue;
       if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
         continue;
+      if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks))
+        continue;
 
+      float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
       bool isGoodK0Short = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
-                           std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV &&
+                           std::abs(v0.dcapostopv()) > dcaDauCutForK0s && std::abs(v0.dcanegtopv()) > dcaDauCutForK0s &&
                            v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
       bool isGoodLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda &&
                           std::abs(v0.dcapostopv()) > v0Selection.dcaBaryonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV;
@@ -1034,6 +1043,8 @@ struct HStrangeCorrelationFilter {
       if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
         continue;
       if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ()))
+        continue;
+      if (trackSelections.requireClusterInITS && (posTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || bachTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks))
         continue;
 
       bool isGoodNegCascadePbPb = std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaBaryonToPV &&
@@ -1191,6 +1202,8 @@ struct HStrangeCorrelationFilter {
       if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
         continue;
       if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ()))
+        continue;
+      if (trackSelections.requireClusterInITS && (posTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || bachTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks))
         continue;
       bool isGoodNegCascadePbPb = (std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaBaryonToPV &&
                                    std::abs(casc.dcanegtopv()) > cascSelection.cascDcaMesonToPV);
