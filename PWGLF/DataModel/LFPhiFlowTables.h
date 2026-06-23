@@ -25,7 +25,7 @@
 
 namespace o2::aod
 {
-namespace kaonkaonevent
+namespace kaonevent
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Posz, posz, float);
@@ -33,45 +33,37 @@ DECLARE_SOA_COLUMN(QxA, qxA, float);
 DECLARE_SOA_COLUMN(QxC, qxC, float);
 DECLARE_SOA_COLUMN(QyA, qyA, float);
 DECLARE_SOA_COLUMN(QyC, qyC, float);
-} // namespace kaonkaonevent
-DECLARE_SOA_TABLE(KaonkaonEvents, "AOD", "KAONKAONEVENT",
+} // namespace kaonevent
+DECLARE_SOA_TABLE(KaonEvents, "AOD", "KAONEVENT",
                   o2::soa::Index<>,
-                  kaonkaonevent::Cent,
-                  kaonkaonevent::Posz,
-                  kaonkaonevent::QxA,
-                  kaonkaonevent::QxC,
-                  kaonkaonevent::QyA,
-                  kaonkaonevent::QyC)
-using KaonkaonEvent = KaonkaonEvents::iterator;
+                  kaonevent::Cent,
+                  kaonevent::Posz,
+                  kaonevent::QxA,
+                  kaonevent::QxC,
+                  kaonevent::QyA,
+                  kaonevent::QyC)
+using KaonEvent = KaonEvents::iterator;
 
-namespace kaonkaonpair
+namespace kaonpair
 {
-DECLARE_SOA_INDEX_COLUMN(KaonkaonEvent, kaonkaonevent);
-DECLARE_SOA_COLUMN(D1Px, d1Px, float);                  //! Bachelor Kaon Px
-DECLARE_SOA_COLUMN(D1Py, d1Py, float);                  //! Bachelor Kaon Py
-DECLARE_SOA_COLUMN(D1Pz, d1Pz, float);                  //! Bachelor Kaon Pz
-DECLARE_SOA_COLUMN(D2Px, d2Px, float);                  //! Bachelor Kaon Px
-DECLARE_SOA_COLUMN(D2Py, d2Py, float);                  //! Bachelor Kaon Py
-DECLARE_SOA_COLUMN(D2Pz, d2Pz, float);                  //! Bachelor Kaon Pz
-DECLARE_SOA_COLUMN(PhiM, phiM, float);                  //! Phi Mass
-DECLARE_SOA_COLUMN(KaonIndex1, kaonIndex1, int64_t);    //! Daughter Kaon index1
-DECLARE_SOA_COLUMN(KaonIndex2, kaonIndex2, int64_t);    //! Daughter Kaon index2
+DECLARE_SOA_INDEX_COLUMN(KaonEvent, kaonevent);
+DECLARE_SOA_COLUMN(Px, px, float);                      //! Bachelor Kaon Px
+DECLARE_SOA_COLUMN(Py, py, float);                      //! Bachelor Kaon Py
+DECLARE_SOA_COLUMN(Pz, pz, float);                      //! Bachelor Kaon Pz
+DECLARE_SOA_COLUMN(Charge, charge, int8_t);             //! Charge
+DECLARE_SOA_COLUMN(KaonIndex, kaonIndex, int64_t);      //! Daughter Kaon index1
 DECLARE_SOA_COLUMN(KaonPidMask, kaonPidMask, uint16_t); //! bitmask for PID selections
-} // namespace kaonkaonpair
+} // namespace kaonpair
 
 DECLARE_SOA_TABLE(KaonTracks, "AOD", "KAONTRACK",
                   o2::soa::Index<>,
-                  kaonkaonpair::KaonkaonEventId,
-                  kaonkaonpair::D1Px,
-                  kaonkaonpair::D1Py,
-                  kaonkaonpair::D1Pz,
-                  kaonkaonpair::D2Px,
-                  kaonkaonpair::D2Py,
-                  kaonkaonpair::D2Pz,
-                  kaonkaonpair::PhiM,
-                  kaonkaonpair::KaonIndex1,
-                  kaonkaonpair::KaonIndex2,
-                  kaonkaonpair::KaonPidMask);
+                  kaonpair::KaonEventId,
+                  kaonpair::Px,
+                  kaonpair::Py,
+                  kaonpair::Pz,
+                  kaonpair::Charge,
+                  kaonpair::KaonIndex,
+                  kaonpair::KaonPidMask);
 
 using KaonTrack = KaonTracks::iterator;
 } // namespace o2::aod
