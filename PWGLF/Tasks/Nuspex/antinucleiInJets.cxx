@@ -2188,7 +2188,7 @@ struct AntinucleiInJets {
 
           // Fill antideuteron spectra
           if (isAntid) {
-            registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt(), weightJet);
+            registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt());
           }
         }
 
@@ -2256,7 +2256,7 @@ struct AntinucleiInJets {
             continue;
 
           // Fill histogram for antideuterons in the UE
-          registryMC.fill(HIST("antideuterons_gen_ue"), deuteronVec.Pt());
+          registryMC.fill(HIST("antideuteron_gen_ue"), deuteronVec.Pt());
         }
       }
       if (isAtLeastOneJetSelected) {
