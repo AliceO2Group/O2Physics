@@ -468,11 +468,11 @@ struct DGBCCandProducer {
             auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
             isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           } else {
-            auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+            auto fwdTracksArray = fwdtracks.emptySlice();
             isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
         } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          auto fwdTracksArray = fwdtracks.emptySlice();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
 
@@ -514,11 +514,11 @@ struct DGBCCandProducer {
           auto fwdTracksArray = ftibcPart.begin().fwdtrack_as<FTCs>();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          auto fwdTracksArray = fwdtracks.emptySlice();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
       } else {
-        auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+        auto fwdTracksArray = fwdtracks.emptySlice();
         isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
       }
 
@@ -683,11 +683,11 @@ struct DGBCCandProducer {
               auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
               isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
             } else {
-              auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+              auto fwdTracksArray = fwdtracks.emptySlice();
               isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
             }
           } else {
-            auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+            auto fwdTracksArray = fwdtracks.emptySlice();
             isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
 
