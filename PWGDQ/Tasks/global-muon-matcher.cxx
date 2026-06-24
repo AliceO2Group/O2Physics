@@ -953,7 +953,7 @@ struct GlobalMuonMatching {
     const auto nClusters = static_cast<int8_t>(std::min(127, mchPar.getNClusters() + mftPar.getNClusters()));
 
     const float chi2 = static_cast<float>(mchTrack.chi2());
-    const int32_t collisionId = mchTrack.has_collision() ? mchTrack.collisionId() : -1;
+    const int32_t collisionId = mchTrack.collisionId();
     bool hasBcSlice = false;
     std::array<int32_t, 2> bcSlice{};
     if (collisionId < 0) {
