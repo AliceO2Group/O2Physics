@@ -25,5 +25,6 @@ find_package(fjcontrib)
 set_package_properties(fjcontrib PROPERTIES TYPE REQUIRED)
 
 find_package(ONNXRuntime)
+find_package(ONNX)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
