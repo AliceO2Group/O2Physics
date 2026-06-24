@@ -145,11 +145,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TList* fEventHistogramsList = NULL;
     TH1F* fHistCentr[2] = {NULL};
     TH1I* fHistMult[2] = {NULL};
-    TH1F* fHistMsel = NULL;
+    TH1F* fHistMsel[2] = {NULL};
     TH1F* fHistX[2] = {NULL};
     TH1F* fHistY[2] = {NULL};
     TH1F* fHistZ[2] = {NULL};
-    TH1I* fHistNContr = NULL;
+    TH1I* fHistNContr[2] = {NULL};
     TH1F* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
   } event;
 
@@ -414,10 +414,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float centr = 0, M = 0., msel = 0.;
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      event.fHistX[eRec]->Fill(collision.posX());
-      event.fHistY[eRec]->Fill(collision.posY());
-      event.fHistZ[eRec]->Fill(collision.posZ());
-      event.fEventHistograms[eVertexZ][eRec][0]->Fill(collision.posZ());
       if (cfCent.value == "FT0C")
         centr = collision.centFT0C();
       else if (cfCent.value == "FT0M")
@@ -425,15 +421,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       else if (cfCent.value == "FT0A")
         centr = collision.centFT0A();
 
-      // *) Event cuts:
-      float centrcut = 80.;
-      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
-        return;
-      }
-      event.fEventHistograms[eVertexZ][eRec][1]->Fill(collision.posZ());
-      event.fHistCentr[eRec]->Fill(centr);
-
-      std::string multType = "TPC";
       if (cfMult.value == "TPC")
         M = collision.multTPC();
       else if (cfMult.value == "FV0M")
@@ -444,8 +431,30 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         M = collision.multFT0M();
       else if (cfMult.value == "NTracksPV")
         M = collision.multNTracksPV();
-      event.fHistMult[eRec]->Fill(M);
-      event.fHistNContr->Fill(collision.numContrib());
+
+      event.fHistX[eBefore]->Fill(collision.posX());
+      event.fHistY[eBefore]->Fill(collision.posY());
+      event.fHistZ[eBefore]->Fill(collision.posZ());
+      event.fHistCentr[eBefore]->Fill(centr);
+      event.fHistMult[eBefore]->Fill(M);
+      event.fHistNContr[eBefore]->Fill(collision.numContrib());
+
+      event.fEventHistograms[eVertexZ][eRec][0]->Fill(collision.posZ());
+
+      // *) Event cuts:
+      float centrcut = 80.;
+      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
+        return;
+      }
+
+      event.fHistX[eAfter]->Fill(collision.posX());
+      event.fHistY[eAfter]->Fill(collision.posY());
+      event.fHistZ[eAfter]->Fill(collision.posZ());
+      event.fHistCentr[eAfter]->Fill(centr);
+      event.fHistMult[eAfter]->Fill(M);
+      event.fHistNContr[eAfter]->Fill(collision.numContrib());
+
+      event.fEventHistograms[eVertexZ][eRec][1]->Fill(collision.posZ());
       qa.fQAM_NC->Fill(M, collision.numContrib());
 
       if constexpr (rs == eRecAndSim) {
@@ -477,7 +486,14 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       float ptrec = 0., ptsim = 0.;
       if constexpr (rs == eRec || rs == eRecAndSim) {
         // Fill track pt distribution:
-        pc.fHistPt[eRec]->Fill(track.pt());
+
+        pc.fHistPt[eBefore]->Fill(track.pt());
+        pc.fHistPhi[eBefore]->Fill(track.phi());
+        pc.fHistCharge[eBefore]->Fill(track.sign());
+        pc.fHistTPCncls[eBefore]->Fill(track.tpcNClsFindable());
+        pc.fHistTracksdcaXY[eBefore]->Fill(track.dcaXY());
+        pc.fHistTracksdcaZ[eBefore]->Fill(track.dcaZ());
+
         event.fEventHistograms[ePt][eRec][0]->Fill(track.pt());
         ptrec = track.pt();
 
@@ -485,17 +501,19 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         if (!ParticleCuts<rs>(track)) { // Main call for particle cuts.
           continue;                     // not return!!
         }
+        pc.fHistPt[eAfter]->Fill(track.pt());
+        pc.fHistPhi[eAfter]->Fill(track.phi());
+        pc.fHistCharge[eAfter]->Fill(track.sign());
+        pc.fHistTPCncls[eAfter]->Fill(track.tpcNClsFindable());
+        pc.fHistTracksdcaXY[eAfter]->Fill(track.dcaXY());
+        pc.fHistTracksdcaZ[eAfter]->Fill(track.dcaZ());
+
         event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
 
         phi = track.phi();
         if (it != phih.histMap.end()) {
           it->second->Fill(phi);
         }
-        pc.fHistPhi[eRec]->Fill(track.phi());
-        pc.fHistCharge[eRec]->Fill(track.sign());
-        pc.fHistTPCncls[eRec]->Fill(track.tpcNClsFindable());
-        pc.fHistTracksdcaXY[eRec]->Fill(track.dcaXY());
-        pc.fHistTracksdcaZ[eRec]->Fill(track.dcaZ());
 
         if (cfUseWeights && histweight != wh.weightsmap.end())
           weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
@@ -529,7 +547,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         }
       }
     } // end of for (auto track: tracks)
-    event.fHistMsel->Fill(msel);
+    event.fHistMsel[eAfter]->Fill(msel);
     // calculate correlations
     float Mmin = 4.;
     if (msel < Mmin)
@@ -659,24 +677,67 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float maxncontr = l_ncontr_bins[1];
     float minncontr = l_ncontr_bins[2];
 
-    pc.fHistPt[eRec] = new TH1F("fHistPt[eRec]", "pt distribution for reconstructed particles", nBins, min, max);
-    pc.fHistPhi[eRec] = new TH1F("fHistPhi[eRec]", "phi distribution for reconstructed particles", nBinsphi, minphi, maxphi);
-    pc.fHistCharge[eRec] = new TH1F("fHistCharge[eRec]", "charge distribution for reconstructed particles", nBinscharge, mincharge, maxcharge);
-    pc.fHistTPCncls[eRec] = new TH1F("fHistTPCncls[eRec]", "tpcncls distribution for reconstructed particles", nBinstpcncls, mintpcncls, maxtpcncls);
-    pc.fHistTracksdcaXY[eRec] = new TH1F("fHistTracksdcaXY[eRec]", "dcaxy distribution for reconstructed particles", nBinsdcaxy, mindcaxy, maxdcaxy);
-    pc.fHistTracksdcaZ[eRec] = new TH1F("fHistTracksdcaZ[eRec]", "dcaz distribution for reconstructed particles", nBinsdcaz, mindcaz, maxdcaz);
-    pc.fHistPt[eRec]->GetXaxis()->SetTitle("p_{T}");
-    pc.fHistPhi[eRec]->GetXaxis()->SetTitle("phi");
-    pc.fHistCharge[eRec]->GetXaxis()->SetTitle("charge");
-    pc.fHistTPCncls[eRec]->GetXaxis()->SetTitle("TPCNClsFindable");
-    pc.fHistTracksdcaXY[eRec]->GetXaxis()->SetTitle("DCA XY");
-    pc.fHistTracksdcaZ[eRec]->GetXaxis()->SetTitle("DCA Z");
-    pc.fParticleHistogramsList->Add(pc.fHistPt[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistPhi[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistCharge[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistTPCncls[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eRec]);
+    const char* cevent[] = {"vertexZ", "Pt"};
+    const char* cpro[] = {"rec", "sim"};
+    const char* ccut[] = {"before", "after"};
+    for (int i = 0; i < eEventHistograms_N; i++) {
+      for (int j = 0; j < eRecAndSim; j++) {
+        for (int k = 0; k < eCut_N; k++) {
+          TString histname = Form("fEventHistograms[%s][%s][%s]", cevent[i], cpro[j], ccut[k]);
+          TString histtitle = Form("%s distribution for %s, %s cut", cevent[i], cpro[j], ccut[k]);
+          if (i == 0)
+            event.fEventHistograms[i][j][k] = new TH1F(histname, histtitle, nBinsz, minz, maxz);
+          if (i == 1)
+            event.fEventHistograms[i][j][k] = new TH1F(histname, histtitle, nBins, min, max);
+          event.fEventHistograms[i][j][k]->GetXaxis()->SetTitle(Form("%s", cevent[i]));
+          // event.fEventHistogramsList->Add(event.fEventHistograms[i][j][k]);
+        }
+      }
+    }
+
+    for (int icut; icut < eCut_N; icut++) {
+      pc.fHistPt[icut] = new TH1F(Form("fHistPt[%s]", ccut[icut]), Form("pt distribution %s cut for reconstructed particles", ccut[icut]), nBins, min, max);
+      pc.fHistPhi[icut] = new TH1F(Form("fHistPhi[%s]", ccut[icut]), Form("phi distribution %s cut for reconstructed particles", ccut[icut]), nBinsphi, minphi, maxphi);
+      pc.fHistCharge[icut] = new TH1F(Form("fHistCharge[%s]", ccut[icut]), Form("charge distribution %s cut for reconstructed particles", ccut[icut]), nBinscharge, mincharge, maxcharge);
+      pc.fHistTPCncls[icut] = new TH1F(Form("fHistTPCncls[%s]", ccut[icut]), Form("tpcncls distribution %s cut for reconstructed particles", ccut[icut]), nBinstpcncls, mintpcncls, maxtpcncls);
+      pc.fHistTracksdcaXY[icut] = new TH1F(Form("fHistTracksdcaXY[%s]", ccut[icut]), Form("dcaxy distribution %s cut for reconstructed particles", ccut[icut]), nBinsdcaxy, mindcaxy, maxdcaxy);
+      pc.fHistTracksdcaZ[icut] = new TH1F(Form("fHistTracksdcaZ[%s]", ccut[icut]), Form("dcaz distribution %s cut for reconstructed particles", ccut[icut]), nBinsdcaz, mindcaz, maxdcaz);
+      pc.fHistPt[icut]->GetXaxis()->SetTitle("p_{T}");
+      pc.fHistPhi[icut]->GetXaxis()->SetTitle("phi");
+      pc.fHistCharge[icut]->GetXaxis()->SetTitle("charge");
+      pc.fHistTPCncls[icut]->GetXaxis()->SetTitle("TPCNClsFindable");
+      pc.fHistTracksdcaXY[icut]->GetXaxis()->SetTitle("DCA XY");
+      pc.fHistTracksdcaZ[icut]->GetXaxis()->SetTitle("DCA Z");
+      pc.fParticleHistogramsList->Add(pc.fHistPt[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistPhi[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistCharge[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistTPCncls[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[icut]);
+
+      // init eventhist
+      event.fHistCentr[icut] = new TH1F(Form("fHistCentr[%s]", ccut[icut]), Form("centrality distribution %s cut for reconstructed particles", ccut[icut]), nBinscentr, mincentr, maxcentr);
+      event.fHistX[icut] = new TH1F(Form("fHistX[%s]", ccut[icut]), Form("posX distribution %s cut for reconstructed particles", ccut[icut]), nBinsx, minx, maxx);
+      event.fHistY[icut] = new TH1F(Form("fHistY[%s]", ccut[icut]), Form("posY distribution %s cut for reconstructed particles", ccut[icut]), nBinsy, miny, maxy);
+      event.fHistZ[icut] = new TH1F(Form("fHistZ[%s]", ccut[icut]), Form("posZ distribution %s cut for reconstructed particles", ccut[icut]), nBinsz, minz, maxz);
+      event.fHistMult[icut] = new TH1I(Form("fHistMult[%s]", ccut[icut]), Form("mult distribution %s cut for reconstructed particles", ccut[icut]), nBinsmult, minmult, maxmult);
+      event.fHistMsel[icut] = new TH1F(Form("fHistMsel[%s]", ccut[icut]), Form("selected tracks %s cut", ccut[icut]), nBinsmsel, minmsel, maxmsel);
+      event.fHistNContr[icut] = new TH1I(Form("fHistNContr[%s]", ccut[icut]), Form("NContr distribution %s cut", ccut[icut]), nBinsncontr, minncontr, maxncontr);
+      event.fHistCentr[icut]->GetXaxis()->SetTitle(Form("centrality, %s", cfCent.value.c_str()));
+      event.fHistX[icut]->GetXaxis()->SetTitle("x");
+      event.fHistY[icut]->GetXaxis()->SetTitle("y");
+      event.fHistZ[icut]->GetXaxis()->SetTitle("z");
+      event.fHistMult[icut]->GetXaxis()->SetTitle(Form("multiplicity, %s", cfMult.value.c_str()));
+      event.fHistMsel[icut]->GetXaxis()->SetTitle("selected tracks");
+      event.fHistNContr[icut]->GetXaxis()->SetTitle("numContrib");
+      event.fEventHistogramsList->Add(event.fHistCentr[icut]);
+      event.fEventHistogramsList->Add(event.fHistX[icut]);
+      event.fEventHistogramsList->Add(event.fHistY[icut]);
+      event.fEventHistogramsList->Add(event.fHistZ[icut]);
+      event.fEventHistogramsList->Add(event.fHistMult[icut]);
+      event.fEventHistogramsList->Add(event.fHistMsel[icut]);
+      event.fEventHistogramsList->Add(event.fHistNContr[icut]);
+    }
 
     // init of sim histograms
     if (cfInitsim) {
@@ -726,46 +787,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
       wh.fWeightsHistList->Add(histweights);
       wh.weightsmap[run] = histweights;
-    }
-
-    event.fHistCentr[eRec] = new TH1F("fHistCentr[eRec]", "centrality distribution for reconstructed particles", nBinscentr, mincentr, maxcentr);
-    event.fHistX[eRec] = new TH1F("fHistX[eRec]", "posX distribution for reconstructed particles", nBinsx, minx, maxx);
-    event.fHistY[eRec] = new TH1F("fHistY[eRec]", "posY distribution for reconstructed particles", nBinsy, miny, maxy);
-    event.fHistZ[eRec] = new TH1F("fHistZ[eRec]", "posZ distribution for reconstructed particles", nBinsz, minz, maxz);
-    event.fHistMult[eRec] = new TH1I("fHistMult[eRec]", "mult distribution for reconstructed particles", nBinsmult, minmult, maxmult);
-    event.fHistMsel = new TH1F("fHistMsel", "selected tracks", nBinsmsel, minmsel, maxmsel);
-    event.fHistNContr = new TH1I("fHistNContr", "NContr distribution", nBinsncontr, minncontr, maxncontr);
-    event.fHistCentr[eRec]->GetXaxis()->SetTitle("centrality");
-    event.fHistX[eRec]->GetXaxis()->SetTitle("x");
-    event.fHistY[eRec]->GetXaxis()->SetTitle("y");
-    event.fHistZ[eRec]->GetXaxis()->SetTitle("z");
-    event.fHistMult[eRec]->GetXaxis()->SetTitle("multiplicity");
-    event.fHistMsel->GetXaxis()->SetTitle("selected tracks");
-    event.fHistNContr->GetXaxis()->SetTitle("numContrib");
-    event.fEventHistogramsList->Add(event.fHistCentr[eRec]);
-    event.fEventHistogramsList->Add(event.fHistX[eRec]);
-    event.fEventHistogramsList->Add(event.fHistY[eRec]);
-    event.fEventHistogramsList->Add(event.fHistZ[eRec]);
-    event.fEventHistogramsList->Add(event.fHistMult[eRec]);
-    event.fEventHistogramsList->Add(event.fHistMsel);
-    event.fEventHistogramsList->Add(event.fHistNContr);
-
-    const char* cevent[] = {"vertexZ", "Pt"};
-    const char* cpro[] = {"rec", "sim"};
-    const char* ccut[] = {"before", "after"};
-    for (int i = 0; i < eEventHistograms_N; i++) {
-      for (int j = 0; j < eRecAndSim; j++) {
-        for (int k = 0; k < eCut_N; k++) {
-          TString histname = Form("fEventHistograms[%s][%s][%s]", cevent[i], cpro[j], ccut[k]);
-          TString histtitle = Form("%s distribution for %s, %s cut", cevent[i], cpro[j], ccut[k]);
-          if (i == 0)
-            event.fEventHistograms[i][j][k] = new TH1F(histname, histtitle, nBinsz, minz, maxz);
-          if (i == 1)
-            event.fEventHistograms[i][j][k] = new TH1F(histname, histtitle, nBins, min, max);
-          event.fEventHistograms[i][j][k]->GetXaxis()->SetTitle(Form("%s", cevent[i]));
-          event.fEventHistogramsList->Add(event.fEventHistograms[i][j][k]);
-        }
-      }
     }
 
     qa.fQA = new TH2F("QA_centr", "quality assurance of centrality", nBinscentr, mincentr, maxcentr, nBinscentr, mincentr, maxcentr);
