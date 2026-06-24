@@ -266,6 +266,9 @@ struct CascDiHadronCorr {
   using ValidCollisions = std::vector<std::vector<ValidCollision>>;
   ValidCollisions validCollisions;
 
+  double masslow = 0;
+  double massup = 0;
+
   // persistent caches
   std::vector<float> efficiencyAssociatedCache;
 
@@ -278,6 +281,10 @@ struct CascDiHadronCorr {
     }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
+    o2::framework::AxisSpec axismass = axisInvMass;
+    int nMasssBinEdges = axismass.binEdges.size();
+    masslow = axismass.binEdges[0];
+    massup = axismass.binEdges[nMasssBinEdges - 1];
     cfgNSigma = cfgNSigmapid;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -530,6 +537,8 @@ struct CascDiHadronCorr {
       return false;
 
     if (cfgOutputXi) {
+      if (casc.mXi() > massup || casc.mXi() < masslow)
+        return false;
       if (casc.sign() < 0) {
         if (std::fabs(bachelor.tpcNSigmaPi()) > cfgNSigma[0])
           return false;
@@ -571,6 +580,8 @@ struct CascDiHadronCorr {
         return false;
     }
     if (cfgOutputOmega) {
+      if (casc.mOmega() > massup || casc.mOmega() < masslow)
+        return false;
       if (casc.sign() < 0) {
         if (std::fabs(bachelor.tpcNSigmaKa()) > cfgNSigma[2])
           return false;
@@ -817,7 +828,10 @@ struct CascDiHadronCorr {
           float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi, -PIHalf);
           float deltaEta = track1.eta() - track2.eta;
 
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          if (cfgOutputXi)
+            same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt, deltaPhi, deltaEta, track1.mXi(), eventWeight * triggerWeight * associatedWeight);
+          if (cfgOutputOmega)
+            same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt, deltaPhi, deltaEta, track1.mOmega(), eventWeight * triggerWeight * associatedWeight);
           registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         }
       }
