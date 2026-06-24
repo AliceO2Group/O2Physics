@@ -28,6 +28,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -42,14 +43,12 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
-#include <CommonConstants/PhysicsConstants.h>
-
-#include <TPDGCode.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TMath.h>
 #include <TMathBase.h>
 #include <TObjString.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <RtypesCore.h>
@@ -68,7 +67,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 
 using namespace o2;
 using namespace o2::framework;
@@ -270,7 +268,6 @@ constexpr static uint32_t gkTrackFillMapWithCovWithColl = VarManager::ObjTypes::
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 // constexpr static uint32_t gkMuonFillMapWithColl = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCollInfo;
-
 
 namespace dqefficiency_helpers
 {
