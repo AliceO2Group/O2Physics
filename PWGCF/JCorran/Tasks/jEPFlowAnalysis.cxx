@@ -146,6 +146,9 @@ struct JEPFlowAnalysis {
   Configurable<std::string> cfgQselHistPath{"cfgQselHistPath", "", "CCDB path for q2 histogram"};
   Configurable<bool> cfgEventQAonly{"cfgEventQAonly", false, "event loop only"};
 
+  Configurable<bool> cfgSelEvtTwoHP{"cfgSelEvtTwoHP", false, "event selection with two high pT"};
+  Configurable<float> cfgHighPtSel{"cfgHighPtSel", 5.0, "pT threshold with cfgSelEvtTwoHP"};
+
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCNeg", "The name of detector for reference B"};
@@ -194,6 +197,8 @@ struct JEPFlowAnalysis {
   TH3F* q2Map = nullptr;
   float q2selHigh = 100.;
   float q2selLow = 0.;
+
+  int nHighPt = 0;
 
   std::vector<float> ft0RelGainConst{};
   std::vector<float> fv0RelGainConst{};
@@ -410,6 +415,20 @@ struct JEPFlowAnalysis {
         q2selHigh = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(cfgQ2SelFrac));
         q2selLow = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(1. - cfgQ2SelFrac));
       }
+
+      if (cfgSelEvtTwoHP && i == 0) {
+        nHighPt = 0;
+        for (const auto& track : tracks) {
+          if (cfgTrkSelFlag && trackSel(track))
+            continue;
+
+          if (track.pt() > cfgHighPtSel)
+            nHighPt++;
+        }
+      }
+
+      if (cfgSelEvtTwoHP && nHighPt > 1.5)
+        continue;
 
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
       epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
