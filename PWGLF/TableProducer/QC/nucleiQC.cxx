@@ -162,6 +162,7 @@ struct nucleiQC {
   std::array<bool, nuclei::Species::kNspecies> mFillSpecies{false};
   Produces<aod::NucleiTableRed> mNucleiTableRed;
   Produces<aod::NucleiTableExt> mNucleiTableExt;
+  Produces<aod::NucleiTableMat> mNucleiTableMat;
 
   std::vector<nuclei::SlimCandidate> mNucleiCandidates;
   std::vector<int> mFilledMcParticleIds;
@@ -209,6 +210,7 @@ struct nucleiQC {
 
       nuclei::createHistogramRegistryNucleus<kSpeciesCt>(mHistograms);
       mHistograms.add(fmt::format("{}/hTrackQuality", nuclei::cNames[kSpeciesRt]).c_str(), (fmt::format("{} track quality;", nuclei::cNames[kSpeciesRt]) + std::string("#it{p}_{T} / #it{Z} (GeV/#it{c}); Selection step; Counts")).c_str(), o2::framework::HistType::kTH2D, {{400, -10.0f, 10.0f}, {trackQuality::kNtrackQuality, -0.5f, static_cast<float>(trackQuality::kNtrackQuality) - 0.5f}});
+      mHistograms.add(fmt::format("{}/h2Productionvertex", nuclei::cNames[kSpeciesRt]).c_str(), (fmt::format("{} production vertex;", nuclei::cNames[kSpeciesRt]) + std::string("#it{x} (cm); #it{y} (cm); Counts")).c_str(), o2::framework::HistType::kTH2D, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}});
       for (size_t iSel = 0; iSel < trackQuality::kNtrackQuality; iSel++) {
         mHistograms.get<TH2>(HIST(nuclei::cNames[kSpeciesRt]) + HIST("/hTrackQuality"))->GetYaxis()->SetBinLabel(iSel + 1, trackQualityLabels[iSel].c_str());
       }
@@ -383,6 +385,14 @@ struct nucleiQC {
       candidate.flags |= nuclei::QcFlags::kQcIsSecondaryFromWeakDecay;
     } else {
       candidate.flags |= nuclei::QcFlags::kQcIsSecondaryFromMaterial;
+      static_for<0, nuclei::kNspecies - 1>([&](auto iSpeciesCtV) {
+        constexpr int kSpeciesCt = decltype(iSpeciesCtV)::value;
+        if (nuclei::getSpeciesFromPdg(particle.pdgCode()) == kSpeciesCt) {
+          mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/h2Productionvertex"), particle.vx(), particle.vy());
+        }
+        candidate.vx = particle.vx();
+        candidate.vy = particle.vy();
+      });
     }
   }
 
@@ -443,7 +453,9 @@ struct nucleiQC {
                                        .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality),
                                        .mcProcess = TMCProcess::kPNoProcess,
                                        .nsigmaTpc = mPidManagers[iSpecies].getNSigmaTPC(track),
-                                       .nsigmaTof = mPidManagers[iSpecies].getNSigmaTOF(track)};
+                                       .nsigmaTof = mPidManagers[iSpecies].getNSigmaTOF(track),
+                                       .vx = -999.f,
+                                       .vy = -999.f};
 
     fillNucleusFlagsPdgs(collision, track, candidate);
 
@@ -527,6 +539,9 @@ struct nucleiQC {
     mNucleiTableExt(
       candidate.nsigmaTpc,
       candidate.nsigmaTof);
+    mNucleiTableMat(
+      candidate.vx,
+      candidate.vy);
   }
 
   void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles, const aod::McCollisions& /*mcCollisions*/)
