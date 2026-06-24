@@ -427,7 +427,7 @@ struct JEPFlowAnalysis {
         }
       }
 
-      if (cfgSelEvtTwoHP && nHighPt > 1.5)
+      if (cfgSelEvtTwoHP && nHighPt < 2)
         continue;
 
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
