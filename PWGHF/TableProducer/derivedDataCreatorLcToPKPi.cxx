@@ -228,8 +228,8 @@ struct HfDerivedDataCreatorLcToPKPi {
         rowsCommon.matchedCollisions.clear();
       }
     }
-    auto sizeTableColl = collisions.size();
-    rowsCommon.reserveTablesColl(sizeTableColl);
+    // auto sizeTableColl = collisions.size();
+    // rowsCommon.reserveTablesColl(sizeTableColl);
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
