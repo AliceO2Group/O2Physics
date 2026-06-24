@@ -264,7 +264,6 @@ struct QaMatching {
     double matchScoreProd{-1};
     double matchChi2Prod{-1};
     int matchRankingProd{-1};
-    int mftMchMatchAttempts{0};
     MuonMatchType matchType{kMatchTypeUndefined};
   };
 
@@ -991,19 +990,38 @@ struct QaMatching {
   {
     AxisSpec chi2Axis = {1000, 0, 1000, "chi^{2}"};
     AxisSpec chi2AxisSmall = {200, 0, 100, "chi^{2}"};
-    AxisSpec pAxis = {1000, 0, 100, "p (GeV/c)"};
-    AxisSpec pTAxis = {100, 0, 10, "p_{T} (GeV/c)"};
+    AxisSpec pAxis = {50, 0, 100, "p (GeV/c)"};
+    AxisSpec pTAxis = {50, 0, 10, "p_{T} (GeV/c)"};
     AxisSpec etaAxis = {100, -4, -2, "#eta"};
-    AxisSpec phiAxis = {90, -180, 180, "#phi (degrees)"};
+    AxisSpec vzAxis = {20, -10, 10, "vertex_{z} (cm)"};
+    AxisSpec rAxis = {60, 0, 15, "R_{track} (cm)"};
+    AxisSpec mftNClusAxis = {6, 5, 11, "# of MFT clusters"};
+
     std::string histPath = cfgIsMc.value ? "matching/MC/" : "matching/";
 
     AxisSpec trackPositionXAtMftAxis = {100, -15, 15, "MFT x (cm)"};
     AxisSpec trackPositionYAtMftAxis = {100, -15, 15, "MFT y (cm)"};
-    registry.add((histPath + "pairedMCHTracksAtMFT").c_str(), "Paired MCH tracks position at MFT end", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
-    registry.add((histPath + "pairedMFTTracksAtMFT").c_str(), "Paired MFT tracks position at MFT end", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
-    registry.add((histPath + "selectedMCHTracksAtMFT").c_str(), "Selected MCH tracks position at MFT end", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
-    registry.add((histPath + "selectedMCHTracksAtMFTTrue").c_str(), "Selected MCH tracks position at MFT end - true", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
-    registry.add((histPath + "selectedMCHTracksAtMFTFake").c_str(), "Selected MCH tracks position at MFT end - fake", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
+    registry.add((histPath + "taggedMCHTracksAtMFT").c_str(), "Tagged MCH tracks position at MFT end", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
+    if (cfgIsMc.value) {
+      registry.add((histPath + "pairedMCHTracksAtMFT").c_str(), "Paired MCH tracks position at MFT end", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
+      registry.add((histPath + "pairedMFTTracksAtMFT").c_str(), "Paired MFT tracks position at MFT end", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
+      registry.add((histPath + "taggedMCHTracksAtMFTTrue").c_str(), "Tagged MCH tracks position at MFT end - true", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
+      registry.add((histPath + "taggedMCHTracksAtMFTFake").c_str(), "Tagged MCH tracks position at MFT end - fake", {HistType::kTH2F, {trackPositionXAtMftAxis, trackPositionYAtMftAxis}});
+    }
+
+    registry.add((histPath + "muonTracksVsMchKine").c_str(), "Muon tracks vs. MCH kine", {HistType::kTHnSparseF, {etaAxis, pTAxis, vzAxis}});
+    registry.add((histPath + "muonTracksVsMchKineAtVertex").c_str(), "Muon tracks vs. MCH kine at vertex", {HistType::kTHnSparseF, {etaAxis, pTAxis, vzAxis}});
+
+    registry.add((histPath + "muonTracksRadiusAtMftFront").c_str(), "Muon tracks radius at MFT front", {HistType::kTHnSparseF, {rAxis, vzAxis, pAxis}});
+    registry.add((histPath + "muonTracksRadiusAtMftBack").c_str(), "Muon tracks radius at MFT back", {HistType::kTHnSparseF, {rAxis, vzAxis, pAxis}});
+
+    if (cfgIsMc.value) {
+      registry.add((histPath + "muonTracksPairedVsMchKine").c_str(), "Paired muon tracks vs. MCH kine", {HistType::kTHnSparseF, {etaAxis, pTAxis, vzAxis, mftNClusAxis}});
+      registry.add((histPath + "muonTracksPairedVsMchKineAtVertex").c_str(), "Paired muon tracks vs. MCH kine at vertex", {HistType::kTHnSparseF, {etaAxis, pTAxis, vzAxis, mftNClusAxis}});
+
+      registry.add((histPath + "muonTracksRadiusPairedAtMftFront").c_str(), "Paired muon tracks radius at MFT front", {HistType::kTHnSparseF, {rAxis, vzAxis, pAxis}});
+      registry.add((histPath + "muonTracksRadiusPairedAtMftBack").c_str(), "Paired muon tracks radius at MFT back", {HistType::kTHnSparseF, {rAxis, vzAxis, pAxis}});
+    }
 
     fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching, configQas.cfgCreatePdgMomHistograms, cfgMftTrackMultiplicityMax, cfgNCandidatesMax, cfgIsMc.value);
     int registryIndex = 0;
@@ -2999,6 +3017,62 @@ struct QaMatching {
     registry.get<TH1>(HIST("tracksMultiplicityMFT"))->Fill(collisionInfo.mftTracks.size());
     registry.get<TH1>(HIST("tracksMultiplicityMCH"))->Fill(collisionInfo.mchTracks.size());
 
+    for (const auto& element : collisionInfo.mchTracks) {
+      auto mchIndex = element.first;
+      auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
+      auto mchTrackAtVertex = VarManager::PropagateMuon(mchTrack, collision, VarManager::kToVertex);
+
+      float mchEta = mchTrack.eta();
+      float mchPt = mchTrack.pt();
+      float mchP = mchTrack.p();
+      float mchEtaAtVertex = mchTrackAtVertex.getEta();
+      float mchPtAtVertex = mchTrackAtVertex.getPt();
+
+      float zMftFront = o2::mft::constants::mft::LayerZCoordinate()[0];
+      float zMftBack = o2::mft::constants::mft::LayerZCoordinate()[9];
+      auto mchTrackAtMftFront = propagateToZMch(mchTrackAtVertex, zMftFront);
+      auto mchTrackAtMftBack = propagateToZMch(mchTrackAtVertex, zMftBack);
+
+      float rAtMftFront = std::hypot(mchTrackAtMftFront.getX(), mchTrackAtMftFront.getY());
+      float rAtMftBack = std::hypot(mchTrackAtMftBack.getX(), mchTrackAtMftBack.getY());
+
+      if (isMC) {
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksVsMchKine"))->Fill(mchEta, mchPt, collision.posZ());
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksVsMchKineAtVertex"))->Fill(mchEtaAtVertex, mchPtAtVertex, collision.posZ());
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksRadiusAtMftFront"))->Fill(rAtMftFront, collision.posZ(), mchP);
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksRadiusAtMftBack"))->Fill(rAtMftBack, collision.posZ(), mchP);
+      } else {
+        registry.get<THnSparse>(HIST("matching/muonTracksVsMchKine"))->Fill(mchEta, mchPt, collision.posZ());
+        registry.get<THnSparse>(HIST("matching/muonTracksVsMchKineAtVertex"))->Fill(mchEtaAtVertex, mchPtAtVertex, collision.posZ());
+        registry.get<THnSparse>(HIST("matching/muonTracksRadiusAtMftFront"))->Fill(rAtMftFront, collision.posZ(), mchP);
+        registry.get<THnSparse>(HIST("matching/muonTracksRadiusAtMftBack"))->Fill(rAtMftBack, collision.posZ(), mchP);
+      }
+
+      if (isMC) {
+        auto matchablePair = getMatchablePairForMch(mchIndex, collisionInfo.matchablePairs);
+        if (!matchablePair) {
+          continue;
+        }
+        auto const& mftTrack = mftTracks.rawIteratorAt(matchablePair.value().second);
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksPairedVsMchKine"))->Fill(mchEta, mchPt, collision.posZ(), mftTrack.nClusters());
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksPairedVsMchKineAtVertex"))->Fill(mchEtaAtVertex, mchPtAtVertex, collision.posZ(), mftTrack.nClusters());
+
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksRadiusPairedAtMftFront"))->Fill(rAtMftFront, collision.posZ(), mchP);
+        registry.get<THnSparse>(HIST("matching/MC/muonTracksRadiusPairedAtMftBack"))->Fill(rAtMftBack, collision.posZ(), mchP);
+
+        if (mftTrackCovs.count(mftTrack.globalIndex()) < 1) {
+          continue;
+        }
+        auto const& mftTrackCov = mftCovs.rawIteratorAt(mftTrackCovs[mftTrack.globalIndex()]);
+
+        // extrapolate the tracks to the matching plane
+        auto mftTrackAtMftBack = propagateToZMft(fwdToTrackPar(mftTrack, mftTrackCov), zMftBack);
+
+        registry.get<TH2>(HIST("matching/MC/pairedMCHTracksAtMFT"))->Fill(mchTrackAtMftBack.getX(), mchTrackAtMftBack.getY());
+        registry.get<TH2>(HIST("matching/MC/pairedMFTTracksAtMFT"))->Fill(mftTrackAtMftBack.getX(), mftTrackAtMftBack.getY());
+      }
+    }
+
     int matchingMethodCounter{0};
 
     //-------------------------------
@@ -3012,29 +3086,6 @@ struct QaMatching {
 
     //-------------------------------
     // Tagged muons
-    for (const auto& [mchIndex, mftIndex] : collisionInfo.matchablePairs) {
-      auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
-      if (!mchTrack.has_collision())
-        continue;
-      auto collision = collisions.rawIteratorAt(mchTrack.collisionId());
-
-      auto const& mftTrack = mftTracks.rawIteratorAt(mftIndex);
-      if (mftTrackCovs.count(mftTrack.globalIndex()) < 1) {
-        continue;
-      }
-      auto const& mftTrackCov = mftCovs.rawIteratorAt(mftTrackCovs[mftTrack.globalIndex()]);
-
-      auto mchTrackAtVertex = VarManager::PropagateMuon(mchTrack, collision, VarManager::kToVertex);
-
-      // extrapolate to the matching plane
-      auto z = o2::mft::constants::mft::LayerZCoordinate()[9];
-      auto mchTrackProp = propagateToZMch(mchTrackAtVertex, z);
-      auto mftTrackProp = propagateToZMft(fwdToTrackPar(mftTrack, mftTrackCov), z);
-
-      registry.get<TH2>(HIST("matching/MC/pairedMCHTracksAtMFT"))->Fill(mchTrackProp.getX(), mchTrackProp.getY());
-      registry.get<TH2>(HIST("matching/MC/pairedMFTTracksAtMFT"))->Fill(mftTrackProp.getX(), mftTrackProp.getY());
-    }
-
     MatchingCandidates taggedMatchingCandidates;
     for (const auto& [mchIndex, globalTracksVector] : collisionInfo.matchingCandidates) {
       if (std::find(taggedMuons.begin(), taggedMuons.end(), mchIndex) != taggedMuons.end()) {
