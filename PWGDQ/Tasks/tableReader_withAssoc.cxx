@@ -282,7 +282,6 @@ constexpr static int pairTypeEE = VarManager::kDecayToEE;
 constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 // constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
-
 namespace dqtablereader_helpers
 {
 inline float* varValues() { return static_cast<float*>(VarManager::fgValues); }
@@ -3813,7 +3812,7 @@ struct AnalysisDileptonTrack {
   Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "Users/y/yalin/pptest/test2", "Path of the efficiency corrections"};
 
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
-  int fNCuts = 0;      // number of dilepton leg cuts
+  int fNCuts = 0;       // number of dilepton leg cuts
   int fNLegCuts = 0;
   int fNPairCuts = 0; // number of pair cuts
   int fNCommonTrackCuts = 0;
