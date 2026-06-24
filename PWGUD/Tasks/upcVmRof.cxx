@@ -35,13 +35,14 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
+
 #include <TH1.h>
 #include <TH2.h>
 #include <TString.h>
 
-#include <cstdint>
 #include <bitset>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <memory>
