@@ -853,7 +853,7 @@ struct HfCandidateCreator3Prong {
   /////////////////////////////////////////////
 
   /// @brief process function using DCA fitter  w/ PV refit and w/ centrality selection on UPC
-  void processPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                        FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                        TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                        aod::BcFullInfos const& bcWithTimeStamps,
@@ -867,7 +867,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithDCAFitterNUpc, "Run candidate creator using DCA fitter with PV refit and w/ centrality selection on UPC", false);
 
   /// @brief process function using DCA fitter  w/o PV refit and  w/ centrality selection on UPC
-  void processNoPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                          FilteredHf3Prongs const& rowsTrackIndexProng3,
                                          TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                          aod::BcFullInfos const& bcWithTimeStamps,
@@ -881,7 +881,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterNUpc, "Run candidate creator using DCA fitter without PV refit and  w/ centrality selection on UPC", false);
 
   /// @brief process function using KFParticle package  w/ PV refit and w/ centrality selection on UPC
-  void processPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                        FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                        TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                        aod::BcFullInfos const& bcWithTimeStamps,
@@ -895,7 +895,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithKFParticleUpc, "Run candidate creator using KFParticle package with PV refit and w/ centrality selection on UPC", false);
 
   /// @brief process function using KFParticle package  w/o PV refit and  w/ centrality selection on UPC
-  void processNoPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                          FilteredHf3Prongs const& rowsTrackIndexProng3,
                                          TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                          aod::BcFullInfos const& bcWithTimeStamps,

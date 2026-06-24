@@ -140,6 +140,12 @@ struct createTTP {
 
     Configurable<float> min_TPCNsigmaEl{"min_TPCNsigmaEl", -2, "min. TPC n sigma for electron inclusion"};
     Configurable<float> max_TPCNsigmaEl{"max_TPCNsigmaEl", +3, "max. TPC n sigma for electron inclusion"};
+    Configurable<float> min_TPCNsigmaPi{"min_TPCNsigmaPi", -1e+10, "min n sigma pi in TPC for exclusion"};
+    Configurable<float> max_TPCNsigmaPi{"max_TPCNsigmaPi", +3, "max n sigma pi in TPC for exclusion"};
+    Configurable<float> min_TPCNsigmaKa{"min_TPCNsigmaKa", -3, "min n sigma ka in TPC for exclusion"};
+    Configurable<float> max_TPCNsigmaKa{"max_TPCNsigmaKa", +3, "max n sigma ka in TPC for exclusion"};
+    Configurable<float> min_TPCNsigmaPr{"min_TPCNsigmaPr", -3, "min n sigma pr in TPC for exclusion"};
+    Configurable<float> max_TPCNsigmaPr{"max_TPCNsigmaPr", +3, "max n sigma pr in TPC for exclusion"};
     Configurable<float> min_TOFNsigmaEl{"min_TOFNsigmaEl", -3, "min. TOF n sigma for electron inclusion"};
     Configurable<float> max_TOFNsigmaEl{"max_TOFNsigmaEl", +3, "max. TOF n sigma for electron inclusion"};
   } tagCut;
@@ -395,9 +401,18 @@ struct createTTP {
   template <typename TTrack>
   bool isTagElectron(TTrack const& track)
   {
-    bool is_El_TPC = tagCut.min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tagCut.max_TPCNsigmaEl;
-    bool is_El_TOF = tagCut.min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tagCut.max_TOFNsigmaEl;
-    return is_El_TPC && is_El_TOF;
+    bool is_OK_El_TPC = tagCut.min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tagCut.max_TPCNsigmaEl;
+    bool is_OK_El_TOFreq = tagCut.min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tagCut.max_TOFNsigmaEl;
+
+    bool is_OK_Pi_TPC = !(tagCut.min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tagCut.max_TPCNsigmaPi);
+    bool is_OK_Ka_TPC = !(tagCut.min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < tagCut.max_TPCNsigmaKa);
+    bool is_OK_Pr_TPC = !(tagCut.min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < tagCut.max_TPCNsigmaPr);
+    bool is_OK_El_TOFif = track.hasTOF() ? tagCut.min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tagCut.max_TOFNsigmaEl : true;
+
+    bool isTOFreq = is_OK_El_TPC && is_OK_Pi_TPC && is_OK_El_TOFreq;
+    bool isTPC_had_rej = is_OK_El_TPC && is_OK_Pi_TPC && is_OK_Ka_TPC && is_OK_Pr_TPC && is_OK_El_TOFif;
+
+    return isTOFreq || isTPC_had_rej;
   }
 
   template <typename TTrack>
@@ -492,7 +507,7 @@ struct createTTP {
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                             aod::pidTPCFullEl, /*aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,*/
+                             aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                              aod::pidTOFFullEl /*, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta*/>;
 
   Filter collisionFilter_zvtx = eventCut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventCut.cfgZvtxMax;

@@ -207,6 +207,7 @@ struct HadNucleiFemto {
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
   Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
   Configurable<float> settingCutNsigmaTOFTPCDe{"settingCutNsigmaTOFTPCDe", 2.5f, "Value of the De TOF TPC combNsigma cut"};
+  Configurable<bool> settingReqSingleNsig{"settingReqSingleNsig", false, "If true, also require individual TPC and TOF n-sigma cuts in branches using combined TPC+TOF PID"};
   Configurable<bool> settingUseProtonMassForKstarMt{"settingUseProtonMassForKstarMt", false, "If true, use proton mass instead of deuteron mass for kstar and mT"};
   Configurable<bool> settingEnableClosePairRejection{"settingEnableClosePairRejection", false, "Enable close pair rejection for deuteron-hadron track pairs"};
   Configurable<float> settingClosePairDeltaPhiMax{"settingClosePairDeltaPhiMax", 0.01f, "Maximum delta phi star for close pair rejection"};
@@ -765,6 +766,10 @@ struct HadNucleiFemto {
     if (combNsigma > protonCombNsigmaMax) {
       return false;
     }
+    if (settingReqSingleNsig.value &&
+        (std::abs(tpcNSigmaPr) > protonCombNsigmaMax || std::abs(tofNSigmaPr) > protonCombNsigmaMax)) {
+      return false;
+    }
 
     mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPr);
     mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaPr);
@@ -854,6 +859,10 @@ struct HadNucleiFemto {
       mQaRegistry.fill(HIST("h2NsigmaHadTOF_preselection"), candidate.sign() * candidate.pt(), tofNSigmaPi);
       mQaRegistry.fill(HIST("h2NsigmaHadComb_preselection"), candidate.sign() * candidate.pt(), combNsigma);
       if (combNsigma > pionRefCombNsigmaMax) {
+        return false;
+      }
+      if (settingReqSingleNsig.value &&
+          (std::abs(tpcNSigmaPi) > pionRefCombNsigmaMax || std::abs(tofNSigmaPi) > pionRefCombNsigmaMax)) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
@@ -989,6 +998,10 @@ struct HadNucleiFemto {
       auto combNsigma = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NsigmaNuTOF_preselection"), candidate.sign() * candidate.pt(), tofNSigmaDe);
       if (combNsigma > settingCutNsigmaTOFTPCDe) {
+        return false;
+      }
+      if (settingReqSingleNsig.value &&
+          (std::abs(tpcNSigmaDe) > settingCutNsigmaTOFTPCDe || std::abs(tofNSigmaDe) > settingCutNsigmaTOFTPCDe)) {
         return false;
       }
       mQaRegistry.fill(HIST("h2dEdxNucandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());

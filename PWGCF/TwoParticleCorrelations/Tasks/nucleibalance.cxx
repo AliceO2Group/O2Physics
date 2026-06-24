@@ -1710,6 +1710,7 @@ struct Lambdastarproxy {
   Configurable<float> lstarCutNsigmaTOFKaon{"lstarCutNsigmaTOFKaon", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{K}| cut"};
   Configurable<float> lstarCutNsigmaTPCDe{"lstarCutNsigmaTPCDe", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{d}| cut"};
   Configurable<float> lstarCutNsigmaTOFDe{"lstarCutNsigmaTOFDe", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{d}| cut"};
+  Configurable<int> lstarEnableTOFNsigmaCutDe{"lstarEnableTOFNsigmaCutDe", 0, "Enable deuteron-only TOF nSigma cut in PID strategy 2"};
   // Optional deuteron-only TOF auxiliary selections.
   // Defaults are OFF, so strategy 2 remains TPC nSigma only for deuterons.
   Configurable<int> lstarEnableBetaCutDe{"lstarEnableBetaCutDe", 0, "Enable deuteron-only TOF beta cut using beta() > lstarBetaCutDe"};
@@ -2453,7 +2454,16 @@ struct Lambdastarproxy {
       // For deuterons, follow the default idea of the official nuclei task:
       // use TPC nσ as the main hard PID selection.
       if (isDeuteron) {
-        return std::abs(nsTPC) < tpcCut;
+        if (std::abs(nsTPC) >= tpcCut) {
+          return false;
+        }
+        if (lstarEnableTOFNsigmaCutDe.value != 0) {
+          if (!hasTof) {
+            return false;
+          }
+          return std::abs(nsTOF) < tofCut;
+        }
+        return true;
       }
 
       // For kaons/protons, use the Lambda(1520)-like pT-ref circular TPC+TOF logic.

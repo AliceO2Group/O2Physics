@@ -1593,8 +1593,8 @@ struct JetChargedV2 {
           // phiMinusPsi2 = jet.phi() - ep2;
           phiMinusPsi2 = RecoDecay::constrainAngle(jet.phi() - ep2, -o2::constants::math::PI);
           float absDelta = std::abs(phiMinusPsi2);
-          registry.fill(HIST("h2_rholocal_cent"), rholocal, centrality, 1.0);
-          registry.fill(HIST("h2_averagerho_cent"), collision.rho(), centrality, 1.0);
+          registry.fill(HIST("h2_rholocal_cent"), centrality, rholocal, 1.0);
+          registry.fill(HIST("h2_averagerho_cent"), centrality, collision.rho(), 1.0);
           registry.fill(HIST("h2_centrality_pT"), jet.pt(), centrality, 1.0);
 
           registry.fill(HIST("h2_phi_rholocal"), jet.phi() - ep2, rholocal, 1.0);
