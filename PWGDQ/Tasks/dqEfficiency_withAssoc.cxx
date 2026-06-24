@@ -3120,7 +3120,7 @@ struct AnalysisSameEventPairing {
     runEmuSameEventPairing<VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons, mcEvents, mcTracks);
   }
 
-  void processMixingElectronMuonSkimmed(soa::Filtered<MyEventsVtxCovHashSelected> const& events,
+  void processMixingElectronMuonSkimmed(soa::Filtered<MyEventsVtxCovHashSelected>& events,
                                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
                                         soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
@@ -3937,7 +3937,7 @@ struct AnalysisAsymmetricPairing {
           }
         }
       } else {
-        LOG(fatal) << "Given tripletType not recognized. Don't know how to make combinations!" << endl;
+        LOG(fatal) << "Given tripletType not recognized. Don't know how to make combinations!";
       }
     } // end event loop
   }
@@ -4265,9 +4265,9 @@ struct AnalysisDileptonTrack {
 
     if (isDummy) {
       if (isBarrel || isMuon || isBarrelAsymmetric || isMCGen) {
-        LOG(fatal) << "Dummy function is enabled even if there are normal process functions running! Fix your config!" << endl;
+        LOG(fatal) << "Dummy function is enabled even if there are normal process functions running! Fix your config!";
       } else {
-        LOG(info) << "Dummy function is enabled. Skipping the rest of the init function" << endl;
+        LOG(info) << "Dummy function is enabled. Skipping the rest of the init function";
         return;
       }
     }
