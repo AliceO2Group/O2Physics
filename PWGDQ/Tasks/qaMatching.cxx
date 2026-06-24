@@ -270,6 +270,10 @@ struct QaMatching {
 
   Configurable<bool> cfgIsMc{"cfgIsMc", true, "Wheter the processed data is from MC simulations"};
 
+  ////   Variables for selecting the collisions
+  Configurable<float> cfgVtxZLow{"cfgVtxZLow", -10.0f, "Lower limit for the vertex z position"};
+  Configurable<float> cfgVtxZUp{"cfgVtxZUp", 10.0f, "Upper limit for the vertex z position"};
+
   ////   Variables for selecting muon tracks
   Configurable<float> cfgPMchLow{"cfgPMchLow", 0.0f, ""};
   Configurable<float> cfgPtMchLow{"cfgPtMchLow", 0.7f, ""};
@@ -2037,6 +2041,11 @@ struct QaMatching {
       const auto& collision = collisions.rawIteratorAt(collisionIds[cid]);
       int64_t collisionIndex = collision.globalIndex();
       auto bc = bcs.rawIteratorAt(collision.bcId());
+
+      // remove vertices outside the allowed z range
+      if ((collision.posZ() < cfgVtxZLow.value) || (collision.posZ() > cfgVtxZUp.value)) {
+        continue;
+      }
 
       // fill collision information for MFT standalone tracks
       for (const auto& mftTrack : mftTracks) {
