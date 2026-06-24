@@ -695,7 +695,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
     }
 
-    for (int icut; icut < eCut_N; icut++) {
+    for (int icut = 0; icut < eCut_N; icut++) {
       pc.fHistPt[icut] = new TH1F(Form("fHistPt[%s]", ccut[icut]), Form("pt distribution %s cut for reconstructed particles", ccut[icut]), nBins, min, max);
       pc.fHistPhi[icut] = new TH1F(Form("fHistPhi[%s]", ccut[icut]), Form("phi distribution %s cut for reconstructed particles", ccut[icut]), nBinsphi, minphi, maxphi);
       pc.fHistCharge[icut] = new TH1F(Form("fHistCharge[%s]", ccut[icut]), Form("charge distribution %s cut for reconstructed particles", ccut[icut]), nBinscharge, mincharge, maxcharge);
