@@ -439,9 +439,9 @@ struct UpcVmRof {
       bool ft0vtxTrg = mask[Ft0VtxIdx];
       bool ft0ceTrg = mask[Ft0CeIdx];
       if (ft0vtxTrg) {
-        bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisBC, thisROF);
+        bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisTF, thisROF);
         if (ft0ceTrg)
-          bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", runNumberBc)]->Fill(thisBC, thisROF);
+          bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", runNumberBc)]->Fill(thisTF, thisROF);
       }
     } // loop over bcs
 
