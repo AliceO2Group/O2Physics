@@ -282,6 +282,14 @@ inline TString* varUnits() { return static_cast<TString*>(VarManager::fgVariable
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups); // defines histograms for all tasks
 
+// template <typename TMap>
+// void PrintBitMap(TMap map, int nbits)
+// {
+//   for (int i = 0; i < nbits; i++) {
+//     cout << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
+//   }
+// }
+
 // Analysis task that produces event decisions and the Hash table used in event mixing
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
@@ -4941,6 +4949,31 @@ struct AnalysisDileptonTrack {
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     for (auto const& mctrack : mcTracks) {
+
+      // if ((std::abs(mctrack.pdgCode()) > 400 && std::abs(mctrack.pdgCode()) < 599) ||
+      //     (std::abs(mctrack.pdgCode()) > 4000 && std::abs(mctrack.pdgCode()) < 5999) ||
+      //     mctrack.mcReducedFlags() > 0) {
+      //   /*cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / selections: " << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / ";
+      //   PrintBitMap(mctrack.mcReducedFlags(), 16);
+      //   cout << endl;
+      //   if (mctrack.has_mothers()) {
+      //     for (auto& m : mctrack.mothersIds()) {
+      //       if (m < mcTracks.size()) { // protect against bad mother indices
+      //         auto aMother = mcTracks.rawIteratorAt(m);
+      //         cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
+      //       }
+      //     }
+      //   }
+      //
+      //   if (mctrack.has_daughters()) {
+      //     for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+      //       if (d < mcTracks.size()) { // protect against bad daughter indices
+      //         auto aDaughter = mcTracks.rawIteratorAt(d);
+      //         cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
+      //       }
+      //     }
+      //   }*/
+      // }
 
       VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
