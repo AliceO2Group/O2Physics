@@ -108,6 +108,9 @@ DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);
 DECLARE_SOA_COLUMN(XAtVtx, xAtVtx, float);
 DECLARE_SOA_COLUMN(YAtVtx, yAtVtx, float);
 DECLARE_SOA_COLUMN(ZAtVtx, zAtVtx, float);
+DECLARE_SOA_COLUMN(FXAtPlaneZ2, fXAtPlaneZ2, float);
+DECLARE_SOA_COLUMN(FYAtPlaneZ2, fYAtPlaneZ2, float);
+DECLARE_SOA_COLUMN(FZAtPlaneZ2, fZAtPlaneZ2, float);
 DECLARE_SOA_COLUMN(PxAtVtx, pxAtVtx, float);
 DECLARE_SOA_COLUMN(PyAtVtx, pyAtVtx, float);
 DECLARE_SOA_COLUMN(PzAtVtx, pzAtVtx, float);
@@ -146,6 +149,9 @@ DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
                   qamatching::XAtVtx,
                   qamatching::YAtVtx,
                   qamatching::ZAtVtx,
+                  qamatching::FXAtPlaneZ2,
+                  qamatching::FYAtPlaneZ2,
+                  qamatching::FZAtPlaneZ2,
                   qamatching::PxAtVtx,
                   qamatching::PyAtVtx,
                   qamatching::PzAtVtx);
@@ -3176,6 +3182,7 @@ struct QaMatching {
         mftMchMatchAttempts = mchTrackInfoIt->second.compatMftTracks.size();
       }
       auto mchTrackAtVertex = VarManager::PropagateMuon(mchTrack, collision, VarManager::kToVertex);
+      auto mchTrackAtPlaneZ2 = propagateToZMch(mchTrackAtVertex, o2::mft::constants::mft::LayerZCoordinate()[9]);
       bool isTagged = false;
       if (std::find(taggedMuons.begin(), taggedMuons.end(), mchIndex) != taggedMuons.end()) {
         isTagged = true;
@@ -3192,6 +3199,9 @@ struct QaMatching {
         static_cast<float>(mchTrackAtVertex.getX()),
         static_cast<float>(mchTrackAtVertex.getY()),
         static_cast<float>(mchTrackAtVertex.getZ()),
+        static_cast<float>(mchTrackAtPlaneZ2.getX()),
+        static_cast<float>(mchTrackAtPlaneZ2.getY()),
+        static_cast<float>(mchTrackAtPlaneZ2.getZ()),
         static_cast<float>(mchTrackAtVertex.getPx()),
         static_cast<float>(mchTrackAtVertex.getPy()),
         static_cast<float>(mchTrackAtVertex.getPz()));
