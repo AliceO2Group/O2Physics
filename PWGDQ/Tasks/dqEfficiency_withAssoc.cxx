@@ -321,8 +321,6 @@ struct AnalysisEventSelection {
   std::map<std::string, std::string> fMetadataRCT, fHeader;
   int fCurrentRun = -1;
 
-  AnalysisEventSelection() : fHistMan(nullptr), fEventCut(nullptr), fCurrentRun(-1) {}
-
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -572,8 +570,6 @@ struct AnalysisTrackSelection {
 
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
-
-  AnalysisTrackSelection() : fHistMan(nullptr), fCurrentRun(0) {}
 
   void init(o2::framework::InitContext& context)
   {
@@ -898,8 +894,6 @@ struct AnalysisMuonSelection {
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
 
-  AnalysisMuonSelection() : fHistMan(nullptr), fCurrentRun(0) {}
-
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -1191,8 +1185,6 @@ struct AnalysisPrefilterSelection {
 
   Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
 
-  AnalysisPrefilterSelection() : fPairCut(nullptr), fPrefilterMask(0), fPrefilterCutBit(-1) {}
-
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -1480,21 +1472,6 @@ struct AnalysisSameEventPairing {
 
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
-
-  AnalysisSameEventPairing()
-    : fCurrentRun(-1),
-      fHistMan(nullptr),
-      fTrackFilterMask(0),
-      fMuonFilterMask(0),
-      fNCutsBarrel(0),
-      fNCutsMuon(0),
-      fNPairCuts(0),
-      fEnableBarrelHistos(false),
-      fEnableMuonHistos(false),
-      fEnableBarrelMuonHistos(false),
-      fEnableBarrelMuonMixingHistos(false)
-  {
-  }
 
   void init(o2::framework::InitContext& context)
   {
@@ -3231,19 +3208,6 @@ struct AnalysisAsymmetricPairing {
   // Map to track how many times a pair of tracks has been encountered
   std::map<std::pair<int32_t, int32_t>, int8_t> fPairCount;
 
-  AnalysisAsymmetricPairing()
-    : fCurrentRun(-1),
-      fHistMan(nullptr),
-      fNPairHistPrefixes(0),
-      fLegAFilterMask(0),
-      fLegBFilterMask(0),
-      fLegCFilterMask(0),
-      fCommonTrackCutMask(0),
-      fNLegCuts(0),
-      fNCommonTrackCuts(0)
-  {
-  }
-
   void init(o2::framework::InitContext& context)
   {
     bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithEventSelection");
@@ -4239,19 +4203,6 @@ struct AnalysisDileptonTrack {
   std::vector<MCSignal*> fGenMCSignals;
 
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> fHashBin;
-
-  AnalysisDileptonTrack()
-    : fCurrentRun(-1),
-      fNCuts(0),
-      fNLegCuts(0),
-      fNPairCuts(0),
-      fNCommonTrackCuts(0),
-      fTrackCutBitMap(0),
-      fValuesDilepton(nullptr),
-      fValuesHadron(nullptr),
-      fHistMan(nullptr)
-  {
-  }
 
   void init(o2::framework::InitContext& context)
   {
