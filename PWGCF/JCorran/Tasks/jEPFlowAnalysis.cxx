@@ -699,7 +699,7 @@ struct JEPFlowAnalysis {
       }
     }
 
-    if (cfgq2analysis == 2) {
+    if (cfgq2analysis == kHistsel) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
