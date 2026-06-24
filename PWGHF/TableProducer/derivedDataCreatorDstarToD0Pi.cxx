@@ -86,6 +86,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
 
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassDStar};
+  static constexpr int NHypothesesCand{1}; // Number of possible selection hypotheses per candidate.
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -130,6 +131,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass, double invMassD0,
                            double y, int8_t flagMc, int8_t flagMcD0, int8_t origin, int8_t nTracksDecayed, double ptBhad, int pdgBhad, const std::vector<float>& mlScores)
   {
+    LOGF(debug, "Filling candidate at derived index %d", rowsCommon.rowCandidateBase.lastIndex() + 1);
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       rowCandidatePar(
@@ -217,20 +219,30 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         rowsCommon.matchedCollisions.clear();
       }
     }
-    // auto sizeTableColl = collisions.size();
+    // const auto sizeTableColl = collisions.size();
     // rowsCommon.reserveTablesColl(sizeTableColl);
+    const auto sizeTableCand = candidates.size() * NHypothesesCand;
+    rowsCommon.reserveTablesCandidates(sizeTableCand);
+    reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
+    reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
+    reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
+    reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
+    reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
+    if constexpr (IsMc) {
+      reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
+    }
     for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
-      auto sizeTableCand = candidatesThisColl.size();
-      LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCand);
+      const auto thisCollId = collision.globalIndex();
+      const auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
+      const auto sizeTableCandThisColl = candidatesThisColl.size();
+      LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCandThisColl);
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (IsMc) {
         mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && rowsCommon.hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
-      if (sizeTableCand == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
+      if (sizeTableCandThisColl == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
         LOGF(debug, "Skipping rec. collision %d", thisCollId);
         continue;
       }
@@ -238,15 +250,6 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       rowsCommon.fillTablesCollision<IsMc>(collision);
 
       // Fill candidate properties
-      rowsCommon.reserveTablesCandidates(sizeTableCand);
-      reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
-      reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
-      reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
-      reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
-      reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
-      if constexpr (IsMc) {
-        reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
-      }
       int8_t flagMcRec = 0, flagMcRecD0 = 0, origin = 0, nTracksDecayed = 0;
       double ptBhadMotherPart = 0;
       int pdgBhadMotherPart = 0;

@@ -265,15 +265,15 @@ struct HfDerivedDataCreatorD0ToKPi {
     for (const auto& collision : collisions) {
       const auto thisCollId = collision.globalIndex();
       const auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
-      const auto sizeTableCand = candidatesThisColl.size();
-      LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCand);
+      const auto sizeTableCandThisColl = candidatesThisColl.size();
+      LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCandThisColl);
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (IsMc) {
         mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && rowsCommon.hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
-      if (sizeTableCand == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
+      if (sizeTableCandThisColl == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
         LOGF(debug, "Skipping rec. collision %d", thisCollId);
         continue;
       }
