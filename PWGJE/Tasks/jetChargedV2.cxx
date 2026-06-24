@@ -350,11 +350,13 @@ struct JetChargedV2 {
       registry.add("h2_averagerho_cent", "#centrality vs #rho; #centrality;  #rho ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
 
       registry.add("h2_rholocal_pt", "#varphi vs #it{p}_{T}; #it{p}_{T};  #rho(#varphi) ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
+      registry.add("h2_rholocal_raw_pt", "#varphi vs #it{p}_{T}; #it{p}_{T} - #rhoArea;  #rho(#varphi) ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
       registry.add("h2_rholocal_pt_inplane", "#varphi vs #it{p}_{T}; #it{p}_{T};  #rho(#varphi) ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
       registry.add("h2_rholocal_pt_outplane", "#varphi vs #it{p}_{T}; #it{p}_{T};  #rho(#varphi) ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
 
       registry.add("h2_phi_averagerho_absDelta", "#varphi vs #rho(0)absDelta, absDelta; #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, 0., o2::constants::math::TwoPI}, {210, -10.0, 200.0}}});
       registry.add("h2_averagerho_pt", "#varphi vs #it{p}_{T}; #it{p}_{T};  <#rho> ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
+      registry.add("h2_averagerho_raw_pt", "#varphi vs #it{p}_{T}; #it{p}_{T} - <#rho>Area;  <#rho> ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
       registry.add("h2_averagerho_pt_inplane", "#varphi vs #it{p}_{T}; #it{p}_{T};  <#rho> ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
       registry.add("h2_averagerho_pt_outplane", "#varphi vs #it{p}_{T}; #it{p}_{T};  <#rho> ", {HistType::kTH2F, {{100, 0., 100}, {210, -10.0, 200.0}}});
 
@@ -1602,7 +1604,9 @@ struct JetChargedV2 {
           registry.fill(HIST("h2_phi_averagerho_absDelta"), absDelta, collision.rho(), 1.0);
 
           registry.fill(HIST("h2_rholocal_pt"), jet.pt(), rholocal, 1.0);
+          registry.fill(HIST("h2_rholocal_raw_pt"), jet.pt() - rholocal * jet.area(), rholocal, 1.0);
           registry.fill(HIST("h2_averagerho_pt"), jet.pt(), collision.rho(), 1.0);
+          registry.fill(HIST("h2_averagerho_raw_pt"), jet.pt() - collision.rho() * jet.area(), collision.rho(), 1.0);
 
           int lowPtCut = 20;
           int mediumPtCut = 40;
