@@ -354,7 +354,7 @@ struct nucleiQC {
     return true;
   }
 
-  template <typename Tparticle>
+  template <int iSpecies, typename Tparticle>
   void fillNucleusFlagsPdgsMc(const Tparticle& particle, nuclei::SlimCandidate& candidate)
   {
     candidate.pdgCode = particle.pdgCode();
@@ -385,14 +385,9 @@ struct nucleiQC {
       candidate.flags |= nuclei::QcFlags::kQcIsSecondaryFromWeakDecay;
     } else {
       candidate.flags |= nuclei::QcFlags::kQcIsSecondaryFromMaterial;
-      static_for<0, nuclei::kNspecies - 1>([&](auto iSpeciesCtV) {
-        constexpr int kSpeciesCt = decltype(iSpeciesCtV)::value;
-        if (nuclei::getSpeciesFromPdg(particle.pdgCode()) == kSpeciesCt) {
-          mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/h2Productionvertex"), particle.vx(), particle.vy());
-        }
-        candidate.vx = particle.vx();
-        candidate.vy = particle.vy();
-      });
+      mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/h2Productionvertex"), particle.vx(), particle.vy());
+      candidate.vx = particle.vx();
+      candidate.vy = particle.vy();
     }
   }
 
@@ -463,7 +458,12 @@ struct nucleiQC {
       if (track.has_mcParticle()) {
 
         const auto& particle = track.mcParticle();
-        fillNucleusFlagsPdgsMc(particle, candidate);
+        static_for<0, nuclei::kNspecies - 1>([&](auto iSpeciesCtV) {
+          constexpr int kSpeciesCt = decltype(iSpeciesCtV)::value;
+          if (std::abs(particle.pdgCode()) == nuclei::pdgCodes[kSpeciesCt]) {
+            fillNucleusFlagsPdgsMc<kSpeciesCt>(particle, candidate);
+          }
+        });
         fillNucleusGeneratedVariables(particle, candidate);
       }
     }
@@ -662,7 +662,12 @@ struct nucleiQC {
       const auto& centralityIt = mcCollisionIdToCentrality.find(particle.mcCollisionId());
       candidate.centrality = centralityIt != mcCollisionIdToCentrality.end() ? centralityIt->second : -1.f;
       fillCollisionFlag(particle, candidate, reconstructedCollisions);
-      fillNucleusFlagsPdgsMc(particle, candidate);
+      static_for<0, nuclei::kNspecies - 1>([&](auto iSpeciesCtV) {
+        constexpr int kSpeciesCt = decltype(iSpeciesCtV)::value;
+        if (std::abs(particle.pdgCode()) == nuclei::pdgCodes[kSpeciesCt]) {
+          fillNucleusFlagsPdgsMc<kSpeciesCt>(particle, candidate);
+        }
+      });
       fillNucleusGeneratedVariables(particle, candidate);
 
       writeCandidate(candidate);
