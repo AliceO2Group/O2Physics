@@ -88,13 +88,11 @@ struct TreeWriterTpcV0 {
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorPr{"dwnSmplFactorPr", 1., "downsampling factor for protons, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorEl{"dwnSmplFactorEl", 1., "downsampling factor for electrons, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorKa{"dwnSmplFactorKa", 1., "downsampling factor for kaons, default fraction to keep is 1."};
-  Configurable<float> sqrtSNN{"sqrtSNN", 5360., "sqrt(s_NN), used for downsampling with the Tsallis distribution"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisElectrons{"downsamplingTsalisElectrons", -1., "Downsampling factor to reduce the number of electrons"};
@@ -108,6 +106,8 @@ struct TreeWriterTpcV0 {
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+  // Configurable for the path of CCDB General Run Parameters LHC Interface information
+  Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
   constexpr static float NSigmaTofUnmatched{o2::aod::v0data::kNoTOFValue};
@@ -263,7 +263,7 @@ struct TreeWriterTpcV0 {
   void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame, const OccupancyValues& occValues, const bool isGoodRctEvent)
   {
     const double ncl = track.tpcNClsFound();
-    const double nclPID = track.tpcNClsFindableMinusPID();
+    const double nclPID = track.tpcNClsPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -422,6 +422,9 @@ struct TreeWriterTpcV0 {
                                               aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
 
+    std::string irSource{};
+    float sqrtSNN{};
+    bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
@@ -434,8 +437,12 @@ struct TreeWriterTpcV0 {
       const auto v0s = myV0s.sliceBy(perCollisionV0s, static_cast<int>(collision.globalIndex()));
       const auto cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
       const auto bc = collision.bc_as<BCType>();
+      if (isFirstCollision) {
+        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
+      }
+      isFirstCollision = false;
       const int runnumber = bc.runNumber();
-      const auto hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
+      const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo : 0.;
       const int bcGlobalIndex = bc.globalIndex();
       int bcTimeFrameId{}, bcBcInTimeFrame{};
       if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
@@ -591,7 +598,6 @@ struct TreeWriterTpcTof {
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   /// Triton
   Configurable<float> maxMomTPCOnlyTr{"maxMomTPCOnlyTr", 1.5, "Maximum momentum for TPC only cut triton"};
   Configurable<float> maxMomHardCutOnlyTr{"maxMomHardCutOnlyTr", 50, "Maximum TPC inner momentum for triton"};
@@ -626,7 +632,6 @@ struct TreeWriterTpcTof {
   Configurable<float> nSigmaTofTpctofPi{"nSigmaTofTpctofPi", 4., "number of sigma for TOF cut for TPC and TOF combined pion"};
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   /// pT dependent downsampling
-  Configurable<float> sqrtSNN{"sqrtSNN", 5360., "sqrt(s_NN), used for downsampling with the Tsallis distribution"};
   Configurable<float> downsamplingTsalisTritons{"downsamplingTsalisTritons", -1., "Downsampling factor to reduce the number of tritons"};
   Configurable<float> downsamplingTsalisDeuterons{"downsamplingTsalisDeuterons", -1., "Downsampling factor to reduce the number of deuterons"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
@@ -637,6 +642,8 @@ struct TreeWriterTpcTof {
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+  // Configurable for the path of CCDB General Run Parameters LHC Interface information
+  Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 
   struct TofTrack {
     bool isApplyHardCutOnly;
@@ -698,7 +705,7 @@ struct TreeWriterTpcTof {
   void fillSkimmedTpcTofTable(T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const double hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame, const OccupancyValues& occValues, const bool isGoodRctEvent)
   {
     const double ncl = track.tpcNClsFound();
-    const double nclPID = track.tpcNClsFindableMinusPID();
+    const double nclPID = track.tpcNClsPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -803,6 +810,9 @@ struct TreeWriterTpcTof {
         labelTrack2TrackQA.at(trackId) = trackQA.globalIndex();
       }
     }
+    std::string irSource{};
+    float sqrtSNN{};
+    bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       const auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
       if (!isEventSelected(collision, applyEvSel)) {
@@ -822,8 +832,12 @@ struct TreeWriterTpcTof {
       }
 
       const auto bc = collision.bc_as<BCType>();
+      if (isFirstCollision) {
+        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
+      }
+      isFirstCollision = false;
       const int runnumber = bc.runNumber();
-      const auto hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
+      const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo : 0.;
       const int bcGlobalIndex = bc.globalIndex();
       int bcTimeFrameId{}, bcBcInTimeFrame{};
       if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
