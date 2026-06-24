@@ -20,25 +20,33 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonDataFormat/BunchFilling.h>
-#include <DataFormatsFDD/Digit.h>
-#include <DataFormatsFIT/Triggers.h>
+#include <CommonDataFormat/TimeStamp.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <bitset>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -439,9 +447,9 @@ struct UpcVmRof {
       bool ft0vtxTrg = mask[Ft0VtxIdx];
       bool ft0ceTrg = mask[Ft0CeIdx];
       if (ft0vtxTrg) {
-        bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisBC, thisROF);
+        bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisTF, thisROF);
         if (ft0ceTrg)
-          bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", runNumberBc)]->Fill(thisBC, thisROF);
+          bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", runNumberBc)]->Fill(thisTF, thisROF);
       }
     } // loop over bcs
 
