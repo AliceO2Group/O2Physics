@@ -356,16 +356,16 @@ struct JetCorrelationD0 {
       }
 
       tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
-              scores[2],
-              scores[1],
-              scores[0],
-              d0Candidate.m(),
-              d0Candidate.pt(),
-              d0Candidate.eta(),
-              d0Candidate.phi(),
-              d0Candidate.y(),
-              matchedFrom,
-              selectedAs);
+                        scores[2],
+                        scores[1],
+                        scores[0],
+                        d0Candidate.m(),
+                        d0Candidate.pt(),
+                        d0Candidate.eta(),
+                        d0Candidate.phi(),
+                        d0Candidate.y(),
+                        matchedFrom,
+                        selectedAs);
       for (const auto& jet : jets) {
         if (jet.pt() < jetPtCutMin) {
           continue;
