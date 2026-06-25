@@ -632,14 +632,17 @@ struct Alice3Strangeness {
       histos.fill(HIST("reconstructedCandidates/Cascade/AfterSelection/hCascDecayLength"), normalizedDecayLength);
       histos.fill(HIST("reconstructedCandidates/Cascade/AfterSelection/hCascDecayRadius"), cascade.cascradius());
       histos.fill(HIST("reconstructedCandidates/Cascade/AfterSelection/hCascCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
-      histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedXiCandidates"), cascade.mXi());
-      histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedAntiXiCandidates"), cascade.mXi());
-      histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedOmegaCandidates"), cascade.mOmega());
-      histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedAntiOmegaCandidates"), cascade.mOmega());
-      histos.fill(HIST("reconstructedCandidates/Cascade/h3dXiCandidates"), cascade.pt(), cascade.eta(), cascade.mOmega());
-      histos.fill(HIST("reconstructedCandidates/Cascade/h3dAntiXiCandidates"), cascade.pt(), cascade.eta(), cascade.mOmega());
-      histos.fill(HIST("reconstructedCandidates/Cascade/h3dOmegaCandidates"), cascade.pt(), cascade.eta(), cascade.mOmega());
-      histos.fill(HIST("reconstructedCandidates/Cascade/h3dAntiOmegaCandidates"), cascade.pt(), cascade.eta(), cascade.mOmega());
+      if (cascade.sign() < 0) {
+        histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedXiCandidates"), cascade.mXi());
+        histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedOmegaCandidates"), cascade.mOmega());
+        histos.fill(HIST("reconstructedCandidates/Cascade/h3dXiCandidates"), cascade.pt(), cascade.eta(), cascade.mXi());
+        histos.fill(HIST("reconstructedCandidates/Cascade/h3dOmegaCandidates"), cascade.pt(), cascade.eta(), cascade.mOmega());
+      } else {
+        histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedAntiXiCandidates"), cascade.mXi());
+        histos.fill(HIST("reconstructedCandidates/Cascade/hMassSelectedAntiOmegaCandidates"), cascade.mOmega());
+        histos.fill(HIST("reconstructedCandidates/Cascade/h3dAntiXiCandidates"), cascade.pt(), cascade.eta(), cascade.mXi());
+        histos.fill(HIST("reconstructedCandidates/Cascade/h3dAntiOmegaCandidates"), cascade.pt(), cascade.eta(), cascade.mOmega());
+      }
     }
   }
 

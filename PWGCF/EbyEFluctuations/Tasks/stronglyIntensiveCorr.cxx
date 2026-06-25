@@ -19,7 +19,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -27,14 +26,12 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-
-#include <TMath.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdint>
 #include <vector>
 
 using namespace o2;
@@ -45,9 +42,9 @@ struct StronglyIntensiveCorr {
   // ------------------------------------------------------------------
   // Configurables
   // ------------------------------------------------------------------
-  Configurable<bool> cfgIsMC{"cfgIsMC", false, "Run MC histograms/processes"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgEtaWidth{"cfgEtaWidth", 0.2f, "FB window width"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute eta cut"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 5.0f, "Upper pT cut"};
@@ -65,10 +62,10 @@ struct StronglyIntensiveCorr {
 
   Configurable<float> cfgCentMin{"cfgCentMin", 0.0f, "Minimum centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 90.0f, "Maximum centrality"};
-  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Centrality estimator: 0=FT0C, 1=FT0A, 2=FT0M, 3=FV0A"};
+  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Centrality estimator: 0=FT0C, 1=FT0M"};
   Configurable<float> cfgCentWindowWidth{"cfgCentWindowWidth", 10.0f, "Centrality window width around class centers"};
 
-  Configurable<int> cfgNSubsamples{"cfgNSubsamples", 20, "Number of subsamples; max is nSubsamplesMax"};
+  Configurable<int> cfgNSubsamples{"cfgNSubsamples", 20, "Number of subsamples; max is NSubsamplesMax"};
 
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time intervals with bad ITS layers"};
@@ -80,30 +77,23 @@ struct StronglyIntensiveCorr {
   // ------------------------------------------------------------------
   // FB binning
   // ------------------------------------------------------------------
-  static constexpr int nEtaGaps = 8;
-  static constexpr int nPtBins = 6;
-  static constexpr int nPhiBins = 16;
-  static constexpr int nSubsamplesMax = 20;
-  static constexpr int nCentClasses = 8;
+  static constexpr int NEtaGaps = 8;
+  static constexpr int NPtBins = 6;
+  static constexpr int NPhiBins = 16;
+  static constexpr int NSubsamplesMax = 20;
+  static constexpr int NCentClasses = 8;
   static constexpr double TwoPi = 6.28318530717958647692;
 
-  // F = (etaMin[i], etaMax[i]), B = (-etaMax[i], -etaMin[i])
-  // Gap = 2*etaMin[i]. Last two bins are adjacent narrow windows around midrapidity.
-  std::array<double, nEtaGaps> etaMin = {0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0.0};
-  std::array<double, nEtaGaps> etaMax = {0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
+  std::array<double, NEtaGaps> etaCenter = {0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0};
 
-  std::array<double, nPtBins + 1> ptEdges = {0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0};
-  std::array<double, nCentClasses + 1> centEdges = {0., 10., 20., 30., 40., 50., 60., 70., 80.};
+  std::array<double, NPtBins + 1> ptEdges = {0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0};
+  std::array<double, NCentClasses + 1> centEdges = {0., 10., 20., 30., 40., 50., 60., 70., 80.};
 
-  using EtaPtPhiArray = std::array<std::array<std::array<double, nPhiBins>, nPtBins>, nEtaGaps>;
+  using EtaPtPhiArray = std::array<std::array<std::array<double, NPhiBins>, NPtBins>, NEtaGaps>;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Service<o2::framework::O2DatabasePDG> pdg;
-  // ------------------------------------------------------------------
-  // Filters and table types
-  // Keep Swati-like joined tables. PID tables are kept for workflow compatibility,
-  // but the inclusive charged FB analysis does not use PID decisions.
-  // ------------------------------------------------------------------
+  Service<o2::framework::O2DatabasePDG> pdg{};
+
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
 
   // Intentionally loose track filter: manual cuts are done in selTrack(), so QA before/after sees tracks.
@@ -148,12 +138,12 @@ struct StronglyIntensiveCorr {
     AxisSpec centAxis = {100, 0.0, 100.0, "centrality (%)"};
     std::vector<double> centClassEdges(centEdges.begin(), centEdges.end());
     AxisSpec centClassAxis = {centClassEdges, "centrality class (%)"};
-    AxisSpec etaGapAxis = {nEtaGaps, -0.05, 1.55, "#Delta#eta"};
+    AxisSpec etaGapAxis = {NEtaGaps, -0.05, 1.55, "#Delta#eta"};
     AxisSpec nAxis = {500, 0.0, 500.0, "N"};
     AxisSpec counterAxis = {20, 0.5, 20.5, "counter"};
     AxisSpec ptAxis = {{0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0}, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec phiAxis = {nPhiBins, 0.0, TwoPi, "#varphi"};
-    AxisSpec subsampleAxis = {nSubsamplesMax, -0.5, static_cast<double>(nSubsamplesMax) - 0.5, "subsample"};
+    AxisSpec phiAxis = {NPhiBins, 0.0, TwoPi, "#varphi"};
+    AxisSpec subsampleAxis = {NSubsamplesMax, -0.5, static_cast<double>(NSubsamplesMax) - 0.5, "subsample"};
 
     AxisSpec nchAxis = {500, 0.0, 500.0, "N_{ch}"};
     AxisSpec nchPvAxis = {1000, 0.0, 1000.0, "N_{ch}^{PV}"};
@@ -334,7 +324,7 @@ struct StronglyIntensiveCorr {
 
   int getCentClass(float cent) const
   {
-    for (int ic = 0; ic < nCentClasses; ++ic) {
+    for (int ic = 0; ic < NCentClasses; ++ic) {
       if (cent >= centEdges[ic] && cent < centEdges[ic + 1]) {
         return ic;
       }
@@ -344,7 +334,7 @@ struct StronglyIntensiveCorr {
 
   double getCentClassCenter(int ic) const
   {
-    if (ic < 0 || ic >= nCentClasses) {
+    if (ic < 0 || ic >= NCentClasses) {
       return -999.0;
     }
     return 0.5 * (centEdges[ic] + centEdges[ic + 1]);
@@ -357,7 +347,7 @@ struct StronglyIntensiveCorr {
       return -1;
     }
 
-    for (int ic = 0; ic < nCentClasses; ++ic) {
+    for (int ic = 0; ic < NCentClasses; ++ic) {
       const double center = getCentClassCenter(ic);
       if (cent >= center - halfWidth && cent < center + halfWidth) {
         return ic;
@@ -369,7 +359,7 @@ struct StronglyIntensiveCorr {
   template <typename C>
   int getSubsampleIndex(C const& coll) const
   {
-    const int nSubsamples = std::min(std::max(cfgNSubsamples.value, 0), nSubsamplesMax);
+    const int nSubsamples = std::min(std::max(cfgNSubsamples.value, 0), NSubsamplesMax);
     if (nSubsamples <= 0) {
       return -1;
     }
@@ -378,7 +368,7 @@ struct StronglyIntensiveCorr {
 
   int getPtBin(double pt) const
   {
-    for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int ipt = 0; ipt < NPtBins; ++ipt) {
       if (pt >= ptEdges[ipt] && pt < ptEdges[ipt + 1]) {
         return ipt;
       }
@@ -395,8 +385,8 @@ struct StronglyIntensiveCorr {
       phi -= TwoPi;
     }
 
-    const int iphi = static_cast<int>(phi / TwoPi * nPhiBins);
-    if (iphi < 0 || iphi >= nPhiBins) {
+    const int iphi = static_cast<int>(phi / TwoPi * NPhiBins);
+    if (iphi < 0 || iphi >= NPhiBins) {
       return -1;
     }
     return iphi;
@@ -591,8 +581,8 @@ struct StronglyIntensiveCorr {
   }
 
   void addToFBCounters(double eta, double pt, double phi,
-                       std::array<double, nEtaGaps>& nF,
-                       std::array<double, nEtaGaps>& nB,
+                       std::array<double, NEtaGaps>& nF,
+                       std::array<double, NEtaGaps>& nB,
                        EtaPtPhiArray& nFPtPhi,
                        EtaPtPhiArray& nBPtPhi)
   {
@@ -600,9 +590,9 @@ struct StronglyIntensiveCorr {
     const int iphi = getPhiBin(phi);
     const bool fillPtPhi = (ipt >= 0 && iphi >= 0);
 
-    for (int i = 0; i < nEtaGaps; ++i) {
-      const double etaLow = etaMin[i];
-      const double etaHigh = etaMax[i];
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double etaLow = etaCenter[i] - cfgEtaWidth.value / 2.0;
+      const double etaHigh = etaCenter[i] + cfgEtaWidth.value / 2.0;
 
       if (eta > etaLow && eta < etaHigh) {
         nF[i] += 1.0;
@@ -621,12 +611,12 @@ struct StronglyIntensiveCorr {
   }
 
   void fillFBQA(float cent,
-                std::array<double, nEtaGaps> const& nF,
-                std::array<double, nEtaGaps> const& nB)
+                std::array<double, NEtaGaps> const& nF,
+                std::array<double, NEtaGaps> const& nB)
   {
-    constexpr int defaultGapBin = 0;
-    const double nf = nF[defaultGapBin];
-    const double nb = nB[defaultGapBin];
+    constexpr int DefaultGapBin = 0;
+    const double nf = nF[DefaultGapBin];
+    const double nb = nB[DefaultGapBin];
 
     histos.fill(HIST("QA/fb/nFvsCent"), cent, nf);
     histos.fill(HIST("QA/fb/nBvsCent"), cent, nb);
@@ -635,35 +625,28 @@ struct StronglyIntensiveCorr {
     histos.fill(HIST("QA/fb/nFplusNB"), nf + nb);
   }
 
-  void fillInclusiveEtaGapMoments(std::array<double, nEtaGaps> const& nF,
-                                  std::array<double, nEtaGaps> const& nB)
+  void fillInclusiveEtaGapMoments(std::array<double, NEtaGaps> const& nF,
+                                  std::array<double, NEtaGaps> const& nB)
   {
-    for (int i = 0; i < nEtaGaps; ++i) {
-      const double gap = 2.0 * etaMin[i];
+    for (int i = 0; i < NEtaGaps; ++i) {
 
       histos.fill(HIST("QA/hNF"), nF[i]);
       histos.fill(HIST("QA/hNB"), nB[i]);
       histos.fill(HIST("QA/hNFvsNB"), nF[i], nB[i]);
-
-      histos.fill(HIST("SI/pNF_etaGap"), gap, nF[i]);
-      histos.fill(HIST("SI/pNB_etaGap"), gap, nB[i]);
-      histos.fill(HIST("SI/pNF2_etaGap"), gap, nF[i] * nF[i]);
-      histos.fill(HIST("SI/pNB2_etaGap"), gap, nB[i] * nB[i]);
-      histos.fill(HIST("SI/pNFNB_etaGap"), gap, nF[i] * nB[i]);
     }
   }
 
   void fillCentClassEtaGapMoments(int centClass,
-                                  std::array<double, nEtaGaps> const& nF,
-                                  std::array<double, nEtaGaps> const& nB)
+                                  std::array<double, NEtaGaps> const& nF,
+                                  std::array<double, NEtaGaps> const& nB)
   {
-    if (centClass < 0 || centClass >= nCentClasses) {
+    if (centClass < 0 || centClass >= NCentClasses) {
       return;
     }
 
     const double centCenter = getCentClassCenter(centClass);
-    for (int i = 0; i < nEtaGaps; ++i) {
-      const double gap = 2.0 * etaMin[i];
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
       histos.fill(HIST("SIcentClass/pNF_cent_etaGap"), centCenter, gap, nF[i]);
       histos.fill(HIST("SIcentClass/pNB_cent_etaGap"), centCenter, gap, nB[i]);
       histos.fill(HIST("SIcentClass/pNF2_cent_etaGap"), centCenter, gap, nF[i] * nF[i]);
@@ -673,16 +656,16 @@ struct StronglyIntensiveCorr {
   }
 
   void fillCentWindowEtaGapMoments(int centWindowClass,
-                                   std::array<double, nEtaGaps> const& nF,
-                                   std::array<double, nEtaGaps> const& nB)
+                                   std::array<double, NEtaGaps> const& nF,
+                                   std::array<double, NEtaGaps> const& nB)
   {
-    if (centWindowClass < 0 || centWindowClass >= nCentClasses) {
+    if (centWindowClass < 0 || centWindowClass >= NCentClasses) {
       return;
     }
 
     const double centCenter = getCentClassCenter(centWindowClass);
-    for (int i = 0; i < nEtaGaps; ++i) {
-      const double gap = 2.0 * etaMin[i];
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
       histos.fill(HIST("SIcentWindow/pNF_cent_etaGap"), centCenter, gap, nF[i]);
       histos.fill(HIST("SIcentWindow/pNB_cent_etaGap"), centCenter, gap, nB[i]);
       histos.fill(HIST("SIcentWindow/pNF2_cent_etaGap"), centCenter, gap, nF[i] * nF[i]);
@@ -693,19 +676,19 @@ struct StronglyIntensiveCorr {
 
   void fillSubsampleCentWindowEtaGapMoments(int isub,
                                             int centWindowClass,
-                                            std::array<double, nEtaGaps> const& nF,
-                                            std::array<double, nEtaGaps> const& nB)
+                                            std::array<double, NEtaGaps> const& nF,
+                                            std::array<double, NEtaGaps> const& nB)
   {
-    if (isub < 0 || isub >= nSubsamplesMax) {
+    if (isub < 0 || isub >= NSubsamplesMax) {
       return;
     }
-    if (centWindowClass < 0 || centWindowClass >= nCentClasses) {
+    if (centWindowClass < 0 || centWindowClass >= NCentClasses) {
       return;
     }
 
     const double centCenter = getCentClassCenter(centWindowClass);
-    for (int i = 0; i < nEtaGaps; ++i) {
-      const double gap = 2.0 * etaMin[i];
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
       histos.fill(HIST("SubsampleCentWindow/pNF_sub_cent_etaGap"), isub, centCenter, gap, nF[i]);
       histos.fill(HIST("SubsampleCentWindow/pNB_sub_cent_etaGap"), isub, centCenter, gap, nB[i]);
       histos.fill(HIST("SubsampleCentWindow/pNF2_sub_cent_etaGap"), isub, centCenter, gap, nF[i] * nF[i]);
@@ -717,12 +700,12 @@ struct StronglyIntensiveCorr {
   void fillDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
                                        EtaPtPhiArray const& nB)
   {
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
 
@@ -742,12 +725,12 @@ struct StronglyIntensiveCorr {
   void fillRecoDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
                                            EtaPtPhiArray const& nB)
   {
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
 
@@ -763,14 +746,14 @@ struct StronglyIntensiveCorr {
   void fillPrimDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
                                            EtaPtPhiArray const& nB)
   {
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
 
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
 
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
 
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
@@ -787,14 +770,14 @@ struct StronglyIntensiveCorr {
   void fillGenDifferentialEtaPtPhiMoments(EtaPtPhiArray const& nF,
                                           EtaPtPhiArray const& nB)
   {
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
 
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
 
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
 
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
@@ -813,16 +796,16 @@ struct StronglyIntensiveCorr {
                                                     EtaPtPhiArray const& nF,
                                                     EtaPtPhiArray const& nB)
   {
-    if (isub < 0 || isub >= nSubsamplesMax) {
+    if (isub < 0 || isub >= NSubsamplesMax) {
       return;
     }
 
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
 
@@ -841,16 +824,16 @@ struct StronglyIntensiveCorr {
                                                     EtaPtPhiArray const& nF,
                                                     EtaPtPhiArray const& nB)
   {
-    if (isub < 0 || isub >= nSubsamplesMax) {
+    if (isub < 0 || isub >= NSubsamplesMax) {
       return;
     }
 
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
 
@@ -869,16 +852,16 @@ struct StronglyIntensiveCorr {
                                                    EtaPtPhiArray const& nF,
                                                    EtaPtPhiArray const& nB)
   {
-    if (isub < 0 || isub >= nSubsamplesMax) {
+    if (isub < 0 || isub >= NSubsamplesMax) {
       return;
     }
 
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
 
@@ -897,16 +880,16 @@ struct StronglyIntensiveCorr {
                                                 EtaPtPhiArray const& nF,
                                                 EtaPtPhiArray const& nB)
   {
-    if (isub < 0 || isub >= nSubsamplesMax) {
+    if (isub < 0 || isub >= NSubsamplesMax) {
       return;
     }
 
-    for (int igap = 0; igap < nEtaGaps; ++igap) {
-      const double gap = 2.0 * etaMin[igap];
-      for (int ipt = 0; ipt < nPtBins; ++ipt) {
+    for (int igap = 0; igap < NEtaGaps; ++igap) {
+      const double gap = 2.0 * (etaCenter[igap] - cfgEtaWidth.value / 2.0);
+      for (int ipt = 0; ipt < NPtBins; ++ipt) {
         const double ptCenter = 0.5 * (ptEdges[ipt] + ptEdges[ipt + 1]);
-        for (int iphi = 0; iphi < nPhiBins; ++iphi) {
-          const double phiCenter = (iphi + 0.5) * TwoPi / nPhiBins;
+        for (int iphi = 0; iphi < NPhiBins; ++iphi) {
+          const double phiCenter = (iphi + 0.5) * TwoPi / NPhiBins;
           const double nf = nF[igap][ipt][iphi];
           const double nb = nB[igap][ipt][iphi];
 
@@ -949,8 +932,8 @@ struct StronglyIntensiveCorr {
   template <typename C>
   void fillAllFBOutputs(C const& coll,
                         float cent,
-                        std::array<double, nEtaGaps> const& nF,
-                        std::array<double, nEtaGaps> const& nB,
+                        std::array<double, NEtaGaps> const& nF,
+                        std::array<double, NEtaGaps> const& nB,
                         EtaPtPhiArray const& nFPtPhi,
                         EtaPtPhiArray const& nBPtPhi)
   {
@@ -982,8 +965,8 @@ struct StronglyIntensiveCorr {
     }
     fillEventQAAfter(coll, cent);
 
-    std::array<double, nEtaGaps> nF{};
-    std::array<double, nEtaGaps> nB{};
+    std::array<double, NEtaGaps> nF{};
+    std::array<double, NEtaGaps> nB{};
     EtaPtPhiArray nFPtPhi{};
     EtaPtPhiArray nBPtPhi{};
 
@@ -1020,8 +1003,8 @@ struct StronglyIntensiveCorr {
     }
     fillEventQAAfter(coll, cent);
 
-    std::array<double, nEtaGaps> nF{};
-    std::array<double, nEtaGaps> nB{};
+    std::array<double, NEtaGaps> nF{};
+    std::array<double, NEtaGaps> nB{};
     EtaPtPhiArray nFPtPhi{};
     EtaPtPhiArray nBPtPhi{};
     int nRecoAll = 0;
@@ -1086,8 +1069,8 @@ struct StronglyIntensiveCorr {
     }
     fillEventQAAfter(coll, cent);
 
-    std::array<double, nEtaGaps> nF{};
-    std::array<double, nEtaGaps> nB{};
+    std::array<double, NEtaGaps> nF{};
+    std::array<double, NEtaGaps> nB{};
     EtaPtPhiArray nFPtPhi{};
     EtaPtPhiArray nBPtPhi{};
 
@@ -1143,8 +1126,8 @@ struct StronglyIntensiveCorr {
     }
     fillEventQAAfter(coll, cent);
 
-    std::array<double, nEtaGaps> nF{};
-    std::array<double, nEtaGaps> nB{};
+    std::array<double, NEtaGaps> nF{};
+    std::array<double, NEtaGaps> nB{};
     EtaPtPhiArray nFPtPhi{};
     EtaPtPhiArray nBPtPhi{};
 

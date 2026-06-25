@@ -147,6 +147,8 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
     O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
     O2_DEFINE_CONFIGURABLE(cfgClosureTest, int, 0, "choose (val) percent particle from charged to pass Pion PID selection");
+
+    O2_DEFINE_CONFIGURABLE(cfgProcessQAOutput, bool, false, "QA plots for processQA");
   } switchsOpts;
 
   /**
@@ -222,7 +224,7 @@ struct PidFlowPtCorr {
     ConfigurableAxis cfgaxisBootstrap{"cfgaxisBootstrap", {30, 0, 30}, "cfgaxisBootstrap"};
   } meanptC22GraphOpts;
 
-  AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90}, "Centrality (%)"};
 
   // configurable
 
@@ -230,7 +232,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // data tracks filter
@@ -309,6 +311,7 @@ struct PidFlowPtCorr {
     funcFillCorrectionGraph,
     funcProcessReco,
     funcProcessSim,
+    funcProcessQA,
     funcNumber
   };
 
@@ -324,10 +327,6 @@ struct PidFlowPtCorr {
   TF1* fT0AV0ASigma = nullptr;
 
   // Declare the pt, mult and phi Axis;
-  int nPtBins = 0;
-  TAxis* fPtAxis = nullptr;
-
-  TAxis* fMultAxis = nullptr;
 
   std::vector<TF1*> funcEff;
   TH1D* hFindPtBin;
@@ -374,13 +373,6 @@ struct PidFlowPtCorr {
     cfgMultPVCutPara = evtSeleOpts.cfgMultPVCut;
 
     // Set the pt, mult and phi Axis;
-    o2::framework::AxisSpec axisPt = cfgaxisPt;
-    nPtBins = axisPt.binEdges.size() - 1;
-    fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
-
-    o2::framework::AxisSpec axisMult = axisMultiplicity;
-    int nMultBins = axisMult.binEdges.size() - 1;
-    fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
 
     if (dcaCutOpts.cfgDCAxyNSigma) {
       dcaCutOpts.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", dcaCutOpts.cfgDCAxy->c_str()), 0.001, 1000);
@@ -620,6 +612,28 @@ struct PidFlowPtCorr {
     registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     // end pid
     // end init tprofile3d for <2'> - meanpt
+
+    /// @note init QA plot for processQA
+    if (switchsOpts.cfgProcessQAOutput.value) {
+      /// @note track QA
+      registry.add("hProcessQA/hDCAz", "DCAz after collision cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -5, 5}, {200, 0, 3}}});
+      registry.add("hProcessQA/hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
+
+      registry.add("hProcessQA/hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+      registry.add("hProcessQA/hChi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
+
+      registry.add("hProcessQA/hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+      registry.add("hProcessQA/hnITSClu", "Number of found ITS clusters", {HistType::kTH1D, {{10, 0, 10}}});
+      registry.add("hProcessQA/hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+      // end track QA
+
+      /// @note evetn QA
+      registry.add("hProcessQA/centVsMult", "cent Vs Mult;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisMultiplicity, cfgaxisNch}});
+      registry.add("hProcessQA/IR", "", {HistType::kTH1D, {{100, 0, 100}}});
+      registry.add("hProcessQA/Occupacy", "", {HistType::kTH1D, {{1000, 0, 10000}}});
+      // end evetn QA
+    }
+    // end init QA plot for processQA
 
     // fgfw set up and correlation config setup
     // Data stored in fGFW
@@ -1676,7 +1690,7 @@ struct PidFlowPtCorr {
         break;
 
       default:
-        LOGF(warning, "could not find event count graph");
+        // LOGF(warning, "could not find event count graph");
         break;
     }
   }
@@ -2409,6 +2423,65 @@ struct PidFlowPtCorr {
     } // end loop all the track
   }
   PROCESS_SWITCH(PidFlowPtCorr, fillCorrectionGraph, "", true);
+
+  void processQA(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  {
+    if (!switchsOpts.cfgProcessQAOutput.value) {
+      LOGF(fatal, "processQAOutput no open!");
+    }
+
+    /// @note init && collision cut
+    int nTot = tracks.size();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
+    double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+    // end init
+
+    /// @note collision cut
+    // include : 1.track.size 2.collision.sel8 3. evenSelected
+    if (nTot < 1)
+      return;
+
+    const auto cent = collision.centFT0C();
+    if (!collision.sel8())
+      return;
+
+    /// @note event qa
+    registry.fill(HIST("hProcessQA/centVsMult"), cent, tracks.size());
+    registry.fill(HIST("hProcessQA/IR"), interactionRate);
+    registry.fill(HIST("hProcessQA/Occupacy"), collision.trackOccupancyInTimeRange());
+    // end event qa
+
+    // i dont want to fill event count again as it's filled in other 5 function
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessQA))
+      return;
+    // end init && collision cut
+
+    /// @note track loop
+    for (const auto& track : tracks) {
+      /// @note select global track
+      // track cut isnt applied, this is track QA function!
+      if (!track.hasITS())
+        continue;
+      if (!track.hasTPC())
+        continue;
+      // end select global track
+
+      /// @note fill QA graphs
+      registry.fill(HIST("hProcessQA/hDCAz"), track.dcaZ(), track.pt());
+      registry.fill(HIST("hProcessQA/hDCAxy"), track.dcaXY(), track.pt());
+
+      registry.fill(HIST("hProcessQA/hChi2prTPCcls"), track.tpcChi2NCl());
+      registry.fill(HIST("hProcessQA/hChi2prITScls"), track.itsChi2NCl());
+
+      registry.fill(HIST("hProcessQA/hnTPCClu"), track.tpcNClsFound());
+      registry.fill(HIST("hProcessQA/hnITSClu"), track.itsNCls());
+      registry.fill(HIST("hProcessQA/hnTPCCrossedRow"), track.tpcNClsCrossedRows());
+      // end fill QA grahps
+    }
+    // end track loop
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processQA, "", true);
 
   /**
    * @brief this main function is used to check the PID performance of ITS TOC TPC, also used to do QA

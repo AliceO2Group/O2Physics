@@ -234,7 +234,8 @@ struct JetSpectraEseTask {
   static constexpr EventPlaneFiller PsiFillerEse = {true, false};
   static constexpr EventPlaneFiller PsiFillerFalse = {false, false};
   TRandom3* fRndm = new TRandom3(0);
-  static constexpr int NumSubSmpl = 10;
+  static constexpr int NumSubSmpl = 5;
+  static constexpr int NumSavedRhoFitEvents = 5;
   std::array<std::shared_ptr<THnSparse>, NumSubSmpl> hSameSub;
 
   void applySystematicPreset()
@@ -359,6 +360,10 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("trackQA/hRhoTrackCounter"))->GetXaxis()->SetBinLabel(3, "Tracks for rho(phi)");
 
       registry.add("trackQA/hPhiPtsum", "jet sumpt;sum p_{T};entries", {HistType::kTH1F, {{40, 0., o2::constants::math::TwoPI}}});
+      for (int i = 0; i < NumSavedRhoFitEvents; ++i) {
+        const auto eventName = fmt::format("rhoPhiFitEvents/event_{}", i);
+        registry.add(eventName, "event;#varphi;#Sigma #it{p}_{T} (GeV/#it{c})", HistType::kTH1F, {{1, 0., o2::constants::math::TwoPI}});
+      }
       registry.add("eventQA/hfitPar0", "", {HistType::kTH2F, {{centAxis}, {fitAxis0}}});
       registry.add("eventQA/hfitPar1", "", {HistType::kTH2F, {{centAxis}, {fitAxis13}}});
       registry.add("eventQA/hfitPar2", "", {HistType::kTH2F, {{centAxis}, {fitAxis24}}});
@@ -447,20 +452,29 @@ struct JetSpectraEseTask {
     if (doprocessESEEPData) {
       LOGF(info, "JetSpectraEseTask::init() - Event Plane Process");
       registry.add("eventQA/hPsi2FT0C", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{centAxis}, {150, -2.5, 2.5}}});
-      registry.addClone("eventQA/hPsi2FT0C", "hPsi2FT0A");
-      registry.addClone("eventQA/hPsi2FT0C", "hPsi2FV0A");
-      registry.addClone("eventQA/hPsi2FT0C", "hPsi2TPCpos");
-      registry.addClone("eventQA/hPsi2FT0C", "hPsi2TPCneg");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi2FT0A");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi2FV0A");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi2TPCpos");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi2TPCneg");
+
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi3FT0C");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi3FT0A");
+
       registry.add("eventQA/hCosPsi2AmC", ";Centrality;cos(2(#Psi_{2}^{A}-#Psi_{2}^{B}));#it{q}_{2}", {HistType::kTH3F, {{centAxis}, {cosAxis}, {eseAxis}}});
-      registry.addClone("eventQA/hCosPsi2AmC", "hCosPsi2AmB");
-      registry.addClone("eventQA/hCosPsi2AmC", "hCosPsi2BmC");
+      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCosPsi2AmB");
+      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCosPsi2BmC");
+
+      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCos4PsiAmC");
+      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCos4PsiAmB");
+      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCos4PsiBmC");
+
       registry.add("eventQA/hQvecUncorV2", ";Centrality;Q_x;Q_y", {HistType::kTH3F, {{centAxis}, {qvecAxis}, {qvecAxis}}});
-      registry.addClone("eventQA/hQvecUncorV2", "hQvecRectrV2");
-      registry.addClone("eventQA/hQvecUncorV2", "hQvecTwistV2");
-      registry.addClone("eventQA/hQvecUncorV2", "hQvecFinalV2");
-      registry.addClone("eventQA/hPsi2FT0C", "hEPUncorV2");
-      registry.addClone("eventQA/hPsi2FT0C", "hEPRectrV2");
-      registry.addClone("eventQA/hPsi2FT0C", "hEPTwistV2");
+      registry.addClone("eventQA/hQvecUncorV2", "eventQA/hQvecRectrV2");
+      registry.addClone("eventQA/hQvecUncorV2", "eventQA/hQvecTwistV2");
+      registry.addClone("eventQA/hQvecUncorV2", "eventQA/hQvecFinalV2");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPUncorV2");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPRectrV2");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPTwistV2");
     }
     if (doprocessESEBackground) {
       LOGF(info, "JetSpectraEseTask::init() - Background Process");
@@ -469,6 +483,9 @@ struct JetSpectraEseTask {
       registry.add("hCentRhoRandomConewoLeadingJet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTHnSparseF, {{centAxis}, {800, -400.0, 400.0}, {dPhiAxis}, {eseAxis}}});
       registry.add("hCentRhoRandomConeRndTrackDirwoOneLeadingJet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTHnSparseF, {{centAxis}, {800, -400.0, 400.0}, {dPhiAxis}, {eseAxis}}});
       registry.add("hCentRhoRandomConeRndTrackDirwoTwoLeadingJet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTHnSparseF, {{centAxis}, {800, -400.0, 400.0}, {dPhiAxis}, {eseAxis}}});
+
+      registry.add("h3CentdeltapTRndmConePhi_localrhovsphi", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{100, 0.0, 100.0}, {400, -200.0, 200.0}, {dPhiAxis}}});
+      registry.add("h3CentdeltapTRndmConePhi_rhovsphi", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{100, 0.0, 100.0}, {400, -200.0, 200.0}, {dPhiAxis}}});
     }
     if (doprocessMCParticleLevel) {
       LOGF(info, "JetSpectraEseTask::init() - MC Particle level");
@@ -659,7 +676,8 @@ struct JetSpectraEseTask {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
         continue;
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+      // if (!isAcceptedJet<aod::JetTracks>(jet)) {
+      if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
         continue;
       }
       auto vCorr = corr(collision, jet);
@@ -793,7 +811,7 @@ struct JetSpectraEseTask {
       for (const auto& jet : jets1) {
         if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
           continue;
-        if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
           continue;
         }
         auto vCorr = corr(c1, jet);
@@ -1187,67 +1205,70 @@ struct JetSpectraEseTask {
 
   static constexpr float InvalidValue = 999.;
 
-  // template <bool FillAllPsi, bool FillHist, typename EPCol>
   template <EventPlaneFiller P, typename EPCol>
   EventPlane procEP(EPCol const& vec)
   {
-    constexpr std::array<float, 2> AmpCut{LowFT0Cut, 0.0};
-    auto computeEP = [&AmpCut](const std::vector<float>& vec, auto det, float n) { return vec[2] > AmpCut[det] ? (1.0 / n) * std::atan2(vec[1], vec[0]) : InvalidValue; };
-    std::map<std::string, float> epMap;
-    std::map<std::string, float> ep3Map;
-    auto vec1{qVecNoESE<DetID::FT0A, P.hist>(vec)};
-    epMap["FT0A"] = computeEP(vec1, 0, 2.0);
-    ep3Map["FT0A"] = computeEP(vec1, 0, 3.0);
+    auto computeEP = [](const std::vector<float>& qVec, float minAmp, float harmonic) {
+      return qVec[2] > minAmp ? std::atan2(qVec[1], qVec[0]) / harmonic : InvalidValue;
+    };
+
+    std::map<std::string, float> epMap{
+      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, P.hist>(vec, 2), LowFT0Cut, 2.0f)},
+      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 2), LowFT0Cut, 2.0f)},
+      {"FV0A", computeEP(qVecNoESE<DetID::FV0A, false>(vec), LowFT0Cut, 2.0f)},
+      {"TPCpos", computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 0.0f, 2.0f)},
+      {"TPCneg", computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 0.0f, 2.0f)}};
+    std::map<std::string, float> ep3Map{
+      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, false>(vec, 3), LowFT0Cut, 3.0f)},
+      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 3), LowFT0Cut, 3.0f)}};
+
     if constexpr (P.psi) {
-      auto vec2{qVecNoESE<DetID::FT0C, false>(vec)};
-      epMap["FT0C"] = computeEP(vec2, 0, 2.0);
-      ep3Map["FT0C"] = computeEP(vec2, 0, 3.0);
-      epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0, 2.0);
-      epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1, 2.0);
-      epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1, 2.0);
-      if constexpr (P.hist)
-        fillEP(/*std::make_index_sequence<5>{},*/ vec, epMap);
-      auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == InvalidValue || static_cast<double>(psiY) == InvalidValue) ? InvalidValue : std::cos(2.0 * (psiX - psiY)); };
-      std::array<float, 3> epCorrContainer{};
-      epCorrContainer[0] = cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefC));
-      epCorrContainer[1] = cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefB));
-      epCorrContainer[2] = cosPsi(epMap.at(cfgEPRefB), epMap.at(cfgEPRefC));
-      if constexpr (P.hist)
-        fillEPCos(/*std::make_index_sequence<3>{},*/ vec, epCorrContainer);
+      if constexpr (P.hist) {
+        fillEP(vec, epMap, ep3Map);
+      }
+
+      auto cosPsi = [](float psiX, float psiY, const float harmonic = 2.0f) {
+        return psiX == InvalidValue || psiY == InvalidValue ? InvalidValue : std::cos(harmonic * (psiX - psiY));
+      };
+      const std::array<float, 3> epCorrContainer{
+        cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefC)),
+        cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefB)),
+        cosPsi(epMap.at(cfgEPRefB), epMap.at(cfgEPRefC))};
+      const std::array<float, 3> epCorrContainer4{
+        cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefC), 4.0f),
+        cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefB), 4.0f),
+        cosPsi(epMap.at(cfgEPRefB), epMap.at(cfgEPRefC), 4.0f)};
+
+      if constexpr (P.hist) {
+        fillEPCos(vec, epCorrContainer, epCorrContainer4);
+      }
     }
-    EventPlane localPlane;
-    localPlane.psi2 = epMap.at(cfgEPRefA);
-    localPlane.psi3 = ep3Map.at(cfgEPRefA);
-    return localPlane;
-    // return epMap.at(cfgEPRefA);
+    return {epMap.at(cfgEPRefA), ep3Map.at(cfgEPRefA)};
   }
-  template </*std::size_t... Idx,*/ typename collision>
-  void fillEPCos(/*const std::index_sequence<Idx...>&,*/ const collision& col, const std::array<float, 3>& Corr)
+  template <typename collision>
+  void fillEPCos(const collision& col, const std::array<float, 3>& Corr, const std::array<float, 3>& Corr4)
   {
-    // static constexpr std::string CosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
-    // (registry.fill(HIST(CosList[Idx]), col.centrality(), Corr[Idx], col.qPERCFT0C()[0]), ...);
     registry.fill(HIST("eventQA/hCosPsi2AmC"), col.centFT0M(), Corr[0], col.qPERCFT0C()[0]);
     registry.fill(HIST("eventQA/hCosPsi2AmB"), col.centFT0M(), Corr[1], col.qPERCFT0C()[0]);
     registry.fill(HIST("eventQA/hCosPsi2BmC"), col.centFT0M(), Corr[2], col.qPERCFT0C()[0]);
+
+    registry.fill(HIST("eventQA/hCos4PsiAmC"), col.centFT0M(), Corr4[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4PsiAmB"), col.centFT0M(), Corr4[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4PsiBmC"), col.centFT0M(), Corr4[2], col.qPERCFT0C()[0]);
   }
 
-  template </*std::size_t... Idx,*/ typename collision>
-  void fillEP(/*const std::index_sequence<Idx...>&,*/ const collision& col, const std::map<std::string, float>& epMap)
+  template <typename collision>
+  void fillEP(const collision& col, const std::map<std::string, float>& epMap, const std::map<std::string, float>& ep3Map)
   {
-    // static constexpr std::string_view EpList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
-    // (registry.fill(HIST(EpList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[Idx])))), ...);
     registry.fill(HIST("eventQA/hPsi2FT0A"), col.centFT0M(), epMap.at("FT0A"));
     registry.fill(HIST("eventQA/hPsi2FV0A"), col.centFT0M(), epMap.at("FV0A"));
     registry.fill(HIST("eventQA/hPsi2FT0C"), col.centFT0M(), epMap.at("FT0C"));
     registry.fill(HIST("eventQA/hPsi2TPCpos"), col.centFT0M(), epMap.at("TPCpos"));
     registry.fill(HIST("eventQA/hPsi2TPCneg"), col.centFT0M(), epMap.at("TPCneg"));
-  }
-  constexpr std::string_view RemovePrefix(std::string_view str)
-  {
-    constexpr std::string_view Prefix{"hPsi2"};
-    return str.substr(Prefix.size());
-  }
 
+    registry.fill(HIST("eventQA/hPsi3FT0A"), col.centFT0M(), ep3Map.at("FT0A"));
+    registry.fill(HIST("eventQA/hPsi3FT0C"), col.centFT0M(), ep3Map.at("FT0C"));
+  }
   constexpr int detIDN(const DetID id)
   {
     switch (id) {
@@ -1269,14 +1290,14 @@ struct JetSpectraEseTask {
     return -1;
   }
 
+  const int secondHarmonic{2};
   template <DetID id, bool fill, typename Col>
-  std::vector<float> qVecNoESE(Col collision)
+  std::vector<float> qVecNoESE(Col collision, int nmode = 2)
   {
-    // const int nmode{2};
     int detId{detIDN(id)};
-    int detInd{detId * 4 /*+ cfgnTotalSystem * 4 * (nmode - 2)*/};
+    int detInd{detId * 4 + cfgnTotalSystem * 4 * (nmode - 2)};
     if constexpr (fill) {
-      if (collision.qvecAmp()[detInd] > LowFT0Cut) {
+      if (collision.qvecAmp()[detInd] > LowFT0Cut && nmode == secondHarmonic) {
         registry.fill(HIST("eventQA/hQvecUncorV2"), collision.centFT0M(), collision.qvecRe()[detInd], collision.qvecIm()[detInd]);
         registry.fill(HIST("eventQA/hQvecRectrV2"), collision.centFT0M(), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1]);
         registry.fill(HIST("eventQA/hQvecTwistV2"), collision.centFT0M(), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2]);
@@ -1310,6 +1331,24 @@ struct JetSpectraEseTask {
       return false;
     else
       return true;
+  }
+
+  std::shared_ptr<TH1> getRhoPhiFitEvent(int eventIndex)
+  {
+    switch (eventIndex) {
+      case 0:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_0"));
+      case 1:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_1"));
+      case 2:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_2"));
+      case 3:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_3"));
+      case 4:
+        return registry.get<TH1>(HIST("rhoPhiFitEvents/event_4"));
+      default:
+        return nullptr;
+    }
   }
 
   template <bool fillHist, typename Col, typename TTracks, typename Jets>
@@ -1360,7 +1399,7 @@ struct JetSpectraEseTask {
     modulationFit->FixParameter(2, (ep.psi2 < 0) ? RecoDecay::constrainAngle(ep.psi2) : ep.psi2);
     modulationFit->FixParameter(4, (ep.psi3 < 0) ? RecoDecay::constrainAngle(ep.psi3) : ep.psi3);
 
-    hPhiPt->Fit(modulationFit.get(), "Q", "", 0, o2::constants::math::TwoPI);
+    hPhiPt->Fit(modulationFit.get(), "QN", "", 0, o2::constants::math::TwoPI);
 
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hfitPar0"), col.centFT0M(), modulationFit->GetParameter(0));
@@ -1391,6 +1430,56 @@ struct JetSpectraEseTask {
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hPValueCentCDF"), col.centFT0M(), cDF);
       registry.fill(HIST("eventQA/hCentChi2Ndf"), col.centFT0M(), chi2 / (static_cast<float>(nDF)));
+
+      static int numSavedRhoFitEvents{0};
+      if (numSavedRhoFitEvents < NumSavedRhoFitEvents) {
+        auto savedEvent = getRhoPhiFitEvent(numSavedRhoFitEvents);
+        savedEvent->SetBins(hPhiPt->GetNbinsX(), 0., o2::constants::math::TwoPI);
+        for (int bin = 0; bin <= hPhiPt->GetNbinsX() + 1; ++bin) {
+          savedEvent->SetBinContent(bin, hPhiPt->GetBinContent(bin));
+          savedEvent->SetBinError(bin, hPhiPt->GetBinError(bin));
+        }
+        savedEvent->SetEntries(hPhiPt->GetEntries());
+
+        const double rho0 = modulationFit->GetParameter(0);
+        const double v2 = modulationFit->GetParameter(1);
+        const double psi2 = modulationFit->GetParameter(2);
+        const double v3 = modulationFit->GetParameter(3);
+        const double psi3 = modulationFit->GetParameter(4);
+
+        auto rho0Function = std::make_unique<TF1>("rho_0", "pol0", 0., o2::constants::math::TwoPI, TF1::EAddToList::kNo);
+        rho0Function->SetParameter(0, rho0);
+        rho0Function->SetParError(0, modulationFit->GetParError(0));
+        rho0Function->SetParName(0, "rho_0");
+        rho0Function->SetLineStyle(2);
+
+        auto rhoPhiFunction = std::unique_ptr<TF1>(static_cast<TF1*>(modulationFit->Clone("rho_phi")));
+        rhoPhiFunction->SetParNames("rho_0", "v_2", "Psi_2", "v_3", "Psi_3");
+        rhoPhiFunction->SetLineWidth(2);
+        rhoPhiFunction->ResetBit(TF1::kNotDraw);
+
+        auto rhoV2Function = std::make_unique<TF1>("rho_v2", "[0] * (1. + 2. * [1] * std::cos(2. * (x - [2])))", 0., o2::constants::math::TwoPI, TF1::EAddToList::kNo);
+        rhoV2Function->SetParameters(rho0, v2, psi2);
+        rhoV2Function->SetParError(0, modulationFit->GetParError(0));
+        rhoV2Function->SetParError(1, modulationFit->GetParError(1));
+        rhoV2Function->SetParError(2, modulationFit->GetParError(2));
+        rhoV2Function->SetParNames("rho_0", "v_2", "Psi_2");
+        rhoV2Function->SetLineStyle(7);
+
+        auto rhoV3Function = std::make_unique<TF1>("rho_v3", "[0] * (1. + 2. * [1] * std::cos(3. * (x - [2])))", 0., o2::constants::math::TwoPI, TF1::EAddToList::kNo);
+        rhoV3Function->SetParameters(rho0, v3, psi3);
+        rhoV3Function->SetParError(0, modulationFit->GetParError(0));
+        rhoV3Function->SetParError(1, modulationFit->GetParError(3));
+        rhoV3Function->SetParError(2, modulationFit->GetParError(4));
+        rhoV3Function->SetParNames("rho_0", "v_3", "Psi_3");
+        rhoV3Function->SetLineStyle(9);
+
+        savedEvent->GetListOfFunctions()->Add(rho0Function.release());
+        savedEvent->GetListOfFunctions()->Add(rhoPhiFunction.release());
+        savedEvent->GetListOfFunctions()->Add(rhoV2Function.release());
+        savedEvent->GetListOfFunctions()->Add(rhoV3Function.release());
+        ++numSavedRhoFitEvents;
+      }
     }
 
     return modulationFit;
@@ -1436,17 +1525,17 @@ struct JetSpectraEseTask {
     }
     registry.fill(HIST("hCentRhoRandomCone"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
-    randomConePt = 0;
+    float randomConePtRandomTrackDir = 0;
     for (auto const& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, -o2::constants::math::PI);
         float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;
         if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-          randomConePt += track.pt();
+          randomConePtRandomTrackDir += track.pt();
         }
       }
     }
-    registry.fill(HIST("hCentRhoRandomConeRandomTrackDir"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("hCentRhoRandomConeRandomTrackDir"), collision.centFT0M(), randomConePtRandomTrackDir - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     if (jets.size() > 0) {
       float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, -o2::constants::math::PI);
@@ -1502,6 +1591,8 @@ struct JetSpectraEseTask {
         }
       }
     }
+    registry.fill(HIST("h3CentdeltapTRndmConePhi_rhovsphi"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho(), dPhiRC);
+    registry.fill(HIST("h3CentdeltapTRndmConePhi_localrhovsphi"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhiRC);
     registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoOneLeadingJet"), collision.centFT0M(), randomConePtWithoutOneLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhiRC, qPerc[0]);
     registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoTwoLeadingJet"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhiRC, qPerc[0]);
   }
@@ -1622,7 +1713,7 @@ struct JetSpectraEseTask {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
         continue;
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+      if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
         continue;
       }
       auto jetPtBkg = jet.pt() - (collision.rho() * jet.area());

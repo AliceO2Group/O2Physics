@@ -116,6 +116,7 @@ struct QaImpactPar {
   Configurable<int> nCustomMinITShits{"n_customMinITShits", 0, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
   Configurable<bool> customForceITSTPCmatching{"custom_forceITSTPCmatching", false, "Consider or not only ITS-TPC macthed tracks when using custom ITS hitmap"};
   Configurable<float> downsamplingFraction{"downsamplingFraction", 1.1, "Fraction of tracks to be used to fill the output objects"};
+  Configurable<int> eventGeneratorHF{"eventGeneratorHF", -1, "If positive, enable event selection using subGeneratorId information (HF). The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   /// Custom cut selection objects
   TrackSelection selector_ITShitmap;
@@ -201,6 +202,12 @@ struct QaImpactPar {
                  const o2::aod::McCollisions&,
                  o2::aod::BCsWithTimestamps const&)
   {
+    /// SubgeneratorID check for HF MC
+    /// Useful to select MB gap events in HF-dedicated MC productions
+    if (eventGeneratorHF >= 0 && collision.mcCollision().getSubGeneratorId() != eventGeneratorHF) {
+      return;
+    }
+
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     processReco<true, false>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);
@@ -216,6 +223,12 @@ struct QaImpactPar {
                         const o2::aod::McCollisions&,
                         o2::aod::BCsWithTimestamps const&)
   {
+    /// SubgeneratorID check for HF MC
+    /// Useful to select MB gap events in HF-dedicated MC productions
+    if (eventGeneratorHF >= 0 && collision.mcCollision().getSubGeneratorId() != eventGeneratorHF) {
+      return;
+    }
+
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     processReco<true, true>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);

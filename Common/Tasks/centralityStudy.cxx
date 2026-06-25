@@ -253,6 +253,9 @@ struct centralityStudy {
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0M_Collisions", "hFT0M_Collisions", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_Collisions", "hFV0A_Collisions", kTH1D, {axisMultUltraFineFV0A});
+      histos.add("hFT0AOuter_Collisions", "hFT0AOuter_Collisions", kTH1D, {axisMultUltraFineFT0A});
+      histos.add("hFT0MOuterA_Collisions", "hFT0MOuterA_Collisions", kTH1D, {axisMultUltraFineFT0M});
+
       histos.add("hNGlobalTracks", "hNGlobalTracks", kTH1D, {axisMultUltraFineGlobalTracks});
       histos.add("hNMFTTracks", "hNMFTTracks", kTH1D, {axisMultUltraFineMFTTracks});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
@@ -272,6 +275,7 @@ struct centralityStudy {
         // 2d correlation of fit signals
         histos.add("hFT0AVsFT0C", "hFT0AVsFT0C", kTH2F, {axisMultFT0C, axisMultFT0A});
         histos.add("hFV0AVsFT0C", "hFV0AVsFT0C", kTH2F, {axisMultFT0C, axisMultFV0A});
+        histos.add("hFT0AOuterVsFT0C", "hFT0AOuterVsFT0C", kTH2F, {axisMultFT0C, axisMultFT0A});
         histos.add("hFDDAVsFT0C", "hFDDAVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDA});
         histos.add("hFDDCVsFT0C", "hFDDCVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDC});
       }
@@ -514,6 +518,8 @@ struct centralityStudy {
 
       histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
       histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
+      histPointers.insert({histPath + "hFT0AOuter_Collisions", histos.add((histPath + "hFT0AOuter_Collisions").c_str(), "hFT0AOuter_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
+      histPointers.insert({histPath + "hFT0MOuterA_Collisions", histos.add((histPath + "hFT0MOuterA_Collisions").c_str(), "hFT0MOuterA_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
       histPointers.insert({histPath + "hFT0M_Collisions", histos.add((histPath + "hFT0M_Collisions").c_str(), "hFT0M_Collisions", {kTH1D, {{axisMultUltraFineFT0M}}})});
       histPointers.insert({histPath + "hFV0A_Collisions", histos.add((histPath + "hFV0A_Collisions").c_str(), "hFV0A_Collisions", {kTH1D, {{axisMultUltraFineFV0A}}})});
       histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
@@ -548,6 +554,7 @@ struct centralityStudy {
       histPointers.insert({histPath + "hFV0AVsFT0C", histos.add((histPath + "hFV0AVsFT0C").c_str(), "hFV0AVsFT0C", {kTH2F, {{axisMultFT0C, axisMultFV0A}}})});
       histPointers.insert({histPath + "hFDDAVsFT0C", histos.add((histPath + "hFDDAVsFT0C").c_str(), "hFDDAVsFT0C", {kTH2F, {{axisMultFT0C, axisMultFDDA}}})});
       histPointers.insert({histPath + "hFDDCVsFT0C", histos.add((histPath + "hFDDCVsFT0C").c_str(), "hFDDCVsFT0C", {kTH2F, {{axisMultFT0C, axisMultFDDC}}})});
+      histPointers.insert({histPath + "hFT0AOuterVsFT0C", histos.add((histPath + "hFT0AOuterVsFT0C").c_str(), "hFT0AOuterVsFT0C", {kTH2F, {{axisMultFT0C, axisMultFT0A}}})});
     }
 
     if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
@@ -956,17 +963,29 @@ struct centralityStudy {
     if constexpr (requires { collision.has_multBC(); }) {
       if (collision.has_multBC()) {
         auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
+        histos.fill(HIST("hFT0AOuter_Collisions"), multbc.multFT0AOuter() * scale.factorFT0A);
+        histos.fill(HIST("hFT0MOuterA_Collisions"), multbc.multFT0AOuter() + multbc.multFT0C() * scale.factorFT0M);
+        if (studies.do2DPlots) {
+          histos.fill(HIST("hFT0AOuterVsFT0C"), multbc.multFT0C() * scale.factorFT0C, multbc.multFT0AOuter() * scale.factorFT0A);
+        }
+
         const uint64_t bcTimestamp = multbc.timestamp();
         const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
         histos.fill(HIST("hInteractionRate"), interactionRate);
         if (doprocessCollisionsWithCentrality || ccdbSettings.fetchCentralityCalibration) {
           histos.fill(HIST("hInteractionRateVsCentrality"), centFT0C, interactionRate);
-        }
-        if (studies.doRunByRunHistograms) {
-          getHist(TH2, histPath + "hInteractionRateVsCentrality")->Fill(centFT0C, interactionRate);
+          if (studies.doRunByRunHistograms) {
+            getHist(TH2, histPath + "hInteractionRateVsCentrality")->Fill(centFT0C, interactionRate);
+          }
         }
         if (studies.doRunByRunHistograms) {
           getHist(TH1, histPath + "hInteractionRate")->Fill(interactionRate);
+          getHist(TH1, histPath + "hFT0AOuter_Collisions")->Fill(multbc.multFT0AOuter() * scale.factorFT0A);
+          getHist(TH1, histPath + "hFT0MOuterA_Collisions")->Fill(multbc.multFT0AOuter() + multbc.multFT0C() * scale.factorFT0M);
+          if (studies.do2DPlots) {
+            getHist(TH2, histPath + "hFT0AOuterVsFT0C")->Fill(multbc.multFT0C() * scale.factorFT0C, multbc.multFT0AOuter() * scale.factorFT0A);
+          }
+
           if (studies.doTimeStudies) {
             const float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
             getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
