@@ -20,11 +20,11 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
 #include <string>
 #include <type_traits>
