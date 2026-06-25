@@ -1343,6 +1343,8 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
+    Configurable<float> fConfigDileptonTauxyCut{"cfgDileptonTauxyCut", -10000, "Tauxy cut for dileptons used to select the non-prompt Jpsi"};
+
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -1974,7 +1976,10 @@ struct AnalysisSameEventPairing {
           if (fConfigOptions.useEfficiencyWeighting) {
             VarManager::FillEfficiency();
           }
-
+          // Fill the pair only if it passes the tau-xy cut
+          if (VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass] < fConfigDileptonTauxyCut) {
+            continue;
+          }
           dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
                          VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
                          t1.sign() + t2.sign(), twoTrackFilter, 0);
