@@ -379,6 +379,11 @@ struct V0ptHadPiKaProt {
     histos.add("h2DnsigmaPionTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (pion)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (kaon)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (proton)", kTH2F, {ptAxis, nSigmaAxis});
+
+    histos.add("h2DnsigmaPionTpcVsTofInterimCut", "3D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonTpcVsTofInterimCut", "3D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonTpcVsTofInterimCut", "3D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+
     histos.add("h2DnsigmaPionTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
@@ -782,20 +787,11 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
-      int flagg1 = 0;
-      if (candidate.tpcNSigmaPi() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaKa() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaPr() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaEl() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
 
-      if (!(flagg1 > 1) && !candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC) {
+      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC) {
         flag = 1;
       }
-      if (!(flagg1 > 1) && candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF) {
+      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF) {
         flag = 1;
       }
     }
@@ -826,6 +822,8 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
+          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPr(), candidate.tofNSigmaPr());
+
           if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -860,20 +858,10 @@ struct V0ptHadPiKaProt {
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
 
-      int flagg1 = 0;
-      if (candidate.tpcNSigmaPi() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaKa() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaPr() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaEl() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-
-      if (!(flagg1 > 1) && !candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC) {
+      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC) {
         flag = 1;
       }
-      if (!(flagg1 > 1) && candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOF) {
+      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOF) {
         flag = 1;
       }
     }
@@ -904,6 +892,7 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
+          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
           if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -938,20 +927,10 @@ struct V0ptHadPiKaProt {
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
 
-      int flagg1 = 0;
-      if (candidate.tpcNSigmaPi() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaKa() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaPr() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-      if (candidate.tpcNSigmaEl() < cfgnSigmaOtherParticles)
-        flagg1 += 1;
-
-      if (!(flagg1 > 1) && !candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC) {
+      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC) {
         flag = 1;
       }
-      if (!(flagg1 > 1) && candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOF) {
+      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOF) {
         flag = 1;
       }
     }
@@ -982,6 +961,7 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
+          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
           if (combNSigmaKa < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
