@@ -469,8 +469,6 @@ struct FlowSP {
         histos.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
         histos.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
         histos.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-        histos.add<TProfile3D>("shift/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
-        histos.add<TProfile3D>("shift/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
       }
 
       if (cfg.cFillQABefore) {
@@ -572,6 +570,8 @@ struct FlowSP {
         registry.add<TProfile>("QQCorrelations/qAXqCY", "", kTProfile, {axisCent});
         registry.add<TProfile>("QQCorrelations/qAYqCX", "", kTProfile, {axisCent});
         registry.add<TProfile>("QQCorrelations/qAXYqCXY", "", kTProfile, {axisCent});
+        registry.add<TProfile3D>("shift/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
+        registry.add<TProfile3D>("shift/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
 
         if (cfg.cFillGeneralV1Histos) {
           // track properties per centrality and per eta, pt bin
@@ -1436,10 +1436,10 @@ struct FlowSP {
     registry.fill(HIST("QQCorrelations/qAqCX"), spm.centrality, spm.qxA * spm.qxC);
     registry.fill(HIST("QQCorrelations/qAqCY"), spm.centrality, spm.qyA * spm.qyC);
     for (int ishift = 1; ishift <= nshift; ishift++) {
-      histos.fill(HIST("shift/ShiftZDCC"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiC));
-      histos.fill(HIST("shift/ShiftZDCC"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiC));
-      histos.fill(HIST("shift/ShiftZDCA"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiA));
-      histos.fill(HIST("shift/ShiftZDCA"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiA));
+      registry.fill(HIST("shift/ShiftZDCC"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiC));
+      registry.fill(HIST("shift/ShiftZDCC"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiC));
+      registry.fill(HIST("shift/ShiftZDCA"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiA));
+      registry.fill(HIST("shift/ShiftZDCA"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiA));
     }
 
     if (cfg.cFillEventQA) {
