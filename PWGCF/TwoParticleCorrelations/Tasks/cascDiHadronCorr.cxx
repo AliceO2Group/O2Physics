@@ -1609,7 +1609,7 @@ struct CascDiHadronCorr {
     // Primaries
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
-        if ((cfgOutputXi && getSpecies(mcParticle.pdgCode()) == 1) || (cfgOutputOmega && getSpecies(mcParticle.pdgCode()) == 2)) {
+        if ((cfgOutputXi && getSpecies(mcParticle.pdgCode()) == getSpecies(PDG_t::kXiMinus)) || (cfgOutputOmega && getSpecies(mcParticle.pdgCode()) == getSpecies(PDG_t::kOmegaMinus))) {
           registry.fill(HIST("MCEffeventcount"), 1.5);
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
         }
