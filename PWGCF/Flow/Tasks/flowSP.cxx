@@ -706,7 +706,6 @@ struct FlowSP {
       int y2024 = 2024;
       std::array<int, 3> nSigma = {1, 2, 3};
 
-
       if (cfg.cUsePredeFinedSigma) {
         if (cfg.cUsePredeFinedSigmaYear == y2023) {
           if (cfg.cUsePredeFinedSigmaNsigma == nSigma[0]) {
@@ -1442,7 +1441,6 @@ struct FlowSP {
       histos.fill(HIST("shift/ShiftZDCA"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiA));
       histos.fill(HIST("shift/ShiftZDCA"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiA));
     }
-
 
     if (cfg.cFillEventQA) {
       histos.fill(HIST("QA/hCentFull"), spm.centrality, 1);
