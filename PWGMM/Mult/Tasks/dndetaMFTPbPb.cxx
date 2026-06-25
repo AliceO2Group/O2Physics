@@ -4643,6 +4643,7 @@ struct DndetaMFTPbPb {
         if (!collision.has_mcCollision()) {
           continue;
         }
+
         int64_t recCollId = collision.globalIndex();
         auto itMC = mapMcCollIdPerRecColl.find(recCollId);
         if (itMC == mapMcCollIdPerRecColl.end()) {
