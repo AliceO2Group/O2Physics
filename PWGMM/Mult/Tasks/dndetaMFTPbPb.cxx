@@ -358,6 +358,7 @@ struct DndetaMFTPbPb {
     Configurable<bool> cfgUseTrackSel{"cfgUseTrackSel", false, "Flag to apply track selection"};
     Configurable<bool> cfgUseParticleSel{"cfgUseParticleSel", false, "Flag to apply particle selection"};
     Configurable<bool> cfgUsePrimaries{"cfgUsePrimaries", false, "Select primary particles"};
+    Configurable<bool> cfgUseSecondaries{"cfgUseSecondaries", false, "Select secondary particles"};
     Configurable<bool> cfgRemoveTrivialAssoc{"cfgRemoveTrivialAssoc", false, "Skip trivial associations"};
     Configurable<bool> cfgRemoveAmbiguousTracks{"cfgRemoveAmbiguousTracks", false, "Remove ambiguous tracks"};
     Configurable<bool> cfgRemoveOrphanTracks{"cfgRemoveOrphanTracks", true, "Remove orphan tracks"};
@@ -1191,19 +1192,25 @@ struct DndetaMFTPbPb {
 
       registry.add("ReAssocMC/hNReAssocRecoColls", "Number of times generated collisions are reconstructed; N; Counts", HistType::kTH1F, {{10, -0.5, 9.5}});
 
-      registry.add("ReAssocMC/hReAssocMCEventStatus", ";status", {HistType::kTH1F, {{static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus), -0.5, +static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus) - 0.5}}});
+      registry.add({"ReAssocMC/EvtGenRecReassoc", ";status;centrality;occupancy", {HistType::kTHnSparseF, {{3, 0.5, 3.5}, centralityAxis, occupancyAxis}}});
+      auto heff = registry.get<THnSparse>(HIST("ReAssocMC/EvtGenRecReassoc"));
+      heff->GetAxis(0)->SetBinLabel(1, "All generated");
+      heff->GetAxis(0)->SetBinLabel(2, "All reconstructed");
+      heff->GetAxis(0)->SetBinLabel(3, "Selected reconstructed");
+
+      registry.add({"ReAssocMC/hReAssocMCEventStatus", ";status;centrality;occupancy", {HistType::kTHnSparseF, {{static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus), -0.5, +static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus) - 0.5}, centralityAxis, occupancyAxis}}});
       std::string labelReAssocMCEventStatus[CevtReAsReAssocMCEventStatus];
       labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll)] = "All";
       labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected)] = "Selected";
       labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl)] = "Has Mc Coll";
       labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved)] = "Split Vtx Removed";
       labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC)] = "Vtx-z cut MC";
-      registry.get<TH1>(HIST("ReAssocMC/hReAssocMCEventStatus"))->SetMinimum(0.1);
+      // registry.get<THnSparse>(HIST("ReAssocMC/hReAssocMCEventStatus"))->SetMinimum(0.1);
       for (int iBin = 0; iBin < static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus); iBin++) {
-        registry.get<TH1>(HIST("ReAssocMC/hReAssocMCEventStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelReAssocMCEventStatus[iBin].data());
+        registry.get<THnSparse>(HIST("ReAssocMC/hReAssocMCEventStatus"))->GetAxis(0)->SetBinLabel(iBin + 1, labelReAssocMCEventStatus[iBin].data());
       }
 
-      registry.add("ReAssocMC/hReAssocMCTrackStatus", ";status", {HistType::kTH1F, {{static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatusCheck), -0.5, +static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatusCheck) - 0.5}}});
+      registry.add({"ReAssocMC/hReAssocMCTrackStatus", ";status;centrality;occupancy", {HistType::kTHnSparseF, {{static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatusCheck), -0.5, +static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatusCheck) - 0.5}, centralityAxis, occupancyAxis}}});
       std::string labelReAssocMCTrackStatus[CreAssocMCTrackStatus];
       labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkReAssocAll)] = "All";
       labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkBestSel)] = "Best sel";
@@ -1238,68 +1245,68 @@ struct DndetaMFTPbPb {
       labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocBad)] = "Assoc bad";
       labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompTrue)] = "Assoc bad Comp True";
       labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompFalse)] = "Assoc bad Comp False";
-      registry.get<TH1>(HIST("ReAssocMC/hReAssocMCTrackStatus"))->SetMinimum(0.1);
+      // registry.get<THnSparse>(HIST("ReAssocMC/hReAssocMCTrackStatus"))->SetMinimum(0.1);
       for (int iBin = 0; iBin < static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatusCheck); iBin++) {
-        registry.get<TH1>(HIST("ReAssocMC/hReAssocMCTrackStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelReAssocMCTrackStatus[iBin].data());
+        registry.get<THnSparse>(HIST("ReAssocMC/hReAssocMCTrackStatus"))->GetAxis(0)->SetBinLabel(iBin + 1, labelReAssocMCTrackStatus[iBin].data());
       }
 
       // Vertex resolution
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)] = registry.add<THnSparse>("ReAssocMC/hVtxResIdGt0", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbID", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbID", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbIDGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbIDBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDExtra", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDExtraGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDExtraBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssoc)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssoc)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)] = registry.add<THnSparse>("ReAssocMC/hVtxResIdGt0", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbID", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbID", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbIDGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbIDBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDExtra", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDExtraGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbIDExtraBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssoc)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssoc)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis, centralityAxis, occupancyAxis});
 
       // DCA
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)] = registry.add<THnSparse>("ReAssocMC/hDCAIdGt0", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbAllE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbGoodE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbBadE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbIDExtra", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbIDExtraGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbIDExtraBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssoc)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssoc)] = registry.add<THnSparse>("ReAssocMC/hDCAAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGood)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)] = registry.add<THnSparse>("ReAssocMC/hDCAIdGt0", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbAllE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbGoodE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbBadE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbIDExtra", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbIDExtraGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbIDExtraBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssoc)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssoc)] = registry.add<THnSparse>("ReAssocMC/hDCAAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGood)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis});
     }
 
     if (doprocessEfficiencyInclusive) {
@@ -1446,33 +1453,33 @@ struct DndetaMFTPbPb {
 
       registry.add({"AmbTracks/hVtxzMCrec", " ; Z_{vtx} (cm)", {HistType::kTH1F, {zAxis}}});
       registry.add({"AmbTracks/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
-      registry.add({"AmbTracks/DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZ", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
       registry.add({"AmbTracks/DCAXYBest", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
-      registry.add({"AmbTracks/DCAZBest", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZBest", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
       registry.add({"AmbTracks/DCAXYBestPrim", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
-      registry.add({"AmbTracks/DCAZBestPrim", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZBestPrim", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
       registry.add({"AmbTracks/DCAXYBestTrue", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
-      registry.add({"AmbTracks/DCAZBestTrue", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZBestTrue", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
       registry.add({"AmbTracks/DCAXYBestFalse", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
-      registry.add({"AmbTracks/DCAZBestFalse", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZBestFalse", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
       registry.add({"AmbTracks/DCAXYBestTrueOrigAssoc", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
       registry.add({"AmbTracks/DCAXYBestTrueOrigReAssoc", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
-      registry.add({"AmbTracks/DCAZBestTrueOrigAssoc", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
-      registry.add({"AmbTracks/DCAZBestTrueOrigReAssoc", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZBestTrueOrigAssoc", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
+      registry.add({"AmbTracks/DCAZBestTrueOrigReAssoc", " ; DCA_{Z} (cm); centrality; occupancy", {HistType::kTH1F, {dcazAxis}}});
 
-      registry.add({"AmbTracks/Centrality/THnDCAxyBestGen", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
-      registry.add({"AmbTracks/Centrality/THnDCAxyBestGenPrim", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
-      registry.add({"AmbTracks/Centrality/THnDCAxyBestTrue", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
-      registry.add({"AmbTracks/Centrality/THnDCAxyBestFalse", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
-      registry.add({"AmbTracks/Centrality/THnDCAxyBestTrueOrigAssoc", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
-      registry.add({"AmbTracks/Centrality/THnDCAxyBestTrueOrigReAssoc", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+      registry.add({"AmbTracks/Centrality/THnDCAxyBestGen", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+      registry.add({"AmbTracks/Centrality/THnDCAxyBestGenPrim", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+      registry.add({"AmbTracks/Centrality/THnDCAxyBestTrue", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+      registry.add({"AmbTracks/Centrality/THnDCAxyBestFalse", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+      registry.add({"AmbTracks/Centrality/THnDCAxyBestTrueOrigAssoc", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+      registry.add({"AmbTracks/Centrality/THnDCAxyBestTrueOrigReAssoc", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
 
-      registry.add({"AmbTracks/BestGenDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
-      registry.add({"AmbTracks/BestPrimDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
-      registry.add({"AmbTracks/BestTrueDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
-      registry.add({"AmbTracks/BestFalseDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
-      registry.add({"AmbTracks/BestTrueOrigReAssocDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
-      registry.add({"AmbTracks/BestTrueOrigAssocDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestGenDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestPrimDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestTrueDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestFalseDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestTrueOrigReAssocDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestTrueOrigAssocDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
     }
 
     if (doprocessEventAndSignalLossCentFT0C) {
@@ -1737,6 +1744,31 @@ struct DndetaMFTPbPb {
     T stdev = std::sqrt(sqSum / vec.size());
 
     return stdev;
+  }
+
+  /// \brief check good rec vertex of corresponding mc coll is available in compatible rec coll
+  template <typename AT>
+  bool isRecInCompColl(AT atrack)
+  {
+    auto const& ids = atrack.compatibleCollIds();
+    bool isInCoColl = false;
+    if (atrack.ambDegree() != 0) {
+      const int mcCollId = atrack.mcParticle().mcCollisionId();
+      if (!ids.empty()) {
+        for (auto const& id : ids) {
+          auto itMcCollId = mapMcCollIdPerRecColl.find(id);
+          if (itMcCollId != mapMcCollIdPerRecColl.end()) {
+            if (itMcCollId->second == mcCollId) {
+              isInCoColl = true;
+              return isInCoColl;
+            }
+          } else {
+            return isInCoColl;
+          }
+        }
+      }
+    }
+    return isInCoColl;
   }
 
   void initCCDB(ExtBCs::iterator const& bc)
@@ -2124,6 +2156,9 @@ struct DndetaMFTPbPb {
   bool isParticleSelected(P const& particle)
   {
     if (gConf.cfgUsePrimaries && !particle.isPhysicalPrimary()) {
+      return false;
+    }
+    if (!gConf.cfgUsePrimaries && (gConf.cfgUseSecondaries && particle.isPhysicalPrimary())) {
       return false;
     }
     if (particle.eta() < trackCuts.minEta || particle.eta() > trackCuts.maxEta) {
@@ -4530,8 +4565,8 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processAssocMC, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
-  template <typename B>
-  void processReAssocMC(CollisionsWithMCLabels const& collisions,
+  template <typename C, typename B>
+  void processReAssocMC(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
                         B const& besttracks,
                         FiltMcMftTracksWColls const& /*tracks*/,
                         aod::McCollisions const& /*mcCollisions*/,
@@ -4540,6 +4575,33 @@ struct DndetaMFTPbPb {
   {
     const auto& nRecoColls = collisions.size();
     registry.fill(HIST("ReAssocMC/hNReAssocRecoColls"), 1.f, nRecoColls);
+
+    float cGen = -1;
+    if constexpr (has_reco_cent<C>) {
+      float crecMin = 105.f;
+      for (const auto& collision : collisions) {
+        if (isGoodEvent<false>(collision)) {
+          float c = getRecoCent(collision);
+          if (c < crecMin) {
+            crecMin = c;
+          }
+        }
+      }
+      if (cGen < 0)
+        cGen = crecMin;
+    }
+    float occGen = -1.;
+    for (const auto& collision : collisions) {
+      if (isGoodEvent<false>(collision)) {
+        float o = getOccupancy(collision, eventCuts.occupancyEstimator);
+        if (o > occGen) {
+          occGen = o;
+        }
+      }
+    }
+
+    registry.fill(HIST("ReAssocMC/EvtGenRecReassoc"), 1., cGen, occGen);
+
     if (nRecoColls > CintZero) {
       mapVtxXrec.clear();
       mapVtxYrec.clear();
@@ -4565,14 +4627,23 @@ struct DndetaMFTPbPb {
 
       int nNoMC{0};
       for (const auto& collision : collisions) {
-        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll));
+        auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
+        float crec = getRecoCent(collision);
+
+        registry.fill(HIST("ReAssocMC/EvtGenRecReassoc"), 2., crec, occ);
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll), crec, occ);
+
         if (!isGoodEvent<true>(collision)) {
           continue;
         }
-        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected));
+
+        registry.fill(HIST("ReAssocMC/EvtGenRecReassoc"), 3., crec, occ);
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected), crec, occ);
+
         if (!collision.has_mcCollision()) {
           continue;
         }
+
         int64_t recCollId = collision.globalIndex();
         auto itMC = mapMcCollIdPerRecColl.find(recCollId);
         if (itMC == mapMcCollIdPerRecColl.end()) {
@@ -4580,49 +4651,51 @@ struct DndetaMFTPbPb {
           continue;
         }
 
-        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl));
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl), crec, occ);
         auto mcColl = collision.template mcCollision_as<aod::McCollisions>();
         if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
           continue;
         }
-        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved));
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved), crec, occ);
         if (eventCuts.useZVtxCutMC && (std::abs(mcColl.posZ()) >= eventCuts.maxZvtx)) {
           continue;
         }
-        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC));
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC), crec, occ);
 
         for (auto const& atrack : besttracks) {
-          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReAssocAll));
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReAssocAll), crec, occ);
           if (!isBestTrackSelected<true>(atrack)) {
             continue;
           }
-          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkBestSel));
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkBestSel), crec, occ);
 
           const float bestDcaZ = getDCAz(atrack);
           auto itrack = atrack.template mfttrack_as<FiltMcMftTracksWColls>();
           if (!isTrackSelected<true>(itrack)) {
             continue;
           }
-          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkSel));
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkSel), crec, occ);
           if (!itrack.has_collision()) {
             continue;
           }
-          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkHasColl));
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkHasColl), crec, occ);
           if (gConf.cfgRemoveReassigned) {
             if (itrack.collisionId() != atrack.bestCollisionId()) {
               continue;
             }
           }
-          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReassignedRemoved));
-          if (gConf.cfgRemoveOrphanTracks && atrack.compatibleCollIds().empty()) {
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReassignedRemoved), crec, occ);
+
+          auto ids = atrack.compatibleCollIds();
+          if (gConf.cfgRemoveOrphanTracks && ids.empty()) {
             continue;
           }
           if (gConf.cfgRemoveTrivialAssoc) {
-            if (atrack.compatibleCollIds().empty() || (atrack.compatibleCollIds().size() == 1 && itrack.collisionId() == atrack.compatibleCollIds()[0])) {
+            if (ids.empty() || (ids.size() == 1 && itrack.collisionId() == ids[0])) {
               continue;
             }
           }
-          if (gConf.cfgRemoveAmbiguousTracks && (atrack.compatibleCollIds().size() != 1)) {
+          if (gConf.cfgRemoveAmbiguousTracks && (ids.size() != 1)) {
             continue;
           }
           if (itrack.collisionId() >= 0 && itrack.has_mcParticle() && itrack.mcMask() == 0) {
@@ -4634,34 +4707,40 @@ struct DndetaMFTPbPb {
             if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
               continue;
             }
-            auto collision = itrack.template collision_as<CollisionsWithMCLabels>();
+            // auto collision = itrack.template collision_as<aod::McCollisionLabels>();
 
             float deltaX = -999.f;
             float deltaY = -999.f;
             float deltaZ = -999.f;
 
-            if (mapVtxXrec.find(atrack.bestCollisionId()) == mapVtxXrec.end()) {
-              continue;
-            }
-            if (mapVtxYrec.find(atrack.bestCollisionId()) == mapVtxYrec.end()) {
-              continue;
-            }
-            if (mapVtxZrec.find(atrack.bestCollisionId()) == mapVtxZrec.end()) {
-              continue;
-            }
-            if (mapMcCollIdPerRecColl.find(atrack.bestCollisionId()) == mapMcCollIdPerRecColl.end()) {
-              continue;
-            }
-            const float vtxXbest = mapVtxXrec.find(atrack.bestCollisionId())->second;
-            const float vtxYbest = mapVtxYrec.find(atrack.bestCollisionId())->second;
-            const float vtxZbest = mapVtxZrec.find(atrack.bestCollisionId())->second;
-            // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
-            const float mcCollIdRec = mapMcCollIdPerRecColl.find(atrack.bestCollisionId())->second;
-            // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - bestMCCol: {}", mcCollIdRec, bestMCCol);
-
             auto vtxXtruth = atrack.mcParticle().mcCollision().posX();
             auto vtxYtruth = atrack.mcParticle().mcCollision().posY();
             auto vtxZtruth = atrack.mcParticle().mcCollision().posZ();
+
+            const int bestRecColl = atrack.bestCollisionId();
+            auto itMapVtxXrec = mapVtxXrec.find(bestRecColl);
+            auto itMapVtxYrec = mapVtxYrec.find(bestRecColl);
+            auto itMapVtxZrec = mapVtxZrec.find(bestRecColl);
+            auto itMapMcCollIdPerRecColl = mapMcCollIdPerRecColl.find(bestRecColl);
+
+            if (itMapVtxXrec == mapVtxXrec.end()) {
+              continue;
+            }
+            if (itMapVtxYrec == mapVtxYrec.end()) {
+              continue;
+            }
+            if (itMapVtxZrec == mapVtxZrec.end()) {
+              continue;
+            }
+            if (itMapMcCollIdPerRecColl == mapMcCollIdPerRecColl.end()) {
+              continue;
+            }
+            const float vtxXbest = itMapVtxXrec->second;
+            const float vtxYbest = itMapVtxYrec->second;
+            const float vtxZbest = itMapVtxZrec->second;
+            // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
+            const float mcCollIdRec = itMapMcCollIdPerRecColl->second;
+            // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - bestMCCol: {}", mcCollIdRec, bestMCCol);
 
             deltaX = vtxXbest - vtxXtruth;
             deltaY = vtxYbest - vtxYtruth;
@@ -4672,145 +4751,128 @@ struct DndetaMFTPbPb {
             const auto dcaZtruth(particle.vz() - particle.mcCollision().posZ());
             auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);
 
-            // check good rec vertex of corresponding mc coll is available in compatible rec coll
-            auto const& ids = atrack.compatibleCollIds();
-            bool isInCoColl = false;
-            if (atrack.ambDegree() != 0) {
-              const int mcCollId = atrack.mcParticle().mcCollisionId();
-              if (!ids.empty()) {
-                for (auto const& id : ids) {
-                  auto itMcCollId = mapMcCollIdPerRecColl.find(id);
-                  if (itMcCollId != mapMcCollIdPerRecColl.end()) {
-                    if (itMcCollId->second == mcCollId) {
-                      isInCoColl = true;
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-            registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkHasMcPart));
+            registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkHasMcPart), crec, occ);
 
             if (ids.size() > 0) {
-              registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkIdGt0));
-              hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-              hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+              registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkIdGt0), crec, occ);
+              hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+              hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
               if (ids.size() == 1) {
-                registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmb));
-                hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmb), crec, occ);
+                hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmb)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                 if (collision.mcCollisionId() == particle.mcCollisionId()) {
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbGood));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbGood), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                 } else {
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbBad));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbBad), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                 }
                 if (itrack.collisionId() == ids[0]) { // non ambiguous
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbID));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbID), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbID)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                   if (collision.mcCollisionId() == particle.mcCollisionId()) {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDGood));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDGood), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                   } else {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDBad));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDBad), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                   }
                 } else if (itrack.collisionId() != ids[0]) { // ambiguous extra
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbID));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbID), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbID)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                   if (collision.mcCollisionId() == particle.mcCollisionId()) {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbIDGood));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbIDGood), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDGood)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                   } else {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbIDBad));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbIDBad), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbIDBad)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                   }
                 } else { // non ambiguous (extra)
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDExtra));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDExtra), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtra)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                   if (collision.mcCollisionId() == particle.mcCollisionId()) {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDExtraGood));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDExtraGood), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraGood)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                   } else {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDExtraBad));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbIDExtraBad), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbIDExtraBad)]->Fill(itrack.pt(), itrack.eta(), 0., 0., dcaXYtruth, dcaZtruth, crec, occ);
                   }
                 }
               } else { // ambiguous
                 if (!itrack.has_collision()) {
                   continue;
                 } else if (itrack.collisionId() != atrack.bestCollisionId()) { // re-associated
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssoc));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssoc)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssoc)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssoc), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssoc)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssoc)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                   if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) { // good coll
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGood));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
-                    if (isInCoColl) { // coll vertex is among compatible colls
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompTrue));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGood), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
+                    if (isRecInCompColl(atrack)) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompTrue), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     } else {
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompFalse));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompFalse), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     }
                   } else {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBad));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
-                    if (isInCoColl) { // coll vertex is among compatible colls
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompTrue));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBad), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
+                    if (isRecInCompColl(atrack)) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompTrue), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     } else {
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompFalse));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompFalse), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     }
                   }
                 } else { // associated
-                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssoc));
-                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssoc)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssoc)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssoc), crec, occ);
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssoc)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssoc)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                   if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) { // good coll
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGood));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGood)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
-                    if (isInCoColl) { // coll vertex is among compatible colls
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompTrue));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGood), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGood)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGood)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
+                    if (isRecInCompColl(atrack)) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompTrue), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     } else {
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompFalse));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompFalse), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     }
                   } else {
-                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBad));
-                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBad)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
-                    if (isInCoColl) { // coll vertex is among compatible colls
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompTrue));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBad), crec, occ);
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBad)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
+                    if (isRecInCompColl(atrack)) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompTrue), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     } else {
-                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompFalse));
-                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth);
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompFalse), crec, occ);
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ, crec, occ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)]->Fill(itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, dcaXYtruth, dcaZtruth, crec, occ);
                     }
                   }
                 }
@@ -4827,23 +4889,23 @@ struct DndetaMFTPbPb {
     }
   }
 
-  void processReAssoc2dMC(CollisionsWithMCLabels const& collisions,
+  void processReAssoc2dMC(soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
                           BestTracks2dWCollsMC const& besttracks,
                           FiltMcMftTracksWColls const& tracks,
                           aod::McCollisions const& mcCollisions,
                           aod::McParticles const& particles)
   {
-    processReAssocMC<BestTracks2dWCollsMC>(collisions, besttracks, tracks, mcCollisions, particles);
+    processReAssocMC<CollsCentFT0C, BestTracks2dWCollsMC>(collisions, besttracks, tracks, mcCollisions, particles);
   }
   PROCESS_SWITCH(DndetaMFTPbPb, processReAssoc2dMC, "Process re-association information based on BestCollisionsFwd (2D) table", false);
 
-  void processReAssoc3dMC(CollisionsWithMCLabels const& collisions,
+  void processReAssoc3dMC(soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
                           BestTracks3dWCollsMC const& besttracks,
                           FiltMcMftTracksWColls const& tracks,
                           aod::McCollisions const& mcCollisions,
                           aod::McParticles const& particles)
   {
-    processReAssocMC<BestTracks3dWCollsMC>(collisions, besttracks, tracks, mcCollisions, particles);
+    processReAssocMC<CollsCentFT0C, BestTracks3dWCollsMC>(collisions, besttracks, tracks, mcCollisions, particles);
   }
   PROCESS_SWITCH(DndetaMFTPbPb, processReAssoc3dMC, "Process re-association information based on BestCollisionsFwd3d (3D) table", true);
 
