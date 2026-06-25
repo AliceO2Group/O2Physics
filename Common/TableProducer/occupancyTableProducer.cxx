@@ -794,7 +794,7 @@ struct OccupancyTableProducer {
 
         auto& vecOccPrimUnfm80 = occPrimUnfm80[i];
         float meanOccPrimUnfm80 = TMath::Mean(vecOccPrimUnfm80.size(), vecOccPrimUnfm80.data());
-        //normalizeVector(vecOccPrimUnfm80, meanOccPrimUnfm80 / meanOccPrimUnfm80);
+        // normalizeVector(vecOccPrimUnfm80, meanOccPrimUnfm80 / meanOccPrimUnfm80);
 
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyOccPrim || processMode == kProcessOnlyOccT0V0Prim || processMode == kProcessOnlyOccFDDT0V0Prim || processMode == kProcessOnlyOccNtrackDet || processMode == kProcessOnlyOccMultExtra) {
           if constexpr (tableMode == fillOccTable) {
@@ -1946,20 +1946,19 @@ struct TrackMeanOccTableProducer {
         if (doAmbgUpdate) { // sKipping ambiguous tracks for now, will be updated in future
           continue;
         }
-        if (doCollisionUpdate || doAmbgUpdate) { // collision.globalIndex() != oldCollisionIndex){ //don't update if info is same as old collision
+        if (doCollisionUpdate) { // collision.globalIndex() != oldCollisionIndex){ //don't update if info is same as old collision
           if (doCollisionUpdate) {
             oldCollisionIndex = collision.globalIndex();
             bc = collision.template bc_as<B>();
           }
-          if (doAmbgUpdate) {
+          // if (doAmbgUpdate) {
             // to be updated later
             //  bc = collisions.iteratorAt(2).bc_as<aod::BCsWithTimestamps>();
             //  bc = ambgTracks.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-          }
+          // }
           // LOG(info)<<" What happens in the case when the collision id is = -1 and it tries to obtain bc"
           getTimingInfo(bc, lastRun, nBCsPerTF, bcSOR, time, tfIdThis, bcInTF);
         }
-
 
         if (tfIdThis != oldTFid) {
           oldTFid = tfIdThis;
