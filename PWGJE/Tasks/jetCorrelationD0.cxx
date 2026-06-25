@@ -96,7 +96,7 @@ DECLARE_SOA_TABLE(D0Tables, "AOD", "D0TABLE",
 
 DECLARE_SOA_TABLE(D0McDTables, "AOD", "D0MCDTABLE",
                   o2::soa::Index<>,
-                  collisionInfo::CollisionTableId,
+                  collisionInfo::McCollisionTableId,
                   d0Info::D0PromptBDT,
                   d0Info::D0NonPromptBDT,
                   d0Info::D0BkgBDT,
@@ -121,6 +121,7 @@ namespace jetInfo
 {
 // D0 tables
 DECLARE_SOA_INDEX_COLUMN(D0Table, d0Table);
+DECLARE_SOA_INDEX_COLUMN(D0McDTable, d0McDTable);
 DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0McPTable);
 // Jet
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
@@ -138,6 +139,15 @@ DECLARE_SOA_TABLE_STAGED(JetTables, "JETTABLE",
                          o2::soa::Index<>,
                          collisionInfo::CollisionTableId,
                          jetInfo::D0TableId,
+                         jetInfo::JetPt,
+                         jetInfo::JetEta,
+                         jetInfo::JetPhi,
+                         jetInfo::D0JetDeltaPhi);
+
+DECLARE_SOA_TABLE_STAGED(JetMcDTables, "JETMCDTABLE",
+                         o2::soa::Index<>,
+                         collisionInfo::CollisionTableId,
+                         jetInfo::D0McDTableId,
                          jetInfo::JetPt,
                          jetInfo::JetEta,
                          jetInfo::JetPhi,
@@ -175,13 +185,14 @@ struct JetCorrelationD0 {
   Produces<aod::D0McDTables> tableD0McDetector;
   Produces<aod::D0McPTables> tableD0McParticle;
   Produces<aod::JetTables> tableJet;
+  Produces<aod::JetMcDTables> tableJetMcDetector;
   Produces<aod::JetMcPTables> tableJetMcParticle;
   Produces<aod::JetMatchedTables> tableJetMatched;
 
   // Configurables
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "decide to run over MB gap events or not"};
-  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", false, "decide to apply RCT selections"};
   Configurable<float> jetPtCutMin{"jetPtCutMin", 5.0, "minimum value of jet pt"};
   Configurable<float> d0PtCutMin{"d0PtCutMin", 1.0, "minimum value of d0 pt"};
   Configurable<float> jetMcPtCutMin{"jetMcPtCutMin", 3.0, "minimum value of jet pt particle level"};
@@ -366,12 +377,12 @@ struct JetCorrelationD0 {
           continue;
         }
         fillJetHistograms(jet, dPhi);
-        tableJet(tableCollision.lastIndex(),
-                 tableD0McDetector.lastIndex(),
-                 jet.pt(),
-                 jet.eta(),
-                 jet.phi(),
-                 dPhi);
+        tableJetMcDetector(tableCollision.lastIndex(),
+                           tableD0McDetector.lastIndex(),
+                           jet.pt(),
+                           jet.eta(),
+                           jet.phi(),
+                           dPhi);
       }
     }
   }
