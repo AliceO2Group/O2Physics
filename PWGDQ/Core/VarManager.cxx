@@ -916,7 +916,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzNPeaksTrimmed2] = "";
   fgVariableNames[kDCAzNPeaksTrimmed3] = "Number of peaks in binned DCAz distribution (trimmed 3)";
   fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
-  fgVariableNames[kInteractionRate] = "ZNC hadronic interaction rate";
+  fgVariableNames[kInteractionRate] = "Interaction rate";
   fgVariableUnits[kInteractionRate] = "kHz";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
