@@ -68,7 +68,7 @@ struct ZdcExtraTableProducer {
   Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
   Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", false, "Event selection: is vertex ITSTPC"};
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", false, "Event selection: is good ITS layers all"};
-  
+
   // Output settings
   Configurable<float> calibrationDownscaling{"calibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
   Configurable<bool> saveQaHistos{"saveQaHistos", false, "Flag to save QA histograms"};
