@@ -217,7 +217,6 @@ struct PiKpRAA {
   Configurable<bool> isCentSel{"isCentSel", true, "Centrality selection?"};
   Configurable<bool> selHasBC{"selHasBC", true, "Has BC?"};
   Configurable<bool> selHasFT0{"selHasFT0", true, "Has FT0?"};
-  Configurable<bool> isT0Ccent{"isT0Ccent", true, "Use T0C-based centrality?"};
   Configurable<std::string> centralitySelector{"centralitySelector", "FT0C", "which centrality selector?"};
 
   Configurable<bool> useSel8{"useSel8", false, "Use sel8?"};
@@ -640,7 +639,6 @@ struct PiKpRAA {
     const uint64_t timeStamp{foundBC.timestamp()};
     const int magField{getMagneticField(timeStamp)};
     const double nPV{collision.multNTracksPVeta1() / 1.};
-    // const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
     float centrality{-999.0};
     if (centralitySelector.value == "FT0C")
       centrality = collision.centFT0C();
@@ -1232,7 +1230,6 @@ struct PiKpRAA {
       int bestCollisionIndex{-1};
       for (const auto& collision : collisions) {
 
-        // const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
         float centrality{-999.0};
         if (centralitySelector.value == "FT0C")
           centrality = collision.centFT0C();
@@ -1292,7 +1289,6 @@ struct PiKpRAA {
       //---------------------------
       for (const auto& collision : collisions) {
 
-        // const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
         float centrality{-999.0};
         if (centralitySelector.value == "FT0C")
           centrality = collision.centFT0C();
