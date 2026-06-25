@@ -172,9 +172,18 @@ struct HfHelper {
   }
 
   template <typename T>
-  static auto invMassBplusToJpsiK(const T& candidate)
+  static auto invMassBplusToJpsiK(const T& candidate, const bool useJpsiPdgMass)
   {
-    return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
+    auto const pVecMuPos = candidate.pVectorProng0();
+    auto const pVecMuNeg = candidate.pVectorProng1();
+    auto const pVecKa = candidate.pVectorProng2();
+    if (useJpsiPdgMass) {
+      return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), pVecKa},
+                          std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus});
+    }
+    // Do not use PDG mass for J/psi
+    return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecKa},
+                        std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
@@ -652,6 +661,38 @@ struct HfHelper {
   }
 
   template <typename T>
+  static auto invMassB0ToJpsiK0Star(const T& candidate, const bool useJpsiPdgMass, const bool useK0StarPdgMass, bool k0StarToKPi = true)
+  {
+    auto const pVecMuPos = candidate.pVectorProng0();
+    auto const pVecMuNeg = candidate.pVectorProng1();
+    auto const pVecLfTrack0 = candidate.pVectorProng2();
+    auto const pVecLfTrack1 = candidate.pVectorProng3();
+    if (useJpsiPdgMass && useK0StarPdgMass) {
+      return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), RecoDecay::pVec(pVecLfTrack0, pVecLfTrack1)},
+                          std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassK0Star892});
+    }
+    if (useJpsiPdgMass && !useK0StarPdgMass) {
+      if (k0StarToKPi) {
+        return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), pVecLfTrack0, pVecLfTrack1},
+                            std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      }
+      return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), pVecLfTrack0, pVecLfTrack1},
+                          std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+    }
+    if (!useJpsiPdgMass && useK0StarPdgMass) {
+      return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, RecoDecay::pVec(pVecLfTrack0, pVecLfTrack1)},
+                          std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassK0Star892});
+    }
+    // Do not use PDG mass for either J/psi or K*0
+    if (k0StarToKPi) {
+      return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecLfTrack0, pVecLfTrack1},
+                          std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+    }
+    return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecLfTrack0, pVecLfTrack1},
+                        std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   static auto cosThetaStarB0(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassDMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassB0, 1);
@@ -684,9 +725,27 @@ struct HfHelper {
   }
 
   template <typename T>
-  static auto invMassBsToJpsiPhi(const T& candidate)
+  static auto invMassBsToJpsiPhi(const T& candidate, const bool useJpsiPdgMass, const bool usePhiPdgMass)
   {
-    return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+    auto const pVecMuPos = candidate.pVectorProng0();
+    auto const pVecMuNeg = candidate.pVectorProng1();
+    auto const pVecKa0 = candidate.pVectorProng2();
+    auto const pVecKa1 = candidate.pVectorProng3();
+    if (useJpsiPdgMass && usePhiPdgMass) {
+      return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), RecoDecay::pVec(pVecKa0, pVecKa1)},
+                          std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassPhi});
+    }
+    if (useJpsiPdgMass && !usePhiPdgMass) {
+      return RecoDecay::m(std::array{RecoDecay::pVec(pVecMuPos, pVecMuNeg), pVecKa0, pVecKa1},
+                          std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+    }
+    if (!useJpsiPdgMass && usePhiPdgMass) {
+      return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, RecoDecay::pVec(pVecKa0, pVecKa1)},
+                          std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPhi});
+    }
+    // Do not use PDG mass for either J/psi or phi
+    return RecoDecay::m(std::array{pVecMuPos, pVecMuNeg, pVecKa0, pVecKa1},
+                        std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
@@ -885,6 +944,122 @@ struct HfHelper {
     return true;
   }
 
+  // Apply topological cuts as defined in SelectorCuts.h
+  /// \param candB0 B0 candidate
+  /// \param cuts B0 candidate selection per pT bin
+  /// \param binsPt pT bin limits
+  /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating B0 candidate mass
+  /// \param useK0StarPdgMass Use PDG mass for K*0 when calculating B0 candidate mass
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  static bool selectionB0ToJpsiK0StarTopol(const T1& candB0, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass, const bool useK0StarPdgMass, const bool k0StarToKPi = true)
+  {
+    auto ptCandB0 = candB0.pt();
+    auto mCandB0 = invMassB0ToJpsiK0Star(candB0, useJpsiPdgMass, useK0StarPdgMass, k0StarToKPi);
+    auto const pVecMu0 = candB0.pVectorProng0();
+    auto const pVecMu1 = candB0.pVectorProng1();
+    auto const pVecLfDau0 = candB0.pVectorProng2();
+    auto const pVecLfDau1 = candB0.pVectorProng3();
+    // K*0 invariant mass for the chosen daughter-mass hypothesis: K*0 → K+ π- or K*0bar → π+ K-
+    auto mCandK0Star = k0StarToKPi
+                         ? RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus})
+                         : RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+    auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptK0Star = RecoDecay::pt(pVecLfDau0, pVecLfDau1);
+    auto candJpsi = candB0.jpsi();
+    float pseudoPropDecLen = candB0.decayLengthXY() * mCandB0 / ptCandB0;
+
+    int binPt = o2::analysis::findBin(binsPt, ptCandB0);
+    if (binPt == -1) {
+      return false;
+    }
+
+    // B0 mass cut
+    if (std::abs(mCandB0 - o2::constants::physics::MassB0) > cuts->get(binPt, "m")) {
+      return false;
+    }
+
+    // K*0 pt
+    if (ptK0Star < cuts->get(binPt, "pT K*0")) {
+      return false;
+    }
+
+    // J/Psi pt
+    if (ptJpsi < cuts->get(binPt, "pT J/Psi")) {
+      return false;
+    }
+
+    // K*0 mass
+    if (std::abs(mCandK0Star - o2::constants::physics::MassK0Star892) > cuts->get(binPt, "DeltaM K*0")) {
+      return false;
+    }
+
+    // J/Psi mass
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) > cuts->get(binPt, "DeltaM J/Psi")) {
+      return false;
+    }
+
+    // d0(J/Psi)xd0(K*0)
+    if (candB0.impactParameterProduct() > cuts->get(binPt, "B Imp. Par. Product")) {
+      return false;
+    }
+
+    // B0 Decay length
+    if (candB0.decayLength() < cuts->get(binPt, "B decLen")) {
+      return false;
+    }
+
+    // B0 Decay length XY
+    if (candB0.decayLengthXY() < cuts->get(binPt, "B decLenXY")) {
+      return false;
+    }
+
+    // B0 CPA cut
+    if (candB0.cpa() < cuts->get(binPt, "CPA")) {
+      return false;
+    }
+
+    // B0 CPAXY cut
+    if (candB0.cpaXY() < cuts->get(binPt, "CPAXY")) {
+      return false;
+    }
+
+    // d0 of K*0 daughters
+    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0") ||
+        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0")) {
+      return false;
+    }
+
+    // d0 of J/Psi
+    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi") ||
+        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi")) {
+      return false;
+    }
+
+    // B pseudoproper decay length
+    if (pseudoPropDecLen < cuts->get(binPt, "B pseudoprop. decLen")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply PID selection
+  /// \param pidTrack PID status of track (prong of B0 candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong of B0 candidate passes all selections
+  static bool selectionB0ToJpsiK0StarPid(const int pidTrack, const bool acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrack != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrack == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Apply PID selection
   /// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
@@ -905,14 +1080,18 @@ struct HfHelper {
   /// \param candBp B+ candidate
   /// \param cuts B+ candidate selection per pT bin
   /// \param binsPt pT bin limits
+  /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating B+ candidate mass
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  static bool selectionBplusToJpsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+  static bool selectionBplusToJpsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass)
   {
     auto ptCandBp = candBp.pt();
-    auto mCandBp = invMassBplusToJpsiK(candBp);
-    auto ptJpsi = RecoDecay::pt(candBp.pxProng0(), candBp.pyProng0());
-    auto ptKa = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
+    auto mCandBp = invMassBplusToJpsiK(candBp, useJpsiPdgMass);
+    auto const pVecMu0 = candBp.pVectorProng0();
+    auto const pVecMu1 = candBp.pVectorProng1();
+    auto const pVecKa = candBp.pVectorProng2();
+    auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptKa = RecoDecay::pt(pVecKa);
     auto candJpsi = candBp.jpsi();
     float pseudoPropDecLen = candBp.decayLengthXY() * mCandBp / ptCandBp;
 
@@ -937,7 +1116,7 @@ struct HfHelper {
     }
 
     // J/Psi mass
-    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(binPt, "DeltaM J/Psi")) {
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) > cuts->get(binPt, "DeltaM J/Psi")) {
       return false;
     }
 
@@ -967,12 +1146,13 @@ struct HfHelper {
     }
 
     // d0 of K
-    if (std::abs(candBp.impactParameter1()) < cuts->get(binPt, "d0 K")) {
+    if (std::abs(candBp.impactParameter2()) < cuts->get(binPt, "d0 K")) {
       return false;
     }
 
-    // d0 of J/Psi
-    if (std::abs(candBp.impactParameter0()) < cuts->get(binPt, "d0 J/Psi")) {
+    // d0 of J/Psi daughters
+    if (std::abs(candBp.impactParameter0()) < cuts->get(binPt, "d0 J/Psi daughters") ||
+        std::abs(candBp.impactParameter1()) < cuts->get(binPt, "d0 J/Psi daughters")) {
       return false;
     }
 
@@ -1088,20 +1268,23 @@ struct HfHelper {
 
   // Apply topological cuts as defined in SelectorCuts.h
   /// \param candBs Bs candidate
-  /// \param candKa0 kaon candidate 0 (phi daughter)
-  /// \param candKa1 kaon candidate 1 (phi daughter)
   /// \param cuts Bs candidate selection per pT bin
   /// \param binsPt pT bin limits
+  /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating Bs candidate mass
+  /// \param usePhiPdgMass Use PDG mass for phi when calculating Bs candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  static bool selectionBsToJpsiPhiTopol(const T1& candBs, const T2& candKa0, const T3& candKa1, const T4& cuts, const T5& binsPt)
+  template <typename T1, typename T2, typename T3>
+  static bool selectionBsToJpsiPhiTopol(const T1& candBs, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass, const bool usePhiPdgMass)
   {
     auto ptCandBs = candBs.pt();
-    auto mCandBs = invMassBsToJpsiPhi(candBs);
-    std::array<float, 3> pVecKa0 = candKa0.pVector();
-    std::array<float, 3> pVecKa1 = candKa1.pVector();
+    auto mCandBs = invMassBsToJpsiPhi(candBs, useJpsiPdgMass, usePhiPdgMass);
+    auto const pVecMu0 = candBs.pVectorProng0();
+    auto const pVecMu1 = candBs.pVectorProng1();
+    auto const pVecKa0 = candBs.pVectorProng2();
+    auto const pVecKa1 = candBs.pVectorProng3();
     auto mCandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
-    auto ptJpsi = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
+    auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptPhi = RecoDecay::pt(pVecKa0, pVecKa1);
     auto candJpsi = candBs.jpsi();
     float pseudoPropDecLen = candBs.decayLengthXY() * mCandBs / ptCandBs;
 
@@ -1111,13 +1294,12 @@ struct HfHelper {
     }
 
     // Bs mass cut
-    if (std::abs(mCandBs - o2::constants::physics::MassBPlus) > cuts->get(binPt, "m")) {
+    if (std::abs(mCandBs - o2::constants::physics::MassBS) > cuts->get(binPt, "m")) {
       return false;
     }
 
-    // kaon pt
-    if (candKa0.pt() < cuts->get(binPt, "pT K") &&
-        candKa1.pt() < cuts->get(binPt, "pT K")) {
+    // phi pt
+    if (ptPhi < cuts->get(binPt, "pT phi")) {
       return false;
     }
 
@@ -1127,12 +1309,12 @@ struct HfHelper {
     }
 
     // phi mass
-    if (std::abs(mCandPhi - o2::constants::physics::MassPhi) < cuts->get(binPt, "DeltaM phi")) {
+    if (std::abs(mCandPhi - o2::constants::physics::MassPhi) > cuts->get(binPt, "DeltaM phi")) {
       return false;
     }
 
     // J/Psi mass
-    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(binPt, "DeltaM J/Psi")) {
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) > cuts->get(binPt, "DeltaM J/Psi")) {
       return false;
     }
 
@@ -1162,12 +1344,14 @@ struct HfHelper {
     }
 
     // d0 of phi
-    if (std::abs(candBs.impactParameter1()) < cuts->get(binPt, "d0 phi")) {
+    if ((std::abs(candBs.impactParameter2()) < cuts->get(binPt, "d0 phi daughters")) ||
+        (std::abs(candBs.impactParameter3()) < cuts->get(binPt, "d0 phi daughters"))) {
       return false;
     }
 
     // d0 of J/Psi
-    if (std::abs(candBs.impactParameter0()) < cuts->get(binPt, "d0 J/Psi")) {
+    if (std::abs(candBs.impactParameter0()) < cuts->get(binPt, "d0 J/Psi daughters") ||
+        std::abs(candBs.impactParameter1()) < cuts->get(binPt, "d0 J/Psi daughters")) {
       return false;
     }
 
@@ -1180,15 +1364,15 @@ struct HfHelper {
   }
 
   /// Apply PID selection
-  /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
+  /// \param pidTrack PID status of track (prong of Bs candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
-  /// \return true if prong1 of B+ candidate passes all selections
-  static bool selectionBsToJpsiPhiPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
+  /// \return true if prong1 of Bs candidate passes all selections
+  static bool selectionBsToJpsiPhiPid(const int pidTrack, const bool acceptPIDNotApplicable)
   {
-    if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
+    if (!acceptPIDNotApplicable && pidTrack != TrackSelectorPID::Accepted) {
       return false;
     }
-    if (acceptPIDNotApplicable && pidTrackKa == TrackSelectorPID::Rejected) {
+    if (acceptPIDNotApplicable && pidTrack == TrackSelectorPID::Rejected) {
       return false;
     }
 

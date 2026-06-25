@@ -475,7 +475,7 @@ struct skimmerPrimaryMuonQC {
   {
     emprimarymuons(collision.globalIndex(), fwdtrack.globalIndex(), fwdtrack.matchMFTTrackId(), fwdtrack.matchMCHTrackId(), fwdtrack.trackType(),
                    muon.pt, muon.eta, muon.phi, fwdtrack.sign(), muon.dcaX, muon.dcaY, muon.cXX, muon.cYY, muon.cXY, muon.ptMatchedMCHMID, muon.etaMatchedMCHMID, muon.phiMatchedMCHMID,
-                   fwdtrack.nClusters(), muon.pDCA, muon.rAtAbsorberEnd, fwdtrack.chi2(), fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
+                   fwdtrack.nClusters(), muon.pDCA, muon.rAtAbsorberEnd, fwdtrack.chi2(), fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(), 9999.f,
                    fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), muon.mftClusterSizesAndTrackFlags, muon.chi2mft, true, false);
 
     // if (fillQAHistograms) {

@@ -140,6 +140,9 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyGainCalibShift{"applyGainCalibShift", false, "Apply shift for cell gain calibration to use values before cell format change (Sept. 2023)"};
   Configurable<bool> applySoftwareTriggerSelection{"applySoftwareTriggerSelection", false, "Apply software trigger selection"};
   Configurable<std::string> softwareTriggerSelection{"softwareTriggerSelection", "fGammaHighPtEMCAL,fGammaHighPtDCAL", "Default: fGammaHighPtEMCAL,fGammaHighPtDCAL"};
+  Configurable<bool> storePerDFInfo{"storePerDFInfo", false, "store addition information per DF."};
+  ConfigurableAxis thConfigAxisClusters{"thConfigAxisClusters", {1000, 0.5f, 1000.5f}, ""};
+  ConfigurableAxis thConfigAxisCells{"thConfigAxisCells", {1000, 0.5f, 1000.5f}, ""};
   // cross talk emulation configs
   EmcCrossTalkConf emcCrossTalkConf;
 
@@ -196,7 +199,17 @@ struct EmcalCorrectionTask {
   int runNumber{0};
 
   static constexpr float TrackNotOnEMCal = -900.f;
-  static constexpr int kMaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
+  static constexpr int MaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
+
+  static constexpr uint MaxClusterPerDFPerClusterizer = 200'000;            // memory footprint: 13 MB per clusterizer
+  static constexpr uint MaxAmbClusterPerDFPerClusterizer = 300'000;         // memory footprint: 19.5 MB per clusterizer
+  static constexpr uint MaxCellsPerClusterPerDFPerClusterizer = 300'000;    // memory footprint: 4.8 MB per clusterizer
+  static constexpr uint MaxCellsPerAmbClusterPerDFPerClusterizer = 450'000; // memory footprint: 7.2 MB per clusterizer
+
+  // cluster size
+  size_t nCluster = 0;
+  size_t nClusterAmb = 0;
+  size_t nCells = 0;
 
   void init(InitContext const&)
   {
@@ -309,6 +322,8 @@ struct EmcalCorrectionTask {
     o2::framework::AxisSpec axisDeltaEta{400, -0.2, 0.2, "#Delta#eta"};
     o2::framework::AxisSpec axisDeltaPhi{400, -0.2, 0.2, "#Delta#varphi (rad)"};
     o2::framework::AxisSpec axisNCluster{1000, 0, 1000, "#it{N}_{clus.}"};
+    const o2::framework::AxisSpec nClusterDFAxis{thConfigAxisClusters, "#it{N}_{cluster}"};
+    const o2::framework::AxisSpec nCellsDFAxis{thConfigAxisCells, "#it{N}_{cells}"};
     mHistManager.add("hCellE", "hCellE", O2HistType::kTH1D, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", O2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
@@ -379,6 +394,12 @@ struct EmcalCorrectionTask {
     mExtraTimeShiftRunRanges.emplace_back(536565, 536590); // Commisioning-LHC23r
     mExtraTimeShiftRunRanges.emplace_back(542280, 543854); // LHC23zv-LHC23zy
     mExtraTimeShiftRunRanges.emplace_back(559544, 559856); // PbPb 2024
+
+    if (storePerDFInfo.value) {
+      mHistManager.add("hNClusterDF", "hNClusterDF", O2HistType::kTH1D, {nClusterDFAxis});
+      mHistManager.add("hNClusterAmbigousDF", "hNClusterAmbigousDF", O2HistType::kTH1D, {nClusterDFAxis});
+      mHistManager.add("hNCellDF", "hNCellDF", O2HistType::kTH1D, {nCellsDFAxis});
+    }
   }
 
   template <typename BCType>
@@ -398,12 +419,19 @@ struct EmcalCorrectionTask {
   void processFull(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process full.";
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
+    nCluster = 0;
+    nClusterAmb = 0;
+    nCells = 0;
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
 
@@ -539,6 +567,11 @@ struct EmcalCorrectionTask {
     } // end of collision loop
 
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
+    if (storePerDFInfo) {
+      mHistManager.fill(HIST("hNClusterDF"), nCluster);
+      mHistManager.fill(HIST("hNClusterAmbigousDF"), nClusterAmb);
+      mHistManager.fill(HIST("hNCellDF"), nCells);
+    }
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processFull, "run full analysis", true);
 
@@ -546,11 +579,20 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
 
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
+
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
+
+    nCluster = 0;
+    nClusterAmb = 0;
+    nCells = 0;
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
 
@@ -690,6 +732,11 @@ struct EmcalCorrectionTask {
     } // end of collision loop
 
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
+    if (storePerDFInfo) {
+      mHistManager.fill(HIST("hNClusterDF"), nCluster);
+      mHistManager.fill(HIST("hNClusterAmbigousDF"), nClusterAmb);
+      mHistManager.fill(HIST("hNCellDF"), nCells);
+    }
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processWithSecondaries, "run full analysis with secondary track matching", false);
 
@@ -697,11 +744,23 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting processMCFull.";
 
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
+
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
+
+    nCluster = 0;
+    nClusterAmb = 0;
+    nCells = 0;
+
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -868,6 +927,11 @@ struct EmcalCorrectionTask {
     } // end of collision loop
 
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
+    if (storePerDFInfo) {
+      mHistManager.fill(HIST("hNClusterDF"), nCluster);
+      mHistManager.fill(HIST("hNClusterAmbigousDF"), nClusterAmb);
+      mHistManager.fill(HIST("hNCellDF"), nCells);
+    }
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processMCFull, "run full analysis with MC info", false);
 
@@ -875,11 +939,22 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting processMCWithSecondaries.";
 
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
+
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
+
+    nCluster = 0;
+    nClusterAmb = 0;
+    nCells = 0;
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -1049,15 +1124,30 @@ struct EmcalCorrectionTask {
     } // end of collision loop
 
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
+    if (storePerDFInfo) {
+      mHistManager.fill(HIST("hNClusterDF"), nCluster);
+      mHistManager.fill(HIST("hNClusterAmbigousDF"), nClusterAmb);
+      mHistManager.fill(HIST("hNCellDF"), nCells);
+    }
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processMCWithSecondaries, "run full analysis with MC info", false);
 
   void processStandalone(BcEvSels const& bcs, aod::Collisions const& collisions, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process standalone.";
+
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
+
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+
+    nCluster = 0;
+    nClusterAmb = 0;
+    nCells = 0;
 
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
@@ -1165,6 +1255,11 @@ struct EmcalCorrectionTask {
       nBCsProcessed++;
     } // end of bc loop
     LOG(debug) << "Done with process BC.";
+    if (storePerDFInfo) {
+      mHistManager.fill(HIST("hNClusterDF"), nCluster);
+      mHistManager.fill(HIST("hNClusterAmbigousDF"), nClusterAmb);
+      mHistManager.fill(HIST("hNCellDF"), nCells);
+    }
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processStandalone, "run stand alone analysis", false);
 
@@ -1209,15 +1304,6 @@ struct EmcalCorrectionTask {
   template <typename Collision>
   void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
   {
-    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    const size_t nAvgNcells = 3;
-    // we found a collision, put the clusters into the none ambiguous table
-    clusters.reserve(mAnalysisClusters.size());
-    if (!mClusterLabels.empty()) {
-      mcclusters.reserve(mClusterLabels.size());
-    }
-    clustercells.reserve(mAnalysisClusters.size() * nAvgNcells);
-
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
 
@@ -1253,6 +1339,7 @@ struct EmcalCorrectionTask {
                cluster.getClusterTime(), cluster.getIsExotic(),
                cluster.getDistanceToBadChannel(), cluster.getNExMax(),
                clusterType);
+      ++nCluster;
       if (!mClusterLabels.empty()) {
         mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
@@ -1262,6 +1349,7 @@ struct EmcalCorrectionTask {
         LOG(debug) << "trying to find cell index " << cellindex << " in map";
         if (cellIndicesBC[cellindex] >= 0) {
           clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
+          ++nCells;
         }
       } // end of cells of cluser loop
       // fill histograms
@@ -1304,14 +1392,7 @@ struct EmcalCorrectionTask {
   template <typename BC>
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
-    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    const size_t nAvgNcells = 3;
     int cellindex = -1;
-    clustersAmbiguous.reserve(mAnalysisClusters.size());
-    if (mClusterLabels.size() > 0) {
-      mcclustersAmbiguous.reserve(mClusterLabels.size());
-    }
-    clustercellsambiguous.reserve(mAnalysisClusters.size() * nAvgNcells);
     unsigned int iCluster = 0;
     float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
@@ -1343,6 +1424,7 @@ struct EmcalCorrectionTask {
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
         cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(iClusterizer)));
+      ++nClusterAmb;
       if (mClusterLabels.size() > 0) {
         mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
@@ -1368,7 +1450,7 @@ struct EmcalCorrectionTask {
     trackGlobalIndex.reserve(nTracksInCol);
     fillTrackInfo<decltype(groupedTracks)>(groupedTracks, trackPhi, trackEta, trackGlobalIndex);
 
-    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, kMaxMatchesPerCluster);
+    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
   template <typename Collision>
@@ -1404,7 +1486,7 @@ struct EmcalCorrectionTask {
       trackEta.emplace_back(trackEtaEmcal);
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
-    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, kMaxMatchesPerCluster);
+    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
   template <typename Tracks>

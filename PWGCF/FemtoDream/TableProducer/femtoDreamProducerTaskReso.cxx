@@ -928,7 +928,7 @@ struct FemtoDreamProducerTaskReso {
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
           trackRegistry.fill(HIST("AnalysisQA/Mother"), pdgCodeMother);
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode(), pdgCode);
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1

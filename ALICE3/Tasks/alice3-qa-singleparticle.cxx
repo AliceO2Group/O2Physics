@@ -15,6 +15,7 @@
 /// \brief   Task to monitor the single particle QA, at the particle and track level, showing the tracked and the origin of particles
 ///
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -88,10 +89,10 @@ struct Alice3SingleParticle {
     pdg->AddParticle("triton", "triton", 2.8089218, kTRUE, 0.0, 3, "Nucleus", 1000010030);
     pdg->AddAntiParticle("anti-triton", -1000010030);
 
-    pdg->AddParticle("helium3", "helium3", 2.80839160743, kTRUE, 0.0, 6, "Nucleus", 1000020030);
+    pdg->AddParticle("helium3", "helium3", o2::constants::physics::MassHelium3, kTRUE, 0.0, 6, "Nucleus", 1000020030);
     pdg->AddAntiParticle("anti-helium3", -1000020030);
 
-    pdg->AddParticle("helium4", "helium4", 2.80839160743, kTRUE, 0.0, 6, "Nucleus", 1000020040);
+    pdg->AddParticle("helium4", "helium4", o2::constants::physics::MassAlpha, kTRUE, 0.0, 6, "Nucleus", 1000020040);
     pdg->AddAntiParticle("anti-helium4", -1000020040);
 
     const TString tit = Form("%i", PDG.value);

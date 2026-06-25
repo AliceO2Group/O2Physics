@@ -39,7 +39,7 @@ enum class EM_HFeeType : int {
 
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPC(TTrack const& track)
+bool hasFakeMatchITSTPC(TTrack const& track)
 {
   // track and mctracklabel have to be joined.
   // bit 13 -- ITS/TPC labels are not equal
@@ -52,7 +52,7 @@ int hasFakeMatchITSTPC(TTrack const& track)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPCTOF(TTrack const&)
+bool hasFakeMatchITSTPCTOF(TTrack const&)
 {
   // track and mctracklabel have to be joined.
   return false;
@@ -64,7 +64,7 @@ int hasFakeMatchITSTPCTOF(TTrack const&)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchMFTMCH(TTrack const& track)
+bool hasFakeMatchMFTMCH(TTrack const& track)
 {
   // fwdtrack and mcfwdtracklabel have to be joined.
   if ((track.mcMask() & 1 << 7)) {

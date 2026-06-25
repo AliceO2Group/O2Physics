@@ -9,13 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Step-by-step event selection efficiency for MC particle-level jets
+// Step-by-step event selection efficiency for MC particle-level jets.
+// Two ordering variants exposed as separate process functions:
+//   - CollRecoFirst: reco collision required first, BC bits read from the reco-coll EvSel bitmask.
+//   - BcBitsFirst:   BC bits read from the MC truth BC, then truth-side SBP, then reco at the end.
 //
 /// \author Joonsuk Bae <joonsuk.bae@cern.ch>
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
@@ -26,16 +32,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
-#include <TH2.h>
-
-#include <algorithm>
 #include <cmath>
-#include <cstddef>
-#include <set>
+#include <cstdint>
 #include <string>
-#include <utility>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,8 +44,8 @@ struct JetCrossSectionEfficiency {
 
   HistogramRegistry registry;
 
-  Configurable<std::string> eventSelections{"eventSelections", "selTVX", "choose event selection (e.g., sel8, selMC, sel8Full, selTVX, etc.)"};
-  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "selTVX | selMC | selMCFull | sel8 | sel8Full"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "reject min-bias gap events from hybrid MB+JJ MC productions"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> centralityMin{"centralityMin", -999.0f, "minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 999.0f, "maximum centrality"};
@@ -63,12 +62,23 @@ struct JetCrossSectionEfficiency {
   Configurable<float> leadingConstituentPtMinMCP{"leadingConstituentPtMinMCP", -99.0f, "minimum pT selection on MCP jet constituent"};
   Configurable<float> leadingConstituentPtMaxMCP{"leadingConstituentPtMaxMCP", 9999.0f, "maximum pT selection on MCP jet constituent"};
 
-  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum track occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions"};
-  Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum track occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions"};
+  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum track occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum track occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> acceptSplitCollisions{"acceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
-  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0f, "maximum fraction of hard scattering for jet acceptance in particle MC"};
-  Configurable<float> pTHatExponent{"pTHatExponent", 6.0f, "exponent of the event weight for the calculation of pTHat"};
-  Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0f, "minimum value of pTHat"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0f, "maximum jet pT in units of pTHat for outlier rejection at MC particle level"};
+  Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0f, "minimum pTHat (drops events with pTHat below this)"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 6.0f, "exponent in the back-calculation of pTHat from the event weight"};
+  Configurable<float> simPtRef{"simPtRef", 10.0f, "reference pT for the back-calculation of pTHat from the event weight"};
+  Configurable<float> ptHardCalcMethodSwitch{"ptHardCalcMethodSwitch", 999.0f, "sentinel and threshold for the stored-ptHard branch (set <=0 to force weight-derived)"};
+  Configurable<bool> applyRCT{"applyRCT", true, "apply RCT_pass step in the cascade (false: force the RCT step to pass)"};
+  Configurable<std::string> rctSelectionsLabel{"rctSelectionsLabel", "CBT_hadronPID", "RCT selection preset name (see RCTSelectionFlags)"};
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  uint64_t rctMask = 0;
+
+  bool applyTFB = true;
+  bool applyROFB = true;
+  bool applySBP = true;
 
   enum AcceptSplitCollisionsOptions {
     NonSplitOnly = 0,
@@ -78,42 +88,34 @@ struct JetCrossSectionEfficiency {
 
   static constexpr float configSwitchLow = -98.0f;
   static constexpr float configSwitchHigh = 9998.0f;
+  static constexpr float kBrokenPtHardSentinel = 1.0f;
 
-  std::vector<int> eventSelectionBits;
+  // CollRecoFirst: reco collision required first; BC bits read from the reco-coll EvSels.
+  static constexpr int kBinCRF_Inel = 1;
+  static constexpr int kBinCRF_RctPass = 2;
+  static constexpr int kBinCRF_HasColl = 3;
+  static constexpr int kBinCRF_Zreco = 4;
+  static constexpr int kBinCRF_NoSplit = 5;
+  static constexpr int kBinCRF_TVX = 6;
+  static constexpr int kBinCRF_TFB = 7;
+  static constexpr int kBinCRF_ROFB = 8;
+  static constexpr int kBinCRF_SBP = 9;
+  static constexpr int kBinCRF_N = 9;
 
-  struct StageInfo {
-    int bit;
-    int bin;
-  };
-  std::vector<StageInfo> activeStages;
+  // BcBitsFirst: BC bits read from the MC truth BC; SBP from a Preslice count
+  // (exactly one MC collision per truth BC) so it works before requiring reco.
+  static constexpr int kBinBBF_Inel = 1;
+  static constexpr int kBinBBF_RctPass = 2;
+  static constexpr int kBinBBF_TVX = 3;
+  static constexpr int kBinBBF_TFB = 4;
+  static constexpr int kBinBBF_ROFB = 5;
+  static constexpr int kBinBBF_TruthSBP = 6;
+  static constexpr int kBinBBF_HasColl = 7;
+  static constexpr int kBinBBF_Zreco = 8;
+  static constexpr int kBinBBF_NoSplit = 9;
+  static constexpr int kBinBBF_N = 9;
 
-  int binInel = 1;
-  int binNoReco = 2;
-  int binSplit = 3;
-  int binZvtx = -1;
-  int binCentrality = -1;
-
-  const char* getStageLabel(int bit)
-  {
-    switch (bit) {
-      case jetderiveddatautilities::JCollisionSel::selTVX:
-        return "kTVX";
-      case jetderiveddatautilities::JCollisionSel::selNoTimeFrameBorder:
-        return "kTFBorder";
-      case jetderiveddatautilities::JCollisionSel::selNoITSROFrameBorder:
-        return "kITSROFBorder";
-      case jetderiveddatautilities::JCollisionSel::selNoSameBunchPileup:
-        return "NoSameBunchPileup";
-      case jetderiveddatautilities::JCollisionSel::selIsGoodZvtxFT0vsPV:
-        return "IsGoodZvtxFT0vsPV";
-      case jetderiveddatautilities::JCollisionSel::selNoCollInTimeRangeStandard:
-        return "NoCollInTimeRangeStd";
-      case jetderiveddatautilities::JCollisionSel::selNoCollInRofStandard:
-        return "NoCollInRofStd";
-      default:
-        return nullptr;
-    }
-  }
+  Preslice<aod::JetMcCollisions> mcCollsPerBC = aod::jmccollision::bcId;
 
   void init(InitContext&)
   {
@@ -121,116 +123,111 @@ struct JetCrossSectionEfficiency {
       LOGF(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
     }
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    rctChecker.init(static_cast<std::string>(rctSelectionsLabel));
+    rctMask = rctChecker.value();
 
-    auto hasBit = [&](int bit) {
-      return std::find(eventSelectionBits.begin(), eventSelectionBits.end(), bit) != eventSelectionBits.end();
-    };
-
-    activeStages.clear();
-    int nextEventSelectionBin = 4;
-    std::set<int> addedBits;
-
-    auto addStageIfNotAlreadyAdded = [&](int bit) {
-      if (addedBits.find(bit) != addedBits.end()) {
-        return;
-      }
-      addedBits.insert(bit);
-      activeStages.push_back({bit, nextEventSelectionBin++});
-    };
-
-    // sel8, sel7, selKINT7 are composite selections that require multiple sub-bits.
-    // initialiseEventSelectionBits returns them as single bits, but for step-by-step QA
-    // we need to expand them into their constituent bits (kTVX, kTFBorder, kITSROFBorder).
-    // Note: selMC, selMCFull, etc. are already expanded by initialiseEventSelectionBits.
-    std::vector<std::pair<int, std::vector<int>>> compositeSelections = {
-      {jetderiveddatautilities::JCollisionSel::sel8, {jetderiveddatautilities::JCollisionSel::selTVX, jetderiveddatautilities::JCollisionSel::selNoTimeFrameBorder, jetderiveddatautilities::JCollisionSel::selNoITSROFrameBorder}},
-      {jetderiveddatautilities::JCollisionSel::sel7, {jetderiveddatautilities::JCollisionSel::selTVX, jetderiveddatautilities::JCollisionSel::selNoTimeFrameBorder, jetderiveddatautilities::JCollisionSel::selNoITSROFrameBorder}},
-      {jetderiveddatautilities::JCollisionSel::selKINT7, {jetderiveddatautilities::JCollisionSel::selTVX, jetderiveddatautilities::JCollisionSel::selNoTimeFrameBorder, jetderiveddatautilities::JCollisionSel::selNoITSROFrameBorder}}};
-
-    for (auto const& [compositeBit, subBits] : compositeSelections) {
-      if (hasBit(compositeBit)) {
-        for (auto subBit : subBits) {
-          addStageIfNotAlreadyAdded(subBit);
-        }
-      }
+    const std::string es = eventSelections;
+    if (es == "selTVX") {
+      applyTFB = false;
+      applyROFB = false;
+      applySBP = false;
+    } else if (es == "selMC") {
+      applyTFB = true;
+      applyROFB = false;
+      applySBP = false;
+    } else if (es == "selMCFull") {
+      applyTFB = true;
+      applyROFB = false;
+      applySBP = true;
+    } else if (es == "sel8") {
+      applyTFB = true;
+      applyROFB = true;
+      applySBP = false;
+    } else if (es == "sel8Full") {
+      applyTFB = true;
+      applyROFB = true;
+      applySBP = true;
+    } else {
+      LOGF(fatal, "Configurable eventSelections=%s not supported; use selTVX, selMC, selMCFull, sel8, or sel8Full", es.c_str());
     }
-
-    std::vector<int> allPossibleBits = {
-      jetderiveddatautilities::JCollisionSel::selTVX,
-      jetderiveddatautilities::JCollisionSel::selNoTimeFrameBorder,
-      jetderiveddatautilities::JCollisionSel::selNoITSROFrameBorder,
-      jetderiveddatautilities::JCollisionSel::selNoSameBunchPileup,
-      jetderiveddatautilities::JCollisionSel::selIsGoodZvtxFT0vsPV,
-      jetderiveddatautilities::JCollisionSel::selNoCollInTimeRangeStandard,
-      jetderiveddatautilities::JCollisionSel::selNoCollInRofStandard};
-
-    for (auto bit : allPossibleBits) {
-      if (hasBit(bit)) {
-        addStageIfNotAlreadyAdded(bit);
-      }
-    }
-
-    binZvtx = nextEventSelectionBin++;
-    binCentrality = nextEventSelectionBin++;
 
     AxisSpec jetPtAxis = {200, 0., jetPtMax, "#it{p}_{T} (GeV/#it{c})"};
-    int totalEventSelectionBins = nextEventSelectionBin - 1;
-    AxisSpec eventSelectionAxis = {totalEventSelectionBins, 0.5, static_cast<double>(nextEventSelectionBin) - 0.5, "event selection"};
-
-    if (doprocessCrossSectionEfficiency || doprocessCrossSectionEfficiencyWeighted) {
-      registry.add("h2_jet_pt_part_eventselection",
-                   "part jet pT vs event selection;#it{p}_{T,jet}^{part} (GeV/#it{c});event selection;counts",
-                   {HistType::kTH2F, {jetPtAxis, eventSelectionAxis}});
-      auto histJetPtVsEventSelection = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection"));
-      histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binInel, "INEL");
-      histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binNoReco, "noRecoColl");
-      histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binSplit, "splitColl");
-      for (auto const& stage : activeStages) {
-        const char* label = getStageLabel(stage.bit);
-        if (label) {
-          histJetPtVsEventSelection->GetYaxis()->SetBinLabel(stage.bin, label);
-        }
-      }
-      histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binZvtx, "zvtx");
-      histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binCentrality, "centralitycut");
-    }
 
     if (doprocessCrossSectionEfficiency) {
-      registry.add("h_mccollisions_eventselection",
-                   "number of mc events vs event selection;event selection;entries",
-                   {HistType::kTH1F, {{totalEventSelectionBins, 0.5, static_cast<double>(nextEventSelectionBin) - 0.5}}});
-      auto histMcCollisionsEventSelection = registry.get<TH1>(HIST("h_mccollisions_eventselection"));
-      histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binInel, "INEL");
-      histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binNoReco, "noRecoColl");
-      histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binSplit, "splitColl");
-      for (auto const& stage : activeStages) {
-        const char* label = getStageLabel(stage.bit);
-        if (label) {
-          histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(stage.bin, label);
-        }
-      }
-      histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binZvtx, "zvtx");
-      histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binCentrality, "centralitycut");
+      AxisSpec axCRF = {kBinCRF_N, 0.5, static_cast<double>(kBinCRF_N) + 0.5, "event selection (CollRecoFirst)"};
+      registry.add("h2_jet_pt_part_eventselection_collRecoFirst",
+                   "part jet pT vs event selection (CollRecoFirst);#it{p}_{T,jet}^{part} (GeV/#it{c});event selection;counts",
+                   {HistType::kTH2F, {jetPtAxis, axCRF}});
+      auto hCRF2 = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_collRecoFirst"));
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_Inel, "INEL");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_RctPass, "+RCT_pass");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_HasColl, "+hasRecoColl");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_Zreco, "+|zReco|<10");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_NoSplit, "+noSplit");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_TVX, "+kTVX");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_TFB, "+kNoTFB");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_ROFB, "+kNoITSROFB");
+      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_SBP, "+kNoSBP");
+
+      registry.add("h_mccollisions_eventselection_collRecoFirst",
+                   "number of mc events vs event selection (CollRecoFirst);event selection;entries",
+                   {HistType::kTH1F, {{kBinCRF_N, 0.5, static_cast<double>(kBinCRF_N) + 0.5}}});
+      auto hCRF1 = registry.get<TH1>(HIST("h_mccollisions_eventselection_collRecoFirst"));
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_Inel, "INEL");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_RctPass, "+RCT_pass");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_HasColl, "+hasRecoColl");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_Zreco, "+|zReco|<10");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_NoSplit, "+noSplit");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_TVX, "+kTVX");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_TFB, "+kNoTFB");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_ROFB, "+kNoITSROFB");
+      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_SBP, "+kNoSBP");
     }
 
-    if (doprocessCrossSectionEfficiencyWeighted) {
-      registry.add("h_mccollisions_eventselection_weighted",
-                   "number of weighted mc events vs event selection;event selection;weighted entries",
-                   {HistType::kTH1F, {{totalEventSelectionBins, 0.5, static_cast<double>(nextEventSelectionBin) - 0.5}}});
-      auto histMcCollisionsEventSelectionWeighted = registry.get<TH1>(HIST("h_mccollisions_eventselection_weighted"));
-      histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binInel, "INEL");
-      histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binNoReco, "noRecoColl");
-      histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binSplit, "splitColl");
-      for (auto const& stage : activeStages) {
-        const char* label = getStageLabel(stage.bit);
-        if (label) {
-          histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(stage.bin, label);
-        }
-      }
-      histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binZvtx, "zvtx");
-      histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binCentrality, "centralitycut");
+    if (doprocessCrossSectionEfficiencyBcBitsFirst) {
+      AxisSpec axBBF = {kBinBBF_N, 0.5, static_cast<double>(kBinBBF_N) + 0.5, "event selection (BcBitsFirst)"};
+      registry.add("h2_jet_pt_part_eventselection_bcBitsFirst",
+                   "part jet pT vs event selection (BcBitsFirst);#it{p}_{T,jet}^{part} (GeV/#it{c});event selection;counts",
+                   {HistType::kTH2F, {jetPtAxis, axBBF}});
+      auto hBBF2 = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_bcBitsFirst"));
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_Inel, "INEL");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_RctPass, "+RCT_pass");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_TVX, "+kTVX(truth)");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_TFB, "+kNoTFB(truth)");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_ROFB, "+kNoITSROFB(truth)");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_TruthSBP, "+kNoSBP(truth)");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_HasColl, "+hasColl");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_Zreco, "+|zReco|<10");
+      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_NoSplit, "+noSplit");
+
+      registry.add("h_mccollisions_eventselection_bcBitsFirst",
+                   "number of mc events vs event selection (BcBitsFirst);event selection;entries",
+                   {HistType::kTH1F, {{kBinBBF_N, 0.5, static_cast<double>(kBinBBF_N) + 0.5}}});
+      auto hBBF1 = registry.get<TH1>(HIST("h_mccollisions_eventselection_bcBitsFirst"));
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_Inel, "INEL");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_RctPass, "+RCT_pass");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_TVX, "+kTVX(truth)");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_TFB, "+kNoTFB(truth)");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_ROFB, "+kNoITSROFB(truth)");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_TruthSBP, "+kNoSBP(truth)");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_HasColl, "+hasColl");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_Zreco, "+|zReco|<10");
+      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_NoSplit, "+noSplit");
     }
+  }
+
+  template <typename TMcCollision>
+  float computePtHat(TMcCollision const& mccollision)
+  {
+    float ptHardFromMc = ptHardCalcMethodSwitch;
+    float storedPtHard = mccollision.ptHard();
+    if (storedPtHard > kBrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
+      ptHardFromMc = storedPtHard;
+    }
+    float weight = mccollision.weight();
+    return ptHardFromMc < ptHardCalcMethodSwitch
+             ? ptHardFromMc
+             : simPtRef / std::pow(weight, 1.0f / pTHatExponent);
   }
 
   template <typename TTracks, typename TJets>
@@ -267,293 +264,154 @@ struct JetCrossSectionEfficiency {
   void processCrossSectionEfficiency(aod::JetMcCollisions::iterator const& mccollision,
                                      soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                      soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
-                                     aod::JetParticles const&)
+                                     aod::JetParticles const&,
+                                     aod::JBCs const&)
   {
-    bool hasRecoColl = (collisions.size() >= 1);
-    bool passesZvtxCut = (std::abs(mccollision.posZ()) <= vertexZCut);
-    bool passesSplitCollCut = !(acceptSplitCollisions == NonSplitOnly && collisions.size() > 1);
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
 
+    bool hasRecoColl = (collisions.size() >= 1);
+    bool passesZvtxCutReco = false;
     if (hasRecoColl) {
-      bool occupancyIsGood = false;
       if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-        auto const& collision = collisions.begin();
-        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-          occupancyIsGood = true;
-        }
+        auto const& col = collisions.begin();
+        passesZvtxCutReco = (std::abs(col.posZ()) <= vertexZCut);
       } else {
-        for (auto const& collision : collisions) {
-          if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-            occupancyIsGood = true;
+        for (auto const& col : collisions) {
+          if (std::abs(col.posZ()) <= vertexZCut) {
+            passesZvtxCutReco = true;
             break;
           }
         }
       }
-      if (!occupancyIsGood) {
-        return;
-      }
+    }
+    bool noSplitPass = (acceptSplitCollisions == NonSplitOnly) ? (collisions.size() == 1) : true;
+
+    bool passesTVX = false, passesNoTFB = false, passesNoITSROFB = false, passesNoSBP = false;
+    if (hasRecoColl) {
+      auto const& col = collisions.begin();
+      auto evSel = col.eventSel();
+      passesTVX = (evSel & (1u << jetderiveddatautilities::JCollisionSel::selTVX)) != 0u;
+      passesNoTFB = (evSel & (1u << jetderiveddatautilities::JCollisionSel::selNoTimeFrameBorder)) != 0u;
+      passesNoITSROFB = (evSel & (1u << jetderiveddatautilities::JCollisionSel::selNoITSROFrameBorder)) != 0u;
+      passesNoSBP = (evSel & (1u << jetderiveddatautilities::JCollisionSel::selNoSameBunchPileup)) != 0u;
     }
 
-    std::vector<bool> stagePassed(activeStages.size(), false);
-    bool hasCustomEventSel = false;
-    bool centralityIsGood = false;
-    float centrality = mccollision.centFT0M();
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-      if (hasRecoColl) {
-        auto const& collision = collisions.begin();
-        for (std::size_t i = 0; i < activeStages.size(); ++i) {
-          if (collision.eventSel() & (1 << activeStages[i].bit)) {
-            stagePassed[i] = true;
-          }
-        }
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
-          hasCustomEventSel = true;
-        }
-      }
-      if ((centralityMin < centrality) && (centrality < centralityMax)) {
-        centralityIsGood = true;
-      }
-    } else {
-      for (auto const& collision : collisions) {
-        for (std::size_t i = 0; i < activeStages.size(); ++i) {
-          if (collision.eventSel() & (1 << activeStages[i].bit)) {
-            stagePassed[i] = true;
-          }
-        }
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
-          hasCustomEventSel = true;
-        }
-        float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
-        if ((centralityMin < centrality) && (centrality < centralityMax)) {
-          centralityIsGood = true;
-        }
-      }
+    bool passesRct = applyRCT ? (mccollision.bc_as<aod::JBCs>().rct_raw() & rctMask) == 0 : true;
+    bool pass[kBinCRF_N + 1] = {false, true, passesRct, hasRecoColl, passesZvtxCutReco,
+                                hasRecoColl && noSplitPass, passesTVX,
+                                applyTFB ? passesNoTFB : true,
+                                applyROFB ? passesNoITSROFB : true,
+                                applySBP ? passesNoSBP : true};
+
+    // Unified weight handling: MB MC -> weight=1 (no-op), JJ MC -> per-event sigma fraction.
+    float weight = mccollision.weight();
+
+    int sMax = 0;
+    for (int s = kBinCRF_Inel; s <= kBinCRF_N; ++s) {
+      if (!pass[s])
+        break;
+      registry.fill(HIST("h_mccollisions_eventselection_collRecoFirst"), static_cast<double>(s), weight);
+      sMax = s;
+    }
+    if (sMax == 0) {
+      return;
     }
 
-    registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binInel));
-    if (!hasRecoColl) {
-    } else {
-      registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binNoReco));
-      if (!passesSplitCollCut) {
-        goto endEventCounter;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binSplit));
-
-      for (std::size_t i = 0; i < activeStages.size(); ++i) {
-        if (!stagePassed[i]) {
-          goto endEventCounter;
-        }
-        registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(activeStages[i].bin));
-      }
-
-      if (!hasCustomEventSel || !passesZvtxCut) {
-        goto endEventCounter;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binZvtx));
-
-      if (!centralityIsGood) {
-        goto endEventCounter;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binCentrality));
+    float pTHat = computePtHat(mccollision);
+    if (pTHat < pTHatAbsoluteMin) {
+      return;
     }
-
-  endEventCounter:
 
     for (auto const& jet : jets) {
-      if (jet.r() != round(selectedJetsRadius * 100.0f)) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
+          jet.pt() < jetPtMin || jet.pt() > pTHatMaxMCP * pTHat ||
+          !isAcceptedJet<aod::JetParticles>(jet)) {
         continue;
       }
-      if (jet.pt() < jetPtMin) {
-        continue;
+      for (int s = kBinCRF_Inel; s <= sMax; ++s) {
+        registry.fill(HIST("h2_jet_pt_part_eventselection_collRecoFirst"), jet.pt(), static_cast<double>(s), weight);
       }
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetParticles>(jet)) {
-        continue;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binInel));
-
-      if (!hasRecoColl) {
-        continue;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binNoReco));
-
-      if (!passesSplitCollCut) {
-        continue;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binSplit));
-
-      for (std::size_t i = 0; i < activeStages.size(); ++i) {
-        if (!stagePassed[i]) {
-          goto nextJetUnweighted;
-        }
-        registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(activeStages[i].bin));
-      }
-
-      if (!hasCustomEventSel || !passesZvtxCut) {
-        goto nextJetUnweighted;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binZvtx));
-
-      if (!centralityIsGood) {
-        goto nextJetUnweighted;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binCentrality));
-
-    nextJetUnweighted:;
     }
   }
-  PROCESS_SWITCH(JetCrossSectionEfficiency, processCrossSectionEfficiency, "jet spectra QC for MC particle level with step-by-step cuts", false);
+  PROCESS_SWITCH(JetCrossSectionEfficiency, processCrossSectionEfficiency,
+                 "Cascade efficiency with collision-reco required first, BC bits read from the reco-coll EvSels bitmask", true);
 
-  void processCrossSectionEfficiencyWeighted(aod::JetMcCollisions::iterator const& mccollision,
-                                             soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                                             soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
-                                             aod::JetParticles const&)
+  void processCrossSectionEfficiencyBcBitsFirst(aod::JetMcCollisions::iterator const& mccollision,
+                                                soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+                                                soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
+                                                aod::JetParticles const&,
+                                                aod::JBCs const&,
+                                                aod::JetMcCollisions const& allMcCollisions)
   {
-    bool hasRecoColl = (collisions.size() >= 1);
-    bool passesZvtxCut = (std::abs(mccollision.posZ()) <= vertexZCut);
-    bool passesSplitCollCut = !(acceptSplitCollisions == NonSplitOnly && collisions.size() > 1);
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
 
+    auto truthBC = mccollision.bc_as<aod::JBCs>();
+    bool passesTVXTruth = truthBC.selection_bit(aod::evsel::kIsTriggerTVX);
+    bool passesNoTFBTruth = truthBC.selection_bit(aod::evsel::kNoTimeFrameBorder);
+    bool passesNoITSROFBTruth = truthBC.selection_bit(aod::evsel::kNoITSROFrameBorder);
+
+    auto sameBC = allMcCollisions.sliceBy(mcCollsPerBC, mccollision.bcId());
+    bool truthNoSBP = (sameBC.size() == 1);
+
+    bool hasRecoColl = (collisions.size() >= 1);
+    bool passesZvtxCutReco = false;
     if (hasRecoColl) {
-      bool occupancyIsGood = false;
       if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-        auto const& collision = collisions.begin();
-        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-          occupancyIsGood = true;
-        }
+        auto const& col = collisions.begin();
+        passesZvtxCutReco = (std::abs(col.posZ()) <= vertexZCut);
       } else {
-        for (auto const& collision : collisions) {
-          if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-            occupancyIsGood = true;
+        for (auto const& col : collisions) {
+          if (std::abs(col.posZ()) <= vertexZCut) {
+            passesZvtxCutReco = true;
             break;
           }
         }
       }
-      if (!occupancyIsGood) {
-        return;
-      }
+    }
+    bool noSplitPass = (acceptSplitCollisions == NonSplitOnly) ? (collisions.size() == 1) : true;
+
+    bool passesRct = applyRCT ? (truthBC.rct_raw() & rctMask) == 0 : true;
+    bool pass[kBinBBF_N + 1] = {false, true, passesRct, passesTVXTruth,
+                                applyTFB ? passesNoTFBTruth : true,
+                                applyROFB ? passesNoITSROFBTruth : true,
+                                applySBP ? truthNoSBP : true,
+                                hasRecoColl, passesZvtxCutReco, hasRecoColl && noSplitPass};
+
+    float weight = mccollision.weight();
+
+    int sMax = 0;
+    for (int s = kBinBBF_Inel; s <= kBinBBF_N; ++s) {
+      if (!pass[s])
+        break;
+      registry.fill(HIST("h_mccollisions_eventselection_bcBitsFirst"), static_cast<double>(s), weight);
+      sMax = s;
+    }
+    if (sMax == 0) {
+      return;
     }
 
-    std::vector<bool> stagePassed(activeStages.size(), false);
-    bool hasCustomEventSel = false;
-    bool centralityIsGood = false;
-    float centrality = mccollision.centFT0M();
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-      if (hasRecoColl) {
-        auto const& collision = collisions.begin();
-        for (std::size_t i = 0; i < activeStages.size(); ++i) {
-          if (collision.eventSel() & (1 << activeStages[i].bit)) {
-            stagePassed[i] = true;
-          }
-        }
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
-          hasCustomEventSel = true;
-        }
-      }
-      if ((centralityMin < centrality) && (centrality < centralityMax)) {
-        centralityIsGood = true;
-      }
-    } else {
-      for (auto const& collision : collisions) {
-        for (std::size_t i = 0; i < activeStages.size(); ++i) {
-          if (collision.eventSel() & (1 << activeStages[i].bit)) {
-            stagePassed[i] = true;
-          }
-        }
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
-          hasCustomEventSel = true;
-        }
-        float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
-        if ((centralityMin < centrality) && (centrality < centralityMax)) {
-          centralityIsGood = true;
-        }
-      }
+    float pTHat = computePtHat(mccollision);
+    if (pTHat < pTHatAbsoluteMin) {
+      return;
     }
-
-    float eventWeight = mccollision.weight();
-
-    registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binInel), eventWeight);
-    if (!hasRecoColl) {
-    } else {
-      registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binNoReco), eventWeight);
-      if (!passesSplitCollCut) {
-        goto endEventCounterWeighted;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binSplit), eventWeight);
-
-      for (std::size_t i = 0; i < activeStages.size(); ++i) {
-        if (!stagePassed[i]) {
-          goto endEventCounterWeighted;
-        }
-        registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(activeStages[i].bin), eventWeight);
-      }
-
-      if (!hasCustomEventSel || !passesZvtxCut) {
-        goto endEventCounterWeighted;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binZvtx), eventWeight);
-
-      if (!centralityIsGood) {
-        goto endEventCounterWeighted;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binCentrality), eventWeight);
-    }
-
-  endEventCounterWeighted:
-
-    float pTHat = 10.0f / (std::pow(eventWeight, 1.0f / pTHatExponent));
 
     for (auto const& jet : jets) {
-      if (jet.r() != round(selectedJetsRadius * 100.0f)) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
+          jet.pt() < jetPtMin || jet.pt() > pTHatMaxMCP * pTHat ||
+          !isAcceptedJet<aod::JetParticles>(jet)) {
         continue;
       }
-      if (jet.pt() < jetPtMin) {
-        continue;
+      for (int s = kBinBBF_Inel; s <= sMax; ++s) {
+        registry.fill(HIST("h2_jet_pt_part_eventselection_bcBitsFirst"), jet.pt(), static_cast<double>(s), weight);
       }
-      if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
-        continue;
-      }
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetParticles>(jet)) {
-        continue;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binInel), eventWeight);
-
-      if (!hasRecoColl) {
-        continue;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binNoReco), eventWeight);
-
-      if (!passesSplitCollCut) {
-        continue;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binSplit), eventWeight);
-
-      for (std::size_t i = 0; i < activeStages.size(); ++i) {
-        if (!stagePassed[i]) {
-          goto nextJetWeighted;
-        }
-        registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(activeStages[i].bin), eventWeight);
-      }
-
-      if (!hasCustomEventSel || !passesZvtxCut) {
-        goto nextJetWeighted;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binZvtx), eventWeight);
-
-      if (!centralityIsGood) {
-        goto nextJetWeighted;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binCentrality), eventWeight);
-
-    nextJetWeighted:;
     }
   }
-  PROCESS_SWITCH(JetCrossSectionEfficiency, processCrossSectionEfficiencyWeighted, "jet spectra QC for MC particle level with step-by-step cuts (weighted)", false);
+  PROCESS_SWITCH(JetCrossSectionEfficiency, processCrossSectionEfficiencyBcBitsFirst,
+                 "Cascade efficiency with BC bits evaluated on MC truth BC before collision reco", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

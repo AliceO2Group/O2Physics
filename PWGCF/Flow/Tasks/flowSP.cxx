@@ -58,6 +58,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -76,21 +77,21 @@ struct FlowSP {
 
   // event selection configurable group
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cEvtUseRCTFlagChecker, bool, false, "Evt sel: use RCT flag checker");
+    O2_DEFINE_CONFIGURABLE(cEvtUseRCTFlagChecker, bool, true, "Evt sel: use RCT flag checker");
     O2_DEFINE_CONFIGURABLE(cEvtRCTFlagCheckerLabel, std::string, "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"); // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
-    O2_DEFINE_CONFIGURABLE(cEvtRCTFlagCheckerZDCCheck, bool, false, "Evt sel: RCT flag checker ZDC check");
-    O2_DEFINE_CONFIGURABLE(cEvtRCTFlagCheckerLimitAcceptAsBad, bool, false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad");
+    O2_DEFINE_CONFIGURABLE(cEvtRCTFlagCheckerZDCCheck, bool, true, "Evt sel: RCT flag checker ZDC check");
+    O2_DEFINE_CONFIGURABLE(cEvtRCTFlagCheckerLimitAcceptAsBad, bool, true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad");
     O2_DEFINE_CONFIGURABLE(cEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
     O2_DEFINE_CONFIGURABLE(cEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
     O2_DEFINE_CONFIGURABLE(cEvSelsMinOccupancy, int, 0, "Minimum occupancy of selected events");
     O2_DEFINE_CONFIGURABLE(cEvSelsNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
     O2_DEFINE_CONFIGURABLE(cEvSelsIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
     O2_DEFINE_CONFIGURABLE(cEvSelsNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
-    O2_DEFINE_CONFIGURABLE(cEvSelsNoCollInTimeRangeNarrow, bool, true, "kNoCollInTimeRangeNarrow");
+    O2_DEFINE_CONFIGURABLE(cEvSelsNoCollInTimeRangeNarrow, bool, false, "kNoCollInTimeRangeNarrow");
     O2_DEFINE_CONFIGURABLE(cEvSelsDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
     O2_DEFINE_CONFIGURABLE(cEvSelsIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
     O2_DEFINE_CONFIGURABLE(cEvSelsIsGoodITSLayersAll, bool, true, "Cut time intervals with dead ITS staves");
-    O2_DEFINE_CONFIGURABLE(cEvSelsIsGoodITSLayer0123, bool, true, "Cut time intervals with dead ITS staves");
+    O2_DEFINE_CONFIGURABLE(cEvSelsIsGoodITSLayer0123, bool, false, "Cut time intervals with dead ITS staves");
 
     // QA Plots
     O2_DEFINE_CONFIGURABLE(cFillEventQA, bool, false, "Fill histograms for event QA");
@@ -117,13 +118,13 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cCentNGlobal, bool, false, "Set centrality estimator to CentNGlobal");
     // Standard selections
     O2_DEFINE_CONFIGURABLE(cTrackSelsDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
-    O2_DEFINE_CONFIGURABLE(cTrackSelsDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
+    O2_DEFINE_CONFIGURABLE(cTrackSelsDCAz, float, 0.2, "Cut on DCA in the longitudinal direction (cm)");
     O2_DEFINE_CONFIGURABLE(cTrackSelsNcls, float, 70, "Cut on number of TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cTrackSelsFshcls, float, 0.4, "Cut on fraction of shared TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cTrackSelsPtmin, float, 0.2, "minimum pt (GeV/c)");
     O2_DEFINE_CONFIGURABLE(cTrackSelsPtmax, float, 10, "maximum pt (GeV/c)");
     O2_DEFINE_CONFIGURABLE(cTrackSelsEta, float, 0.8, "eta cut");
-    O2_DEFINE_CONFIGURABLE(cIsMCReco, bool, true, "Is MC Reco");
+    O2_DEFINE_CONFIGURABLE(cIsMCReco, bool, false, "Is MC Reco");
     O2_DEFINE_CONFIGURABLE(cEvSelsVtxZ, float, 10, "vertex cut (cm)");
     O2_DEFINE_CONFIGURABLE(cMagField, float, 99999, "Configurable magnetic field;default CCDB will be queried");
     O2_DEFINE_CONFIGURABLE(cCentMin, float, 0, "Minimum cenrality for selected events");
@@ -136,11 +137,11 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cUseNUA1D, bool, true, "Use 1D NUA weights (only phi)");
     O2_DEFINE_CONFIGURABLE(cUseNUA2D, bool, false, "Use 2D NUA weights (phi and eta)");
     O2_DEFINE_CONFIGURABLE(cUseNUE2D, bool, false, "Use 2D NUE weights");
-    O2_DEFINE_CONFIGURABLE(cUseNUE3D, bool, false, "Use 3D NUE weights (pt, eta, centrality)");
+    O2_DEFINE_CONFIGURABLE(cUseNUE3D, bool, true, "Use 3D NUE weights (pt, eta, centrality)");
     O2_DEFINE_CONFIGURABLE(cUseNUE2Deta, bool, false, "Use 2D NUE weights TRUE: (pt and eta) FALSE: (pt and centrality)");
     // Additional track Selections
     O2_DEFINE_CONFIGURABLE(cTrackSelsUseAdditionalTrackCut, bool, false, "Bool to enable Additional Track Cut");
-    O2_DEFINE_CONFIGURABLE(cTrackSelsDoDCApt, bool, false, "Apply Pt dependent DCAz cut");
+    O2_DEFINE_CONFIGURABLE(cTrackSelsDoDCApt, bool, true, "Apply Pt dependent DCAz cut");
     O2_DEFINE_CONFIGURABLE(cTrackSelsDCApt1, float, 0.1, "DcaZ < const + (a * b) / pt^1.1 -> this sets a");
     O2_DEFINE_CONFIGURABLE(cTrackSelsDCApt2, float, 0.035, "DcaZ < const + (a * b) / pt^1.1 -> this sets b");
     O2_DEFINE_CONFIGURABLE(cTrackSelsDCAptConsMin, float, 0.1, "DcaZ < const + (a * b) / pt^1.1 -> this sets const");
@@ -150,21 +151,19 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cHarm, int, 1, "Flow harmonic n for ux and uy: (Cos(n*phi), Sin(n*phi))");
     O2_DEFINE_CONFIGURABLE(cHarmMixed, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
     // settings for CCDB data
-    O2_DEFINE_CONFIGURABLE(cCCDBdir_QQ, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/meanQQ/Default", "ccdb dir for average QQ values in 1% centrality bins");
+    O2_DEFINE_CONFIGURABLE(cCCDBdir_QQ, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/meanQQ/noGain", "ccdb dir for average QQ values in 1% centrality bins");
     O2_DEFINE_CONFIGURABLE(cCCDBdir_SP, std::string, "", "ccdb dir for average event plane resolution in 1% centrality bins");
-    O2_DEFINE_CONFIGURABLE(cCCDB_NUA, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/Default", "ccdb dir for NUA corrections");
+    O2_DEFINE_CONFIGURABLE(cCCDB_NUA, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/noGain/Default", "ccdb dir for NUA corrections");
     O2_DEFINE_CONFIGURABLE(cCCDB_NUE, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/Default", "ccdb dir for NUE corrections (pt)");
     O2_DEFINE_CONFIGURABLE(cCCDB_NUE2D, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/2D", "ccdb dir for NUE 2D corrections (pt, eta)");
-    O2_DEFINE_CONFIGURABLE(cCCDB_NUE3D, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/3D", "ccdb dir for NUE 3D corrections (pt, eta, centrality)");
-    O2_DEFINE_CONFIGURABLE(cCCDBdir_centrality, std::string, "", "ccdb dir for Centrality corrections");
+    O2_DEFINE_CONFIGURABLE(cCCDB_NUE3D, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE3D/Default", "ccdb dir for NUE 3D corrections (pt, eta, centrality)");
+    O2_DEFINE_CONFIGURABLE(cCCDBdir_centrality, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/centWeight/Default", "ccdb dir for Centrality corrections");
     O2_DEFINE_CONFIGURABLE(cCCDBdir_meanPt, std::string, "", "ccdb dir for Mean Pt corrections");
 
-    // Confogirable axis
-    // ConfigurableAxis axisCentrality{"axisCentrality", {20, 0, 100}, "Centrality bins for vn "};
-    // ConfigurableAxis axisMomentum{"axisMomentum", {20, 0, 10}, "Momentum bins for vn"};
-    // ConfigurableAxis axisEtaVn{"axisEtaVn", {8, -0.8, 0.8}, "Eta bins for vn"};
-
     // Configurables containing vector
+    O2_DEFINE_CONFIGURABLE(cUsePredeFinedSigma, bool, true, "Use one of the pre-defines settings for the multiplicity vs. centrality plots");
+    O2_DEFINE_CONFIGURABLE(cUsePredeFinedSigmaYear, int, 2023, "Predifine what year you want to use (2023/2024)");
+    O2_DEFINE_CONFIGURABLE(cUsePredeFinedSigmaNsigma, int, 2, "Sigma used for cuts (1,2,3)");
     Configurable<std::vector<double>> cEvSelsMultPv{"cEvSelsMultPv", std::vector<double>{2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05}, "Multiplicity cuts (PV) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
     Configurable<std::vector<double>> cEvSelsMult{"cEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
     Configurable<std::vector<double>> cPtBinning{"cPtBinning", std::vector<double>{0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pT binning for vn"};
@@ -260,6 +259,21 @@ struct FlowSP {
     double meanPxC = 0;
   } spm;
 
+  struct PtMaps {
+    std::unique_ptr<TProfile> meanPTMap = std::make_unique<TProfile>("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> meanPTMapPos = std::make_unique<TProfile>("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> meanPTMapNeg = std::make_unique<TProfile>("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
+
+    std::unique_ptr<TProfile> relPxA = std::make_unique<TProfile>("relPxA", "relPxA", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxC = std::make_unique<TProfile>("relPxC", "relPxC", 8, -0.8, 0.8);
+
+    std::unique_ptr<TProfile> relPxANeg = std::make_unique<TProfile>("relPxANeg", "relPxANeg", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxAPos = std::make_unique<TProfile>("relPxAPos", "relPxAPos", 8, -0.8, 0.8);
+
+    std::unique_ptr<TProfile> relPxCNeg = std::make_unique<TProfile>("relPxCNeg", "relPxCNeg", 8, -0.8, 0.8);
+    std::unique_ptr<TProfile> relPxCPos = std::make_unique<TProfile>("relPxCPos", "relPxCPos", 8, -0.8, 0.8);
+  } ptmaps;
+
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   OutputObj<GFWWeights> fWeightsPOS{GFWWeights("weights_positive")};
   OutputObj<GFWWeights> fWeightsNEG{GFWWeights("weights_negative")};
@@ -268,13 +282,13 @@ struct FlowSP {
   HistogramRegistry histos{"QAhistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Event selection cuts
-  TF1* fPhiCutLow = nullptr;
-  TF1* fPhiCutHigh = nullptr;
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
+  std::unique_ptr<TF1> fPhiCutLow = nullptr;
+  std::unique_ptr<TF1> fPhiCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultPVCutLow = nullptr;
+  std::unique_ptr<TF1> fMultPVCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultCutLow = nullptr;
+  std::unique_ptr<TF1> fMultCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultMultPVCut = nullptr;
 
   enum SelectionCriteria {
     evSel_FilteredEvent,
@@ -379,6 +393,7 @@ struct FlowSP {
     rctChecker.init(cfg.cEvtRCTFlagCheckerLabel, cfg.cEvtRCTFlagCheckerZDCCheck, cfg.cEvtRCTFlagCheckerLimitAcceptAsBad);
 
     histos.add("hCentrality", "Centrality; Centrality (%); ", {HistType::kTH1D, {axisCent}});
+    histos.add("hCentralityCW", "Centrality; Centrality (%); Weighted counts", {HistType::kTH1D, {axisCent}});
 
     histos.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
@@ -454,7 +469,6 @@ struct FlowSP {
         histos.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
         histos.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
         histos.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-        // histos.add("QA/after/DeltaPsivsPx", "", {HistType::kTH3D, {axisCent, axisPhiPlane, axisPx}});
       }
 
       if (cfg.cFillQABefore) {
@@ -537,8 +551,8 @@ struct FlowSP {
         registry.add("trackMCReco/after/incl/hIsPhysicalPrimary", "", {HistType::kTH3D, {{2, 0, 2}, axisCentrality, axisPt}});
         registry.get<TH3>(HIST("trackMCReco/after/incl/hIsPhysicalPrimary"))->GetXaxis()->SetBinLabel(1, "Secondary");
         registry.get<TH3>(HIST("trackMCReco/after/incl/hIsPhysicalPrimary"))->GetXaxis()->SetBinLabel(2, "Primary");
-        registry.add("trackMCReco/hTrackSize_unFiltered", "", {HistType::kTH2D, {{100, 0, 200000}, axisCentrality}});
-        registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH2D, {{100, 0, 20000}, axisCentrality}});
+        registry.add("trackMCReco/hTrackSize_unFiltered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentrality}});
+        registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentrality}});
         registry.add("trackMCReco/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
         registry.add("trackMCReco/after/incl/hPt_proton", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
         registry.add("trackMCReco/after/incl/hPt_pion", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
@@ -556,6 +570,8 @@ struct FlowSP {
         registry.add<TProfile>("QQCorrelations/qAXqCY", "", kTProfile, {axisCent});
         registry.add<TProfile>("QQCorrelations/qAYqCX", "", kTProfile, {axisCent});
         registry.add<TProfile>("QQCorrelations/qAXYqCXY", "", kTProfile, {axisCent});
+        registry.add<TProfile3D>("shift/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
+        registry.add<TProfile3D>("shift/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
 
         if (cfg.cFillGeneralV1Histos) {
           // track properties per centrality and per eta, pt bin
@@ -611,8 +627,7 @@ struct FlowSP {
           registry.add<TProfile3D>("incl/vnFull_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
         }
         if (cfg.cFillEventPlaneQA) {
-          histos.add<TH1>("QA/hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
-          histos.add<TH1>("QA/hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
+          histos.add<TH2>("QA/hSPplaneAC", "hSPplaneAC", kTH2D, {axisPhiPlane, axisPhiPlane});
           histos.add<TH1>("QA/hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
           histos.add<TProfile>("QA/hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
           histos.add<TProfile>("QA/hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
@@ -680,13 +695,51 @@ struct FlowSP {
     }
 
     if (cfg.cEvSelsUseAdditionalEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultPVCutLow = std::make_unique<TF1>("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultPVCutHigh = std::make_unique<TF1>("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultCutLow = std::make_unique<TF1>("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultCutHigh = std::make_unique<TF1>("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
-      std::vector<double> paramsMultPVCut = cfg.cEvSelsMultPv;
-      std::vector<double> paramsMultCut = cfg.cEvSelsMult;
+      std::vector<double> paramsMultPVCut;
+      std::vector<double> paramsMultCut;
+      int y2023 = 2023;
+      int y2024 = 2024;
+      std::array<int, 3> nSigma = {1, 2, 3};
+
+      if (cfg.cUsePredeFinedSigma) {
+        if (cfg.cUsePredeFinedSigmaYear == y2023) {
+          if (cfg.cUsePredeFinedSigmaNsigma == nSigma[0]) {
+            paramsMultPVCut = {2615.47, -90.5747, 1.25125, -0.00847075, 2.41183e-05, 3399.72, -121.652, 1.84077, -0.0142886, 4.71449e-05};
+            paramsMultCut = {1716.84, -56.5663, 0.715202, -0.00426007, 1.05075e-05, 2550.82, -87.4873, 1.22205, -0.00852644, 2.54248e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[1]) {
+            paramsMultPVCut = {2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05};
+            paramsMultCut = {1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[2]) {
+            paramsMultPVCut = {1837.75, -60.852, 0.724331, -0.00366975, 6.47562e-06, 4182.12, -152.459, 2.41955, -0.0199481, 6.93894e-05};
+            paramsMultCut = {885.976, -26.3397, 0.240114, -0.000496168, -1.82704e-06, 3384.43, -118.377, 1.72823, -0.0127887, 4.03432e-05};
+          } else {
+            LOGF(fatal, "nSigma can only be 1-3 please reset the variable or give the parameters manually and set cfg.cUsePredeFinedSigma to FALSE");
+          }
+        } else if (cfg.cUsePredeFinedSigmaYear == y2024) {
+          if (cfg.cUsePredeFinedSigmaNsigma == nSigma[0]) {
+            paramsMultPVCut = {2726.93, -100.128, 1.45046, -0.0099354, 2.71182e-05, 3404.72, -126.569, 1.92500, -0.0142653, 4.31645e-05};
+            paramsMultCut = {1858.77, -66.6070, 0.929146, -0.00606961, 1.57639e-05, 2672.43, -96.7708, 1.39109, -0.00942498, 2.54268e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[1]) {
+            paramsMultPVCut = {2390.04, -87.3154, 1.23176, -0.00806869, 2.06624e-05, 3744.26, -139.927, 2.16863, -0.0165329, 5.17269e-05};
+            paramsMultCut = {1451.23, -51.4314, 0.694609, -0.00433959, 1.06698e-05, 3080.42, -112.071, 1.63166, -0.0112533, 3.10348e-05};
+          } else if (cfg.cUsePredeFinedSigmaNsigma == nSigma[2]) {
+            paramsMultPVCut = {2053.64, -74.5950, 1.01563, -0.00621473, 1.41276e-05, 4083.79, -153.304, 2.41333, -0.0188198, 6.03974e-05};
+            paramsMultCut = {1042.50, -35.9374, 0.440681, -0.00222218, 3.20643e-06, 3488.53, -127.396, 1.87339, -0.0131007, 3.67434e-05};
+          } else {
+            LOGF(fatal, "cUsePredeFinedSigmaNsigma can only be 1-3 please reset the variable or give the parameters manually and set cUsePredeFinedSigma to FALSE");
+          }
+        } else {
+          LOGF(fatal, "cUsePredeFinedSigmaYear can only be 2023/2024 please reset the variable or give the parameters manually and set cUsePredeFinedSigma to FALSE");
+        }
+      } else {
+        paramsMultPVCut = cfg.cEvSelsMultPv;
+        paramsMultCut = cfg.cEvSelsMult;
+      }
 
       // number of parameters required in cfg.cEvSelsMultPv and cfg.cEvSelsMult.  (5 Low + 5 High)
       uint64_t nParams = 10;
@@ -704,8 +757,8 @@ struct FlowSP {
     }
 
     if (cfg.cTrackSelsUseAdditionalTrackCut) {
-      fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+      fPhiCutLow = std::make_unique<TF1>("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
+      fPhiCutHigh = std::make_unique<TF1>("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
   } // end of init
 
@@ -1125,7 +1178,6 @@ struct FlowSP {
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vz"), psiA, collision.posZ(), spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vz"), psiC, collision.posZ(), spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vz"), psiFull, collision.posZ(), spm.centWeight);
-        // histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/DeltaPsivsPx"), spm.centrality, psiA - psiC - constants::math::PI, track.px(), spm.centWeight);
       }
     }
     return;
@@ -1135,20 +1187,27 @@ struct FlowSP {
   inline void fillHistograms(TrackObject track)
   {
     double weight = spm.wacc[ct][pt] * spm.weff[ct][pt] * spm.centWeight;
-    int scale = 1.0;
-    int minusQ = -1.0;
+    float scale = 1.0;
+    float minusQ = -1.0;
     if (track.eta() < 0)
       scale = -1.0;
 
+    const double invSqrtQQ = 1.0 / std::sqrt(std::fabs(spm.corrQQ));
+    const double invSqrtQQx = 1.0 / std::sqrt(std::fabs(spm.corrQQx));
+    const double invSqrtQQy = 1.0 / std::sqrt(std::fabs(spm.corrQQy));
+    const double uqA = spm.uy * spm.qyA + spm.ux * spm.qxA;
+    const double uqC = spm.uy * spm.qyC + spm.ux * spm.qxC;
+    const double invMeanPtQQ = 1.0 / spm.meanPtWeight;
+
     if (cfg.cFillGeneralV1Histos) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCodd"), track.pt(), track.eta(), spm.centrality, scale * (spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnOdd"), track.pt(), track.eta(), spm.centrality, scale * 0.5 * ((spm.uy * spm.qyA + spm.ux * spm.qxA) - (spm.uy * spm.qyC + spm.ux * spm.qxC)) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnEven"), track.pt(), track.eta(), spm.centrality, 0.5 * ((spm.uy * spm.qyA + spm.ux * spm.qxA) + (spm.uy * spm.qyC + spm.ux * spm.qxC)) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCSetPlane"), track.pt(), track.eta(), spm.centrality, (spm.uy + spm.ux) / std::sqrt(std::fabs(spm.corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnASetPlane"), track.pt(), track.eta(), spm.centrality, (minusQ * spm.ux - spm.uy) / std::sqrt(std::fabs(spm.corrQQ)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (uqA)*invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCodd"), track.pt(), track.eta(), spm.centrality, scale * (uqC)*invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnOdd"), track.pt(), track.eta(), spm.centrality, scale * 0.5 * ((uqA) - (uqC)) * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnEven"), track.pt(), track.eta(), spm.centrality, 0.5 * ((uqA) + (uqC)) * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (uqA)*invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (uqC)*invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCSetPlane"), track.pt(), track.eta(), spm.centrality, (spm.uy + spm.ux) * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnASetPlane"), track.pt(), track.eta(), spm.centrality, (minusQ * spm.ux - spm.uy) * invSqrtQQ, weight);
     }
 
     if (cfg.cFillMixedHarmonics) {
@@ -1159,10 +1218,10 @@ struct FlowSP {
     }
 
     if (cfg.cFillXandYterms) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQx)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA) / std::sqrt(std::fabs(spm.corrQQy)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQx)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC) / std::sqrt(std::fabs(spm.corrQQy)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxA) * invSqrtQQx, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA) * invSqrtQQy, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxC) * invSqrtQQx, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC) * invSqrtQQy, weight);
     }
 
     if (cfg.cFillEventPlane) { // only fill for inclusive!
@@ -1172,23 +1231,23 @@ struct FlowSP {
     }
 
     if (cfg.cFillMeanPT) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3D"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3D"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3D"), track.pt(), track.eta(), spm.centrality, track.pt() * ((uqA) * (invSqrtQQ * invMeanPtQQ)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3D"), track.pt(), track.eta(), spm.centrality, track.pt() * ((uqC) * (invSqrtQQ * invMeanPtQQ)), weight);
 
       if (cfg.cFillMeanPTextra) {
         registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtEtaCent"), track.eta(), spm.centrality, track.pt(), weight);
         registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtCent"), spm.centrality, track.pt(), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) * (invSqrtQQ * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) * (invSqrtQQ * invMeanPtQQ)), weight);
 
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Aodd"), track.eta(), spm.centrality, track.pt() * scale * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Codd"), track.eta(), spm.centrality, track.pt() * scale * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Aodd"), track.eta(), spm.centrality, track.pt() * scale * ((spm.uy * spm.qyA + spm.ux * spm.qxA) * (invSqrtQQ * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Codd"), track.eta(), spm.centrality, track.pt() * scale * ((spm.uy * spm.qyC + spm.ux * spm.qxC) * (invSqrtQQ * invMeanPtQQ)), weight);
 
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3Dx"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.ux * spm.qxA) / (std::sqrt(std::fabs(spm.corrQQx)) * spm.meanPtWeight)), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3Dx"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.ux * spm.qxC) / (std::sqrt(std::fabs(spm.corrQQx)) * spm.meanPtWeight)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3Dx"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.ux * spm.qxA) * (invSqrtQQx * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3Dx"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.ux * spm.qxC) * (invSqrtQQx * invMeanPtQQ)), weight);
 
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3Dy"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA) / (std::sqrt(std::fabs(spm.corrQQy)) * spm.meanPtWeight)), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3Dy"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC) / (std::sqrt(std::fabs(spm.corrQQy)) * spm.meanPtWeight)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3Dy"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA) * (invSqrtQQy * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3Dy"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC) * (invSqrtQQy * invMeanPtQQ)), weight);
       }
     }
   }
@@ -1199,26 +1258,28 @@ struct FlowSP {
     if (!cfg.cFillTrackQA)
       return;
 
+    double weight = spm.wacc[ct][par] * spm.weff[ct][par] * spm.centWeight;
+
     static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when nocfg.cTrackSelDo) {
     if (cfg.cTrackSelDoTrackQAvsCent) {
-      histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta"), track.pt(), track.eta(), spm.centrality, spm.wacc[ct][par] * spm.weff[ct][par]);
+      histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta"), track.pt(), track.eta(), spm.centrality, weight);
       histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta_uncorrected"), track.pt(), track.eta(), spm.centrality);
-      histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta"), track.phi(), track.eta(), spm.centrality, spm.wacc[ct][par] * spm.weff[ct][par]);
+      histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta"), track.phi(), track.eta(), spm.centrality, weight);
       histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_uncorrected"), track.phi(), track.eta(), spm.centrality);
     } else {
       histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt"), track.phi(), track.eta(), track.pt());
-      histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt_corrected"), track.phi(), track.eta(), track.pt(), spm.wacc[ct][par] * spm.weff[ct][par]);
+      histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt_corrected"), track.phi(), track.eta(), track.pt(), weight);
     }
 
     histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), spm.vz);
     histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), spm.vz, spm.wacc[ct][par]);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), spm.wacc[ct][par] * spm.weff[ct][par]);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), spm.wacc[ct][par] * spm.weff[ct][par]);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), spm.wacc[ct][par] * spm.weff[ct][par]);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsCrossedRows(), spm.wacc[ct][par] * spm.weff[ct][par]);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), spm.wacc[ct][par] * spm.weff[ct][par]);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hMeanPtEta"), track.eta(), spm.centrality, track.pt(), spm.wacc[ct][par] * spm.weff[ct][par]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), weight);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), weight);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), weight);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsCrossedRows(), weight);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), weight);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hMeanPtEta"), track.eta(), spm.centrality, track.pt(), weight);
   }
 
   template <FillType ft, ChargeType ct, typename TrackObject>
@@ -1362,6 +1423,8 @@ struct FlowSP {
     spm.psiA = 1.0 * std::atan2(spm.qyA, spm.qxA);
     spm.psiC = 1.0 * std::atan2(spm.qyC, spm.qxC);
 
+    int nshift = 10; // no. of iterations
+
     // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
     spm.psiFull = 1.0 * std::atan2(spm.qyA + spm.qyC, spm.qxA + spm.qxC);
 
@@ -1372,13 +1435,18 @@ struct FlowSP {
     registry.fill(HIST("QQCorrelations/qAXYqCXY"), spm.centrality, spm.qyA * spm.qxC + spm.qxA * spm.qyC);
     registry.fill(HIST("QQCorrelations/qAqCX"), spm.centrality, spm.qxA * spm.qxC);
     registry.fill(HIST("QQCorrelations/qAqCY"), spm.centrality, spm.qyA * spm.qyC);
+    for (int ishift = 1; ishift <= nshift; ishift++) {
+      registry.fill(HIST("shift/ShiftZDCC"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiC));
+      registry.fill(HIST("shift/ShiftZDCC"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiC));
+      registry.fill(HIST("shift/ShiftZDCA"), spm.centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * spm.psiA));
+      registry.fill(HIST("shift/ShiftZDCA"), spm.centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * spm.psiA));
+    }
 
     if (cfg.cFillEventQA) {
       histos.fill(HIST("QA/hCentFull"), spm.centrality, 1);
     }
     if (cfg.cFillEventPlaneQA) {
-      histos.fill(HIST("QA/hSPplaneA"), spm.psiA, 1);
-      histos.fill(HIST("QA/hSPplaneC"), spm.psiC, 1);
+      histos.fill(HIST("QA/hSPplaneAC"), spm.psiA, spm.psiC, 1);
       histos.fill(HIST("QA/hSPplaneFull"), spm.psiFull, 1);
       histos.fill(HIST("QA/hCosPhiACosPhiC"), spm.centrality, std::cos(spm.psiA) * std::cos(spm.psiC));
       histos.fill(HIST("QA/hSinPhiASinPhiC"), spm.centrality, std::sin(spm.psiA) * std::sin(spm.psiC));
@@ -1428,29 +1496,34 @@ struct FlowSP {
         conf.clCentrality = true;
       }
       double centW = conf.hCentrality->GetBinContent(conf.hCentrality->FindBin(spm.centrality));
-      if (centW < 0) {
+      if (centW <= 0) {
         spm.centWeight = 0.;
         LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
+      } else {
+        spm.centWeight = centW;
       }
     }
 
+    // Always fill centrality histogram after event selections!
+    histos.fill(HIST("hCentralityCW"), spm.centrality, spm.centWeight);
+
     fillEventQA<kAfter>(collision, tracks);
 
-    TProfile* meanPTMap = new TProfile("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
-    TProfile* meanPTMapPos = new TProfile("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
-    TProfile* meanPTMapNeg = new TProfile("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
+    ptmaps.meanPTMap->Reset();
+    ptmaps.meanPTMapPos->Reset();
+    ptmaps.meanPTMapNeg->Reset();
 
-    TProfile* relPxA = new TProfile("relPxA", "relPxA", 8, -0.8, 0.8);
-    TProfile* relPxC = new TProfile("relPxC", "relPxC", 8, -0.8, 0.8);
+    ptmaps.relPxA->Reset();
+    ptmaps.relPxC->Reset();
 
-    TProfile* relPxANeg = new TProfile("relPxANeg", "relPxANeg", 8, -0.8, 0.8);
-    TProfile* relPxAPos = new TProfile("relPxAPos", "relPxAPos", 8, -0.8, 0.8);
+    ptmaps.relPxANeg->Reset();
+    ptmaps.relPxAPos->Reset();
 
-    TProfile* relPxCNeg = new TProfile("relPxCNeg", "relPxCNeg", 8, -0.8, 0.8);
-    TProfile* relPxCPos = new TProfile("relPxCPos", "relPxCPos", 8, -0.8, 0.8);
+    ptmaps.relPxCNeg->Reset();
+    ptmaps.relPxCPos->Reset();
 
     double sumPxAEvent = 0;
-    int meanPxEventCount = 0;
+    double meanPxEventCount = 0;
     double sumPxCEvent = 0;
 
     for (const auto& track : tracks) {
@@ -1555,26 +1628,31 @@ struct FlowSP {
       sumPxCEvent += spm.meanPxC * weightIncl;
       meanPxEventCount += weightIncl;
 
-      meanPTMap->Fill(track.eta(), track.pt(), weightIncl);
-      relPxA->Fill(track.eta(), drelPxA, weightIncl);
-      relPxC->Fill(track.eta(), drelPxC, weightIncl);
+      ptmaps.meanPTMap->Fill(track.eta(), track.pt(), weightIncl);
+      ptmaps.relPxA->Fill(track.eta(), drelPxA, weightIncl);
+      ptmaps.relPxC->Fill(track.eta(), drelPxC, weightIncl);
 
       if (spm.charge == kPositive) {
-        meanPTMapPos->Fill(track.eta(), track.pt(), weightPos);
-        relPxAPos->Fill(track.eta(), drelPxA, weightPos);
-        relPxCPos->Fill(track.eta(), drelPxC, weightPos);
+        ptmaps.meanPTMapPos->Fill(track.eta(), track.pt(), weightPos);
+        ptmaps.relPxAPos->Fill(track.eta(), drelPxA, weightPos);
+        ptmaps.relPxCPos->Fill(track.eta(), drelPxC, weightPos);
       }
 
       if (spm.charge == kNegative) {
-        meanPTMapNeg->Fill(track.eta(), track.pt(), weightNeg);
-        relPxANeg->Fill(track.eta(), drelPxA, weightNeg);
-        relPxCNeg->Fill(track.eta(), drelPxC, weightNeg);
+        ptmaps.meanPTMapNeg->Fill(track.eta(), track.pt(), weightNeg);
+        ptmaps.relPxANeg->Fill(track.eta(), drelPxA, weightNeg);
+        ptmaps.relPxCNeg->Fill(track.eta(), drelPxC, weightNeg);
       }
 
     } // end of track loop
 
-    double meanPxAEvent = sumPxAEvent / meanPxEventCount;
-    double meanPxCEvent = sumPxCEvent / meanPxEventCount;
+    double meanPxAEvent = 0;
+    double meanPxCEvent = 0;
+
+    if (meanPxEventCount > 0) {
+      meanPxAEvent = sumPxAEvent / meanPxEventCount;
+      meanPxCEvent = sumPxCEvent / meanPxEventCount;
+    }
 
     if (cfg.cFillMeanPTextra) {
       registry.fill(HIST("incl/meanPT/meanPxA"), spm.centrality, spm.psiA - spm.psiC, meanPxAEvent);
@@ -1587,18 +1665,18 @@ struct FlowSP {
       int nBinsEta = 8;
       for (int etabin = 1; etabin <= nBinsEta; etabin++) {
         // eta bin is 1 --> Find centbin!!
-        double eta = meanPTMap->GetXaxis()->GetBinCenter(etabin);
-        double meanPt = meanPTMap->GetBinContent(etabin);
-        double meanPtPos = meanPTMapPos->GetBinContent(etabin);
-        double meanPtNeg = meanPTMapNeg->GetBinContent(etabin);
+        double eta = ptmaps.meanPTMap->GetXaxis()->GetBinCenter(etabin);
+        double meanPt = ptmaps.meanPTMap->GetBinContent(etabin);
+        double meanPtPos = ptmaps.meanPTMapPos->GetBinContent(etabin);
+        double meanPtNeg = ptmaps.meanPTMapNeg->GetBinContent(etabin);
 
-        double drelPxA = relPxA->GetBinContent(etabin);
-        double drelPxANeg = relPxANeg->GetBinContent(etabin);
-        double drelPxAPos = relPxAPos->GetBinContent(etabin);
+        double drelPxA = ptmaps.relPxA->GetBinContent(etabin);
+        double drelPxANeg = ptmaps.relPxANeg->GetBinContent(etabin);
+        double drelPxAPos = ptmaps.relPxAPos->GetBinContent(etabin);
 
-        double drelPxC = relPxC->GetBinContent(etabin);
-        double drelPxCNeg = relPxCNeg->GetBinContent(etabin);
-        double drelPxCPos = relPxCPos->GetBinContent(etabin);
+        double drelPxC = ptmaps.relPxC->GetBinContent(etabin);
+        double drelPxCNeg = ptmaps.relPxCNeg->GetBinContent(etabin);
+        double drelPxCPos = ptmaps.relPxCPos->GetBinContent(etabin);
 
         if (meanPt != 0) {
           registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, drelPxA / meanPt, spm.centWeight);
@@ -1613,16 +1691,6 @@ struct FlowSP {
         }
       }
     }
-
-    delete meanPTMap;
-    delete meanPTMapPos;
-    delete meanPTMapNeg;
-    delete relPxA;
-    delete relPxANeg;
-    delete relPxAPos;
-    delete relPxC;
-    delete relPxCNeg;
-    delete relPxCPos;
   }
 
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
@@ -1721,11 +1789,10 @@ struct FlowSP {
         conf.clCentrality = true;
       }
       double centW = conf.hCentrality->GetBinContent(conf.hCentrality->FindBin(spm.centrality));
-      if (centW < 0) {
-        spm.centWeight = 1. / centW;
-      } else {
+
+      if (centW <= 0) {
+        spm.centWeight = 0;
         LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
-        spm.centWeight = 0.;
       }
     }
 
@@ -1997,6 +2064,8 @@ struct FlowSP {
         // get tracks that belong to reconstructed collision
         auto trackSlice = tracks.sliceBy(trackPerCollision, col.globalIndex());
 
+        // get filtered tracks that belong to reconstructed collision
+        // mcReco uses filtered tracks
         auto filteredTrackSlice = filteredTracks.sliceBy(trackPerCollision, col.globalIndex());
 
         spm.centrality = col.centFT0C();

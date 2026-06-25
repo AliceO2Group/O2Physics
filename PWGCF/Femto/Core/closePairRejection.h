@@ -88,6 +88,8 @@ constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaugh
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
 constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0DaughterNeg";
+constexpr const char PrefixCprV0DaughterResoDaughterPos[] = "CprV0DaughterResoDaughterPos";
+constexpr const char PrefixCprV0DaughterResoDaughterNeg[] = "CprV0DaughterResoDaughterNeg";
 constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor";
 
 // pairs
@@ -97,6 +99,8 @@ using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
 using ConfCprV0DaugherV0DaughterNeg = ConfCpr<PrefixCprV0DaughterV0DaughterNeg>;
+using ConfCprV0DaughterResoDaughterPos = ConfCpr<PrefixCprV0DaughterResoDaughterPos>;
+using ConfCprV0DaughterResoDaughterNeg = ConfCpr<PrefixCprV0DaughterResoDaughterNeg>;
 using ConfCprTrackCascadeBachelor = ConfCpr<PrefixCprTrackCascadeBachelor>;
 
 // tpc radii for computing phistar
@@ -112,6 +116,10 @@ constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
 constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
 constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";
 constexpr char PrefixV0V0NegMe[] = "CPR_V0V0_NegDau/ME/";
+constexpr char PrefixV0TwoTrackResonancePosSe[] = "CPR_V0Resonance_PosDau/SE/";
+constexpr char PrefixV0TwoTrackResonanceNegSe[] = "CPR_V0Resonance_NegDau/SE/";
+constexpr char PrefixV0TwoTrackResonancePosMe[] = "CPR_V0Resonance_PosDau/ME/";
+constexpr char PrefixV0TwoTrackResonanceNegMe[] = "CPR_V0Resonance_NegDau/ME/";
 constexpr char PrefixTrackTwoTrackResonanceSe[] = "CPR_TrackResonanceDau/SE/";
 constexpr char PrefixTrackTwoTrackResonanceMe[] = "CPR_TrackResonanceDau/ME/";
 constexpr char PrefixTrackCascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";

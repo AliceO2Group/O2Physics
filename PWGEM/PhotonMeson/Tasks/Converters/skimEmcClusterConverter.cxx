@@ -41,6 +41,7 @@ struct SkimEmcClusterConverter {
   {
     std::vector<float> vDummy = {};
     std::vector<float> vPhi, vEta, vPt, vP;
+    tableGammaEMCReco001.reserve(emcClusters.size());
     for (const auto& emcCluster : emcClusters) {
       // using convertSpanToVector is just a temporal solution, since right now tables return gsl::span
       // while filling a table needs std::span which can not be transformed. So going over std::vector
