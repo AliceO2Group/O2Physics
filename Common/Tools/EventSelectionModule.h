@@ -310,6 +310,7 @@ class BcSelectionModule
       return;
     }
     bcselbuffer.clear();
+    bcselbuffer.reserve(bcs.size());
     for (const auto& bc : bcs) {
       uint64_t timestamp = timestamps[bc.globalIndex()];
       par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", timestamp);
@@ -453,6 +454,7 @@ class BcSelectionModule
 
     int run = bcs.iteratorAt(0).runNumber();
 
+    bcselbuffer.reserve(bcs.size());
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
       uint64_t timestamp = timestamps[bc.globalIndex()];
