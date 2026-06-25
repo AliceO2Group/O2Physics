@@ -255,6 +255,8 @@ struct ueCharged {
     ue.add("hEtaLeadingVsPtLeading", " ", HistType::kTH2D, {{ptAxist}, {50, -2.5, 2.5, "#eta"}});
 
     if (analyzeEvandTracksel) {
+      ue.add("hPtVsDCAxy", " ", HistType::kTH2D, {{ptAxis}, {225, -0.6, 0.6, "#it{DCA}_{xy} (cm)"}});
+      ue.add("hPtVsDCAz", " ", HistType::kTH2D, {{ptAxis}, {225, -0.6, 0.6, "#it{DCA}_{z} (cm)"}});
       const AxisSpec axisVtxZ{500, -25., 25., ""};
       ue.add("hVtxFT0VsVtxCol", " ", HistType::kTH2D, {{axisVtxZ}, {axisVtxZ}});
       ue.add("hVtxFT0VsVtxCol_afterSel8", " ", HistType::kTH2D, {{axisVtxZ}, {axisVtxZ}});
@@ -1169,12 +1171,17 @@ struct ueCharged {
 
     ue.fill(HIST("hvtxZ_after"), collision.posZ());
 
+    if (!isMCEventSelected(collision))
+      return;
+
     int tracks_before = 0;
     int tracks_after = 0;
 
     for (auto& track : tracks) {
 
       if (track.hasITS() && track.hasTPC()) {
+        ue.fill(HIST("hPtVsDCAxy"), track.pt(), track.dcaXY());
+        ue.fill(HIST("hPtVsDCAz"), track.pt(), track.dcaZ());
         ue.fill(HIST("preselection_track/ITS/itsNCls"), track.itsNCls());
         ue.fill(HIST("preselection_track/ITS/itsChi2NCl"), track.itsChi2NCl());
         ue.fill(HIST("preselection_track/ITS/itsClusterMap"), track.itsClusterMap());
