@@ -1952,9 +1952,9 @@ struct TrackMeanOccTableProducer {
             bc = collision.template bc_as<B>();
           }
           // if (doAmbgUpdate) {
-            // to be updated later
-            //  bc = collisions.iteratorAt(2).bc_as<aod::BCsWithTimestamps>();
-            //  bc = ambgTracks.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+          // to be updated later
+          //  bc = collisions.iteratorAt(2).bc_as<aod::BCsWithTimestamps>();
+          //  bc = ambgTracks.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
           // }
           // LOG(info)<<" What happens in the case when the collision id is = -1 and it tries to obtain bc"
           getTimingInfo(bc, lastRun, nBCsPerTF, bcSOR, time, tfIdThis, bcInTF);
