@@ -346,14 +346,12 @@ struct JetCorrelationD0 {
 
       if (d0Candidate.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
         matchedFrom = 1;
-      }
-      else if (d0Candidate.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
+      } else if (d0Candidate.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
         matchedFrom = -1;
       }
       if (d0Candidate.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
         selectedAs = 1;
-      }
-      else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+      } else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
         selectedAs = -1;
       }
 
