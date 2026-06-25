@@ -67,7 +67,7 @@ struct ALICE3Centrality {
   void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks)
   {
     if (!centralityLoaded) {
-      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
+      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", 1);
       centralityLoaded = true;
       LOGF(info, "ALICE 3 centrality calibration loaded!");
     }

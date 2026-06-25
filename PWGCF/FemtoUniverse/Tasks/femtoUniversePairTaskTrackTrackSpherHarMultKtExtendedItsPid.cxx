@@ -500,6 +500,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtendedItsPid {
       } else {
         sameEventMultCont.init(&sameMultRegistryPM, confkstarBins, confMultKstarBins, confKtKstarBins, confLMax, twotracksconfigs.confIs1D);
         mixedEventMultCont.init(&mixedMultRegistryPM, confkstarBins, confMultKstarBins, confKtKstarBins, confLMax, twotracksconfigs.confIs1D);
+        sameEventMultCont.setPairMass(mass1, mass2);
+        mixedEventMultCont.setPairMass(mass1, mass2);
       }
     }
 
@@ -512,6 +514,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtendedItsPid {
       } else {
         sameEventMultContPP.init(&sameMultRegistryPP, confkstarBins, confMultKstarBins, confKtKstarBins, confLMax, twotracksconfigs.confIs1D);
         mixedEventMultContPP.init(&mixedMultRegistryPP, confkstarBins, confMultKstarBins, confKtKstarBins, confLMax, twotracksconfigs.confIs1D);
+        sameEventMultContPP.setPairMass(mass1, mass2);
+        mixedEventMultContPP.setPairMass(mass1, mass2);
       }
       sameEventCont1dpp.init(&resultRegistry1D, confkstarBins, confMultBinsCent, confkTBins, confmTBins, confmultBins3D, confmTBins3D, twotracksconfigs.confEtaBins, twotracksconfigs.confPhiBins, twotracksconfigs.confIsMC, twotracksconfigs.confUse3D);
       sameEventCont1dpp.setPDGCodes(trackonefilter.confPDGCodePartOne, tracktwofilter.confPDGCodePartTwo);
@@ -528,6 +532,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtendedItsPid {
       } else {
         sameEventMultContMM.init(&sameMultRegistryMM, confkstarBins, confMultKstarBins, confKtKstarBins, confLMax, twotracksconfigs.confIs1D);
         mixedEventMultContMM.init(&mixedMultRegistryMM, confkstarBins, confMultKstarBins, confKtKstarBins, confLMax, twotracksconfigs.confIs1D);
+        sameEventMultContMM.setPairMass(mass1, mass2);
+        mixedEventMultContMM.setPairMass(mass1, mass2);
       }
       sameEventCont1dmm.init(&resultRegistry1D, confkstarBins, confMultBinsCent, confkTBins, confmTBins, confmultBins3D, confmTBins3D, twotracksconfigs.confEtaBins, twotracksconfigs.confPhiBins, twotracksconfigs.confIsMC, twotracksconfigs.confUse3D);
       sameEventCont1dmm.setPDGCodes(trackonefilter.confPDGCodePartOne, tracktwofilter.confPDGCodePartTwo);

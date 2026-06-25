@@ -337,13 +337,21 @@ class PIDExtended
         return XiC0;
       case o2::constants::physics::Pdg::kK0Star892:
         return Kstar;
-      case 323:
+      case -o2::constants::physics::Pdg::kK0Star892:
+        return Kstar;
+      case o2::constants::physics::Pdg::kKPlusStar892:
+        return KstarPM;
+      case -o2::constants::physics::Pdg::kKPlusStar892:
         return KstarPM;
       case 310:
         return Kshort;
       case 3324:
         return Xi1530;
+      case -3324:
+        return Xi1530;
       case 3124:
+        return Lambda1520;
+      case -3124:
         return Lambda1520;
       default:
         LOG(debug) << "Cannot identify particle with PDG code " << particle.pdgCode();

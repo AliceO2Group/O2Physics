@@ -182,6 +182,13 @@ class MlResponse
       LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
     }
 
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const int numInputFeatures = static_cast<int>(input.size());
+
+    if (numInputNodes != numInputFeatures) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
+    }
+
     TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
     return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }

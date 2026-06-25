@@ -123,6 +123,16 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdas, "Process lambdas and tracks", false);
 
+  void processLambdas(FilteredCollision const& col, Tracks const& tracks, Lambdas const& lambdas)
+  {
+    if (v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+      return;
+    }
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdas, "Process lambdas", false);
+
   void processTracksK0shorts(FilteredCollision const& col, Tracks const& tracks, K0shorts const& k0shorts)
   {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {

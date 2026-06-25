@@ -22,13 +22,19 @@
 
 #include "tpcSkimsTableCreator.h"
 
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/DataModel/OccupancyTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Logger.h>
 
 #include <TRandom3.h>
 
 #include <cmath>
+#include <string>
 
 namespace o2::dpg_tpcskimstablecreator
 {
@@ -49,7 +55,7 @@ enum {
 
 /// Event selection
 template <typename CollisionType>
-inline bool isEventSelected(const CollisionType& collision, const int applyEvSel)
+bool isEventSelected(const CollisionType& collision, const int applyEvSel)
 {
   if ((applyEvSel == EventSelectionRun2 && !collision.sel7()) || (applyEvSel == EventSelectionRun3 && !collision.sel8())) {
     return false;
@@ -88,7 +94,7 @@ inline bool downsampleTsalisCharged(TRandom3* fRndm, const double pt, const doub
 
 // Track selection
 template <typename TrackType>
-inline bool isTrackSelected(const TrackType& track, const int trackSelection)
+bool isTrackSelected(const TrackType& track, const int trackSelection)
 {
   bool isSelected{false};
   isSelected |= trackSelection == TrackSelectionNoCut;
@@ -103,12 +109,33 @@ inline bool isTrackSelected(const TrackType& track, const int trackSelection)
 
 /// Evaluate tpcSignal with or without dEdx correction
 template <bool IsCorrectedDeDx, typename TrkType>
-inline double tpcSignalGeneric(const TrkType& track)
+double tpcSignalGeneric(const TrkType& track)
 {
   if constexpr (IsCorrectedDeDx) {
     return track.tpcSignalCorrected();
   } else {
     return track.tpcSignal();
+  }
+}
+
+/// Determine interaction rate source and sqrtSNN from CCDB
+void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp, std::string& irSource, float& sqrtSNN)
+{
+  o2::parameters::GRPLHCIFData* genRunParams = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(ccdbPathGrpLhcIf, timestamp);
+  if (genRunParams != nullptr) {
+    const auto collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
+    if (collSys == CollisionSystemType::kCollSyspp) {
+      irSource = "T0VTX";
+    } else {
+      irSource = "ZNC hadronic";
+    }
+    sqrtSNN = genRunParams->getSqrtS();
+    LOG(info) << "irSource determined from General Run Parameters: " << irSource;
+    LOG(info) << "sqrtSNN determined from General Run Parameters: " << sqrtSNN << " GeV";
+  } else {
+    irSource = "";
+    sqrtSNN = 5360.f;
+    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined, sqrtSNN defaulted to 5360 GeV";
   }
 }
 
@@ -129,12 +156,12 @@ using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoToTrackQA, aod::TmoPri
 
 /// Evaluate occupancy-related variables
 template <typename TrkType>
-inline void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues)
+void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues)
 {
   if (track.tmoId() == -1) {
     return;
   }
-  const auto& tmoFromTrack = track.template tmo_as<TrackMeanOccs>();
+  const auto tmoFromTrack = track.template tmo_as<TrackMeanOccs>();
   occValues.tmoPrimUnfm80 = tmoFromTrack.tmoPrimUnfm80();
   occValues.tmoFV0AUnfm80 = tmoFromTrack.tmoFV0AUnfm80();
   occValues.tmoFT0AUnfm80 = tmoFromTrack.tmoFT0AUnfm80();

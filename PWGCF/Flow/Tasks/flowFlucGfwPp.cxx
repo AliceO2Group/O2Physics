@@ -116,9 +116,12 @@ struct FlowFlucGfwPp {
   static constexpr int kMinTracksPerEtaSideForGapCorrelation = 2;
   static constexpr int kMinTracksPerEtaRegionForThreeSubevents = 2;
 
+  static constexpr int EllipticQVectorHarmonic = 2;
+  static constexpr int TriangularQVectorHarmonic = 3;
+
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgIsMC, bool, false, "Is MC event")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A, 4:NTPV, 5:NGlobals, 6:MFT")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A, 4:NTPV, 5:NGlobals")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgQvecQA, bool, false, "Enable filling QA for q-Vec of TPC")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
@@ -165,7 +168,11 @@ struct FlowFlucGfwPp {
   O2_DEFINE_CONFIGURABLE(cfgNumQnBins, int, 10, "Number of qn bins");
   O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 100, "Maximum of centrality or multiplicity");
   O2_DEFINE_CONFIGURABLE(cfgEvtSelCent, bool, true, "Choose event selector as centrality(true) or multicplity(false)");
-  O2_DEFINE_CONFIGURABLE(cfgUseNegativeEtaHalfForq2, bool, true, "If true, use -eta half for q2 selection; otherwise use +eta half");
+  O2_DEFINE_CONFIGURABLE(cfgUseNegativeEtaHalfForq2, bool, true, "If true, use -eta half for qn selection; otherwise use +eta half");
+  O2_DEFINE_CONFIGURABLE(cfgQnSelectionHarmonic, int, 2, "Harmonic n used to build the reduced q_n vector for event shape selection, use 2 for q2 and 3 for q3");
+  O2_DEFINE_CONFIGURABLE(cfgQnHistMax, float, 6., "Upper range for q_n calibration histograms");
+  O2_DEFINE_CONFIGURABLE(cfgQnTrkAbsEtaMax, float, 0.5, "Upper range for abs eta of tracks contributing to q_n");
+  O2_DEFINE_CONFIGURABLE(cfgBypassQnSelection, bool, false, "Bypass q_n event shape selection and fill one integral q-bin");
   O2_DEFINE_CONFIGURABLE(cfgMinPtOnTPC, float, 0.2, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction");
   O2_DEFINE_CONFIGURABLE(cfgMaxPtOnTPC, float, 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction");
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8, "Maximum pseudorapidiy for charged track");
@@ -271,8 +278,7 @@ struct FlowFlucGfwPp {
     kCentFT0M,
     kCentFV0A,
     kCentNTPV,
-    kCentNGlobal,
-    kCentMFT
+    kCentNGlobal
   };
   enum EventSelFlags {
     kFilteredEvent = 1,
@@ -304,6 +310,11 @@ struct FlowFlucGfwPp {
     return "ese";
   }
 
+  int getNQnOutputBins()
+  {
+    return static_cast<bool>(cfgBypassQnSelection) ? 1 : static_cast<int>(cfgNumQnBins);
+  }
+
   // region indices for consistency flag
   int posRegionIndex = -1;
   int negRegionIndex = -1;
@@ -326,11 +337,11 @@ struct FlowFlucGfwPp {
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
 
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   o2::framework::expressions::Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter mcParticlesFilter = (aod::mcparticle::eta > o2::analysis::gfwflowflucpp::etalow && aod::mcparticle::eta < o2::analysis::gfwflowflucpp::etaup && aod::mcparticle::pt > o2::analysis::gfwflowflucpp::ptlow && aod::mcparticle::pt < o2::analysis::gfwflowflucpp::ptup);
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA>>;
+  using GFWTracksMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::McTrackLabels>>;
 
   void init(InitContext const&)
   {
@@ -404,8 +415,7 @@ struct FlowFlucGfwPp {
       {kCentFT0M, "FT0M"},
       {kCentFV0A, "FV0A"},
       {kCentNTPV, "NTPV"},
-      {kCentNGlobal, "NGlobals"},
-      {kCentMFT, "MFT"}};
+      {kCentNGlobal, "NGlobals"}};
     sCentralityEstimator = centEstimatorMap.at(cfgCentEstimator);
     sCentralityEstimator += " centrality (%)";
     AxisSpec centAxis = {o2::analysis::gfwflowflucpp::centbinning, sCentralityEstimator.c_str()};
@@ -447,6 +457,17 @@ struct FlowFlucGfwPp {
     int ptbins = o2::analysis::gfwflowflucpp::ptbinning.size() - 1;
     fSecondAxis = (cfgTimeDependent) ? new TAxis(timeAxis.binEdges.size() - 1, &(timeAxis.binEdges[0])) : new TAxis(ptbins, &o2::analysis::gfwflowflucpp::ptbinning[0]);
 
+    if (static_cast<bool>(cfgBypassQnSelection)) {
+      LOGF(info, "Bypassing q_n event shape selection, all accepted events will be filled into the integral bin ese_0");
+      if (static_cast<int>(cfgNumQnBins) != 1) {
+        LOGF(warning, "cfgBypassQnSelection is on, cfgNumQnBins=%d will be ignored and only one output q-bin will be made", static_cast<int>(cfgNumQnBins));
+      }
+    } else {
+      LOGF(info, "Event-shape selector uses q_%d from the %s eta half",
+           static_cast<int>(cfgQnSelectionHarmonic),
+           static_cast<bool>(cfgUseNegativeEtaHalfForq2) ? "negative" : "positive");
+    }
+
     if (cfgQvecQA && (doprocessData || doprocessq2)) {
       // qVectorsTable-equivalent TPC-track QA for the in-task raw TPC Q-vector loop.
       AxisSpec qVecAxisPt = {40, 0.0, 4.0};
@@ -461,14 +482,27 @@ struct FlowFlucGfwPp {
     }
 
     if (doprocessq2) {
-      registry.add("mq2/eventcounter", "", HistType::kTH1F, {{10, 0, 10}});
-      registry.add("mq2/h2_cent_q2_etapos", ";Centrality;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{100, 0, 100}, {600, 0, 6}});
-      registry.add("mq2/h2_cent_q2_etaneg", ";Centrality;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, 6}});
-      registry.add("mq2/h2_mult_q2_etapos", ";Multiplicity;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, 6}});
-      registry.add("mq2/h2_mult_q2_etaneg", ";Multiplicity;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, 6}});
+      const int qnHarmonic = static_cast<int>(cfgQnSelectionHarmonic);
+      const double qnHistMax = static_cast<double>(cfgQnHistMax);
+
+      if (qnHarmonic == EllipticQVectorHarmonic) {
+        registry.add("mq2/eventcounter", "", HistType::kTH1F, {{10, 0, 10}});
+        registry.add("mq2/h2_cent_q2_etapos", ";Centrality;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq2/h2_cent_q2_etaneg", ";Centrality;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq2/h2_mult_q2_etapos", ";Multiplicity;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+        registry.add("mq2/h2_mult_q2_etaneg", ";Multiplicity;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+      }
+
+      if (qnHarmonic == TriangularQVectorHarmonic) {
+        registry.add("mq3/eventcounter", "", HistType::kTH1F, {{10, 0, 10}});
+        registry.add("mq3/h2_cent_q3_etapos", ";Centrality;#it{q}_{3}^{#eta pos};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq3/h2_cent_q3_etaneg", ";Centrality;#it{q}_{3}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, qnHistMax}});
+        registry.add("mq3/h2_mult_q3_etapos", ";Multiplicity;#it{q}_{3}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+        registry.add("mq3/h2_mult_q3_etaneg", ";Multiplicity;#it{q}_{3}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, qnHistMax}});
+      }
     }
 
-    if (doprocessData) {
+    if (doprocessData || doprocessMC) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
       registry.add("trackQA/before/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
@@ -495,24 +529,20 @@ struct FlowFlucGfwPp {
       registry.add("eventQA/before/globalTracks_multV0A", "", {HistType::kTH2D, {v0aAxis, nchAxis}});
       registry.add("eventQA/before/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, v0aAxis}});
 
-      if (doprocessData) {
-        registry.add("eventQA/before/centrality", "", {HistType::kTH1D, {centAxis}});
-        registry.add("eventQA/before/globalTracks_centT0C", "", {HistType::kTH2D, {centAxis, nchAxis}});
-        registry.add("eventQA/before/PVTracks_centT0C", "", {HistType::kTH2D, {centAxis, multpvAxis}});
-        registry.add("eventQA/before/multT0C_centT0C", "", {HistType::kTH2D, {centAxis, t0cAxis}});
+      registry.add("eventQA/before/centrality", "", {HistType::kTH1D, {centAxis}});
+      registry.add("eventQA/before/globalTracks_centT0C", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      registry.add("eventQA/before/PVTracks_centT0C", "", {HistType::kTH2D, {centAxis, multpvAxis}});
+      registry.add("eventQA/before/multT0C_centT0C", "", {HistType::kTH2D, {centAxis, t0cAxis}});
 
-        registry.add("eventQA/before/centT0M_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
-        registry.add("eventQA/before/centV0A_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
-        registry.add("eventQA/before/centGlobal_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
-        registry.add("eventQA/before/centNTPV_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
-        registry.add("eventQA/before/centMFT_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
-
-        if (cfgIsMC) {
-          registry.add("MCGen/trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-          registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
-          registry.add("MCGen/trackQA/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptreflow, o2::analysis::gfwflowflucpp::ptrefup}}});
-          registry.add("MCGen/trackQA/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptpoilow, o2::analysis::gfwflowflucpp::ptpoiup}}});
-        }
+      registry.add("eventQA/before/centT0M_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
+      registry.add("eventQA/before/centV0A_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
+      registry.add("eventQA/before/centGlobal_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
+      registry.add("eventQA/before/centNTPV_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
+      if (cfgIsMC || doprocessMC) {
+        registry.add("MCGen/trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
+        registry.add("MCGen/trackQA/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptreflow, o2::analysis::gfwflowflucpp::ptrefup}}});
+        registry.add("MCGen/trackQA/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptpoilow, o2::analysis::gfwflowflucpp::ptpoiup}}});
       }
 
       registry.addClone("eventQA/before/", "eventQA/after/");
@@ -857,8 +887,9 @@ struct FlowFlucGfwPp {
   void addConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs)
   {
     const auto shapeSel = getShapeSel();
+    const int nQnOutputBins = getNQnOutputBins();
     for (auto it = configs.begin(); it != configs.end(); ++it) {
-      for (int jese = 0; jese < cfgNumQnBins; ++jese) {
+      for (int jese = 0; jese < nQnOutputBins; ++jese) {
         std::string name = Form("%s_%d_%s", shapeSel.c_str(), jese, it->Head.c_str());
         std::string title = it->Head + std::string("_ese");
         oba->Add(new TNamed(name.c_str(), title.c_str()));
@@ -984,14 +1015,14 @@ struct FlowFlucGfwPp {
         registry.fill(HIST("qvecQA/ChTracks"), trk.pt(), trk.eta(), trk.phi());
       }
 
-      if (trk.eta() > 0) {
+      if (trk.eta() > 0 && std::fabs(trk.eta()) < cfgQnTrkAbsEtaMax) {
         // In qVectorsTable this branch is additionally guarded by useDetector["QvectorTPCposs"] || useDetector["QvectorBPoss"].
         // Here TPCpos is always computed because the downstream ESE selector can require it.
         qvec.qVectTPCPos[0] += trk.pt() * std::cos(trk.phi() * nMode);
         qvec.qVectTPCPos[1] += trk.pt() * std::sin(trk.phi() * nMode);
         qvec.trkTPCPosLabel.push_back(trk.globalIndex());
         qvec.nTrkTPCPos++;
-      } else if (trk.eta() < 0) {
+      } else if (trk.eta() < 0 && std::fabs(trk.eta()) < cfgQnTrkAbsEtaMax) {
         // In qVectorsTable this branch is additionally guarded by useDetector["QvectorTPCnegs"] || useDetector["QvectorBNegs"].
         // Here TPCneg is always computed because the downstream ESE selector can require it.
         qvec.qVectTPCNeg[0] += trk.pt() * std::cos(trk.phi() * nMode);
@@ -1134,6 +1165,48 @@ struct FlowFlucGfwPp {
 
     fillOutputContainers<dt>(cfgUseNch ? static_cast<float>(xaxis.multiplicity) : xaxis.centrality,
                              lRandom, qPtmp, run);
+  }
+
+  template <typename TCollision, typename TParticles>
+  void processGenCollision(TCollision collision, TParticles particles, const int& mcCollisionId, const XAxis& xaxis, const int& run, const int& qPtmp)
+  {
+    if (xaxis.multiplicity < cfgFixedMultMin || xaxis.multiplicity > cfgFixedMultMax)
+      return;
+
+    if (cfgFillQA && xaxis.centrality >= 0)
+      registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
+    if (cfgFillQA)
+      registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
+
+    fGFW->Clear();
+    float lRandom = fRndm->Rndm();
+    float vtxz = collision.posZ();
+
+    AcceptedTracks acceptedTracks{0, 0, 0, 0};
+    for (const auto& particle : particles) {
+      if (particle.mcCollisionId() != mcCollisionId)
+        continue;
+      processTrack(particle, vtxz, xaxis.multiplicity, run, acceptedTracks);
+    }
+
+    if (cfgConsistentEventFlag & kRequireBothEtaSides)
+      if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
+        return;
+    if (cfgConsistentEventFlag & kRequireFullFourParticleTracks)
+      if (acceptedTracks.nFull < kMinTracksForFourParticleCorrelation)
+        return;
+    if (cfgConsistentEventFlag & kRequireTwoTracksInBothEtaSides)
+      if (acceptedTracks.nPos < kMinTracksPerEtaSideForGapCorrelation ||
+          acceptedTracks.nNeg < kMinTracksPerEtaSideForGapCorrelation)
+        return;
+    if (cfgConsistentEventFlag & kRequireTwoTracksInThreeEtaRegions)
+      if (acceptedTracks.nPos < kMinTracksPerEtaRegionForThreeSubevents ||
+          acceptedTracks.nMid < kMinTracksPerEtaRegionForThreeSubevents ||
+          acceptedTracks.nNeg < kMinTracksPerEtaRegionForThreeSubevents)
+        return;
+
+    fillOutputContainers<kGen>(cfgUseNch ? static_cast<float>(xaxis.multiplicity) : xaxis.centrality,
+                               lRandom, qPtmp, run);
   }
 
   bool isStable(int pdg)
@@ -1298,8 +1371,6 @@ struct FlowFlucGfwPp {
         return collision.centNTPV();
       case kCentNGlobal:
         return collision.centNGlobal();
-      case kCentMFT:
-        return collision.centMFT();
       default:
         return collision.centFT0C();
     }
@@ -1316,7 +1387,6 @@ struct FlowFlucGfwPp {
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("centV0A_centT0C"), collision.centFT0C(), collision.centFV0A());
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("centGlobal_centT0C"), collision.centFT0C(), collision.centNGlobal());
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("centNTPV_centT0C"), collision.centFT0C(), collision.centNTPV());
-      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("centMFT_centT0C"), collision.centFT0C(), collision.centMFT());
     }
     registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_PVTracks"), collision.multNTracksPV(), xaxis.multiplicity);
     registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_multT0A"), collision.multFT0A(), xaxis.multiplicity);
@@ -1340,10 +1410,37 @@ struct FlowFlucGfwPp {
     return static_cast<double>(diff) / 3600000.0;
   }
 
+  void fillQnEventCounter(float count)
+  {
+    const int qnHarmonic = static_cast<int>(cfgQnSelectionHarmonic);
+
+    if (qnHarmonic == EllipticQVectorHarmonic) {
+      registry.fill(HIST("mq2/eventcounter"), count);
+    } else if (qnHarmonic == TriangularQVectorHarmonic) {
+      registry.fill(HIST("mq3/eventcounter"), count);
+    }
+  }
+
+  void fillQnCalibrationHistograms(float centrality, float multiplicity, float qnPos, float qnNeg)
+  {
+    const int qnHarmonic = static_cast<int>(cfgQnSelectionHarmonic);
+
+    if (qnHarmonic == EllipticQVectorHarmonic) {
+      registry.fill(HIST("mq2/h2_cent_q2_etapos"), centrality, qnPos);
+      registry.fill(HIST("mq2/h2_cent_q2_etaneg"), centrality, qnNeg);
+      registry.fill(HIST("mq2/h2_mult_q2_etapos"), multiplicity, qnPos);
+      registry.fill(HIST("mq2/h2_mult_q2_etaneg"), multiplicity, qnNeg);
+    } else if (qnHarmonic == TriangularQVectorHarmonic) {
+      registry.fill(HIST("mq3/h2_cent_q3_etapos"), centrality, qnPos);
+      registry.fill(HIST("mq3/h2_cent_q3_etaneg"), centrality, qnNeg);
+      registry.fill(HIST("mq3/h2_mult_q3_etapos"), multiplicity, qnPos);
+      registry.fill(HIST("mq3/h2_mult_q3_etaneg"), multiplicity, qnNeg);
+    }
+  }
+
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                            aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
-                                           aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals,
-                                           aod::CentMFTs>>::iterator const& collision,
+                                           aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals>>::iterator const& collision,
                    aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1406,35 +1503,38 @@ struct FlowFlucGfwPp {
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, xaxis);
 
-    const auto qvecTPC = calcQVec(2, tracks, collision);
-    float qn = computeqnVec(qvecTPC, cfgUseNegativeEtaHalfForq2);
-    if (qn < 0)
-      return;
+    int qPtmp = 0;
+    if (!static_cast<bool>(cfgBypassQnSelection)) {
+      const auto qvecTPC = calcQVec(static_cast<int>(cfgQnSelectionHarmonic), tracks, collision);
+      float qn = computeqnVec(qvecTPC, cfgUseNegativeEtaHalfForq2);
+      if (qn < 0)
+        return;
 
-    int qPtmp = myqnBin(cfgEvtSelCent ? xaxis.centrality : xaxis.multiplicity,
-                        cfgCentMax, qn, qnBinSeparator, cfgNumQnBins);
-    if (qPtmp < 0)
-      return;
+      qPtmp = myqnBin(cfgEvtSelCent ? xaxis.centrality : xaxis.multiplicity,
+                      cfgCentMax, qn, qnBinSeparator, cfgNumQnBins);
+      if (qPtmp < 0)
+        return;
+    }
 
     processCollision<kReco>(collision, tracks, xaxis, run, qPtmp);
   }
   PROCESS_SWITCH(FlowFlucGfwPp, processData, "Process analysis for non-derived data", false);
 
-  void processq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  void processq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     float count{0.5};
-    registry.fill(HIST("mq2/eventcounter"), count++);
+    fillQnEventCounter(count++);
     if (!collision.sel8()) {
       return;
     }
-    registry.fill(HIST("mq2/eventcounter"), count++);
+    fillQnEventCounter(count++);
     if (cfgDoOccupancySel) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < 0 || occupancy > cfgOccupancySelection) {
         return;
       }
     }
-    registry.fill(HIST("mq2/eventcounter"), count++);
+    fillQnEventCounter(count++);
 
     const XAxis xaxis{getCentrality(collision), collision.multNTracksPV(), -1.0};
     if (!eventSelected(collision, xaxis.multiplicity, xaxis.centrality, -1))
@@ -1442,7 +1542,7 @@ struct FlowFlucGfwPp {
 
     const auto centr = xaxis.centrality;
     const auto multi = xaxis.multiplicity;
-    const auto qvecTPC = calcQVec(2, tracks, collision);
+    const auto qvecTPC = calcQVec(static_cast<int>(cfgQnSelectionHarmonic), tracks, collision);
     const auto qvecPos = computeqnVec(qvecTPC, false);
     const auto qvecNeg = computeqnVec(qvecTPC, true);
 
@@ -1450,13 +1550,86 @@ struct FlowFlucGfwPp {
       return;
     }
 
-    registry.fill(HIST("mq2/eventcounter"), count++);
-    registry.fill(HIST("mq2/h2_cent_q2_etapos"), centr, qvecPos);
-    registry.fill(HIST("mq2/h2_cent_q2_etaneg"), centr, qvecNeg);
-    registry.fill(HIST("mq2/h2_mult_q2_etapos"), multi, qvecPos);
-    registry.fill(HIST("mq2/h2_mult_q2_etaneg"), multi, qvecNeg);
+    fillQnEventCounter(count++);
+    fillQnCalibrationHistograms(centr, multi, qvecPos, qvecNeg);
   }
-  PROCESS_SWITCH(FlowFlucGfwPp, processq2, "Process analysis for filling q-vectors", true);
+  PROCESS_SWITCH(FlowFlucGfwPp, processq2, "Process analysis for filling q_n-vector calibration histograms", true);
+
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
+                                         aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
+                                         aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals,
+                                         aod::McCollisionLabels>>::iterator const& collision,
+                 aod::BCsWithTimestamps const&, GFWTracksMC const& tracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int run = bc.runNumber();
+    if (run != lastRun) {
+      lastRun = run;
+      LOGF(info, "run = %d", run);
+      if (cfgRunByRun) {
+        if (std::find(runNumbers.begin(), runNumbers.end(), run) == runNumbers.end()) {
+          LOGF(info, "Creating histograms for run %d", run);
+          createRunByRunHistograms(run);
+          runNumbers.push_back(run);
+        }
+        if (!cfgFillWeights)
+          loadCorrections(bc);
+      }
+    }
+    if (!cfgFillWeights && !cfgRunByRun)
+      loadCorrections(bc);
+
+    registry.fill(HIST("eventQA/eventSel"), kFilteredEvent);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(kFilteredEvent);
+
+    if (!collision.sel8())
+      return;
+
+    registry.fill(HIST("eventQA/eventSel"), kSel8);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(kSel8);
+
+    if (cfgDoOccupancySel) {
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy < 0 || occupancy > cfgOccupancySelection)
+        return;
+    }
+
+    registry.fill(HIST("eventQA/eventSel"), kOccupancy);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(kOccupancy);
+
+    const XAxis xaxis{
+      getCentrality(collision),
+      collision.multNTracksPV(),
+      (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0};
+
+    if (cfgTimeDependent && run == *firstRunOfCurrentFill &&
+        firstRunOfCurrentFill != o2::analysis::gfwflowflucpp::firstRunsOfFill.end() - 1)
+      ++firstRunOfCurrentFill;
+
+    if (cfgFillQA)
+      fillEventQA<kBefore>(collision, xaxis);
+
+    registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
+    registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
+
+    if (!eventSelected(collision, xaxis.multiplicity, xaxis.centrality, run))
+      return;
+
+    if (cfgFillQA)
+      fillEventQA<kAfter>(collision, xaxis);
+
+    processCollision<kReco>(collision, tracks, xaxis, run, 0);
+
+    if (!collision.has_mcCollision())
+      return;
+
+    const auto genCollision = collision.template mcCollision_as<aod::McCollisions>();
+    processGenCollision(genCollision, mcParticles, collision.mcCollisionId(), xaxis, run, 0);
+  }
+  PROCESS_SWITCH(FlowFlucGfwPp, processMC, "Process analysis for Monte-Carlo data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

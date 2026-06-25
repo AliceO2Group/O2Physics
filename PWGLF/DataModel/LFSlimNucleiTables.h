@@ -56,8 +56,11 @@ DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 DECLARE_SOA_COLUMN(McProcess, mcProcess, uint64_t);
 DECLARE_SOA_COLUMN(gEventMask, genEventMask, uint8_t);
 
-DECLARE_SOA_COLUMN(NsigmaTpc, nsigmaTpc, uint8_t);
-DECLARE_SOA_COLUMN(NsigmaTof, nsigmaTof, uint8_t);
+DECLARE_SOA_COLUMN(NsigmaTpc, nsigmaTpc, float);
+DECLARE_SOA_COLUMN(NsigmaTof, nsigmaTof, float);
+
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
 
 } // namespace NucleiTableNS
 
@@ -201,6 +204,7 @@ DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::Flags,
+                  NucleiFlowTableNS::CentFT0C,
                   NucleiTableNS::gPt,
                   NucleiTableNS::McProcess,
                   NucleiTableNS::PDGcode,
@@ -244,6 +248,10 @@ DECLARE_SOA_TABLE(NucleiTableMCExtension, "AOD", "NUCTABLEMCSEL",
 DECLARE_SOA_TABLE(NucleiTableExt, "AOD", "NUCLEITABLEEXT",
                   NucleiTableNS::NsigmaTpc,
                   NucleiTableNS::NsigmaTof);
+// Extended table for studies on nuclei from material
+DECLARE_SOA_TABLE(NucleiTableMat, "AOD", "NUCLEITABLEMAT",
+                  NucleiTableNS::Vx,
+                  NucleiTableNS::Vy);
 
 } // namespace o2::aod
 

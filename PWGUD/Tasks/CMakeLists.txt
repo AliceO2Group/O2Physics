@@ -14,7 +14,7 @@ o2physics_add_dpl_workflow(upc-polarisation-jpsi-incoh
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upc
+o2physics_add_dpl_workflow(upc-analysis
                            SOURCES upcAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
@@ -99,17 +99,17 @@ o2physics_add_dpl_workflow(diff-qa
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dgcand-analyzer
+o2physics_add_dpl_workflow(dg-cand-analyzer
                            SOURCES dgCandAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::UDGoodRunSelector O2Physics::DGPIDSelector O2Physics::UDFSParser
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upccand-analyzer
+o2physics_add_dpl_workflow(upc-cand-analyzer
                            SOURCES upcCandidateAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upccand-producer-qa
+o2physics_add_dpl_workflow(upc-cand-producer-qa
                            SOURCES upcCandidateProducerQa.cpp
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
@@ -119,7 +119,7 @@ o2physics_add_dpl_workflow(upc-mft
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upc-veto
+o2physics_add_dpl_workflow(upc-veto-analysis
                            SOURCES upcVetoAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
@@ -200,7 +200,7 @@ o2physics_add_dpl_workflow(upc-pion-analysis
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(fwd-muons-upc
-                           SOURCES FwdMuonsUPC.cxx
+                           SOURCES fwdMuonsUpc.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
@@ -214,8 +214,8 @@ o2physics_add_dpl_workflow(upc-semi-fwd-jpsi-rl
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upc-event-itsrof-counter
-                           SOURCES upcEventITSROFcounter.cxx
+o2physics_add_dpl_workflow(upc-event-its-rof-counter
+                           SOURCES upcEventItsRofCounter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)
 
@@ -244,8 +244,8 @@ o2physics_add_dpl_workflow(upc-quarkonia-central-barrel
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(test-mc-std-tabs-rl
-                           SOURCES testMcStdTabsRl.cxx
+o2physics_add_dpl_workflow(upc-test-mc-std-tabs-rl
+                           SOURCES upcTestMcStdTabsRl.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
 
@@ -289,7 +289,17 @@ o2physics_add_dpl_workflow(sg-exclusive-jpsi-midrapidity
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(fitbit-mapping
-													 SOURCES upcTestFITBitMapping.cxx
-													 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-													 COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(upc-vm-rof
+                           SOURCES upcVmRof.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-test-fit-bit-mapping
+                           SOURCES upcTestFitBitMapping.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pt-spectra-inclusive-upc
+                           SOURCES ptSpectraInclusiveUpc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)

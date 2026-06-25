@@ -24,6 +24,7 @@ struct stramccollmultconverter {
 
   void process(aod::StraMCCollMults_000 const& straMCcolls)
   {
+    straMCCollMults_001.reserve(straMCcolls.size());
     for (auto& straMCcoll : straMCcolls) {
       straMCCollMults_001(straMCcoll.multMCFT0A(),
                           straMCcoll.multMCFT0C(),

@@ -33,6 +33,7 @@ struct MftTracksConverter {
   Produces<aod::StoredMFTTracks_001> mftTracks_001;
   void process(aod::MFTTracks_000 const& mftTracks_000)
   {
+    mftTracks_001.reserve(mftTracks_000.size());
 
     for (const auto& track0 : mftTracks_000) {
       uint64_t mftClusterSizesAndTrackFlags = 0;

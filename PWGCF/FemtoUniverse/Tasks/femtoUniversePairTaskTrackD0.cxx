@@ -171,12 +171,14 @@ struct FemtoUniversePairTaskTrackD0 {
   } ConfMlOpt;
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPtTH3{"binsPtTH3", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<uint8_t> confChooseD0trackCorr{"confChooseD0trackCorr", 0, "If 0 correlations with D0s, if 1 with D0bars"};
-  // Correlated background for D0/D0bar candidates
-  Configurable<bool> fillCorrBkgs{"fillCorrBkgs", false, "Fill histograms with correlated background candidates"};
-  // Configurable to enable BDT vs pT histograms for D0/D0bar at MC Reco level
-  Configurable<bool> fillBDTvsPt{"fillBDTvsPt", false, "Fill BDT vs pT histograms for D0/D0bar candidates"};
-
+  struct : o2::framework::ConfigurableGroup {
+    // Correlated background for D0/D0bar candidates
+    Configurable<bool> fillCorrBkgs{"fillCorrBkgs", false, "Fill histograms with correlated background candidates"};
+    // Configurable to enable BDT vs pT histograms for D0/D0bar at MC Reco level
+    Configurable<bool> fillBDTvsPt{"fillBDTvsPt", true, "Fill BDT vs pT histograms for D0/D0bar candidates"};
+  } ConfFill;
   // Efficiency
   Configurable<bool> doEfficiencyCorr{"doEfficiencyCorr", false, "Apply efficiency corrections"};
 
@@ -511,6 +513,7 @@ struct FemtoUniversePairTaskTrackD0 {
 
     // D0/D0bar histograms
     auto vbins = (std::vector<double>)binsPt;
+    auto vPtBinsTH3 = (std::vector<double>)binsPtTH3;
     if (doEfficiencyCorr) {
       registry.add("D0D0bar_oneMassHypo/hMassVsPtEffCorr", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
       registry.add("D0D0bar_oneMassHypo/hMassVsPtD0EffCorr", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -530,10 +533,14 @@ struct FemtoUniversePairTaskTrackD0 {
     registry.add("DebugBdt/hBdtScore1", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
     registry.add("DebugBdt/hBdtScore2", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
     registry.add("DebugBdt/hBdtScore3", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
-    if (fillBDTvsPt) {
-      registry.add("DebugBdtMcReco/hBdtScore1", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
-      registry.add("DebugBdtMcReco/hBdtScore2", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
-      registry.add("DebugBdtMcReco/hBdtScore3", ";BDT score;Entries", {HistType::kTH1F, {axisBdtScore}});
+    if (ConfFill.fillBDTvsPt) {
+      registry.add("DebugBdtMcReco/hBdtScore1VsPt", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore2VsPt", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPt", ";BDT score;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisBdtScore, {vbins}}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPtVsMassPromptD0", ";BDT score;#it{p}_{T} (GeV/#it{c});M(K#pi) (GeV/#it{c}^{2})", {HistType::kTH3F, {axisBdtScore, {vPtBinsTH3}, confInvMassBins}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPtVsMassNonPromptD0", ";BDT score;#it{p}_{T} (GeV/#it{c});M(K#pi) (GeV/#it{c}^{2})", {HistType::kTH3F, {axisBdtScore, {vPtBinsTH3}, confInvMassBins}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPtVsMassPromptD0bar", ";BDT score;#it{p}_{T} (GeV/#it{c});M(K#pi) (GeV/#it{c}^{2})", {HistType::kTH3F, {axisBdtScore, {vPtBinsTH3}, confInvMassBins}});
+      registry.add("DebugBdtMcReco/hBdtScore3VsPtVsMassNonPromptD0bar", ";BDT score;#it{p}_{T} (GeV/#it{c});M(K#pi) (GeV/#it{c}^{2})", {HistType::kTH3F, {axisBdtScore, {vPtBinsTH3}, confInvMassBins}});
     }
     if (applyMLOpt) {
       registry.add("D0D0bar_MLSel/hMassVsPt1", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -576,7 +583,7 @@ struct FemtoUniversePairTaskTrackD0 {
     mcRecoRegistry.add("hMassVsPtD0barPrompt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     mcRecoRegistry.add("hMassVsPtD0barNonPrompt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // Histograms for D0/D0bar correlated backgrounds
-    if (fillCorrBkgs) {
+    if (ConfFill.fillCorrBkgs) {
       mcRecoRegistry.add("hMassVsPtD0ToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
       mcRecoRegistry.add("hMassVsPtD0ToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
       mcRecoRegistry.add("hMassVsPtD0ToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -605,16 +612,20 @@ struct FemtoUniversePairTaskTrackD0 {
     mcTruthRegistry.add("hMcGenD0Pt", "MC Truth all D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0Prompt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0PromptPt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
+    mcTruthRegistry.add("hMcGenD0PromptPtLessBins", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vPtBinsTH3}});
     mcTruthRegistry.add("hMcGenD0NonPrompt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0NonPromptPt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
+    mcTruthRegistry.add("hMcGenD0NonPromptPtLessBins", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vPtBinsTH3}});
     mcTruthRegistry.add("hMcGenD0bar", "MC Truth all D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0barPt", "MC Truth all D0bars;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0barPrompt", "MC Truth prompt D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0barPromptPt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
+    mcTruthRegistry.add("hMcGenD0barPromptPtLessBins", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vPtBinsTH3}});
     mcTruthRegistry.add("hMcGenD0barNonPrompt", "MC Truth non-prompt D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0barNonPromptPt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
-    mcTruthRegistry.add("hMcGenAllPositivePt", "MC Truth all positive;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{360, 0, 36}}});
-    mcTruthRegistry.add("hMcGenAllNegativePt", "MC Truth all negative;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{360, 0, 36}}});
+    mcTruthRegistry.add("hMcGenD0barNonPromptPtLessBins", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vPtBinsTH3}});
+    mcTruthRegistry.add("hMcGenAllPositivePt", "MC Truth all positive;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{500, 0, 5}}});
+    mcTruthRegistry.add("hMcGenAllNegativePt", "MC Truth all negative;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{500, 0, 5}}});
     mcTruthRegistry.add("hMcGenKpPtVsEta", "MC Truth K+;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenKmPtVsEta", "MC Truth K-;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenPipPtVsEta", "MC Truth #pi+;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -934,7 +945,7 @@ struct FemtoUniversePairTaskTrackD0 {
             continue;
           }
         }
-        trackHistoPartTrack.fillQA<isMC, false>(track);
+        trackHistoPartTrack.fillQA<isMC, true>(track);
 
         tpcNSigmaPi = trackCuts.getNsigmaTPC(track, o2::track::PID::Pion);
         tofNSigmaPi = trackCuts.getNsigmaTOF(track, o2::track::PID::Pion);
@@ -1465,40 +1476,51 @@ struct FemtoUniversePairTaskTrackD0 {
           }
         }
       } else if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco)) {
-        if (fillBDTvsPt && std::abs(mcpart.pdgMCTruth()) == o2::constants::physics::Pdg::kD0) {
-          registry.fill(HIST("DebugBdtMcReco/hBdtScore1"), part.decayVtxX());
-          registry.fill(HIST("DebugBdtMcReco/hBdtScore2"), part.decayVtxY());
-          registry.fill(HIST("DebugBdtMcReco/hBdtScore3"), part.decayVtxZ());
+        if (ConfFill.fillBDTvsPt && std::abs(mcpart.pdgMCTruth()) == o2::constants::physics::Pdg::kD0) {
+          registry.fill(HIST("DebugBdtMcReco/hBdtScore1VsPt"), part.decayVtxX(), part.pt());
+          registry.fill(HIST("DebugBdtMcReco/hBdtScore2VsPt"), part.decayVtxY(), part.pt());
+          registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPt"), part.decayVtxZ(), part.pt());
         }
         if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0) {
           mcRecoRegistry.fill(HIST("hMcRecD0"), part.pt(), part.eta());
           mcRecoRegistry.fill(HIST("hMcRecD0Pt"), part.pt());
           mcRecoRegistry.fill(HIST("hMcRecD0Phi"), part.phi());
+
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0Prompt"), part.pt(), part.eta());
             mcRecoRegistry.fill(HIST("hMcRecD0PromptPt"), part.pt());
             mcRecoRegistry.fill(HIST("hMcRecD0PromptPhi"), part.phi());
+            if (ConfFill.fillBDTvsPt) {
+              registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPtVsMassPromptD0"), part.decayVtxZ(), part.pt(), part.mLambda());
+            }
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0NonPrompt"), part.pt(), part.eta());
             mcRecoRegistry.fill(HIST("hMcRecD0NonPromptPt"), part.pt());
             mcRecoRegistry.fill(HIST("hMcRecD0NonPromptPhi"), part.phi());
+            if (ConfFill.fillBDTvsPt) {
+              registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPtVsMassNonPromptD0"), part.decayVtxZ(), part.pt(), part.mAntiLambda());
+            }
           }
         } else if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0bar) {
           mcRecoRegistry.fill(HIST("hMcRecD0bar"), part.pt(), part.eta());
           mcRecoRegistry.fill(HIST("hMcRecD0barPt"), part.pt());
           mcRecoRegistry.fill(HIST("hMcRecD0barPhi"), part.phi());
+
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barPrompt"), part.pt(), part.eta());
             mcRecoRegistry.fill(HIST("hMcRecD0barPromptPt"), part.pt());
+            if (ConfFill.fillBDTvsPt) {
+              registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPtVsMassPromptD0bar"), part.decayVtxZ(), part.pt(), part.mLambda());
+            }
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barNonPrompt"), part.pt(), part.eta());
             mcRecoRegistry.fill(HIST("hMcRecD0barNonPromptPt"), part.pt());
+            if (ConfFill.fillBDTvsPt) {
+              registry.fill(HIST("DebugBdtMcReco/hBdtScore3VsPtVsMassNonPromptD0bar"), part.decayVtxZ(), part.pt(), part.mAntiLambda());
+            }
           }
         }
       }
-      // if (isParticleNSigma(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
-      // hTrackDCA.fillQA<true, true>(part);
-      //} This part required change
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processMcReco, "Process MC reco data", false);
@@ -1523,7 +1545,7 @@ struct FemtoUniversePairTaskTrackD0 {
           } else {
             mcRecoRegistry.fill(HIST("hMassVsPtD0Bkg"), part.mLambda(), part.pt(), weight);
           }
-          if (fillCorrBkgs) {
+          if (ConfFill.fillCorrBkgs) {
             if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) { // D0 -> pi+K-pi0
               mcRecoRegistry.fill(HIST("hMassVsPtD0ToPiKaPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPi) { // D0 -> pi+pi-
@@ -1547,7 +1569,7 @@ struct FemtoUniversePairTaskTrackD0 {
           } else {
             mcRecoRegistry.fill(HIST("hMassVsPtD0barBkg"), part.mAntiLambda(), part.pt(), weight);
           }
-          if (fillCorrBkgs) {
+          if (ConfFill.fillCorrBkgs) {
             if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) { // D0 -> pi+K-pi0
               mcRecoRegistry.fill(HIST("hMassVsPtD0barToPiKaPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPi) { // D0 -> pi+pi-
@@ -1582,7 +1604,41 @@ struct FemtoUniversePairTaskTrackD0 {
       if (!pdgParticle) {
         continue;
       }
-
+      // filling the histograms for generated D0 and D0bar mesons
+      if (pdgCode == o2::constants::physics::Pdg::kD0) {
+        if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+          mcTruthRegistry.fill(HIST("hMcGenD0"), part.pt(), part.eta());
+          mcTruthRegistry.fill(HIST("hMcGenD0Pt"), part.pt());
+          if (static_cast<int8_t>(part.mAntiLambda()) == genPromptD0) {
+            mcTruthRegistry.fill(HIST("hMcGenD0Prompt"), part.pt(), part.eta());
+            mcTruthRegistry.fill(HIST("hMcGenD0PromptPt"), part.pt());
+            mcTruthRegistry.fill(HIST("hMcGenD0PromptPtLessBins"), part.pt());
+          } else if (static_cast<int8_t>(part.mAntiLambda()) == genNonPromptD0) {
+            mcTruthRegistry.fill(HIST("hMcGenD0NonPrompt"), part.pt(), part.eta());
+            mcTruthRegistry.fill(HIST("hMcGenD0NonPromptPt"), part.pt());
+            mcTruthRegistry.fill(HIST("hMcGenD0NonPromptPtLessBins"), part.pt());
+          }
+        }
+      }
+      if (pdgCode == o2::constants::physics::Pdg::kD0Bar) {
+        if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+          mcTruthRegistry.fill(HIST("hMcGenD0bar"), part.pt(), part.eta());
+          mcTruthRegistry.fill(HIST("hMcGenD0barPt"), part.pt());
+          if (static_cast<int8_t>(part.mAntiLambda()) == genPromptD0) {
+            mcTruthRegistry.fill(HIST("hMcGenD0barPrompt"), part.pt(), part.eta());
+            mcTruthRegistry.fill(HIST("hMcGenD0barPromptPt"), part.pt());
+            mcTruthRegistry.fill(HIST("hMcGenD0barPromptPtLessBins"), part.pt());
+          } else if (static_cast<int8_t>(part.mAntiLambda()) == genNonPromptD0) {
+            mcTruthRegistry.fill(HIST("hMcGenD0barNonPrompt"), part.pt(), part.eta());
+            mcTruthRegistry.fill(HIST("hMcGenD0barNonPromptPt"), part.pt());
+            mcTruthRegistry.fill(HIST("hMcGenD0barNonPromptPtLessBins"), part.pt());
+          }
+        }
+      }
+      // filling the histograms for identified hadrons
+      if (part.pt() < ConfTrack.confTrackLowPtCut || part.pt() > ConfTrack.confTrackHighPtCut || std::abs(part.eta()) > ConfTrack.confTrackEtaMax) {
+        continue;
+      }
       if (pdgParticle->Charge() > 0.0) {
         mcTruthRegistry.fill(HIST("hMcGenAllPositivePt"), part.pt());
       }
@@ -1594,19 +1650,7 @@ struct FemtoUniversePairTaskTrackD0 {
         mcTruthRegistry.fill(HIST("hMcGenKpPtVsEta"), part.pt(), part.eta());
         mcTruthRegistry.fill(HIST("hMcGenKpPt"), part.pt());
       }
-      if (pdgCode == o2::constants::physics::Pdg::kD0) {
-        if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          mcTruthRegistry.fill(HIST("hMcGenD0"), part.pt(), part.eta());
-          mcTruthRegistry.fill(HIST("hMcGenD0Pt"), part.pt());
-          if (static_cast<int8_t>(part.mAntiLambda()) == genPromptD0) {
-            mcTruthRegistry.fill(HIST("hMcGenD0Prompt"), part.pt(), part.eta());
-            mcTruthRegistry.fill(HIST("hMcGenD0PromptPt"), part.pt());
-          } else if (static_cast<int8_t>(part.mAntiLambda()) == genNonPromptD0) {
-            mcTruthRegistry.fill(HIST("hMcGenD0NonPrompt"), part.pt(), part.eta());
-            mcTruthRegistry.fill(HIST("hMcGenD0NonPromptPt"), part.pt());
-          }
-        }
-      }
+
       if (pdgCode == PDG_t::kProton) {
         mcTruthRegistry.fill(HIST("hMcGenPrPtVsEta"), part.pt(), part.eta());
         mcTruthRegistry.fill(HIST("hMcGenPrPt"), part.pt());
@@ -1622,19 +1666,6 @@ struct FemtoUniversePairTaskTrackD0 {
       if (pdgCode == PDG_t::kKMinus) {
         mcTruthRegistry.fill(HIST("hMcGenKmPtVsEta"), part.pt(), part.eta());
         mcTruthRegistry.fill(HIST("hMcGenKmPt"), part.pt());
-      }
-      if (pdgCode == o2::constants::physics::Pdg::kD0Bar) {
-        if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          mcTruthRegistry.fill(HIST("hMcGenD0bar"), part.pt(), part.eta());
-          mcTruthRegistry.fill(HIST("hMcGenD0barPt"), part.pt());
-          if (static_cast<int8_t>(part.mAntiLambda()) == genPromptD0) {
-            mcTruthRegistry.fill(HIST("hMcGenD0barPrompt"), part.pt(), part.eta());
-            mcTruthRegistry.fill(HIST("hMcGenD0barPromptPt"), part.pt());
-          } else if (static_cast<int8_t>(part.mAntiLambda()) == genNonPromptD0) {
-            mcTruthRegistry.fill(HIST("hMcGenD0barNonPrompt"), part.pt(), part.eta());
-            mcTruthRegistry.fill(HIST("hMcGenD0barNonPromptPt"), part.pt());
-          }
-        }
       }
       if (pdgCode == -PDG_t::kProton) {
         mcTruthRegistry.fill(HIST("hMcGenAntiPrPtVsEta"), part.pt(), part.eta());

@@ -17,6 +17,7 @@
 #include "PWGLF/DataModel/ReducedDoublePhiTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
@@ -83,7 +84,7 @@ struct doublephitable {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   SliceCache cache;
@@ -165,7 +166,7 @@ struct doublephitable {
 
     int Npostrack = 0;
     int Nnegtrack = 0;
-
+    float centrality = collision.centFT0M();
     if (collision.sel8() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -258,7 +259,7 @@ struct doublephitable {
     if (keepEventDoublePhi && numberPhi > 1 && Npostrack > 1 && Nnegtrack > 1 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       /////////// Fill collision table///////////////
-      redPhiEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), Npostrack, Nnegtrack);
+      redPhiEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), Npostrack, Nnegtrack, centrality);
       auto indexEvent = redPhiEvents.lastIndex();
       //// Fill track table for Phi//////////////////
       for (auto if1 = phiresonance.begin(); if1 != phiresonance.end(); ++if1) {
