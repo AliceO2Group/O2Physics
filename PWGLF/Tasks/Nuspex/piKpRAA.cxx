@@ -79,22 +79,22 @@ using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionE
 
 using TracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCEl, aod::pidTOFFlags, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFullPi, aod::pidTOFFullEl, aod::McTrackLabels>;
 
-static constexpr int kNEtaHists{8};
+static constexpr int KnEtaHists{8};
 
-std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiV0{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPrV0{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElV0{};
-std::array<std::shared_ptr<TH3>, kNEtaHists> dEdx{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> pTVsP{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsP{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPElV0{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPPiV0{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPPrV0{};
-std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPp{};
-std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpElV0{};
-std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpPiV0{};
-std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpPrV0{};
-std::array<std::shared_ptr<TH1>, kNEtaHists> etaTest{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxPiV0{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxPrV0{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxElV0{};
+std::array<std::shared_ptr<TH3>, KnEtaHists> dEdx{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> pTVsP{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> nClVsP{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> nClVsPElV0{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> nClVsPPiV0{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> nClVsPPrV0{};
+std::array<std::shared_ptr<TProfile>, KnEtaHists> nClVsPp{};
+std::array<std::shared_ptr<TProfile>, KnEtaHists> nClVsPpElV0{};
+std::array<std::shared_ptr<TProfile>, KnEtaHists> nClVsPpPiV0{};
+std::array<std::shared_ptr<TProfile>, KnEtaHists> nClVsPpPrV0{};
+std::array<std::shared_ptr<TH1>, KnEtaHists> etaTest{};
 
 template <typename T>
 auto printArray(std::vector<T> const& vec)
@@ -110,30 +110,25 @@ auto printArray(std::vector<T> const& vec)
 
 struct PiKpRAA {
 
-  static constexpr int kZeroInt{0};
-  static constexpr int kSevenInt{7};
+  static constexpr int KzeroInt{0};
+  static constexpr int KsevenInt{7};
 
-  static constexpr float kZero{0.0f};
-  static constexpr float kOne{1.0f};
-  static constexpr float kTwoPtGeVSel{2.0f};
-  static constexpr float kThree{3.0f};
-  static constexpr float kTenToMinusNine{1e-9};
-  // static constexpr float kMinPtNchSel{0.1f};
-  // static constexpr float kMaxPtNchSel{3.0f};
-  static constexpr float kMinCharge{3.f};
-  static constexpr float kMinPMIP{0.4f};
-  static constexpr float kMaxPMIP{0.6f};
-  static constexpr float kMindEdxMIP{40.0f};
-  static constexpr float kMaxdEdxMIP{60.0f};
-  static constexpr float kMindEdxMIPPlateau{70.0f};
-  static constexpr float kMaxdEdxMIPPlateau{90.0f};
-  static constexpr float kMinFT0A{3.5f};
-  static constexpr float kMaxFT0A{4.9f};
-  static constexpr float kMinFT0C{-3.3f};
-  static constexpr float kMaxFT0C{-2.1f};
-
-  // static constexpr float kLowEta[kNEtaHists] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6};
-  // static constexpr float kHighEta[kNEtaHists] = {-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+  static constexpr float Kzero{0.0f};
+  static constexpr float Kone{1.0f};
+  static constexpr float KtwoPtGeVSel{2.0f};
+  static constexpr float Kthree{3.0f};
+  static constexpr float KtEnToMinusNine{1e-9};
+  static constexpr float KminCharge{3.f};
+  static constexpr float KminPMIP{0.4f};
+  static constexpr float KmaxPMIP{0.6f};
+  static constexpr float KmindEdxMIP{40.0f};
+  static constexpr float KmaxdEdxMIP{60.0f};
+  static constexpr float KmindEdxMIPPlateau{70.0f};
+  static constexpr float KmaxdEdxMIPPlateau{90.0f};
+  static constexpr float KminFT0A{3.5f};
+  static constexpr float KmaxFT0A{4.9f};
+  static constexpr float KminFT0C{-3.3f};
+  static constexpr float KmaxFT0C{-2.1f};
 
   static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -259,7 +254,7 @@ struct PiKpRAA {
   Configurable<std::vector<double>> vecLowEta{"vecLowEta", {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6}, "lower eta cuts"};
   Configurable<std::vector<double>> vecUpEta{"vecUpEta", {-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8}, "upper eta cuts"};
   Configurable<std::vector<std::string>> vecEndingEta{"vecEndingEta", {"86", "64", "42", "20", "02", "24", "46", "68"}, "string representing names for histogram distiction"};
-  Configurable<std::vector<std::string>> vecLatexEta{"vecLatexEta", {"-0.8 < #eta < -0.6", "-0.6 < #eta < -0.4", "-0.4 < #eta < -0.2", "-0.2 < #eta < 0", "0 < #eta < 0.2", "0.2 < #eta < 0.4", "0.4 < #eta < 0.6", "0.6 < #eta < 0.8"}, "string representing an eta interval"};
+  Configurable<std::vector<std::string>> vecLatexEta{"vecLatexEta", {"-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta< 0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta< 0.6", "0.6<#eta< 0.8"}, "string representing an eta interval"};
 
   // CCDB paths
   Configurable<std::string> pathDCAxy{"pathDCAxy", "Users/o/omvazque/DCAxy/Test", "base path to the ccdb object"};
@@ -366,8 +361,6 @@ struct PiKpRAA {
     const AxisSpec axisCent{binsCent, "Centrality Perc."};
     const auto latexEta = (std::vector<std::string>)vecLatexEta;
     const auto endingEta = (std::vector<std::string>)vecEndingEta;
-    // const char* endingEta[kNEtaHists] = {"86", "64", "42", "20", "02", "24", "46", "68"};
-    // const char* latexEta[kNEtaHists] = {"-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta<0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
 
     registry.add("EventCounter", ";;Events", kTH1F, {axisEvent});
     registry.add("HasBCVsFT0VsTVXVsEvSel", "Alls=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;", kTH1F, {{5, 0.5, 5.5}});
@@ -479,7 +472,7 @@ struct PiKpRAA {
       registry.add("dEdxVsEtaElMIPV0p", "e^{+} + e^{-}: 0.4 <#it{p}_{T} < 0.6 [GeV/#it{c}];#eta; #LTdE/dx#GT", kTProfile, {axisEta});
       registry.add("pTVsCent", "", kTH2F, {axisPt, axisCent});
 
-      for (int i = 0; i < kNEtaHists; ++i) {
+      for (int i = 0; i < KnEtaHists; ++i) {
         dEdx[i] = registry.add<TH3>(Form("dEdx_%s", endingEta[i].c_str()), Form("%s;Momentum;dE/dx;", latexEta[i].c_str()), kTH3F, {axisPt, axisdEdx, axisCent});
         pTVsP[i] = registry.add<TH2>(Form("pTVsP_%s", endingEta[i].c_str()), Form("%s;Momentum;#it{p}_{T} (GeV/#it{c});", latexEta[i].c_str()), kTH2F, {axisPt, axisPt});
         dEdxPiV0[i] = registry.add<TH2>(Form("dEdxPiV0_%s", endingEta[i].c_str()), Form("#pi^{+} + #pi^{-}, %s;Momentum;dE/dx;", latexEta[i].c_str()), kTH2F, {axisPtV0s, axisdEdx});
@@ -749,9 +742,9 @@ struct PiKpRAA {
       const double piRadiusNsigma{std::sqrt(std::pow(piTPCNsigma, 2.) + std::pow(piTOFNsigma, 2.))};
       const double prRadiusNsigma{std::sqrt(std::pow(prTPCNsigma, 2.) + std::pow(prTOFNsigma, 2.))};
 
-      if (piRadiusNsigma < kThree)
+      if (piRadiusNsigma < Kthree)
         registry.fill(HIST("dcaVsPtPi"), pt, dcaXy, centrality);
-      if (prRadiusNsigma < kThree)
+      if (prRadiusNsigma < Kthree)
         registry.fill(HIST("dcaVsPtPr"), pt, dcaXy, centrality);
     }
 
@@ -790,37 +783,37 @@ struct PiKpRAA {
 
       if (trackSelections.applyEtaCal && etaCal.isMIPCalLoaded) {
         const double dedxCal{etaCal.pEtaCal->GetBinContent(etaCal.pEtaCal->FindBin(eta))};
-        if (dedxCal > kMindEdxMIP && dedxCal < kMaxdEdxMIP)
+        if (dedxCal > KmindEdxMIP && dedxCal < KmaxdEdxMIP)
           dedx *= (50.0 / dedxCal);
         else
           continue;
       }
 
       int indexEta{-999};
-      for (int i = 0; i < kNEtaHists; ++i) {
+      for (int i = 0; i < KnEtaHists; ++i) {
         if (eta >= kLowEta[i] && eta < kHighEta[i]) {
           indexEta = i;
           break;
         }
       }
 
-      if (indexEta < kZeroInt || indexEta > kSevenInt)
+      if (indexEta < KzeroInt || indexEta > KsevenInt)
         continue;
 
-      if (momentum > kMinPMIP && momentum < kMaxPMIP && dedx > kMindEdxMIP && dedx < kMaxdEdxMIP) {
+      if (momentum > KminPMIP && momentum < KmaxPMIP && dedx > KmindEdxMIP && dedx < KmaxdEdxMIP) {
         registry.fill(HIST("dEdxVsEtaPiMIP"), eta, dedx);
         registry.fill(HIST("dEdxVsEtaPiMIPp"), eta, dedx);
         registry.fill(HIST("NclVsEtaPiMIP"), eta, ncl);
         registry.fill(HIST("NclVsEtaPiMIPp"), eta, ncl);
       }
 
-      if (momentum > kMinPMIP && momentum < kMaxPMIP && dedx > kMindEdxMIPPlateau && dedx < kMaxdEdxMIPPlateau) {
+      if (momentum > KminPMIP && momentum < KmaxPMIP && dedx > KmindEdxMIPPlateau && dedx < KmaxdEdxMIPPlateau) {
         if (track.hasTOF() && track.goodTOFMatch()) {
           const float tTOF{track.tofSignal()};
           const float trkLength{track.length()};
           const float tExpElTOF{track.tofExpSignalEl(tTOF)};
 
-          if ((std::abs((tExpElTOF / tTOF) - kOne) < trackSelections.maxElTOFBeta) && tTOF > kZero && trkLength > kZero) {
+          if ((std::abs((tExpElTOF / tTOF) - Kone) < trackSelections.maxElTOFBeta) && tTOF > Kzero && trkLength > Kzero) {
             registry.fill(HIST("dEdxVsEtaElMIP"), eta, dedx);
             registry.fill(HIST("dEdxVsEtaElMIPp"), eta, dedx);
           }
@@ -903,7 +896,7 @@ struct PiKpRAA {
       // Eta calibration positive-charge track
       if (trackSelections.applyEtaCal && etaCal.isMIPCalLoaded) {
         const double dedxCal{etaCal.pEtaCal->GetBinContent(etaCal.pEtaCal->FindBin(posTrkEta))};
-        if (dedxCal > kMindEdxMIP && dedxCal < kMaxdEdxMIP)
+        if (dedxCal > KmindEdxMIP && dedxCal < KmaxdEdxMIP)
           posTrkdEdx *= (50.0 / dedxCal);
         else
           continue;
@@ -912,7 +905,7 @@ struct PiKpRAA {
       // Eta calibration negative-charge track
       if (trackSelections.applyEtaCal && etaCal.isMIPCalLoaded) {
         const double dedxCal{etaCal.pEtaCal->GetBinContent(etaCal.pEtaCal->FindBin(negTrkEta))};
-        if (dedxCal > kMindEdxMIP && dedxCal < kMaxdEdxMIP)
+        if (dedxCal > KmindEdxMIP && dedxCal < KmaxdEdxMIP)
           negTrkdEdx *= (50.0 / dedxCal);
         else
           continue;
@@ -935,24 +928,24 @@ struct PiKpRAA {
 
       int posIndexEta{-999};
       int negIndexEta{-999};
-      for (int i = 0; i < kNEtaHists; ++i) {
+      for (int i = 0; i < KnEtaHists; ++i) {
         if (posTrkEta >= kLowEta[i] && posTrkEta < kHighEta[i]) {
           posIndexEta = i;
           break;
         }
       }
 
-      for (int i = 0; i < kNEtaHists; ++i) {
+      for (int i = 0; i < KnEtaHists; ++i) {
         if (negTrkEta >= kLowEta[i] && negTrkEta < kHighEta[i]) {
           negIndexEta = i;
           break;
         }
       }
 
-      if (posIndexEta < kZeroInt || posIndexEta > kSevenInt)
+      if (posIndexEta < KzeroInt || posIndexEta > KsevenInt)
         continue;
 
-      if (negIndexEta < kZeroInt || negIndexEta > kSevenInt)
+      if (negIndexEta < KzeroInt || negIndexEta > KsevenInt)
         continue;
 
       registry.fill(HIST("ArmAfterTopoSel"), alpha, qT);
@@ -978,11 +971,11 @@ struct PiKpRAA {
           dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
           dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
 
-          if (posTrkP > kMinPMIP && posTrkP < kMaxPMIP && posTrkdEdx > kMindEdxMIP && posTrkdEdx < kMaxdEdxMIP) {
+          if (posTrkP > KminPMIP && posTrkP < KmaxPMIP && posTrkdEdx > KmindEdxMIP && posTrkdEdx < KmaxdEdxMIP) {
             registry.fill(HIST("dEdxVsEtaPiMIPV0"), posTrkEta, posTrkdEdx);
             registry.fill(HIST("dEdxVsEtaPiMIPV0p"), posTrkEta, posTrkdEdx);
           }
-          if (negTrkP > kMinPMIP && negTrkP < kMaxPMIP && negTrkdEdx > kMindEdxMIP && negTrkdEdx < kMaxdEdxMIP) {
+          if (negTrkP > KminPMIP && negTrkP < KmaxPMIP && negTrkdEdx > KmindEdxMIP && negTrkdEdx < KmaxdEdxMIP) {
             registry.fill(HIST("dEdxVsEtaPiMIPV0"), negTrkEta, negTrkdEdx);
             registry.fill(HIST("dEdxVsEtaPiMIPV0p"), negTrkEta, negTrkdEdx);
           }
@@ -993,7 +986,7 @@ struct PiKpRAA {
         registry.fill(HIST("V0sCounter"), V0sCounter::Lambda);
         registry.fill(HIST("ArmL"), alpha, qT);
         registry.fill(HIST("MassLVsPt"), v0.pt(), v0.mLambda());
-        if (posTrackCharge > kZero) {
+        if (posTrackCharge > Kzero) {
           registry.fill(HIST("nSigPrFromL"), posTrkPt, posTrack.tpcNSigmaPr());
           registry.fill(HIST("NclVsEtaPrV0"), posTrkEta, posNcl);
           registry.fill(HIST("NclVsEtaPrV0p"), posTrkEta, posNcl);
@@ -1001,7 +994,7 @@ struct PiKpRAA {
           nClVsPpPrV0[posIndexEta]->Fill(posPorPTPC, posNcl);
           dEdxPrV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
         }
-        if (negTrackCharge < kZero) {
+        if (negTrackCharge < Kzero) {
           registry.fill(HIST("nSigPiFromL"), negTrkPt, negTrack.tpcNSigmaPi());
           // registry.fill(HIST("NclVsEtaPiV0"), negTrkEta, negNcl);
           // registry.fill(HIST("NclVsEtaPiV0p"), negTrkEta, negNcl);
@@ -1015,7 +1008,7 @@ struct PiKpRAA {
         registry.fill(HIST("V0sCounter"), V0sCounter::AntiLambda);
         registry.fill(HIST("ArmAL"), alpha, qT);
         registry.fill(HIST("MassALVsPt"), v0.pt(), v0.mAntiLambda());
-        if (posTrackCharge > kZero) {
+        if (posTrackCharge > Kzero) {
           registry.fill(HIST("nSigPiFromAL"), posTrkPt, posTrack.tpcNSigmaPi());
           // registry.fill(HIST("NclVsEtaPiV0"), posTrkEta, posNcl);
           // registry.fill(HIST("NclVsEtaPiV0p"), posTrkEta, posNcl);
@@ -1023,7 +1016,7 @@ struct PiKpRAA {
           // nClVsPpPiV0[posIndexEta]->Fill(posPorPt, posNcl);
           // dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
         }
-        if (negTrackCharge < kZero) {
+        if (negTrackCharge < Kzero) {
           registry.fill(HIST("nSigPrFromAL"), negTrkPt, negTrack.tpcNSigmaPr());
           registry.fill(HIST("NclVsEtaPrV0"), negTrkEta, negNcl);
           registry.fill(HIST("NclVsEtaPrV0p"), negTrkEta, negNcl);
@@ -1056,11 +1049,11 @@ struct PiKpRAA {
           nClVsPpElV0[negIndexEta]->Fill(negPorPTPC, negNcl);
           nClVsPElV0[posIndexEta]->Fill(posPorPTPC, posNcl);
           nClVsPpElV0[posIndexEta]->Fill(posPorPTPC, posNcl);
-          if (posPorPTPC > kMinPMIP && posPorPTPC < kMaxPMIP && posTrkdEdx > kMindEdxMIPPlateau && posTrkdEdx < kMaxdEdxMIPPlateau) {
+          if (posPorPTPC > KminPMIP && posPorPTPC < KmaxPMIP && posTrkdEdx > KmindEdxMIPPlateau && posTrkdEdx < KmaxdEdxMIPPlateau) {
             registry.fill(HIST("dEdxVsEtaElMIPV0"), posTrkEta, posTrkdEdx);
             registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
           }
-          if (negPorPTPC > kMinPMIP && negPorPTPC < kMaxPMIP && negTrkdEdx > kMindEdxMIPPlateau && negTrkdEdx < kMaxdEdxMIPPlateau) {
+          if (negPorPTPC > KminPMIP && negPorPTPC < KmaxPMIP && negTrkdEdx > KmindEdxMIPPlateau && negTrkdEdx < KmaxdEdxMIPPlateau) {
             registry.fill(HIST("dEdxVsEtaElMIPV0"), negTrkEta, negTrkdEdx);
             registry.fill(HIST("dEdxVsEtaElMIPV0p"), negTrkEta, negTrkdEdx);
           }
@@ -1101,7 +1094,7 @@ struct PiKpRAA {
       }
 
       // Is it a charged particle?
-      if (std::abs(charge) < kMinCharge)
+      if (std::abs(charge) < KminCharge)
         continue;
 
       // Is it a primary particle?
@@ -1111,11 +1104,11 @@ struct PiKpRAA {
       const float eta{particle.eta()};
 
       // TVX requirement
-      if (eta > kMinFT0A && eta < kMaxFT0A) {
+      if (eta > KminFT0A && eta < KmaxFT0A) {
         nChFT0A++;
       }
 
-      if (eta > kMinFT0C && eta < kMaxFT0C) {
+      if (eta > KminFT0C && eta < KmaxFT0C) {
         nChFT0C++;
       }
 
@@ -1124,7 +1117,7 @@ struct PiKpRAA {
       }
 
       // INEL > 0
-      if (std::abs(eta) > kOne)
+      if (std::abs(eta) > Kone)
         continue;
 
       nChMC++;
@@ -1134,7 +1127,7 @@ struct PiKpRAA {
     // Select only events with at least one charged particle in the FT0A and FT0C acceptances?
     //---------------------------
     if (selTVXMC) {
-      if (!(nChFT0A > kZeroInt && nChFT0C > kZeroInt)) {
+      if (!(nChFT0A > KzeroInt && nChFT0C > KzeroInt)) {
         registry.fill(HIST("NchMCcentVsTVX"), nChMC, 0.5);
         return;
       }
@@ -1152,7 +1145,7 @@ struct PiKpRAA {
     // Select only INEL > 0 generated events?
     //---------------------------
     if (selINELgt0) {
-      if (!(nChMC > kZeroInt)) {
+      if (!(nChMC > KzeroInt)) {
         return;
       }
     }
@@ -1181,7 +1174,7 @@ struct PiKpRAA {
       }
 
       // Is it a charged particle?
-      if (std::abs(charge) < kMinCharge)
+      if (std::abs(charge) < KminCharge)
         continue;
 
       // Is it a primary particle?
@@ -1220,7 +1213,7 @@ struct PiKpRAA {
     //---------------------------
     // Only Generated evets with at least one reconstrued collision
     //---------------------------
-    if (nRecColls > kZeroInt) {
+    if (nRecColls > KzeroInt) {
 
       //---------------------------
       // Looks for the collision with the largest number of contributors
@@ -1435,7 +1428,7 @@ struct PiKpRAA {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge)
+          if (std::abs(charge) < KminCharge)
             continue;
 
           // Is it a primary particle?
@@ -1485,7 +1478,7 @@ struct PiKpRAA {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge)
+          if (std::abs(charge) < KminCharge)
             continue;
 
           registry.fill(HIST("DCAxyVsPt"), track.pt(), track.dcaXY());
@@ -1563,7 +1556,7 @@ struct PiKpRAA {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge)
+          if (std::abs(charge) < KminCharge)
             continue;
 
           float phiPrime{track.phi()};
@@ -1571,14 +1564,14 @@ struct PiKpRAA {
 
           int indexEta{-999};
           const float eta{track.eta()};
-          for (int i = 0; i < kNEtaHists; ++i) {
+          for (int i = 0; i < KnEtaHists; ++i) {
             if (eta >= kLowEta[i] && eta < kHighEta[i]) {
               indexEta = i;
               break;
             }
           }
 
-          if (indexEta < kZeroInt || indexEta > kSevenInt)
+          if (indexEta < KzeroInt || indexEta > KsevenInt)
             continue;
 
           nCh++;
@@ -1645,7 +1638,7 @@ struct PiKpRAA {
     alpha = 0., qT = 0.;
     TVector3 pV0 = ppos + pneg;
     double pV0mag = pV0.Mag();
-    if (pV0mag < kTenToMinusNine)
+    if (pV0mag < KtEnToMinusNine)
       return; // protect against zero momentum
 
     const TVector3 u = pV0 * (1.0 / pV0mag);
@@ -1659,7 +1652,7 @@ struct PiKpRAA {
 
     // α: longitudinal asymmetry (uses + and − labels by charge)
     double denom = pLpos + pLneg;
-    if (std::abs(denom) < kTenToMinusNine)
+    if (std::abs(denom) < KtEnToMinusNine)
       return; // avoid 0 division (unphysical for V0s)
 
     alpha = (pLpos - pLneg) / denom; // equivalently / pV0mag
@@ -2005,7 +1998,7 @@ struct PiKpRAA {
   bool passesPhiSelection(const float& pt, const float& phi)
   {
     // Do not apply Phi Sel if pt < 2 GeV/c
-    if (pt < kTwoPtGeVSel)
+    if (pt < KtwoPtGeVSel)
       return true;
 
     bool isSelected{true};
