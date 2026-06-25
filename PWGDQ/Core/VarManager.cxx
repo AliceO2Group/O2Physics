@@ -916,6 +916,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzNPeaksTrimmed2] = "";
   fgVariableNames[kDCAzNPeaksTrimmed3] = "Number of peaks in binned DCAz distribution (trimmed 3)";
   fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
+  fgVariableNames[kInteractionRate] = "Interaction rate";
+  fgVariableUnits[kInteractionRate] = "kHz";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -2196,6 +2198,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
   fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
+  fgVarNamesMap["kInteractionRate"] = kInteractionRate;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;
