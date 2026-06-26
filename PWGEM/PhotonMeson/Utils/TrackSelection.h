@@ -16,11 +16,36 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 #define PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 
-#include <Framework/ASoA.h>
-
 #include <TPDGCode.h>
-
+#include <concepts>
 #include <cmath>
+
+template <typename T>
+concept is_iterator = requires (T t)
+{
+  typename std::decay_t<T>::policy_t;
+  typename std::decay_t<T>::all_columns;
+  t.getIndexBindings();
+};
+
+template <typename T>
+concept is_sentinel = requires (T t)
+{
+  std::same_as<decltype(t.index), int64_t const>;
+};
+
+template <typename T>
+concept is_track_with_extra = requires (T t)
+{
+  { t.hasITS() } -> std::same_as<bool>;
+  { t.hasTPC() } -> std::same_as<bool>;
+};
+
+template <typename T>
+concept is_mc_particle = requires (T t)
+{
+  { t.pdgCode() } -> std::same_as<const int&>;
+};
 
 namespace o2::pwgem::photonmeson
 {
@@ -32,7 +57,7 @@ namespace o2::pwgem::photonmeson
  * @param track track
  * @return true if has both
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSTPCTrack(TTrack const& track)
 {
   return track.hasITS() && track.hasTPC();
@@ -45,7 +70,7 @@ inline bool isITSTPCTrack(TTrack const& track)
  * @param track track
  * @return true if has both
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isTPCTRDTrack(TTrack const& track)
 {
   return !track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF();
@@ -58,7 +83,7 @@ inline bool isTPCTRDTrack(TTrack const& track)
  * @param track track
  * @return true if has all
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSTPCTRDTrack(TTrack const& track)
 {
   return track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF();
@@ -70,7 +95,7 @@ inline bool isITSTPCTRDTrack(TTrack const& track)
  * @param track track
  * @return true if has both
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isTPCTOFTrack(TTrack const& track)
 {
   return !track.hasITS() && track.hasTPC() && !track.hasTRD() && track.hasTOF();
@@ -82,7 +107,7 @@ inline bool isTPCTOFTrack(TTrack const& track)
  * @param track track
  * @return true if has all
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isTPCTRDTOFTrack(TTrack const& track)
 {
   return !track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF();
@@ -94,7 +119,7 @@ inline bool isTPCTRDTOFTrack(TTrack const& track)
  * @param track track
  * @return true if has all
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSTPCTRDTOFTrack(TTrack const& track)
 {
   return track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF();
@@ -107,7 +132,7 @@ inline bool isITSTPCTRDTOFTrack(TTrack const& track)
  * @param track track
  * @return true if tracks is TPC-only
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isTPConlyTrack(TTrack const& track)
 {
   return !track.hasITS() && track.hasTPC() && !track.hasTRD() && !track.hasTOF();
@@ -120,7 +145,7 @@ inline bool isTPConlyTrack(TTrack const& track)
  * @param track track
  * @return true if tracks is ITS-only
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSonlyTrack(TTrack const& track)
 {
   return track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF();
@@ -134,7 +159,7 @@ inline bool isITSonlyTrack(TTrack const& track)
  * @param track1 track from daughter 1
  * @return true if V0 pairs are ITSTPC-tracks
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSTPC_ITSTPC(TTrack const& track0, TTrack const& track1)
 {
   return isITSTPCTrack(track0) && isITSTPCTrack(track1);
@@ -148,7 +173,7 @@ inline bool isITSTPC_ITSTPC(TTrack const& track0, TTrack const& track1)
  * @param track1 track from daughter 1
  * @return true if one is TPC-only and the other ITSTPC
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSTPC_TPConly(TTrack const& track0, TTrack const& track1)
 {
   return (isITSTPCTrack(track0) && isTPConlyTrack(track1)) || (isITSTPCTrack(track1) && isTPConlyTrack(track0));
@@ -162,7 +187,7 @@ inline bool isITSTPC_TPConly(TTrack const& track0, TTrack const& track1)
  * @param track1 track from daughter 1
  * @return true if one is ITS-only and the other ITSTPC
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSTPC_ITSonly(TTrack const& track0, TTrack const& track1)
 {
   return (isITSTPCTrack(track0) && isITSonlyTrack(track1)) || (isITSTPCTrack(track1) && isITSonlyTrack(track0));
@@ -176,7 +201,7 @@ inline bool isITSTPC_ITSonly(TTrack const& track0, TTrack const& track1)
  * @param track1 track from daughter 1
  * @return true if both are TPC-only tracks
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isTPConly_TPConly(TTrack const& track0, TTrack const& track1)
 {
   return isTPConlyTrack(track0) && isTPConlyTrack(track1);
@@ -190,7 +215,7 @@ inline bool isTPConly_TPConly(TTrack const& track0, TTrack const& track1)
  * @param track1 track from daughter 1
  * @return true if both are ITS-only tracks
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isITSonly_ITSonly(TTrack const& track0, TTrack const& track1)
 {
   return isITSonlyTrack(track0) && isITSonlyTrack(track1);
@@ -204,7 +229,7 @@ inline bool isITSonly_ITSonly(TTrack const& track0, TTrack const& track1)
  * @param track1 track from daughter 1
  * @return true if either one is ITS-only while the other one is TPC-only
  */
-template <o2::soa::is_iterator TTrack>
+template <is_track_with_extra TTrack>
 inline bool isTPConly_ITSonly(TTrack const& track0, TTrack const& track1)
 {
   return (isTPConlyTrack(track0) && isITSonlyTrack(track1)) || (isTPConlyTrack(track1) && isITSonlyTrack(track0));
@@ -217,7 +242,7 @@ inline bool isTPConly_ITSonly(TTrack const& track0, TTrack const& track1)
  * @param mc2 MCParticle 1
  * @return true if the mother particle is the expected type and the same for both
  */
-template <PDG_t motherType, o2::soa::is_iterator T>
+template <PDG_t motherType, is_mc_particle T>
 inline bool checkMCParticles(T const& mc1, T const& mc2)
 {
   if (std::abs(mc1.pdgCode()) != kElectron || std::abs(mc2.pdgCode()) != kElectron) {

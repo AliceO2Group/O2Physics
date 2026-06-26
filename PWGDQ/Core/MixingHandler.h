@@ -24,7 +24,6 @@
 
 #include <Rtypes.h>
 
-#include <algorithm>
 #include <array>
 #include <iostream>
 #include <map>
