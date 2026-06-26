@@ -791,6 +791,9 @@ struct kstarInOO {
   template <typename TracksType>
   ROOT::Math::PxPyPzMVector TrueReconstruction(const TracksType& trk1, const TracksType& trk2)
   {
+    constexpr int kaonPdg = 321;
+    constexpr int pionPdg = 211;
+    constexpr int kstar0Pdg = 313;
     double conjugate = trk1.sign() * trk2.sign();
     if (conjugate > 0)
       return {};
@@ -819,26 +822,26 @@ struct kstarInOO {
       mothers2PDG.push_back(particle2_mom.pdgCode());
     }
 
-    if (mothers1PDG[0] != 313)
+    if (mothers1PDG[0] != kstar0Pdg)
       return {}; // mother not K*0
-    if (mothers2PDG[0] != 313)
+    if (mothers2PDG[0] != kstar0Pdg)
       return {}; // mothers not K*0
     if (mothers1[0] != mothers2[0])
       return {}; // Kaon and pion not from the same K*0
 
-    if (std::abs(particle1.pdgCode()) != 211 && std::abs(particle1.pdgCode()) != 321)
+    if (std::abs(particle1.pdgCode()) != pionPdg && std::abs(particle1.pdgCode()) != kaonPdg)
       return {};
-    if (std::abs(particle2.pdgCode()) != 211 && std::abs(particle2.pdgCode()) != 321)
+    if (std::abs(particle2.pdgCode()) != pionPdg && std::abs(particle2.pdgCode()) != kaonPdg)
       return {};
 
     double track1_mass, track2_mass;
-    if (std::abs(particle1.pdgCode()) == 211) {
+    if (std::abs(particle1.pdgCode()) == pionPdg) {
       track1_mass = massPi;
     } else {
       track1_mass = massKa;
     }
 
-    if (std::abs(particle2.pdgCode()) == 211) {
+    if (std::abs(particle2.pdgCode()) == pionPdg) {
       track2_mass = massPi;
     } else {
       track2_mass = massKa;
@@ -1118,6 +1121,9 @@ struct kstarInOO {
     bool HasJets = false;
     int nJets = 0;
     for (auto chargedjet : chargedjets) {
+      // if(std::abs(chargedjet.eta()) > cfgJetEta)
+      // 	return;
+
       jetpT.push_back(chargedjet.pt());
       jetEta.push_back(chargedjet.eta());
       jetPhi.push_back(chargedjet.phi());
@@ -1167,6 +1173,10 @@ struct kstarInOO {
   int nJetMCEvents = 0;
   void processMCJets(o2::aod::JetCollision const& collision, JetTrackCandidatesMC const& jetTracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, aod::McParticles const&, aod::JetParticles const&)
   {
+    constexpr int kaonPdg = 321;
+    constexpr int pionPdg = 211;
+    constexpr int kstar0Pdg = 313;
+
     if (cDebugLevel > 0) {
       nJetMCEvents++;
       if ((nJetMCEvents + 1) % 10000 == 0) {
@@ -1315,21 +1325,21 @@ struct kstarInOO {
         histos.fill(HIST("hEffRecTest5_pT"), lResonanceTest1.Pt());
       }
 
-      if (std::abs(particle1.pdgCode()) != 321) // kaon
+      if (std::abs(particle1.pdgCode()) != kaonPdg) // kaon
         continue;
 
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest6_pT"), lResonanceTest1.Pt());
       }
 
-      if (std::abs(particle2.pdgCode()) != 211) // pion
+      if (std::abs(particle2.pdgCode()) != pionPdg) // pion
         continue;
 
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest7_pT"), lResonanceTest1.Pt());
       }
 
-      if (std::abs(mothers1PDG[0]) != 313)
+      if (std::abs(mothers1PDG[0]) != kstar0Pdg)
         continue; // mother not K*0
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest8_pT"), lResonanceTest1.Pt());
@@ -1339,7 +1349,7 @@ struct kstarInOO {
         }
       }
 
-      if (std::abs(mothers2PDG[0]) != 313)
+      if (std::abs(mothers2PDG[0]) != kstar0Pdg)
         continue; // mothers not K*0
 
       if (cfgJetMCHistos) {
@@ -1764,16 +1774,19 @@ struct kstarInOO {
       bool skip = false;
       int daughter_kaon = 0;
       int daughter_pion = 0;
+      constexpr int kaonPdg = 321;
+      constexpr int pionPdg = 211;
+
       if (!cfgIsKstar) {
         for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
-          if (std::abs(daughter.pdgCode()) != 321)
+          if (std::abs(daughter.pdgCode()) != kaonPdg)
             skip = true;
         }
       } else {
         for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
-          if (std::abs(daughter.pdgCode()) == 321)
+          if (std::abs(daughter.pdgCode()) == kaonPdg)
             ++daughter_kaon;
-          else if (std::abs(daughter.pdgCode()) == 211)
+          else if (std::abs(daughter.pdgCode()) == pionPdg)
             ++daughter_pion;
         }
         if (daughter_kaon != 1 || daughter_pion != 1)
@@ -1825,7 +1838,7 @@ struct kstarInOO {
       bool pion_out = false;
       for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
         if (cfgIsKstar) {
-          if (std::abs(daughter.pdgCode()) == 321) {
+          if (std::abs(daughter.pdgCode()) == kaonPdg) {
 
             double dphi_kaon = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_kaon = bestJetEta - daughter.eta();
@@ -1842,7 +1855,7 @@ struct kstarInOO {
               }
             } // INSIDE Jets
           } // kaon daughter
-          if (std::abs(daughter.pdgCode()) == 211) {
+          if (std::abs(daughter.pdgCode()) == pionPdg) {
 
             double dphi_pion = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_pion = bestJetEta - daughter.eta();
@@ -1863,7 +1876,7 @@ struct kstarInOO {
             } // INSIDE Jets
           } // pion daughter
         } else {
-          if (std::abs(daughter.pdgCode()) == 321) {
+          if (std::abs(daughter.pdgCode()) == kaonPdg) {
             double dphi_kaon = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_kaon = bestJetEta - daughter.eta();
             dR_kaon = TMath::Sqrt((dphi_kaon * dphi_kaon) + (deta_kaon * deta_kaon));
