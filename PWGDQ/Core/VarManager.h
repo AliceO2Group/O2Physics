@@ -1585,7 +1585,6 @@ class VarManager : public TObject
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
-
 };
 
 template <typename T, typename C>

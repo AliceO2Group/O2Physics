@@ -202,7 +202,6 @@ class MixingHandler : public TNamed
 
   short fPoolDepth;                 // number of events to be kept in each pool
   std::map<int, MixingPool> fPools; // key: category, value: pool of events corresponding to that category
-
 };
 
 #endif // PWGDQ_CORE_MIXINGHANDLER_H_

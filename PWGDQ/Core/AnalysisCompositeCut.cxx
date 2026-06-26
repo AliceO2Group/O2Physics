@@ -18,10 +18,10 @@
 #include <vector>
 
 //____________________________________________________________________________
-  AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
-                                                            fOptionUseAND(useAND),
-                                                            fCutList(),
-                                                            fCompositeCutList()
+AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
+                                                          fOptionUseAND(useAND),
+                                                          fCutList(),
+                                                          fCompositeCutList()
 {
   //
   // default constructor

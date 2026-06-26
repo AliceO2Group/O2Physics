@@ -114,6 +114,5 @@ class MCProng
   bool fCheckGenerationsInTime;
   std::vector<int> fPDGInHistory;
   std::vector<bool> fExcludePDGInHistory;
-
 };
 #endif // PWGDQ_CORE_MCPRONG_H_

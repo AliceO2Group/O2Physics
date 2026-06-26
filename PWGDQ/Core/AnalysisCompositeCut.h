@@ -52,7 +52,6 @@ class AnalysisCompositeCut : public AnalysisCut
   bool fOptionUseAND;                                  // true (default): apply AND on all cuts; false: use OR
   std::vector<AnalysisCut> fCutList;                   // list of cuts
   std::vector<AnalysisCompositeCut> fCompositeCutList; // list of composite cuts
-
 };
 
 #endif // PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
