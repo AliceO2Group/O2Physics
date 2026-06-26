@@ -30,7 +30,7 @@ concept is_iterator = requires(T t) {
 
 template <typename T>
 concept is_sentinel = requires(T t) {
-  std::same_as<decltype(t.index), int64_t const>;
+  requires(std::same_as<decltype(t.index), int64_t const>);
 };
 
 template <typename T>
