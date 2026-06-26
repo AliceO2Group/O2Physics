@@ -201,7 +201,7 @@ class MixingHandler : public TNamed
   std::vector<std::vector<float>> fVariableLimits;
   std::map<int, int> fVariables; // key: variable, value: position in the internal variable list of the handler (used to map the variables to the values passed to FindEventCategory)
 
-  int16_t fPoolDepth;                 // number of events to be kept in each pool
+  int16_t fPoolDepth;               // number of events to be kept in each pool
   std::map<int, MixingPool> fPools; // key: category, value: pool of events corresponding to that category
 };
 
