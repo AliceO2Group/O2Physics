@@ -27,7 +27,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -41,12 +40,11 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
 
-#include <cstddef>
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <string>
-#include <tuple>
 #include <vector>
 
 using namespace o2;
@@ -56,10 +54,8 @@ using namespace o2::aod::rctsel;
 
 struct phiflow {
 
-  Produces<aod::KaonkaonEvents> kaonkaonEvent;
+  Produces<aod::KaonEvents> kaonEvent;
   Produces<aod::KaonTracks> kaonTrack;
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
@@ -100,8 +96,6 @@ struct phiflow {
     Configurable<float> nsigmaCutTPCKaMeson{"nsigmaCutTPCKaMeson", 3.0, "Maximum nsigma cut TPC for kaon meson track"};
     Configurable<float> nsigmaCutTOFKaMeson{"nsigmaCutTOFKaMeson", 3.0, "Maximum nsigma cut TOF for kaon meson track"};
     Configurable<float> cutTOFBetaKaMeson{"cutTOFBetaKaMeson", 1.0, "Maximum beta cut for kaon meson track"};
-    Configurable<bool> isDeepAngle{"isDeepAngle", true, "Deep Angle cut"};
-    Configurable<double> cutDeepAngle{"cutDeepAngle", 0.04, "Deep Angle cut value"};
   } grpKaon;
 
   enum KaonPidBits : uint8_t {
@@ -111,35 +105,28 @@ struct phiflow {
     kPID4 = 1u << 3  // selectionPID4
   };
 
-  // configurable for chargedkstar
-  Configurable<float> cfgPhiMassMin{"cfgPhiMassMin", 0.9f, "Phi mass min"};
-  Configurable<float> cfgPhiMassMax{"cfgPhiMassMax", 1.2f, "Phi mass max"};
-
-  Configurable<int> iMNbins{"iMNbins", 120, "Number of bins in invariant mass"};
-  Configurable<float> lbinIM{"lbinIM", 0.9, "lower bin value in IM histograms"};
-  Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
-
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   RCTFlagsChecker rctChecker;
   void init(o2::framework::InitContext&)
   {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
-    AxisSpec thnAxisInvMass{iMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
 
     histos.add("hCent", "hCent", kTH1F, {{8, 0, 80.0}});
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
     histos.add("hTrkSelInfo", "hTrkSelInfo", kTH1F, {{10, 0, 10.0}});
-    histos.add("hPhiMass", "hPhiMass", kTH1F, {thnAxisInvMass});
-    histos.add("hInfo", "hInfo", kTH1F, {{5, 0, 5.0}});
   }
 
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpKaon.itsclusterKaMeson && candidate.tpcNClsCrossedRows() > grpKaon.tpcCrossedRowsKaMeson && std::abs(candidate.dcaXY()) <= grpKaon.cutDCAxyKaMeson && std::abs(candidate.dcaZ()) <= grpKaon.cutDCAzKaMeson && std::abs(candidate.eta()) <= grpKaon.cutEtaKaMeson && candidate.pt() >= grpKaon.cutPTKaMeson) {
-      return true;
-    }
-    return false;
+    return candidate.isGlobalTrack() &&
+           candidate.isPVContributor() &&
+           candidate.itsNCls() >= grpKaon.itsclusterKaMeson &&
+           candidate.tpcNClsCrossedRows() > grpKaon.tpcCrossedRowsKaMeson &&
+           std::abs(candidate.dcaXY()) <= grpKaon.cutDCAxyKaMeson &&
+           std::abs(candidate.dcaZ()) <= grpKaon.cutDCAzKaMeson &&
+           std::abs(candidate.eta()) <= grpKaon.cutEtaKaMeson &&
+           candidate.pt() >= grpKaon.cutPTKaMeson;
   }
 
   template <typename T>
@@ -169,83 +156,75 @@ struct phiflow {
   template <typename T>
   bool selectionPID3(const T& candidate)
   {
-    auto px = candidate.px();
-    auto py = candidate.py();
-    auto pt = std::sqrt(px * px + py * py);
-    float lowmom = 0.5;
-    if (pt < lowmom) {
-      if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < grpKaon.nsigmaCutTPCKaMeson) {
-        return true;
-      } else if (candidate.hasTOF() && std::sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpKaon.nsigmaCutTOFKaMeson) {
-        return true;
-      }
-    } else if (candidate.hasTOF() && std::sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpKaon.nsigmaCutTOFKaMeson) {
-      return true;
-    }
-    return false;
-  }
+    constexpr float pSwitch = 0.5f;
 
-  template <typename T>
-  bool selectionPID4(const T& candidate)
-  {
-    const float px = candidate.px();
-    const float py = candidate.py();
-    // const float pz = candidate.pz();
-    const float pt = std::sqrt(px * px + py * py);
-
-    constexpr float pSwitch = 0.5f; // GeV/c
-
+    const float pt = candidate.pt();
     const float nTPC = candidate.tpcNSigmaKa();
 
-    // Low momentum: TPC-only, TOF not required and not used
-    if (pt < pSwitch) {
-      return std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson; // e.g. 3
+    if (pt < pSwitch && !candidate.hasTOF()) {
+      return std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson;
     }
 
-    // High momentum: TOF hit mandatory + separate 3σ cuts
     if (!candidate.hasTOF()) {
       return false;
     }
 
     const float nTOF = candidate.tofNSigmaKa();
-    return (std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson) &&
-           (std::abs(nTOF) < grpKaon.nsigmaCutTOFKaMeson);
+    const float nCombined = std::sqrt(nTPC * nTPC + nTOF * nTOF);
+
+    return nCombined < grpKaon.nsigmaCutTOFKaMeson;
+  }
+
+  template <typename T>
+  bool selectionPID4(const T& candidate)
+  {
+    constexpr float pSwitch = 0.5f;
+
+    const float pt = candidate.pt();
+    const float nTPC = candidate.tpcNSigmaKa();
+
+    if (pt < pSwitch) {
+      return std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson;
+    }
+
+    if (!candidate.hasTOF()) {
+      return false;
+    }
+
+    const float nTOF = candidate.tofNSigmaKa();
+
+    return std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson &&
+           std::abs(nTOF) < grpKaon.nsigmaCutTOFKaMeson;
   }
 
   template <typename T>
   uint8_t kaonPidMask(const T& trk)
   {
     uint8_t m = 0;
-    if (selectionPID(trk))
+
+    if (selectionPID(trk)) {
       m |= kPID1;
-    if (selectionPID2(trk))
+    }
+    if (selectionPID2(trk)) {
       m |= kPID2;
-    if (selectionPID3(trk))
+    }
+    if (selectionPID3(trk)) {
       m |= kPID3;
-    if (selectionPID4(trk))
+    }
+    if (selectionPID4(trk)) {
       m |= kPID4;
+    }
     return m;
   }
 
-  // deep angle cut on pair to remove photon conversion
-  template <typename T1, typename T2>
-  bool selectionPair(const T1& candidate1, const T2& candidate2)
-  {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.pt();
-    pt2 = candidate2.pt();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
-    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (grpKaon.isDeepAngle && angle < grpKaon.cutDeepAngle) {
-      return false;
-    }
-    return true;
-  }
-
-  ROOT::Math::PxPyPzMVector phi, kaon, antiKaon;
+  struct StoredKaon {
+    float px;
+    float py;
+    float pz;
+    int8_t charge;
+    int64_t trackId;
+    uint8_t pidMask;
+  };
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (aod::cent::centFT0C < cfgCutCentralityMax && aod::cent::centFT0C > cfgCutCentralityMin);
@@ -259,114 +238,145 @@ struct phiflow {
   Partition<AllTrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<AllTrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
-  ROOT::Math::PxPyPzMVector KaonPlus, KaonMinus, PhiMesonMother, PhiVectorDummy, Phid1dummy, Phid2dummy;
-  double massKa = o2::constants::physics::MassKPlus;
-
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/)
+  void processData(EventCandidates::iterator const& collision,
+                   AllTrackCandidates const& /*tracks*/)
   {
     o2::aod::ITSResponse itsResponse;
-    int numberPhi = 0;
-    auto centrality = collision.centFT0C();
-    auto vz = collision.posZ();
-    int occupancy = collision.trackOccupancyInTimeRange();
-    auto qxZDCA = collision.qxZDCA();
-    auto qxZDCC = collision.qxZDCC();
-    auto qyZDCA = collision.qyZDCA();
-    auto qyZDCC = collision.qyZDCC();
 
-    std::vector<ROOT::Math::PtEtaPhiMVector> phiresonance, phiresonanced1, phiresonanced2;
-    std::vector<int64_t> Phid1Index = {};
-    std::vector<int64_t> Phid2Index = {};
-    std::vector<uint16_t> PhiPairPidMask = {};
+    const auto centrality = collision.centFT0C();
+    const auto vz = collision.posZ();
+    const int occupancy = collision.trackOccupancyInTimeRange();
 
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
-      histos.fill(HIST("hEvtSelInfo"), 1.5);
-      auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      histos.fill(HIST("hCent"), centrality);
-
-      for (const auto& track1 : posThisColl) {
-        histos.fill(HIST("hTrkSelInfo"), 0.5);
-        if (!selectionTrack(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hTrkSelInfo"), 1.5);
-
-        if (grpKaon.itsPIDSelection && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > grpKaon.lowITSPIDNsigma && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < grpKaon.highITSPIDNsigma)) {
-          continue;
-        }
-        histos.fill(HIST("hTrkSelInfo"), 2.5);
-        const uint8_t mask = kaonPidMask(track1);
-        if (grpKaon.usePID && mask == 0) {
-          continue;
-        }
-        histos.fill(HIST("hTrkSelInfo"), 3.5);
-        auto track1ID = track1.globalIndex();
-
-        for (const auto& track2 : negThisColl) {
-          histos.fill(HIST("hTrkSelInfo"), 4.5);
-          if (!selectionTrack(track2)) {
-            continue;
-          }
-          histos.fill(HIST("hTrkSelInfo"), 5.5);
-
-          if (grpKaon.itsPIDSelection && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > grpKaon.lowITSPIDNsigma && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < grpKaon.highITSPIDNsigma)) {
-            continue;
-          }
-          histos.fill(HIST("hTrkSelInfo"), 6.5);
-          const uint8_t mask2 = kaonPidMask(track2);
-          if (grpKaon.usePID && mask2 == 0) {
-            continue;
-          }
-          histos.fill(HIST("hTrkSelInfo"), 7.5);
-
-          auto track2ID = track2.globalIndex();
-
-          if (track2ID == track1ID) {
-            continue;
-          }
-
-          if (!selectionPair(track1, track2)) {
-            continue;
-          }
-
-          KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-          KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
-          PhiMesonMother = KaonPlus + KaonMinus;
-          if (PhiMesonMother.M() > cfgPhiMassMin && PhiMesonMother.M() < cfgPhiMassMax) {
-            numberPhi = numberPhi + 1;
-
-            histos.fill(HIST("hPhiMass"), PhiMesonMother.M());
-            ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
-            ROOT::Math::PtEtaPhiMVector temp2(track2.pt(), track2.eta(), track2.phi(), massKa);
-            ROOT::Math::PtEtaPhiMVector temp3(PhiMesonMother.pt(), PhiMesonMother.eta(), PhiMesonMother.phi(), PhiMesonMother.M());
-
-            phiresonanced1.push_back(temp1);
-            phiresonanced2.push_back(temp2);
-            phiresonance.push_back(temp3);
-            Phid1Index.push_back(track1.globalIndex());
-            Phid2Index.push_back(track2.globalIndex());
-            uint16_t pairPidMask = (static_cast<uint16_t>(mask2) << 8) | mask;
-            PhiPairPidMask.push_back(pairPidMask);
-          }
-        }
-      }
+    if (!((!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
+          collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+          collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+          (!useNoCollInTimeRangeStandard ||
+           collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) &&
+          collision.sel8() &&
+          (!useGoodITSLayersAll ||
+           collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
+          occupancy < cfgCutOccupancy)) {
+      return;
     }
 
-    if (numberPhi > 0) {
-      kaonkaonEvent(centrality, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC);
-      auto indexEvent = kaonkaonEvent.lastIndex();
-      //// Fill track table for Phi//////////////////
-      for (auto if1 = phiresonance.begin(); if1 != phiresonance.end(); ++if1) {
-        auto i5 = std::distance(phiresonance.begin(), if1);
-        PhiVectorDummy = phiresonance.at(i5);
-        Phid1dummy = phiresonanced1.at(i5);
-        Phid2dummy = phiresonanced2.at(i5);
-        kaonTrack(indexEvent, Phid1dummy.Px(), Phid1dummy.Py(), Phid1dummy.Pz(), Phid2dummy.Px(), Phid2dummy.Py(), Phid2dummy.Pz(),
-                  PhiVectorDummy.M(), Phid1Index.at(i5), Phid2Index.at(i5), PhiPairPidMask.at(i5));
+    histos.fill(HIST("hEvtSelInfo"), 1.5);
+    histos.fill(HIST("hCent"), centrality);
+
+    std::vector<StoredKaon> selectedKaons;
+
+    // Same slicing pattern that worked in your old producer.
+    auto posThisColl = posTracks->sliceByCached(
+      aod::track::collisionId,
+      collision.globalIndex(),
+      cache);
+
+    auto negThisColl = negTracks->sliceByCached(
+      aod::track::collisionId,
+      collision.globalIndex(),
+      cache);
+
+    // ---------------- Positive kaons ----------------
+    for (const auto& track1 : posThisColl) {
+      histos.fill(HIST("hTrkSelInfo"), 0.5);
+
+      if (!selectionTrack(track1)) {
+        continue;
       }
+
+      histos.fill(HIST("hTrkSelInfo"), 1.5);
+
+      const float nSigmaITS1 =
+        itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1);
+
+      if (grpKaon.itsPIDSelection &&
+          (nSigmaITS1 <= grpKaon.lowITSPIDNsigma ||
+           nSigmaITS1 >= grpKaon.highITSPIDNsigma)) {
+        continue;
+      }
+
+      histos.fill(HIST("hTrkSelInfo"), 2.5);
+
+      const uint8_t mask1 = kaonPidMask(track1);
+
+      if (grpKaon.usePID && mask1 == 0) {
+        continue;
+      }
+
+      histos.fill(HIST("hTrkSelInfo"), 3.5);
+
+      selectedKaons.push_back({track1.px(),
+                               track1.py(),
+                               track1.pz(),
+                               +1,
+                               static_cast<int64_t>(track1.globalIndex()),
+                               mask1});
+    }
+
+    // ---------------- Negative kaons ----------------
+    for (const auto& track2 : negThisColl) {
+      histos.fill(HIST("hTrkSelInfo"), 4.5);
+
+      if (!selectionTrack(track2)) {
+        continue;
+      }
+
+      histos.fill(HIST("hTrkSelInfo"), 5.5);
+
+      const float nSigmaITS2 =
+        itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2);
+
+      if (grpKaon.itsPIDSelection &&
+          (nSigmaITS2 <= grpKaon.lowITSPIDNsigma ||
+           nSigmaITS2 >= grpKaon.highITSPIDNsigma)) {
+        continue;
+      }
+
+      histos.fill(HIST("hTrkSelInfo"), 6.5);
+
+      const uint8_t mask2 = kaonPidMask(track2);
+
+      if (grpKaon.usePID && mask2 == 0) {
+        continue;
+      }
+
+      histos.fill(HIST("hTrkSelInfo"), 7.5);
+
+      selectedKaons.push_back({track2.px(),
+                               track2.py(),
+                               track2.pz(),
+                               -1,
+                               static_cast<int64_t>(track2.globalIndex()),
+                               mask2});
+    }
+
+    // No selected K+ or K- in this collision:
+    // not writing a reduced event row.
+    if (selectedKaons.empty()) {
+      return;
+    }
+
+    histos.fill(HIST("hEvtSelInfo"), 2.5);
+
+    kaonEvent(centrality,
+              vz,
+              collision.qxZDCA(),
+              collision.qxZDCC(),
+              collision.qyZDCA(),
+              collision.qyZDCC());
+
+    const int64_t indexEvent = kaonEvent.lastIndex();
+
+    // One table row per selected kaon.
+    for (const auto& kaon : selectedKaons) {
+      kaonTrack(indexEvent,
+                kaon.px,
+                kaon.py,
+                kaon.pz,
+                kaon.charge,
+                kaon.trackId,
+                kaon.pidMask);
     }
   }
   PROCESS_SWITCH(phiflow, processData, "Process data", true);

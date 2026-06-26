@@ -1710,6 +1710,8 @@ struct Lambdastarproxy {
   Configurable<float> lstarCutNsigmaTOFKaon{"lstarCutNsigmaTOFKaon", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{K}| cut"};
   Configurable<float> lstarCutNsigmaTPCDe{"lstarCutNsigmaTPCDe", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{d}| cut"};
   Configurable<float> lstarCutNsigmaTOFDe{"lstarCutNsigmaTOFDe", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{d}| cut"};
+  Configurable<int> lstarEnableTOFNsigmaCutDe{"lstarEnableTOFNsigmaCutDe", 0, "Enable deuteron-only TOF nSigma cut in PID strategy 2"};
+  Configurable<int> lstarProxyUseProtonPIDAsDeuteron{"lstarProxyUseProtonPIDAsDeuteron", 0, "Closure/control test: keep proxy candidates that pass the normal deuteron selection and are also proton-like, then build p_proxy = p_track/2"};
   // Optional deuteron-only TOF auxiliary selections.
   // Defaults are OFF, so strategy 2 remains TPC nSigma only for deuterons.
   Configurable<int> lstarEnableBetaCutDe{"lstarEnableBetaCutDe", 0, "Enable deuteron-only TOF beta cut using beta() > lstarBetaCutDe"};
@@ -1762,6 +1764,9 @@ struct Lambdastarproxy {
   Configurable<int> lstarNoMixedEvents{"lstarNoMixedEvents", int{NoMixedEventsDefault}, "Number of previous events kept for mixed-event background"};
   Configurable<float> lstarMixZvtxMax{"lstarMixZvtxMax", float{MixZvtxMaxDefault}, "Max |Δzvtx| (cm) for event mixing"};
   Configurable<float> lstarMixMultMax{"lstarMixMultMax", float{MixMultMaxDefault}, "Max |Δmult| for event mixing"};
+  // Master switch for PID QA histogram filling.
+  // Inclusive PID-QA histograms are filled before final PID cuts, after event/track-quality cuts.
+  // Candidate-level nSigma/TOF/DCA histograms are filled after final PID cuts.
   Configurable<int> lstarEnablePidQA{"lstarEnablePidQA", 0, "Enable PID QA histograms (dE/dx, TOF #beta, proxy invariant-mass QA, etc.): 1 = ON, 0 = OFF"};
   Configurable<int> lstarEnableSparse{"lstarEnableSparse", 1, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
   Configurable<float> lstarLambdaAbsYMax{"lstarLambdaAbsYMax", 0.5f, "Max |y_{pK}| (or y_{proxy K}) for #Lambda^{*} candidates"};
@@ -2103,6 +2108,7 @@ struct Lambdastarproxy {
                "#Lambda^{*} proxy invariant mass from (d/2 + K);M_{p_{proxy}K} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
+    // Inclusive PID QA before final candidate PID cuts: after track-quality cuts only
     // TPC dE/dx vs total momentum
     histos.add("hTPCdEdxVsP",
                "TPC dE/dx vs p;p (GeV/c);dE/dx (arb. units);Counts",
@@ -2113,7 +2119,8 @@ struct Lambdastarproxy {
                "TOF #beta vs p;p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
 
-    // --- Per-species PID QA (tagged) ---
+    // --- Per-species inclusive PID QA before final candidate PID cuts ---
+    // Species tagging here uses classifyPidSpecies() and is meant only for QA.
     histos.add("hTPCdEdxVsP_Pi",
                "TPC dE/dx vs p (tagged #pi);p (GeV/c);dE/dx (arb. units);Counts",
                HistType::kTH2F, {pAxis, dEdxAxis});
@@ -2203,7 +2210,7 @@ struct Lambdastarproxy {
                "TOF n#sigma_{K} vs p; p (GeV/c); n#sigma^{TOF}_{K};Counts",
                HistType::kTH2F, {pAxis, nsAxis});
 
-    // --- Additional pT-based PID QA for the final selected K/p/d candidates ---
+    // --- Candidate PID QA after final selected K/p/d PID cuts ---
     // These histograms are needed for PID studies in the same pT intervals used by the analysis.
     histos.add("hTOFBetaVsPt_K",
                "TOF #beta vs p_{T} for selected K;p_{T} (GeV/c);#beta_{TOF};Counts",
@@ -2450,10 +2457,18 @@ struct Lambdastarproxy {
     }
 
     if (lstarPidStrategy.value == PidStrategyNucleiDeuteronTPC) {
-      // For deuterons, follow the default idea of the official nuclei task:
-      // use TPC nσ as the main hard PID selection.
+      // For deuterons, use TPC nσ as the main hard PID selection.
+      // If the optional deuteron TOF nσ cut is enabled, apply it only when
+      // the track has a valid TOF match. Tracks without TOF are kept with
+      // the TPC-only decision, avoiding an additional TOF-matching efficiency loss.
       if (isDeuteron) {
-        return std::abs(nsTPC) < tpcCut;
+        if (std::abs(nsTPC) >= tpcCut) {
+          return false;
+        }
+        if (lstarEnableTOFNsigmaCutDe.value != 0 && hasTof) {
+          return std::abs(nsTOF) < tofCut;
+        }
+        return true;
       }
 
       // For kaons/protons, use the Lambda(1520)-like pT-ref circular TPC+TOF logic.
@@ -2570,87 +2585,6 @@ struct Lambdastarproxy {
     constexpr double MassProton = o2::constants::physics::MassProton;
     constexpr double MassKaonCharged = o2::constants::physics::MassKaonCharged;
 
-    // --- Inclusive PID QA: keep #pi/K/p/d bands in TPC dE/dx and TOF beta plots ---
-    if (lstarEnablePidQA.value != 0) {
-      for (auto const& trk : tracks) {
-        if (trk.pt() < lstarCutPtMin.value || std::abs(trk.eta()) > lstarCutEtaMax.value) {
-          continue;
-        }
-        if (!passTrackQuality(trk)) {
-          continue;
-        }
-        if (trk.sign() == 0) {
-          continue;
-        }
-        // Inclusive PID QA
-        fillTPCdEdxVsPIfAvailable(trk);
-        fillTOFBetaVsPIfAvailable(trk);
-
-        // Per-species PID-QA (tagged) histograms
-        const int sp = classifyPidSpecies(trk);
-        switch (sp) {
-          case 0: { // pion
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_Pi"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_Pi"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 1: { // kaon
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_K"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_K"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 2: { // proton
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_P"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_P"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 3: { // deuteron
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_D"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_D"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          default:
-            break;
-        }
-      }
-    }
-
     std::vector<KaonCand> kaonCands;
     std::vector<ProxyCand> proxyCands;
     std::vector<ProtonCand> protonCands;
@@ -2660,7 +2594,9 @@ struct Lambdastarproxy {
 
     float eventMultFallback = 0.f; // fallback mixing variable: number of selected charged tracks (after quality cuts)
 
-    // Inclusive PID QA loop: count all selected charged tracks for fallback multiplicity
+    // Inclusive track loop before final candidate PID cuts.
+    // It counts selected charged tracks for fallback multiplicity and when enabled,
+    // fills inclusive PID QA after track-quality cuts but before final K/p/d PID cuts.
     for (auto const& trk : tracks) {
       if (trk.pt() < lstarCutPtMin.value || std::abs(trk.eta()) > lstarCutEtaMax.value) {
         continue;
@@ -2759,23 +2695,44 @@ struct Lambdastarproxy {
       const float etaD = trkD.eta();
       const float phiD = trkD.phi();
 
-      // PID for deuteron candidates
+      // PID for proxy candidates.
+      // Normal mode: use the standard deuteron PID and build p_proxy = p_d / 2.
+      // Closure/control mode: select the subset of standard deuteron-proxy candidates
+      // that are also proton-like. This tests proton contamination inside the deuteron
+      // selection, not all proton candidates.
+      const bool useProtonAsProxy = (lstarProxyUseProtonPIDAsDeuteron.value != 0);
+
       const float nsTPCDe = trkD.tpcNSigmaDe();
       const float nsTOFDe = trkD.tofNSigmaDe();
       const bool hasTofDe = hasTOFMatch(trkD);
+
       if (!passOptionalDeuteronTOFExtras(trkD)) {
         continue;
       }
-      const bool isDeuteron = passFinalCandidatePID(trkD.pt(), trkD.tpcNSigmaDe(), nsTOFDe, hasTofDe,
-                                                    lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
-                                                    lstarPidCircularCutDe.value, lstarPidPtRefDe.value, true);
-      if (!isDeuteron) {
+
+      const bool passesDeuteronSelection = passFinalCandidatePID(ptD, nsTPCDe, nsTOFDe, hasTofDe,
+                                                                 lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
+                                                                 lstarPidCircularCutDe.value, lstarPidPtRefDe.value,
+                                                                 true);
+      if (!passesDeuteronSelection) {
         continue;
+      }
+
+      if (useProtonAsProxy) {
+        const float nsTPCPrAsProxy = trkD.tpcNSigmaPr();
+        const float nsTOFPrAsProxy = trkD.tofNSigmaPr();
+        const bool passesProtonSelection = passFinalCandidatePID(ptD, nsTPCPrAsProxy, nsTOFPrAsProxy, hasTofDe,
+                                                                 lstarCutNsigmaTPCPr.value, lstarCutNsigmaTOFPr.value,
+                                                                 lstarPidCircularCutPr.value, lstarPidPtRefPr.value,
+                                                                 false);
+        if (!passesProtonSelection) {
+          continue;
+        }
       }
 
       const double pD = static_cast<double>(ptD) * std::cosh(static_cast<double>(etaD));
 
-      // QA histos for deuteron PID and kinematics
+      // Candidate QA after final deuteron PID cut
       if (lstarEnablePidQA.value != 0) {
         histos.fill(HIST("hDeuteronProxyPt"), ptD);
         histos.fill(HIST("hDeuteronProxyEta"), etaD);

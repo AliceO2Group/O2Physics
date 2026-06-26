@@ -153,21 +153,21 @@ class DielectronCut : public TNamed
     }
 
     float deta = v1.Eta() - v2.Eta();
-    float dphi = v1.Phi() - v2.Phi();
+    float dphi = RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U);
     dphi = RecoDecay::constrainAngle(dphi, -M_PI, 1U); // -pi - +pi
     if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
       return false;
     }
 
-    float phiPosition1 = t1.phi() + std::asin(t1.sign() * -0.30282 * (mBz * 0.1) * mRefR / (2.f * t1.pt()));
-    float phiPosition2 = t2.phi() + std::asin(t2.sign() * -0.30282 * (mBz * 0.1) * mRefR / (2.f * t2.pt()));
-    phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1U); // 0-2pi
-    phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1U); // 0-2pi
-    float dphiPosition = phiPosition1 - phiPosition2;
-    dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
-    if (mApplydEtadPhiPosition && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphiPosition / mMinDeltaPhi, 2) < 1.f) {
-      return false;
-    }
+    // float phiPosition1 = t1.phi() + std::asin(t1.sign() * -0.30282 * (mBz * 0.1) * mRefR / (2.f * t1.pt()));
+    // float phiPosition2 = t2.phi() + std::asin(t2.sign() * -0.30282 * (mBz * 0.1) * mRefR / (2.f * t2.pt()));
+    // phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1U); // 0-2pi
+    // phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1U); // 0-2pi
+    // float dphiPosition = phiPosition1 - phiPosition2;
+    // dphiPosition = RecoDecay::constrainAngle(dphiPosition, -M_PI, 1U); // -pi - +pi
+    // if (mApplydEtadPhiPosition && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphiPosition / mMinDeltaPhi, 2) < 1.f) {
+    //   return false;
+    // }
 
     return true;
   }
