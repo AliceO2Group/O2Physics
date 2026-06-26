@@ -26,7 +26,7 @@ o2physics_add_library(PWGDQCore
 o2physics_target_root_dictionary(PWGDQCore
                           HEADERS   AnalysisCut.h
                                     AnalysisCompositeCut.h
-                                    VarManager.h
+				    VarManagerCore.h
                                     HistogramManager.h
                                     CutsLibrary.h
                                     MixingHandler.h

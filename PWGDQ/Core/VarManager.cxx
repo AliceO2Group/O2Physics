@@ -641,6 +641,233 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
   return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis, nPeaks);
 }
 
+void VarManager::SetUseVariable(int var)
+{
+  if (var >= 0 && var < kNVars) {
+    fgUsedVars[var] = kTRUE;
+  }
+  SetVariableDependencies();
+}
+
+void VarManager::SetUseVars(const bool* usedVars)
+{
+  for (int i = 0; i < kNVars; ++i) {
+    if (usedVars[i]) {
+      fgUsedVars[i] = true; // overwrite only the variables that are being used since there are more channels to modify the used variables array, independently
+    }
+  }
+  SetVariableDependencies();
+}
+
+void VarManager::SetUseVars(const std::vector<int> usedVars)
+{
+  for (auto& var : usedVars) {
+    fgUsedVars[var] = true;
+  }
+}
+bool VarManager::GetUsedVar(int var)
+{
+  if (var >= 0 && var < kNVars) {
+    return fgUsedVars[var];
+  }
+  return false;
+}
+
+       // Flag to  set PV recalculation via KF
+void VarManager::SetPVrecalculationKF(const bool pvRecalKF)
+{
+  fgPVrecalKF = pvRecalKF;
+}
+
+void VarManager::SetMagneticField(float magField)
+{
+  fgMagField = magField;
+}
+
+       // Setup plane position for MFT-MCH matching
+void VarManager::SetMatchingPlane(float z)
+{
+  fgzMatching = z;
+}
+
+float VarManager::GetMatchingPlane()
+{
+  return fgzMatching;
+}
+
+       // Set z shift for forward tracks
+void VarManager::SetZShift(float z)
+{
+  fgzShiftFwd = z;
+}
+
+       // Setup the 2 prong KFParticle
+void VarManager::SetupTwoProngKFParticle(float magField)
+{
+  KFParticle::SetField(magField);
+  fgUsedKF = true;
+}
+// Setup magnetic field for muon propagation
+void VarManager::SetupMuonMagField()
+{
+  o2::mch::TrackExtrap::setField();
+}
+
+       // Setup the 2 prong DCAFitterN
+void VarManager::SetupTwoProngDCAFitter(float magField, bool propagateToPCA, float maxR, float maxDZIni, float minParamChange, float minRelChi2Change, bool useAbsDCA)
+{
+  fgFitterTwoProngBarrel.setBz(magField);
+  fgFitterTwoProngBarrel.setPropagateToPCA(propagateToPCA);
+  fgFitterTwoProngBarrel.setMaxR(maxR);
+  fgFitterTwoProngBarrel.setMaxDZIni(maxDZIni);
+  fgFitterTwoProngBarrel.setMinParamChange(minParamChange);
+  fgFitterTwoProngBarrel.setMinRelChi2Change(minRelChi2Change);
+  fgFitterTwoProngBarrel.setUseAbsDCA(useAbsDCA);
+  fgUsedKF = false;
+}
+
+       // Setup the 2 prong FwdDCAFitterN
+void VarManager::SetupTwoProngFwdDCAFitter(float magField, bool propagateToPCA, float maxR, float minParamChange, float minRelChi2Change, bool useAbsDCA)
+{
+  fgFitterTwoProngFwd.setBz(magField);
+  fgFitterTwoProngFwd.setPropagateToPCA(propagateToPCA);
+  fgFitterTwoProngFwd.setMaxR(maxR);
+  fgFitterTwoProngFwd.setMinParamChange(minParamChange);
+  fgFitterTwoProngFwd.setMinRelChi2Change(minRelChi2Change);
+  fgFitterTwoProngFwd.setUseAbsDCA(useAbsDCA);
+  fgUsedKF = false;
+}
+// Use MatLayerCylSet to correct MCS in fwdtrack propagation
+void VarManager::SetupMatLUTFwdDCAFitter(o2::base::MatLayerCylSet* m)
+{
+  fgFitterTwoProngFwd.setTGeoMat(false);
+  fgFitterTwoProngFwd.setMatLUT(m);
+}
+// Use GeometryManager to correct MCS in fwdtrack propagation
+void VarManager::SetupTGeoFwdDCAFitter()
+{
+  fgFitterTwoProngFwd.setTGeoMat(true);
+}
+// No material budget in fwdtrack propagation
+void VarManager::SetupFwdDCAFitterNoCorr()
+{
+  fgFitterTwoProngFwd.setTGeoMat(false);
+}
+// Setup the 3 prong KFParticle
+void VarManager::SetupThreeProngKFParticle(float magField)
+{
+  KFParticle::SetField(magField);
+  fgUsedKF = true;
+}
+
+       // Setup the 3 prong DCAFitterN
+void VarManager::SetupThreeProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA)
+{
+  fgFitterThreeProngBarrel.setBz(magField);
+  fgFitterThreeProngBarrel.setPropagateToPCA(propagateToPCA);
+  fgFitterThreeProngBarrel.setMaxR(maxR);
+  fgFitterThreeProngBarrel.setMinParamChange(minParamChange);
+  fgFitterThreeProngBarrel.setMinRelChi2Change(minRelChi2Change);
+  fgFitterThreeProngBarrel.setUseAbsDCA(useAbsDCA);
+  fgUsedKF = false;
+}
+
+       // Setup the 4 prong KFParticle
+void VarManager::SetupFourProngKFParticle(float magField)
+{
+  KFParticle::SetField(magField);
+  fgUsedKF = true;
+}
+
+       // Setup the 4 prong DCAFitterN
+void VarManager::SetupFourProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA)
+{
+  fgFitterFourProngBarrel.setBz(magField);
+  fgFitterFourProngBarrel.setPropagateToPCA(propagateToPCA);
+  fgFitterFourProngBarrel.setMaxR(maxR);
+  fgFitterFourProngBarrel.setMinParamChange(minParamChange);
+  fgFitterFourProngBarrel.setMinRelChi2Change(minRelChi2Change);
+  fgFitterFourProngBarrel.setUseAbsDCA(useAbsDCA);
+  fgUsedKF = false;
+}
+
+auto VarManager::getEventPlane(int harm, float qnxa, float qnya)
+{
+  // Compute event plane angle from qn vector components for the sub-event A
+  return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
+};
+
+float VarManager::getDeltaPsiInRange(float psi1, float psi2, float harmonic)
+{
+  float deltaPsi = psi1 - psi2;
+  if (std::abs(deltaPsi) > o2::constants::math::PI / harmonic) {
+    if (deltaPsi > 0.) {
+      deltaPsi -= o2::constants::math::TwoPI / harmonic;
+    } else {
+      deltaPsi += o2::constants::math::TwoPI / harmonic;
+    }
+  }
+  return deltaPsi;
+}
+
+void VarManager::SetCalibrationObject(CalibObjects calib, TObject* obj)
+{
+  fgCalibs[calib] = obj;
+  // Check whether all the needed objects for TPC postcalibration are available
+  if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
+    fgRunTPCPostCalibration[0] = true;
+    fgUsedVars[kTPCnSigmaEl_Corr] = true;
+  }
+  if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
+    fgRunTPCPostCalibration[1] = true;
+    fgUsedVars[kTPCnSigmaPi_Corr] = true;
+  }
+  if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
+    fgRunTPCPostCalibration[2] = true;
+    fgUsedVars[kTPCnSigmaKa_Corr] = true;
+  }
+  if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
+    fgRunTPCPostCalibration[3] = true;
+    fgUsedVars[kTPCnSigmaPr_Corr] = true;
+  }
+}
+
+void VarManager::SetCalibrationType(int type, bool useInterpolation)
+{
+  if (type < 0 || type > 2) {
+    LOG(fatal) << "Invalid calibration type. Must be 0, 1, or 2.";
+  }
+  fgCalibrationType = type;
+  fgUseInterpolatedCalibration = useInterpolation;
+}
+
+TObject* VarManager::GetCalibrationObject(CalibObjects calib)
+{
+  auto obj = fgCalibs.find(calib);
+  if (obj == fgCalibs.end()) {
+    return 0x0;
+  } else {
+    return obj->second;
+  }
+}
+void VarManager::SetTPCInterSectorBoundary(float boundarySize)
+{
+  fgTPCInterSectorBoundary = boundarySize;
+}
+void VarManager::SetITSROFBorderselection(int bias, int length, int marginLow, int marginHigh)
+{
+  fgITSROFbias = bias;
+  fgITSROFlength = length;
+  fgITSROFBorderMarginLow = marginLow;
+  fgITSROFBorderMarginHigh = marginHigh;
+}
+
+void VarManager::SetSORandEOR(uint64_t sor, uint64_t eor)
+{
+  fgSOR = sor;
+  fgEOR = eor;
+}
+
 //__________________________________________________________________
 void VarManager::SetDefaultVarNames()
 {

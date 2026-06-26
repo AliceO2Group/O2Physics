@@ -14,7 +14,7 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 
 #include "HistogramManager.h"
-#include "VarManager.h"
+#include "VarManagerCore.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Logger.h>

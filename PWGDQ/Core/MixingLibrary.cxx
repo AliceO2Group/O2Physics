@@ -14,7 +14,7 @@
 #include "PWGDQ/Core/MixingLibrary.h"
 
 #include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/Core/VarManagerCore.h"
 
 #include <Framework/Logger.h>
 

@@ -17,7 +17,7 @@
 
 #include "AnalysisCompositeCut.h"
 #include "AnalysisCut.h"
-#include "VarManager.h"
+#include "VarManagerCore.h"
 
 #include <Framework/Array2D.h>
 #include <Framework/Logger.h>
