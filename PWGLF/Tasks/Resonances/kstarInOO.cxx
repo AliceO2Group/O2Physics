@@ -149,7 +149,8 @@ struct kstarInOO {
   //|
   //======================
   Configurable<float> cfgJetpT{"cfgJetpT", 8.0, "Set Jet pT minimum"};
-  Configurable<float> cfgJetR{"cfgJetR", 0.4, "Set Jet radius parameter"};
+  Configurable<float> cfgJetR{"cfgJetR", 0.4, "Anti-kT Radius"};
+  Configurable<float> cfgJetdR{"cfgJetdR", 0.4, "Set Jet radius parameter"};
   Configurable<bool> cfgSingleJet{"cfgSingleJet", false, "Enforces strict phi-jet correspondance"};
   Configurable<bool> cfgReqJets{"cfgReqJets", false, "False: MB, True: Inside Jets"};
   Configurable<std::string> cfgRealTriggerMasks{"cfgRealTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
@@ -278,8 +279,14 @@ struct kstarInOO {
       histos.add("missed_kpi_INJets_8_infinite", "missed kpi In Jets with 8 < jetPt < infinite", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
 
       histos.add("recoveredJetpT_6_8to8_10", "recovered Jet pT", kTH1F, {{2000, 0., 100.}});
+      histos.add("recoveredJetpT_6_8to8_10_kstarSpectra", "Kstar pT within the recovered Jet pT", kTH1F, {{2000, 0., 100.}});
 
-      histos.add("JetMigration", "bin to bin migration", {HistType::kTH2F, {{100, 0.0, 50.0, "True jet pT (GeV/c)"}, {100, 0., 50., "Recovered jet pT (GeV/c)"}}});
+      histos.add("normalJetpT_8_kstarSpectra", "kstar pT in Jet > 8GeV/c", kTH1F, {{2000, 0., 100.}});
+      histos.add("normalJetpT_6_8_kstarSpectra", "6 GeV/c < kstar pT in Jet < 8 GeV/c", kTH1F, {{2000, 0., 100.}});
+      histos.add("normalJetpT_8_10_kstarSpectra", "8 GeV/c < kstar pT in Jet < 10 GeV/c", kTH1F, {{2000, 0., 100.}});
+      histos.add("normalJetpT_10_12_kstarSpectra", "10 GeV/c < kstar pT in Jet < 12 GeV/c", kTH1F, {{2000, 0., 100.}});
+
+      histos.add("JetMigration", "bin to bin migration", {HistType::kTH2F, {{150, 0.0, 15.0, "True jet pT (GeV/c)"}, {150, 0., 15., "Recovered jet pT (GeV/c)"}}});
     }
 
     ////////////////////////////////////
@@ -1807,7 +1814,7 @@ struct kstarInOO {
           bestJetEta = mcpjet.eta();
         }
       } // mcpJets
-      if (bestR > cfgJetR)
+      if (bestR > cfgJetdR)
         continue;
 
       //==================
@@ -1824,12 +1831,12 @@ struct kstarInOO {
             double deta_kaon = bestJetEta - daughter.eta();
             dR_kaon = TMath::Sqrt((dphi_kaon * dphi_kaon) + (deta_kaon * deta_kaon));
 
-            if (bestR < cfgJetR) {
+            if (bestR < cfgJetdR) {
               if (cfgJetdRHistos) {
                 histos.fill(HIST("dR_taggedjet_kaon"), dR_kaon, lResonance.Pt());
                 histos.fill(HIST("dR_taggedjet_all"), dR_kaon, lResonance.Pt());
               }
-              if (dR_kaon > cfgJetR) {
+              if (dR_kaon > cfgJetdR) {
                 kaon_out = true;
                 missing_pt += daughter.pt();
               }
@@ -1841,7 +1848,7 @@ struct kstarInOO {
             double deta_pion = bestJetEta - daughter.eta();
             dR_pion = TMath::Sqrt((dphi_pion * dphi_pion) + (deta_pion * deta_pion));
 
-            if (bestR < cfgJetR) {
+            if (bestR < cfgJetdR) {
               if (cfgJetdRHistos) {
                 histos.fill(HIST("dR_taggedjet_pion"), dR_pion, lResonance.Pt());
                 histos.fill(HIST("dR_taggedjet_all"), dR_pion, lResonance.Pt());
@@ -1849,7 +1856,7 @@ struct kstarInOO {
                 if (bestJetpT > 6.0 && bestJetpT < 8.0)
                   histos.fill(HIST("dR_taggedjet_all_6_8"), dR_pion, lResonance.Pt());
               }
-              if (dR_pion > cfgJetR) {
+              if (dR_pion > cfgJetdR) {
                 pion_out = true;
                 missing_pt += daughter.pt();
               }
@@ -1861,7 +1868,7 @@ struct kstarInOO {
             double deta_kaon = bestJetEta - daughter.eta();
             dR_kaon = TMath::Sqrt((dphi_kaon * dphi_kaon) + (deta_kaon * deta_kaon));
 
-            if (bestR < cfgJetR) {
+            if (bestR < cfgJetdR) {
               if (cfgJetdRHistos) {
                 histos.fill(HIST("dR_taggedjet_kaon"), dR_kaon, lResonance.Pt());
                 histos.fill(HIST("dR_taggedjet_all"), dR_kaon, lResonance.Pt());
@@ -1870,7 +1877,7 @@ struct kstarInOO {
                   histos.fill(HIST("dR_taggedjet_all_6_8"), dR_kaon, lResonance.Pt());
               }
 
-              if (dR_kaon > cfgJetR) {
+              if (dR_kaon > cfgJetdR) {
                 kaon_out = true;
                 missing_pt = daughter.pt();
               }
@@ -1883,14 +1890,22 @@ struct kstarInOO {
         double recoveredJetpT = bestJetpT + missing_pt;
         if (cfgJetdRHistos) {
           if (bestJetpT > 6.0 && bestJetpT < 8.0) {
+            histos.fill(HIST("normalJetpT_6_8_kstarSpectra"), lResonance.Pt());
             histos.fill(HIST("missed_kpi_INJets_6_8"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
-            if (recoveredJetpT > 8.0)
+            if (recoveredJetpT > 8.0) {
               histos.fill(HIST("recoveredJetpT_6_8to8_10"), recoveredJetpT);
+              histos.fill(HIST("recoveredJetpT_6_8to8_10_kstarSpectra"), lResonance.Pt());
+            }
           }
-          if (bestJetpT > 8.0 && bestJetpT < 10.0)
+
+          if (bestJetpT > 8.0 && bestJetpT < 10.0) {
             histos.fill(HIST("missed_kpi_INJets_8_10"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
-          if (bestJetpT > 10.0 && bestJetpT < 12.0)
+            histos.fill(HIST("normalJetpT_8_10_kstarSpectra"), lResonance.Pt());
+          }
+          if (bestJetpT > 10.0 && bestJetpT < 12.0) {
             histos.fill(HIST("missed_kpi_INJets_10_12"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
+            histos.fill(HIST("normalJetpT_10_12_kstarSpectra"), lResonance.Pt());
+          }
           if (bestJetpT > 12.0 && bestJetpT < 15.0)
             histos.fill(HIST("missed_kpi_INJets_12_15"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
           if (bestJetpT > 15.0 && bestJetpT < 25.0)
@@ -1898,9 +1913,10 @@ struct kstarInOO {
           if (bestJetpT > 25.0)
             histos.fill(HIST("missed_kpi_INJets_25_infinite"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
 
-          if (bestJetpT > 8.0)
+          if (bestJetpT > 8.0) {
             histos.fill(HIST("missed_kpi_INJets_8_infinite"), (bestJetpT - missing_pt) / bestJetpT, lResonance.Pt());
-
+            histos.fill(HIST("normalJetpT_8_kstarSpectra"), lResonance.Pt());
+          }
           histos.fill(HIST("JetMigration"), bestJetpT, recoveredJetpT);
         } // cfgJetdRHistos
       } // kaon_out || pion_out
