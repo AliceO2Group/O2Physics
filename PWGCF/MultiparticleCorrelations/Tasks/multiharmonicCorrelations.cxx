@@ -404,7 +404,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   static double pdf(double* x, double* par)
   {
     double y = 1;
-    for (int i = 0; i < 6; i = i + 1) {
+    int harm = 6;
+    for (int i = 0; i < harm; i = i + 1) {
       y = y + 2 * (0.04 + (i + 1.) * 0.01) * TMath::Cos((i + 1) * (x[0] - par[0]));
     }
     return y;
