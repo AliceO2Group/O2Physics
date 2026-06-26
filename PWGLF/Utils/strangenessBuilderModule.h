@@ -584,6 +584,7 @@ class BuilderModule
       if (f == 1) {
         baseOpts.mEnabledTables[i] = 1;
         listOfRequestors[i] = "manual enabling";
+        nEnabledTables++;
       }
       if (f == -1) {
         // autodetect this table in other devices
@@ -597,6 +598,8 @@ class BuilderModule
                 tableNameWithVersion += Form("_%03d", version);
               }
               if (input.matcher.binding == tableNameWithVersion) {
+                if (device.name == "strangenesstofpid")
+                  continue;
                 LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
                 listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
                 baseOpts.mEnabledTables[i] = 1;
