@@ -681,7 +681,7 @@ struct Cascqaanalysis {
     // All generated collisions
     registry.fill(HIST("hNEventsMC"), 0.5);
 
-    // Generated after optional z-vertex selection
+    // Generated z-vertex selection
     if (cutzvertexGen >= 0.f && std::fabs(mcCollision.posZ()) > cutzvertexGen) {
       return;
     }
