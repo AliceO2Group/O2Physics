@@ -21,24 +21,23 @@
 #define HomogeneousField
 #endif
 
-#include <TObject.h>
-
 #include <DCAFitter/DCAFitterN.h>
 #include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <ReconstructionDataFormats/GlobalFwdTrack.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 #include <ReconstructionDataFormats/Vertex.h>
-#include <DataFormatsParameters/GRPLHCIFData.h>
+
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SVector.h>
+#include <Math/Vector4Dfwd.h>
+#include <TObject.h>
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
-
-#include <Math/Vector4Dfwd.h>
-#include <Math/MatrixRepresentationsStatic.h>
-#include <Math/SVector.h>
 
 #include <map>
 
@@ -1127,32 +1126,32 @@ class VarManager : public TObject
   static void SetUseVars(const std::vector<int> usedVars);
   static bool GetUsedVar(int var);
 
-         // Flag to  set PV recalculation via KF
+  // Flag to  set PV recalculation via KF
   static void SetPVrecalculationKF(const bool pvRecalKF);
 
-         // Setup the collision system
+  // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
   static void SetCollisionSystem(o2::parameters::GRPLHCIFData* grplhcif);
 
   static void SetMagneticField(float magField);
 
-         // Setup plane position for MFT-MCH matching
+  // Setup plane position for MFT-MCH matching
   static void SetMatchingPlane(float z);
 
   static float GetMatchingPlane();
 
-         // Set z shift for forward tracks
+  // Set z shift for forward tracks
   static void SetZShift(float z);
 
-         // Setup the 2 prong KFParticle
+  // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField);
   // Setup magnetic field for muon propagation
   static void SetupMuonMagField();
 
-         // Setup the 2 prong DCAFitterN
+  // Setup the 2 prong DCAFitterN
   static void SetupTwoProngDCAFitter(float magField, bool propagateToPCA, float maxR, float maxDZIni, float minParamChange, float minRelChi2Change, bool useAbsDCA);
 
-         // Setup the 2 prong FwdDCAFitterN
+  // Setup the 2 prong FwdDCAFitterN
   static void SetupTwoProngFwdDCAFitter(float magField, bool propagateToPCA, float maxR, float minParamChange, float minRelChi2Change, bool useAbsDCA);
   // Use MatLayerCylSet to correct MCS in fwdtrack propagation
   static void SetupMatLUTFwdDCAFitter(o2::base::MatLayerCylSet* m);
@@ -1163,13 +1162,13 @@ class VarManager : public TObject
   // Setup the 3 prong KFParticle
   static void SetupThreeProngKFParticle(float magField);
 
-         // Setup the 3 prong DCAFitterN
+  // Setup the 3 prong DCAFitterN
   static void SetupThreeProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA);
 
-         // Setup the 4 prong KFParticle
+  // Setup the 4 prong KFParticle
   static void SetupFourProngKFParticle(float magField);
 
-         // Setup the 4 prong DCAFitterN
+  // Setup the 4 prong DCAFitterN
   static void SetupFourProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA);
 
   static auto getEventPlane(int harm, float qnxa, float qnya);
@@ -1343,7 +1342,7 @@ class VarManager : public TObject
   static ROOT::Math::PxPyPzEVector fgBeamA; // beam from A-side 4-momentum vector
   static ROOT::Math::PxPyPzEVector fgBeamC; // beam from C-side 4-momentum vector
 
-         // static void FillEventDerived(float* values = nullptr);
+  // static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
