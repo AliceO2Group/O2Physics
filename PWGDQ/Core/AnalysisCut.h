@@ -73,7 +73,6 @@ class AnalysisCut : public TNamed
  protected:
   std::vector<CutContainer> fCuts;
 
-  ClassDef(AnalysisCut, 2);
 };
 
 //____________________________________________________________________________

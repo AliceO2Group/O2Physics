@@ -17,9 +17,7 @@
 
 #include <vector>
 
-ClassImp(AnalysisCompositeCut)
-
-  //____________________________________________________________________________
+//____________________________________________________________________________
   AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
                                                             fOptionUseAND(useAND),
                                                             fCutList(),

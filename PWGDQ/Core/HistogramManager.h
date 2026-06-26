@@ -116,7 +116,6 @@ class HistogramManager : public TNamed
   HistogramManager& operator=(const HistogramManager& c);
   HistogramManager(const HistogramManager& c);
 
-  ClassDef(HistogramManager, 2)
 };
 
 #endif // PWGDQ_CORE_HISTOGRAMMANAGER_H_
