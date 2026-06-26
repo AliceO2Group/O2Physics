@@ -240,7 +240,7 @@ struct muonGlobalAlignment {
 
   Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, false};
 
   double mBzAtMftCenter{0};
 
