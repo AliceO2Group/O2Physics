@@ -434,7 +434,7 @@ struct Cascqaanalysis {
       registry.fill(HIST("hNEvents"), 8.5);
     }
 
-    // Z vertex selection
+    // z-vertex selection
     if (std::fabs(collision.posZ()) > cutzvertex) {
       return false;
     }
