@@ -18,6 +18,7 @@
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
 #include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
+#include "PWGHF/ALICE3/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"

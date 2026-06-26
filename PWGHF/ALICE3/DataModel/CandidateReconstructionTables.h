@@ -20,18 +20,10 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
-#include "PWGHF/Utils/utilsPid.h"
-//
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
-
-#include <array>
-#include <cstdint>
 
 namespace o2::aod
 {
@@ -39,7 +31,7 @@ namespace o2::aod
 namespace hf_cand_chic
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // Jpsi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
+// DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
 DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
 } // namespace hf_cand_chic
 
@@ -52,7 +44,7 @@ DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_chic::Prong0Id, hf_cand_chic::Prong1Id,
+                  hf_cand_chic::Prong0Id, /*hf_cand_chic::Prong1Id,*/
                   hf_track_index::HFflag, hf_cand_chic::JpsiToMuMuMass,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
