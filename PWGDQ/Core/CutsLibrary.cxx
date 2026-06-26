@@ -3070,7 +3070,25 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
-
+ 
+  if (!nameStr.compare("muonLowPt1p5_MchMidmatching")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p5"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+  
+  if (!nameStr.compare("muonLowPt1p7_MchMidmatching")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p7"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+ 
+  if (!nameStr.compare("muonLowPt6_MchMidmatching")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+  
   if (!nameStr.compare("muonLowPt10SigmaPDCA")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
@@ -3131,6 +3149,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("muonLowPt6")) {
     cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+ 
+  if (!nameStr.compare("muonLowPt1p5")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+ 
+  if (!nameStr.compare("muonLowPt1p7")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p7"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -6572,7 +6602,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kPt, 2.0, 1000.0);
     return cut;
   }
+ 
+  if (!nameStr.compare("muonLowPt1p5")) {
+    cut->AddCut(VarManager::kPt, 1.5, 1000.0);
+    return cut;
+  }
 
+  if (!nameStr.compare("muonLowPt1p7")) {
+    cut->AddCut(VarManager::kPt, 1.7, 1000.0);
+    return cut;
+  }
+    
   if (!nameStr.compare("muonHighPt")) {
     cut->AddCut(VarManager::kPt, 3.0, 1000.0);
     return cut;
@@ -6602,7 +6642,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kPt, 20.0, 1000.0);
     return cut;
   }
-
+  
   if (!nameStr.compare("muonTightQualityCutsForTests")) {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 20.0, 60.0);
