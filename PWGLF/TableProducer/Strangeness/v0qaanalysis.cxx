@@ -20,6 +20,7 @@
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -43,12 +44,14 @@
 
 #include <TH1.h>
 
+#include <string>
 #include <utility>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -61,6 +64,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 using DauTracksMC = soa::Join<DauTracks, aod::McTrackLabels>;
 using V0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentNGlobals>;
+using BCsWithBcSels = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
 struct LfV0qaanalysis {
 
@@ -106,10 +110,12 @@ struct LfV0qaanalysis {
       registry.add("hCentFT0M_GenRecoColl_MC_INELgt0", "hCentFT0M_GenRecoColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
       registry.add("hCentFT0M_GenColl_MC", "hCentFT0M_GenColl_MC", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
       registry.add("hCentFT0M_GenColl_MC_INELgt0", "hCentFT0M_GenColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-      registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1D, {{4, 0.f, 4.f}}});
+      registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1D, {{5, 0.f, 5.f}}});
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(1, "all");
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(2, "zvertex_true");
-      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "INELgt0_true");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "BC TF/ITS ROF border");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(4, "RCTFlagsChecker");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(5, "INELgt0_true");
       registry.add("hNEventsMCGenReco", "hNEventsMCGenReco", {HistType::kTH1D, {{2, 0.f, 2.f}}});
       registry.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(1, "INEL");
       registry.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(2, "INELgt0");
@@ -153,6 +159,7 @@ struct LfV0qaanalysis {
       registry.add("Generated_MCGenColl_INELgt0_Lambda", "Generated_MCGenColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCGenColl_INELgt0_AntiLambda", "Generated_MCGenColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
     }
+    rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad, applyRCTOnGen);
     registry.print();
   }
 
@@ -164,10 +171,17 @@ struct LfV0qaanalysis {
   Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Is Trigger TVX"};
   Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "Is No Time Frame Border"};
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
+  Configurable<bool> applyBcBorderCutsOnGen{"applyBcBorderCutsOnGen", false, "Apply enabled BC-level TF and ITS ROF border cuts on generated-level MC collisions"};
+  Configurable<bool> applyRCTOnGen{"applyRCTOnGen", false, "Apply enabled BC-level RCT run-condition selection on generated-level MC collisions"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
   Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
+  Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+  Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+  Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
   Configurable<bool> NotITSAfterburner{"NotITSAfterburner", 0, "NotITSAfterburner"};
+
+  RCTFlagsChecker rctChecker;
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -212,6 +226,27 @@ struct LfV0qaanalysis {
     registry.fill(HIST("hNEvents"), 7.5);
 
     return true;
+  }
+
+  template <typename TBC>
+  bool acceptGeneratedEventBcBorderCuts(TBC const& bc)
+  {
+    if (!applyBcBorderCutsOnGen) {
+      return true;
+    }
+    if (isNoTimeFrameBorder && !bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (isNoITSROFrameBorder && !bc.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TBC>
+  bool acceptGeneratedEventRCT(TBC const& bc)
+  {
+    return !applyRCTOnGen || rctChecker(bc);
   }
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
@@ -469,7 +504,8 @@ struct LfV0qaanalysis {
 
   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                     aod::McParticles const& mcParticles,
-                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions)
+                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions,
+                    BCsWithBcSels const&)
   {
     //====================================
     //===== Event Loss Denominator =======
@@ -481,13 +517,22 @@ struct LfV0qaanalysis {
       return;
     }
     registry.fill(HIST("hNEventsMCGen"), 1.5);
+    const auto bc = mcCollision.bc_as<BCsWithBcSels>();
+    if (!acceptGeneratedEventBcBorderCuts(bc)) {
+      return;
+    }
+    registry.fill(HIST("hNEventsMCGen"), 2.5);
+    if (!acceptGeneratedEventRCT(bc)) {
+      return;
+    }
+    registry.fill(HIST("hNEventsMCGen"), 3.5);
     registry.fill(HIST("hCentFT0M_GenColl_MC"), mcCollision.centFT0M());
 
     bool isINELgt0true = false;
 
     if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       isINELgt0true = true;
-      registry.fill(HIST("hNEventsMCGen"), 2.5);
+      registry.fill(HIST("hNEventsMCGen"), 4.5);
       registry.fill(HIST("hCentFT0M_GenColl_MC_INELgt0"), mcCollision.centFT0M());
     }
 
