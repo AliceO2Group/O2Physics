@@ -51,7 +51,6 @@
 #include <TString.h>
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -85,12 +84,6 @@ struct Cascqaanalysis {
     kNEventTypeBins
   };
 
-  static constexpr std::array<std::pair<EventTypeBin, const char*>, kNEventTypeBins> EventTypeBinLabels{{
-    {kINEL, "INEL"},
-    {kINELgt0, "INEL>0"},
-    {kINELgt1, "INEL>1"},
-  }};
-
   // Axes
   ConfigurableAxis ptAxis{"ptAxis", {200, 0.0f, 10.0f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis rapidityAxis{"rapidityAxis", {200, -2.0f, 2.0f}, "y"};
@@ -112,6 +105,7 @@ struct Cascqaanalysis {
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> cutzvertexGen{"cutzvertexGen", -1.0f, "Accepted generated z-vertex range (cm); negative disables the cut"};
   Configurable<bool> isVertexITSTPC{"isVertexITSTPC", 0, "Select collisions with at least one ITS-TPC track"};
   Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "Same found-by-T0 bunch crossing rejection"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
@@ -213,14 +207,6 @@ struct Cascqaanalysis {
             o2::constants::physics::MassOmegaMinus * decayLength * invMomentum};
   }
 
-  template <typename TAxisType>
-  static void setEventTypeAxisLabels(TAxisType* axis)
-  {
-    for (const auto& [bin, label] : EventTypeBinLabels) {
-      axis->SetBinLabel(static_cast<int>(bin) + 1, label);
-    }
-  }
-
   void init(InitContext const&)
   {
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
@@ -255,17 +241,9 @@ struct Cascqaanalysis {
       registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2D, {nChargedFT0MGenAxis, eventTypeAxis}});
       registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2D, {nChargedFV0AGenAxis, eventTypeAxis}});
       registry.add("hCentFT0M_genMC", "hCentFT0M_genMC", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
-      setEventTypeAxisLabels(registry.get<TH2>(HIST("hEventTypeRecVsGen"))->GetXaxis());
-      setEventTypeAxisLabels(registry.get<TH2>(HIST("hEventTypeRecVsGen"))->GetYaxis());
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0MNAssocMCCollisions"))->GetZaxis());
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0MNAssocMCCollisionsSameType"))->GetZaxis());
-      setEventTypeAxisLabels(registry.get<TH2>(HIST("hNchFT0MGenEvType"))->GetYaxis());
-      setEventTypeAxisLabels(registry.get<TH2>(HIST("hNchFV0AGenEvType"))->GetYaxis());
-      setEventTypeAxisLabels(registry.get<TH2>(HIST("hCentFT0M_genMC"))->GetYaxis());
     }
 
     registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
-    setEventTypeAxisLabels(registry.get<TH2>(HIST("hCentFT0M_rec"))->GetYaxis());
 
     if (candidateQA) {
       registry.add("hNcandidates", "hNcandidates", {HistType::kTH3D, {nCandidates, centFT0MAxis, {2, -0.5f, 1.5f}}});
@@ -279,9 +257,6 @@ struct Cascqaanalysis {
         registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
         registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
         registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3D, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
-        setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0Mglobal"))->GetZaxis());
-        setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFT0MPVContr"))->GetZaxis());
-        setEventTypeAxisLabels(registry.get<TH3>(HIST("hNchFV0APVContr"))->GetZaxis());
       }
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3D, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3D, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
@@ -289,11 +264,6 @@ struct Cascqaanalysis {
       registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3D, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
       registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2D, {signalFT0MAxis, signalFV0AAxis}});
       registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0MpvContr"))->GetZaxis());
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFV0ApvContr"))->GetZaxis());
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0Mglobal"))->GetZaxis());
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFV0AFT0M"))->GetZaxis());
-      setEventTypeAxisLabels(registry.get<TH3>(HIST("hFT0MsignalPVContr"))->GetZaxis());
     }
 
     rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad, requireRCTFlagChecker || applyRCTOnGen);
@@ -711,8 +681,8 @@ struct Cascqaanalysis {
     // All generated collisions
     registry.fill(HIST("hNEventsMC"), 0.5);
 
-    // Generated with accepted z vertex
-    if (std::fabs(mcCollision.posZ()) > cutzvertex) {
+    // Generated after optional z-vertex selection
+    if (cutzvertexGen >= 0.f && std::fabs(mcCollision.posZ()) > cutzvertexGen) {
       return;
     }
     registry.fill(HIST("hNEventsMC"), 1.5);
