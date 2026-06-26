@@ -346,25 +346,39 @@ using EMMLLCascPair = EMMLLCascPairs::iterator;
 
 namespace emmldilepton
 {
-DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);                     //! index to event table
-DECLARE_SOA_COLUMN(Signed1Pt1, signed1Pt1, float);                  //! q/pt of lepton1 at PV
-DECLARE_SOA_COLUMN(Eta1, eta1, float);                              //! eta of lepton1 at PV
-DECLARE_SOA_COLUMN(ImpParXY1, impParXY1, float);                    //! impact parameter for lepton1 in XY plane
-DECLARE_SOA_COLUMN(ImpParZ1, impParZ1, float);                      //! impact parameter for lepton1 in Z plane
-DECLARE_SOA_COLUMN(ImpParCYY1, impParCYY1, float);                  //! sigma of impact parameter for lepton1 in XY
-DECLARE_SOA_COLUMN(ImpParCZY1, impParCZY1, float);                  //! sigma of impact parameter for lepton1, correlaion term
-DECLARE_SOA_COLUMN(ImpParCZZ1, impParCZZ1, float);                  //! sigma of impact parameter for lepton1 in Z
+DECLARE_SOA_INDEX_COLUMN(EMMLEvent, emmlevent);    //! index to event table
+DECLARE_SOA_COLUMN(Signed1Pt1, signed1Pt1, float); //! q/pt of lepton1 at PV
+DECLARE_SOA_COLUMN(Eta1, eta1, float);             //! eta of lepton1 at PV
+DECLARE_SOA_COLUMN(ImpParXY1, impParXY1, float);   //! impact parameter for lepton1 in XY plane
+DECLARE_SOA_COLUMN(ImpParZ1, impParZ1, float);     //! impact parameter for lepton1 in Z plane
+DECLARE_SOA_COLUMN(ImpParCYY1, impParCYY1, float); //! sigma of impact parameter for lepton1 in XY
+DECLARE_SOA_COLUMN(ImpParCZY1, impParCZY1, float); //! sigma of impact parameter for lepton1, correlaion term
+DECLARE_SOA_COLUMN(ImpParCZZ1, impParCZZ1, float); //! sigma of impact parameter for lepton1 in Z
+
+DECLARE_SOA_COLUMN(UnbiasedImpParXY1, unbiasedImpParXY1, float);   //! impact parameter for lepton1 in XY plane
+DECLARE_SOA_COLUMN(UnbiasedImpParZ1, unbiasedImpParZ1, float);     //! impact parameter for lepton1 in Z plane
+DECLARE_SOA_COLUMN(UnbiasedImpParCYY1, unbiasedImpParCYY1, float); //! sigma of impact parameter for lepton1 in XY
+DECLARE_SOA_COLUMN(UnbiasedImpParCZY1, unbiasedImpParCZY1, float); //! sigma of impact parameter for lepton1, correlaion term
+DECLARE_SOA_COLUMN(UnbiasedImpParCZZ1, unbiasedImpParCZZ1, float); //! sigma of impact parameter for lepton1 in Z
+
 DECLARE_SOA_COLUMN(IsCorrectCollision1, isCorrectCollision1, bool); //! lepton1 is associated to correct collision.
 DECLARE_SOA_COLUMN(IsReassociated1, isReassociated1, bool);         //! lepton1 is reassociated.
 DECLARE_SOA_COLUMN(PdgCodeMother1, pdgCodeMother1, int);            //! pdg code of mother of lepton1
 
-DECLARE_SOA_COLUMN(Signed1Pt2, signed1Pt2, float);                  //! q/pt of lepton2 at PV
-DECLARE_SOA_COLUMN(Eta2, eta2, float);                              //! eta of lepton1 at PV
-DECLARE_SOA_COLUMN(ImpParXY2, impParXY2, float);                    //! impact parameter for lepton2 in XY plane
-DECLARE_SOA_COLUMN(ImpParZ2, impParZ2, float);                      //! impact parameter for lepton2 in Z plane
-DECLARE_SOA_COLUMN(ImpParCYY2, impParCYY2, float);                  //! sigma of impact parameter for lepton2 in XY
-DECLARE_SOA_COLUMN(ImpParCZY2, impParCZY2, float);                  //! sigma of impact parameter for lepton2, correlaion term
-DECLARE_SOA_COLUMN(ImpParCZZ2, impParCZZ2, float);                  //! sigma of impact parameter for lepton2 in Z
+DECLARE_SOA_COLUMN(Signed1Pt2, signed1Pt2, float); //! q/pt of lepton2 at PV
+DECLARE_SOA_COLUMN(Eta2, eta2, float);             //! eta of lepton1 at PV
+DECLARE_SOA_COLUMN(ImpParXY2, impParXY2, float);   //! impact parameter for lepton2 in XY plane
+DECLARE_SOA_COLUMN(ImpParZ2, impParZ2, float);     //! impact parameter for lepton2 in Z plane
+DECLARE_SOA_COLUMN(ImpParCYY2, impParCYY2, float); //! sigma of impact parameter for lepton2 in XY
+DECLARE_SOA_COLUMN(ImpParCZY2, impParCZY2, float); //! sigma of impact parameter for lepton2, correlaion term
+DECLARE_SOA_COLUMN(ImpParCZZ2, impParCZZ2, float); //! sigma of impact parameter for lepton2 in Z
+
+DECLARE_SOA_COLUMN(UnbiasedImpParXY2, unbiasedImpParXY2, float);   //! impact parameter for lepton2 in XY plane
+DECLARE_SOA_COLUMN(UnbiasedImpParZ2, unbiasedImpParZ2, float);     //! impact parameter for lepton2 in Z plane
+DECLARE_SOA_COLUMN(UnbiasedImpParCYY2, unbiasedImpParCYY2, float); //! sigma of impact parameter for lepton2 in XY
+DECLARE_SOA_COLUMN(UnbiasedImpParCZY2, unbiasedImpParCZY2, float); //! sigma of impact parameter for lepton2, correlaion term
+DECLARE_SOA_COLUMN(UnbiasedImpParCZZ2, unbiasedImpParCZZ2, float); //! sigma of impact parameter for lepton2 in Z
+
 DECLARE_SOA_COLUMN(IsCorrectCollision2, isCorrectCollision2, bool); //! lepton is associated to correct collision.
 DECLARE_SOA_COLUMN(IsReassociated2, isReassociated2, bool);         //! lepton2 is reassociated.
 DECLARE_SOA_COLUMN(PdgCodeMother2, pdgCodeMother2, int);            //! pdg code of mother of lepton1
@@ -392,6 +406,10 @@ DECLARE_SOA_TABLE(EMMLDielectronsAtSV, "AOD", "EMMLEESV", //!
                   emmldilepton::EMMLEventId,
                   emmldilepton::Signed1Pt1, emmldilepton::Eta1, emmldilepton::ImpParXY1, emmldilepton::ImpParZ1, emmldilepton::ImpParCYY1, emmldilepton::ImpParCZY1, emmldilepton::ImpParCZZ1, emmldilepton::IsCorrectCollision1, emmldilepton::IsReassociated1, emmldilepton::PdgCodeMother1,
                   emmldilepton::Signed1Pt2, emmldilepton::Eta2, emmldilepton::ImpParXY2, emmldilepton::ImpParZ2, emmldilepton::ImpParCYY2, emmldilepton::ImpParCZY2, emmldilepton::ImpParCZZ2, emmldilepton::IsCorrectCollision2, emmldilepton::IsReassociated2, emmldilepton::PdgCodeMother2,
+
+                  emmldilepton::UnbiasedImpParXY1, emmldilepton::UnbiasedImpParZ1, emmldilepton::UnbiasedImpParCYY1, emmldilepton::UnbiasedImpParCZY1, emmldilepton::UnbiasedImpParCZZ1,
+                  emmldilepton::UnbiasedImpParXY2, emmldilepton::UnbiasedImpParZ2, emmldilepton::UnbiasedImpParCYY2, emmldilepton::UnbiasedImpParCZY2, emmldilepton::UnbiasedImpParCZZ2,
+
                   emmldilepton::Mass, emmldilepton::Pt, emmldilepton::Rapidity,
                   emmldilepton::Chi2PCA,
                   emmldilepton::CPA, emmldilepton::CPAXY, emmldilepton::CPARZ,

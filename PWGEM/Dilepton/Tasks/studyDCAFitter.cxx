@@ -35,6 +35,7 @@
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexer.h> // for PV refit
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -45,6 +46,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Vertex.h> // for PV refit
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -56,6 +58,7 @@
 #include <random>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -70,7 +73,18 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 struct studyDCAFitter {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::McCollisionLabels>;
   using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::McTrackLabels>;
+  using MyTrack = MyTracks::iterator;
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+
+  // struct unbiasedDCA {
+  //   int globalIndex{0};
+  //   float dcaXY{999.f};
+  //   float dcaZ{999.f};
+  //   float cYY{999.f};
+  //   float cZZ{999.f};
+  //   float cZY{999.f};
+  //   bool isOK{false};
+  // };
 
   Produces<aod::EMMLEvents> eventTable;
   Produces<aod::EMMLDielectronsAtSV> dileptonTable;
@@ -233,6 +247,11 @@ struct studyDCAFitter {
     fRegistry.add("Event/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{110, 0, 110}}, false);
     fRegistry.add("Event/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", kTH2F, {{110, 0, 110}, {600, 0, 6000}}, false);
     fRegistry.add("Event/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
+    fRegistry.add("Event/refitPV/hNContrib", "hNContrib;before;after", kTH2F, {{1001, -0.5, 1000.5}, {1001, -0.5, 1000.5}}, false);
+    fRegistry.add("Event/refitPV/hChi2", "hChi2;before;after", kTH2F, {{100, 0, 1000}, {100, 0, 1000}}, false);
+    fRegistry.add("Event/refitPV/hDeltaXvsNContrib", "hDeltaXvsNContrib;numContrib after;X_{after} - X_{before} (cm)", kTH2F, {{1001, -0.5, 1000.5}, {200, -0.01, 0.01}}, false);
+    fRegistry.add("Event/refitPV/hDeltaYvsNContrib", "hDeltaYvsNContrib;numContrib after;Y_{after} - Y_{before} (cm)", kTH2F, {{1001, -0.5, 1000.5}, {200, -0.01, 0.01}}, false);
+    fRegistry.add("Event/refitPV/hDeltaZvsNContrib", "hDeltaZvsNContrib;numContrib after;Z_{after} - Z_{before} (cm)", kTH2F, {{1001, -0.5, 1000.5}, {200, -0.01, 0.01}}, false);
 
     const o2::framework::AxisSpec axis_mass{ConfMllBins, "m_{ll} (GeV/c^{2})"};
     const o2::framework::AxisSpec axis_pt{ConfPtllBins, "p_{T,ee} (GeV/c)"};
@@ -510,13 +529,156 @@ struct studyDCAFitter {
     } // end of HFee
   }
 
-  template <uint8_t signType, typename TCollision, typename TTrack, typename TMCParticles>
-  void runSVFinder(TCollision const& collision, TTrack const& t1, TTrack const& t2, TMCParticles const& mcParticles)
+  template <typename TCollision, typename TTrack>
+  o2::dataformats::VertexBase refitPV(TCollision const& collision, std::vector<o2::track::TrackParCov> const& vecPvContributorTrackParCov, std::vector<int64_t> const& vecPvContributorGlobalId, std::vector<TTrack> const& tracksToRemove)
+  {
+    std::vector<bool> vecPvRefitContributorUsed(vecPvContributorGlobalId.size(), true);
+
+    // build the VertexBase to initialize the vertexer
+    o2::dataformats::VertexBase primVtx;
+    primVtx.setX(collision.posX());
+    primVtx.setY(collision.posY());
+    primVtx.setZ(collision.posZ());
+    primVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+
+    o2::vertexing::PVertexer vertexer;
+    o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // remove diamond constraint
+    vertexer.init();
+    const bool pvRefitDoable = vertexer.prepareVertexRefit(vecPvContributorTrackParCov, primVtx);
+    if (!pvRefitDoable) {
+      LOG(info) << "Not enough tracks accepted for the refit"; // this should not happen by definition, because nPV>=2 is required in the reconstruction. I analyze the reconstructed collisions in AO2D.
+      return primVtx;
+    }
+
+    for (const auto& trackToRemove : tracksToRemove) {
+      const auto trackIterator = std::find(vecPvContributorGlobalId.begin(), vecPvContributorGlobalId.end(), trackToRemove.globalIndex()); // track global index
+      if (trackIterator != vecPvContributorGlobalId.end()) {
+        const int entry = std::distance(vecPvContributorGlobalId.begin(), trackIterator); // this track contributed to this collision: let's do the refit without it
+        vecPvRefitContributorUsed[entry] = false;                                         // remove the track from the PV refitting
+      }
+    }
+
+    const auto primVtxRefitted = vertexer.refitVertexFull(vecPvRefitContributorUsed, primVtx); // vertex refit
+    // LOG(info) << "refit for track with global index " << static_cast<int>(trackToRemove.globalIndex()) << " " << primVtxRefitted.asString();
+    if (primVtxRefitted.getChi2() < 0) {
+      LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
+      return primVtx;
+    }
+
+    fRegistry.fill(HIST("Event/refitPV/hNContrib"), collision.numContrib(), primVtxRefitted.getNContributors());
+    fRegistry.fill(HIST("Event/refitPV/hChi2"), collision.chi2(), primVtxRefitted.getChi2());
+    fRegistry.fill(HIST("Event/refitPV/hDeltaXvsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getX() - primVtx.getX());
+    fRegistry.fill(HIST("Event/refitPV/hDeltaYvsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getY() - primVtx.getY());
+    fRegistry.fill(HIST("Event/refitPV/hDeltaZvsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getZ() - primVtx.getZ());
+
+    o2::dataformats::VertexBase primVtxBaseRecalc;
+    primVtxBaseRecalc.setX(primVtxRefitted.getX());
+    primVtxBaseRecalc.setY(primVtxRefitted.getY());
+    primVtxBaseRecalc.setZ(primVtxRefitted.getZ());
+    primVtxBaseRecalc.setCov(primVtxRefitted.getSigmaX2(), primVtxRefitted.getSigmaXY(), primVtxRefitted.getSigmaY2(), primVtxRefitted.getSigmaXZ(), primVtxRefitted.getSigmaYZ(), primVtxRefitted.getSigmaZ2());
+
+    vecPvRefitContributorUsed.clear();
+    vecPvRefitContributorUsed.shrink_to_fit();
+    // return primVtxRefitted;
+    return primVtxBaseRecalc;
+  }
+
+  // template <typename TCollision, typename TTrack>
+  // bool refitPV(TCollision const& collision, std::vector<o2::track::TrackParCov> const& vecPvContributorTrackParCov, std::vector<int64_t> const& vecPvContributorGlobalId, std::vector<TTrack> const& tracksToRemove, unbiasedDCA& candidate)
+  // {
+  //   std::vector<bool> vecPvRefitContributorUsed(vecPvContributorGlobalId.size(), true);
+
+  //   // build the VertexBase to initialize the vertexer
+  //   o2::dataformats::VertexBase primVtx;
+  //   primVtx.setX(collision.posX());
+  //   primVtx.setY(collision.posY());
+  //   primVtx.setZ(collision.posZ());
+  //   primVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+
+  //   o2::vertexing::PVertexer vertexer;
+  //   o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // remove diamond constraint
+  //   vertexer.init();
+  //   const bool pvRefitDoable = vertexer.prepareVertexRefit(vecPvContributorTrackParCov, primVtx);
+  //   if (!pvRefitDoable) {
+  //     LOG(info) << "Not enough tracks accepted for the refit"; // this should not happen by definition, because nPV>=2 is required in the reconstruction. I analyze the reconstructed collisions in AO2D.
+  //     candidate.isOK = false;
+  //     return false;
+  //   }
+
+  //   // PV refitting, if the tracks contributed to this at the beginning
+  //   o2::dataformats::VertexBase primVtxBaseRecalc;
+  //   bool recalcImpPar = false;
+  //   if (pvRefitDoable) {
+  //     recalcImpPar = true;
+
+  //     for (const auto& trackToRemove : tracksToRemove) {
+  //       const auto trackIterator = std::find(vecPvContributorGlobalId.begin(), vecPvContributorGlobalId.end(), trackToRemove.globalIndex()); /// track global index
+  //       if (trackIterator != vecPvContributorGlobalId.end()) {
+  //         const int entry = std::distance(vecPvContributorGlobalId.begin(), trackIterator); // this track contributed to this collision: let's do the refit without it
+  //         vecPvRefitContributorUsed[entry] = false; // remove the track from the PV refitting
+  //       }
+  //     }
+
+  //     const auto primVtxRefitted = vertexer.refitVertexFull(vecPvRefitContributorUsed, primVtx); // vertex refit
+
+  //     // LOG(info) << "refit for track with global index " << static_cast<int>(trackToRemove.globalIndex()) << " " << primVtxRefitted.asString();
+  //     if (primVtxRefitted.getChi2() < 0) {
+  //       LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
+  //       candidate.isOK = false;
+  //       recalcImpPar = false;
+  //       return false;
+  //     }
+
+  //     // LOGF(info, "collision.numContrib() = %d, primVtxRefitted.getNContributors() = %d", collision.numContrib(), primVtxRefitted.getNContributors());
+  //     fRegistry.fill(HIST("Event/refitPV/hNContrib"), collision.numContrib(), primVtxRefitted.getNContributors());
+  //     fRegistry.fill(HIST("Event/refitPV/hChi2"), collision.chi2(), primVtxRefitted.getChi2());
+  //     fRegistry.fill(HIST("Event/refitPV/hDeltaXvsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getX() - primVtx.getX());
+  //     fRegistry.fill(HIST("Event/refitPV/hDeltaYvsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getY() - primVtx.getY());
+  //     fRegistry.fill(HIST("Event/refitPV/hDeltaZvsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getZ() - primVtx.getZ());
+
+  //     // vecPvRefitContributorUsed[entry] = true; // restore the track for the next PV refitting (probably not necessary here)
+
+  //     if (recalcImpPar) {
+  //       // fill the newly calculated PV
+  //       primVtxBaseRecalc.setX(primVtxRefitted.getX());
+  //       primVtxBaseRecalc.setY(primVtxRefitted.getY());
+  //       primVtxBaseRecalc.setZ(primVtxRefitted.getZ());
+  //       primVtxBaseRecalc.setCov(primVtxRefitted.getSigmaX2(), primVtxRefitted.getSigmaXY(), primVtxRefitted.getSigmaY2(), primVtxRefitted.getSigmaXZ(), primVtxRefitted.getSigmaYZ(), primVtxRefitted.getSigmaZ2());
+  //     }
+
+  //     // updated value after PV recalculation
+  //     if (recalcImpPar) {
+  //       for (const auto& trackToRemove : tracksToRemove) {
+  //         auto trackParCov = getTrackParCov(trackToRemove);
+  //         o2::dataformats::DCA impactParameter;
+  //         impactParameter.set(999, 999, 999, 999, 999);
+  //         trackParCov.setPID(o2::track::PID::Electron);
+
+  //         // if (o2::base::Propagator::Instance()->propagateToDCABxByBz(primVtxBaseRecalc, trackParCov, 2.f, matCorr, &impactParameter)) {
+  //         if (o2::base::Propagator::Instance()->propagateToDCABxByBz(primVtxRefitted, trackParCov, 2.f, matCorr, &impactParameter)) {
+  //           candidate.dcaXY = impactParameter.getY();
+  //           candidate.dcaZ = impactParameter.getZ();
+  //           candidate.cYY = trackParCov.getSigmaY2();
+  //           candidate.cZZ = trackParCov.getSigmaZ2();
+  //           candidate.cZY = trackParCov.getSigmaZY();
+  //           // LOGF(info, "trackToRemove.globalIndex() = %d, candidate.dcaXY = %f, candidate.dcaZ = %f, candidate.cYY = %.16f, candidate.cZZ = %.16f, candidate.cZY = %.16f", trackToRemove.globalIndex(), candidate.dcaXY, candidate.dcaZ, candidate.cYY, candidate.cZZ, candidate.cZY);
+  //           candidate.isOK = true;
+  //         }
+  //       }
+  //     }
+  //   } /// end 'if (doPvRefit && pvRefitDoable)'
+
+  //   vecPvRefitContributorUsed.clear();
+  //   vecPvRefitContributorUsed.shrink_to_fit();
+  //   return true;
+  // }
+
+  template <uint8_t signType, typename TCollision, typename TTrack, typename TMCParticles, typename TRefittedPV>
+  void runSVFinder(TCollision const& collision, TTrack const& t1, TTrack const& t2, TMCParticles const& mcParticles, TRefittedPV const& refittedPV)
   {
     auto trackParCov1 = getTrackParCov(t1);
     trackParCov1.setPID(o2::track::PID::Electron);
     mDcaInfoCov.set(999, 999, 999, 999, 999);
-    trackParCov1.setPID(o2::track::PID::Electron);
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov1, 2.f, matCorr, &mDcaInfoCov);
     float dcaXY1 = mDcaInfoCov.getY();
     float dcaZ1 = mDcaInfoCov.getZ();
@@ -526,10 +688,17 @@ struct studyDCAFitter {
     float signed1Pt1 = trackParCov1.getQ2Pt(); // at PV
     float eta1 = trackParCov1.getEta();        // at PV
 
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(refittedPV, trackParCov1, 2.f, matCorr, &mDcaInfoCov);
+    float unbiased_dcaXY1 = mDcaInfoCov.getY();
+    float unbiased_dcaZ1 = mDcaInfoCov.getZ();
+    float unbiased_CYY1 = trackParCov1.getSigmaY2();
+    float unbiased_CZY1 = trackParCov1.getSigmaZY();
+    float unbiased_CZZ1 = trackParCov1.getSigmaZ2();
+
     auto trackParCov2 = getTrackParCov(t2);
     trackParCov2.setPID(o2::track::PID::Electron);
     mDcaInfoCov.set(999, 999, 999, 999, 999);
-    trackParCov2.setPID(o2::track::PID::Electron);
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov2, 2.f, matCorr, &mDcaInfoCov);
     float dcaXY2 = mDcaInfoCov.getY();
     float dcaZ2 = mDcaInfoCov.getZ();
@@ -539,7 +708,16 @@ struct studyDCAFitter {
     float signed1Pt2 = trackParCov2.getQ2Pt(); // at PV
     float eta2 = trackParCov2.getEta();        // at PV
 
-    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(refittedPV, trackParCov2, 2.f, matCorr, &mDcaInfoCov);
+    float unbiased_dcaXY2 = mDcaInfoCov.getY();
+    float unbiased_dcaZ2 = mDcaInfoCov.getZ();
+    float unbiased_CYY2 = trackParCov2.getSigmaY2();
+    float unbiased_CZY2 = trackParCov2.getSigmaZY();
+    float unbiased_CZZ2 = trackParCov2.getSigmaZ2();
+
+    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    std::array<float, 3> pVtx = {refittedPV.getX(), refittedPV.getY(), refittedPV.getZ()};
     std::array<float, 3> svpos = {0.}; // secondary vertex position
     std::array<float, 3> pvec0 = {0.};
     std::array<float, 3> pvec1 = {0.};
@@ -575,11 +753,12 @@ struct studyDCAFitter {
       return;
     }
 
-    float lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2)); // in cm
-    float lz = svpos[2] - collision.posZ();                                                                     // in cm
+    float lxy = std::sqrt(std::pow(svpos[0] - refittedPV.getX(), 2) + std::pow(svpos[1] - refittedPV.getY(), 2)); // in cm
+    float lz = svpos[2] - refittedPV.getZ();                                                                      // in cm
     float lxyz = std::sqrt(std::pow(lxy, 2) + std::pow(lz, 2));
 
-    auto primaryVertex = getPrimaryVertex(collision);
+    // auto primaryVertex = getPrimaryVertex(collision);
+    auto primaryVertex = refittedPV;
     std::array<float, 6> covVtx = fitter.calcPCACovMatrixFlat();
     double phi{}, theta{};
     getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, svpos, phi, theta);
@@ -772,6 +951,8 @@ struct studyDCAFitter {
       dileptonTable(eventTable.lastIndex() + 1,
                     signed1Pt1, eta1, dcaXY1, dcaZ1, CYY1, CZY1, CZZ1, isCorrectCollision1, isReassociated1, pdgCodeMother1,
                     signed1Pt2, eta2, dcaXY2, dcaZ2, CYY2, CZY2, CZZ2, isCorrectCollision2, isReassociated2, pdgCodeMother2,
+                    unbiased_dcaXY1, unbiased_dcaZ1, unbiased_CYY1, unbiased_CZY1, unbiased_CZZ1,
+                    unbiased_dcaXY2, unbiased_dcaZ2, unbiased_CYY2, unbiased_CZY2, unbiased_CZZ2,
                     meeAtSV, pteeAtSV, yeeAtSV,
                     chi2PCA,
                     cpa, cpaXY, cpaRZ,
@@ -801,6 +982,8 @@ struct studyDCAFitter {
       fillEventHistograms(collision);
 
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      std::vector<int> electronIds;
+      std::vector<int> positronIds;
       electronIds.reserve(trackIdsThisCollision.size());
       positronIds.reserve(trackIdsThisCollision.size());
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
@@ -851,11 +1034,38 @@ struct studyDCAFitter {
         }
       } // end of track loop for electron selection
 
+      auto pvContributors_per_collision = pvContributors->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov;
+      std::vector<int64_t> vecPvContributorGlobalId;
+      vecPvContributorTrackParCov.reserve(pvContributors_per_collision.size());
+      vecPvContributorGlobalId.reserve(pvContributors_per_collision.size());
+
+      for (const auto& track : pvContributors_per_collision) {
+        vecPvContributorGlobalId.push_back(track.globalIndex());
+        vecPvContributorTrackParCov.push_back(getTrackParCov(track));
+      }
+      // LOGF(info, "collision.numContrib() = %d, pvContributors_per_collision.size() = %d, vecPvContributorGlobalId.size() = %d", collision.numContrib(), pvContributors_per_collision.size(), vecPvContributorGlobalId.size()); // these 3 numbers must be consistent.
+
+      // std::unordered_map<int, unbiasedDCA> map_unbiasedDCA; // track.globalIndex() -> unbiasedDCA
+      // for (const auto& posId : positronIds) {
+      //   unbiasedDCA candidate;
+      //   auto pos = tracks.rawIteratorAt(posId);
+      //   refitPV(collision, vecPvContributorTrackParCov, vecPvContributorGlobalId, std::vector<MyTrack>{pos}, candidate);
+      //   map_unbiasedDCA[pos.globalIndex()] = candidate;
+      // }
+      // for (const auto& eleId : electronIds) {
+      //   unbiasedDCA candidate;
+      //   auto ele = tracks.rawIteratorAt(eleId);
+      //   refitPV(collision, vecPvContributorTrackParCov, vecPvContributorGlobalId, std::vector<MyTrack>{ele}, candidate);
+      //   map_unbiasedDCA[ele.globalIndex()] = candidate;
+      // }
+
       for (const auto& posId : positronIds) {
         auto pos = tracks.rawIteratorAt(posId);
         for (const auto& eleId : electronIds) {
           auto ele = tracks.rawIteratorAt(eleId);
-          runSVFinder<0>(collision, pos, ele, mcParticles);
+          const auto& refittedPV = refitPV(collision, vecPvContributorTrackParCov, vecPvContributorGlobalId, std::vector<MyTrack>{pos, ele});
+          runSVFinder<0>(collision, pos, ele, mcParticles, refittedPV);
           runPairingAtPV<0>(pos, ele, mcParticles);
         } // end of electron loop
       } // end of positron loop
@@ -864,7 +1074,8 @@ struct studyDCAFitter {
         auto pos1 = tracks.rawIteratorAt(positronIds[i]);
         for (size_t j = i + 1; j < positronIds.size(); j++) {
           auto pos2 = tracks.rawIteratorAt(positronIds[j]);
-          runSVFinder<1>(collision, pos1, pos2, mcParticles);
+          const auto& refittedPV = refitPV(collision, vecPvContributorTrackParCov, vecPvContributorGlobalId, std::vector<MyTrack>{pos1, pos2});
+          runSVFinder<1>(collision, pos1, pos2, mcParticles, refittedPV);
           runPairingAtPV<1>(pos1, pos2, mcParticles);
         } // end of positron loop
       } // end of positron loop
@@ -873,7 +1084,8 @@ struct studyDCAFitter {
         auto ele1 = tracks.rawIteratorAt(electronIds[i]);
         for (size_t j = i + 1; j < electronIds.size(); j++) {
           auto ele2 = tracks.rawIteratorAt(electronIds[j]);
-          runSVFinder<2>(collision, ele1, ele2, mcParticles);
+          const auto& refittedPV = refitPV(collision, vecPvContributorTrackParCov, vecPvContributorGlobalId, std::vector<MyTrack>{ele1, ele2});
+          runSVFinder<2>(collision, ele1, ele2, mcParticles, refittedPV);
           runPairingAtPV<2>(ele1, ele2, mcParticles);
         } // end of electron loop
       } // end of electron loop
@@ -887,6 +1099,14 @@ struct studyDCAFitter {
       positronIds.clear();
       positronIds.shrink_to_fit();
 
+      vecPvContributorGlobalId.clear();
+      vecPvContributorTrackParCov.clear();
+
+      vecPvContributorGlobalId.shrink_to_fit();
+      vecPvContributorTrackParCov.shrink_to_fit();
+
+      // map_unbiasedDCA.clear();
+
     } // end of collision loop
   }
 
@@ -897,12 +1117,11 @@ struct studyDCAFitter {
   Filter collisionFilter_centrality = (eventCut.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventCut.cfgCentMax) || (eventCut.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventCut.cfgCentMax) || (eventCut.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventCut.cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
+  Partition<MyTracks> pvContributors = ((o2::aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   // Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   // Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
-
-  std::vector<int> electronIds;
-  std::vector<int> positronIds;
 
   void processMC(FilteredMyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, aod::TrackAssoc const& trackIndices, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
