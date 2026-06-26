@@ -17,6 +17,7 @@
 #include "PWGJE/DataModel/JetSubtraction.h"
 //
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -190,6 +191,7 @@ struct nucleiInJets {
   // using EventTable = soa::Join<aod::JetCollisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
   using EventTable = aod::JetCollisions;
   using EventTableMC = soa::Join<EventTable, aod::JMcCollisionLbs>;
+  using JetMcCollisionWithCent = soa::Join<aod::JetMcCollisions, aod::McCentFT0Cs, aod::McCentFV0As>::iterator;
   using JetCollWithLabel = o2::soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::BkgChargedRhos>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa,
                                     aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTPCFullTr, aod::pidTOFFullPi, aod::pidTOFFullKa,
@@ -600,13 +602,16 @@ struct nucleiInJets {
       // Event and signal loss analysis histograms (inclusive)
       jetHist.add("eventLoss/hEventStatistics", "Event Statistics for Loss Analysis", kTH1F, {{10, 0.f, 10.f}});
       jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(1, "All Generated");
-      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(2, "Gen |Vz|<10");
+      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(2, "Gen |Vz| cut");
       jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(3, "Gen True INEL>0");
       jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(4, "Has Reco Coll");
       jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(5, "Pass Sel8");
-      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(6, "Pass |Vz|<10");
-      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(7, "Pass rec INEL>0");
-      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(8, "EvSelPassedRecINELgt0");
+      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(6, "Pass reco |Vz| cut");
+      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(7, "Pass extra event sel");
+      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(8, "Reco selected");
+      jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(9, "Reco selected + true INEL>0");
+      jetHist.add<TH2>("eventLoss/hRecoCollPerMCCollVsCent", "Reco collisions per MC collision;N_{reco coll};Centrality", HistType::kTH2F, {{10, -0.5f, 9.5f}, {100, 0.f, 100.f}});
+      jetHist.add<TH2>("eventLoss/hSelectedRecoCollPerMCCollVsCent", "Selected reco collisions per MC collision;N_{selected reco coll};Centrality", HistType::kTH2F, {{10, -0.5f, 9.5f}, {100, 0.f, 100.f}});
 
       // Signal loss histograms (only the ones that are actually used)
       jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_INELgt0", "Generated Particles p_{T} vs #eta vs Centrality", HistType::kTH3F, {{PtAxis}, {100, -1.5f, 1.5f}, {100, 0, 100}});
@@ -733,6 +738,10 @@ struct nucleiInJets {
       jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/gen/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
       jetHist.add<TH2>("eff/recmatched/gen/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/mcC/gen/pt/PtParticleType", "Pt (gen, mcC) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/mcCSpectra/gen/pt/PtParticleType", "Pt (gen, mcCSpectra) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/mcC/gen/perpCone/pt/PtParticleType", "Pt (gen, mcC, perp cone) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/mcCSpectra/gen/perpCone/pt/PtParticleType", "Pt (gen, mcCSpectra, perp cone) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       // gen matched
       jetHist.add<TH2>("genmatched/hRecMatchedJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH2F, {{100, 0., 100.}, {400, -20., 20.}});
       jetHist.add<TH2>("genmatched/hRecMatchedVsGenJetPt", "matched jet pT (Rec level);#it{p}_{T,jet det}; #it{p}_{T,jet part} (GeV/#it{c})", HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}});
@@ -2414,8 +2423,22 @@ struct nucleiInJets {
 
       if (mapPDGToValue(mcParticle.pdgCode()) != 0) {
         jetHist.fill(HIST("eff/recmatched/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, mapPDGToValue(mcParticle.pdgCode()));
+        if (useMcC) {
+          if (useDataLikeHist) {
+            jetHist.fill(HIST("eff/recmatched/mcC/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, mapPDGToValue(mcParticle.pdgCode()));
+          } else {
+            jetHist.fill(HIST("eff/recmatched/mcCSpectra/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, mapPDGToValue(mcParticle.pdgCode()));
+          }
+        }
         if (jetFlagPerpConeMC) {
           jetHist.fill(HIST("eff/recmatched/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()));
+          if (useMcC) {
+            if (useDataLikeHist) {
+              jetHist.fill(HIST("eff/recmatched/mcC/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()));
+            } else {
+              jetHist.fill(HIST("eff/recmatched/mcCSpectra/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()));
+            }
+          }
         }
       }
     } // mcParticle
@@ -2714,76 +2737,95 @@ struct nucleiInJets {
   }
 
   // Process function for event and signal loss analysis (inclusive)
-  void processEventSignalLoss(aod::JetMcCollision const& mcCollision,
+  void processEventSignalLoss(JetMcCollisionWithCent const& mcCollision,
                               soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recoColls,
                               aod::JetParticles const& mcParticles,
                               TrackCandidates const&)
   {
-
-    // Fill generated event statistics
     jetHist.fill(HIST("eventLoss/hEventStatistics"), 0.5); // All Generated
 
-    // Check if we have a reconstructed collision
-    bool hasRecoColl = false;
-    bool passSel8 = false;
-    bool passVz = false;
-    bool passINELgt0 = false;
-    bool isSel8 = false;
-
-    float centrality = -999;
+    auto mcParticles_perColl = mcParticles.sliceBy(perMCCol, mcCollision.globalIndex());
+    float centrality = -999.f;
     switch (centralityType) {
-      case 0: // FT0M
+      case 0:
         centrality = mcCollision.centFT0M();
         break;
-      case 1: // FT0C
-        centrality = mcCollision.multFT0C();
+      case 1:
+        centrality = mcCollision.centFT0C();
         break;
-      case 2: // V0A
-        centrality = mcCollision.multFV0A();
+      case 2:
+        centrality = mcCollision.centFV0A();
         break;
       default:
-        centrality = -999;
+        centrality = mcCollision.centFT0M();
+        break;
     }
+    const bool passGenVz = std::abs(mcCollision.posZ()) < cfgMaxZVertex;
+    const bool mcINELgt0 = o2::pwglf::isINELgt0mc(mcParticles_perColl, pdgDB);
 
-    // Check INEL>0 at MC level using PWGLF functionality
-    bool mcINELgt0 = o2::pwglf::isINELgt0mc(mcParticles, pdgDB);
-    if (mcCollision.posZ() < 10) {
-      jetHist.fill(HIST("eventLoss/hEventStatistics"), 1.5);
-      if (mcINELgt0) {
-        jetHist.fill(HIST("eventLoss/hEventStatistics"), 2.5);
-      }
+    if (!passGenVz) {
+      return;
     }
+    jetHist.fill(HIST("eventLoss/hEventStatistics"), 1.5); // Gen |Vz| cut
 
+    if (!mcINELgt0) {
+      return;
+    }
+    jetHist.fill(HIST("eventLoss/hEventStatistics"), 2.5); // Gen True INEL>0
+
+    int nRecoColls = 0;
+    int nSelectedRecoColls = 0;
+    bool hasRecoColl = false;
+    bool passSel8 = false;
+    bool passRecoVz = false;
+    bool passExtraEventSel = false;
+    bool hasSelectedRecoColl = false;
     for (const auto& recoColl : recoColls) {
+      ++nRecoColls;
       hasRecoColl = true;
-      if (jetderiveddatautilities::selectCollision(recoColl, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
-        isSel8 = true;
-      jetHist.fill(HIST("eventLoss/hEventStatistics"), 3.5); // Has Reco Coll
+      const bool isSel8 = jetderiveddatautilities::selectCollision(recoColl, jetderiveddatautilities::initialiseEventSelectionBits("sel8"));
+      const bool isRecoVz = std::abs(recoColl.posZ()) < cfgMaxZVertex;
+      const bool isNoSameBunchPileup = !selNoSameBunchPileup || jetderiveddatautilities::selectCollision(recoColl, jetderiveddatautilities::initialiseEventSelectionBits("NoSameBunchPileup"));
+      const bool isGoodZvtxFT0vsPV = !selIsGoodZvtxFT0vsPV || jetderiveddatautilities::selectCollision(recoColl, jetderiveddatautilities::initialiseEventSelectionBits("IsGoodZvtxFT0vsPV"));
+      const bool isOccupancy = !useOccupancy || isOccupancyAccepted(recoColl);
+      const bool isExtraEventSel = isNoSameBunchPileup && isGoodZvtxFT0vsPV && isOccupancy;
 
       if (isSel8) {
         passSel8 = true;
-        jetHist.fill(HIST("eventLoss/hEventStatistics"), 4.5); // Pass Sel8
+      }
+      if (isRecoVz) {
+        passRecoVz = true;
+      }
+      if (isExtraEventSel) {
+        passExtraEventSel = true;
       }
 
-      if (std::abs(recoColl.posZ()) < 10.0) {
-        passVz = true;
-        jetHist.fill(HIST("eventLoss/hEventStatistics"), 5.5); // Pass |Vz|<10
+      if (isSel8 && isRecoVz && isExtraEventSel) {
+        ++nSelectedRecoColls;
+        hasSelectedRecoColl = true;
       }
-
-      if (mcINELgt0) {
-        passINELgt0 = true;
-        jetHist.fill(HIST("eventLoss/hEventStatistics"), 6.5); // Pass rec INEL>0
-      }
-
-      break; // Only first reco collision
     }
 
-    // Final selection (all cuts passed)
-    if (hasRecoColl && passSel8 && passVz && passINELgt0) {
-      jetHist.fill(HIST("eventLoss/hEventStatistics"), 7.5); // Final Selection
+    jetHist.fill(HIST("eventLoss/hRecoCollPerMCCollVsCent"), nRecoColls, centrality);
+    jetHist.fill(HIST("eventLoss/hSelectedRecoCollPerMCCollVsCent"), nSelectedRecoColls, centrality);
+
+    if (hasRecoColl) {
+      jetHist.fill(HIST("eventLoss/hEventStatistics"), 3.5); // Has Reco Coll
+    }
+    if (passSel8) {
+      jetHist.fill(HIST("eventLoss/hEventStatistics"), 4.5); // Pass Sel8
+    }
+    if (passRecoVz) {
+      jetHist.fill(HIST("eventLoss/hEventStatistics"), 5.5); // Pass reco |Vz| cut
+    }
+    if (passExtraEventSel) {
+      jetHist.fill(HIST("eventLoss/hEventStatistics"), 6.5); // Pass extra event sel
+    }
+    if (hasSelectedRecoColl) {
+      jetHist.fill(HIST("eventLoss/hEventStatistics"), 7.5); // Reco selected
+      jetHist.fill(HIST("eventLoss/hEventStatistics"), 8.5); // Reco selected + true INEL>0
     }
 
-    auto mcParticles_perColl = mcParticles.sliceBy(perMCCol, mcCollision.globalIndex());
     for (const auto& mcParticle : mcParticles_perColl) {
       if (!mcParticle.isPhysicalPrimary())
         continue;
@@ -2791,19 +2833,17 @@ struct nucleiInJets {
       // Apply kinematic cuts similar to track selection
       if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta)
         continue;
+      if (std::fabs(mcParticle.y()) > cfgtrkMaxRap)
+        continue;
 
       int particleType = mapPDGToValue(mcParticle.pdgCode());
       if (particleType == 0)
         continue; // Only interested particles
 
-      // Fill INEL>0 specific histograms
-      if (mcINELgt0) {
-        jetHist.fill(HIST("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_TrueINELgt0"), mcParticle.pt(), mcParticle.eta(), centrality);
-        jetHist.fill(HIST("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_TrueINELgt0"), mcParticle.pt(), particleType, centrality);
-      }
+      jetHist.fill(HIST("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_TrueINELgt0"), mcParticle.pt(), mcParticle.eta(), centrality);
+      jetHist.fill(HIST("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_TrueINELgt0"), mcParticle.pt(), particleType, centrality);
 
-      // Fill generated particle histograms (rec events)
-      if (hasRecoColl && passSel8 && passVz && passINELgt0) {
+      if (hasSelectedRecoColl) {
         jetHist.fill(HIST("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_INELgt0"), mcParticle.pt(), mcParticle.eta(), centrality);
         jetHist.fill(HIST("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_INELgt0"), mcParticle.pt(), particleType, centrality);
       }

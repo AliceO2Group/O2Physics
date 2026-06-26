@@ -237,6 +237,38 @@ struct CascDiHadronCorr {
     MixedEvent = 3
   };
 
+  // buffer for mixevents
+  struct ValidCollision {
+    struct ValidParticle {
+      float eta;
+      float phi;
+      float pt;
+      int region;
+      float efficiency;
+      float efficiencyError;
+      int type;
+    };
+    float pvz;
+    float mult;
+    std::vector<ValidParticle> trigParticles;
+    std::vector<ValidParticle> assocParticles;
+    void addValidParticle(float eta, float phi, float pt, int region, float efficiency, float efficiencyError, int type)
+    {
+      ValidParticle particle{eta, phi, pt, region, efficiency, efficiencyError, type};
+
+      if (type == -1) {
+        trigParticles.push_back(particle);
+      } else {
+        assocParticles.push_back(particle);
+      }
+    }
+  };
+  using ValidCollisions = std::vector<std::vector<ValidCollision>>;
+  ValidCollisions validCollisions;
+
+  double masslow = 0;
+  double massup = 0;
+
   // persistent caches
   std::vector<float> efficiencyAssociatedCache;
 
@@ -249,6 +281,10 @@ struct CascDiHadronCorr {
     }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
+    o2::framework::AxisSpec axismass = axisInvMass;
+    int nMasssBinEdges = axismass.binEdges.size();
+    masslow = axismass.binEdges[0];
+    massup = axismass.binEdges[nMasssBinEdges - 1];
     cfgNSigma = cfgNSigmapid;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -332,6 +368,10 @@ struct CascDiHadronCorr {
         registry.add("Solo_tracks_assoc", "pT", {HistType::kTH1D, {axisPtAssoc}});
       }
     }
+    if (cfgOutputXi || cfgOutputOmega) {
+      if (!cfgCentTableUnavailable)
+        registry.add("Invmass", "", {HistType::kTHnSparseF, {{axisPtTrigger, axisInvMass, axisEta, axisCentrality}}});
+    }
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
     if (doprocessMCSame && doprocessOntheflySame) {
@@ -378,10 +418,17 @@ struct CascDiHadronCorr {
       {axisVertexEfficiency, "z-vtx (cm)"},
     };
     std::vector<AxisSpec> userAxis;
-    userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+    if (cfgOutputXi || cfgOutputOmega)
+      userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
+
+    o2::framework::AxisSpec axisMult = axisMultiplicity;
+    o2::framework::AxisSpec axisVtx = axisVertex;
+    int nMultBins = axisMult.binEdges.size() - 1;
+    int nVtxBins = axisVtx.binEdges.size() - 1;
+    validCollisions.resize(nMultBins * nVtxBins);
 
     LOGF(info, "End of init");
   }
@@ -427,12 +474,28 @@ struct CascDiHadronCorr {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
+    if (std::abs(track.eta()) > cfgCutEta) {
+      return false;
+    }
+    if (std::abs(track.pt()) < cfgCutPtMin || std::abs(track.pt()) > cfgCutPtMax) {
+      return false;
+    }
+    if ((track.tpcNClsFound() < cfgCutTPCclu) || (track.tpcNClsCrossedRows() < cfgCutTPCCrossedRows) || (track.itsNCls() < cfgCutITSclu)) {
+      return false;
+    }
+    return true;
   }
 
   template <typename TTrackCasc>
   bool cascSelected(TTrackCasc casc, float posX, float posY, float posZ)
   {
+    if (std::abs(casc.eta()) > cfgCutEta) {
+      return false;
+    }
+    if (std::abs(casc.pt()) < cfgCutPtMin || std::abs(casc.pt()) > cfgCutPtMax) {
+      return false;
+    }
+
     auto bachelor = casc.template bachelor_as<DaughterTracks>();
     auto posdau = casc.template posTrack_as<DaughterTracks>();
     auto negdau = casc.template negTrack_as<DaughterTracks>();
@@ -478,6 +541,8 @@ struct CascDiHadronCorr {
       return false;
 
     if (cfgOutputXi) {
+      if (casc.mXi() > massup || casc.mXi() < masslow)
+        return false;
       if (casc.sign() < 0) {
         if (std::fabs(bachelor.tpcNSigmaPi()) > cfgNSigma[0])
           return false;
@@ -519,6 +584,8 @@ struct CascDiHadronCorr {
         return false;
     }
     if (cfgOutputOmega) {
+      if (casc.mOmega() > massup || casc.mOmega() < masslow)
+        return false;
       if (casc.sign() < 0) {
         if (std::fabs(bachelor.tpcNSigmaKa()) > cfgNSigma[2])
           return false;
@@ -680,6 +747,105 @@ struct CascDiHadronCorr {
     return dPhiStar;
   }
 
+  template <CorrelationContainer::CFStep step, typename TTracks, typename TCollision>
+  void fillCorrelations(TTracks tracks1, TCollision currentCollision, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
+  {
+    float triggerWeight = 1.0f;
+    float associatedWeight = 1.0f;
+    if (currentCollision.assocParticles.size() == 0)
+      return;
+    // loop over all  validCollisions in buffer
+    for (const auto& collision : validCollisions[bin]) {
+      double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+
+      // Cache efficiency for particles (too many FindBin lookups)
+      if (mEfficiency) {
+        efficiencyAssociatedCache.clear();
+        efficiencyAssociatedCache.reserve(collision.assocParticles.size());
+        for (const auto& track2 : collision.assocParticles) {
+          float weff = 1.;
+          getEfficiencyCorrection(weff, track2.eta, track2.pt, posZ);
+          efficiencyAssociatedCache.push_back(weff);
+        }
+      }
+
+      // loop over all tracks
+      for (const auto& track1 : tracks1) {
+        if (!trackSelected(track1))
+          continue;
+        if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
+          continue;
+
+        int index = 0;
+        for (const auto& track2 : collision.assocParticles) {
+          if (mEfficiency) {
+            associatedWeight = efficiencyAssociatedCache[index];
+            index++;
+          }
+          if (cfgUsePtOrder && cfgUsePtOrderInMixEvent && track1.pt() <= track2.pt)
+            continue; // For pt-differential correlations in mixed events, skip if the trigger pt is less than the associate pt
+
+          float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi, -PIHalf);
+          float deltaEta = track1.eta() - track2.eta;
+
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+        }
+      }
+    }
+  }
+
+  template <CorrelationContainer::CFStep step, typename TTracks, typename TCollision>
+  void fillCorrelationsCasc(TTracks tracks1, TCollision currentCollision, float posX, float posY, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
+  {
+    float triggerWeight = 1.0f;
+    float associatedWeight = 1.0f;
+    if (currentCollision.assocParticles.size() == 0)
+      return;
+    // loop over all  validCollisions in buffer
+    for (const auto& collision : validCollisions[bin]) {
+      double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+
+      // Cache efficiency for particles (too many FindBin lookups)
+      if (mEfficiency) {
+        efficiencyAssociatedCache.clear();
+        efficiencyAssociatedCache.reserve(collision.assocParticles.size());
+        for (const auto& track2 : collision.assocParticles) {
+          float weff = 1.;
+          getEfficiencyCorrection(weff, track2.eta, track2.pt, posZ);
+          efficiencyAssociatedCache.push_back(weff);
+        }
+      }
+
+      // loop over all tracks
+      for (const auto& track1 : tracks1) {
+        if (!cascSelected(track1, posX, posY, posZ))
+          continue;
+        if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
+          continue;
+
+        int index = 0;
+        for (const auto& track2 : collision.assocParticles) {
+          if (mEfficiency) {
+            associatedWeight = efficiencyAssociatedCache[index];
+            index++;
+          }
+          if (cfgUsePtOrder && cfgUsePtOrderInMixEvent && track1.pt() <= track2.pt)
+            continue; // For pt-differential correlations in mixed events, skip if the trigger pt is less than the associate pt
+
+          float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi, -PIHalf);
+          float deltaEta = track1.eta() - track2.eta;
+
+          if (cfgOutputXi)
+            mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt, deltaPhi, deltaEta, track1.mXi(), eventWeight * triggerWeight * associatedWeight);
+          if (cfgOutputOmega)
+            mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt, deltaPhi, deltaEta, track1.mOmega(), eventWeight * triggerWeight * associatedWeight);
+          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+        }
+      }
+    }
+  }
+
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
@@ -698,7 +864,7 @@ struct CascDiHadronCorr {
       registry.fill(HIST("Centrality_used"), cent);
     registry.fill(HIST("Nch_used"), tracks1.size());
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -785,7 +951,7 @@ struct CascDiHadronCorr {
       registry.fill(HIST("Nch_used"), tracks1.size());
     }
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -798,6 +964,10 @@ struct CascDiHadronCorr {
         continue;
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+        if (!cfgCentTableUnavailable && cfgOutputXi)
+          registry.fill(HIST("Invmass"), track1.pt(), track1.mXi(), track1.eta(), cent, eventWeight * triggerWeight);
+        if (!cfgCentTableUnavailable && cfgOutputOmega)
+          registry.fill(HIST("Invmass"), track1.pt(), track1.mOmega(), track1.eta(), cent, eventWeight * triggerWeight);
       }
 
       auto bachelor = track1.template bachelor_as<DaughterTracks>();
@@ -892,7 +1062,7 @@ struct CascDiHadronCorr {
       registry.fill(HIST("Centrality_used"), cent);
     registry.fill(HIST("Nch_used"), tracks1.size());
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -965,7 +1135,7 @@ struct CascDiHadronCorr {
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -1312,6 +1482,112 @@ struct CascDiHadronCorr {
   }
   PROCESS_SWITCH(CascDiHadronCorr, processMixedCasc, "Process mixed events", true);
 
+  // the process for filling the mixed events by buffer
+  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
+  {
+    ValidCollision currentCollision;
+    int nBinsMult = 0;
+    int binMult = 0;
+    int nBinsVtxZ = 0;
+    int binVtxZ = 0;
+    currentCollision.pvz = collision.posZ();
+    currentCollision.mult = tracks.size();
+
+    nBinsMult = registry.get<TH1>(HIST("Nch"))->GetNbinsX();
+    binMult = registry.get<TH1>(HIST("Nch"))->GetXaxis()->FindBin(tracks.size()) - 1;
+    nBinsVtxZ = registry.get<TH1>(HIST("zVtx"))->GetNbinsX();
+    binVtxZ = registry.get<TH1>(HIST("zVtx"))->GetXaxis()->FindBin(collision.posZ()) - 1;
+    if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1)
+      return;
+    int bin = binMult * nBinsVtxZ + binVtxZ;
+
+    if (!collision.sel8())
+      return;
+
+    if (cfgSelCollByNch && tracks.size() < cfgCutMultMin)
+      return;
+
+    float cent = -1;
+    if (!cfgCentTableUnavailable) {
+      cent = getCentrality(collision);
+    }
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, false))
+      return;
+
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
+      return;
+
+    float weightCent = 1.0f;
+    if (!cfgCentTableUnavailable)
+      getCentralityWeight(weightCent, cent);
+
+    for (const auto& track : tracks) {
+      if (!trackSelected(track))
+        continue;
+      currentCollision.addValidParticle(track.eta(), track.phi(), track.pt(), 0, 1, 1, 1);
+    }
+
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, currentCollision, collision.posZ(), bin, weightCent);
+    if (validCollisions[bin].size() >= static_cast<size_t>(cfgMixEventNumMin)) {
+      validCollisions[bin].erase(validCollisions[bin].begin());
+    }
+    validCollisions[bin].push_back(currentCollision);
+  }
+
+  PROCESS_SWITCH(CascDiHadronCorr, processMixedBuffer, "Process mixed events", false);
+
+  void processMixedBufferCasc(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, DaughterTracks const&)
+  {
+    ValidCollision currentCollision;
+    int nBinsMult = 0;
+    int binMult = 0;
+    int nBinsVtxZ = 0;
+    int binVtxZ = 0;
+    currentCollision.pvz = collision.posZ();
+    currentCollision.mult = tracks.size();
+
+    nBinsMult = registry.get<TH1>(HIST("Nch"))->GetNbinsX();
+    binMult = registry.get<TH1>(HIST("Nch"))->GetXaxis()->FindBin(tracks.size()) - 1;
+    nBinsVtxZ = registry.get<TH1>(HIST("zVtx"))->GetNbinsX();
+    binVtxZ = registry.get<TH1>(HIST("zVtx"))->GetXaxis()->FindBin(collision.posZ()) - 1;
+    if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1)
+      return;
+    int bin = binMult * nBinsVtxZ + binVtxZ;
+
+    if (!collision.sel8())
+      return;
+
+    if (cfgSelCollByNch && tracks.size() < cfgCutMultMin)
+      return;
+
+    float cent = -1;
+    if (!cfgCentTableUnavailable) {
+      cent = getCentrality(collision);
+    }
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, false))
+      return;
+
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
+      return;
+
+    float weightCent = 1.0f;
+    if (!cfgCentTableUnavailable)
+      getCentralityWeight(weightCent, cent);
+
+    for (const auto& track : tracks) {
+      if (!trackSelected(track))
+        continue;
+      currentCollision.addValidParticle(track.eta(), track.phi(), track.pt(), 0, 1, 1, 1);
+    }
+
+    fillCorrelationsCasc<CorrelationContainer::kCFStepReconstructed>(cascades, currentCollision, collision.posX(), collision.posY(), collision.posZ(), bin, weightCent);
+    if (validCollisions[bin].size() >= static_cast<size_t>(cfgMixEventNumMin)) {
+      validCollisions[bin].erase(validCollisions[bin].begin());
+    }
+    validCollisions[bin].push_back(currentCollision);
+  }
+  PROCESS_SWITCH(CascDiHadronCorr, processMixedBufferCasc, "Process mixed events", true);
+
   int getSpecies(int pdgCode)
   {
     switch (std::abs(pdgCode)) {
@@ -1324,7 +1600,7 @@ struct CascDiHadronCorr {
     }
   }
 
-  void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, FilteredMcParticles const& mcParticles)
+  void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, FilteredMcParticles const& mcParticles, DaughterTracks const&)
   {
     registry.fill(HIST("MCEffeventcount"), 0.5);
     if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
@@ -1333,8 +1609,10 @@ struct CascDiHadronCorr {
     // Primaries
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
-        registry.fill(HIST("MCEffeventcount"), 1.5);
-        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
+        if ((cfgOutputXi && getSpecies(mcParticle.pdgCode()) == getSpecies(PDG_t::kXiMinus)) || (cfgOutputOmega && getSpecies(mcParticle.pdgCode()) == getSpecies(PDG_t::kOmegaMinus))) {
+          registry.fill(HIST("MCEffeventcount"), 1.5);
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
+        }
       }
     }
     for (const auto& collision : collisions) {
@@ -1345,14 +1623,16 @@ struct CascDiHadronCorr {
       }
 
       for (const auto& casc : groupedCascades) {
+        if (!cascSelected(casc, collision.posX(), collision.posY(), collision.posZ()))
+          continue;
         if (casc.has_mcParticle()) {
-          auto mcParticle = casc.mcParticle();
+          auto mcParticle = casc.mcParticle_as<FilteredMcParticles>();
           if (mcParticle.isPhysicalPrimary()) {
             registry.fill(HIST("MCEffeventcount"), 2.5);
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
           }
           registry.fill(HIST("MCEffeventcount"), 3.5);
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), (cfgOutputXi * getSpecies(PDG_t::kXiMinus) + cfgOutputOmega * getSpecies(PDG_t::kOmegaMinus)), 0., mcCollision.posZ());
         } else {
           // fake casc
           registry.fill(HIST("MCEffeventcount"), 4.5);

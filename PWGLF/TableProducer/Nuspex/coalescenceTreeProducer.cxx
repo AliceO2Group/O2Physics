@@ -27,6 +27,10 @@
 ///
 /// \author Alberto Calivà <alberto.caliva@cern.ch>
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/DataModel/Centrality.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -65,6 +69,8 @@ using namespace o2::constants::math;
 
 constexpr double massHypertriton = 2.99116;
 
+using GenCollisionsMc = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+
 // Lightweight particle container
 struct ReducedParticle {
   int64_t idPart = 0;
@@ -85,6 +91,8 @@ struct CoalescenceTreeProducer {
 
   // Configurable analysis parameters
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum |z vertex| in cm"};
+  Configurable<float> multMin{"multMin", 0.f, "Lower edge of the multiplicity/centrality interval (%)"};
+  Configurable<float> multMax{"multMax", 90.f, "Upper edge of the multiplicity/centrality interval (%)"};
   Configurable<float> etaMax{"etaMax", 1.5f, "Maximum |eta| for generated particles"};
   Configurable<float> pRhoMax{"pRhoMax", 0.5f, "Maximum Jacobi p_rho in GeV/c"};
   Configurable<float> pLambdaMax{"pLambdaMax", 0.5f, "Maximum Jacobi p_lambda in GeV/c"};
@@ -112,8 +120,17 @@ struct CoalescenceTreeProducer {
     registry.add("eventCounter", "event Counter", HistType::kTH1F, {{5, 0, 5, "counter"}});
     registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(1, "Before z-vertex cut");
     registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(2, "After z-vertex cut");
-    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(3, "After non-empty constituent lists");
-    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(4, "After non-empty candidate lists");
+    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(3, "After multiplicity selection");
+    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(4, "After non-empty constituent lists");
+    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(5, "After non-empty candidate lists");
+
+    // Multiplicity distribution
+    registry.add("multDistribution", "multiplicity distribution", HistType::kTH1F, {{200, 0, 100, "Multiplicity (%)"}});
+
+    // pt distributions of constituents (to be used for re-weighting)
+    registry.add("ptProtons", "ptProtons", HistType::kTH1F, {{200, 0, 10, "p_{T} (GeV/c)"}});
+    registry.add("ptNeutrons", "ptNeutrons", HistType::kTH1F, {{200, 0, 10, "p_{T} (GeV/c)"}});
+    registry.add("ptLambdas", "ptLambdas", HistType::kTH1F, {{200, 0, 10, "p_{T} (GeV/c)"}});
 
     // Output tree for bound-state candidates
     treeBoundState.setObject(new TTree("BoundStateTree", "Tree for coalescence"));
@@ -231,7 +248,7 @@ struct CoalescenceTreeProducer {
   Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Process Hypertriton
-  void processHypertriton(aod::McCollisions const& collisions, aod::McParticles const& mcParticles)
+  void processHypertriton(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
     // Loop over MC collisions
     for (const auto& collision : collisions) {
@@ -246,7 +263,16 @@ struct CoalescenceTreeProducer {
       // Event counter after z-vertex cut
       registry.fill(HIST("eventCounter"), 1.5);
 
-      // To be implemented: maybe add INEL>0 selection
+      // Multiplicity Distribution
+      const float multiplicityPerc = collision.centFT0M();
+      registry.fill(HIST("multDistribution"), multiplicityPerc);
+
+      // Multiplicity selection
+      if (multiplicityPerc < multMin || multiplicityPerc > multMax)
+        continue;
+
+      // Event counter multiplicity selection
+      registry.fill(HIST("eventCounter"), 2.5);
 
       // Get particles in this MC collision
       const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
@@ -284,6 +310,21 @@ struct CoalescenceTreeProducer {
         if (std::abs(particle.pdgCode()) == PDG_t::kLambda0) {
           lambdas.push_back({particle.globalIndex(), particle.pdgCode(), particle.vx(), particle.vy(), particle.vz(), particle.vt(), particle.px(), particle.py(), particle.pz()});
         }
+
+        // Rapidity selection
+        if (std::abs(particle.y()) > yMax)
+          continue;
+
+        // Pt distributions of constituents
+        if (std::abs(particle.pdgCode()) == PDG_t::kProton) {
+          registry.fill(HIST("ptProtons"), particle.pt());
+        }
+        if (std::abs(particle.pdgCode()) == PDG_t::kNeutron) {
+          registry.fill(HIST("ptNeutrons"), particle.pt());
+        }
+        if (std::abs(particle.pdgCode()) == PDG_t::kLambda0) {
+          registry.fill(HIST("ptLambdas"), particle.pt());
+        }
       } // end of loop over MC particles
 
       // Reject events that do not contain at least one proton, one neutron, and one lambda
@@ -291,7 +332,7 @@ struct CoalescenceTreeProducer {
         continue;
 
       // Event counter: events containing all three constituent species
-      registry.fill(HIST("eventCounter"), 2.5);
+      registry.fill(HIST("eventCounter"), 3.5);
 
       // Count matter and antimatter candidates in the event
       Long64_t nCandidatesMatter(0);
@@ -321,7 +362,7 @@ struct CoalescenceTreeProducer {
         continue;
 
       // Event counter: number of events with at least one candidate
-      registry.fill(HIST("eventCounter"), 3.5);
+      registry.fill(HIST("eventCounter"), 4.5);
 
       // Store number of candidates per event
       nMatterCandidatesPerEvent = nCandidatesMatter;
