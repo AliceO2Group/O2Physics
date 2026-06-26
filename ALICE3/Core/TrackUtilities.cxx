@@ -17,6 +17,8 @@
 
 #include "TrackUtilities.h"
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <MathUtils/Primitive2D.h>
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/Track.h>
 

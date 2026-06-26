@@ -95,7 +95,7 @@ struct electronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> minchi2tpc{"minchi2tpc", 0.0, "min. chi2/NclsTPC"};
   o2::framework::Configurable<float> minchi2its{"minchi2its", 0.0, "min. chi2/NclsITS"};
   o2::framework::Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-  o2::framework::Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
+  o2::framework::Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
   o2::framework::Configurable<float> minpt{"minpt", 0.05, "min pt"};
   o2::framework::Configurable<float> maxeta{"maxeta", 0.9, "max eta"};
   o2::framework::Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
@@ -112,19 +112,23 @@ struct electronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   o2::framework::Configurable<float> min_pin_for_pion_rejection{"min_pin_for_pion_rejection", 0.0, "pion rejection is applied above this pin"}; // this is used only in TOFreq
   o2::framework::Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 0.5, "pion rejection is applied below this pin"};
-  o2::framework::Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+  o2::framework::Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 0.7f, "max fraction of shared clusters in TPC"};
   o2::framework::Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
   o2::framework::Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
   o2::framework::Configurable<int> minNelectron{"minNelectron", 0, "min number of electron candidates per collision"};
   o2::framework::Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks only for MC. switch ON only if needed."};
   o2::framework::Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
+  o2::framework::Configurable<bool> useElectronHypothesis{"useElectronHypothesis", true, "force to use trackParCov.setPID(o2::track::PID::Electron)"};
+
+  o2::framework::Configurable<uint8_t> dcaType{"dcaType", 0, "type of DCA cut. 0:3D, 1:XY, 2:Z, else:3D"};
+  o2::framework::Configurable<float> max_dca_in_sigma{"max_dca_in_sigma", 1e+10, "max dca in sigma for a single track"};
 
   // configuration for PID ML
   o2::framework::Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
-  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95, 0.95, 0.7, 0.7, 0.8, 0.8, 0.7, 0.7}, "ML cuts per bin"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.7, 0.8, 0.8, 0.7, 0.7, 0.7}, "ML cuts per bin"};
   o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"tpcInnerParam", "tpcNClsFound", "tpcChi2NCl", "tpcNSigmaEl", "tofNSigmaEl", "meanClusterSizeITSobCosTgl"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "tpcInnerParam", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
@@ -148,7 +152,7 @@ struct electronPFCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
   o2::framework::Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.0, "max. TPC n sigma for electron inclusion"};
-  o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 1e+10, "max. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.0, "max. TOF n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
   o2::framework::Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
   o2::framework::Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 0.0, "max. TPC n sigma for kaon exclusion"};
@@ -162,8 +166,8 @@ struct electronPFCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
 
   // configuration for PID ML
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
-  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.65, 0.65, 0.75, 0.75, 0.65, 0.65}, "ML cuts per bin"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 4.0, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.85, 0.85, 0.85, 0.65, 0.75, 0.75, 0.65, 0.65, 0.65}, "ML cuts per bin"};
 
   // for pair
   o2::framework::Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
@@ -189,134 +193,122 @@ struct hadronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
   o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3, "min n sigma pi in TPC"};
   o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3, "max n sigma pi in TPC"};
-  // o2::framework::Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -3, "min n sigma pi in TOF"};
-  // o2::framework::Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +3, "max n sigma pi in TOF"};
   o2::framework::Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3, "min n sigma ka in TPC"};
   o2::framework::Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
-  // o2::framework::Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
-  // o2::framework::Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
-  // o2::framework::Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
-  // o2::framework::Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
-  // // o2::framework::Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
-  // // o2::framework::Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
   o2::framework::Configurable<bool> requirePiKa{"requirePiKa", true, "require hadron to be pion or kaon"}; // protons are not involved in semileptonic decays of HF hadrons.
 };
 
-struct v0Cut : o2::framework::ConfigurableGroup {
-  std::string prefix = "v0Cut";
-  o2::framework::Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.48, "min mass for K0S"};
-  o2::framework::Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.51, "max mass for K0S"};
-  o2::framework::Configurable<float> cfg_min_mass_k0s_veto{"cfg_min_mass_k0s_veto", 0.48, "min mass for K0S veto for Lambda"};
-  o2::framework::Configurable<float> cfg_max_mass_k0s_veto{"cfg_max_mass_k0s_veto", 0.51, "max mass for K0S veto for Lambda"};
-  o2::framework::Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for Lambda"};
-  o2::framework::Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for Lambda"};
-  o2::framework::Configurable<float> cfg_min_mass_lambda_veto{"cfg_min_mass_lambda_veto", 1.11, "min mass for Lambda veto for K0S"};
-  o2::framework::Configurable<float> cfg_max_mass_lambda_veto{"cfg_max_mass_lambda_veto", 1.12, "max mass for Lambda veto for K0S"};
-  o2::framework::Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "min cospa for v0"};
-  o2::framework::Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 0.1, "max distance between 2 legs for v0"};
-  o2::framework::Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v"};
-  o2::framework::Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.f, "min. TPC Ncr/Nf ratio"};
-  o2::framework::Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-  o2::framework::Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
-  o2::framework::Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-  o2::framework::Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-  o2::framework::Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
-  o2::framework::Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
-  o2::framework::Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
-  o2::framework::Configurable<float> cfg_min_dcaxy{"cfg_min_dcaxy", 0.1, "min dca XY for v0 legs in cm"};
-
-  o2::framework::Configurable<float> cfg_max_alpha_veto{"cfg_max_alpha_veto", 0.95, "max alpha for photon conversion rejection"};
-  o2::framework::Configurable<float> cfg_max_qt_veto{"cfg_max_qt_veto", 0.01, "max qT for photon conversion rejection"};
-
-  // for both v0 and cascade
-  o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3, "min n sigma pi in TPC"};
-  o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3, "max n sigma pi in TPC"};
-  o2::framework::Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3, "min n sigma ka in TPC"};
-  o2::framework::Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
-  o2::framework::Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
-  o2::framework::Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
-  // o2::framework::Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -3, "min n sigma pi in TOF"};
-  // o2::framework::Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +3, "max n sigma pi in TOF"};
-  // o2::framework::Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
-  // o2::framework::Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
-  // o2::framework::Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
-  // o2::framework::Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
-  // o2::framework::Configurable<bool> applyTOFif{"applyTOFif", false, "apply TOFif for hadron identification"};
-};
-
-struct cascadeCut : o2::framework::ConfigurableGroup {
-  std::string prefix = "cascadeCut";
-  o2::framework::Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for lambda in cascade"};
-  o2::framework::Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for lambda in cascade"};
-  o2::framework::Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.314, "min mass for Xi"};
-  o2::framework::Configurable<float> cfg_max_mass_Xi{"cfg_max_mass_Xi", 1.328, "max mass for Xi"};
-  o2::framework::Configurable<float> cfg_min_mass_Xi_veto{"cfg_min_mass_Xi_veto", 1.31, "min mass for Xi veto"};
-  o2::framework::Configurable<float> cfg_max_mass_Xi_veto{"cfg_max_mass_Xi_veto", 1.33, "max mass for Xi veto"};
-  o2::framework::Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.668, "min mass for Omega"};
-  o2::framework::Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.678, "max mass for Omega"};
-  o2::framework::Configurable<float> cfg_min_mass_Omega_veto{"cfg_min_mass_Omega_veto", 1.665, "min mass for Omega veto"};
-  o2::framework::Configurable<float> cfg_max_mass_Omega_veto{"cfg_max_mass_Omega_veto", 1.680, "max mass for Omega veto"};
-  o2::framework::Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.95, "minimum V0 CosPA in cascade"};
-  o2::framework::Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.1, "max distance between V0 Daughters in cascade"};
-  o2::framework::Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "minimum cascade CosPA"};
-  o2::framework::Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between bachelor and V0"};
-  o2::framework::Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 0.1, "minimum V0 rxy in cascade"};
-  o2::framework::Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.1, "minimum V0 rxy in cascade"};
-  o2::framework::Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
-  o2::framework::Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
-  o2::framework::Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.0, "min dca XY for V0 in cm"};
-};
+// struct v0Cut : o2::framework::ConfigurableGroup {
+//   std::string prefix = "v0Cut";
+//   o2::framework::Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.48, "min mass for K0S"};
+//   o2::framework::Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.51, "max mass for K0S"};
+//   o2::framework::Configurable<float> cfg_min_mass_k0s_veto{"cfg_min_mass_k0s_veto", 0.48, "min mass for K0S veto for Lambda"};
+//   o2::framework::Configurable<float> cfg_max_mass_k0s_veto{"cfg_max_mass_k0s_veto", 0.51, "max mass for K0S veto for Lambda"};
+//   o2::framework::Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for Lambda"};
+//   o2::framework::Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for Lambda"};
+//   o2::framework::Configurable<float> cfg_min_mass_lambda_veto{"cfg_min_mass_lambda_veto", 1.11, "min mass for Lambda veto for K0S"};
+//   o2::framework::Configurable<float> cfg_max_mass_lambda_veto{"cfg_max_mass_lambda_veto", 1.12, "max mass for Lambda veto for K0S"};
+//   o2::framework::Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "min cospa for v0"};
+//   o2::framework::Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 0.1, "max distance between 2 legs for v0"};
+//   o2::framework::Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v"};
+//   o2::framework::Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.f, "min. TPC Ncr/Nf ratio"};
+//   o2::framework::Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+//   o2::framework::Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
+//   o2::framework::Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+//   o2::framework::Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+//   o2::framework::Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
+//   o2::framework::Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
+//   o2::framework::Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
+//   o2::framework::Configurable<float> cfg_min_dcaxy{"cfg_min_dcaxy", 0.1, "min dca XY for v0 legs in cm"};
+//
+//   o2::framework::Configurable<float> cfg_max_alpha_veto{"cfg_max_alpha_veto", 0.95, "max alpha for photon conversion rejection"};
+//   o2::framework::Configurable<float> cfg_max_qt_veto{"cfg_max_qt_veto", 0.01, "max qT for photon conversion rejection"};
+//
+//   // for both v0 and cascade
+//   o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3, "min n sigma pi in TPC"};
+//   o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3, "max n sigma pi in TPC"};
+//   o2::framework::Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3, "min n sigma ka in TPC"};
+//   o2::framework::Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
+//   o2::framework::Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
+//   o2::framework::Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
+// };
+//
+// struct cascadeCut : o2::framework::ConfigurableGroup {
+//   std::string prefix = "cascadeCut";
+//   o2::framework::Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for lambda in cascade"};
+//   o2::framework::Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for lambda in cascade"};
+//   o2::framework::Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.314, "min mass for Xi"};
+//   o2::framework::Configurable<float> cfg_max_mass_Xi{"cfg_max_mass_Xi", 1.328, "max mass for Xi"};
+//   o2::framework::Configurable<float> cfg_min_mass_Xi_veto{"cfg_min_mass_Xi_veto", 1.31, "min mass for Xi veto"};
+//   o2::framework::Configurable<float> cfg_max_mass_Xi_veto{"cfg_max_mass_Xi_veto", 1.33, "max mass for Xi veto"};
+//   o2::framework::Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.668, "min mass for Omega"};
+//   o2::framework::Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.678, "max mass for Omega"};
+//   o2::framework::Configurable<float> cfg_min_mass_Omega_veto{"cfg_min_mass_Omega_veto", 1.665, "min mass for Omega veto"};
+//   o2::framework::Configurable<float> cfg_max_mass_Omega_veto{"cfg_max_mass_Omega_veto", 1.680, "max mass for Omega veto"};
+//   o2::framework::Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.95, "minimum V0 CosPA in cascade"};
+//   o2::framework::Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.1, "max distance between V0 Daughters in cascade"};
+//   o2::framework::Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "minimum cascade CosPA"};
+//   o2::framework::Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between bachelor and V0"};
+//   o2::framework::Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 0.1, "minimum V0 rxy in cascade"};
+//   o2::framework::Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.1, "minimum V0 rxy in cascade"};
+//   o2::framework::Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
+//   o2::framework::Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
+//   o2::framework::Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.0, "min dca XY for V0 in cm"};
+// };
 
 struct cfgDFeT : o2::framework::ConfigurableGroup {
   std::string prefix = "cfgDFeT";
   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  o2::framework::Configurable<float> maxDCA2legs{"maxDCA2legs", 1.0, "max distance between 2 legs in cm"};
+  o2::framework::Configurable<float> maxChi2PCA{"maxChi2PCA", 1.0, "max chi2 at PCA"};
+  o2::framework::Configurable<float> maxMassLH{"maxMassLH", 5.5, "max massLH in GeV/c2"}; // set hb mass. SVs whose mass is above this mass cannot be HF hadrons.
   // configuration for PID ML
   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
+  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "tpcNSigmaKa", "signedMassLH", "cpa", "cpaXY", "dcaLH", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
+  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "tpcNSigmaKa", "signedMassLH", "logChi2PCA", "cpa", "cpaXY", "decayLength3DinSigma"}, "Names of ML model input features"};
   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 };
 
-struct cfgDFeV0 : o2::framework::ConfigurableGroup {
-  std::string prefix = "cfgDFeV0";
-  o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
-  o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  o2::framework::Configurable<float> maxDCA2legs{"maxDCA2legs", 1.0, "max distance between 2 legs in cm"};
-  // configuration for PID ML
-  o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
-  o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
-  o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
-  // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "cpa", "cpaXY", "dcaLH", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
-  o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
-  o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
-};
-
-struct cfgDFeC : o2::framework::ConfigurableGroup {
-  std::string prefix = "cfgDFeC";
-  o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
-  o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  o2::framework::Configurable<float> maxDCA2legs{"maxDCA2legs", 1.0, "max distance between 2 legs in cm"};
-  // configuration for PID ML
-  o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
-  o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
-  o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
-  // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
-  o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "cpa", "cpaXY", "dcaLH", "impPar3DinSigma", "decayLength3DinSigma", "decayLengthXYinSigma"}, "Names of ML model input features"};
-  o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
-  o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
-};
+// struct cfgDFeV0 : o2::framework::ConfigurableGroup {
+//   std::string prefix = "cfgDFeV0";
+//   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+//   o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+//   o2::framework::Configurable<float> maxChi2PCA{"maxChi2PCA", 1.0, "max chi2 at PCA"};
+//   o2::framework::Configurable<float> maxMassLH{"maxMassLH", 5.5, "max massLH in GeV/c2"}; // set hb mass. SVs whose mass is above this mass cannot be HF hadrons.
+//   // configuration for PID ML
+//   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
+//   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
+//   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
+//   o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
+//   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
+//   o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "logChi2PCA", "cpa", "cpaXY", "decayLength3DinSigma"}, "Names of ML model input features"};
+//   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
+//   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+//   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+// };
+//
+// struct cfgDFeC : o2::framework::ConfigurableGroup {
+//   std::string prefix = "cfgDFeC";
+//   o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+//   o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+//   o2::framework::Configurable<float> maxChi2PCA{"maxChi2PCA", 1.0, "max chi2 at PCA"};
+//   o2::framework::Configurable<float> maxMassLH{"maxMassLH", 5.5, "max massLH in GeV/c2"}; // set hb mass. SVs whose mass is above this mass cannot be HF hadrons.
+//   // configuration for PID ML
+//   o2::framework::Configurable<bool> useML{"useML", false, "Flag to use PID ML"};
+//   o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
+//   o2::framework::Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
+//   o2::framework::Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.4, 0.8, 1.0, 2.0, 4, 20}, "Bin limits for ML application"};
+//   // o2::framework::Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "ML cuts per bin"};
+//   o2::framework::Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"ptH", "impPar3DHinSigma", "massLH", "logChi2PCA", "cpa", "cpaXY", "decayLength3DinSigma"}, "Names of ML model input features"};
+//   o2::framework::Configurable<std::string> nameBinningFeature{"nameBinningFeature", "ptL", "Names of ML model binning feature"};
+//   o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+//   o2::framework::Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+// };
 
 class ElectronModule
 {
@@ -330,14 +322,14 @@ class ElectronModule
     // destructor
   }
 
-  struct looseElectron {
-    float pt{1e+10};
-    float eta{1e+10};
-    float phi{1e+10};
-  };
+  // struct looseElectron {
+  //   float pt{1e+10};
+  //   float eta{1e+10};
+  //   float phi{1e+10};
+  // };
 
-  template <typename TElectronCut, typename TElectronPFCut, typename THadronCut, typename TV0Cut, typename TCascadeCut, typename TDFConfigET, typename TDFConfigEV0, typename TDFConfigEC, typename TInitContext, typename TCCDB, typename TTOFResponse>
-  void init(TElectronCut const& eCut, TElectronPFCut const& ePFCut, THadronCut const& hCut, TV0Cut const& v0Cut, TCascadeCut const& cascadeCut, TDFConfigET const& cfgET, TDFConfigEV0 const& cfgEV0, TDFConfigEC const& cfgEC, TInitContext& initContext, TCCDB& ccdb, TTOFResponse const& tofResponse, std::string const& ccdburl)
+  template <typename TElectronCut, typename TElectronPFCut, typename THadronCut, /*typename TV0Cut, typename TCascadeCut, */ typename TDFConfigET, /*typename TDFConfigEV0, typename TDFConfigEC,*/ typename TInitContext, typename TCCDB, typename TTOFResponse>
+  void init(TElectronCut const& eCut, TElectronPFCut const& ePFCut, THadronCut const& hCut, /*TV0Cut const& v0Cut, TCascadeCut const& cascadeCut,*/ TDFConfigET const& cfgET, /*TDFConfigEV0 const& cfgEV0, TDFConfigEC const& cfgEC,*/ TInitContext& initContext, TCCDB& ccdb, TTOFResponse const& tofResponse, std::string const& ccdburl)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -348,15 +340,14 @@ class ElectronModule
     fElectronCut = eCut;
     fElectronPFCut = ePFCut;
     fHadronCut = hCut;
-    fV0Cut = v0Cut;
-    fCascadeCut = cascadeCut;
+    // fV0Cut = v0Cut;
+    // fCascadeCut = cascadeCut;
     fConfigDFeT = cfgET;
-    fConfigDFeV0 = cfgEV0;
-    fConfigDFeC = cfgEC;
+    // fConfigDFeV0 = cfgEV0;
+    // fConfigDFeC = cfgEC;
 
     LOGF(info, "intializing TOFResponse");
     mTOFResponse = tofResponse;
-    // mTOFResponse->initSetup(&ccdb->instance(), initContext);
     mTOFResponse->initSetup(ccdb, initContext);
 
     dfeT.setPropagateToPCA(true);
@@ -369,25 +360,25 @@ class ElectronModule
     dfeT.setWeightedFinalPCA(fConfigDFeT.useWeightedFinalPCA);
     dfeT.setMatCorrType(matCorr);
 
-    dfeV0.setPropagateToPCA(true);
-    dfeV0.setMaxR(200.f);
-    dfeV0.setMinParamChange(1e-3);
-    dfeV0.setMinRelChi2Change(0.9);
-    dfeV0.setMaxDZIni(1e9);
-    dfeV0.setMaxChi2(1e9);
-    dfeV0.setUseAbsDCA(fConfigDFeV0.useAbsDCA);
-    dfeV0.setWeightedFinalPCA(fConfigDFeV0.useWeightedFinalPCA);
-    dfeV0.setMatCorrType(matCorr);
+    // dfeV0.setPropagateToPCA(true);
+    // dfeV0.setMaxR(200.f);
+    // dfeV0.setMinParamChange(1e-3);
+    // dfeV0.setMinRelChi2Change(0.9);
+    // dfeV0.setMaxDZIni(1e9);
+    // dfeV0.setMaxChi2(1e9);
+    // dfeV0.setUseAbsDCA(fConfigDFeV0.useAbsDCA);
+    // dfeV0.setWeightedFinalPCA(fConfigDFeV0.useWeightedFinalPCA);
+    // dfeV0.setMatCorrType(matCorr);
 
-    dfeC.setPropagateToPCA(true);
-    dfeC.setMaxR(200.f);
-    dfeC.setMinParamChange(1e-3);
-    dfeC.setMinRelChi2Change(0.9);
-    dfeC.setMaxDZIni(1e9);
-    dfeC.setMaxChi2(1e9);
-    dfeC.setUseAbsDCA(fConfigDFeC.useAbsDCA);
-    dfeC.setWeightedFinalPCA(fConfigDFeC.useWeightedFinalPCA);
-    dfeC.setMatCorrType(matCorr);
+    // dfeC.setPropagateToPCA(true);
+    // dfeC.setMaxR(200.f);
+    // dfeC.setMinParamChange(1e-3);
+    // dfeC.setMinRelChi2Change(0.9);
+    // dfeC.setMaxDZIni(1e9);
+    // dfeC.setMaxChi2(1e9);
+    // dfeC.setUseAbsDCA(fConfigDFeC.useAbsDCA);
+    // dfeC.setWeightedFinalPCA(fConfigDFeC.useWeightedFinalPCA);
+    // dfeC.setMatCorrType(matCorr);
   }
 
   template <typename TBC>
@@ -400,8 +391,13 @@ class ElectronModule
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Configuring for timestamp " << bc.timestamp() << " with magnetic field of " << d_bz << " kG";
 
+    dfeT.setBz(d_bz);
+    // dfeV0.setBz(d_bz);
+    // dfeC.setBz(d_bz);
+
     // initialize MLResponse
     if (fElectronCut.usePIDML) {
+      LOGF(info, "loading ONNX for ML PID");
       static constexpr int nClassesMl = 2;
       const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
       const std::vector<std::string> labelsClasses = {"Background", "Signal"};
@@ -426,9 +422,10 @@ class ElectronModule
     } // end of ML PID
 
     if (fConfigDFeT.useML) {
+      LOGF(info, "loading ONNX for SCT eT");
       static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
+      const std::vector<std::string> labelsClasses = {"background", "prompthc", "nonprompthc", "hb"};
       const uint32_t nBinsMl = fConfigDFeT.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
       double cutsMlArr[nBinsMl][nClassesMl];
@@ -451,57 +448,58 @@ class ElectronModule
       mlResponseSCTeT.init(fConfigDFeT.enableOptimizations);
     } // end of ML SCTeT
 
-    if (fConfigDFeV0.useML) {
-      static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
-      const uint32_t nBinsMl = fConfigDFeV0.binsMl.value.size() - 1;
-      const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      double cutsMlArr[nBinsMl][nClassesMl];
-      for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = 0.0;
-        cutsMlArr[i][1] = 0.0;
-        cutsMlArr[i][2] = 0.0;
-        cutsMlArr[i][3] = 0.0;
-      }
-      o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+    // if (fConfigDFeV0.useML) {
+    //   LOGF(info, "loading ONNX for SCT eV0");
+    //   static constexpr int nClassesMl = 4;
+    //   const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
+    //   const std::vector<std::string> labelsClasses = {"background", "prompthc", "nonprompthc", "hb"};
+    //   const uint32_t nBinsMl = fConfigDFeV0.binsMl.value.size() - 1;
+    //   const std::vector<std::string> labelsBins(nBinsMl, "bin");
+    //   double cutsMlArr[nBinsMl][nClassesMl];
+    //   for (uint32_t i = 0; i < nBinsMl; i++) {
+    //     cutsMlArr[i][0] = 0.0;
+    //     cutsMlArr[i][1] = 0.0;
+    //     cutsMlArr[i][2] = 0.0;
+    //     cutsMlArr[i][3] = 0.0;
+    //   }
+    //   o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
 
-      mlResponseSCTeV0.configure(fConfigDFeV0.binsMl.value, cutsMltmp, cutDirMl, nClassesMl);
-      if (fConfigDFeV0.loadModelsFromCCDB) {
-        mlResponseSCTeV0.setModelPathsCCDB(fConfigDFeV0.onnxFileNames, ccdbApi, fConfigDFeV0.onnxPathsCCDB, bc.timestamp());
-      } else {
-        mlResponseSCTeV0.setModelPathsLocal(fConfigDFeV0.onnxFileNames);
-      }
-      mlResponseSCTeV0.cacheInputFeaturesIndices(fConfigDFeV0.namesInputFeatures);
-      mlResponseSCTeV0.cacheBinningIndex(fConfigDFeV0.nameBinningFeature);
-      mlResponseSCTeV0.init(fConfigDFeV0.enableOptimizations);
-    } // end of ML SCTeV0
+    //   mlResponseSCTeV0.configure(fConfigDFeV0.binsMl.value, cutsMltmp, cutDirMl, nClassesMl);
+    //   if (fConfigDFeV0.loadModelsFromCCDB) {
+    //     mlResponseSCTeV0.setModelPathsCCDB(fConfigDFeV0.onnxFileNames, ccdbApi, fConfigDFeV0.onnxPathsCCDB, bc.timestamp());
+    //   } else {
+    //     mlResponseSCTeV0.setModelPathsLocal(fConfigDFeV0.onnxFileNames);
+    //   }
+    //   mlResponseSCTeV0.cacheInputFeaturesIndices(fConfigDFeV0.namesInputFeatures);
+    //   mlResponseSCTeV0.cacheBinningIndex(fConfigDFeV0.nameBinningFeature);
+    //   mlResponseSCTeV0.init(fConfigDFeV0.enableOptimizations);
+    // } // end of ML SCTeV0
 
-    if (fConfigDFeC.useML) {
-      static constexpr int nClassesMl = 4;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"prompt", "prompthc", "nonprompthc", "hb"};
-      const uint32_t nBinsMl = fConfigDFeC.binsMl.value.size() - 1;
-      const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      double cutsMlArr[nBinsMl][nClassesMl];
-      for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = 0.0;
-        cutsMlArr[i][1] = 0.0;
-        cutsMlArr[i][2] = 0.0;
-        cutsMlArr[i][3] = 0.0;
-      }
-      o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+    // if (fConfigDFeC.useML) {
+    //   LOGF(info, "loading ONNX for SCT eC");
+    //   static constexpr int nClassesMl = 3;
+    //   const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot, o2::cuts_ml::CutNot};
+    //   const std::vector<std::string> labelsClasses = {"background", "prompthc", "nonprompthc"};
+    //   const uint32_t nBinsMl = fConfigDFeC.binsMl.value.size() - 1;
+    //   const std::vector<std::string> labelsBins(nBinsMl, "bin");
+    //   double cutsMlArr[nBinsMl][nClassesMl];
+    //   for (uint32_t i = 0; i < nBinsMl; i++) {
+    //     cutsMlArr[i][0] = 0.0;
+    //     cutsMlArr[i][1] = 0.0;
+    //     cutsMlArr[i][2] = 0.0;
+    //   }
+    //   o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
 
-      mlResponseSCTeC.configure(fConfigDFeC.binsMl.value, cutsMltmp, cutDirMl, nClassesMl);
-      if (fConfigDFeC.loadModelsFromCCDB) {
-        mlResponseSCTeC.setModelPathsCCDB(fConfigDFeC.onnxFileNames, ccdbApi, fConfigDFeC.onnxPathsCCDB, bc.timestamp());
-      } else {
-        mlResponseSCTeC.setModelPathsLocal(fConfigDFeC.onnxFileNames);
-      }
-      mlResponseSCTeC.cacheInputFeaturesIndices(fConfigDFeC.namesInputFeatures);
-      mlResponseSCTeC.cacheBinningIndex(fConfigDFeC.nameBinningFeature);
-      mlResponseSCTeC.init(fConfigDFeC.enableOptimizations);
-    } // end of ML SCTeC
+    //   mlResponseSCTeC.configure(fConfigDFeC.binsMl.value, cutsMltmp, cutDirMl, nClassesMl);
+    //   if (fConfigDFeC.loadModelsFromCCDB) {
+    //     mlResponseSCTeC.setModelPathsCCDB(fConfigDFeC.onnxFileNames, ccdbApi, fConfigDFeC.onnxPathsCCDB, bc.timestamp());
+    //   } else {
+    //     mlResponseSCTeC.setModelPathsLocal(fConfigDFeC.onnxFileNames);
+    //   }
+    //   mlResponseSCTeC.cacheInputFeaturesIndices(fConfigDFeC.namesInputFeatures);
+    //   mlResponseSCTeC.cacheBinningIndex(fConfigDFeC.nameBinningFeature);
+    //   mlResponseSCTeC.init(fConfigDFeC.enableOptimizations);
+    // } // end of ML SCTeC
 
     mRunNumber = bc.runNumber();
     mTOFResponse->processSetup(bc);
@@ -515,6 +513,7 @@ class ElectronModule
     registry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", o2::framework::HistType::kTH2F, {{180, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
     registry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", o2::framework::HistType::kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     registry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", o2::framework::HistType::kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    registry.add("Track/hDCA3dSigma", "DCA 3d;DCA_{3D} (#sigma);", o2::framework::HistType::kTH1F, {{100, 0.0f, 10.0f}}, false);
     registry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     registry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     registry.add("Track/hNclsTPC", "number of TPC clusters", o2::framework::HistType::kTH1F, {{161, -0.5, 160.5}}, false);
@@ -525,7 +524,7 @@ class ElectronModule
     registry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", o2::framework::HistType::kTH1F, {{200, 0, 2}}, false);
     registry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
     registry.add("Track/hNclsITS", "number of ITS clusters", o2::framework::HistType::kTH1F, {{8, -0.5, 7.5}}, false);
-    registry.add("Track/hChi2ITS", "chi2/number of ITS clusters", o2::framework::HistType::kTH1F, {{100, 0, 10}}, false);
+    registry.add("Track/hChi2ITS", "chi2/number of ITS clusters", o2::framework::HistType::kTH1F, {{72, 0, 36}}, false);
     registry.add("Track/hITSClusterMap", "ITS cluster map", o2::framework::HistType::kTH1F, {{128, -0.5, 127.5}}, false);
     registry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     registry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
@@ -535,9 +534,9 @@ class ElectronModule
     registry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
     registry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    registry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    registry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    registry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // registry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // registry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // registry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
     registry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
     registry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
@@ -586,7 +585,6 @@ class ElectronModule
     registry.add("SCT/Cascade/hMassXi_misid", "#Xi mass;m_{#Lambda#pi} (GeV/c^{2})", o2::framework::HistType::kTH1F, {{100, 1.27, 1.37}}, false);
     registry.add("SCT/Cascade/hMassOmega_misid", "#Omega mass;m_{#LambdaK} (GeV/c^{2})", o2::framework::HistType::kTH1F, {{100, 1.62, 1.72}}, false);
 
-    registry.add("SCT/eT/hImpactParameter", "eH impact parameter;IP in XY (cm);IP in Z (cm);", o2::framework::HistType::kTH2F, {{200, -1, 1}, {200, -1, 1}}, false);
     registry.add("SCT/eT/hDecayLength", "eH decay length;L_{xy} (cm);L_{z} (cm);", o2::framework::HistType::kTH2F, {{100, 0, 1}, {200, -1, 1}}, false);
     registry.add("SCT/eT/hCosPA", "eH cosPA;cosine of pointing angle", o2::framework::HistType::kTH1F, {{200, -1, 1}}, false);
     registry.add("SCT/eT/hDCA2legs", "dca between e and hadron;dca between 2legs (cm)", o2::framework::HistType::kTH1F, {{100, 0, 1}}, false);
@@ -624,16 +622,15 @@ class ElectronModule
             if (track.hasTOF() && track.has_collision()) { // TTCA may use orphan tracks.
               auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
               fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Electron>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Pion>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Kaon>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Proton>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Pion>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Kaon>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = mTOFResponse->nSigma<o2::track::PID::Proton>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
               fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
-              ;
             } else {
               fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-              fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-              fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-              fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+              // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+              // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+              // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
               fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
             }
           } // end of track loop
@@ -648,9 +645,9 @@ class ElectronModule
               continue;
             }
             fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-            fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-            fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-            fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+            // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           }
         } // end of track loop
@@ -665,9 +662,9 @@ class ElectronModule
               continue;
             }
             fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-            fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-            fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-            fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+            // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           } // end of track loop
         } // end of collision loop
@@ -679,9 +676,9 @@ class ElectronModule
               continue;
             }
             fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
-            fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
-            fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
-            fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
+            // fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            // fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            // fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPr();
             fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
           }
         } // end of track loop
@@ -693,16 +690,16 @@ class ElectronModule
   void fillMapMLPID(TCollision const& collision, TTrack const& track)
   {
     if (fElectronCut.usePIDML) {
-      o2::dataformats::DCA mDcaInfoCov;
-      mDcaInfoCov.set(999, 999, 999, 999, 999);
-      auto trackParCov = getTrackParCov(track);
-      trackParCov.setPID(o2::track::PID::Electron);
-      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-      if (!isPropOK) {
+      if (!isElectron_TOFif(track, collision, fElectronCut)) { // minimal n sigma cut is taken from the main electron cut.
         return;
       }
 
-      if (!isElectron_TOFif(track, collision, fElectronCut)) { // minimal n sigma cut is taken from the main electron cut.
+      o2::dataformats::DCA mDcaInfoCov;
+      mDcaInfoCov.set(999, 999, 999, 999, 999);
+      auto trackParCov = getTrackParCov(track);
+      trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : track.pidForTracking());
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
         return;
       }
 
@@ -722,7 +719,7 @@ class ElectronModule
       }
       candidate.meanClusterSizeITSobCosTgl = static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(trackParCov.getTgl()));
 
-      std::vector<float> inputFeatures = mlResponsePID.getInputFeatures(candidate);
+      auto inputFeatures = mlResponsePID.getInputFeatures(candidate);
       float binningFeature = mlResponsePID.getBinningFeature(candidate);
 
       int pbin = lower_bound(fElectronCut.binsMl.value.begin(), fElectronCut.binsMl.value.end(), binningFeature) - fElectronCut.binsMl.value.begin() - 1;
@@ -802,7 +799,7 @@ class ElectronModule
     o2::dataformats::DCA mDcaInfoCov;
     mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(o2::track::PID::Electron);
+    trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : track.pidForTracking());
     bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
     if (!isPropOK) {
       return false;
@@ -811,6 +808,10 @@ class ElectronModule
     float dcaZ = mDcaInfoCov.getZ();
 
     if (std::fabs(dcaXY) > fElectronCut.dca_xy_max || std::fabs(dcaZ) > fElectronCut.dca_z_max) {
+      return false;
+    }
+
+    if ((std::array<float, 3>{dca3DinSigmaOTF(dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY()), dcaXY / std::sqrt(trackParCov.getSigmaY2()), dcaZ / std::sqrt(trackParCov.getSigmaZ2())}[fElectronCut.dcaType]) > fElectronCut.max_dca_in_sigma) {
       return false;
     }
 
@@ -880,7 +881,7 @@ class ElectronModule
     o2::dataformats::DCA mDcaInfoCov;
     mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(o2::track::PID::Electron);
+    trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : track.pidForTracking());
     bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
     if (!isPropOK) {
       return false;
@@ -1046,9 +1047,9 @@ class ElectronModule
     float phi = RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U);
 
     float tofNSigmaEl = fMapTOFNsigmaElReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaPi = fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaKa = fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
-    float tofNSigmaPr = fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaPi = fMapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaKa = fMapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    // float tofNSigmaPr = fMapTOFNsigmaPrReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     float beta = fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     float probaEl = fMapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())];
 
@@ -1124,6 +1125,7 @@ class ElectronModule
     registry.fill(HIST("Track/hEtaPhi"), phi, eta);
     registry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
     registry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / std::sqrt(trackParCov.getSigmaY2()), dcaZ / std::sqrt(trackParCov.getSigmaZ2()));
+    registry.fill(HIST("Track/hDCA3dSigma"), dca3DinSigmaOTF(dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY()));
     registry.fill(HIST("Track/hDCAxyRes_Pt"), pt, std::sqrt(trackParCov.getSigmaY2()) * 1e+4); // convert cm to um
     registry.fill(HIST("Track/hDCAzRes_Pt"), pt, std::sqrt(trackParCov.getSigmaZ2()) * 1e+4);  // convert cm to um
     registry.fill(HIST("Track/hNclsITS"), track.itsNCls());
@@ -1144,9 +1146,9 @@ class ElectronModule
     registry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
     registry.fill(HIST("Track/hTOFbeta"), trackParCov.getP(), beta);
     registry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), tofNSigmaEl);
-    registry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), tofNSigmaPi);
-    registry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), tofNSigmaKa);
-    registry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), tofNSigmaPr);
+    // registry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), tofNSigmaPi);
+    // registry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), tofNSigmaKa);
+    // registry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), tofNSigmaPr);
     registry.fill(HIST("Track/hMeanClusterSizeITS"), trackParCov.getP(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl())));
     registry.fill(HIST("Track/hMeanClusterSizeITSib"), trackParCov.getP(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(trackParCov.getTgl())));
     registry.fill(HIST("Track/hMeanClusterSizeITSob"), trackParCov.getP(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(trackParCov.getTgl())));
@@ -1162,193 +1164,197 @@ class ElectronModule
     return is_pi_included_TPC || is_ka_included_TPC;
   }
 
-  template <bool isMC, typename TTrack>
-  bool isSelectedV0Leg(TTrack const& track)
+  // template <bool isMC, typename TTrack>
+  // bool isSelectedV0Leg(TTrack const& track)
+  // {
+  //   if constexpr (isMC) {
+  //     if (!track.has_mcParticle()) {
+  //       return false;
+  //     }
+  //   }
+
+  //   if (!track.hasITS() || !track.hasTPC()) {
+  //     return false;
+  //   }
+
+  //   if (track.itsChi2NCl() > fV0Cut.cfg_max_chi2its) {
+  //     return false;
+  //   }
+
+  //   if (track.itsNCls() < fV0Cut.cfg_min_ncluster_its) {
+  //     return false;
+  //   }
+
+  //   if (track.itsNClsInnerBarrel() < fV0Cut.cfg_min_ncluster_itsib) {
+  //     return false;
+  //   }
+
+  //   if (track.tpcChi2NCl() > fV0Cut.cfg_max_chi2tpc) {
+  //     return false;
+  //   }
+
+  //   if (track.tpcNClsFound() < fV0Cut.cfg_min_ncluster_tpc) {
+  //     return false;
+  //   }
+
+  //   if (track.tpcNClsCrossedRows() < fV0Cut.cfg_min_ncrossedrows_tpc) {
+  //     return false;
+  //   }
+
+  //   if (track.tpcCrossedRowsOverFindableCls() < fV0Cut.cfg_min_cr2findable_ratio_tpc) {
+  //     return false;
+  //   }
+
+  //   if (track.tpcFractionSharedCls() > fV0Cut.cfg_max_frac_shared_clusters_tpc) {
+  //     return false;
+  //   }
+
+  //   return true;
+  // }
+
+  // template <typename TTrack>
+  // bool isPion(TTrack const& track)
+  // {
+  //   return fV0Cut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < fV0Cut.cfg_max_TPCNsigmaPi;
+  // }
+
+  // template <typename TTrack>
+  // bool isKaon(TTrack const& track)
+  // {
+  //   return fV0Cut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < fV0Cut.cfg_max_TPCNsigmaKa;
+  // }
+
+  // template <typename TTrack>
+  // bool isProton(TTrack const& track)
+  // {
+  //   return fV0Cut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < fV0Cut.cfg_max_TPCNsigmaPr;
+  // }
+
+  // template <typename TV0>
+  // bool isK0S(TV0 const& v0)
+  // {
+  //   return (fV0Cut.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < fV0Cut.cfg_max_mass_k0s) && (v0.mLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mLambda()) && (v0.mAntiLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mAntiLambda());
+  // }
+
+  // template <typename TV0>
+  // bool isLambda(TV0 const& v0)
+  // {
+  //   return (fV0Cut.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < fV0Cut.cfg_max_mass_lambda) && (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short());
+  // }
+
+  // template <typename TV0>
+  // bool isAntiLambda(TV0 const& v0)
+  // {
+  //   return (fV0Cut.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < fV0Cut.cfg_max_mass_lambda) && (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short());
+  // }
+
+  // template <typename TCascade>
+  // bool isXi(TCascade const& cascade)
+  // {
+  //   return (fCascadeCut.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < fCascadeCut.cfg_max_mass_Xi) && (cascade.mOmega() < fCascadeCut.cfg_min_mass_Omega_veto || fCascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega());
+  // }
+
+  // template <typename TCascade>
+  // bool isOmega(TCascade const& cascade)
+  // {
+  //   return (fCascadeCut.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < fCascadeCut.cfg_max_mass_Omega) && (cascade.mXi() < fCascadeCut.cfg_min_mass_Xi_veto || fCascadeCut.cfg_max_mass_Xi_veto < cascade.mXi());
+  // }
+
+  // template <typename TTracks, typename TCollision, typename TV0, typename THistoregistry>
+  // void fillV0Histograms(TCollision const&, TV0 const& v0, THistoregistry& registry)
+  // {
+  //   auto pos = v0.template posTrack_as<TTracks>();
+  //   auto neg = v0.template negTrack_as<TTracks>();
+  //   registry.fill(HIST("SCT/V0/hPt"), v0.pt());
+  //   registry.fill(HIST("SCT/V0/hAP"), v0.alpha(), v0.qtarm());
+  //   registry.fill(HIST("SCT/V0/hCosPA"), v0.v0cosPA());
+  //   registry.fill(HIST("SCT/V0/hLxy"), v0.v0radius());
+  //   registry.fill(HIST("SCT/V0/hDCA2Legs"), v0.dcaV0daughters());
+
+  //   if (isPion(pos) && isPion(neg)) {
+  //     if ((v0.mLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mLambda()) && (v0.mAntiLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mAntiLambda())) {
+  //       registry.fill(HIST("SCT/V0/hMassK0S"), v0.mK0Short());
+  //       registry.fill(HIST("SCT/V0/hYPhi_K0S"), v0.phi(), v0.yK0Short());
+  //     }
+  //     registry.fill(HIST("SCT/V0/hMassGamma_misid"), v0.mGamma());
+  //     registry.fill(HIST("SCT/V0/hMassLambda_misid"), v0.mLambda());
+  //     registry.fill(HIST("SCT/V0/hMassAntiLambda_misid"), v0.mAntiLambda());
+  //   }
+
+  //   if (isProton(pos) && isPion(neg)) {
+  //     if (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short()) {
+  //       registry.fill(HIST("SCT/V0/hMassLambda"), v0.mLambda());
+  //       registry.fill(HIST("SCT/V0/hYPhi_Lambda"), v0.phi(), v0.yLambda());
+  //     }
+  //     registry.fill(HIST("SCT/V0/hMassGamma_misid"), v0.mGamma());
+  //     registry.fill(HIST("SCT/V0/hMassK0S_misid"), v0.mK0Short());
+  //   }
+
+  //   if (isProton(neg) && isPion(pos)) {
+  //     if (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short()) {
+  //       registry.fill(HIST("SCT/V0/hMassAntiLambda"), v0.mAntiLambda());
+  //       registry.fill(HIST("SCT/V0/hYPhi_Lambda"), v0.phi(), v0.yLambda());
+  //     }
+  //     registry.fill(HIST("SCT/V0/hMassGamma_misid"), v0.mGamma());
+  //     registry.fill(HIST("SCT/V0/hMassK0S_misid"), v0.mK0Short());
+  //   }
+  // }
+
+  // template <typename TTracks, typename TCollision, typename TCascade, typename THistoregistry>
+  // void fillCascadeHistograms(TCollision const& collision, TCascade const& cascade, THistoregistry& registry)
+  // {
+  //   auto pos = cascade.template posTrack_as<TTracks>();
+  //   auto neg = cascade.template negTrack_as<TTracks>();
+  //   auto bachelor = cascade.template bachelor_as<TTracks>();
+
+  //   registry.fill(HIST("SCT/Cascade/hPt"), cascade.pt());
+  //   registry.fill(HIST("SCT/Cascade/hMassLambda"), cascade.mLambda());
+  //   registry.fill(HIST("SCT/Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+  //   registry.fill(HIST("SCT/Cascade/hDCA2Legs"), cascade.dcacascdaughters());
+  //   registry.fill(HIST("SCT/Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+  //   registry.fill(HIST("SCT/Cascade/hV0DCA2Legs"), cascade.dcaV0daughters());
+
+  //   if (cascade.sign() < 0) { // Xi- or Omega-
+  //     if (isPion(bachelor) && isProton(pos) && isPion(neg)) {
+  //       if (cascade.mOmega() < fCascadeCut.cfg_min_mass_Omega_veto || fCascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega()) {
+  //         registry.fill(HIST("SCT/Cascade/hMassXi"), cascade.mXi());
+  //         registry.fill(HIST("SCT/Cascade/hYPhi_Xi"), cascade.phi(), cascade.yXi());
+  //       }
+  //       registry.fill(HIST("SCT/Cascade/hMassOmega_misid"), cascade.mOmega());
+  //     }
+  //     if (isKaon(bachelor) && isProton(pos) && isPion(neg)) {
+  //       if (cascade.mXi() < fCascadeCut.cfg_min_mass_Xi_veto || fCascadeCut.cfg_max_mass_Xi_veto < cascade.mXi()) {
+  //         registry.fill(HIST("SCT/Cascade/hMassOmega"), cascade.mOmega());
+  //         registry.fill(HIST("SCT/Cascade/hYPhi_Omega"), cascade.phi(), cascade.yOmega());
+  //       }
+  //       registry.fill(HIST("SCT/Cascade/hMassXi_misid"), cascade.mXi());
+  //     }
+  //   } else { // Xi+ or Omega+
+  //     if (isPion(bachelor) && isProton(neg) && isPion(pos)) {
+  //       if (cascade.mOmega() < fCascadeCut.cfg_min_mass_Omega_veto || fCascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega()) {
+  //         registry.fill(HIST("SCT/Cascade/hMassXi"), cascade.mXi());
+  //         registry.fill(HIST("SCT/Cascade/hYPhi_Xi"), cascade.phi(), cascade.yXi());
+  //       }
+  //       registry.fill(HIST("SCT/Cascade/hMassOmega_misid"), cascade.mOmega());
+  //     }
+  //     if (isKaon(bachelor) && isProton(neg) && isPion(pos)) {
+  //       if (cascade.mXi() < fCascadeCut.cfg_min_mass_Xi_veto || fCascadeCut.cfg_max_mass_Xi_veto < cascade.mXi()) {
+  //         registry.fill(HIST("SCT/Cascade/hMassOmega"), cascade.mOmega());
+  //         registry.fill(HIST("SCT/Cascade/hYPhi_Omega"), cascade.phi(), cascade.yOmega());
+  //       }
+  //       registry.fill(HIST("SCT/Cascade/hMassXi_misid"), cascade.mXi());
+  //     }
+  //   }
+  // }
+
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, /*typename TV0s, typename TCascades,*/ typename TTrackAssoc, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc /*, typename TPresliceV0, typename TPresliceCascade*/>
+  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, /*TV0s const& v0s, TCascades const& cascades,*/ TTrackAssoc const& trackIndices, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision /*, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc*/)
   {
-    if constexpr (isMC) {
-      if (!track.has_mcParticle()) {
-        return false;
-      }
+    if (bcs.size() == 0) {
+      return;
     }
-
-    if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
-
-    if (track.itsChi2NCl() > fV0Cut.cfg_max_chi2its) {
-      return false;
-    }
-
-    if (track.itsNCls() < fV0Cut.cfg_min_ncluster_its) {
-      return false;
-    }
-
-    if (track.itsNClsInnerBarrel() < fV0Cut.cfg_min_ncluster_itsib) {
-      return false;
-    }
-
-    if (track.tpcChi2NCl() > fV0Cut.cfg_max_chi2tpc) {
-      return false;
-    }
-
-    if (track.tpcNClsFound() < fV0Cut.cfg_min_ncluster_tpc) {
-      return false;
-    }
-
-    if (track.tpcNClsCrossedRows() < fV0Cut.cfg_min_ncrossedrows_tpc) {
-      return false;
-    }
-
-    if (track.tpcCrossedRowsOverFindableCls() < fV0Cut.cfg_min_cr2findable_ratio_tpc) {
-      return false;
-    }
-
-    if (track.tpcFractionSharedCls() > fV0Cut.cfg_max_frac_shared_clusters_tpc) {
-      return false;
-    }
-
-    return true;
-  }
-
-  template <typename TTrack>
-  bool isPion(TTrack const& track)
-  {
-    return fV0Cut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < fV0Cut.cfg_max_TPCNsigmaPi;
-  }
-
-  template <typename TTrack>
-  bool isKaon(TTrack const& track)
-  {
-    return fV0Cut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < fV0Cut.cfg_max_TPCNsigmaKa;
-  }
-
-  template <typename TTrack>
-  bool isProton(TTrack const& track)
-  {
-    return fV0Cut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < fV0Cut.cfg_max_TPCNsigmaPr;
-  }
-
-  template <typename TV0>
-  bool isK0S(TV0 const& v0)
-  {
-    return (fV0Cut.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < fV0Cut.cfg_max_mass_k0s) && (v0.mLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mLambda()) && (v0.mAntiLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mAntiLambda());
-  }
-
-  template <typename TV0>
-  bool isLambda(TV0 const& v0)
-  {
-    return (fV0Cut.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < fV0Cut.cfg_max_mass_lambda) && (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short());
-  }
-
-  template <typename TV0>
-  bool isAntiLambda(TV0 const& v0)
-  {
-    return (fV0Cut.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < fV0Cut.cfg_max_mass_lambda) && (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short());
-  }
-
-  template <typename TCascade>
-  bool isXi(TCascade const& cascade)
-  {
-    return (fCascadeCut.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < fCascadeCut.cfg_max_mass_Xi) && (cascade.mOmega() < fCascadeCut.cfg_min_mass_Omega_veto || fCascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega());
-  }
-
-  template <typename TCascade>
-  bool isOmega(TCascade const& cascade)
-  {
-    return (fCascadeCut.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < fCascadeCut.cfg_max_mass_Omega) && (cascade.mXi() < fCascadeCut.cfg_min_mass_Xi_veto || fCascadeCut.cfg_max_mass_Xi_veto < cascade.mXi());
-  }
-
-  template <typename TTracks, typename TCollision, typename TV0, typename THistoregistry>
-  void fillV0Histograms(TCollision const&, TV0 const& v0, THistoregistry& registry)
-  {
-    auto pos = v0.template posTrack_as<TTracks>();
-    auto neg = v0.template negTrack_as<TTracks>();
-    registry.fill(HIST("SCT/V0/hPt"), v0.pt());
-    registry.fill(HIST("SCT/V0/hAP"), v0.alpha(), v0.qtarm());
-    registry.fill(HIST("SCT/V0/hCosPA"), v0.v0cosPA());
-    registry.fill(HIST("SCT/V0/hLxy"), v0.v0radius());
-    registry.fill(HIST("SCT/V0/hDCA2Legs"), v0.dcaV0daughters());
-
-    if (isPion(pos) && isPion(neg)) {
-      if ((v0.mLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mLambda()) && (v0.mAntiLambda() < fV0Cut.cfg_min_mass_lambda_veto || fV0Cut.cfg_max_mass_lambda_veto < v0.mAntiLambda())) {
-        registry.fill(HIST("SCT/V0/hMassK0S"), v0.mK0Short());
-        registry.fill(HIST("SCT/V0/hYPhi_K0S"), v0.phi(), v0.yK0Short());
-      }
-      registry.fill(HIST("SCT/V0/hMassGamma_misid"), v0.mGamma());
-      registry.fill(HIST("SCT/V0/hMassLambda_misid"), v0.mLambda());
-      registry.fill(HIST("SCT/V0/hMassAntiLambda_misid"), v0.mAntiLambda());
-    }
-
-    if (isProton(pos) && isPion(neg)) {
-      if (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short()) {
-        registry.fill(HIST("SCT/V0/hMassLambda"), v0.mLambda());
-        registry.fill(HIST("SCT/V0/hYPhi_Lambda"), v0.phi(), v0.yLambda());
-      }
-      registry.fill(HIST("SCT/V0/hMassGamma_misid"), v0.mGamma());
-      registry.fill(HIST("SCT/V0/hMassK0S_misid"), v0.mK0Short());
-    }
-
-    if (isProton(neg) && isPion(pos)) {
-      if (v0.mK0Short() < fV0Cut.cfg_min_mass_k0s_veto || fV0Cut.cfg_max_mass_k0s_veto < v0.mK0Short()) {
-        registry.fill(HIST("SCT/V0/hMassAntiLambda"), v0.mAntiLambda());
-        registry.fill(HIST("SCT/V0/hYPhi_Lambda"), v0.phi(), v0.yLambda());
-      }
-      registry.fill(HIST("SCT/V0/hMassGamma_misid"), v0.mGamma());
-      registry.fill(HIST("SCT/V0/hMassK0S_misid"), v0.mK0Short());
-    }
-  }
-
-  template <typename TTracks, typename TCollision, typename TCascade, typename THistoregistry>
-  void fillCascadeHistograms(TCollision const& collision, TCascade const& cascade, THistoregistry& registry)
-  {
-    auto pos = cascade.template posTrack_as<TTracks>();
-    auto neg = cascade.template negTrack_as<TTracks>();
-    auto bachelor = cascade.template bachelor_as<TTracks>();
-
-    registry.fill(HIST("SCT/Cascade/hPt"), cascade.pt());
-    registry.fill(HIST("SCT/Cascade/hMassLambda"), cascade.mLambda());
-    registry.fill(HIST("SCT/Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
-    registry.fill(HIST("SCT/Cascade/hDCA2Legs"), cascade.dcacascdaughters());
-    registry.fill(HIST("SCT/Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-    registry.fill(HIST("SCT/Cascade/hV0DCA2Legs"), cascade.dcaV0daughters());
-
-    if (cascade.sign() < 0) { // Xi- or Omega-
-      if (isPion(bachelor) && isProton(pos) && isPion(neg)) {
-        if (cascade.mOmega() < fCascadeCut.cfg_min_mass_Omega_veto || fCascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega()) {
-          registry.fill(HIST("SCT/Cascade/hMassXi"), cascade.mXi());
-          registry.fill(HIST("SCT/Cascade/hYPhi_Xi"), cascade.phi(), cascade.yXi());
-        }
-        registry.fill(HIST("SCT/Cascade/hMassOmega_misid"), cascade.mOmega());
-      }
-      if (isKaon(bachelor) && isProton(pos) && isPion(neg)) {
-        if (cascade.mXi() < fCascadeCut.cfg_min_mass_Xi_veto || fCascadeCut.cfg_max_mass_Xi_veto < cascade.mXi()) {
-          registry.fill(HIST("SCT/Cascade/hMassOmega"), cascade.mOmega());
-          registry.fill(HIST("SCT/Cascade/hYPhi_Omega"), cascade.phi(), cascade.yOmega());
-        }
-        registry.fill(HIST("SCT/Cascade/hMassXi_misid"), cascade.mXi());
-      }
-    } else { // Xi+ or Omega+
-      if (isPion(bachelor) && isProton(neg) && isPion(pos)) {
-        if (cascade.mOmega() < fCascadeCut.cfg_min_mass_Omega_veto || fCascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega()) {
-          registry.fill(HIST("SCT/Cascade/hMassXi"), cascade.mXi());
-          registry.fill(HIST("SCT/Cascade/hYPhi_Xi"), cascade.phi(), cascade.yXi());
-        }
-        registry.fill(HIST("SCT/Cascade/hMassOmega_misid"), cascade.mOmega());
-      }
-      if (isKaon(bachelor) && isProton(neg) && isPion(pos)) {
-        if (cascade.mXi() < fCascadeCut.cfg_min_mass_Xi_veto || fCascadeCut.cfg_max_mass_Xi_veto < cascade.mXi()) {
-          registry.fill(HIST("SCT/Cascade/hMassOmega"), cascade.mOmega());
-          registry.fill(HIST("SCT/Cascade/hYPhi_Omega"), cascade.phi(), cascade.yOmega());
-        }
-        registry.fill(HIST("SCT/Cascade/hMassXi_misid"), cascade.mXi());
-      }
-    }
-  }
-
-  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TTrackAssoc, typename TMCParticles, typename TProducts, typename THistoregistry, typename TSliceCache, typename TPresliceTrack, typename TPresliceTrackAssoc, typename TPresliceV0, typename TPresliceCascade>
-  void processWithTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks, TV0s const& v0s, TCascades const& cascades, TTrackAssoc const& trackIndices, TMCParticles const&, TProducts& products, THistoregistry& registry, TSliceCache& cache, TPresliceTrack const& perColTrack, TPresliceTrackAssoc const& trackIndicesPerCollision, TPresliceV0 const& perColV0, TPresliceCascade const& perColCasc)
-  {
-    initCCDB(bcs.begin());
+    auto bc = bcs.begin();
+    initCCDB(bc);
 
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices, cache, perColTrack, trackIndicesPerCollision);
 
@@ -1407,161 +1413,160 @@ class ElectronModule
       }
 
       std::vector<int> hadronIds;
-      std::vector<int> k0sIds;
-      std::vector<int> lambdaIds;
-      std::vector<int> antilambdaIds;
-      std::vector<int> xiMinusIds;
-      std::vector<int> xiPlusIds;
-      std::vector<int> omegaMinusIds;
-      std::vector<int> omegaPlusIds;
+      // std::vector<int> k0sIds;
+      // std::vector<int> lambdaIds;
+      // std::vector<int> antilambdaIds;
+      // std::vector<int> xiMinusIds;
+      // std::vector<int> xiPlusIds;
+      // std::vector<int> omegaMinusIds;
+      // std::vector<int> omegaPlusIds;
 
       if (fDoSCTwithTracks) {
         hadronIds.reserve(trackIdsThisCollision.size());
+        for (const auto& trackId : trackIdsThisCollision) {
+          auto track = trackId.template track_as<TTracks>();
+          auto trackParCov = getTrackParCov(track);
+          o2::dataformats::DCA mDcaInfoCov;
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          trackParCov.setPID(track.pidForTracking());
+          bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          if (!isPropOK) {
+            continue;
+          }
+          float dcaXY = mDcaInfoCov.getY();
+          float dcaZ = mDcaInfoCov.getZ();
+          if (isSelectedHadron(collision, track, trackParCov, dcaXY, dcaZ)) {
+            float tpcSignal = track.tpcSignal();
+            if constexpr (isMC) {
+              tpcSignal = track.mcTunedTPCSignal();
+            }
+            registry.fill(HIST("SCT/Track/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
+            registry.fill(HIST("SCT/Track/hDCA"), dcaXY, dcaZ);
+            registry.fill(HIST("SCT/Track/hTPCdEdx"), track.tpcInnerParam(), tpcSignal);
+            registry.fill(HIST("SCT/Track/hTOFbeta"), trackParCov.getP(), fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+            hadronIds.emplace_back(track.globalIndex());
+          }
+        } // end of track loop
       }
 
-      if (fDoSCTwithV0s) {
-        auto v0s_per_collision = v0s.sliceBy(perColV0, collision.globalIndex());
-        k0sIds.reserve(v0s_per_collision.size());
-        lambdaIds.reserve(v0s_per_collision.size());
-        antilambdaIds.reserve(v0s_per_collision.size());
+      // if (fDoSCTwithV0s) {
+      //   auto v0s_per_collision = v0s.sliceBy(perColV0, collision.globalIndex());
+      //   k0sIds.reserve(v0s_per_collision.size());
+      //   lambdaIds.reserve(v0s_per_collision.size());
+      //   antilambdaIds.reserve(v0s_per_collision.size());
 
-        for (const auto& v0 : v0s_per_collision) {
-          auto pos = v0.template posTrack_as<TTracks>();
-          auto neg = v0.template negTrack_as<TTracks>();
+      //   for (const auto& v0 : v0s_per_collision) {
+      //     auto pos = v0.template posTrack_as<TTracks>();
+      //     auto neg = v0.template negTrack_as<TTracks>();
 
-          if (pos.sign() * neg.sign() > 0) {
-            continue;
-          }
-          if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg)) {
-            continue;
-          }
+      //     if (pos.sign() * neg.sign() > 0) {
+      //       continue;
+      //     }
+      //     if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg)) {
+      //       continue;
+      //     }
 
-          if (v0.dcaV0daughters() > fV0Cut.cfg_max_dca2legs) {
-            continue;
-          }
+      //     if (v0.dcaV0daughters() > fV0Cut.cfg_max_dca2legs) {
+      //       continue;
+      //     }
 
-          if (v0.v0radius() < fV0Cut.cfg_min_radius) {
-            continue;
-          }
+      //     if (v0.v0radius() < fV0Cut.cfg_min_radius) {
+      //       continue;
+      //     }
 
-          if (v0.v0cosPA() < fV0Cut.cfg_min_cospa) {
-            continue;
-          }
+      //     if (v0.v0cosPA() < fV0Cut.cfg_min_cospa) {
+      //       continue;
+      //     }
 
-          if (std::sqrt(std::pow(v0.alpha() / fV0Cut.cfg_max_alpha_veto, 2) + std::pow(v0.qtarm() / fV0Cut.cfg_max_qt_veto, 2)) < 1.f) { // photon conversion rejection at small qT
-            continue;
-          }
+      //     if (std::sqrt(std::pow(v0.alpha() / fV0Cut.cfg_max_alpha_veto, 2) + std::pow(v0.qtarm() / fV0Cut.cfg_max_qt_veto, 2)) < 1.f) { // photon conversion rejection at small qT
+      //       continue;
+      //     }
 
-          fillV0Histograms<TTracks>(collision, v0, registry);
+      //     fillV0Histograms<TTracks>(collision, v0, registry);
 
-          if (isK0S(v0) && isPion(pos) && isPion(neg)) {
-            k0sIds.emplace_back(v0.globalIndex());
-          }
+      //     if (isK0S(v0) && isPion(pos) && isPion(neg)) {
+      //       k0sIds.emplace_back(v0.globalIndex());
+      //     }
 
-          if (isLambda(v0) && isProton(pos) && isPion(neg)) {
-            lambdaIds.emplace_back(v0.globalIndex());
-          } else if (isAntiLambda(v0) && isProton(neg) && isPion(pos)) {
-            antilambdaIds.emplace_back(v0.globalIndex());
-          }
+      //     if (isLambda(v0) && isProton(pos) && isPion(neg)) {
+      //       lambdaIds.emplace_back(v0.globalIndex());
+      //     } else if (isAntiLambda(v0) && isProton(neg) && isPion(pos)) {
+      //       antilambdaIds.emplace_back(v0.globalIndex());
+      //     }
 
-        } // end of v0 loop
-      }
+      //   } // end of v0 loop
+      // }
 
-      if (fDoSCTwithCascades) {
-        auto cascades_per_collision = cascades.sliceBy(perColCasc, collision.globalIndex());
-        xiMinusIds.reserve(cascades_per_collision.size());
-        xiPlusIds.reserve(cascades_per_collision.size());
-        omegaMinusIds.reserve(cascades_per_collision.size());
-        omegaPlusIds.reserve(cascades_per_collision.size());
+      // if (fDoSCTwithCascades) {
+      //   auto cascades_per_collision = cascades.sliceBy(perColCasc, collision.globalIndex());
+      //   xiMinusIds.reserve(cascades_per_collision.size());
+      //   xiPlusIds.reserve(cascades_per_collision.size());
+      //   omegaMinusIds.reserve(cascades_per_collision.size());
+      //   omegaPlusIds.reserve(cascades_per_collision.size());
 
-        for (const auto& cascade : cascades_per_collision) {
-          auto pos = cascade.template posTrack_as<TTracks>();
-          auto neg = cascade.template negTrack_as<TTracks>();
-          auto bachelor = cascade.template bachelor_as<TTracks>();
-          if (pos.sign() * neg.sign() > 0) {
-            continue;
-          }
-          if (cascade.mLambda() < fCascadeCut.cfg_min_mass_lambda || fCascadeCut.cfg_max_mass_lambda < cascade.mLambda()) {
-            continue;
-          }
+      //   for (const auto& cascade : cascades_per_collision) {
+      //     auto pos = cascade.template posTrack_as<TTracks>();
+      //     auto neg = cascade.template negTrack_as<TTracks>();
+      //     auto bachelor = cascade.template bachelor_as<TTracks>();
+      //     if (pos.sign() * neg.sign() > 0) {
+      //       continue;
+      //     }
+      //     if (cascade.mLambda() < fCascadeCut.cfg_min_mass_lambda || fCascadeCut.cfg_max_mass_lambda < cascade.mLambda()) {
+      //       continue;
+      //     }
 
-          if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg) || !isSelectedV0Leg<isMC>(bachelor)) {
-            continue;
-          }
+      //     if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg) || !isSelectedV0Leg<isMC>(bachelor)) {
+      //       continue;
+      //     }
 
-          if (cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < fCascadeCut.cfg_min_cospa) {
-            continue;
-          }
-          if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < fCascadeCut.cfg_min_cospa_v0) {
-            continue;
-          }
+      //     if (cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < fCascadeCut.cfg_min_cospa) {
+      //       continue;
+      //     }
+      //     if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < fCascadeCut.cfg_min_cospa_v0) {
+      //       continue;
+      //     }
 
-          if (cascade.cascradius() > cascade.v0radius()) {
-            continue;
-          }
+      //     if (cascade.cascradius() > cascade.v0radius()) {
+      //       continue;
+      //     }
 
-          if (cascade.dcaV0daughters() > fCascadeCut.cfg_max_dcadau_v0) {
-            continue;
-          }
-          if (cascade.v0radius() < fCascadeCut.cfg_min_rxy_v0) {
-            continue;
-          }
-          if (cascade.cascradius() < fCascadeCut.cfg_min_rxy) {
-            continue;
-          }
+      //     if (cascade.dcaV0daughters() > fCascadeCut.cfg_max_dcadau_v0) {
+      //       continue;
+      //     }
+      //     if (cascade.v0radius() < fCascadeCut.cfg_min_rxy_v0) {
+      //       continue;
+      //     }
+      //     if (cascade.cascradius() < fCascadeCut.cfg_min_rxy) {
+      //       continue;
+      //     }
 
-          if (cascade.dcacascdaughters() > fCascadeCut.cfg_max_dcadau) {
-            continue;
-          }
+      //     if (cascade.dcacascdaughters() > fCascadeCut.cfg_max_dcadau) {
+      //       continue;
+      //     }
 
-          if (std::fabs(cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < fCascadeCut.cfg_min_dcaxy_v0) {
-            continue;
-          }
+      //     if (std::fabs(cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < fCascadeCut.cfg_min_dcaxy_v0) {
+      //       continue;
+      //     }
 
-          fillCascadeHistograms<TTracks>(collision, cascade, registry);
+      //     fillCascadeHistograms<TTracks>(collision, cascade, registry);
 
-          if (cascade.sign() < 0) { // Xi- or Omega-
-            if (isXi(cascade) && isPion(bachelor) && isProton(pos) && isPion(neg)) {
-              xiMinusIds.emplace_back(cascade.globalIndex());
-            }
-            if (isOmega(cascade) && isKaon(bachelor) && isProton(pos) && isPion(neg)) {
-              omegaMinusIds.emplace_back(cascade.globalIndex());
-            }
-          } else { // Xi+ or Omega+
-            if (isXi(cascade) && isPion(bachelor) && isProton(neg) && isPion(pos)) {
-              xiPlusIds.emplace_back(cascade.globalIndex());
-            }
-            if (isOmega(cascade) && isKaon(bachelor) && isProton(neg) && isPion(pos)) {
-              omegaPlusIds.emplace_back(cascade.globalIndex());
-            }
-          }
-        } // end of cascade loop
-      }
-
-      for (const auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<TTracks>();
-        auto trackParCov = getTrackParCov(track);
-        o2::dataformats::DCA mDcaInfoCov;
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        trackParCov.setPID(track.pidForTracking());
-        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-        if (!isPropOK) {
-          continue;
-        }
-        float dcaXY = mDcaInfoCov.getY();
-        float dcaZ = mDcaInfoCov.getZ();
-        if (isSelectedHadron(collision, track, trackParCov, dcaXY, dcaZ)) {
-          float tpcSignal = track.tpcSignal();
-          if constexpr (isMC) {
-            tpcSignal = track.mcTunedTPCSignal();
-          }
-          registry.fill(HIST("SCT/Track/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
-          registry.fill(HIST("SCT/Track/hDCA"), dcaXY, dcaZ);
-          registry.fill(HIST("SCT/Track/hTPCdEdx"), track.tpcInnerParam(), tpcSignal);
-          registry.fill(HIST("SCT/Track/hTOFbeta"), trackParCov.getP(), fMapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
-          hadronIds.emplace_back(track.globalIndex());
-        }
-      } // end of track loop
+      //     if (cascade.sign() < 0) { // Xi- or Omega-
+      //       if (isXi(cascade) && isPion(bachelor) && isProton(pos) && isPion(neg)) {
+      //         xiMinusIds.emplace_back(cascade.globalIndex());
+      //       }
+      //       if (isOmega(cascade) && isKaon(bachelor) && isProton(pos) && isPion(neg)) {
+      //         omegaMinusIds.emplace_back(cascade.globalIndex());
+      //       }
+      //     } else { // Xi+ or Omega+
+      //       if (isXi(cascade) && isPion(bachelor) && isProton(neg) && isPion(pos)) {
+      //         xiPlusIds.emplace_back(cascade.globalIndex());
+      //       }
+      //       if (isOmega(cascade) && isKaon(bachelor) && isProton(neg) && isPion(pos)) {
+      //         omegaPlusIds.emplace_back(cascade.globalIndex());
+      //       }
+      //     }
+      //   } // end of cascade loop
+      // }
 
       auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
       for (auto it = range_electrons.first; it != range_electrons.second; it++) {
@@ -1569,7 +1574,7 @@ class ElectronModule
         o2::dataformats::DCA mDcaInfoCov;
         mDcaInfoCov.set(999, 999, 999, 999, 999);
         auto trackParCov = getTrackParCov(electron);
-        trackParCov.setPID(o2::track::PID::Electron);
+        trackParCov.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking());
         bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
         if (!isPropOK) {
           continue;
@@ -1591,7 +1596,7 @@ class ElectronModule
           }
 
           auto trackParCov2 = getTrackParCov(looseElectron);
-          trackParCov2.setPID(o2::track::PID::Electron);
+          trackParCov2.setPID(fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : looseElectron.pidForTracking());
           bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov2, 2.f, matCorr, &mDcaInfoCov);
           if (!isPropOK) {
             continue;
@@ -1625,17 +1630,17 @@ class ElectronModule
         products.electronPFTable(pfb);
 
         // perform SCT from here
-        std::vector<float> bdtScorePrompt;
-        std::vector<float> bdtScorePromptHc;
-        std::vector<float> bdtScoreNonpromptHc;
-        std::vector<float> bdtScoreHb;
+        std::vector<uint8_t> bdtScoreBkg;
+        std::vector<uint8_t> bdtScorePromptHc;
+        std::vector<uint8_t> bdtScoreNonpromptHc;
+        std::vector<uint8_t> bdtScoreHb;
         std::vector<uint8_t> hadronType;
 
-        bdtScorePrompt.reserve(hadronIds.size() + k0sIds.size() + lambdaIds.size() + antilambdaIds.size());
-        bdtScorePromptHc.reserve(hadronIds.size() + k0sIds.size() + lambdaIds.size() + antilambdaIds.size());
-        bdtScoreNonpromptHc.reserve(hadronIds.size() + k0sIds.size() + lambdaIds.size() + antilambdaIds.size());
-        bdtScoreHb.reserve(hadronIds.size() + k0sIds.size() + lambdaIds.size() + antilambdaIds.size());
-        hadronType.reserve(hadronIds.size() + k0sIds.size() + lambdaIds.size() + antilambdaIds.size());
+        bdtScoreBkg.reserve(hadronIds.size() /*+ k0sIds.size() + lambdaIds.size() + antilambdaIds.size()*/);
+        bdtScorePromptHc.reserve(hadronIds.size() /*+ k0sIds.size() + lambdaIds.size() + antilambdaIds.size()*/);
+        bdtScoreNonpromptHc.reserve(hadronIds.size() /*+ k0sIds.size() + lambdaIds.size() + antilambdaIds.size()*/);
+        bdtScoreHb.reserve(hadronIds.size() /*+ k0sIds.size() + lambdaIds.size() + antilambdaIds.size()*/);
+        hadronType.reserve(hadronIds.size() /*+ k0sIds.size() + lambdaIds.size() + antilambdaIds.size()*/);
 
         // eTrack pair
         for (const auto& hadronId : hadronIds) {
@@ -1650,21 +1655,20 @@ class ElectronModule
           hadronParCov.setPID(hadron.pidForTracking());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, hadronParCov, 2.f, matCorr, &mDcaInfoCov);
 
-          auto eTpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(dfeT, collision, electron, hadron, o2::track::PID::Electron, hadron.pidForTracking());
-          registry.fill(HIST("SCT/eT/hImpactParameter"), eTpair.impParXY, eTpair.impParZ);
+          auto eTpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(dfeT, collision, electron, hadron, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), hadron.pidForTracking(), o2::constants::physics::MassElectron);
           registry.fill(HIST("SCT/eT/hDecayLength"), eTpair.lxy, eTpair.lz);
           registry.fill(HIST("SCT/eT/hCosPA"), eTpair.cospa);
           registry.fill(HIST("SCT/eT/hDCA2legs"), eTpair.dca2legs);
           registry.fill(HIST("SCT/eT/hMass"), eTpair.mass);
-          if (eTpair.isOK && fConfigDFeT.useML) {
+          if (eTpair.isOK && fConfigDFeT.useML && eTpair.chi2PCA < fConfigDFeT.maxChi2PCA && eTpair.mass < fConfigDFeT.maxMassLH) {
             o2::analysis::pwgem::dilepton::sct::candidate candidate;
-            fillCandidate(candidate, eTpair, trackParCov, mDcaInfoCov);
+            fillCandidate(candidate, eTpair, hadronParCov, mDcaInfoCov);
             candidate.ptL = trackParCov.getPt();
             candidate.signLH = electron.sign() * hadron.sign();
             candidate.signedMassLH = electron.sign() * hadron.sign() * eTpair.mass;
             candidate.tpcNSigmaKa = hadron.tpcNSigmaKa();
 
-            std::vector<float> inputFeatures = mlResponseSCTeT.getInputFeatures(candidate);
+            auto inputFeatures = mlResponseSCTeT.getInputFeatures(candidate);
             float binningFeature = mlResponseSCTeT.getBinningFeature(candidate);
 
             int pbin = lower_bound(fConfigDFeT.binsMl.value.begin(), fConfigDFeT.binsMl.value.end(), binningFeature) - fConfigDFeT.binsMl.value.begin() - 1;
@@ -1674,405 +1678,380 @@ class ElectronModule
               pbin = static_cast<int>(fConfigDFeT.binsMl.value.size()) - 2;
             }
 
-            float probaPrompt = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[0];
-            float probaPromptHc = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[1];
-            float probaNonpromptHc = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[2];
-            float probaHb = mlResponseSCTeT.getModelOutput(inputFeatures, pbin)[3];
-
-            bdtScorePrompt.emplace_back(probaPrompt);
-            bdtScorePromptHc.emplace_back(probaPromptHc);
-            bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-            bdtScoreHb.emplace_back(probaHb);
+            auto vecProb = mlResponseSCTeT.getModelOutput(inputFeatures, pbin);
+            bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+            bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+            bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+            bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
             hadronType.emplace_back(0);
           }
         } // end of charged track loop
 
-        // eK0S pair
-        for (const auto& k0sId : k0sIds) {
-          auto v0 = v0s.rawIteratorAt(k0sId);
-          if (v0.posTrackId() == electron.globalIndex() || v0.negTrackId() == electron.globalIndex()) {
-            continue;
-          }
-          const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-          const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
-          std::array<float, 21> covV0 = {0.};
-          constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-          for (int i = 0; i < 6; i++) {
-            covV0[MomInd[i]] = v0.momentumCovMat()[i];
-            covV0[i] = v0.positionCovMat()[i];
-          }
-          auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
-          v0ParCov.setAbsCharge(0);
-          v0ParCov.setPID(o2::track::PID::K0);
-          o2::dataformats::DCA impactParameterV0;
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
+        // // eK0S pair
+        // for (const auto& k0sId : k0sIds) {
+        //   auto v0 = v0s.rawIteratorAt(k0sId);
+        //   if (v0.posTrackId() == electron.globalIndex() || v0.negTrackId() == electron.globalIndex()) {
+        //     continue;
+        //   }
+        //   const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+        //   const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
+        //   std::array<float, 21> covV0 = {0.};
+        //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        //   for (int i = 0; i < 6; i++) {
+        //     covV0[MomInd[i]] = v0.momentumCovMat()[i];
+        //     covV0[i] = v0.positionCovMat()[i];
+        //   }
+        //   auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
+        //   v0ParCov.setAbsCharge(0);
+        //   v0ParCov.setPID(o2::track::PID::K0);
+        //   o2::dataformats::DCA impactParameterV0;
+        //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
-          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::K0);
-          registry.fill(HIST("SCT/eV0/hImpactParameter"), eV0pair.impParXY, eV0pair.impParZ);
-          registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
-          registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
-          registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
-          registry.fill(HIST("SCT/eV0/hMass"), eV0pair.mass);
-          if (eV0pair.isOK && fConfigDFeV0.useML) {
-            o2::analysis::pwgem::dilepton::sct::candidate candidate;
-            fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
-            candidate.ptL = trackParCov.getPt();
+        //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::K0, o2::constants::physics::MassElectron);
+        //   registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
+        //   registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
+        //   registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
+        //   registry.fill(HIST("SCT/eV0/hMass"), eV0pair.mass);
+        //   if (eV0pair.isOK && fConfigDFeV0.useML && eV0pair.chi2PCA < fConfigDFeV0.maxChi2PCA && eV0pair.mass < fConfigDFeV0.maxMassLH) {
+        //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+        //     fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
+        //     candidate.ptL = trackParCov.getPt();
+        //     candidate.massH = o2::constants::physics::MassK0Short;
 
-            std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
-            float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
+        //     auto inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
+        //     float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
 
-            int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
-            if (pbin < 0) {
-              pbin = 0;
-            } else if (static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2 < pbin) {
-              pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
-            }
+        //     int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
+        //     if (pbin < 0) {
+        //       pbin = 0;
+        //     } else if (static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2 < pbin) {
+        //       pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
+        //     }
 
-            float probaPrompt = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[0];
-            float probaPromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[1];
-            float probaNonpromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[2];
-            float probaHb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[3];
-            bdtScorePrompt.emplace_back(probaPrompt);
-            bdtScorePromptHc.emplace_back(probaPromptHc);
-            bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-            bdtScoreHb.emplace_back(probaHb);
-            hadronType.emplace_back(1);
-          }
-        } // end of k0s loop
+        //     auto vecProb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin);
+        //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+        //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+        //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+        //     bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
+        //     hadronType.emplace_back(1);
+        //   }
+        // } // end of k0s loop
 
         if (electron.sign() > 0) { // positron
           // eL pair // sign is restricted in baryon decay: Lc+ -> e+ nu_e Lambda
-          for (const auto& lambdaId : lambdaIds) {
-            auto v0 = v0s.rawIteratorAt(lambdaId);
-            if (v0.posTrackId() == electron.globalIndex() || v0.negTrackId() == electron.globalIndex()) {
-              continue;
-            }
-            const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-            const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 21> covV0 = {0.};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
-              covV0[MomInd[i]] = v0.momentumCovMat()[i];
-              covV0[i] = v0.positionCovMat()[i];
-            }
-            auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
-            v0ParCov.setAbsCharge(0);
-            v0ParCov.setPID(o2::track::PID::Lambda);
-            o2::dataformats::DCA impactParameterV0;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
+          // for (const auto& lambdaId : lambdaIds) {
+          //   auto v0 = v0s.rawIteratorAt(lambdaId);
+          //   if (v0.posTrackId() == electron.globalIndex() || v0.negTrackId() == electron.globalIndex()) {
+          //     continue;
+          //   }
+          //   const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+          //   const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
+          //   std::array<float, 21> covV0 = {0.};
+          //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+          //   for (int i = 0; i < 6; i++) {
+          //     covV0[MomInd[i]] = v0.momentumCovMat()[i];
+          //     covV0[i] = v0.positionCovMat()[i];
+          //   }
+          //   auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
+          //   v0ParCov.setAbsCharge(0);
+          //   v0ParCov.setPID(o2::track::PID::Lambda);
+          //   o2::dataformats::DCA impactParameterV0;
+          //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
-            auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
-            registry.fill(HIST("SCT/eV0/hImpactParameter"), eV0pair.impParXY, eV0pair.impParZ);
-            registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
-            registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
-            registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
-            registry.fill(HIST("SCT/eV0/hMass"), eV0pair.mass);
-            if (eV0pair.isOK && fConfigDFeV0.useML) {
-              o2::analysis::pwgem::dilepton::sct::candidate candidate;
-              fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
-              candidate.ptL = trackParCov.getPt();
+          //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::Lambda, o2::constants::physics::MassElectron);
+          //   registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
+          //   registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
+          //   registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
+          //   registry.fill(HIST("SCT/eV0/hMass"), eV0pair.mass);
+          //   if (eV0pair.isOK && fConfigDFeV0.useML && eV0pair.chi2PCA < fConfigDFeV0.maxChi2PCA && eV0pair.mass < fConfigDFeV0.maxMassLH) {
+          //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+          //     fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
+          //     candidate.ptL = trackParCov.getPt();
+          //     candidate.massH = o2::constants::physics::MassLambda;
 
-              std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
-              float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
+          //     auto inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
+          //     float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
 
-              int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
-              if (pbin < 0) {
-                pbin = 0;
-              } else if (static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2 < pbin) {
-                pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
-              }
+          //     int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
+          //     if (pbin < 0) {
+          //       pbin = 0;
+          //     } else if (static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2 < pbin) {
+          //       pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
+          //     }
 
-              float probaPrompt = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
-              hadronType.emplace_back(2);
-            }
-          } // end of lambda loop
+          //     auto vecProb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin);
+          //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+          //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+          //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+          //     bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
+          //     hadronType.emplace_back(2);
+          //   }
+          // } // end of lambda loop
 
           // eXi pair // sign is restricted in baryon decay: Xic0 -> e+ nu_e Xi-
-          for (const auto& xiId : xiMinusIds) {
-            auto cascade = cascades.rawIteratorAt(xiId);
-            if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
-              continue;
-            }
+          // for (const auto& xiId : xiMinusIds) {
+          //   auto cascade = cascades.rawIteratorAt(xiId);
+          //   if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
+          //     continue;
+          //   }
 
-            const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
-            const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
-            std::array<float, 21> covCasc = {0.};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
-              covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
-              covCasc[i] = cascade.positionCovMat()[i];
-            }
-            auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
-            cascadeParCov.setAbsCharge(1);
-            cascadeParCov.setPID(o2::track::PID::XiMinus);
-            o2::dataformats::DCA impactParameterCasc;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
+          //   const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
+          //   const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
+          //   std::array<float, 21> covCasc = {0.};
+          //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+          //   for (int i = 0; i < 6; i++) {
+          //     covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
+          //     covCasc[i] = cascade.positionCovMat()[i];
+          //   }
+          //   auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
+          //   cascadeParCov.setAbsCharge(1);
+          //   cascadeParCov.setPID(o2::track::PID::XiMinus);
+          //   o2::dataformats::DCA impactParameterCasc;
+          //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-            auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
-            registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
-            registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
-            registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
-            registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
-            if (eCpair.isOK && fConfigDFeC.useML) {
-              o2::analysis::pwgem::dilepton::sct::candidate candidate;
-              fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
-              candidate.ptL = trackParCov.getPt();
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::XiMinus, o2::constants::physics::MassElectron);
+          //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
+          //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
+          //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
+          //   registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
+          //   if (eCpair.isOK && fConfigDFeC.useML && eCpair.chi2PCA < fConfigDFeC.maxChi2PCA && eCpair.mass < fConfigDFeC.maxMassLH) {
+          //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+          //     fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
+          //     candidate.ptL = trackParCov.getPt();
+          //     candidate.massH = o2::constants::physics::MassXiMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
-              float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
+          //     auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+          //     float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
-              int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
-              if (pbin < 0) {
-                pbin = 0;
-              } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
-                pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
-              }
+          //     int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
+          //     if (pbin < 0) {
+          //       pbin = 0;
+          //     } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
+          //       pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
+          //     }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
-              hadronType.emplace_back(4);
-            }
-          } // end of Xi- loop
+          //     auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+          //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+          //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+          //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+          //     bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
+          //     hadronType.emplace_back(4);
+          //   }
+          // } // end of Xi- loop
 
-          // eOmega pair // sign is restricted in baryon decay: Omegac0 -> e+ nu_e Omega-
-          for (const auto& omegaId : omegaMinusIds) {
-            auto cascade = cascades.rawIteratorAt(omegaId);
-            if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
-              continue;
-            }
+          // // eOmega pair // sign is restricted in baryon decay: Omegac0 -> e+ nu_e Omega-
+          // for (const auto& omegaId : omegaMinusIds) {
+          //   auto cascade = cascades.rawIteratorAt(omegaId);
+          //   if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
+          //     continue;
+          //   }
 
-            const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
-            const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
-            std::array<float, 21> covCasc = {0.};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
-              covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
-              covCasc[i] = cascade.positionCovMat()[i];
-            }
-            auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
-            cascadeParCov.setAbsCharge(1);
-            cascadeParCov.setPID(o2::track::PID::OmegaMinus);
-            o2::dataformats::DCA impactParameterCasc;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
+          //   const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
+          //   const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
+          //   std::array<float, 21> covCasc = {0.};
+          //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+          //   for (int i = 0; i < 6; i++) {
+          //     covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
+          //     covCasc[i] = cascade.positionCovMat()[i];
+          //   }
+          //   auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
+          //   cascadeParCov.setAbsCharge(1);
+          //   cascadeParCov.setPID(o2::track::PID::OmegaMinus);
+          //   o2::dataformats::DCA impactParameterCasc;
+          //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-            auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
-            registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
-            registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
-            registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
-            registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
-            if (eCpair.isOK && fConfigDFeC.useML) {
-              o2::analysis::pwgem::dilepton::sct::candidate candidate;
-              fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
-              candidate.ptL = trackParCov.getPt();
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::OmegaMinus, o2::constants::physics::MassElectron);
+          //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
+          //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
+          //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
+          //   registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
+          //   if (eCpair.isOK && fConfigDFeC.useML && eCpair.chi2PCA < fConfigDFeC.maxChi2PCA && eCpair.mass < fConfigDFeC.maxMassLH) {
+          //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+          //     fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
+          //     candidate.ptL = trackParCov.getPt();
+          //     candidate.massH = o2::constants::physics::MassOmegaMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
-              float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
+          //     auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+          //     float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
-              int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
-              if (pbin < 0) {
-                pbin = 0;
-              } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
-                pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
-              }
+          //     int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
+          //     if (pbin < 0) {
+          //       pbin = 0;
+          //     } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
+          //       pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
+          //     }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
-              hadronType.emplace_back(6);
-            }
-          } // end of Omega- loop
+          //     auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+          //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+          //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+          //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+          //     bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
+          //     hadronType.emplace_back(6);
+          //   }
+          // } // end of Omega- loop
 
         } else { // electron
           // eL pair // sign is restricted in baryon decay: Lc- -> e- anti_nu_e antiLambda
-          for (const auto& antilambdaId : antilambdaIds) {
-            auto v0 = v0s.rawIteratorAt(antilambdaId);
-            if (v0.posTrackId() == electron.globalIndex() || v0.negTrackId() == electron.globalIndex()) {
-              continue;
-            }
-            const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-            const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 21> covV0 = {0.};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
-              covV0[MomInd[i]] = v0.momentumCovMat()[i];
-              covV0[i] = v0.positionCovMat()[i];
-            }
-            auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
-            v0ParCov.setAbsCharge(0);
-            v0ParCov.setPID(o2::track::PID::Lambda);
-            o2::dataformats::DCA impactParameterV0;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
+          // for (const auto& antilambdaId : antilambdaIds) {
+          //   auto v0 = v0s.rawIteratorAt(antilambdaId);
+          //   if (v0.posTrackId() == electron.globalIndex() || v0.negTrackId() == electron.globalIndex()) {
+          //     continue;
+          //   }
+          //   const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+          //   const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
+          //   std::array<float, 21> covV0 = {0.};
+          //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+          //   for (int i = 0; i < 6; i++) {
+          //     covV0[MomInd[i]] = v0.momentumCovMat()[i];
+          //     covV0[i] = v0.positionCovMat()[i];
+          //   }
+          //   auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
+          //   v0ParCov.setAbsCharge(0);
+          //   v0ParCov.setPID(o2::track::PID::Lambda);
+          //   o2::dataformats::DCA impactParameterV0;
+          //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, v0ParCov, 2.f, matCorr, &impactParameterV0); // v0ParCov is TrackParCov object
 
-            auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
-            registry.fill(HIST("SCT/eV0/hImpactParameter"), eV0pair.impParXY, eV0pair.impParZ);
-            registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
-            registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
-            registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
-            registry.fill(HIST("SCT/eV0/hMass"), eV0pair.mass);
-            if (eV0pair.isOK && fConfigDFeV0.useML) {
-              o2::analysis::pwgem::dilepton::sct::candidate candidate;
-              fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
-              candidate.ptL = trackParCov.getPt();
+          //   auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(dfeV0, collision, electron, v0, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::Lambda, o2::constants::physics::MassElectron);
+          //   registry.fill(HIST("SCT/eV0/hDecayLength"), eV0pair.lxy, eV0pair.lz);
+          //   registry.fill(HIST("SCT/eV0/hCosPA"), eV0pair.cospa);
+          //   registry.fill(HIST("SCT/eV0/hDCA2legs"), eV0pair.dca2legs);
+          //   registry.fill(HIST("SCT/eV0/hMass"), eV0pair.mass);
+          //   if (eV0pair.isOK && fConfigDFeV0.useML && eV0pair.chi2PCA < fConfigDFeV0.maxChi2PCA && eV0pair.mass < fConfigDFeV0.maxMassLH) {
+          //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+          //     fillCandidate(candidate, eV0pair, v0ParCov, impactParameterV0);
+          //     candidate.ptL = trackParCov.getPt();
+          //     candidate.massH = o2::constants::physics::MassLambda;
 
-              std::vector<float> inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
-              float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
+          //     auto inputFeatures = mlResponseSCTeV0.getInputFeatures(candidate);
+          //     float binningFeature = mlResponseSCTeV0.getBinningFeature(candidate);
 
-              int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
-              if (pbin < 0) {
-                pbin = 0;
-              } else if (static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2 < pbin) {
-                pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
-              }
+          //     int pbin = lower_bound(fConfigDFeV0.binsMl.value.begin(), fConfigDFeV0.binsMl.value.end(), binningFeature) - fConfigDFeV0.binsMl.value.begin() - 1;
+          //     if (pbin < 0) {
+          //       pbin = 0;
+          //     } else if (static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2 < pbin) {
+          //       pbin = static_cast<int>(fConfigDFeV0.binsMl.value.size()) - 2;
+          //     }
 
-              float probaPrompt = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
-              hadronType.emplace_back(3);
-            }
-          } // end of antilambda loop
+          //     auto vecProb = mlResponseSCTeV0.getModelOutput(inputFeatures, pbin);
+          //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+          //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+          //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+          //     bdtScoreHb.emplace_back(static_cast<uint8_t>(vecProb[3] * 255.f));
+          //     hadronType.emplace_back(3);
+          //   }
+          // } // end of antilambda loop
 
-          // eXi pair // sign is restricted in baryon decay: Xic0bar -> e- anti_nu_e Xi+
-          for (const auto& xiId : xiPlusIds) {
-            auto cascade = cascades.rawIteratorAt(xiId);
-            if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
-              continue;
-            }
+          // // eXi pair // sign is restricted in baryon decay: Xic0bar -> e- anti_nu_e Xi+
+          // for (const auto& xiId : xiPlusIds) {
+          //   auto cascade = cascades.rawIteratorAt(xiId);
+          //   if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
+          //     continue;
+          //   }
 
-            const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
-            const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
-            std::array<float, 21> covCasc = {0.};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
-              covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
-              covCasc[i] = cascade.positionCovMat()[i];
-            }
-            auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
-            cascadeParCov.setAbsCharge(1);
-            cascadeParCov.setPID(o2::track::PID::XiMinus);
-            o2::dataformats::DCA impactParameterCasc;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
+          //   const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
+          //   const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
+          //   std::array<float, 21> covCasc = {0.};
+          //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+          //   for (int i = 0; i < 6; i++) {
+          //     covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
+          //     covCasc[i] = cascade.positionCovMat()[i];
+          //   }
+          //   auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
+          //   cascadeParCov.setAbsCharge(1);
+          //   cascadeParCov.setPID(o2::track::PID::XiMinus);
+          //   o2::dataformats::DCA impactParameterCasc;
+          //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-            auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
-            registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
-            registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
-            registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
-            registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
-            if (eCpair.isOK && fConfigDFeC.useML) {
-              o2::analysis::pwgem::dilepton::sct::candidate candidate;
-              fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
-              candidate.ptL = trackParCov.getPt();
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::XiMinus, o2::constants::physics::MassElectron);
+          //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
+          //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
+          //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
+          //   registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
+          //   if (eCpair.isOK && fConfigDFeC.useML && eCpair.chi2PCA < fConfigDFeC.maxChi2PCA && eCpair.mass < fConfigDFeC.maxMassLH) {
+          //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+          //     fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
+          //     candidate.ptL = trackParCov.getPt();
+          //     candidate.massH = o2::constants::physics::MassXiMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
-              float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
+          //     auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+          //     float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
-              int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
-              if (pbin < 0) {
-                pbin = 0;
-              } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
-                pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
-              }
+          //     int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
+          //     if (pbin < 0) {
+          //       pbin = 0;
+          //     } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
+          //       pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
+          //     }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
-              hadronType.emplace_back(5);
-            }
-          } // end of Xi- loop
+          //     auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+          //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+          //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+          //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+          //     bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
+          //     hadronType.emplace_back(5);
+          //   }
+          // } // end of Xi- loop
 
-          // eOmega pair // sign is restricted in baryon decay: Omegac0bar -> e- anti_nu_e Omega+
-          for (const auto& omegaId : omegaPlusIds) {
-            auto cascade = cascades.rawIteratorAt(omegaId);
-            if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
-              continue;
-            }
+          // // eOmega pair // sign is restricted in baryon decay: Omegac0bar -> e- anti_nu_e Omega+
+          // for (const auto& omegaId : omegaPlusIds) {
+          //   auto cascade = cascades.rawIteratorAt(omegaId);
+          //   if (cascade.posTrackId() == electron.globalIndex() || cascade.negTrackId() == electron.globalIndex() || cascade.bachelorId() == electron.globalIndex()) {
+          //     continue;
+          //   }
 
-            const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
-            const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
-            std::array<float, 21> covCasc = {0.};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
-              covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
-              covCasc[i] = cascade.positionCovMat()[i];
-            }
-            auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
-            cascadeParCov.setAbsCharge(1);
-            cascadeParCov.setPID(o2::track::PID::OmegaMinus);
-            o2::dataformats::DCA impactParameterCasc;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
+          //   const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
+          //   const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
+          //   std::array<float, 21> covCasc = {0.};
+          //   constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+          //   for (int i = 0; i < 6; i++) {
+          //     covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
+          //     covCasc[i] = cascade.positionCovMat()[i];
+          //   }
+          //   auto cascadeParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
+          //   cascadeParCov.setAbsCharge(1);
+          //   cascadeParCov.setPID(o2::track::PID::OmegaMinus);
+          //   o2::dataformats::DCA impactParameterCasc;
+          //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, cascadeParCov, 2.f, matCorr, &impactParameterCasc); // cascadeParCov is TrackParCov object
 
-            auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
-            registry.fill(HIST("SCT/eC/hImpactParameter"), eCpair.impParXY, eCpair.impParZ);
-            registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
-            registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
-            registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
-            registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
-            if (eCpair.isOK && fConfigDFeC.useML) {
-              o2::analysis::pwgem::dilepton::sct::candidate candidate;
-              fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
-              candidate.ptL = trackParCov.getPt();
+          //   auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(dfeC, collision, electron, cascade, fElectronCut.useElectronHypothesis ? o2::track::PID::Electron : electron.pidForTracking(), o2::track::PID::OmegaMinus, o2::constants::physics::MassElectron);
+          //   registry.fill(HIST("SCT/eC/hDecayLength"), eCpair.lxy, eCpair.lz);
+          //   registry.fill(HIST("SCT/eC/hCosPA"), eCpair.cospa);
+          //   registry.fill(HIST("SCT/eC/hDCA2legs"), eCpair.dca2legs);
+          //   registry.fill(HIST("SCT/eC/hMass"), eCpair.mass);
+          //   if (eCpair.isOK && fConfigDFeC.useML && eCpair.chi2PCA < fConfigDFeC.maxChi2PCA && eCpair.mass < fConfigDFeC.maxMassLH) {
+          //     o2::analysis::pwgem::dilepton::sct::candidate candidate;
+          //     fillCandidate(candidate, eCpair, cascadeParCov, impactParameterCasc);
+          //     candidate.ptL = trackParCov.getPt();
+          //     candidate.massH = o2::constants::physics::MassOmegaMinus;
 
-              std::vector<float> inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
-              float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
+          //     auto inputFeatures = mlResponseSCTeC.getInputFeatures(candidate);
+          //     float binningFeature = mlResponseSCTeC.getBinningFeature(candidate);
 
-              int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
-              if (pbin < 0) {
-                pbin = 0;
-              } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
-                pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
-              }
+          //     int pbin = lower_bound(fConfigDFeC.binsMl.value.begin(), fConfigDFeC.binsMl.value.end(), binningFeature) - fConfigDFeC.binsMl.value.begin() - 1;
+          //     if (pbin < 0) {
+          //       pbin = 0;
+          //     } else if (static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2 < pbin) {
+          //       pbin = static_cast<int>(fConfigDFeC.binsMl.value.size()) - 2;
+          //     }
 
-              float probaPrompt = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[0];
-              float probaPromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[1];
-              float probaNonpromptHc = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[2];
-              float probaHb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin)[3];
-              bdtScorePrompt.emplace_back(probaPrompt);
-              bdtScorePromptHc.emplace_back(probaPromptHc);
-              bdtScoreNonpromptHc.emplace_back(probaNonpromptHc);
-              bdtScoreHb.emplace_back(probaHb);
-              hadronType.emplace_back(7);
-            }
-          } // end of Omega- loop
+          //     auto vecProb = mlResponseSCTeC.getModelOutput(inputFeatures, pbin);
+          //     bdtScoreBkg.emplace_back(static_cast<uint8_t>(vecProb[0] * 255.f));
+          //     bdtScorePromptHc.emplace_back(static_cast<uint8_t>(vecProb[1] * 255.f));
+          //     bdtScoreNonpromptHc.emplace_back(static_cast<uint8_t>(vecProb[2] * 255.f));
+          //     bdtScoreHb.emplace_back(static_cast<uint8_t>(0));
+          //     hadronType.emplace_back(7);
+          //   }
+          // } // end of Omega- loop
         }
 
-        products.sctTable(bdtScorePrompt, bdtScorePromptHc, bdtScoreNonpromptHc, bdtScoreHb, hadronType);
+        products.sctTable(/*bdtScoreBkg,*/ bdtScorePromptHc, bdtScoreNonpromptHc, bdtScoreHb, hadronType);
 
-        bdtScorePrompt.clear();
+        bdtScoreBkg.clear();
         bdtScorePromptHc.clear();
         bdtScoreNonpromptHc.clear();
         bdtScoreHb.clear();
         hadronType.clear();
-        bdtScorePrompt.shrink_to_fit();
+        bdtScoreBkg.shrink_to_fit();
         bdtScorePromptHc.shrink_to_fit();
         bdtScoreNonpromptHc.shrink_to_fit();
         bdtScoreHb.shrink_to_fit();
@@ -2082,63 +2061,65 @@ class ElectronModule
       hadronIds.clear();
       hadronIds.shrink_to_fit();
 
-      k0sIds.clear();
-      k0sIds.shrink_to_fit();
+      // k0sIds.clear();
+      // k0sIds.shrink_to_fit();
 
-      lambdaIds.clear();
-      lambdaIds.shrink_to_fit();
-      antilambdaIds.clear();
-      antilambdaIds.shrink_to_fit();
+      // lambdaIds.clear();
+      // lambdaIds.shrink_to_fit();
+      // antilambdaIds.clear();
+      // antilambdaIds.shrink_to_fit();
 
-      xiMinusIds.clear();
-      xiMinusIds.shrink_to_fit();
-      xiPlusIds.clear();
-      xiPlusIds.shrink_to_fit();
+      // xiMinusIds.clear();
+      // xiMinusIds.shrink_to_fit();
+      // xiPlusIds.clear();
+      // xiPlusIds.shrink_to_fit();
 
-      omegaMinusIds.clear();
-      omegaMinusIds.shrink_to_fit();
-      omegaPlusIds.clear();
-      omegaPlusIds.shrink_to_fit();
+      // omegaMinusIds.clear();
+      // omegaMinusIds.shrink_to_fit();
+      // omegaPlusIds.clear();
+      // omegaPlusIds.shrink_to_fit();
 
       looseElectronIds.clear();
       looseElectronIds.shrink_to_fit();
       multiMapTracksPerCollision.clear();
+
+      fMapProbaEl.clear();
+
     } // end of collision loop
     clear();
   }
 
-  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TCascades, typename TMCParticles, typename TProducts, typename THistoregistry>
-  void processWithoutTTCA(TBCs const& bcs, TCollisions const& collisions, TTracks const&, TV0s const&, TCascades const&, TMCParticles const&, TProducts&, THistoregistry&)
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks, /*typename TV0s, typename TCascades,*/ typename TMCParticles, typename TProducts, typename THistoregistry>
+  void processWithoutTTCA(TBCs const&, TCollisions const&, TTracks const&, /*TV0s const&, TCascades const&,*/ TMCParticles const&, TProducts&, THistoregistry&)
   {
     LOGF(info, "processWithoutTTCA is not supported. Bye.");
-    return;
 
-    initCCDB(bcs.begin());
-    // calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
+    // initCCDB(bcs.begin());
+    // // calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
-    for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<TBCs>();
-      initCCDB(bc);
+    // for (const auto& collision : collisions) {
+    //   auto bc = collision.template bc_as<TBCs>();
+    //   initCCDB(bc);
 
-      if constexpr (isMC) {
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-      }
+    //   if constexpr (isMC) {
+    //     if (!collision.has_mcCollision()) {
+    //       continue;
+    //     }
+    //   }
 
-      if (!collision.isSelected()) {
-        continue;
-      }
+    //   if (!collision.isSelected()) {
+    //     continue;
+    //   }
 
-      if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
-          continue;
-        }
-      }
+    //   if constexpr (isTriggerAnalysis) {
+    //     if (collision.swtaliastmp_raw() == 0) {
+    //       continue;
+    //     }
+    //   }
 
-    } // end of collision loop
+    // } // end of collision loop
 
-    clear();
+    // clear();
   }
 
   void clear()
@@ -2146,15 +2127,15 @@ class ElectronModule
     // this should be called at the end of DF.
     fMapProbaEl.clear();
     fMapTOFNsigmaElReassociated.clear();
-    fMapTOFNsigmaPiReassociated.clear();
-    fMapTOFNsigmaKaReassociated.clear();
-    fMapTOFNsigmaPrReassociated.clear();
+    // fMapTOFNsigmaPiReassociated.clear();
+    // fMapTOFNsigmaKaReassociated.clear();
+    // fMapTOFNsigmaPrReassociated.clear();
     fMapTOFBetaReassociated.clear();
   }
 
   void doSCTwithTracks(const bool flag) { fDoSCTwithTracks = flag; }
-  void doSCTwithV0s(const bool flag) { fDoSCTwithV0s = flag; }
-  void doSCTwithCascades(const bool flag) { fDoSCTwithCascades = flag; }
+  // void doSCTwithV0s(const bool flag) { fDoSCTwithV0s = flag; }
+  // void doSCTwithCascades(const bool flag) { fDoSCTwithCascades = flag; }
 
   float dca3DinSigmaOTF(const float dcaXY, const float dcaZ, const float cYY, const float cZZ, const float cZY)
   {
@@ -2178,18 +2159,18 @@ class ElectronModule
     candidate.impParZHinSigma = candidate.impParZH / std::sqrt(trackParCov.getSigmaZ2());
     candidate.impPar3DHinSigma = dca3DinSigmaOTF(candidate.impParXYH, candidate.impParZH, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
     candidate.signLH = 0;
-    candidate.dcaLH = pair.dca2legs;
+    candidate.dcaLH = std::sqrt(pair.chi2PCA);
+    candidate.logChi2PCA = std::log10(pair.chi2PCA);
     candidate.massLH = pair.mass;
-    candidate.ptLH = pair.pt;
     candidate.signedMassLH = pair.mass;
     candidate.cpa = pair.cospa;
     candidate.cpaXY = pair.cospaXY;
-    candidate.impParXY = pair.impParXY;
-    candidate.impParZ = pair.impParZ;
-    candidate.impPar3D = std::sqrt(std::pow(candidate.impParXY, 2) + std::pow(candidate.impParZ, 2));
-    candidate.impParXYinSigma = candidate.impParXY / std::sqrt(pair.impParCYY);
-    candidate.impParZinSigma = candidate.impParZ / std::sqrt(pair.impParCZZ);
-    candidate.impPar3DinSigma = dca3DinSigmaOTF(candidate.impParXY, candidate.impParZ, pair.impParCYY, pair.impParCZY, pair.impParCZZ);
+    // candidate.impParXY = pair.impParXY;
+    // candidate.impParZ = pair.impParZ;
+    // candidate.impPar3D = std::sqrt(std::pow(candidate.impParXY, 2) + std::pow(candidate.impParZ, 2));
+    // candidate.impParXYinSigma = candidate.impParXY / std::sqrt(pair.impParCYY);
+    // candidate.impParZinSigma = candidate.impParZ / std::sqrt(pair.impParCZZ);
+    // candidate.impPar3DinSigma = dca3DinSigmaOTF(candidate.impParXY, candidate.impParZ, pair.impParCYY, pair.impParCZY, pair.impParCZZ);
     candidate.decayLengthXY = pair.lxy;
     candidate.decayLengthZ = pair.lz;
     candidate.decayLength3D = pair.lxyz;
@@ -2202,18 +2183,18 @@ class ElectronModule
   electronCut fElectronCut;
   electronPFCut fElectronPFCut;
   hadronCut fHadronCut;
-  v0Cut fV0Cut;
-  cascadeCut fCascadeCut;
+  // v0Cut fV0Cut;
+  // cascadeCut fCascadeCut;
   cfgDFeT fConfigDFeT;
-  cfgDFeV0 fConfigDFeV0;
-  cfgDFeC fConfigDFeC;
+  // cfgDFeV0 fConfigDFeV0;
+  // cfgDFeC fConfigDFeC;
 
   std::map<std::pair<int, int>, float> fMapProbaEl;                 // map pair(collisionId, trackId) -> probaEl
   std::map<std::pair<int, int>, float> fMapTOFNsigmaElReassociated; // map pair(collisionId, trackId) -> tof n sigma el
-  std::map<std::pair<int, int>, float> fMapTOFNsigmaPiReassociated; // map pair(collisionId, trackId) -> tof n sigma pi
-  std::map<std::pair<int, int>, float> fMapTOFNsigmaKaReassociated; // map pair(collisionId, trackId) -> tof n sigma ka
-  std::map<std::pair<int, int>, float> fMapTOFNsigmaPrReassociated; // map pair(collisionId, trackId) -> tof n sigma pr
-  std::map<std::pair<int, int>, float> fMapTOFBetaReassociated;     // map pair(collisionId, trackId) -> tof beta
+  // std::map<std::pair<int, int>, float> fMapTOFNsigmaPiReassociated; // map pair(collisionId, trackId) -> tof n sigma pi
+  // std::map<std::pair<int, int>, float> fMapTOFNsigmaKaReassociated; // map pair(collisionId, trackId) -> tof n sigma ka
+  // std::map<std::pair<int, int>, float> fMapTOFNsigmaPrReassociated; // map pair(collisionId, trackId) -> tof n sigma pr
+  std::map<std::pair<int, int>, float> fMapTOFBetaReassociated; // map pair(collisionId, trackId) -> tof beta
 
   int mRunNumber{0};
   float d_bz{0};
@@ -2222,16 +2203,16 @@ class ElectronModule
   o2::framework::Service<o2::pid::tof::TOFResponse> mTOFResponse;
   o2::analysis::MlResponsePID<float> mlResponsePID;
   o2::analysis::MlResponseSCT<float> mlResponseSCTeT;
-  o2::analysis::MlResponseSCT<float> mlResponseSCTeV0;
-  o2::analysis::MlResponseSCT<float> mlResponseSCTeC;
+  // o2::analysis::MlResponseSCT<float> mlResponseSCTeV0;
+  // o2::analysis::MlResponseSCT<float> mlResponseSCTeC;
 
   bool fDoSCTwithTracks{false};
-  bool fDoSCTwithV0s{false};
-  bool fDoSCTwithCascades{false};
+  // bool fDoSCTwithV0s{false};
+  // bool fDoSCTwithCascades{false};
   const std::vector<float> max_mee_vec{0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14};
   o2::vertexing::DCAFitterN<2> dfeT;
-  o2::vertexing::DCAFitterN<2> dfeV0;
-  o2::vertexing::DCAFitterN<2> dfeC;
+  // o2::vertexing::DCAFitterN<2> dfeV0;
+  // o2::vertexing::DCAFitterN<2> dfeC;
   o2::ccdb::CcdbApi ccdbApi;
 
 }; // end ElectronModule

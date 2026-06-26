@@ -33,6 +33,7 @@ struct eventNormConverter1 {
 
   void process(aod::EMEventNormInfos_000 const& collisions)
   {
+    event_001.reserve(collisions.size());
     for (const auto& collision : collisions) {
       event_001(
         collision.selection_raw(),

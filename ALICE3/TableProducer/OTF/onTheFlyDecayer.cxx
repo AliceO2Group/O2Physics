@@ -18,9 +18,8 @@
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
-#include "ALICE3/DataModel/OTFMCParticle.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -32,19 +31,15 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TPDGCode.h>
-
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
-#include <map>
-#include <ostream>
-#include <span>
 #include <string>
 #include <vector>
 
@@ -54,8 +49,8 @@ using namespace o2::framework;
 static constexpr int NumDecays = 7;
 static constexpr int NumParameters = 1;
 static constexpr int DefaultParameters[NumDecays][NumParameters]{{1}, {1}, {1}, {1}, {1}, {1}, {1}};
-static const std::vector<std::string> ParameterNames{"enable"};
-static const std::vector<std::string> ParticleNames{"K0s",
+static const std::vector<std::string> parameterNames{"enable"};
+static const std::vector<std::string> particleNames{"K0s",
                                                     "Lambda",
                                                     "Anti-Lambda",
                                                     "Xi",
@@ -71,23 +66,29 @@ static const std::vector<int> pdgCodes{PDG_t::kK0Short,
                                        PDG_t::kOmegaMinus,
                                        PDG_t::kOmegaPlusBar};
 
+namespace o2::aod
+{
+O2ORIGIN("TMP");
+}
+
 struct OnTheFlyDecayer {
-  Produces<aod::McPartWithDaus> tableMcParticlesWithDau;
+  Produces<aod::McCollisions_001> tableMcCollisions;
+  Produces<aod::StoredMcParticles_001> tableMcParticles;
+  Produces<aod::OTFDecayerBits> tableOTFDecayerBits;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
-  std::map<int, std::vector<o2::upgrade::OTFParticle>> mDecayDaughters;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
-                                                {DefaultParameters[0], NumDecays, NumParameters, ParticleNames, ParameterNames},
+                                                {DefaultParameters[0], NumDecays, NumParameters, particleNames, parameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
 
+  std::size_t indexOffset = 0;
+  std::size_t particlesInDataframe = 0;
   static constexpr float PicoToNano = 1.e-3f;
-  int mCollisionId{-1};
-
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
   {
@@ -97,7 +98,7 @@ struct OnTheFlyDecayer {
     decayer.setSeed(seed);
     decayer.setBField(magneticField);
     for (int i = 0; i < NumDecays; ++i) {
-      if (enabledDecays->get(ParticleNames[i].c_str(), "enable")) {
+      if (enabledDecays->get(particleNames[i].c_str(), "enable")) {
         LOG(info) << " --- Decay enabled: " << pdgCodes[i];
         mEnabledDecays.push_back(pdgCodes[i]);
       }
@@ -120,20 +121,28 @@ struct OnTheFlyDecayer {
   std::vector<o2::upgrade::OTFParticle> allParticles;
   void decayParticles(const int start, const int stop)
   {
+    if (start >= stop) {
+      return;
+    }
+
     int ndau = 0;
-    for (int i = start; i < stop; i++) {
+    for (int i = start; i < stop; ++i) {
       o2::upgrade::OTFParticle& particle = allParticles[i];
       if (particle.isFromMcParticles()) {
-        particle.setIsPrimary(true);
-        particle.setIsAlive(true);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsPrimary);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsAlive);
       }
 
       if (!canDecay(particle)) {
         continue;
       }
 
-      particle.setIsAlive(false);
+      particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
       std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
+      if (decayStack.empty()) {
+        continue;
+      }
+
       const float decayRadius = decayer.getDecayRadius();
       const float trackVelocity = o2::upgrade::computeParticleVelocity(particle.p(), pdgDB->GetParticle(particle.pdgCode())->Mass());
       const int charge = pdgDB->GetParticle(particle.pdgCode())->Charge() / 3;
@@ -150,61 +159,74 @@ struct OnTheFlyDecayer {
       }
 
       const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
-      particle.setIndicesDaughter(allParticles.size(), allParticles.size() + (decayStack.size() - 1));
-      for (o2::upgrade::OTFParticle daughter : decayStack) {
-        daughter.setIndicesMother(i, i);
-        daughter.setCollisionId(mCollisionId);
-        daughter.setIsAlive(true);
-        daughter.setIsPrimary(false);
+      particle.setIndicesDaughter(particlesInDataframe - indexOffset + allParticles.size(), particlesInDataframe - indexOffset + allParticles.size() + (decayStack.size() - 1));
+      for (auto& daughter : decayStack) {
+        daughter.setIndicesMother(particlesInDataframe - indexOffset + i, particlesInDataframe - indexOffset + i);
+        daughter.setCollisionId(particle.collisionId());
+        daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
+        daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
         daughter.setProductionTime(trackTimeNS);
         allParticles.push_back(daughter);
-        ndau++;
       }
-    }
-
-    if (start >= stop) {
-      return;
+      ndau += decayStack.size();
     }
 
     decayParticles(stop, stop + ndau);
   }
 
-  void process(aod::McCollision const& collision, aod::McParticles const& mcParticles)
+  void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>>::iterator const& collision, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
   {
-    mCollisionId = collision.globalIndex();
     allParticles.clear();
+    allParticles.reserve(mcParticles.size() * 2);
+    if (collision.globalIndex() == 0) {
+      particlesInDataframe = 0;
+      indexOffset = 0;
+    }
+
+    // Reproduce collision table to have AOD origin
+    tableMcCollisions(collision.bcId(), collision.generatorsID(),
+                      collision.posX(), collision.posY(), collision.posZ(), collision.t(),
+                      collision.weight(), collision.impactParameter(), collision.eventPlaneAngle());
 
     // First we copy the particles from the table into a vector that is extendable
-    for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
-      const auto& mcParticle = mcParticles.rawIteratorAt(index);
-      allParticles.push_back(o2::upgrade::OTFParticle{mcParticle});
+    for (const auto& particle : mcParticles) {
+      allParticles.emplace_back(o2::upgrade::OTFParticle{particle});
     }
 
     // Do all decays
     decayParticles(0, allParticles.size());
 
     // Fill output table
-    for (int index{0}; index < static_cast<int>(allParticles.size()); ++index) {
-      const auto& otfParticle = allParticles[index];
-
+    for (auto& otfParticle : allParticles) {
+      otfParticle.setIndexOffset(indexOffset);
       if (otfParticle.hasNaN()) {
         histos.fill(HIST("hNaNBookkeeping"), 1);
       } else {
         histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      // todo: status codes
-      tableMcParticlesWithDau(otfParticle.collisionId(), otfParticle.pdgCode(), otfParticle.statusCode(),
-                              otfParticle.flags(), otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
-                              otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
-                              otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt(),
-                              otfParticle.phi(), otfParticle.eta(), otfParticle.pt(), otfParticle.p(), otfParticle.y(),
-                              otfParticle.isAlive(), otfParticle.isPrimary());
+      tableOTFDecayerBits(otfParticle.getBitsValue());
+      tableMcParticles(tableMcCollisions.lastIndex(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
+                       otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
+                       otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
+                       otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
     }
+
+    // Particles for later collisions in df's needs to have thier mother
+    // and daughter indices adjusted since their global index will be
+    // shifted due to the appending of decay products
+    indexOffset += (allParticles.size() - mcParticles.size());
+    particlesInDataframe += allParticles.size();
   }
+};
+
+struct OnTheFlyDecayerExtensionSpawner {
+  Spawns<aod::McParticles_001Extension> spawnMcParticlesExtensions;
+  void init(o2::framework::InitContext&) {}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc),
+                      adaptAnalysisTask<OnTheFlyDecayerExtensionSpawner>(cfgc)};
 }

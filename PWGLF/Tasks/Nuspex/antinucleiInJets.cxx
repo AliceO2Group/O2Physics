@@ -392,6 +392,10 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_full", "antiproton_gen_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
+      // Generated spectra of antideuterons
+      registryMC.add("antideuteron_gen_jet", "antideuteron_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_gen_ue", "antideuteron_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
       // Generated spectra of antiprotons for closure test
       registryMC.add("antiproton_gen_jet_data", "antiproton_gen_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_ue_data", "antiproton_gen_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -424,6 +428,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_rec_tof_ue", "antiproton_rec_tof_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tpc_full", "antiproton_rec_tpc_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tof_full", "antiproton_rec_tof_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Reconstructed spectra of antideuterons
+      registryMC.add("antideuteron_rec_tpc_jet", "antideuteron_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_rec_tof_jet", "antideuteron_rec_tof_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_rec_tpc_ue", "antideuteron_rec_tpc_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_rec_tof_ue", "antideuteron_rec_tof_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Reconstructed spectra of antiprotons for closure test
       registryMC.add("antiproton_rec_tpc_jet_data", "antiproton_rec_tpc_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -464,8 +474,8 @@ struct AntinucleiInJets {
       // Generated spectra of (anti)deuterons
       registryMC.add("deuteron_gen_jet", "deuteron_gen_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("deuteron_gen_ue", "deuteron_gen_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antideuteron_gen_jet", "antideuteron_gen_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antideuteron_gen_ue", "antideuteron_gen_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuterons_gen_jet", "antideuterons_gen_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuterons_gen_ue", "antideuterons_gen_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Generated spectra of (anti)helium3
       registryMC.add("helium3_gen_jet", "helium3_gen_jet", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -484,10 +494,10 @@ struct AntinucleiInJets {
       registryMC.add("deuteron_rec_tof_jet", "deuteron_rec_tof_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("deuteron_rec_tpc_ue", "deuteron_rec_tpc_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("deuteron_rec_tof_ue", "deuteron_rec_tof_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antideuteron_rec_tpc_jet", "antideuteron_rec_tpc_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antideuteron_rec_tof_jet", "antideuteron_rec_tof_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antideuteron_rec_tpc_ue", "antideuteron_rec_tpc_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antideuteron_rec_tof_ue", "antideuteron_rec_tof_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuterons_rec_tpc_jet", "antideuterons_rec_tpc_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuterons_rec_tof_jet", "antideuterons_rec_tof_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuterons_rec_tpc_ue", "antideuterons_rec_tpc_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuterons_rec_tof_ue", "antideuterons_rec_tof_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Reconstructed spectra of (anti)helium3
       registryMC.add("helium3_rec_tpc_jet", "helium3_rec_tpc_jet", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -735,9 +745,9 @@ struct AntinucleiInJets {
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
   bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
   {
-    // Keep only pi, K, p, e, mu
+    // Keep only pi, K, p, d, e, mu
     int pdg = std::abs(particle.pdgCode());
-    if (!(pdg == PDG_t::kPiPlus || pdg == PDG_t::kKPlus || pdg == PDG_t::kProton || pdg == PDG_t::kElectron || pdg == PDG_t::kMuonMinus))
+    if (!(pdg == PDG_t::kPiPlus || pdg == PDG_t::kKPlus || pdg == PDG_t::kProton || pdg == o2::constants::physics::Pdg::kDeuteron || pdg == PDG_t::kElectron || pdg == PDG_t::kMuonMinus))
       return false;
 
     // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
@@ -1750,8 +1760,8 @@ struct AntinucleiInJets {
             registryMC.fill(HIST("deuteron_gen_ue"), particle.pt());
             break;
           case -o2::constants::physics::Pdg::kDeuteron:
-            registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt());
-            registryMC.fill(HIST("antideuteron_gen_ue"), particle.pt());
+            registryMC.fill(HIST("antideuterons_gen_jet"), particle.pt());
+            registryMC.fill(HIST("antideuterons_gen_ue"), particle.pt());
             break;
           case o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("helium3_gen_jet"), particle.pt());
@@ -1982,12 +1992,12 @@ struct AntinucleiInJets {
         // Fill histograms of antideuterons
         if (track.sign() < 0 && particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron && passedItsPidDeut) {
           if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc) {
-            registryMC.fill(HIST("antideuteron_rec_tpc_jet"), track.pt());
-            registryMC.fill(HIST("antideuteron_rec_tpc_ue"), track.pt());
+            registryMC.fill(HIST("antideuterons_rec_tpc_jet"), track.pt());
+            registryMC.fill(HIST("antideuterons_rec_tpc_ue"), track.pt());
 
             if (track.hasTOF() && nsigmaTOFDe > minNsigmaTof && nsigmaTOFDe < maxNsigmaTof) {
-              registryMC.fill(HIST("antideuteron_rec_tof_jet"), track.pt());
-              registryMC.fill(HIST("antideuteron_rec_tof_ue"), track.pt());
+              registryMC.fill(HIST("antideuterons_rec_tof_jet"), track.pt());
+              registryMC.fill(HIST("antideuterons_rec_tof_ue"), track.pt());
             }
           }
         }
@@ -2030,6 +2040,7 @@ struct AntinucleiInJets {
     // Define per-event particle containers
     std::vector<fastjet::PseudoJet> fjParticles;
     std::vector<TVector3> protonMomentum;
+    std::vector<TVector3> deuteronMomentum;
 
     // Event counter
     int eventCounter = 0;
@@ -2047,6 +2058,7 @@ struct AntinucleiInJets {
       // Clear containers at the start of the event loop
       fjParticles.clear();
       protonMomentum.clear();
+      deuteronMomentum.clear();
 
       // Event counter: before event selection
       registryMC.fill(HIST("genEvents"), 0.5);
@@ -2082,6 +2094,12 @@ struct AntinucleiInJets {
           TVector3 pVec(particle.px(), particle.py(), particle.pz());
           protonMomentum.emplace_back(pVec);
           registryMC.fill(HIST("antiproton_gen_full"), particle.pt());
+        }
+
+        // Store 3-momentum vectors of antideuterons for further analysis
+        if (particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron) {
+          TVector3 pVec(particle.px(), particle.py(), particle.pz());
+          deuteronMomentum.emplace_back(pVec);
         }
 
         // 4-momentum representation of a particle
@@ -2133,34 +2151,45 @@ struct AntinucleiInJets {
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
-          if (particle.user_index() != PDG_t::kProtonBar)
-            continue;
 
+          // Particle selection based on PDG
+          bool isAntip = particle.user_index() == PDG_t::kProtonBar;
+          bool isAntid = particle.user_index() == -o2::constants::physics::Pdg::kDeuteron;
+
+          // Pseudorapidity selection
           if (particle.eta() < minEta || particle.eta() > maxEta)
             continue;
 
-          // Fill normalization histogram
-          registryMC.fill(HIST("antiproton_deltay_deltaphi_jet"), particle.eta() - jet.eta(), getDeltaPhi(particle.phi(), jet.phi()));
+          // Fill antiproton spectra
+          if (isAntip) {
+            // Fill normalization histogram
+            registryMC.fill(HIST("antiproton_deltay_deltaphi_jet"), particle.eta() - jet.eta(), getDeltaPhi(particle.phi(), jet.phi()));
 
-          // Calculate weight
-          double weightJet(1.0);
-          if (applyReweighting && particle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
-            int ipt = antiprotonsInsideJets->FindBin(particle.pt());
-            weightJet = antiprotonsInsideJets->GetBinContent(ipt);
+            // Calculate weight
+            double weightJet(1.0);
+            if (applyReweighting && particle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsInsideJets->FindBin(particle.pt());
+              weightJet = antiprotonsInsideJets->GetBinContent(ipt);
+            }
+
+            // Fill histogram for generated antiprotons
+            registryMC.fill(HIST("antiproton_gen_jet"), particle.pt(), weightJet);
+
+            // Fill histograms for generated antiprotons for closure test
+            if (isPseudoData) {
+              registryMC.fill(HIST("antiproton_gen_jet_data"), particle.pt());
+            } else {
+              registryMC.fill(HIST("antiproton_gen_jet_mc"), particle.pt());
+            }
+
+            // Fill 2d (pt,eta) distribution of antiprotons
+            registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta(), weightJet);
+          } // end if antip
+
+          // Fill antideuteron spectra
+          if (isAntid) {
+            registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt());
           }
-
-          // Fill histogram for generated antiprotons
-          registryMC.fill(HIST("antiproton_gen_jet"), particle.pt(), weightJet);
-
-          // Fill histograms for generated antiprotons for closure test
-          if (isPseudoData) {
-            registryMC.fill(HIST("antiproton_gen_jet_data"), particle.pt());
-          } else {
-            registryMC.fill(HIST("antiproton_gen_jet_mc"), particle.pt());
-          }
-
-          // Fill 2d (pt,eta) distribution of antiprotons
-          registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta(), weightJet);
         }
 
         // Set up two perpendicular cone axes for underlying event estimation
@@ -2171,7 +2200,7 @@ struct AntinucleiInJets {
           continue;
         }
 
-        // Loop over MC particles to analyze underlying event region
+        // Loop over antiprotons to analyze underlying event region
         for (const auto& protonVec : protonMomentum) {
 
           // Compute distance of particle from both perpendicular cone axes
@@ -2210,6 +2239,25 @@ struct AntinucleiInJets {
           // Fill 2d (pt,eta) distribution of antiprotons
           registryMC.fill(HIST("antiproton_eta_pt_ue"), protonVec.Pt(), protonVec.Eta(), weightUe);
         }
+
+        // Loop over antideuterons to analyze underlying event region
+        for (const auto& deuteronVec : deuteronMomentum) {
+
+          // Compute distance of particle from both perpendicular cone axes
+          double deltaEtaUe1 = deuteronVec.Eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(deuteronVec.Phi(), ueAxis1.Phi());
+          double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          double deltaEtaUe2 = deuteronVec.Eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(deuteronVec.Phi(), ueAxis2.Phi());
+          double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Reject tracks that lie outside the maxConeRadius from both UE axes
+          if (deltaRUe1 > rJet && deltaRUe2 > rJet)
+            continue;
+
+          // Fill histogram for antideuterons in the UE
+          registryMC.fill(HIST("antideuteron_gen_ue"), deuteronVec.Pt());
+        }
       }
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("genEvents"), 3.5);
@@ -2235,6 +2283,7 @@ struct AntinucleiInJets {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
     std::vector<int> antiprotonTrackIndex;
+    std::vector<int> antideuteronTrackIndex;
 
     // Jet and area definitions
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
@@ -2255,6 +2304,7 @@ struct AntinucleiInJets {
       // Clear containers at the start of the event loop
       fjParticles.clear();
       antiprotonTrackIndex.clear();
+      antideuteronTrackIndex.clear();
 
       // Event counter: before event selection
       registryMC.fill(HIST("recEvents"), 0.5);
@@ -2329,6 +2379,11 @@ struct AntinucleiInJets {
               registryMC.fill(HIST("antiproton_rec_tof_full"), pt);
             }
           }
+        }
+
+        // Store track index for antideuteron tracks
+        if (passedTrackSelection(track) && track.sign() < 0 && mcparticle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron) {
+          antideuteronTrackIndex.emplace_back(id);
         }
 
         // Apply track selection for jet reconstruction
@@ -2408,6 +2463,8 @@ struct AntinucleiInJets {
           // Define variables
           double nsigmaTPCPr = track.tpcNSigmaPr();
           double nsigmaTOFPr = track.tofNSigmaPr();
+          double nsigmaTPCDe = track.tpcNSigmaDe();
+          double nsigmaTOFDe = track.tofNSigmaDe();
           double pt = track.pt();
           double dcaxy = track.dcaXY();
           double dcaz = track.dcaZ();
@@ -2417,71 +2474,94 @@ struct AntinucleiInJets {
             registryMC.fill(HIST("antiproton_nsigma_tof_jet_mc"), pt, nsigmaTOFPr);
           }
 
-          // Antiproton selection based on the PDG
-          if (mcparticle.pdgCode() != PDG_t::kProtonBar)
-            continue;
+          // Particle selection based on PDG
+          bool isAntip = mcparticle.pdgCode() == PDG_t::kProtonBar;
+          bool isAntid = mcparticle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron;
 
-          // Fill DCA templates
-          if (std::fabs(dcaz) < maxDcaz) {
-            if (mcparticle.isPhysicalPrimary()) {
-              registryMC.fill(HIST("antiproton_prim_dca_jet"), pt, dcaxy);
-            } else {
-              registryMC.fill(HIST("antiproton_all_dca_jet"), pt, dcaxy);
-            }
-          }
-
-          // Apply DCA selections
-          if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
-            continue;
-
-          // nsigmaITS for antiprotons
-          double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
-
-          // Particle identification using the ITS cluster size
-          bool passedItsPidProt(true);
-          if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
-            passedItsPidProt = false;
-          }
-
-          // Fill inclusive antiproton spectrum
-          registryMC.fill(HIST("antiproton_incl_jet"), pt);
-
-          // Select physical primary antiprotons
-          if (!mcparticle.isPhysicalPrimary())
-            continue;
-
-          // Fill antiproton spectrum for physical primaries
-          registryMC.fill(HIST("antiproton_prim_jet"), pt);
-
-          // Calculate weight
-          double weightJet(1.0);
-          if (applyReweighting && mcparticle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
-            int ipt = antiprotonsInsideJets->FindBin(mcparticle.pt());
-            weightJet = antiprotonsInsideJets->GetBinContent(ipt);
-          }
-
-          // Fill histograms (TPC and TOF) only for selected candidates
-          if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
-            registryMC.fill(HIST("antiproton_rec_tpc_jet"), pt, weightJet);
-
-            // Fill histograms for reconstructed antiprotons for closure test
-            if (isPseudoData) {
-              registryMC.fill(HIST("antiproton_rec_tpc_jet_data"), pt);
-            } else {
-              registryMC.fill(HIST("antiproton_rec_tpc_jet_mc"), pt);
+          // Fill spectra for antiprotons
+          if (isAntip) {
+            // Fill DCA templates
+            if (std::fabs(dcaz) < maxDcaz) {
+              if (mcparticle.isPhysicalPrimary()) {
+                registryMC.fill(HIST("antiproton_prim_dca_jet"), pt, dcaxy);
+              } else {
+                registryMC.fill(HIST("antiproton_all_dca_jet"), pt, dcaxy);
+              }
             }
 
-            if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
-              registryMC.fill(HIST("antiproton_rec_tof_jet"), pt, weightJet);
+            // Apply DCA selections
+            if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
+              continue;
+
+            // nsigmaITS for antiprotons
+            double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+
+            // Particle identification using the ITS cluster size
+            bool passedItsPidProt(true);
+            if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
+              passedItsPidProt = false;
+            }
+
+            // Fill inclusive antiproton spectrum
+            registryMC.fill(HIST("antiproton_incl_jet"), pt);
+
+            // Select physical primary antiprotons
+            if (!mcparticle.isPhysicalPrimary())
+              continue;
+
+            // Fill antiproton spectrum for physical primaries
+            registryMC.fill(HIST("antiproton_prim_jet"), pt);
+
+            // Calculate weight
+            double weightJet(1.0);
+            if (applyReweighting && mcparticle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsInsideJets->FindBin(mcparticle.pt());
+              weightJet = antiprotonsInsideJets->GetBinContent(ipt);
+            }
+
+            // Fill histograms (TPC and TOF) only for selected candidates
+            if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
+              registryMC.fill(HIST("antiproton_rec_tpc_jet"), pt, weightJet);
 
               // Fill histograms for reconstructed antiprotons for closure test
               if (isPseudoData) {
-                registryMC.fill(HIST("antiproton_rec_tof_jet_data"), pt);
+                registryMC.fill(HIST("antiproton_rec_tpc_jet_data"), pt);
               } else {
-                registryMC.fill(HIST("antiproton_rec_tof_jet_mc"), pt);
+                registryMC.fill(HIST("antiproton_rec_tpc_jet_mc"), pt);
+              }
+
+              if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
+                registryMC.fill(HIST("antiproton_rec_tof_jet"), pt, weightJet);
+
+                // Fill histograms for reconstructed antiprotons for closure test
+                if (isPseudoData) {
+                  registryMC.fill(HIST("antiproton_rec_tof_jet_data"), pt);
+                } else {
+                  registryMC.fill(HIST("antiproton_rec_tof_jet_mc"), pt);
+                }
               }
             }
-          }
+          } // end of isAntip
+
+          // Fill antideuteron spectra
+          if (isAntid) {
+            // Apply DCA selections
+            if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
+              continue;
+
+            // Select physical primary antiprotons
+            if (!mcparticle.isPhysicalPrimary())
+              continue;
+
+            // Fill histograms (TPC and TOF) only for selected candidates
+            if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc) {
+              registryMC.fill(HIST("antideuteron_rec_tpc_jet"), pt);
+
+              if (track.hasTOF() && nsigmaTOFDe > minNsigmaTof && nsigmaTOFDe < maxNsigmaTof) {
+                registryMC.fill(HIST("antideuteron_rec_tof_jet"), pt);
+              }
+            }
+          } // end of isAntid
         }
 
         // Loop over tracks in the underlying event
@@ -2571,6 +2651,54 @@ struct AntinucleiInJets {
               } else {
                 registryMC.fill(HIST("antiproton_rec_tof_ue_mc"), pt);
               }
+            }
+          }
+        }
+
+        // Loop over tracks in the underlying event
+        for (auto const& index : antideuteronTrackIndex) {
+
+          // retrieve track associated to index
+          auto const& track = mcTracksThisMcColl.iteratorAt(index);
+
+          // Get corresponding MC particle
+          if (!track.has_mcParticle())
+            continue;
+          const auto mcparticle = track.mcParticle();
+
+          // Define variables
+          double nsigmaTPCDe = track.tpcNSigmaDe();
+          double nsigmaTOFDe = track.tofNSigmaDe();
+          double pt = track.pt();
+          double dcaxy = track.dcaXY();
+          double dcaz = track.dcaZ();
+
+          // Apply DCA selection
+          if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
+            continue;
+
+          // Calculate the angular distance between the track and underlying event axes in eta-phi space
+          double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(track.phi(), ueAxis1.Phi());
+          double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
+          double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Reject tracks that lie outside the maxConeRadius from both UE axes
+          if (deltaRUe1 > rJet && deltaRUe2 > rJet)
+            continue;
+
+          // Select physical primary antiprotons
+          if (!mcparticle.isPhysicalPrimary())
+            continue;
+
+          // Fill histograms (TPC and TOF) only for selected candidates
+          if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc) {
+            registryMC.fill(HIST("antideuteron_rec_tpc_ue"), pt);
+
+            if (track.hasTOF() && nsigmaTOFDe > minNsigmaTof && nsigmaTOFDe < maxNsigmaTof) {
+              registryMC.fill(HIST("antideuteron_rec_tof_ue"), pt);
             }
           }
         }

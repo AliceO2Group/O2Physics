@@ -21,6 +21,7 @@ struct Run2TracksExtraConverter {
   Produces<aod::Run2TrackExtras_001> Run2TrackExtras_001;
   void process(aod::Run2TrackExtras_000 const& Run2TrackExtras_000)
   {
+    Run2TrackExtras_001.reserve(Run2TrackExtras_000.size());
 
     for (const auto& track0 : Run2TrackExtras_000) {
       Run2TrackExtras_001(track0.itsSignal(), 0);

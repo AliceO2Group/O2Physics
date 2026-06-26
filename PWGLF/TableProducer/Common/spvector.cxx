@@ -173,6 +173,8 @@ struct spvector {
   Configurable<std::string> ConfRecenterevzSp6{"ConfRecenterevzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere6"};
   Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
   Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
+  Configurable<bool> useTimeRecentering{"useTimeRecentering", false, "Use residual time recentering"};
+  Configurable<std::string> confRecentereTimeSp{"confRecentereTimeSp", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast2", "Path to time recentering map"};
 
   // Event selection cuts - Alex
   /*
@@ -276,6 +278,10 @@ struct spvector {
     histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centfineAxis});
     histos.add("hpSinPsiAPsiC", "hpSinPsiAPsiC", kTProfile, {centfineAxis});
     histos.add("AvgVxy", "AvgVxy", kTProfile, {VxyAxis});
+    histos.add("hpQxZDCAvstime", "hpQxZDCAvstime", kTProfile, {{timefineAxis}});
+    histos.add("hpQxZDCCvstime", "hpQxZDCCvstime", kTProfile, {{timefineAxis}});
+    histos.add("hpQyZDCAvstime", "hpQyZDCAvstime", kTProfile, {{timefineAxis}});
+    histos.add("hpQyZDCCvstime", "hpQyZDCCvstime", kTProfile, {{timefineAxis}});
 
     // Event selection cut additional - Alex
     /*
@@ -308,6 +314,7 @@ struct spvector {
   std::array<TH2F*, 6> hrecenterevzSpA;   // Array of 5 histograms
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
+  TH2F* hrecentereTimeSp = nullptr;
 
   Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
@@ -389,6 +396,30 @@ struct spvector {
     return kTRUE;
   }
 
+  bool Correcttime(TH2F* hrecentereTimeSp,
+                   auto timeMin,
+                   auto& qxZDCA,
+                   auto& qyZDCA,
+                   auto& qxZDCC,
+                   auto& qyZDCC)
+  {
+    if (!hrecentereTimeSp) {
+      return false;
+    }
+
+    double meanxA = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 0.5));
+    double meanyA = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 1.5));
+    double meanxC = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 2.5));
+    double meanyC = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 3.5));
+
+    qxZDCA -= meanxA;
+    qyZDCA -= meanyA;
+    qxZDCC -= meanxC;
+    qyZDCC -= meanyC;
+
+    return true;
+  }
+
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
@@ -443,7 +474,7 @@ struct spvector {
       runStartTime[currentRunNumber] = timestampzdc;
     }
 
-    double timeInMinutes = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
+    double timeMin = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
 
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
@@ -709,6 +740,25 @@ struct spvector {
       if (res == 0 && resfine == 0 && check == 0) {
         LOG(info) << "Histograms are null";
       }
+
+      if (useTimeRecentering && (currentRunNumber != lastRunNumber)) {
+        hrecentereTimeSp = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp.value, bc.timestamp());
+      }
+
+      bool restime = false;
+      if (useTimeRecentering) {
+        restime = Correcttime(hrecentereTimeSp, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+      }
+
+      if (restime == 0) {
+        LOG(info) << "Histograms are null";
+      }
+
+      histos.fill(HIST("hpQxZDCAvstime"), timeMin, qxZDCA);
+      histos.fill(HIST("hpQxZDCCvstime"), timeMin, qxZDCC);
+      histos.fill(HIST("hpQyZDCAvstime"), timeMin, qyZDCA);
+      histos.fill(HIST("hpQyZDCCvstime"), timeMin, qyZDCC);
+
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
 
@@ -771,11 +821,6 @@ struct spvector {
         histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
         histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
         histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
-
-        histos.fill(HIST("htimeQxZDCA"), timeInMinutes, qxZDCA);
-        histos.fill(HIST("htimeQyZDCA"), timeInMinutes, qyZDCA);
-        histos.fill(HIST("htimeQxZDCC"), timeInMinutes, qxZDCC);
-        histos.fill(HIST("htimeQyZDCC"), timeInMinutes, qyZDCC);
       }
 
       histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));

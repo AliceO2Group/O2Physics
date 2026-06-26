@@ -24,9 +24,7 @@
 
 #include <TLorentzVector.h>
 
-#include <array>
 #include <cmath>
-#include <span>
 #include <vector>
 
 namespace o2::upgrade

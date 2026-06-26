@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -691,14 +692,22 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
 DECLARE_SOA_COLUMN(ProbElBDT, probElBDT, float);                //!
 
-DECLARE_SOA_COLUMN(BDTScorePrompt, bdtScorePrompt, std::vector<float>);           //!
-DECLARE_SOA_COLUMN(BDTScorePromptHc, bdtScorePromptHc, std::vector<float>);       //!
-DECLARE_SOA_COLUMN(BDTScoreNonpromptHc, bdtScoreNonpromptHc, std::vector<float>); //!
-DECLARE_SOA_COLUMN(BDTScoreHb, bdtScoreHb, std::vector<float>);                   //!
-DECLARE_SOA_COLUMN(HadronType, hadronType, std::vector<uint8_t>);                 //! 0:track, 1:K0S, 2:Lambda, 3:AntiLambda, 4:XiMinus, 5:XiPlus, 6:OmegaMinus, 7:OmegaPlus
+// As sum of probability is 1, keeping 3 out of 4 is enough.
+// DECLARE_SOA_COLUMN(BDTScorePromptUINT8, bdtScorePromptUINT8, std::vector<uint8_t>);           //! scaling factor is 255.
+DECLARE_SOA_COLUMN(BDTScorePromptHcUINT8, bdtScorePromptHcUINT8, std::vector<uint8_t>);       //! scaling factor is 255.
+DECLARE_SOA_COLUMN(BDTScoreNonpromptHcUINT8, bdtScoreNonpromptHcUINT8, std::vector<uint8_t>); //! scaling factor is 255.
+DECLARE_SOA_COLUMN(BDTScoreHbUINT8, bdtScoreHbUINT8, std::vector<uint8_t>);                   //! scaling factor is 255.
+DECLARE_SOA_COLUMN(HadronType, hadronType, std::vector<uint8_t>);                             //! 0:track, 1:K0S, 2:Lambda, 3:AntiLambda, 4:XiMinus, 5:XiPlus, 6:OmegaMinus, 7:OmegaPlus
 
-DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](std::vector<float> p0, std::vector<float> p1, std::vector<float> p2, std::vector<float> p3, std::vector<uint8_t> type, int index) -> std::array<float, 5> { return std::array<float, 5>{p0[index], p1[index], p2[index], p3[index], static_cast<float>(type[index])}; });
-DECLARE_SOA_DYNAMIC_COLUMN(NSV, nSV, [](std::vector<uint8_t> type) -> size_t { return type.size(); });
+DECLARE_SOA_DYNAMIC_COLUMN(ProbaSCT, probaSCT, [](gsl::span<const uint8_t> p1, gsl::span<const uint8_t> p2, gsl::span<const uint8_t> p3, gsl::span<const uint8_t> type, const int index) -> std::array<float, 5> {
+  return std::array<float, 5>{
+    1.f - (std::nextafter(p1[index] / 255.f, std::numeric_limits<float>::infinity()) + std::nextafter(p2[index] / 255.f, std::numeric_limits<float>::infinity()) + std::nextafter(p3[index] / 255.f, std::numeric_limits<float>::infinity())),
+    std::nextafter(p1[index] / 255.f, std::numeric_limits<float>::infinity()),
+    std::nextafter(p2[index] / 255.f, std::numeric_limits<float>::infinity()),
+    std::nextafter(p3[index] / 255.f, std::numeric_limits<float>::infinity()),
+    static_cast<float>(type[index])};
+});
+DECLARE_SOA_DYNAMIC_COLUMN(NSV, nSV, [](gsl::span<const uint8_t> type) -> size_t { return type.size(); });
 
 DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float); //!
@@ -1017,9 +1026,9 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBDERIVED
 using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
 
 DECLARE_SOA_TABLE(EMPrimaryElectronsBDTSCT, "AOD", "ELBDTSCT", // To be joined with EMPrimaryElectrons table at analysis level.
-                  emprimaryelectron::BDTScorePrompt, emprimaryelectron::BDTScorePromptHc, emprimaryelectron::BDTScoreNonpromptHc, emprimaryelectron::BDTScoreHb, emprimaryelectron::HadronType,
+                  /*emprimaryelectron::BDTScorePromptUINT8,*/ emprimaryelectron::BDTScorePromptHcUINT8, emprimaryelectron::BDTScoreNonpromptHcUINT8, emprimaryelectron::BDTScoreHbUINT8, emprimaryelectron::HadronType,
                   emprimaryelectron::NSV<emprimaryelectron::HadronType>,
-                  emprimaryelectron::ProbaSCT<emprimaryelectron::BDTScorePrompt, emprimaryelectron::BDTScorePromptHc, emprimaryelectron::BDTScoreNonpromptHc, emprimaryelectron::BDTScoreHb, emprimaryelectron::HadronType>);
+                  emprimaryelectron::ProbaSCT</*emprimaryelectron::BDTScorePromptUINT8,*/ emprimaryelectron::BDTScorePromptHcUINT8, emprimaryelectron::BDTScoreNonpromptHcUINT8, emprimaryelectron::BDTScoreHbUINT8, emprimaryelectron::HadronType>);
 // iterators
 using EMPrimaryElectronBDTSCT = EMPrimaryElectronsBDTSCT::iterator;
 
@@ -1033,22 +1042,23 @@ DECLARE_SOA_COLUMN(MCHTrackId, mchtrackId, int);                                
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMCHMID, globalMuonsWithSameMCHMID); //! self indices to global muons that have the same MCHTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMFT, globalMuonsWithSameMFT);       //! self indices to global muons that have the same MFTTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousMuons, ambiguousMuons);
-DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                         //! DCAx resolution squared at DCA
-DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                         //! DCAy resolution squared at DCA
-DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                         //! correlation term of DCAx,y resolution at DCA
-DECLARE_SOA_COLUMN(PtMatchedMCHMID, ptMatchedMCHMID, float);           //! pt of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);         //! eta of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);         //! phi of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(EtaMatchedMCHMIDatMP, etaMatchedMCHMIDatMP, float); //! eta of MCH-MID track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(PhiMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, float); //! phi of MCH-MID track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(EtaMatchedMFTatMP, etaMatchedMFTatMP, float);       //! eta of MFT track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(PhiMatchedMFTatMP, phiMatchedMFTatMP, float);       //! phi of MFT track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);        //! is associated to most probable collision
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                    //! is ambiguous
-DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);  //! is correct match between MFT and MCH, only for MC
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //!
-DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                           //! chi2 of MFT standalone track
-DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);         //!
+DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                          //! DCAx resolution squared at DCA
+DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                          //! DCAy resolution squared at DCA
+DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                          //! correlation term of DCAx,y resolution at DCA
+DECLARE_SOA_COLUMN(PtMatchedMCHMID, ptMatchedMCHMID, float);            //! pt of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);          //! eta of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);          //! phi of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(EtaMatchedMCHMIDatMP, etaMatchedMCHMIDatMP, float);  //! eta of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(PhiMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, float);  //! phi of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(EtaMatchedMFTatMP, etaMatchedMFTatMP, float);        //! eta of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(PhiMatchedMFTatMP, phiMatchedMFTatMP, float);        //! phi of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);         //! is associated to most probable collision
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                     //! is ambiguous
+DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);   //! is correct match between MFT and MCH, only for MC
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                 //!
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                            //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(DiffChi2MatchMCHMFT, diffChi2MatchingMCHMFT, float); //! difference of matching chi2 between the best and the 2nd-best matched candidates
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);          //!
 DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float eta) -> float { return std::tan(o2::constants::math::PIHalf - 2 * std::atan(std::exp(-eta))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
@@ -1147,7 +1157,30 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_002, "AOD", "EMPRIMARYMU", 2, //!
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-using EMPrimaryMuons = EMPrimaryMuons_002;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_003, "AOD", "EMPRIMARYMU", 3, //!
+                            o2::soa::Index<>, emprimarymuon::CollisionId,
+                            emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
+                            fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, o2::aod::fwdtrack::CXX, o2::aod::fwdtrack::CYY, o2::aod::fwdtrack::CXY,
+                            emprimarymuon::PtMatchedMCHMID, emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT, emprimarymuon::DiffChi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
+
+                            // dynamic column
+                            emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
+                            emprimarymuon::Tgl<fwdtrack::Eta>,
+                            emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
+
+using EMPrimaryMuons = EMPrimaryMuons_003;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 

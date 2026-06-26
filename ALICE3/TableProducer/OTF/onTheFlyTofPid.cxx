@@ -45,7 +45,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <Math/GenVector/PositionVector3D.h>
@@ -308,9 +307,11 @@ struct OnTheFlyTofPid {
    public:
     ~TOFLayerEfficiency()
     {
-      hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
-      hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
-      hHitMapInPixelBefore->SaveAs(Form("/tmp/%s.png", hHitMapInPixelBefore->GetName()));
+      if (0) {
+        hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
+        hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
+        hHitMapInPixelBefore->SaveAs(Form("/tmp/%s.png", hHitMapInPixelBefore->GetName()));
+      }
 
       delete axisZ;
       delete axisRPhi;

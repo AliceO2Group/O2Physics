@@ -210,7 +210,7 @@ class TwoTrackResonanceBuilder
     return ((mMass > mMassMin && mMass < mMassMax) &&
             (mPt > mPtMin && mPt < mPtMax) &&
             (mEta > mEtaMin && mEta < mEtaMax) &&
-            (mPhi > mPhiMin && mPhi < mPhiMax));
+            (mPhi >= mPhiMin && mPhi < mPhiMax));
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
@@ -278,7 +278,7 @@ class TwoTrackResonanceBuilder
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0Bar)) {
       if (mProduceKstar0s) {
         resonanceProducts.producedKstars(col.globalIndex(),
-                                         mPt,
+                                         -1.f * mPt,
                                          mEta,
                                          mPhi,
                                          mMass,

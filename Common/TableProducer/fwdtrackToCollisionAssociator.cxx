@@ -16,6 +16,7 @@
 
 #include "Common/Core/CollisionAssociation.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/FwdTrackReAlignTables.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -44,6 +45,7 @@ struct FwdTrackToCollisionAssociation {
   CollisionAssociation<false> collisionAssociator;
 
   Preslice<FwdTracks> muonsPerCollisions = aod::fwdtrack::collisionId;
+  Preslice<FwdTracksReAlign> realignmuonsPerCollisions = aod::fwdtrack::collisionId;
   Preslice<MFTTracks> mftsPerCollisions = aod::fwdtrack::collisionId;
 
   void init(InitContext const&)
@@ -55,7 +57,7 @@ struct FwdTrackToCollisionAssociation {
       LOGP(fatal, "Exactly one process function between standard and time-based association should be enabled!");
     }
 
-    if (!(doprocessMFTAssocWithTime || doprocessMFTStandardAssoc || doprocessFwdAssocWithTime || doprocessFwdStandardAssoc)) {
+    if (!(doprocessMFTAssocWithTime || doprocessMFTStandardAssoc || doprocessFwdAssocWithTime || doprocessFwdStandardAssoc || doprocessFwdRealignAssocWithTime || doprocessFwdRealignStandardAssoc)) {
       LOGP(fatal, "At least one process function should be enabled!");
     }
 
@@ -84,6 +86,22 @@ struct FwdTrackToCollisionAssociation {
     collisionAssociator.runStandardAssoc(collisions, muons, muonsPerCollisions, fwdassociation, fwdreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdStandardAssoc, "Use standard fwdtrack-to-collision association", false);
+
+  void processFwdRealignAssocWithTime(Collisions const& collisions,
+                                      FwdTracksReAlign const& muons,
+                                      AmbiguousFwdTrksReAlign const& ambiTracksFwd,
+                                      BCs const& bcs)
+  {
+    collisionAssociator.runAssocWithTime(collisions, muons, muons, ambiTracksFwd, bcs, fwdassociation, fwdreverseIndices);
+  }
+  PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdRealignAssocWithTime, "Use fwdrealigntrack-to-collision association based on time", false);
+
+  void processFwdRealignStandardAssoc(Collisions const& collisions,
+                                      FwdTracksReAlign const& muons)
+  {
+    collisionAssociator.runStandardAssoc(collisions, muons, realignmuonsPerCollisions, fwdassociation, fwdreverseIndices);
+  }
+  PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdRealignStandardAssoc, "Use standard fwdrealigntrack-to-collision association", false);
 
   void processMFTAssocWithTime(Collisions const& collisions,
                                MFTTracks const& tracks,

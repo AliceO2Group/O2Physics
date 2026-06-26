@@ -23,6 +23,7 @@
 #include <Framework/Logger.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace o2::analysis::femto
 {
@@ -308,6 +309,12 @@ void processMixedEvent(T1 const& Collisions,
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
+  // collision1 is fixed across each mixing window, so its track slice is
+  // materialized once per window and reused for every mixing partner, instead
+  // of being re-sliced (a fresh arrow Slice + selection copy, the dominant cost
+  // on the heaviest femto trains) on every (collision1, collision2) pair.
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle1;
+
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
 
     // --- new window ---
@@ -318,6 +325,7 @@ void processMixedEvent(T1 const& Collisions,
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
@@ -329,20 +337,18 @@ void processMixedEvent(T1 const& Collisions,
 
     CprManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
 
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+    if (sliceParticle1->size() == 0 || sliceParticle2.size() == 0) {
       PairHistManager.fillMixingQaMePerEvent();
       continue;
     }
 
     bool hasValidPair = false;
     PairHistManager.fillMixingQaMe(collision1, collision2);
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, sliceParticle2))) {
 
       if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
         continue;
@@ -415,6 +421,12 @@ void processMixedEvent(T1 const& Collisions,
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
+  // collision1 is fixed across each mixing window, so its track slice is
+  // materialized once per window and reused for every mixing partner, instead
+  // of being re-sliced (a fresh arrow Slice + selection copy, the dominant cost
+  // on the heaviest femto trains) on every (collision1, collision2) pair.
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle1;
+
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
     if (collision1.globalIndex() != lastCollisionIndex) {
       if (lastCollisionIndex != -1) {
@@ -423,6 +435,7 @@ void processMixedEvent(T1 const& Collisions,
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
@@ -434,13 +447,11 @@ void processMixedEvent(T1 const& Collisions,
 
     CprManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
 
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+    if (sliceParticle1->size() == 0 || sliceParticle2.size() == 0) {
       PairHistManager.fillMixingQaMePerEvent();
       continue;
     }
@@ -448,7 +459,7 @@ void processMixedEvent(T1 const& Collisions,
     bool hasValidPair = false;
     PairHistManager.fillMixingQaMe(collision1, collision2);
 
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, sliceParticle2))) {
 
       if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
           !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
