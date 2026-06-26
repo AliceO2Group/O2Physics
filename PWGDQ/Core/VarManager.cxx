@@ -673,7 +673,7 @@ bool VarManager::GetUsedVar(int var)
   return false;
 }
 
-       // Flag to  set PV recalculation via KF
+// Flag to  set PV recalculation via KF
 void VarManager::SetPVrecalculationKF(const bool pvRecalKF)
 {
   fgPVrecalKF = pvRecalKF;
@@ -684,7 +684,7 @@ void VarManager::SetMagneticField(float magField)
   fgMagField = magField;
 }
 
-       // Setup plane position for MFT-MCH matching
+// Setup plane position for MFT-MCH matching
 void VarManager::SetMatchingPlane(float z)
 {
   fgzMatching = z;
@@ -695,13 +695,13 @@ float VarManager::GetMatchingPlane()
   return fgzMatching;
 }
 
-       // Set z shift for forward tracks
+// Set z shift for forward tracks
 void VarManager::SetZShift(float z)
 {
   fgzShiftFwd = z;
 }
 
-       // Setup the 2 prong KFParticle
+// Setup the 2 prong KFParticle
 void VarManager::SetupTwoProngKFParticle(float magField)
 {
   KFParticle::SetField(magField);
@@ -713,7 +713,7 @@ void VarManager::SetupMuonMagField()
   o2::mch::TrackExtrap::setField();
 }
 
-       // Setup the 2 prong DCAFitterN
+// Setup the 2 prong DCAFitterN
 void VarManager::SetupTwoProngDCAFitter(float magField, bool propagateToPCA, float maxR, float maxDZIni, float minParamChange, float minRelChi2Change, bool useAbsDCA)
 {
   fgFitterTwoProngBarrel.setBz(magField);
@@ -726,7 +726,7 @@ void VarManager::SetupTwoProngDCAFitter(float magField, bool propagateToPCA, flo
   fgUsedKF = false;
 }
 
-       // Setup the 2 prong FwdDCAFitterN
+// Setup the 2 prong FwdDCAFitterN
 void VarManager::SetupTwoProngFwdDCAFitter(float magField, bool propagateToPCA, float maxR, float minParamChange, float minRelChi2Change, bool useAbsDCA)
 {
   fgFitterTwoProngFwd.setBz(magField);
@@ -760,7 +760,7 @@ void VarManager::SetupThreeProngKFParticle(float magField)
   fgUsedKF = true;
 }
 
-       // Setup the 3 prong DCAFitterN
+// Setup the 3 prong DCAFitterN
 void VarManager::SetupThreeProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA)
 {
   fgFitterThreeProngBarrel.setBz(magField);
@@ -772,14 +772,14 @@ void VarManager::SetupThreeProngDCAFitter(float magField, bool propagateToPCA, f
   fgUsedKF = false;
 }
 
-       // Setup the 4 prong KFParticle
+// Setup the 4 prong KFParticle
 void VarManager::SetupFourProngKFParticle(float magField)
 {
   KFParticle::SetField(magField);
   fgUsedKF = true;
 }
 
-       // Setup the 4 prong DCAFitterN
+// Setup the 4 prong DCAFitterN
 void VarManager::SetupFourProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA)
 {
   fgFitterFourProngBarrel.setBz(magField);

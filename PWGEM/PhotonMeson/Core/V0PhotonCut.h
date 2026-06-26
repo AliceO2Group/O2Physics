@@ -164,9 +164,8 @@ concept IsNonLinIterator = requires(T t) {
 } // namespace o2::analysis::em::v0
 
 template <typename T>
-concept is_table = requires(T t)
-{
-  { t.begin() } ->std::same_as<typename std::decay_t<T>::iterator>;
+concept is_table = requires(T t) {
+  { t.begin() } -> std::same_as<typename std::decay_t<T>::iterator>;
 };
 
 class V0PhotonCut : public TNamed

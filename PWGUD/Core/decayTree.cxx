@@ -1248,7 +1248,7 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
     auto max = o2::framework::AxisSpec(res->nmassBins(), res->massHistRange()[0], res->massHistRange()[1]);
     auto momax = o2::framework::AxisSpec(res->nmomBins(), res->momHistRange()[0], res->momHistRange()[1]);
 
-           // M-pT, M-eta, pT-eta
+    // M-pT, M-eta, pT-eta
     for (const auto& cc : fccs) {
       base = cc;
       base.append("/").append(res->name()).append("/");
@@ -1262,20 +1262,20 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
       annot = "pT versus eta; pT (" + res->name() + ") GeV/c; eta (" + res->name() + ")";
       fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {momax, etax}})});
 
-             // M versus daughters
+      // M versus daughters
       auto daughs = res->getDaughters();
       auto ndaughs = daughs.size();
       for (auto i = 0; i < static_cast<int>(ndaughs); i++) {
         auto d1 = getResonance(daughs[i]);
 
-               // M vs pT daughter
+        // M vs pT daughter
         hname = base;
         hname.append("MvspT_").append(res->name()).append(d1->name());
         annot = "M versus pT; M (" + res->name() + ") GeV/c^{2}; pT (" + d1->name() + ") GeV/c";
         auto momax1 = o2::framework::AxisSpec(d1->nmomBins(), d1->momHistRange()[0], d1->momHistRange()[1]);
         fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, momax1}})});
 
-               // M vs eta daughter
+        // M vs eta daughter
         hname = base;
         hname.append("Mvseta_").append(res->name()).append(d1->name());
         annot = "M versus eta; M (" + res->name() + ") GeV/c^{2}; eta (" + d1->name() + ")";
@@ -1292,19 +1292,19 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
           annot = "M versus dcaZ; M (" + res->name() + ") GeV/c^{2}; dca_{Z} (" + d1->name() + ") #mu m";
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, dcazax}})});
 
-                 // M vs chi2 track
+          // M vs chi2 track
           hname = base;
           hname.append("Mvschi2_").append(res->name()).append(d1->name());
           annot = "M versus chi2; M (" + res->name() + ") GeV/c^{2}; chi2 (" + d1->name() + ")";
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, chi2ax}})});
 
-                 // M vs nCl track
+          // M vs nCl track
           hname = base;
           hname.append("MvsnCl_").append(res->name()).append(d1->name());
           annot = "M versus nCl; M (" + res->name() + ") GeV/c^{2}; nCl (" + d1->name() + ")";
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, nClax}})});
 
-                 // M versus detector hits
+          // M versus detector hits
           hname = base;
           hname.append("MvsdetHits_").append(res->name()).append(d1->name());
           annot = "M versus detector hits; M (" + res->name() + ") GeV/c^{2}; ITS + 2*TPC + 4*TRD + 8*TOF (" + d1->name() + ")";
@@ -1319,7 +1319,7 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
         }
       }
 
-             // daughters vs daughters
+      // daughters vs daughters
       for (auto i = 0; i < static_cast<int>(ndaughs - 1); i++) {
         auto d1 = getResonance(daughs[i]);
         auto max1 = o2::framework::AxisSpec(d1->nmassBins(), d1->massHistRange()[0], d1->massHistRange()[1]);
@@ -1327,25 +1327,25 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
           auto d2 = getResonance(daughs[j]);
           auto max2 = o2::framework::AxisSpec(d2->nmassBins(), d2->massHistRange()[0], d2->massHistRange()[1]);
 
-                 // M1 vs M2
+          // M1 vs M2
           hname = base;
           hname.append("MvsM_").append(d1->name()).append(d2->name());
           annot = std::string("M versus M; M (").append(d1->name()).append(") GeV/c^{2}; M (").append(d2->name()).append(") GeV/c^{2}");
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max1, max2}})});
 
-                 // angle(d1, d2)
+          // angle(d1, d2)
           hname = base;
           hname.append("angle_").append(d1->name()).append(d2->name());
           annot = std::string("angle; Angle (").append(d1->name()).append(", ").append(d2->name()).append(")");
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH1F, {angax}})});
 
-                 // M vs angle(d1, d2)
+          // M vs angle(d1, d2)
           hname = base;
           hname.append("Mvsangle_").append(d1->name()).append(d2->name());
           annot = std::string("M versus angle; M (").append(res->name()).append(") GeV/c^{2}; Angle (").append(d1->name()).append(", ").append(d2->name()).append(")");
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, angax}})});
 
-                 // both daughters are finals
+          // both daughters are finals
           if (d1->isFinal() && d2->isFinal()) {
             hname = base;
             hname.append("TPCsignal_").append(d1->name()).append(d2->name());
@@ -1355,7 +1355,7 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
         }
       }
 
-             // for finals only
+      // for finals only
       if (res->isFinal()) {
         // dca
         hname = base;
@@ -1367,7 +1367,7 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
         annot = std::string("dcaZ; dca_{Z}(").append(res->name()).append(")");
         fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH1F, {dcazax}})});
 
-               // nSIgma[TPC, TOF] vs pT
+        // nSIgma[TPC, TOF] vs pT
         for (const auto& det : fdets) {
           for (const auto& part : fparts) {
             hname = base;
@@ -1377,7 +1377,7 @@ void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
           }
         }
 
-               // detector hits
+        // detector hits
         hname = base;
         hname.append("detectorHits");
         annot = std::string("detectorHits; Detector(").append(res->name()).append(")");

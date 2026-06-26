@@ -17,33 +17,30 @@
 #define PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 
 #include <TPDGCode.h>
-#include <concepts>
+
 #include <cmath>
+#include <concepts>
 
 template <typename T>
-concept is_iterator = requires (T t)
-{
+concept is_iterator = requires(T t) {
   typename std::decay_t<T>::policy_t;
   typename std::decay_t<T>::all_columns;
   t.getIndexBindings();
 };
 
 template <typename T>
-concept is_sentinel = requires (T t)
-{
+concept is_sentinel = requires(T t) {
   std::same_as<decltype(t.index), int64_t const>;
 };
 
 template <typename T>
-concept is_track_with_extra = requires (T t)
-{
+concept is_track_with_extra = requires(T t) {
   { t.hasITS() } -> std::same_as<bool>;
   { t.hasTPC() } -> std::same_as<bool>;
 };
 
 template <typename T>
-concept is_mc_particle = requires (T t)
-{
+concept is_mc_particle = requires(T t) {
   { t.pdgCode() } -> std::same_as<const int&>;
 };
 

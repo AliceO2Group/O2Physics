@@ -13,12 +13,12 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <Common/DataModel/Centrality.h>
-#include <Common/DataModel/EventSelection.h>
-#include <Common/DataModel/Multiplicity.h>
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
