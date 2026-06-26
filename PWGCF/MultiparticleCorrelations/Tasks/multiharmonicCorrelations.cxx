@@ -26,6 +26,7 @@
 
 #include <TCollection.h>
 #include <TComplex.h>
+#include <TF1.h>
 #include <TFile.h>
 #include <TGrid.h>
 #include <TH1.h>
@@ -114,6 +115,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfQA{"cfQA", true, "quality assurance"};
   Configurable<bool> cfInitsim{"cfInitsim", false, "init histograms of sim"};
   Configurable<bool> cfUseWeights{"cfUseWeights", true, "use weights"};
+  Configurable<bool> cfToyModel{"cfToyModel", true, "phi-distribution from toy model"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
@@ -399,6 +401,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     return four;
   } // TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
 
+  static double pdf(double* x, double* par)
+  {
+    double y = 1;
+    for (int i = 0; i < 6; i = i + 1) {
+      y = y + 2 * (0.04 + (i + 1.) * 0.01) * TMath::Cos((i + 1) * (x[0] - par[0]));
+    }
+    return y;
+  }
+
   template <eRecSim rs, typename T1, typename T2>
   void Steer(T1 const& collision, T2 const& tracks)
   {
@@ -412,6 +423,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     auto it = phih.histMap.find(currentRun);
     auto histweight = wh.weightsmap.find(currentRun);
     float centr = 0, M = 0., msel = 0.;
+    TF1* f = new TF1("f", pdf, 0, TMath::TwoPi(), 1);
+    f->SetParameters(0.);
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
       if (cfCent.value == "FT0C")
@@ -511,6 +524,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
 
         phi = track.phi();
+        if (cfToyModel) {
+          phi = f->GetRandom();
+        }
         if (it != phih.histMap.end()) {
           it->second->Fill(phi);
         }
@@ -674,8 +690,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float maxdcaxy = l_dcaxy_bins[2];
     float mindcaz = l_dcaz_bins[1];
     float maxdcaz = l_dcaz_bins[2];
-    float maxncontr = l_ncontr_bins[1];
-    float minncontr = l_ncontr_bins[2];
+    float minncontr = l_ncontr_bins[1];
+    float maxncontr = l_ncontr_bins[2];
 
     const char* cevent[] = {"vertexZ", "Pt"};
     const char* cpro[] = {"rec", "sim"};
