@@ -1171,7 +1171,7 @@ class VarManager : public TObject
   // Setup the 4 prong DCAFitterN
   static void SetupFourProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA);
 
-  static auto getEventPlane(int harm, float qnxa, float qnya);
+  static double getEventPlane(int harm, float qnxa, float qnya);
 
   static float getDeltaPsiInRange(float psi1, float psi2, float harmonic);
   template <typename T, typename T1>

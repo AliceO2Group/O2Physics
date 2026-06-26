@@ -791,7 +791,7 @@ void VarManager::SetupFourProngDCAFitter(float magField, bool propagateToPCA, fl
   fgUsedKF = false;
 }
 
-auto VarManager::getEventPlane(int harm, float qnxa, float qnya)
+double VarManager::getEventPlane(int harm, float qnxa, float qnya)
 {
   // Compute event plane angle from qn vector components for the sub-event A
   return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
