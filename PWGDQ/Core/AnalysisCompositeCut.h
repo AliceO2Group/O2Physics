@@ -28,7 +28,7 @@
 class AnalysisCompositeCut : public AnalysisCut
 {
  public:
-  AnalysisCompositeCut(bool useAND = kTRUE);
+  explicit AnalysisCompositeCut(bool useAND = kTRUE);
   AnalysisCompositeCut(const char* name, const char* title, bool useAND = kTRUE);
   AnalysisCompositeCut(const AnalysisCompositeCut& c);
   AnalysisCompositeCut& operator=(const AnalysisCompositeCut& c);
