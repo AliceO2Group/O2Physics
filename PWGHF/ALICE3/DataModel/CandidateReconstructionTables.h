@@ -18,6 +18,7 @@
 #ifndef PWGHF_ALICE3_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 #define PWGHF_ALICE3_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
+#include "PWGHF/ALICE3/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
