@@ -100,11 +100,8 @@ struct JetSpectraEseTask {
   Configurable<float> cfgChi2PrTPCcls{"cfgChi2PrTPCcls", 2.5, "cut for chi2 per TPC cluster for tracks"};
   Configurable<float> cfgChi2PrITScls{"cfgChi2PrITScls", 36, "cut for chi2 per ITS cluster for tracks"};
 
-  Configurable<float> trackPtMinRhoPhi{"trackPtMinRhoPhi", 0.2, "minimum pT acceptance for tracks used in rho(phi) calculation"};
-  Configurable<float> trackPtMaxRhoPhi{"trackPtMaxRhoPhi", 5.0, "maximum pT acceptance for tracks used in rho(phi) calculation"};
-
-  Configurable<float> jetEtaMin{"jetEtaMin", -0.7, "minimum jet pseudorapidity"};
-  Configurable<float> jetEtaMax{"jetEtaMax", 0.7, "maximum jet pseudorapidity"};
+  Configurable<std::vector<float>> trackPtRhoPhi{"trackPtRhoPhi", {0.2, 5.0}, "pT range for tracks used in rho(phi) calculation"};
+  Configurable<std::vector<float>> cfgJetEta{"cfgJetEta", {-0.7, 0.7}, "jet eta range for analysis"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8FullPbPb", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
@@ -117,6 +114,7 @@ struct JetSpectraEseTask {
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
   Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
+  Configurable<int> cfgnredCorrLevel{"cfgnredCorrLevel", 2, "For the correlation of the reduced q vector, QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
 
   Configurable<std::string> cfgEPRefA{"cfgEPRefA", "FT0A", "EP reference A"};
   Configurable<std::string> cfgEPRefB{"cfgEPRefB", "TPCpos", "EP reference B"};
@@ -462,14 +460,21 @@ struct JetSpectraEseTask {
 
       registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi4FT0C");
       registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi4FT0A");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi4FV0A");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi4TPCpos");
+      registry.addClone("eventQA/hPsi2FT0C", "eventQA/hPsi4TPCneg");
 
-      registry.add("eventQA/hCosPsi2AmC", ";Centrality;cos(2(#Psi_{2}^{A}-#Psi_{2}^{B}));#it{q}_{2}", {HistType::kTH3F, {{centAxis}, {cosAxis}, {eseAxis}}});
-      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCosPsi2AmB");
-      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCosPsi2BmC");
+      registry.add("eventQA/hCos2Psi2AmC", ";Centrality;cos(2(#Psi_{2}^{A}-#Psi_{2}^{B}));#it{q}_{2}", {HistType::kTH3F, {{centAxis}, {cosAxis}, {eseAxis}}});
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos2Psi2AmB");
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos2Psi2BmC");
 
-      registry.addClone("eventQA/hCosPsi2AmC", "eventQA/hCosPsi4AmC");
-      registry.addClone("eventQA/hCosPsi4AmC", "eventQA/hCosPsi4AmB");
-      registry.addClone("eventQA/hCosPsi4AmC", "eventQA/hCosPsi4BmC");
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos4Psi2AmC");
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos4Psi2AmB");
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos4Psi2BmC");
+
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos4Psi4AmC");
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos4Psi4AmB");
+      registry.addClone("eventQA/hCos2Psi2AmC", "eventQA/hCos4Psi4BmC");
 
       registry.add("eventQA/hQvecUncorV2", ";Centrality;Q_x;Q_y", {HistType::kTH3F, {{centAxis}, {qvecAxis}, {qvecAxis}}});
       registry.addClone("eventQA/hQvecUncorV2", "eventQA/hQvecRectrV2");
@@ -478,6 +483,8 @@ struct JetSpectraEseTask {
       registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPUncorV2");
       registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPRectrV2");
       registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPTwistV2");
+
+      registry.add("eventQA/h3Centq2FT0Cq2FT0A", ";Centrality;#it{q}_{2}^{FT0C};#it{q}_{2}^{FT0A}", {HistType::kTH3F, {{centAxis}, {250, 0, 35}, {250, 0, 35}}});
     }
     if (doprocessESEBackground) {
       LOGF(info, "JetSpectraEseTask::init() - Background Process");
@@ -486,6 +493,9 @@ struct JetSpectraEseTask {
       registry.add("hCentRhoRandomConewoLeadingJet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTHnSparseF, {{centAxis}, {800, -400.0, 400.0}, {dPhiAxis}, {eseAxis}}});
       registry.add("hCentRhoRandomConeRndTrackDirwoOneLeadingJet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTHnSparseF, {{centAxis}, {800, -400.0, 400.0}, {dPhiAxis}, {eseAxis}}});
       registry.add("hCentRhoRandomConeRndTrackDirwoTwoLeadingJet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTHnSparseF, {{centAxis}, {800, -400.0, 400.0}, {dPhiAxis}, {eseAxis}}});
+
+      registry.add("h3CentdeltapTRndmConePhi_localrhovsphi", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{100, 0.0, 100.0}, {400, -200.0, 200.0}, {dPhiAxis}}});
+      registry.add("h3CentdeltapTRndmConePhi_rhovsphi", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{100, 0.0, 100.0}, {400, -200.0, 200.0}, {dPhiAxis}}});
     }
     if (doprocessMCParticleLevel) {
       LOGF(info, "JetSpectraEseTask::init() - MC Particle level");
@@ -674,7 +684,7 @@ struct JetSpectraEseTask {
 
     auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), collision.rho()) * j.area(); };
     for (const auto& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax))
         continue;
       // if (!isAcceptedJet<aod::JetTracks>(jet)) {
       if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
@@ -809,7 +819,7 @@ struct JetSpectraEseTask {
 
       auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), c1.rho()) * j.area(); };
       for (const auto& jet : jets1) {
-        if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
+        if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax))
           continue;
         if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
           continue;
@@ -896,6 +906,7 @@ struct JetSpectraEseTask {
       return;
 
     [[maybe_unused]] const auto psi{procEP<PsiFillerEP>(collision)};
+    detCorrelation(collision);
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEEPData, "process ese collisions for filling EP and EPR", false);
 
@@ -939,7 +950,7 @@ struct JetSpectraEseTask {
       registry.fill(HIST("hTrackPhi"), collision.centFT0M(), track.phi(), occupancy);
     }
     for (const auto& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax))
         continue;
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
@@ -1203,6 +1214,27 @@ struct JetSpectraEseTask {
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCRecoTrack, "jet MC process: Reconstructed track", false);
 
+  float redqn(const std::vector<float>& vec)
+  {
+    float redq = -999.0f;
+    if (vec[2] > LowFT0Cut) {
+      redq = std::sqrt(vec[0] * vec[0] + vec[1] * vec[1]) * std::sqrt(vec[2]);
+    }
+    return redq;
+  }
+  template <typename Col>
+  void detCorrelation(Col const& col)
+  {
+
+    auto qC = qVecNoESE<DetID::FT0C, false>(col, 2, cfgnredCorrLevel);
+    auto qA = qVecNoESE<DetID::FT0A, false>(col, 2, cfgnredCorrLevel);
+
+    auto redFT0C = redqn(qC);
+    auto redFT0A = redqn(qA);
+
+    registry.fill(HIST("eventQA/h3Centq2FT0Cq2FT0A"), col.centFT0M(), redFT0C, redFT0A);
+  }
+
   static constexpr float InvalidValue = 999.;
 
   template <EventPlaneFiller P, typename EPCol>
@@ -1213,54 +1245,62 @@ struct JetSpectraEseTask {
     };
 
     std::map<std::string, float> epMap{
-      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, P.hist>(vec, 2), LowFT0Cut, 2.0f)},
-      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 2), LowFT0Cut, 2.0f)},
-      {"FV0A", computeEP(qVecNoESE<DetID::FV0A, false>(vec), LowFT0Cut, 2.0f)},
-      {"TPCpos", computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 0.0f, 2.0f)},
-      {"TPCneg", computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 0.0f, 2.0f)}};
+      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, P.hist>(vec, 2, cfgnCorrLevel), LowFT0Cut, 2.0f)},
+      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 2, cfgnCorrLevel), LowFT0Cut, 2.0f)},
+      {"FV0A", computeEP(qVecNoESE<DetID::FV0A, false>(vec, 2, cfgnCorrLevel), LowFT0Cut, 2.0f)},
+      {"TPCpos", computeEP(qVecNoESE<DetID::TPCpos, false>(vec, 2, cfgnCorrLevel), 0.0f, 2.0f)},
+      {"TPCneg", computeEP(qVecNoESE<DetID::TPCneg, false>(vec, 2, cfgnCorrLevel), 0.0f, 2.0f)}};
     std::map<std::string, float> ep3Map{
-      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, false>(vec, 3), LowFT0Cut, 3.0f)},
-      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 3), LowFT0Cut, 3.0f)}};
+      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, false>(vec, 3, cfgnCorrLevel), LowFT0Cut, 3.0f)},
+      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 3, cfgnCorrLevel), LowFT0Cut, 3.0f)}};
     std::map<std::string, float> ep4Map{
-      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, false>(vec, 4), LowFT0Cut, 4.0f)},
-      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 4), LowFT0Cut, 4.0f)},
-      {"FV0A", computeEP(qVecNoESE<DetID::FV0A, false>(vec, 4), LowFT0Cut, 4.0f)},
-      {"TPCpos", computeEP(qVecNoESE<DetID::TPCpos, false>(vec, 4), 0.0f, 4.0f)},
-      {"TPCneg", computeEP(qVecNoESE<DetID::TPCneg, false>(vec, 4), 0.0f, 4.0f)}};
+      {"FT0A", computeEP(qVecNoESE<DetID::FT0A, false>(vec, 4, cfgnCorrLevel), LowFT0Cut, 4.0f)},
+      {"FT0C", computeEP(qVecNoESE<DetID::FT0C, false>(vec, 4, cfgnCorrLevel), LowFT0Cut, 4.0f)},
+      {"FV0A", computeEP(qVecNoESE<DetID::FV0A, false>(vec, 4, cfgnCorrLevel), LowFT0Cut, 4.0f)},
+      {"TPCpos", computeEP(qVecNoESE<DetID::TPCpos, false>(vec, 4, cfgnCorrLevel), 0.0f, 4.0f)},
+      {"TPCneg", computeEP(qVecNoESE<DetID::TPCneg, false>(vec, 4, cfgnCorrLevel), 0.0f, 4.0f)}};
 
     if constexpr (P.psi) {
       if constexpr (P.hist) {
         fillEP(vec, epMap, ep3Map, ep4Map);
       }
 
-      auto cosPsi = [](float psiX, float psiY) {
-        return psiX == InvalidValue || psiY == InvalidValue ? InvalidValue : std::cos(2.0f * (psiX - psiY));
+      auto cosPsi = [](float psiX, float psiY, const float harmonic = 2.0f) {
+        return psiX == InvalidValue || psiY == InvalidValue ? InvalidValue : std::cos(harmonic * (psiX - psiY));
       };
-      const std::array<float, 3> epCorrContainer{
+      const std::array<float, 3> epCorrContainer22{
         cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefC)),
         cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefB)),
         cosPsi(epMap.at(cfgEPRefB), epMap.at(cfgEPRefC))};
-      const std::array<float, 3> epCorrContainer4{
-        cosPsi(ep4Map.at(cfgEPRefA), ep4Map.at(cfgEPRefC)),
-        cosPsi(ep4Map.at(cfgEPRefA), ep4Map.at(cfgEPRefB)),
-        cosPsi(ep4Map.at(cfgEPRefB), ep4Map.at(cfgEPRefC))};
+      const std::array<float, 3> epCorrContainer24{
+        cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefC), 4.0f),
+        cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefB), 4.0f),
+        cosPsi(epMap.at(cfgEPRefB), epMap.at(cfgEPRefC), 4.0f)};
+      const std::array<float, 3> epCorrContainer44{
+        cosPsi(ep4Map.at(cfgEPRefA), ep4Map.at(cfgEPRefC), 4.0f),
+        cosPsi(ep4Map.at(cfgEPRefA), ep4Map.at(cfgEPRefB), 4.0f),
+        cosPsi(ep4Map.at(cfgEPRefB), ep4Map.at(cfgEPRefC), 4.0f)};
 
       if constexpr (P.hist) {
-        fillEPCos(vec, epCorrContainer, epCorrContainer4);
+        fillEPCos(vec, epCorrContainer22, epCorrContainer24, epCorrContainer44);
       }
     }
     return {epMap.at(cfgEPRefA), ep3Map.at(cfgEPRefA)};
   }
   template <typename collision>
-  void fillEPCos(const collision& col, const std::array<float, 3>& Corr, const std::array<float, 3>& Corr4)
+  void fillEPCos(const collision& col, const std::array<float, 3>& Corr22, const std::array<float, 3>& Corr42, const std::array<float, 3>& Corr44)
   {
-    registry.fill(HIST("eventQA/hCosPsi2AmC"), col.centFT0M(), Corr[0], col.qPERCFT0C()[0]);
-    registry.fill(HIST("eventQA/hCosPsi2AmB"), col.centFT0M(), Corr[1], col.qPERCFT0C()[0]);
-    registry.fill(HIST("eventQA/hCosPsi2BmC"), col.centFT0M(), Corr[2], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos2Psi2AmC"), col.centFT0M(), Corr22[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos2Psi2AmB"), col.centFT0M(), Corr22[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos2Psi2BmC"), col.centFT0M(), Corr22[2], col.qPERCFT0C()[0]);
 
-    registry.fill(HIST("eventQA/hCosPsi4AmC"), col.centFT0M(), Corr4[0], col.qPERCFT0C()[0]);
-    registry.fill(HIST("eventQA/hCosPsi4AmB"), col.centFT0M(), Corr4[1], col.qPERCFT0C()[0]);
-    registry.fill(HIST("eventQA/hCosPsi4BmC"), col.centFT0M(), Corr4[2], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4Psi2AmC"), col.centFT0M(), Corr42[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4Psi2AmB"), col.centFT0M(), Corr42[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4Psi2BmC"), col.centFT0M(), Corr42[2], col.qPERCFT0C()[0]);
+
+    registry.fill(HIST("eventQA/hCos4Psi4AmC"), col.centFT0M(), Corr44[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4Psi4AmB"), col.centFT0M(), Corr44[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("eventQA/hCos4Psi4BmC"), col.centFT0M(), Corr44[2], col.qPERCFT0C()[0]);
   }
 
   template <typename collision>
@@ -1277,6 +1317,9 @@ struct JetSpectraEseTask {
 
     registry.fill(HIST("eventQA/hPsi4FT0A"), col.centFT0M(), ep4Map.at("FT0A"));
     registry.fill(HIST("eventQA/hPsi4FT0C"), col.centFT0M(), ep4Map.at("FT0C"));
+    registry.fill(HIST("eventQA/hPsi4FV0A"), col.centFT0M(), ep4Map.at("FV0A"));
+    registry.fill(HIST("eventQA/hPsi4TPCpos"), col.centFT0M(), ep4Map.at("TPCpos"));
+    registry.fill(HIST("eventQA/hPsi4TPCneg"), col.centFT0M(), ep4Map.at("TPCneg"));
   }
   constexpr int detIDN(const DetID id)
   {
@@ -1301,7 +1344,7 @@ struct JetSpectraEseTask {
 
   const int secondHarmonic{2};
   template <DetID id, bool fill, typename Col>
-  std::vector<float> qVecNoESE(Col collision, int nmode = 2)
+  std::vector<float> qVecNoESE(Col collision, int nmode = 2, int corrLevel = 3)
   {
     int detId{detIDN(id)};
     int detInd{detId * 4 + cfgnTotalSystem * 4 * (nmode - 2)};
@@ -1317,8 +1360,8 @@ struct JetSpectraEseTask {
       }
     }
     std::vector<float> qVec{};
-    qVec.push_back(collision.qvecRe()[detInd + cfgnCorrLevel]);
-    qVec.push_back(collision.qvecIm()[detInd + cfgnCorrLevel]);
+    qVec.push_back(collision.qvecRe()[detInd + corrLevel]);
+    qVec.push_back(collision.qvecIm()[detInd + corrLevel]);
     qVec.push_back(collision.qvecAmp()[detId]);
     return qVec;
   }
@@ -1379,7 +1422,7 @@ struct JetSpectraEseTask {
       for (const auto& track : tracks) {
         if constexpr (fillHist)
           registry.fill(HIST("trackQA/hRhoTrackCounter"), 0.5);
-        if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetR) && track.pt() >= trackPtMinRhoPhi && track.pt() <= trackPtMaxRhoPhi) {
+        if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetR) && track.pt() >= trackPtRhoPhi->at(0) && track.pt() <= trackPtRhoPhi->at(1)) {
           nTrk++;
           if constexpr (fillHist)
             registry.fill(HIST("trackQA/hRhoTrackCounter"), 1.5);
@@ -1391,7 +1434,7 @@ struct JetSpectraEseTask {
 
     auto hPhiPt = std::unique_ptr<TH1F>(new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(nTrk)), 0., o2::constants::math::TwoPI));
     for (const auto& track : tracks) {
-      if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetR) && track.pt() >= trackPtMinRhoPhi && track.pt() <= trackPtMaxRhoPhi) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetR) && track.pt() >= trackPtRhoPhi->at(0) && track.pt() <= trackPtRhoPhi->at(1)) {
         hPhiPt->Fill(track.phi(), track.pt());
         if constexpr (fillHist) {
           registry.fill(HIST("trackQA/hRhoTrackCounter"), 2.5);
@@ -1534,17 +1577,17 @@ struct JetSpectraEseTask {
     }
     registry.fill(HIST("hCentRhoRandomCone"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
-    randomConePt = 0;
+    float randomConePtRandomTrackDir = 0;
     for (auto const& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, -o2::constants::math::PI);
         float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;
         if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-          randomConePt += track.pt();
+          randomConePtRandomTrackDir += track.pt();
         }
       }
     }
-    registry.fill(HIST("hCentRhoRandomConeRandomTrackDir"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("hCentRhoRandomConeRandomTrackDir"), collision.centFT0M(), randomConePtRandomTrackDir - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     if (jets.size() > 0) {
       float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, -o2::constants::math::PI);
@@ -1600,6 +1643,8 @@ struct JetSpectraEseTask {
         }
       }
     }
+    registry.fill(HIST("h3CentdeltapTRndmConePhi_rhovsphi"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho(), dPhiRC);
+    registry.fill(HIST("h3CentdeltapTRndmConePhi_localrhovsphi"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhiRC);
     registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoOneLeadingJet"), collision.centFT0M(), randomConePtWithoutOneLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhiRC, qPerc[0]);
     registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoTwoLeadingJet"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhiRC, qPerc[0]);
   }
@@ -1624,7 +1669,7 @@ struct JetSpectraEseTask {
   {
     float weight = 1.0;
     for (const auto& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<JTracks>(jet)) {
@@ -1647,7 +1692,7 @@ struct JetSpectraEseTask {
     bool mcLevelIsParticleLevel = true;
     float weight = 1.0;
     for (const auto& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<JTracks>(jet, mcLevelIsParticleLevel)) {
@@ -1669,7 +1714,7 @@ struct JetSpectraEseTask {
   {
     float weight = 1.0;
     for (const auto& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<JTracks>(jet)) {
@@ -1718,7 +1763,7 @@ struct JetSpectraEseTask {
     float leadJetEta = -999;
     bool hasLeadingJet = false;
     for (const auto& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax))
         continue;
       if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
         continue;
