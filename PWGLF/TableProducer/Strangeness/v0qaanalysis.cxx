@@ -265,7 +265,7 @@ struct LfV0qaanalysis {
     registry.fill(HIST("hCentFT0M"), collision.centFT0M());
     registry.fill(HIST("hCentNGlobals"), collision.centNGlobal());
 
-    for (auto& v0 : V0s) { // loop over V0s
+    for (const auto& v0 : V0s) { // loop over V0s
 
       if (v0.v0Type() != v0TypeSelection) {
         continue;
@@ -358,7 +358,7 @@ struct LfV0qaanalysis {
       }
 
       auto v0sThisCollision = V0s.sliceBy(perCol, collision.globalIndex());
-      for (auto& v0 : v0sThisCollision) { // loop over V0s
+      for (const auto& v0 : v0sThisCollision) { // loop over V0s
 
         if (!v0.has_mcParticle()) {
           continue;
@@ -406,8 +406,8 @@ struct LfV0qaanalysis {
           lPDG = v0mcparticle.pdgCode();
           isprimary = v0mcparticle.isPhysicalPrimary();
         }
-        for (auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
-          for (auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
+        for (const auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
+          for (const auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
             if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -211) {
               isDauK0Short = true;
             }
@@ -424,7 +424,7 @@ struct LfV0qaanalysis {
         float pdgMother = 0.;
 
         if (std::abs(v0mcparticle.pdgCode()) == 3122 && v0mcparticle.has_mothers()) {
-          for (auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
+          for (const auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
             if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
               ptMotherMC = mcparticleMother0.pt();
               pdgMother = mcparticleMother0.pdgCode();
@@ -470,7 +470,7 @@ struct LfV0qaanalysis {
       // Generated particles
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache1);
 
-      for (auto& mcParticle : particlesInCollision) {
+      for (const auto& mcParticle : particlesInCollision) {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
@@ -540,7 +540,7 @@ struct LfV0qaanalysis {
     //===== Signal Loss Denominator =======
     //=====================================
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -571,7 +571,7 @@ struct LfV0qaanalysis {
 
     int recoCollIndex_INEL = 0;
     int recoCollIndex_INELgt0 = 0;
-    for (auto& collision : collisions) { // loop on reconstructed collisions
+    for (const auto& collision : collisions) { // loop on reconstructed collisions
 
       //=====================================
       //====== Event Split Numerator ========
@@ -598,7 +598,7 @@ struct LfV0qaanalysis {
       //======== Sgn Split Numerator ========
       //=====================================
 
-      for (auto& mcParticle : mcParticles) {
+      for (const auto& mcParticle : mcParticles) {
 
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
@@ -650,7 +650,7 @@ struct LfV0qaanalysis {
     //===== Signal Loss Numerator =========
     //=====================================
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -727,7 +727,7 @@ struct LfMyV0s {
 
   void process(aod::MyV0Candidates const& myv0s)
   {
-    for (auto& candidate : myv0s) {
+    for (const auto& candidate : myv0s) {
 
       registry.fill(HIST("hMassLambda"), candidate.masslambda());
       registry.fill(HIST("hPt"), candidate.v0pt());
