@@ -48,13 +48,12 @@ using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
 template <typename T>
-concept is_fwd_track = requires (T t) {
+concept is_fwd_track = requires(T t) {
   { t.rAtAbsorberEnd() } -> std::same_as<float>;
 };
 
 template <typename T>
-concept is_fwd_cov = requires (T t)
-{
+concept is_fwd_cov = requires(T t) {
   { t.sigmaX() } -> std::same_as<float>;
 };
 

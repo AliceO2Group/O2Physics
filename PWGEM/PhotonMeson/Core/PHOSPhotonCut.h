@@ -17,7 +17,9 @@
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+
 #include <TNamed.h>
+
 #include <Rtypes.h>
 
 class PHOSPhotonCut : public TNamed
