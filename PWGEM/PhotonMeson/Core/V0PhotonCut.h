@@ -23,7 +23,6 @@
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/Array2D.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -158,11 +157,16 @@ namespace o2::analysis::em::v0
 {
 
 template <typename T>
-concept IsNonLinIterator = o2::soa::is_iterator<T> && requires(T t) {
+concept IsNonLinIterator = requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.corrPt() } -> std::same_as<float>;
 };
 } // namespace o2::analysis::em::v0
+
+template <typename T>
+concept is_table = requires(T t) {
+  { t.begin() } -> std::same_as<typename std::decay_t<T>::iterator>;
+};
 
 class V0PhotonCut : public TNamed
 {
@@ -302,7 +306,7 @@ class V0PhotonCut : public TNamed
     }
   }
 
-  template <o2::soa::is_iterator TV0, o2::soa::is_iterator TLeg1, o2::soa::is_iterator TLeg2>
+  template <is_iterator TV0, is_iterator TLeg1, is_iterator TLeg2>
   void fillBeforePhotonHistogram(TV0 const& v0, TLeg1 const& pos, TLeg2 const& ele, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
@@ -332,7 +336,7 @@ class V0PhotonCut : public TNamed
     fRegistry->fill(HIST("QA/V0Photon/before/Neg/hTPCHits"), ele.tpcNClsFound(), ele.tpcNClsCrossedRows());
   }
 
-  template <o2::soa::is_iterator TV0, o2::soa::is_iterator TLeg1, o2::soa::is_iterator TLeg2>
+  template <is_iterator TV0, is_iterator TLeg1, is_iterator TLeg2>
   void fillAfterPhotonHistogram(TV0 const& v0, TLeg1 const& pos, TLeg2 const& ele, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
@@ -364,7 +368,7 @@ class V0PhotonCut : public TNamed
 
   /// \brief creates a mask for the V0s if they are too close to another V0 and have higher chi^2
   /// \param v0s V0 table
-  template <o2::soa::is_table TV0>
+  template <is_table TV0>
   void createCloseV0CutMask(TV0 const& v0s) const
   {
     const bool useDistance3D = (mTooCloseType == TooCloseCuts::kDistance3D);
@@ -478,7 +482,7 @@ class V0PhotonCut : public TNamed
   /// \brief check if given v0 photon survives all cuts
   /// \param flags EMBitFlags where results will be stored
   /// \param v0s v0 photon table to check
-  template <o2::soa::is_table TV0, typename TLeg>
+  template <is_table TV0, typename TLeg>
   void AreSelectedRunning(EMBitFlags& flags, TV0 const& v0s, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     if (v0s.size() <= 0) {
@@ -512,7 +516,7 @@ class V0PhotonCut : public TNamed
     }
   }
 
-  template <o2::soa::is_iterator TV0, typename TLeg>
+  template <is_iterator TV0, typename TLeg>
   bool IsSelected(TV0 const& v0, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     auto pos = v0.template posTrack_as<TLeg>();
@@ -820,7 +824,7 @@ class V0PhotonCut : public TNamed
     return true;
   }
 
-  template <o2::soa::is_iterator T>
+  template <is_iterator T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
     switch (cut) {
@@ -1064,7 +1068,7 @@ class V0PhotonCut : public TNamed
     return mMlBDTScores;
   }
 
-  template <o2::soa::is_iterator TMCPhoton>
+  template <is_iterator TMCPhoton>
   bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, float convRadius) const
   {
     // eta cut

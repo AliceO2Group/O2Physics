@@ -105,7 +105,7 @@ inline void fillTrackQA2D(
   reg->fill(histbase + HIST("hTrackdPhiPt"), dPhi, pt, w);
 }
 
-template <const int cls_id, o2::soa::is_iterator TCluster, is_optional_table TMatchedTracks = std::nullptr_t, is_optional_table TMatchedSecondaries = std::nullptr_t>
+template <const int cls_id, o2::soa::is_iterator TCluster, typename TMatchedTracks = std::nullptr_t, typename TMatchedSecondaries = std::nullptr_t>
 inline void fillClusterHistograms(o2::framework::HistogramRegistry* fRegistry, TCluster cluster, bool do2DQA, float weight = 1.f, TMatchedTracks const& primTracks = nullptr, TMatchedSecondaries const& secTracks = nullptr)
 {
   const auto e = cluster.e();

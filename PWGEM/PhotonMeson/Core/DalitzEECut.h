@@ -18,9 +18,9 @@
 
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoA.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -71,7 +71,7 @@ class DalitzEECut : public TNamed
     kTPConly = 1,
   };
 
-  template <o2::soa::is_iterator TTrack1, o2::soa::is_iterator TTrack2>
+  template <is_track_with_extra TTrack1, is_track_with_extra TTrack2>
   bool IsSelected(TTrack1 const& t1, TTrack2 const& t2, float bz) const
   {
     if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
@@ -85,7 +85,7 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <o2::soa::is_iterator TTrack1, o2::soa::is_iterator TTrack2>
+  template <is_track_with_extra TTrack1, is_track_with_extra TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
@@ -107,7 +107,7 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <bool isML = false, o2::soa::is_iterator TTrack, typename TCollision = int>
+  template <bool isML = false, is_track_with_extra TTrack, typename TCollision = int>
   bool IsSelectedTrack(TTrack const& track, TCollision const& = 0) const
   {
     if (!track.hasITS()) {
@@ -193,7 +193,7 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <o2::soa::is_iterator T>
+  template <is_track_with_extra T>
   bool PassPID(T const& track) const
   {
     switch (mPIDScheme) {
@@ -211,7 +211,7 @@ class DalitzEECut : public TNamed
     }
   }
 
-  template <o2::soa::is_iterator T>
+  template <is_track_with_extra T>
   bool PassTPConly(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
@@ -219,7 +219,7 @@ class DalitzEECut : public TNamed
     return is_el_included_TPC && is_pi_excluded_TPC;
   }
 
-  template <o2::soa::is_iterator T>
+  template <is_track_with_extra T>
   bool PassTOFif(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
@@ -228,7 +228,7 @@ class DalitzEECut : public TNamed
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
-  template <o2::soa::is_iterator T>
+  template <is_track_with_extra T>
   bool IsSelectedTrack(T const& track, const DalitzEECuts& cut) const
   {
     switch (cut) {

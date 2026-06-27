@@ -17,10 +17,9 @@
 #define PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
@@ -39,9 +38,6 @@
 #include <type_traits>
 #include <vector>
 
-template <typename T>
-concept is_optional_table = o2::soa::is_table<T> || std::is_same_v<T, std::nullptr_t>;
-
 template <typename TPrimaries>
 static constexpr bool HasPrimaries = !std::is_same_v<TPrimaries, std::nullptr_t>;
 
@@ -49,21 +45,21 @@ template <typename TSecondaries>
 static constexpr bool HasSecondaries = !std::is_same_v<TSecondaries, std::nullptr_t>;
 
 template <typename T>
-concept IsNonLinIterator = o2::soa::is_iterator<T> && requires(T t) {
+concept IsNonLinIterator = requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.corrE() } -> std::same_as<float>;
   { t.corrPt() } -> std::same_as<float>;
 };
 
 template <typename T>
-concept IsNonLinContainer = o2::soa::is_table<T> && requires(T t) {
+concept IsNonLinContainer = requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.begin().corrE() } -> std::same_as<float>;
   { t.begin().corrPt() } -> std::same_as<float>;
 };
 
 template <typename T>
-concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
+concept IsTrackIterator = requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.deltaEta() } -> std::same_as<float>;
   { t.deltaPhi() } -> std::same_as<float>;
@@ -72,7 +68,7 @@ concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
 };
 
 template <typename T>
-concept IsTrackContainer = o2::soa::is_table<T> && requires(T t) {
+concept IsTrackContainer = requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.begin().deltaEta() } -> std::same_as<float>;
   { t.begin().deltaPhi() } -> std::same_as<float>;
@@ -82,7 +78,6 @@ concept IsTrackContainer = o2::soa::is_table<T> && requires(T t) {
 
 template <typename Cluster>
 concept HasTrackMatching =
-  o2::soa::is_iterator<Cluster> &&
   requires(Cluster cluster) {
     // requires that the following are valid calls:
     { cluster.deltaEta() } -> std::convertible_to<std::vector<float>>;
@@ -93,7 +88,6 @@ concept HasTrackMatching =
 
 template <typename Cluster>
 concept HasSecondaryMatching =
-  o2::soa::is_iterator<Cluster> &&
   requires(Cluster cluster) {
     // requires that the following are valid calls:
     { cluster.deltaEtaSec() } -> std::convertible_to<std::vector<float>>;
@@ -135,7 +129,7 @@ class EMCPhotonCut : public TNamed
 
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
-  static constexpr auto getClusterId(o2::soa::is_iterator auto const& t)
+  static constexpr auto getClusterId(IsTrackIterator auto const& t)
   {
     if constexpr (requires { t.emEmcClusterId(); }) {
       return t.emEmcClusterId();
@@ -148,51 +142,7 @@ class EMCPhotonCut : public TNamed
 
   /// \brief add histograms to registry
   /// \param fRegistry pointer to histogram registry
-  void addQAHistograms(o2::framework::HistogramRegistry* fRegistry = nullptr) const
-  {
-    if (mDoQA && fRegistry != nullptr) {
-      const o2::framework::AxisSpec thAxisClusterEnergy{500, 0, 50, "#it{E}_{cls} (GeV)"};
-      const o2::framework::AxisSpec thAxisMomentum{250, 0., 25., "#it{p}_{T} (GeV/#it{c})"};
-      const o2::framework::AxisSpec thAxisDEta{200, -0.1, 0.1, "#Delta#eta"};
-      const o2::framework::AxisSpec thAxisDPhi{200, -0.1, 0.1, "#Delta#varphi (rad)"};
-      const o2::framework::AxisSpec thAxisEnergy{500, 0., 50., "#it{E} (GeV)"};
-      const o2::framework::AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
-      const o2::framework::AxisSpec thAxisPhi{500, 0, o2::constants::math::TwoPI, "#varphi (rad)"};
-      const o2::framework::AxisSpec thAxisNCell{51, -0.5, 50.5, "#it{N}_{cell}"};
-      const o2::framework::AxisSpec thAxisM02{200, 0, 2.0, "#it{M}_{02}"};
-      const o2::framework::AxisSpec thAxisTime{300, -150, +150, "#it{t}_{cls} (ns)"};
-      const o2::framework::AxisSpec thAxisEoverP{400, 0, 10., "#it{E}_{cls}/#it{p}_{track} (#it{c})"};
-
-      fRegistry->add("QA/Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::HistType::kTH1D, {thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::HistType::kTH1D, {thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::HistType::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
-      fRegistry->add("QA/Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
-      fRegistry->add("QA/Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisNCell, thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisM02, thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisTime, thAxisClusterEnergy}, true);
-
-      fRegistry->addClone("QA/Cluster/before/", "QA/Cluster/after/");
-
-      auto hClusterQualityCuts = fRegistry->add<TH2>("QA/Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::HistType::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, thAxisClusterEnergy}, true);
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(1, "In");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(2, "Definition");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(3, "Energy");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(4, "NCell");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(5, "M02");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(6, "Timing");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(7, "TM");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(8, "Sec. TM");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(9, "Exotic");
-      hClusterQualityCuts->GetXaxis()->SetBinLabel(10, "Out");
-
-      fRegistry->add("QA/Cluster/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-      fRegistry->add("QA/Cluster/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
-    }
-  }
+  void addQAHistograms(o2::framework::HistogramRegistry* fRegistry = nullptr) const;
 
   /// \brief performs check if track is matched with given cluster
   /// \param cluster cluster to be checked
@@ -201,7 +151,7 @@ class EMCPhotonCut : public TNamed
   /// \param GetEtaCut lambda to get the eta cut value
   /// \param GetPhiCut lambda to get the phi cut value
   /// \param applyEoverP bool to check if E/p should be checked (for secondaries we do not check this!)
-  bool checkTrackMatching(o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrack, o2::soa::RowViewSentinel const emcmatchedtrackEnd, bool applyEoverP, auto GetEtaCut, auto GetPhiCut, o2::framework::HistogramRegistry* fRegistry = nullptr, TrackType trackType = TrackType::kPrimary) const
+  bool checkTrackMatching(is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrack, is_sentinel auto const emcmatchedtrackEnd, bool applyEoverP, auto GetEtaCut, auto GetPhiCut, o2::framework::HistogramRegistry* fRegistry = nullptr, TrackType trackType = TrackType::kPrimary) const
   {
     // advance to cluster
     while (emcmatchedtrack != emcmatchedtrackEnd && getClusterId(emcmatchedtrack) < cluster.globalIndex()) {
@@ -250,7 +200,7 @@ class EMCPhotonCut : public TNamed
     return true; // all tracks checked, cluster survives
   }
 
-  void fillBeforeClusterHistogram(o2::soa::is_iterator auto const& cluster, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  void fillBeforeClusterHistogram(is_iterator auto const& cluster, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
     if (mDoQA == false || fRegistry == nullptr) {
@@ -266,7 +216,7 @@ class EMCPhotonCut : public TNamed
     fRegistry->fill(HIST("QA/Cluster/before/hTime"), cluster.time(), cluster.e());
   }
 
-  void fillAfterClusterHistogram(o2::soa::is_iterator auto const& cluster, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  void fillAfterClusterHistogram(is_iterator auto const& cluster, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
     if (mDoQA == false || fRegistry == nullptr) {
@@ -288,7 +238,7 @@ class EMCPhotonCut : public TNamed
   /// \param matchedTracks matched primary tracks table
   /// \param matchedSecondaries matched secondary tracks table
   /// \param fRegistry  o2::framework::HistogramRegistry pointer of the main task
-  void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  void AreSelectedRunning(EMBitFlags& flags, auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     if (clusters.size() <= 0) {
       return;
@@ -332,7 +282,7 @@ class EMCPhotonCut : public TNamed
   /// \param secondaryIter current iterator of matched secondary tracks
   /// \param secondaryEnd end iterator of matched secondary tracks
   /// \return true if cluster survives all cuts else false
-  bool IsSelectedRunning(o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrackIter, o2::soa::RowViewSentinel const emcmatchedtrackEnd, IsTrackIterator auto& secondaryIter, o2::soa::RowViewSentinel const secondaryEnd, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  bool IsSelectedRunning(is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrackIter, is_sentinel auto const emcmatchedtrackEnd, IsTrackIterator auto& secondaryIter, is_sentinel auto const secondaryEnd, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     const bool doQA = mDoQA && fRegistry != nullptr;
     if (!IsSelectedEMCalRunning(EMCPhotonCuts::kDefinition, cluster)) {
@@ -398,7 +348,7 @@ class EMCPhotonCut : public TNamed
   /// \param cut enum of the cluster cut to check
   /// \param cluster cluster to check
   /// \return true if cluster survives cut else false
-  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster) const
+  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, is_iterator auto const& cluster) const
   {
     switch (cut) {
       case EMCPhotonCuts::kDefinition:
@@ -440,7 +390,7 @@ class EMCPhotonCut : public TNamed
   /// \param matchedTrackIter current iterator of matched primary or secondary tracks
   /// \param matchedTrackEnd end iterator of matched primary or secondary tracks
   /// \return true if cluster survives cut else false
-  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& matchedTrackIter, o2::soa::RowViewSentinel const matchedTrackEnd, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, is_iterator auto const& cluster, IsTrackIterator auto& matchedTrackIter, is_sentinel auto const matchedTrackEnd, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     switch (cut) {
       case EMCPhotonCuts::kTM:
@@ -459,7 +409,7 @@ class EMCPhotonCut : public TNamed
   /// \param matchedTracks subtable of the matched primary tracks (optional)
   /// \param matchedSecondaries subtable of the matched secondary tracks (optional)
   /// \return true if cluster survives all cuts else false
-  template <o2::soa::is_iterator Cluster, typename TMatchedTracks = std::nullptr_t, typename TMatchedSecondaries = std::nullptr_t>
+  template <is_iterator Cluster, typename TMatchedTracks = std::nullptr_t, typename TMatchedSecondaries = std::nullptr_t>
   bool IsSelected(Cluster const& cluster, TMatchedTracks const& emcmatchedtracks = nullptr, TMatchedSecondaries const& secondaries = nullptr) const
   {
     if (!IsSelectedEMCal(EMCPhotonCuts::kDefinition, cluster)) {
@@ -495,7 +445,7 @@ class EMCPhotonCut : public TNamed
   /// \param matchedTracks subtable of the matched primary tracks (optional)
   /// \param matchedSecondaries subtable of the matched secondary tracks (optional)
   /// \return true if cluster survives cut else false
-  template <o2::soa::is_iterator Cluster, typename TMatchedTracks = std::nullptr_t>
+  template <is_iterator Cluster, typename TMatchedTracks = std::nullptr_t>
   bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster, TMatchedTracks const& emcmatchedtracks = nullptr) const
   {
     switch (cut) {

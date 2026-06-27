@@ -16,7 +16,7 @@
 #ifndef PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
-#include <Framework/ASoA.h>
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 #include <TNamed.h>
 
@@ -38,7 +38,7 @@ class PHOSPhotonCut : public TNamed
   static const char* mCutNames[static_cast<int>(PHOSPhotonCuts::kNCuts)];
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
-  template <o2::soa::is_iterator Cluster>
+  template <is_iterator Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
     // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimPHOSClusters table.
@@ -71,7 +71,7 @@ class PHOSPhotonCut : public TNamed
   }
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
-  template <o2::soa::is_iterator Cluster>
+  template <is_iterator Cluster>
   bool IsSelectedCluster(Cluster const& cls, const PHOSPhotonCuts& cut) const
   {
     switch (cut) {

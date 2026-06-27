@@ -59,22 +59,22 @@ struct EtaPhiHistograms {
   }
 };
 
-struct FilteredHistograms {
-  /// Construct a registry object with direct declaration
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},                            //
-      {"ptToPt", "#ptToPt", {HistType::kTH2F, {{100, -0.01, 10.01}, {100, -0.01, 10.01}}}} //
-    } //
-  };
+// struct FilteredHistograms {
+//   /// Construct a registry object with direct declaration
+//   HistogramRegistry registry{
+//     "registry",
+//     {
+//       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},                            //
+//       {"ptToPt", "#ptToPt", {HistType::kTH2F, {{100, -0.01, 10.01}, {100, -0.01, 10.01}}}} //
+//     } //
+//   };
 
-  void process(aod::Tracks const& tracks)
-  {
-    registry.fill<aod::track::Eta>(HIST("eta"), tracks, aod::track::eta > 0.0f);
-    registry.fill<aod::track::Pt, aod::track::Pt>(HIST("ptToPt"), tracks, aod::track::pt < 5.0f);
-  }
-};
+//   void process(aod::Tracks const& tracks)
+//   {
+//     registry.fill<aod::track::Eta>(HIST("eta"), tracks, aod::track::eta > 0.0f);
+//     registry.fill<aod::track::Pt, aod::track::Pt>(HIST("ptToPt"), tracks, aod::track::pt < 5.0f);
+//   }
+// };
 
 struct DimensionTest {
 
@@ -118,19 +118,19 @@ struct DimensionTest {
   void process(aod::Tracks const& tracks)
   {
     using namespace aod::track;
-    // does not work with dynamic columns (e.g. Charge, NormalizedPhi)
-    registry.fill<Eta>(HIST("1d"), tracks, eta > -0.7f);
-    registry.fill<Pt, Eta, Phi>(HIST("3d"), tracks, eta > 0.f);
-    registry.fill<Pt, Eta, Phi, P, X>(HIST("5d"), tracks, pt > 0.15f);
-    registry.fill<Pt, Eta, Phi, P, X, Y, Z>(HIST("7d"), tracks, pt > 0.15f);
-    registry.fill<Pt, Eta, Phi>(HIST("2d-profile"), tracks, eta > -0.5f);
+    // // does not work with dynamic columns (e.g. Charge, NormalizedPhi)
+    // registry.fill<Eta>(HIST("1d"), tracks, eta > -0.7f);
+    // registry.fill<Pt, Eta, Phi>(HIST("3d"), tracks, eta > 0.f);
+    // registry.fill<Pt, Eta, Phi, P, X>(HIST("5d"), tracks, pt > 0.15f);
+    // registry.fill<Pt, Eta, Phi, P, X, Y, Z>(HIST("7d"), tracks, pt > 0.15f);
+    // registry.fill<Pt, Eta, Phi>(HIST("2d-profile"), tracks, eta > -0.5f);
 
-    // fill 4d histogram with weight (column X)
-    registry.fill<Pt, Eta, Phi, Z, X>(HIST("4d-weight"), tracks, eta > 0.f);
+    // // fill 4d histogram with weight (column X)
+    // registry.fill<Pt, Eta, Phi, Z, X>(HIST("4d-weight"), tracks, eta > 0.f);
 
-    registry.fill<Pt, Eta, Phi>(HIST("2d-weight"), tracks, eta > 0.f);
+    // registry.fill<Pt, Eta, Phi>(HIST("2d-weight"), tracks, eta > 0.f);
 
-    registry.fill<Pt, Eta, Phi>(HIST("1d-profile-weight"), tracks, eta > 0.f);
+    // registry.fill<Pt, Eta, Phi>(HIST("1d-profile-weight"), tracks, eta > 0.f);
 
     for (auto& track : tracks) {
       registry.fill(HIST("2d"), track.eta(), track.pt());
@@ -218,8 +218,8 @@ struct RealisticExample {
   {
     using namespace aod::track;
 
-    etaStudy.fill<Pt>(HIST("positive"), tracks, eta > 0.f);
-    etaStudy.fill<Pt>(HIST("negative"), tracks, eta < 0.f);
+    // etaStudy.fill<Pt>(HIST("positive"), tracks, eta > 0.f);
+    // etaStudy.fill<Pt>(HIST("negative"), tracks, eta < 0.f);
 
     for (auto& track : tracks) {
       spectra.fill(HIST("myControlHist"), track.pt(), track.eta());
@@ -329,7 +329,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<OutputObjTest>(cfgc),
     adaptAnalysisTask<EtaPhiHistograms>(cfgc),
-    adaptAnalysisTask<FilteredHistograms>(cfgc),
+    // adaptAnalysisTask<FilteredHistograms>(cfgc),
     adaptAnalysisTask<DimensionTest>(cfgc),
     adaptAnalysisTask<RealisticExample>(cfgc),
     adaptAnalysisTask<TListTest>(cfgc),

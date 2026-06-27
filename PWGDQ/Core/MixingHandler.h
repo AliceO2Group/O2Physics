@@ -17,14 +17,13 @@
 #ifndef PWGDQ_CORE_MIXINGHANDLER_H_
 #define PWGDQ_CORE_MIXINGHANDLER_H_
 
-#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/Core/VarManagerCore.h"
 
 #include <TArrayF.h>
 #include <TNamed.h>
 
 #include <Rtypes.h>
 
-#include <algorithm>
 #include <array>
 #include <iostream>
 #include <map>

@@ -133,7 +133,7 @@ static constexpr float kMinSigma = 1e-9;
 
 struct Photonhbt {
 
-  template <is_iterator TGamma, is_table TSubInfos>
+  template <o2::soa::is_iterator TGamma, o2::soa::is_table TSubInfos>
   static inline V0Combo classifyV0Combo(TGamma const& g)
   {
     const auto pos = g.template posTrack_as<TSubInfos>();
