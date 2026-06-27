@@ -271,9 +271,9 @@ struct lfNucleiBATask {
 
   static constexpr int NumMotherList = sizeof(PdgMotherList) / sizeof(PdgMotherList[0]);
 
-  static constexpr const char* kMotherNames[NumMotherList] = {"#pi^{+}", "K^{+}", "K^{0}_{S}", "n", "p", "#Lambda", "d", "He3", "t", "^{3}_{#Lambda}H", "He4"};
+  static constexpr const char* MotherNames[NumMotherList] = {"#pi^{+}", "K^{+}", "K^{0}_{S}", "n", "p", "#Lambda", "d", "He3", "t", "^{3}_{#Lambda}H", "He4"};
 
-  static constexpr int kMaxNumMom = 2; // X: 0..4, overflow=5
+  static constexpr int MaxNumMom = 2; // X: 0..4, overflow=5
 
   template <typename TrackType>
   float averageClusterSizeTrk(const TrackType& track)
@@ -1092,7 +1092,7 @@ struct lfNucleiBATask {
           ayPdgPr->SetBinLabel(1, "undef.");
           ayPdgPr->SetBinLabel(2, "other");
           for (int i = 0; i < NumMotherList; i++) {
-            ayPdgPr->SetBinLabel(i + 3, kMotherNames[i]);
+            ayPdgPr->SetBinLabel(i + 3, MotherNames[i]);
           }
 
           histos.add<TH2>("tracks/proton/dca/before/hDCAxyVsPtantiProtonTrue", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
@@ -1164,7 +1164,7 @@ struct lfNucleiBATask {
           ayPdgDe->SetBinLabel(1, "undef.");
           ayPdgDe->SetBinLabel(2, "other");
           for (int i = 0; i < NumMotherList; i++) {
-            ayPdgDe->SetBinLabel(i + 3, kMotherNames[i]);
+            ayPdgDe->SetBinLabel(i + 3, MotherNames[i]);
           }
 
           histos.add<TH2>("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteronTrue", "DCAxy vs Pt (#bar{d}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
@@ -1339,7 +1339,7 @@ struct lfNucleiBATask {
           ayPdgHe->SetBinLabel(1, "undef.");
           ayPdgHe->SetBinLabel(2, "other");
           for (int i = 0; i < NumMotherList; i++) {
-            ayPdgHe->SetBinLabel(i + 3, kMotherNames[i]);
+            ayPdgHe->SetBinLabel(i + 3, MotherNames[i]);
           }
 
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtantiHeliumTrue", "DCAxy vs Pt (#bar{He}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
@@ -3369,8 +3369,8 @@ struct lfNucleiBATask {
         [[maybe_unused]] int firstMotherId = -1;
         [[maybe_unused]] int firstMotherPdg = -1;
         [[maybe_unused]] float firstMotherPt = -1.f;
-        [[maybe_unused]] int pdgMomList[kMaxNumMom];
-        [[maybe_unused]] float ptMomList[kMaxNumMom];
+        [[maybe_unused]] int pdgMomList[MaxNumMom];
+        [[maybe_unused]] float ptMomList[MaxNumMom];
         [[maybe_unused]] int nSaved = 0;
 
         if constexpr (IsFilteredData) {
@@ -3412,7 +3412,7 @@ struct lfNucleiBATask {
               firstMotherPdg = pdgMom;
               firstMotherPt = ptMom;
             }
-            if (nSaved < kMaxNumMom) {
+            if (nSaved < MaxNumMom) {
               pdgMomList[nSaved] = pdgMom;
               ptMomList[nSaved] = ptMom;
               nSaved++;
