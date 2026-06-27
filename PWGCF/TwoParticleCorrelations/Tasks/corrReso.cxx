@@ -923,20 +923,20 @@ struct CorrReso {
     correctionsLoaded = true;
   }
 
-  bool getEfficiencyCorrection_Nch(float& weight_Nch, float pt)
+  bool getEfficiencyCorrectionNch(float& weightNch, float pt)
   {
-    float eff_Nch = 1.;
+    float effNch = 1.;
     if (mEfficiencyNch) {
 
       int ptBin = mEfficiencyNch->FindBin(pt);
-      eff_Nch = mEfficiencyNch->GetBinContent(ptBin);
+      effNch = mEfficiencyNch->GetBinContent(ptBin);
 
     } else {
-      eff_Nch = 1.0;
+      effNch = 1.0;
     }
-    if (eff_Nch == 0)
+    if (effNch == 0)
       return false;
-    weight_Nch = 1. / eff_Nch;
+    weight_Nch = 1. / effNch;
     return true;
   }
 
@@ -963,7 +963,7 @@ struct CorrReso {
   void trackCounter(TTracks tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
-    float weight_Nch = 1.0f;
+    float weightNch = 1.0f;
     for (auto const& track : tracks) {
 
       if (cfgRefMultiplicity) {
@@ -971,11 +971,11 @@ struct CorrReso {
           continue;
       }
 
-      if (!getEfficiencyCorrection_Nch(weight_Nch, track.pt())) {
+      if (!getEfficiencyCorrectionNch(weightNch, track.pt())) {
         continue;
       }
 
-      nTracksCorrected += weight_Nch;
+      nTracksCorrected += weightNch;
     }
     multiplicity = nTracksCorrected;
   }

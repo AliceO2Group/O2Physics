@@ -855,20 +855,20 @@ struct CorrFit {
     correctionsLoaded = true;
   }
 
-  bool getEfficiencyCorrection_Nch(float& weight_Nch, float pt)
+  bool getEfficiencyCorrectionNch(float& weightNch, float pt)
   {
-    float eff_Nch = 1.;
+    float effNch = 1.;
     if (mEfficiencyNch) {
 
       int ptBin = mEfficiencyNch->FindBin(pt);
-      eff_Nch = mEfficiencyNch->GetBinContent(ptBin);
+      effNch = mEfficiencyNch->GetBinContent(ptBin);
 
     } else {
-      eff_Nch = 1.0;
+      effNch = 1.0;
     }
-    if (eff_Nch == 0)
+    if (effNch == 0)
       return false;
-    weight_Nch = 1. / eff_Nch;
+    weightNch = 1. / effNch;
     return true;
   }
 
@@ -910,7 +910,7 @@ struct CorrFit {
   void trackCounter(TTracks tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
-    float weight_Nch = 1.0f;
+    float weightNch = 1.0f;
     for (auto const& track : tracks) {
 
       if (cfgRefMultiplicity) {
@@ -918,11 +918,11 @@ struct CorrFit {
           continue;
       }
 
-      if (!getEfficiencyCorrection_Nch(weight_Nch, track.pt())) {
+      if (!getEfficiencyCorrectionNch(weightNch, track.pt())) {
         continue;
       }
 
-      nTracksCorrected += weight_Nch;
+      nTracksCorrected += weightNch;
     }
     multiplicity = nTracksCorrected;
   }
@@ -956,7 +956,7 @@ struct CorrFit {
   }
 
   template <typename TTrack>
-  void fillNsigmaBeforeCut(TTrack track1, Int_t pid) // function to fill the QA before Nsigma selection
+  void fillNsigmaBeforeCut(TTrack track1, int pid) // function to fill the QA before Nsigma selection
   {
     switch (pid) {
       case kPions: // For Pions
@@ -1008,7 +1008,7 @@ struct CorrFit {
   } // end of fillNsigmaBeforeCut
 
   template <typename TTrack>
-  void fillNsigmaAfterCut(TTrack track1, Int_t pid) // function to fill the QA after Nsigma selection
+  void fillNsigmaAfterCut(TTrack track1, int pid) // function to fill the QA after Nsigma selection
   {
     switch (pid) {
       case kPions: // For Pions
@@ -1221,7 +1221,7 @@ struct CorrFit {
       if (cfgPIDConfgs.cfgPIDParticle > kCharged)
         fillNsigmaAfterCut(track1, cfgPIDConfgs.cfgPIDParticle);
 
-      if (!getEfficiencyCorrection_Nch(triggerWeight, track1.pt()))
+      if (!getEfficiencyCorrectionNch(triggerWeight, track1.pt()))
         continue;
 
       if (system == SameEvent) {
@@ -1233,7 +1233,7 @@ struct CorrFit {
         if (!trackSelected(track2))
           continue;
 
-        if (!getEfficiencyCorrection_Nch(associateWeight, track2.pt()))
+        if (!getEfficiencyCorrectionNch(associateWeight, track2.pt()))
           continue;
 
         if (cfgRefpTt) {
