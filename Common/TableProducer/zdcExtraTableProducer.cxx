@@ -52,10 +52,12 @@ struct ZdcExtraTableProducer {
   //
   Configurable<int> nBins{"nBins", 400, "n bins"};
   Configurable<float> maxZN{"maxZN", 399.5, "Max ZN signal"};
-  Configurable<bool> tdcCut{"tdcCut", false, "Flag for TDC cut"};
-  Configurable<float> tdcZNmincut{"tdcZNmincut", -2.5, "Min ZN TDC cut"};
-  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 2.5, "Max ZN TDC cut"};
-  Configurable<bool> cfgUsePMC{"cfgUsePMC", true, "Use common PM (true) or sum of PMs (false) "};
+  Configurable<bool> applyTdcCut{"applyTdcCut", false, "Flag for TDC cut"};
+  Configurable<float> tdcZnMin{"tdcZnMin", -2.5, "Min ZN TDC cut"};
+  Configurable<float> tdcZnMax{"tdcZnMax", 2.5, "Max ZN TDC cut"};
+  Configurable<bool> useCfactor{"useCfactor", true, "Use C normalization factor (depends on multiplicity) for centroid calculation"};
+  Configurable<bool> usePMC{"usePMC", true, "Use common PM (true) or sum of PMs (false) "};
+
   // Event selections
   Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
   Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx"};
@@ -66,11 +68,10 @@ struct ZdcExtraTableProducer {
   Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
   Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", false, "Event selection: is vertex ITSTPC"};
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", false, "Event selection: is good ITS layers all"};
-  // Calibration settings
-  Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
 
   // Output settings
-  Configurable<bool> cfgSaveQaHistos{"cfgSaveQaHistos", false, "Flag to save QA histograms"};
+  Configurable<float> calibrationDownscaling{"calibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
+  Configurable<bool> saveQaHistos{"saveQaHistos", false, "Flag to save QA histograms"};
 
   enum SelectionCriteria {
     ZVtxCut,
@@ -102,7 +103,7 @@ struct ZdcExtraTableProducer {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsGoodITSLayersAll + 1, "IsGoodITSLayersAll");
 
     // Skip histogram registration if QA flag is false
-    if (!cfgSaveQaHistos) {
+    if (!saveQaHistos) {
       return;
     }
 
@@ -234,11 +235,11 @@ struct ZdcExtraTableProducer {
         double tdcZNA = zdc.timeZNA();
 
         // OR we can select a narrow window in both ZN TDCs using the configurable parameters
-        if (tdcCut) { // a narrow TDC window is set
-          if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
+        if (applyTdcCut) { // a narrow TDC window is set
+          if ((tdcZNC >= tdcZnMin) && (tdcZNC <= tdcZnMax)) {
             isZNChit = true;
           }
-          if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut)) {
+          if ((tdcZNA >= tdcZnMin) && (tdcZNA <= tdcZnMax)) {
             isZNAhit = true;
           }
         } else { // if no window on TDC is set
@@ -261,7 +262,7 @@ struct ZdcExtraTableProducer {
             sumZNC += pmqZNC[it];
           }
 
-          if (cfgSaveQaHistos) {
+          if (saveQaHistos) {
             registry.get<TH1>(HIST("ZNCpmc"))->Fill(pmcZNC);
             registry.get<TH1>(HIST("ZNCpm1"))->Fill(pmqZNC[0]);
             registry.get<TH1>(HIST("ZNCpm2"))->Fill(pmqZNC[1]);
@@ -276,7 +277,7 @@ struct ZdcExtraTableProducer {
             sumZNA += pmqZNA[it];
           }
           //
-          if (cfgSaveQaHistos) {
+          if (saveQaHistos) {
             registry.get<TH1>(HIST("ZNApmc"))->Fill(pmcZNA);
             registry.get<TH1>(HIST("ZNApm1"))->Fill(pmqZNA[0]);
             registry.get<TH1>(HIST("ZNApm2"))->Fill(pmqZNA[1]);
@@ -318,8 +319,8 @@ struct ZdcExtraTableProducer {
         float zncCommon = 0;
         float znaCommon = 0;
 
-        // Use sum of PMTs (cfgUsePMC == false) when common PMT is saturated
-        if (cfgUsePMC) {
+        // Use sum of PMTs (usePMC == false) when common PMT is saturated
+        if (usePMC) {
           zncCommon = pmcZNC;
           znaCommon = pmcZNA;
         } else {
@@ -330,8 +331,13 @@ struct ZdcExtraTableProducer {
         float centroidZNC[2], centroidZNA[2];
 
         if (denZNC != 0.) {
-          float nSpecnC = zncCommon / kBeamEne;
-          float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
+          float cZNC = 1.0;
+
+          if (useCfactor) {
+            float nSpecnC = zncCommon / kBeamEne;
+            cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
+          }
+
           centroidZNC[0] = cZNC * numXZNC / denZNC;
           centroidZNC[1] = cZNC * numYZNC / denZNC;
         } else {
@@ -340,15 +346,19 @@ struct ZdcExtraTableProducer {
         }
         //
         if (denZNA != 0.) {
-          float nSpecnA = znaCommon / kBeamEne;
-          float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
+          float cZNA = 1.0;
+          if (useCfactor) {
+            float nSpecnA = znaCommon / kBeamEne;
+            cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
+          }
+
           centroidZNA[0] = cZNA * numXZNA / denZNA;
           centroidZNA[1] = cZNA * numYZNA / denZNA;
         } else {
           centroidZNA[0] = 999.;
           centroidZNA[1] = 999.;
         }
-        if (cfgSaveQaHistos) {
+        if (saveQaHistos) {
           if (isZNChit) {
             registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
           }
@@ -361,7 +371,7 @@ struct ZdcExtraTableProducer {
         auto vx = collision.posX();
         auto vy = collision.posY();
 
-        if ((isZNAhit || isZNChit) && (gRandom->Uniform() < cfgCalibrationDownscaling)) {
+        if ((isZNAhit || isZNChit) && (gRandom->Uniform() < calibrationDownscaling)) {
           zdcextras(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNA, centroidZNA[0], centroidZNA[1], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNC, centroidZNC[0], centroidZNC[1], centrality, vx, vy, vz, foundBC.timestamp(), foundBC.runNumber(), evSelection);
         }
       }
