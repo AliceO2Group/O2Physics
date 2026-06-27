@@ -1305,7 +1305,7 @@ struct AnalysisSameEventPairing {
   o2::base::MatLayerCylSet* fLUT = nullptr;
   TH1D* ResoFlowSP = nullptr;
   TH1D* ResoFlowEP = nullptr;
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
 
@@ -1391,7 +1391,7 @@ struct AnalysisSameEventPairing {
 
   uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
   uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
-  uint32_t fQvectorFilterMask = 0; // mask for the track cuts required to be applied on the tracks used for the Q-vector calculation
+  uint32_t fQvectorFilterMask = 0; // mask for the track cuts applied in TPC Q-vector calculation, used to remove auto-correlation in flow analysis
   int fNCutsBarrel = 0;
   int fNCutsMuon = 0;
   int fNPairCuts = 0;
@@ -1972,8 +1972,9 @@ struct AnalysisSameEventPairing {
 
           fNPairPerEvent++;
 
-          VarManager::fgValues[VarManager::kSel1] = -999.;
-          VarManager::fgValues[VarManager::kSel2] = -999.;
+          // check if t1 or t2 is used in TPC Q vector calculation, so as to remove auto correlations in the flow analysis
+          VarManager::fgValues[VarManager::kSel1] = -9999.;
+          VarManager::fgValues[VarManager::kSel2] = -9999.;
           if (t1.reducedeventId() == event.globalIndex()) {
             if ((a1.isBarrelSelected_raw() & fQvectorFilterMask) > 0) {
               VarManager::fgValues[VarManager::kSel1] = 1.;

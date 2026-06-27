@@ -823,8 +823,8 @@ class VarManager : public TObject
     kCos2DeltaPhiPP_FT0C,
     kNullA2,
     kInfA2,
-    kSel1,
-    kSel2,
+    kSel1, // if track1 is used in TPC Q vector calculation
+    kSel2, // if track2 is used in TPC Q vector calculation
     kDeltaPhiPair,
     kOpeningAngle,
     kQuadDCAabsXY,
