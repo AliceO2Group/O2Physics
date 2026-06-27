@@ -103,6 +103,7 @@ struct V0ptHadPiKaProt {
   };
 
   Configurable<bool> cfgIsMC{"cfgIsMC", false, "Run MC"};
+  Configurable<bool> cfgMcClosure{"cfgMcClosure", false, "Calculate v0(pT) at Gen and Rec level to check Mc Closure"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
   Configurable<float> cfgCutItsChi2NCl{"cfgCutItsChi2NCl", 36.0f, "Maximum ITSchi2NCl"};
@@ -207,11 +208,16 @@ struct V0ptHadPiKaProt {
 
   // Output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histosAnalysis{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosAnalysis{"HistosAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosMc{"HistosMc", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleV02;
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleV02weighted;
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleV02weightedOption3;
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleMcGen;
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleMcRecRaw;
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleMcRecCorr;
   TRandom3* funRndm = new TRandom3(0);
 
   // Phi weight histograms initialization
@@ -373,6 +379,11 @@ struct V0ptHadPiKaProt {
     histos.add("h2DnsigmaPionTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (pion)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (kaon)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (proton)", kTH2F, {ptAxis, nSigmaAxis});
+
+    histos.add("h2DnsigmaPionTpcVsTofInterimCut", "3D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonTpcVsTofInterimCut", "3D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonTpcVsTofInterimCut", "3D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+
     histos.add("h2DnsigmaPionTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
@@ -382,64 +393,146 @@ struct V0ptHadPiKaProt {
 
     // Analysis profiles
 
-    histos.add("Prof_A_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_C_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_D_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Bone_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Btwo_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+    // v0(pT) analysis for data
+    if (!cfgIsMC) {
+      histos.add("Prof_A_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_C_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_D_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Bone_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Btwo_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
 
-    histos.add("Prof_A_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_C_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_D_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Bone_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Btwo_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_A_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_C_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_D_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Bone_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Btwo_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
 
-    histos.add("Prof_A_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_C_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_D_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Bone_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Btwo_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_A_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_C_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_D_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Bone_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Btwo_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
 
-    histos.add("Prof_A_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_C_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_D_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Bone_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_Btwo_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_A_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_C_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_D_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Bone_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_Btwo_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+    }
+    if (cfgIsMC && cfgMcClosure) {
 
-    // Analysis profile for v02(pT)
-    histos.add("Prof_XY", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-    histos.add("Prof_XYZ_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_Z_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_XYZ_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_Z_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_XYZ_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_Z_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_XYZ_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-    histos.add("Prof_Z_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      // v0(pT) analysis for MC generated
+      histos.add("McClosure/Generated/Prof_A_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_C_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_D_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Bone_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Btwo_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
 
-    // check with different normalization for event averaging
-    if (cfgV02WeightedFill) {
-      histos.add("Prof_XY_weighted", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-      histos.add("Prof_XYZ_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_XYZ_weighted_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weighted_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_XYZ_weighted_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weighted_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_XYZ_weighted_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weighted_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_A_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_C_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_D_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Bone_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Btwo_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histos.add("McClosure/Generated/Prof_A_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_C_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_D_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Bone_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Btwo_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histos.add("McClosure/Generated/Prof_A_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_C_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("McClosure/Generated/Prof_D_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Bone_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("McClosure/Generated/Prof_Btwo_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      // v0(pT) analysis for MC reconstructed efficiency raw
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_A_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_C_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_D_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Bone_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Btwo_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_A_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_C_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_D_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Bone_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Btwo_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_A_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_C_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_D_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Bone_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Btwo_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_A_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_C_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_D_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Bone_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Raw/Prof_Btwo_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      // v0(pT) analysis for MC reconstructed efficiency corrected
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_A_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_C_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_D_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Bone_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Btwo_had", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_A_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_C_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_D_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Bone_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Btwo_pi", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_A_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_C_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_D_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Bone_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Btwo_ka", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_A_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_C_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_D_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Bone_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histosMc.add("McClosure/Reconstructed/Corr/Prof_Btwo_prot", "", {HistType::kTProfile2D, {centAxis, noAxis}});
     }
 
-    if (cfgV02WeightedOption3Fill) {
-      histos.add("Prof_XY_weightedOption3", "", {HistType::kTProfile2D, {centAxis, noAxis}});
-      histos.add("Prof_XYZ_weightedOption3_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weightedOption3_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_XYZ_weightedOption3_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weightedOption3_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_XYZ_weightedOption3_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weightedOption3_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_XYZ_weightedOption3_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
-      histos.add("Prof_Z_weightedOption3_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+    // Analysis profile for v02(pT)
+    if (!cfgIsMC) {
+      histos.add("Prof_XY", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_XYZ_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_XYZ_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_XYZ_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_XYZ_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+
+      // check with different normalization for event averaging
+      if (cfgV02WeightedFill) {
+        histos.add("Prof_XY_weighted", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+        histos.add("Prof_XYZ_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_XYZ_weighted_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weighted_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_XYZ_weighted_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weighted_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_XYZ_weighted_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weighted_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      }
+
+      if (cfgV02WeightedOption3Fill) {
+        histos.add("Prof_XY_weightedOption3", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+        histos.add("Prof_XYZ_weightedOption3_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weightedOption3_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_XYZ_weightedOption3_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weightedOption3_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_XYZ_weightedOption3_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weightedOption3_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_XYZ_weightedOption3_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+        histos.add("Prof_Z_weightedOption3_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      }
     }
 
     // initial array
@@ -447,69 +540,163 @@ struct V0ptHadPiKaProt {
     subSampleV02.resize(cfgNSubsample);
     subSampleV02weighted.resize(cfgNSubsample);
     subSampleV02weightedOption3.resize(cfgNSubsample);
+    if (cfgIsMC && cfgMcClosure) {
+      subSampleMcGen.resize(cfgNSubsample);
+      subSampleMcRecRaw.resize(cfgNSubsample);
+      subSampleMcRecCorr.resize(cfgNSubsample);
+    }
+
     for (int i = 0; i < cfgNSubsample; i++) {
       subSample[i].resize(20);
       subSampleV02[i].resize(9);
       subSampleV02weighted[i].resize(9);
       subSampleV02weightedOption3[i].resize(9);
+
+      if (cfgIsMC && cfgMcClosure) {
+        subSampleMcGen[i].resize(20);
+        subSampleMcRecRaw[i].resize(20);
+        subSampleMcRecCorr[i].resize(20);
+      }
     }
     for (int i = 0; i < cfgNSubsample; i++) {
-      subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][3] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][4] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
 
-      subSample[i][5] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][6] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][7] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][8] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][9] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+      if (!cfgIsMC) {
+        subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][3] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][4] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
 
-      subSample[i][10] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][11] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][12] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][13] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][14] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][5] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][6] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][7] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][8] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][9] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
 
-      subSample[i][15] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][16] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSample[i][17] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][18] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSample[i][19] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][10] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][11] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][12] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][13] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][14] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
 
-      subSampleV02[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XY", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSampleV02[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-
-      if (cfgV02WeightedFill) {
-        subSampleV02weighted[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XY_weighted", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-        subSampleV02weighted[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weighted[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][15] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][16] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSample[i][17] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][18] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSample[i][19] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
       }
 
-      if (cfgV02WeightedOption3Fill) {
-        subSampleV02weightedOption3[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XY_weightedOption3", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-        subSampleV02weightedOption3[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-        subSampleV02weightedOption3[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      if (cfgIsMC && cfgMcClosure) {
+        // generated
+        subSampleMcGen[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_C_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_D_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][3] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Bone_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][4] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Btwo_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcGen[i][5] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_A_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][6] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_C_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][7] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_D_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][8] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Bone_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][9] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Btwo_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcGen[i][10] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_A_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][11] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_C_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][12] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_D_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][13] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Bone_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][14] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Btwo_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcGen[i][15] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_A_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][16] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_C_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcGen[i][17] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_D_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][18] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Bone_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcGen[i][19] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("McClosure/Generated/subSample_%d/Prof_Btwo_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        // reconstruced/Raw
+        subSampleMcRecRaw[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_C_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_D_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Bone_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Btwo_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcRecRaw[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_A_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_C_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_D_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Bone_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][9] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Btwo_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcRecRaw[i][10] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_A_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][11] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_C_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][12] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_D_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][13] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Bone_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][14] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Btwo_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcRecRaw[i][15] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_A_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][16] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_C_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecRaw[i][17] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_D_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][18] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Bone_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecRaw[i][19] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Raw/subSample_%d/Prof_Btwo_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        // reconstruced/Corr
+        subSampleMcRecCorr[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_C_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_D_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Bone_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Btwo_had", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcRecCorr[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_A_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_C_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_D_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Bone_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][9] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Btwo_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcRecCorr[i][10] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_A_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][11] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_C_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][12] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_D_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][13] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Bone_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][14] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Btwo_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+
+        subSampleMcRecCorr[i][15] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_A_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][16] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_C_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleMcRecCorr[i][17] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_D_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][18] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Bone_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleMcRecCorr[i][19] = std::get<std::shared_ptr<TProfile2D>>(histosMc.add(Form("McClosure/Reconstructed/Corr/subSample_%d/Prof_Btwo_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+      }
+
+      if (!cfgIsMC) {
+        subSampleV02[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XY", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleV02[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+
+        if (cfgV02WeightedFill) {
+          subSampleV02weighted[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XY_weighted", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+          subSampleV02weighted[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_XYZ_weighted_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weighted[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weighted_%d/Prof_Z_weighted_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        }
+
+        if (cfgV02WeightedOption3Fill) {
+          subSampleV02weightedOption3[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XY_weightedOption3", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+          subSampleV02weightedOption3[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_XYZ_weightedOption3_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+          subSampleV02weightedOption3[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02weightedOption3_%d/Prof_Z_weightedOption3_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        }
       }
     }
 
@@ -600,6 +787,7 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
+
       if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC) {
         flag = 1;
       }
@@ -634,6 +822,8 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
+          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPr(), candidate.tofNSigmaPr());
+
           if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -667,6 +857,7 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
+
       if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC) {
         flag = 1;
       }
@@ -701,6 +892,7 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
+          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
           if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -734,6 +926,7 @@ struct V0ptHadPiKaProt {
     }
 
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
+
       if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC) {
         flag = 1;
       }
@@ -768,6 +961,7 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
+          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
           if (combNSigmaKa < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -1091,6 +1285,22 @@ struct V0ptHadPiKaProt {
     histos.fill(HIST("MCGenerated/hMC"), 4.5);
     histos.fill(HIST("MCGenerated/hCentgen"), cent);
 
+    // initialization of generated level variables for MCclosure
+    int nbinsHad = 20;
+    int nbinsPid = 18;
+    double binsarray[21] = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0};
+    TH1D* fPtProfileHadMcGen = new TH1D("fPtProfileHadMcGen", "fPtProfileHadMcGen", 20, binsarray);
+    TH1D* fPtProfilePiMcGen = new TH1D("fPtProfilePiMcGen", "fPtProfilePiMcGen", 20, binsarray);
+    TH1D* fPtProfileKaMcGen = new TH1D("fPtProfileKaMcGen", "fPtProfileKaMcGen", 20, binsarray);
+    TH1D* fPtProfileProtMcGen = new TH1D("fPtProfileProtMcGen", "fPtProfileProtMcGen", 20, binsarray);
+    double pTsumEtaLeftHadMcGen = 0.0;
+    double nSumEtaLeftHadMcGen = 0.0;
+    double pTsumEtaRightHadMcGen = 0.0;
+    double nSumEtaRightHadMcGen = 0.0;
+    double nSumEtaLeftPiMcGen = 0.0;
+    double nSumEtaLeftKaMcGen = 0.0;
+    double nSumEtaLeftProtMcGen = 0.0;
+
     // creating phi, pt, eta dstribution of generted MC particles
 
     // Generated track variables
@@ -1119,9 +1329,122 @@ struct V0ptHadPiKaProt {
 
           if (pdgcode == PDG_t::kProton)
             histos.fill(HIST("MCGenerated/hPtEtaPhiProton_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
+
+          if (cfgMcClosure) {
+            double trkPt = mcParticle.pt();
+            double trkEta = mcParticle.eta();
+
+            // generated (true)
+            double effweight = 1.0;
+            double effweightPion = 1.0;
+            double effweightKaon = 1.0;
+            double effweightProton = 1.0;
+
+            if (trkEta < cfgCutEtaLeft) {
+              fPtProfileHadMcGen->Fill(trkPt);
+              pTsumEtaLeftHadMcGen += trkPt * effweight;
+              nSumEtaLeftHadMcGen += effweight;
+            }
+            if (trkEta > cfgCutEtaRight) {
+              pTsumEtaRightHadMcGen += trkPt * effweight;
+              nSumEtaRightHadMcGen += effweight;
+            }
+
+            if (trkPt < cfgCutPtUpperPID) {
+              if (trkEta < cfgCutEtaLeft) {
+                if (pdgcode == PDG_t::kPiPlus) {
+                  fPtProfilePiMcGen->Fill(trkPt, effweightPion);
+                  nSumEtaLeftPiMcGen += effweightPion;
+                }
+                if (pdgcode == PDG_t::kKPlus) {
+                  fPtProfileKaMcGen->Fill(trkPt, effweightKaon);
+                  nSumEtaLeftKaMcGen += effweightKaon;
+                }
+                if (pdgcode == PDG_t::kProton && trkPt > cfgCutPtLowerProt) {
+                  fPtProfileProtMcGen->Fill(trkPt, effweightProton);
+                  nSumEtaLeftProtMcGen += effweightProton;
+                }
+              }
+            }
+          } // end of if(cfgMcClosure)
         }
       }
     } //! end particle loop
+
+    if (cfgMcClosure) {
+      // selecting subsample and filling profiles
+      float lRandom = funRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+      // MC generated
+      if (nSumEtaRightHadMcGen > 0 && nSumEtaLeftHadMcGen > 0) {
+        for (int i = 0; i < nbinsHad; i++) {
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_A_had"))->Fill(cent, fPtProfileHadMcGen->GetBinCenter(i + 1), (fPtProfileHadMcGen->GetBinContent(i + 1) / nSumEtaLeftHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_C_had"))->Fill(cent, fPtProfileHadMcGen->GetBinCenter(i + 1), ((fPtProfileHadMcGen->GetBinContent(i + 1) / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Bone_had"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Btwo_had"))->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_D_had"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+
+          subSampleMcGen[sampleIndex][0]->Fill(cent, fPtProfileHadMcGen->GetBinCenter(i + 1), (fPtProfileHadMcGen->GetBinContent(i + 1) / nSumEtaLeftHadMcGen));
+          subSampleMcGen[sampleIndex][1]->Fill(cent, fPtProfileHadMcGen->GetBinCenter(i + 1), ((fPtProfileHadMcGen->GetBinContent(i + 1) / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][2]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][3]->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          subSampleMcGen[sampleIndex][4]->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+        }
+      }
+
+      if (nSumEtaRightHadMcGen > 0 && nSumEtaLeftHadMcGen > 0 && nSumEtaLeftPiMcGen > 0) {
+        for (int i = 0; i < nbinsPid; i++) {
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_A_pi"))->Fill(cent, fPtProfilePiMcGen->GetBinCenter(i + 1), (fPtProfilePiMcGen->GetBinContent(i + 1) / nSumEtaLeftPiMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_C_pi"))->Fill(cent, fPtProfilePiMcGen->GetBinCenter(i + 1), ((fPtProfilePiMcGen->GetBinContent(i + 1) / nSumEtaLeftPiMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Bone_pi"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Btwo_pi"))->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_D_pi"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+
+          subSampleMcGen[sampleIndex][5]->Fill(cent, fPtProfilePiMcGen->GetBinCenter(i + 1), (fPtProfilePiMcGen->GetBinContent(i + 1) / nSumEtaLeftPiMcGen));
+          subSampleMcGen[sampleIndex][6]->Fill(cent, fPtProfilePiMcGen->GetBinCenter(i + 1), ((fPtProfilePiMcGen->GetBinContent(i + 1) / nSumEtaLeftPiMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][7]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][8]->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          subSampleMcGen[sampleIndex][9]->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+        }
+      }
+
+      if (nSumEtaRightHadMcGen > 0 && nSumEtaLeftHadMcGen > 0 && nSumEtaLeftKaMcGen > 0) {
+        for (int i = 0; i < nbinsPid; i++) {
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_A_ka"))->Fill(cent, fPtProfileKaMcGen->GetBinCenter(i + 1), (fPtProfileKaMcGen->GetBinContent(i + 1) / nSumEtaLeftKaMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_C_ka"))->Fill(cent, fPtProfileKaMcGen->GetBinCenter(i + 1), ((fPtProfileKaMcGen->GetBinContent(i + 1) / nSumEtaLeftKaMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Bone_ka"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Btwo_ka"))->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_D_ka"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+
+          subSampleMcGen[sampleIndex][10]->Fill(cent, fPtProfileKaMcGen->GetBinCenter(i + 1), (fPtProfileKaMcGen->GetBinContent(i + 1) / nSumEtaLeftKaMcGen));
+          subSampleMcGen[sampleIndex][11]->Fill(cent, fPtProfileKaMcGen->GetBinCenter(i + 1), ((fPtProfileKaMcGen->GetBinContent(i + 1) / nSumEtaLeftKaMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][12]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][13]->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          subSampleMcGen[sampleIndex][14]->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+        }
+      }
+      if (nSumEtaRightHadMcGen > 0 && nSumEtaLeftHadMcGen > 0 && nSumEtaLeftProtMcGen > 0) {
+        for (int i = 1; i < nbinsPid; i++) {
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_A_prot"))->Fill(cent, fPtProfileProtMcGen->GetBinCenter(i + 1), (fPtProfileProtMcGen->GetBinContent(i + 1) / nSumEtaLeftProtMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_C_prot"))->Fill(cent, fPtProfileProtMcGen->GetBinCenter(i + 1), ((fPtProfileProtMcGen->GetBinContent(i + 1) / nSumEtaLeftProtMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Bone_prot"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_Btwo_prot"))->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+          histos.get<TProfile2D>(HIST("McClosure/Generated/Prof_D_prot"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+
+          subSampleMcGen[sampleIndex][15]->Fill(cent, fPtProfileProtMcGen->GetBinCenter(i + 1), (fPtProfileProtMcGen->GetBinContent(i + 1) / nSumEtaLeftProtMcGen));
+          subSampleMcGen[sampleIndex][16]->Fill(cent, fPtProfileProtMcGen->GetBinCenter(i + 1), ((fPtProfileProtMcGen->GetBinContent(i + 1) / nSumEtaLeftProtMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][17]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen) * (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen)));
+          subSampleMcGen[sampleIndex][18]->Fill(cent, 0.5, (pTsumEtaLeftHadMcGen / nSumEtaLeftHadMcGen));
+          subSampleMcGen[sampleIndex][19]->Fill(cent, 0.5, (pTsumEtaRightHadMcGen / nSumEtaRightHadMcGen));
+        }
+      }
+    }
+
+    fPtProfileHadMcGen->Delete();
+    fPtProfilePiMcGen->Delete();
+    fPtProfileKaMcGen->Delete();
+    fPtProfileProtMcGen->Delete();
   }
   PROCESS_SWITCH(V0ptHadPiKaProt, processMCGen, "Process Monte-carlo generated data", false);
 
@@ -1201,6 +1524,37 @@ struct V0ptHadPiKaProt {
         }
       }
     } //! end mc particle loop
+
+    // MC reconstructed Analysis variables for v0(pT)
+    int nbinsHad = 20;
+    int nbinsPid = 18;
+    double binsarray[21] = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0};
+
+    // Raw
+    TH1D* fPtProfileHadMcRecRaw = new TH1D("fPtProfileHadMcRecRaw", "fPtProfileHadMcRecRaw", 20, binsarray);
+    TH1D* fPtProfilePiMcRecRaw = new TH1D("fPtProfilePiMcRecRaw", "fPtProfilePiMcRecRaw", 20, binsarray);
+    TH1D* fPtProfileKaMcRecRaw = new TH1D("fPtProfileKaMcRecRaw", "fPtProfileKaMcRecRaw", 20, binsarray);
+    TH1D* fPtProfileProtMcRecRaw = new TH1D("fPtProfileProtMcRecRaw", "fPtProfileProtMcRecRaw", 20, binsarray);
+    double pTsumEtaLeftHadMcRecRaw = 0.0;
+    double nSumEtaLeftHadMcRecRaw = 0.0;
+    double pTsumEtaRightHadMcRecRaw = 0.0;
+    double nSumEtaRightHadMcRecRaw = 0.0;
+    double nSumEtaLeftPiMcRecRaw = 0.0;
+    double nSumEtaLeftKaMcRecRaw = 0.0;
+    double nSumEtaLeftProtMcRecRaw = 0.0;
+
+    // Eff corrected
+    TH1D* fPtProfileHadMcRecCorr = new TH1D("fPtProfileHadMcRecCorr", "fPtProfileHadMcRecCorr", 20, binsarray);
+    TH1D* fPtProfilePiMcRecCorr = new TH1D("fPtProfilePiMcRecCorr", "fPtProfilePiMcRecCorr", 20, binsarray);
+    TH1D* fPtProfileKaMcRecCorr = new TH1D("fPtProfileKaMcRecCorr", "fPtProfileKaMcRecCorr", 20, binsarray);
+    TH1D* fPtProfileProtMcRecCorr = new TH1D("fPtProfileProtMcRecCorr", "fPtProfileProtMcRecCorr", 20, binsarray);
+    double pTsumEtaLeftHadMcRecCorr = 0.0;
+    double nSumEtaLeftHadMcRecCorr = 0.0;
+    double pTsumEtaRightHadMcRecCorr = 0.0;
+    double nSumEtaRightHadMcRecCorr = 0.0;
+    double nSumEtaLeftPiMcRecCorr = 0.0;
+    double nSumEtaLeftKaMcRecCorr = 0.0;
+    double nSumEtaLeftProtMcRecCorr = 0.0;
 
     for (const auto& track : tracks) { // Loop over tracks
 
@@ -1332,9 +1686,230 @@ struct V0ptHadPiKaProt {
             if (pdgcodeRec == PDG_t::kProton)
               histos.fill(HIST("MCReconstructed/hPtEtaPhiTrueProtonTrack"), track.pt(), track.eta(), track.phi());
           }
+
+          if (cfgMcClosure) {
+            double trkPt = particle.pt();
+            double trkEta = particle.eta();
+
+            // Raw
+            double effweight = 1.0;
+            double effweightPion = 1.0;
+            double effweightKaon = 1.0;
+            double effweightProton = 1.0;
+
+            if (track.sign() != 0) {
+              if (trkEta < cfgCutEtaLeft) {
+                fPtProfileHadMcRecRaw->Fill(trkPt);
+                pTsumEtaLeftHadMcRecRaw += trkPt * effweight;
+                nSumEtaLeftHadMcRecRaw += effweight;
+              }
+              if (trkEta > cfgCutEtaRight) {
+                pTsumEtaRightHadMcRecRaw += trkPt * effweight;
+                nSumEtaRightHadMcRecRaw += effweight;
+              }
+            }
+
+            if (trkPt < cfgCutPtUpperPID) {
+              if (trkEta < cfgCutEtaLeft) {
+                if (isPion) {
+                  fPtProfilePiMcRecRaw->Fill(trkPt, effweightPion);
+                  nSumEtaLeftPiMcRecRaw += effweightPion;
+                }
+                if (isKaon) {
+                  fPtProfileKaMcRecRaw->Fill(trkPt, effweightKaon);
+                  nSumEtaLeftKaMcRecRaw += effweightKaon;
+                }
+                if (isProton && trkPt > cfgCutPtLowerProt) {
+                  fPtProfileProtMcRecRaw->Fill(trkPt, effweightProton);
+                  nSumEtaLeftProtMcRecRaw += effweightProton;
+                }
+              }
+            }
+
+            // Efficiency corrected
+            if (cfgLoadPtEffWeights) {
+              effweight = getEffWeightAllCharged(track);   // NUE weight
+              effweightPion = getEffWeightPion(track);     // NUE weight for pion
+              effweightKaon = getEffWeightKaon(track);     // NUE weight for kaon
+              effweightProton = getEffWeightProton(track); // NUE weight for proton
+            }
+            if (track.sign() != 0) {
+              if (trkEta < cfgCutEtaLeft) {
+                fPtProfileHadMcRecCorr->Fill(trkPt);
+                pTsumEtaLeftHadMcRecCorr += trkPt * effweight;
+                nSumEtaLeftHadMcRecCorr += effweight;
+              }
+              if (trkEta > cfgCutEtaRight) {
+                pTsumEtaRightHadMcRecCorr += trkPt * effweight;
+                nSumEtaRightHadMcRecCorr += effweight;
+              }
+            }
+
+            if (trkPt < cfgCutPtUpperPID) {
+              if (trkEta < cfgCutEtaLeft) {
+                if (isPion) {
+                  fPtProfilePiMcRecCorr->Fill(trkPt, effweightPion);
+                  nSumEtaLeftPiMcRecCorr += effweightPion;
+                }
+                if (isKaon) {
+                  fPtProfileKaMcRecCorr->Fill(trkPt, effweightKaon);
+                  nSumEtaLeftKaMcRecCorr += effweightKaon;
+                }
+                if (isProton && trkPt > cfgCutPtLowerProt) {
+                  fPtProfileProtMcRecCorr->Fill(trkPt, effweightProton);
+                  nSumEtaLeftProtMcRecCorr += effweightProton;
+                }
+              }
+            }
+          } // end of if(cfgMcClosure)
         }
       }
     } // end track loop
+
+    if (cfgMcClosure) {
+      // selecting subsample and filling profiles
+      float lRandom = funRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+      // MC reconstructed Raw; not corrected for efficiency
+      if (nSumEtaRightHadMcRecRaw > 0 && nSumEtaLeftHadMcRecRaw > 0) {
+        for (int i = 0; i < nbinsHad; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_A_had"))->Fill(cent, fPtProfileHadMcRecRaw->GetBinCenter(i + 1), (fPtProfileHadMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_C_had"))->Fill(cent, fPtProfileHadMcRecRaw->GetBinCenter(i + 1), ((fPtProfileHadMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Bone_had"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Btwo_had"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_D_had"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+
+          subSampleMcRecRaw[sampleIndex][0]->Fill(cent, fPtProfileHadMcRecRaw->GetBinCenter(i + 1), (fPtProfileHadMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftHadMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][1]->Fill(cent, fPtProfileHadMcRecRaw->GetBinCenter(i + 1), ((fPtProfileHadMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][2]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][3]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][4]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+        }
+      }
+
+      if (nSumEtaRightHadMcRecRaw > 0 && nSumEtaLeftHadMcRecRaw > 0 && nSumEtaLeftPiMcRecRaw > 0) {
+        for (int i = 0; i < nbinsPid; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_A_pi"))->Fill(cent, fPtProfilePiMcRecRaw->GetBinCenter(i + 1), (fPtProfilePiMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftPiMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_C_pi"))->Fill(cent, fPtProfilePiMcRecRaw->GetBinCenter(i + 1), ((fPtProfilePiMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftPiMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Bone_pi"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Btwo_pi"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_D_pi"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+
+          subSampleMcRecRaw[sampleIndex][5]->Fill(cent, fPtProfilePiMcRecRaw->GetBinCenter(i + 1), (fPtProfilePiMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftPiMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][6]->Fill(cent, fPtProfilePiMcRecRaw->GetBinCenter(i + 1), ((fPtProfilePiMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftPiMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][7]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][8]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][9]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+        }
+      }
+
+      if (nSumEtaRightHadMcRecRaw > 0 && nSumEtaLeftHadMcRecRaw > 0 && nSumEtaLeftKaMcRecRaw > 0) {
+        for (int i = 0; i < nbinsPid; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_A_ka"))->Fill(cent, fPtProfileKaMcRecRaw->GetBinCenter(i + 1), (fPtProfileKaMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftKaMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_C_ka"))->Fill(cent, fPtProfileKaMcRecRaw->GetBinCenter(i + 1), ((fPtProfileKaMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftKaMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Bone_ka"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Btwo_ka"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_D_ka"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+
+          subSampleMcRecRaw[sampleIndex][10]->Fill(cent, fPtProfileKaMcRecRaw->GetBinCenter(i + 1), (fPtProfileKaMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftKaMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][11]->Fill(cent, fPtProfileKaMcRecRaw->GetBinCenter(i + 1), ((fPtProfileKaMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftKaMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][12]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][13]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][14]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+        }
+      }
+      if (nSumEtaRightHadMcRecRaw > 0 && nSumEtaLeftHadMcRecRaw > 0 && nSumEtaLeftProtMcRecRaw > 0) {
+        for (int i = 1; i < nbinsPid; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_A_prot"))->Fill(cent, fPtProfileProtMcRecRaw->GetBinCenter(i + 1), (fPtProfileProtMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftProtMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_C_prot"))->Fill(cent, fPtProfileProtMcRecRaw->GetBinCenter(i + 1), ((fPtProfileProtMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftProtMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Bone_prot"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_Btwo_prot"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Raw/Prof_D_prot"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+
+          subSampleMcRecRaw[sampleIndex][15]->Fill(cent, fPtProfileProtMcRecRaw->GetBinCenter(i + 1), (fPtProfileProtMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftProtMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][16]->Fill(cent, fPtProfileProtMcRecRaw->GetBinCenter(i + 1), ((fPtProfileProtMcRecRaw->GetBinContent(i + 1) / nSumEtaLeftProtMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][17]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw) * (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw)));
+          subSampleMcRecRaw[sampleIndex][18]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecRaw / nSumEtaLeftHadMcRecRaw));
+          subSampleMcRecRaw[sampleIndex][19]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecRaw / nSumEtaRightHadMcRecRaw));
+        }
+      }
+
+      // MC Reconstructed Efficiency corrected
+
+      if (nSumEtaRightHadMcRecCorr > 0 && nSumEtaLeftHadMcRecCorr > 0) {
+        for (int i = 0; i < nbinsHad; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_A_had"))->Fill(cent, fPtProfileHadMcRecCorr->GetBinCenter(i + 1), (fPtProfileHadMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_C_had"))->Fill(cent, fPtProfileHadMcRecCorr->GetBinCenter(i + 1), ((fPtProfileHadMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Bone_had"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Btwo_had"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_D_had"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+
+          subSampleMcRecCorr[sampleIndex][0]->Fill(cent, fPtProfileHadMcRecCorr->GetBinCenter(i + 1), (fPtProfileHadMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftHadMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][1]->Fill(cent, fPtProfileHadMcRecCorr->GetBinCenter(i + 1), ((fPtProfileHadMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][2]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][3]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][4]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+        }
+      }
+
+      if (nSumEtaRightHadMcRecCorr > 0 && nSumEtaLeftHadMcRecCorr > 0 && nSumEtaLeftPiMcRecCorr > 0) {
+        for (int i = 0; i < nbinsPid; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_A_pi"))->Fill(cent, fPtProfilePiMcRecCorr->GetBinCenter(i + 1), (fPtProfilePiMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftPiMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_C_pi"))->Fill(cent, fPtProfilePiMcRecCorr->GetBinCenter(i + 1), ((fPtProfilePiMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftPiMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Bone_pi"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Btwo_pi"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_D_pi"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+
+          subSampleMcRecCorr[sampleIndex][5]->Fill(cent, fPtProfilePiMcRecCorr->GetBinCenter(i + 1), (fPtProfilePiMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftPiMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][6]->Fill(cent, fPtProfilePiMcRecCorr->GetBinCenter(i + 1), ((fPtProfilePiMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftPiMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][7]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][8]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][9]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+        }
+      }
+
+      if (nSumEtaRightHadMcRecCorr > 0 && nSumEtaLeftHadMcRecCorr > 0 && nSumEtaLeftKaMcRecCorr > 0) {
+        for (int i = 0; i < nbinsPid; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_A_ka"))->Fill(cent, fPtProfileKaMcRecCorr->GetBinCenter(i + 1), (fPtProfileKaMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftKaMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_C_ka"))->Fill(cent, fPtProfileKaMcRecCorr->GetBinCenter(i + 1), ((fPtProfileKaMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftKaMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Bone_ka"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Btwo_ka"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_D_ka"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+
+          subSampleMcRecCorr[sampleIndex][10]->Fill(cent, fPtProfileKaMcRecCorr->GetBinCenter(i + 1), (fPtProfileKaMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftKaMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][11]->Fill(cent, fPtProfileKaMcRecCorr->GetBinCenter(i + 1), ((fPtProfileKaMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftKaMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][12]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][13]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][14]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+        }
+      }
+      if (nSumEtaRightHadMcRecCorr > 0 && nSumEtaLeftHadMcRecCorr > 0 && nSumEtaLeftProtMcRecCorr > 0) {
+        for (int i = 1; i < nbinsPid; i++) {
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_A_prot"))->Fill(cent, fPtProfileProtMcRecCorr->GetBinCenter(i + 1), (fPtProfileProtMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftProtMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_C_prot"))->Fill(cent, fPtProfileProtMcRecCorr->GetBinCenter(i + 1), ((fPtProfileProtMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftProtMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Bone_prot"))->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_Btwo_prot"))->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+          histosMc.get<TProfile2D>(HIST("McClosure/Reconstructed/Corr/Prof_D_prot"))->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+
+          subSampleMcRecCorr[sampleIndex][15]->Fill(cent, fPtProfileProtMcRecCorr->GetBinCenter(i + 1), (fPtProfileProtMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftProtMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][16]->Fill(cent, fPtProfileProtMcRecCorr->GetBinCenter(i + 1), ((fPtProfileProtMcRecCorr->GetBinContent(i + 1) / nSumEtaLeftProtMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][17]->Fill(cent, 0.5, ((pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr) * (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr)));
+          subSampleMcRecCorr[sampleIndex][18]->Fill(cent, 0.5, (pTsumEtaLeftHadMcRecCorr / nSumEtaLeftHadMcRecCorr));
+          subSampleMcRecCorr[sampleIndex][19]->Fill(cent, 0.5, (pTsumEtaRightHadMcRecCorr / nSumEtaRightHadMcRecCorr));
+        }
+      }
+    }
+
+    fPtProfileHadMcRecRaw->Delete();
+    fPtProfilePiMcRecRaw->Delete();
+    fPtProfileKaMcRecRaw->Delete();
+    fPtProfileProtMcRecRaw->Delete();
+
+    fPtProfileHadMcRecCorr->Delete();
+    fPtProfilePiMcRecCorr->Delete();
+    fPtProfileKaMcRecCorr->Delete();
+    fPtProfileProtMcRecCorr->Delete();
   }
   PROCESS_SWITCH(V0ptHadPiKaProt, processMCRec, "Process Monte-carlo reconstructed data", false);
 
@@ -1375,6 +1950,7 @@ struct V0ptHadPiKaProt {
     int nbinsHad = 20;
     int nbinsPid = 18;
     double binsarray[21] = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0};
+
     TH1D* fPtProfileHad = new TH1D("fPtProfileHad", "fPtProfileHad", 20, binsarray);
     TH1D* fPtProfilePi = new TH1D("fPtProfilePi", "fPtProfilePi", 20, binsarray);
     TH1D* fPtProfileKa = new TH1D("fPtProfileKa", "fPtProfileKa", 20, binsarray);

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file upcEventITSROFcounter.cxx
+/// \file upcEventItsRofCounter.cxx
 /// \brief Personal task to analyze tau events from UPC collisions
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
@@ -51,11 +51,14 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3Match
 using CCs = soa::Join<aod::Collisions, aod::EvSels>;
 using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
 
-struct UpcEventITSROFcounter {
+struct UpcEventItsRofCounter {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   SGSelector sgSelector;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  static constexpr int NCollFillCount = 12; // upper bound of collision-count loop filling the per-ROF histograms (last value goes to overflow of 11-bin histos)
+  static constexpr int DoubleGapSide = 2;   // SGSelector convention: 0=A-gap, 1=C-gap, 2=double-gap
 
   Configurable<int> nTracksForUPCevent{"nTracksForUPCevent", 16, {"Maximum of tracks defining a UPC collision"}};
 
@@ -158,7 +161,7 @@ struct UpcEventITSROFcounter {
       arrUPCcolls[nUpcCollsInROF]++;
     } // end loop over ITSROFs
 
-    for (int ncol = 0; ncol < 12; ncol++) {
+    for (int ncol = 0; ncol < NCollFillCount; ncol++) {
       histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(ncol, arrAllColls[ncol]);
       histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(ncol, arrUPCcolls[ncol]);
     }
@@ -198,7 +201,7 @@ struct UpcEventITSROFcounter {
     }
 
     if (coll.flags() == 0) {
-      if (gapSide == 2) {
+      if (gapSide == DoubleGapSide) {
         histos.get<TH1>(HIST("Runs/hStdModeCollDG"))->Fill(coll.runNumber());
       } else if (gapSide == 1) {
         histos.get<TH1>(HIST("Runs/hStdModeCollSG1"))->Fill(coll.runNumber());
@@ -208,7 +211,7 @@ struct UpcEventITSROFcounter {
         histos.get<TH1>(HIST("Runs/hStdModeCollNG"))->Fill(coll.runNumber());
       }
     } else {
-      if (gapSide == 2) {
+      if (gapSide == DoubleGapSide) {
         histos.get<TH1>(HIST("Runs/hUpcModeCollDG"))->Fill(coll.runNumber());
       } else if (gapSide == 1) {
         histos.get<TH1>(HIST("Runs/hUpcModeCollSG1"))->Fill(coll.runNumber());
@@ -220,12 +223,12 @@ struct UpcEventITSROFcounter {
     }
   }
 
-  PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerITSROF, "Counts number of collisions per ITSROF", false);
-  PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerRun, "Counts number of whatever per RUN", true);
+  PROCESS_SWITCH(UpcEventItsRofCounter, processCounterPerITSROF, "Counts number of collisions per ITSROF", false);
+  PROCESS_SWITCH(UpcEventItsRofCounter, processCounterPerRun, "Counts number of whatever per RUN", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcEventITSROFcounter>(cfgc)};
+    adaptAnalysisTask<UpcEventItsRofCounter>(cfgc)};
 }
