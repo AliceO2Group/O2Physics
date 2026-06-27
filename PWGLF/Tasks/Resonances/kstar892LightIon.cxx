@@ -136,15 +136,9 @@ struct Kstar892LightIon {
     Configurable<float> motherRapidityMin{"motherRapidityMin", -0.5, "Minimum rapidity of mother"};
 
     // PID selections
-    Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
-    Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
-    Configurable<bool> onlyTOFVeto{"onlyTOFVeto", false, "only select TOF tracks with TOF and TPC cuts"};
-    Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"};
-    Configurable<bool> isApplypTdepPID{"isApplypTdepPID", false, "Apply pT dependent PID"};
-    Configurable<bool> isApplypTdepPIDwTOF{"isApplypTdepPIDwTOF", false, "Apply pT dependent PID with compulsory TOF condition in a pT range"};
-    Configurable<bool> isApplyMID{"isApplyMID", false, "Apply particle MID"};
-    Configurable<bool> isApplypTdepMID{"isApplypTdepMID", false, "Apply pT dependent particle MID"};
-    Configurable<bool> isApplypTdepMIDComp{"isApplypTdepMIDComp", false, "Apply pT dependent particle MID by comparing the nsigma value"};
+    Configurable<int> pidStrategy{"pidStrategy", 0, "0=Standard, 1=pTDependent, 2=pTDependentTOF, 3=ThreePtDependent, 4=PIDCompare"};
+    Configurable<int> pidMode{"pidMode", 0, "0=Combined,1=TPC,2=TOF,3=TOFHIT,4=TOFVeto"};
+    Configurable<int> midStrategy{"midStrategy", -1, "-1=Disabled, 0=Standard, 1=PtDependent, 2=PtDependentCompare"};
 
     Configurable<float> nsigmaCutTPCPi{"nsigmaCutTPCPi", 3.0, "TPC Nsigma cut for pions"};
     Configurable<float> nsigmaCutTPCKa{"nsigmaCutTPCKa", 3.0, "TPC Nsigma cut for kaons"};
@@ -153,7 +147,6 @@ struct Kstar892LightIon {
     Configurable<float> nsigmaCutCombinedKa{"nsigmaCutCombinedKa", 3.0, "Combined Nsigma cut for kaon"};
     Configurable<float> nsigmaCutCombinedPi{"nsigmaCutCombinedPi", 3.0, "Combined Nsigma cut for pion"};
 
-    Configurable<float> nsigmaCutCombinedMID{"nsigmaCutCombinedMID", 3.0, "Combined Nsigma cut for pion and kaon in MID"};
     Configurable<float> nsigmaCutTPCMID{"nsigmaCutTPCMID", 1.0, "MID Nsigma cut for pion and kaon in TPC"};
 
     Configurable<bool> isApplyFakeTrack{"isApplyFakeTrack", false, "Fake track selection"};
@@ -165,8 +158,8 @@ struct Kstar892LightIon {
     Configurable<float> kaonMidPtLow{"kaonMidPtLow", 0.7, "Low pT cut for kaon in MID"};
     Configurable<float> kaonMidPtHigh{"kaonMidPtHigh", 2.5, "High pT cut for kaon in MID"};
 
-    // Fixed variables
-    float lowPtCutPID = 0.5;
+    Configurable<float> lowPtCutPid{"lowPtCutPid", 0.5, "Low pT cut for PID"};
+    Configurable<float> highPtCutPid{"highPtCutPid", 6.0, "High pT cut for PID"};
 
     Configurable<bool> selHasFT0MC{"selHasFT0MC", true, "Has FT0?"};
     Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
@@ -210,18 +203,53 @@ struct Kstar892LightIon {
     kNEstimators // useful if you want to iterate or size things
   };
 
-  enum PIDParticle {
+  enum class PIDParticle {
     kPion,
-    kKaon,
-    kProton
+    kKaon
+  };
+
+  enum class PIDStrategy {
+    Standard,
+    PtDependent,
+    PtDependentTOF,
+    ThreePtDependent,
+    PIDCompare
+  };
+
+  enum class PIDMode {
+    Combined,
+    TPC,
+    TOF,
+    TOFHIT,
+    TOFVeto
+  };
+
+  enum class MIDStrategy {
+    Disabled = -1,
+    Standard = 0,
+    PtDependent = 1,
+    PtDependentCompare = 2
   };
 
   int noOfDaughters = 2;
   int initialValue = -9999999;
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
 
-  double pionPIDpTLow = 1.0, pionPIDpTHigh = 2.5, kaonPIDpTLow = 0.7, kaonPIDpTHigh = 2.5;
+  double pionPidPtLow = 1.0, pionPidPtHigh = 2.5, kaonPidPtLow = 0.7, kaonPidPtHigh = 2.5;
 
   int kKstar14300 = 10311, kK11400Plus = 20323, kKStar1680Plus = 30323, kK21770Plus = 10325, kK21820Plus = 20325, kKstar14100 = 100313, kKstar16800 = 30313, kK218200 = 20315, kK217700 = 10315, kKstar214300 = 315, kKstar1430Plus = 10321;
+
+  // ThreePtDependent PID cuts
+  // Regions:
+  // 0 : pT < lowPtCutPid
+  // 1 : lowPtCutPid <= pT < highPtCutPID
+  // 2 : pT >= highPtCutPID
+  static constexpr std::array<float, 3> TPCPiCuts3Pt{3.0f, 1.5f, 2.0f};
+  static constexpr std::array<float, 3> TOFPiCuts3Pt{3.0f, 2.0f, 3.0f};
+
+  static constexpr std::array<float, 3> TPCKaCuts3Pt{2.0f, 1.5f, 2.0f};
+  static constexpr std::array<float, 3> TOFKaCuts3Pt{3.0f, 2.0f, 3.0f};
 
   TRandom* rn = new TRandom();
 
@@ -498,9 +526,6 @@ struct Kstar892LightIon {
     }
   }
 
-  double massPi = o2::constants::physics::MassPiPlus;
-  double massKa = o2::constants::physics::MassKPlus;
-
   template <typename Coll>
   bool selectionEvent(const Coll& collision, bool fillHist = false) // default to false
   {
@@ -670,7 +695,7 @@ struct Kstar892LightIon {
   }
 
   template <typename T>
-  bool isFakeTrack(const T& track, int PID)
+  bool isFakeTrack(const T& track, PIDParticle PID)
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
@@ -687,201 +712,198 @@ struct Kstar892LightIon {
   }
 
   template <typename T>
-  bool selectionPID(const T& candidate, int PID)
+  float tpcSigma(const T& c, PIDParticle pid)
   {
-    if (PID == PIDParticle::kPion) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFVeto) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedPi * selectionConfig.nsigmaCutCombinedPi) && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
+    return pid == PIDParticle::kPion ? c.tpcNSigmaPi() : c.tpcNSigmaKa();
+  }
+
+  template <typename T>
+  float tofSigma(const T& c, PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? c.tofNSigmaPi() : c.tofNSigmaKa();
+  }
+
+  template <typename T>
+  float combinedNSigma2(const T& c, PIDParticle pid)
+  {
+    const float tpc = tpcSigma(c, pid);
+    const float tof = tofSigma(c, pid);
+
+    return tpc * tpc + tof * tof;
+  }
+
+  float tpcCut(PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? selectionConfig.nsigmaCutTPCPi : selectionConfig.nsigmaCutTPCKa;
+  }
+
+  float tofCut(PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? selectionConfig.nsigmaCutTOFPi : selectionConfig.nsigmaCutTOFKa;
+  }
+
+  float combinedCut(PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? selectionConfig.nsigmaCutCombinedPi : selectionConfig.nsigmaCutCombinedKa;
+  }
+
+  template <typename T>
+  bool passTPC(const T& c, PIDParticle pid)
+  {
+    return std::abs(tpcSigma(c, pid)) < tpcCut(pid);
+  }
+
+  template <typename T>
+  bool passTOF(const T& c, PIDParticle pid)
+  {
+    return c.hasTOF() && std::abs(tofSigma(c, pid)) < tofCut(pid) && c.beta() > selectionConfig.cfgTOFBetaCut;
+  }
+
+  template <typename T>
+  bool passCombined(const T& c, PIDParticle pid)
+  {
+    if (!c.hasTOF() || c.beta() <= selectionConfig.cfgTOFBetaCut)
+      return false;
+
+    const float tpc = tpcSigma(c, pid);
+    const float tof = tofSigma(c, pid);
+    const float cut = combinedCut(pid);
+
+    return tpc * tpc + tof * tof < cut * cut;
+  }
+
+  template <typename T>
+  bool selectionPID(const T& candidate, PIDParticle pid)
+  {
+    const auto strategy = static_cast<PIDStrategy>(selectionConfig.pidStrategy.value);
+    const auto mode = static_cast<PIDMode>(selectionConfig.pidMode.value);
+
+    switch (strategy) {
+      case PIDStrategy::Standard: {
+        switch (mode) {
+          case PIDMode::TPC: // Apply only TPC cut
+            return passTPC(candidate, pid);
+
+          case PIDMode::TOF: // Apply only TOF cut
+            return passTOF(candidate, pid);
+
+          case PIDMode::TOFVeto: // Require TOF hit; apply both TPC and TOF cuts. Tracks without TOF are rejected.
+            return passTPC(candidate, pid) && passTOF(candidate, pid);
+
+          case PIDMode::TOFHIT: // Apply only TOF cut that has tof hits, apply TPC cut for the rest
+            if (candidate.hasTOF())
+              return passTOF(candidate, pid);
+
+            return passTPC(candidate, pid);
+
+          case PIDMode::Combined: // Apply combined cut if TOF is available, apply TPC cut for the rest
+            if (candidate.hasTOF())
+              return passCombined(candidate, pid);
+
+            return passTPC(candidate, pid);
+
+          default:
+            LOGF(fatal, "Unknown PID mode!");
+            return false;
         }
       }
-    } else if (PID == PIDParticle::kKaon) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFVeto) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedKa * selectionConfig.nsigmaCutCombinedKa) && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
+
+      case PIDStrategy::PtDependent: // Apply TPC and TOF cut above lowPtCut, apply TPC cut for the rest
+      {
+        if (candidate.hasTOF() && candidate.pt() >= selectionConfig.lowPtCutPid)
+          return passTPC(candidate, pid) && passTOF(candidate, pid);
+
+        return passTPC(candidate, pid);
       }
+
+      case PIDStrategy::PtDependentTOF: // Apply combined cut (requires TOF) in specific pT window, apply TPC+TOF cut for tracks with TOF hit above lowPtCut, apply TPC cut for the rest.
+      {
+        const bool inPtWindow = (pid == PIDParticle::kPion) ? (candidate.pt() >= pionPidPtLow && candidate.pt() <= pionPidPtHigh) : (candidate.pt() >= kaonPidPtLow && candidate.pt() <= kaonPidPtHigh);
+
+        if (inPtWindow)
+          return passCombined(candidate, pid);
+
+        if (candidate.hasTOF() && candidate.pt() >= selectionConfig.lowPtCutPid)
+          return passTPC(candidate, pid) && passTOF(candidate, pid);
+
+        return passTPC(candidate, pid);
+      }
+
+      case PIDStrategy::ThreePtDependent: // Apply pT-dependent TPC and TOF cuts using three pT regions
+      {
+        const int region = (candidate.pt() < selectionConfig.lowPtCutPid) ? 0 : (candidate.pt() < selectionConfig.highPtCutPid) ? 1
+                                                                                                                                : 2;
+
+        const float regionTPCCut = (pid == PIDParticle::kPion) ? TPCPiCuts3Pt[region] : TPCKaCuts3Pt[region];
+
+        const float regionTOFCut = (pid == PIDParticle::kPion) ? TOFPiCuts3Pt[region] : TOFKaCuts3Pt[region];
+
+        if (candidate.hasTOF()) {
+          return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut) && (std::abs(tofSigma(candidate, pid)) < regionTOFCut) && (candidate.beta() > selectionConfig.cfgTOFBetaCut);
+        }
+
+        return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
+      }
+
+      case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, above lowPtCutPid, require TOF and accept the candidate only if its combined nsigma is smaller than that of the alternate PID hypothesis
+      {
+        if (candidate.pt() < selectionConfig.lowPtCutPid) {
+          if (candidate.hasTOF())
+            return passTPC(candidate, pid) && passTOF(candidate, pid);
+          return passTPC(candidate, pid);
+        }
+
+        if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+          return false;
+
+        const float sigmaComb2 = combinedNSigma2(candidate, pid);
+
+        const float cut = combinedCut(pid);
+        if (sigmaComb2 >= cut * cut)
+          return false;
+
+        const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
+
+        return sigmaComb2 < combinedNSigma2(candidate, otherPID);
+      }
+
+      default:
+        LOGF(fatal, "Unknown PID strategy!");
     }
     return false;
   }
 
   template <typename T>
-  bool selectionPIDpTdep(const T& candidate, int PID)
+  bool isMisidentified(const T& candidate, PIDParticle pid)
   {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-        return true;
-      }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-        return true;
-      }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && !candidate.hasTOF()) {
-        return true;
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-        return true;
-      }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-        return true;
-      }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && !candidate.hasTOF()) {
-        return true;
-      }
-    }
-    return false;
-  }
+    const auto strategy = static_cast<MIDStrategy>(selectionConfig.midStrategy.value);
+    const PIDParticle misPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
 
-  template <typename T>
-  bool selectionPIDpTdepTOF(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() < pionPIDpTLow || candidate.pt() > pionPIDpTHigh) {
-        if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && !candidate.hasTOF()) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedPi * selectionConfig.nsigmaCutCombinedPi)) {
-          return true;
-        }
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() < kaonPIDpTLow || candidate.pt() > kaonPIDpTHigh) {
-        if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && !candidate.hasTOF()) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedKa * selectionConfig.nsigmaCutCombinedKa)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
+    switch (strategy) {
+      case MIDStrategy::Disabled:
+        return false;
 
-  template <typename T>
-  bool selectionMID(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedMID * selectionConfig.nsigmaCutCombinedMID)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedMID * selectionConfig.nsigmaCutCombinedMID)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
+      case MIDStrategy::Standard: // Reject if track also satisfies TPC cut for the opposite hypothesis
+        return std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTPCMID;
 
-  template <typename T>
-  bool selectionMIDpTdep(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= selectionConfig.pionMidPtLow && candidate.pt() < selectionConfig.pionMidPtHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-        return true;
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= selectionConfig.kaonMidPtLow && candidate.pt() < selectionConfig.kaonMidPtHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-        return true;
-      }
-    }
-    return false;
-  }
+      case MIDStrategy::PtDependent: // Reject if track is in MID pT window, has no TOF, and passes opposite TPC cut
+      {
+        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtLow : selectionConfig.kaonMidPtLow;
+        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtHigh : selectionConfig.kaonMidPtHigh;
 
-  template <typename T>
-  bool selectionMIDPtDepComp(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= selectionConfig.pionMidPtLow && candidate.pt() < selectionConfig.pionMidPtHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
-        return true;
+        return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTPCMID;
       }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= selectionConfig.kaonMidPtLow && candidate.pt() < selectionConfig.kaonMidPtHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
-        return true;
+
+      case MIDStrategy::PtDependentCompare: // Reject if track is in MID pT window, has no TOF, and looks more like the opposite hypothesis than the signal hypothesis
+      {
+        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtLow : selectionConfig.kaonMidPtLow;
+        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtHigh : selectionConfig.kaonMidPtHigh;
+
+        return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < std::abs(tpcSigma(candidate, pid));
       }
+
+      default:
+        LOGF(fatal, "Unknown MID strategy!");
     }
     return false;
   }
@@ -1049,31 +1071,18 @@ struct Kstar892LightIon {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
-        continue;
-      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !selectionPID(track2, 0)) // Track 2 is checked with Pion
+      if (!selectionPID(track1, PIDParticle::kKaon)) // Track 1 is checked with Kaon
         continue;
 
-      if (selectionConfig.isApplypTdepPID && !selectionPIDpTdep(track1, 1)) // Track 1 is checked with Kaon
-        continue;
-      if (selectionConfig.isApplypTdepPID && !selectionPIDpTdep(track2, 0)) // Track 2 is checked with Pion
+      if (!selectionPID(track2, PIDParticle::kPion)) // Track 2 is checked with Pion
         continue;
 
-      if (selectionConfig.isApplypTdepPIDwTOF && !selectionPIDpTdepTOF(track1, 1)) // Track 1 is checked with Kaon
+      if (isMisidentified(track1, PIDParticle::kKaon))
         continue;
-      if (selectionConfig.isApplypTdepPIDwTOF && !selectionPIDpTdepTOF(track2, 0)) // Track 2 is checked with Pion
-        continue;
-
-      if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+      if (isMisidentified(track2, PIDParticle::kPion))
         continue;
 
-      if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
         continue;
 
       if (cQAplots) {
@@ -1227,25 +1236,18 @@ struct Kstar892LightIon {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && (!selectionPID(track1, 1) || !selectionPID(track2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+      if (!selectionPID(track1, PIDParticle::kKaon)) // Track 1 is checked with Kaon
         continue;
 
-      if (selectionConfig.isApplypTdepPID && (!selectionPIDpTdep(track1, 1) || !selectionPIDpTdep(track2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+      if (!selectionPID(track2, PIDParticle::kPion)) // Track 2 is checked with Pion
         continue;
 
-      if (selectionConfig.isApplypTdepPIDwTOF && (!selectionPIDpTdepTOF(track1, 1) || !selectionPIDpTdepTOF(track2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+      if (isMisidentified(track1, PIDParticle::kKaon))
+        continue;
+      if (isMisidentified(track2, PIDParticle::kPion))
         continue;
 
-      if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
         continue;
 
       if (cQAplots) {
@@ -1355,25 +1357,14 @@ struct Kstar892LightIon {
             continue;
           }
 
-          if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && (!selectionPID(t1, 1) || !selectionPID(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          // t1 checked as kaon and t2 checked as pion
+          if (!selectionPID(t1, PIDParticle::kKaon) || !selectionPID(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPID && (!selectionPIDpTdep(t1, 1) || !selectionPIDpTdep(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          if (isMisidentified(t1, PIDParticle::kKaon) || isMisidentified(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPIDwTOF && (!selectionPIDpTdepTOF(t1, 1) || !selectionPIDpTdepTOF(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
-            continue;
-
-          if (selectionConfig.isApplyMID && (selectionMID(t1, 0) || selectionMID(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(t1, 0) || selectionMIDpTdep(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(t1, 0) || selectionMIDPtDepComp(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, 1) || isFakeTrack(t2, 0)))
+          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, PIDParticle::kKaon) || isFakeTrack(t2, PIDParticle::kPion)))
             continue;
 
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
@@ -1438,25 +1429,14 @@ struct Kstar892LightIon {
             continue;
           }
 
-          if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && (!selectionPID(t1, 1) || !selectionPID(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          // t1 checked as kaon and t2 checked as pion
+          if (!selectionPID(t1, PIDParticle::kKaon) || !selectionPID(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPID && (!selectionPIDpTdep(t1, 1) || !selectionPIDpTdep(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          if (isMisidentified(t1, PIDParticle::kKaon) || isMisidentified(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPIDwTOF && (!selectionPIDpTdepTOF(t1, 1) || !selectionPIDpTdepTOF(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
-            continue;
-
-          if (selectionConfig.isApplyMID && (selectionMID(t1, 0) || selectionMID(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(t1, 0) || selectionMIDpTdep(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(t1, 0) || selectionMIDPtDepComp(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, 1) || isFakeTrack(t2, 0)))
+          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, PIDParticle::kKaon) || isFakeTrack(t2, PIDParticle::kPion)))
             continue;
 
           if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
@@ -1742,24 +1722,13 @@ struct Kstar892LightIon {
           }
 
           if (track1PDG == PDG_t::kPiPlus) {
-            if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
-              continue;
-            } else if (selectionConfig.isApplypTdepPID && !(selectionPIDpTdep(track1, 0) && selectionPIDpTdep(track2, 1))) { // pion and kaon
-              continue;
-            } else if (selectionConfig.isApplypTdepPIDwTOF && !(selectionPIDpTdepTOF(track1, 0) && selectionPIDpTdepTOF(track2, 1))) {
-              continue;
-            }
-
-            if (selectionConfig.isApplyMID && (selectionMID(track1, 1) || selectionMID(track2, 0)))
+            if (!selectionPID(track1, PIDParticle::kPion) || !selectionPID(track2, PIDParticle::kKaon)) // Treat track1 as the pion candidate and track2 as the kaon candidate
               continue;
 
-            if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 1) || selectionMIDpTdep(track2, 0)))
+            if (isMisidentified(track1, PIDParticle::kPion) || isMisidentified(track2, PIDParticle::kKaon))
               continue;
 
-            if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 1) || selectionMIDPtDepComp(track2, 0)))
-              continue;
-
-            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 0) || isFakeTrack(track2, 1)))
+            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kPion) || isFakeTrack(track2, PIDParticle::kKaon)))
               continue;
 
             if (cQAplots) {
@@ -1796,24 +1765,13 @@ struct Kstar892LightIon {
             }
 
           } else if (track1PDG == PDG_t::kKPlus) {
-            if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // kaon and pion
-              continue;
-            } else if (selectionConfig.isApplypTdepPID && !(selectionPIDpTdep(track1, 1) && selectionPIDpTdep(track2, 0))) { // kaon and pion
-              continue;
-            } else if (selectionConfig.isApplypTdepPIDwTOF && !(selectionPIDpTdepTOF(track1, 1) && selectionPIDpTdepTOF(track2, 0))) {
-              continue;
-            }
-
-            if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+            if (!selectionPID(track1, PIDParticle::kKaon) || !selectionPID(track2, PIDParticle::kPion)) // Treat track1 as the kaon candidate and track2 as the pion candidate
               continue;
 
-            if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
+            if (isMisidentified(track1, PIDParticle::kKaon) || isMisidentified(track2, PIDParticle::kPion))
               continue;
 
-            if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-              continue;
-
-            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
               continue;
 
             if (cQAplots) {
@@ -2226,8 +2184,7 @@ struct Kstar892LightIon {
       centrality = collision.centFT0M();
     }
 
-    for (const auto& [track1, track2] :
-         combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
 
       if (!selectionTrack(track1) || !selectionTrack(track2))
         continue;
@@ -2694,24 +2651,13 @@ struct Kstar892LightIon {
 
       if (track1PDG == PDG_t::kKPlus) {
 
-        if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // kaon and pion
-          continue;
-        } else if (selectionConfig.isApplypTdepPID && !(selectionPIDpTdep(track1, 1) && selectionPIDpTdep(track2, 0))) { // kaon and pion
-          continue;
-        } else if (selectionConfig.isApplypTdepPIDwTOF && !(selectionPIDpTdepTOF(track1, 1) && selectionPIDpTdepTOF(track2, 0))) {
-          continue;
-        }
-
-        if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+        if (!selectionPID(track1, PIDParticle::kKaon) || !selectionPID(track2, PIDParticle::kPion)) // Treat track1 as the kaon candidate and track2 as the pion candidate
           continue;
 
-        if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
+        if (isMisidentified(track1, PIDParticle::kKaon) || isMisidentified(track2, PIDParticle::kPion))
           continue;
 
-        if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-          continue;
-
-        if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+        if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
           continue;
 
         kVec = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
@@ -2728,24 +2674,13 @@ struct Kstar892LightIon {
 
       } else {
 
-        if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
-          continue;
-        } else if (selectionConfig.isApplypTdepPID && !(selectionPIDpTdep(track1, 0) && selectionPIDpTdep(track2, 1))) { // pion and kaon
-          continue;
-        } else if (selectionConfig.isApplypTdepPIDwTOF && !(selectionPIDpTdepTOF(track1, 0) && selectionPIDpTdepTOF(track2, 1))) {
-          continue;
-        }
-
-        if (selectionConfig.isApplyMID && (selectionMID(track1, 1) || selectionMID(track2, 0)))
+        if (!selectionPID(track1, PIDParticle::kPion) || !selectionPID(track2, PIDParticle::kKaon)) // Treat track1 as the pion candidate and track2 as the kaon candidate
           continue;
 
-        if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 1) || selectionMIDpTdep(track2, 0)))
+        if (isMisidentified(track1, PIDParticle::kPion) || isMisidentified(track2, PIDParticle::kKaon))
           continue;
 
-        if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 1) || selectionMIDPtDepComp(track2, 0)))
-          continue;
-
-        if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 0) || isFakeTrack(track2, 1)))
+        if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kPion) || isFakeTrack(track2, PIDParticle::kKaon)))
           continue;
 
         kVec = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
