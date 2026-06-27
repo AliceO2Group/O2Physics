@@ -23,8 +23,6 @@
 #include <vector>
 using namespace std;
 
-ClassImp(MixingHandler);
-
 //_________________________________________________________________________
 MixingHandler::MixingHandler() : TNamed(),
                                  fIsInitialized(false),
