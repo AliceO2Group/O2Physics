@@ -2530,10 +2530,6 @@ struct lfNucleiBATask {
       bool tritonPID = track.pidForTracking() == o2::track::PID::Triton;
       bool deuteronPID = track.pidForTracking() == o2::track::PID::Deuteron;
 
-      float shiftPtPos = 0.f;
-      float shiftPtNeg = 0.f;
-      float shiftPtPID = 0.f;
-
       if (enablePtShiftHe && !fShiftPtHe) {
         fShiftPtHe = new TF1("fShiftPtHe", "[0] * exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         auto parHe = (std::vector<float>)parShiftPtHe; // NOLINT
