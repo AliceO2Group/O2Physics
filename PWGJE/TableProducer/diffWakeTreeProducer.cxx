@@ -233,8 +233,7 @@ struct DiffWakeTreeProducer {
       uint64_t bitmask20Bits = 0b11111111111111111111;
 
       int64_t particlePx = (track.px() * 6000);
-      if (particlePx < 0)
-      {
+      if (particlePx < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
         particlePx = (-1) * particlePx;
       }
@@ -243,8 +242,7 @@ struct DiffWakeTreeProducer {
       uppermostBit = 41;
       lowermostBit = 21;
       int64_t particlePy = (track.py() * 6000);
-      if (particlePy < 0)
-      {
+      if (particlePy < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
         particlePy = (-1) * particlePy;
       }
@@ -253,8 +251,7 @@ struct DiffWakeTreeProducer {
       uppermostBit = 62;
       lowermostBit = 42;
       int64_t particlePz = (track.pz() * 6000);
-      if (particlePz < 0)
-      {
+      if (particlePz < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
         particlePz = (-1) * particlePz;
       }
