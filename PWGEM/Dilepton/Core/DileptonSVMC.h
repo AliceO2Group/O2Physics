@@ -1573,9 +1573,9 @@ struct DileptonSVMC {
         return false;
       }
 
-      // if (!cut.IsSelectedPair(t1, t2)) {
-      //   return false;
-      // }
+      if (!cut.IsSelectedPair(t1, t2)) {
+        return false;
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
         return false;
@@ -1617,9 +1617,9 @@ struct DileptonSVMC {
         return false;
       }
 
-      // if (!cut.IsSelectedPair(t1, t2)) {
-      //   return false;
-      // }
+      if (!cut.IsSelectedPair(t1, t2)) {
+        return false;
+      }
     }
 
     float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
