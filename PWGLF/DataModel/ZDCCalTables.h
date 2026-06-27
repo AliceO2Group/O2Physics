@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(QyA, qyA, float);
 DECLARE_SOA_COLUMN(QyC, qyC, float);
 } // namespace zdccaltable
 DECLARE_SOA_TABLE(ZDCCalTables, "AOD", "ZDCCALTABLE",
+                  o2::soa::Index<>,
                   zdccaltable::TriggerEventZDC,
                   zdccaltable::TriggerEventRunNo,
                   zdccaltable::Cent,
