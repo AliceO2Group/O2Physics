@@ -936,7 +936,7 @@ struct CorrReso {
     }
     if (effNch == 0)
       return false;
-    weight_Nch = 1. / effNch;
+    weightNch = 1. / effNch;
     return true;
   }
 
@@ -1147,7 +1147,7 @@ struct CorrReso {
   }
 
   template <CorrelationContainer::CFStep step, typename TV0Tracks, typename TFT0s>
-  void fillCorrelationsTPCFT0(TV0Tracks tracks1, TFT0s const& ft0, float posZ, float posY, float posX, int system, int multiplicity, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCFT0(TV0Tracks tracks1, TFT0s const& ft0, float posZ, float posY, float posX, int system, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -1347,7 +1347,7 @@ struct CorrReso {
     }
 
     const auto& ft0 = collision.foundFT0();
-    fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(V0s, ft0, collision.posZ(), collision.posY(), collision.posX(), SameEvent, multiplicity, kFT0A, eventWeight);
+    fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(V0s, ft0, collision.posZ(), collision.posY(), collision.posX(), SameEvent, kFT0A, eventWeight);
   }
   PROCESS_SWITCH(CorrReso, processSameTpcFt0a, "Process same event for TPC-FT0 correlation", false);
 
@@ -1409,7 +1409,7 @@ struct CorrReso {
       }
 
       const auto& ft0 = collision2.foundFT0();
-      fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(v0s1, ft0, collision1.posZ(), collision1.posY(), collision1.posX(), MixedEvent, multiplicity, kFT0A, eventWeight);
+      fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(v0s1, ft0, collision1.posZ(), collision1.posY(), collision1.posX(), MixedEvent, kFT0A, eventWeight);
     }
   }
   PROCESS_SWITCH(CorrReso, processMixedTpcFt0a, "Process mixed events for TPC-FT0A correlation", false);
@@ -1465,7 +1465,7 @@ struct CorrReso {
       return;
     }
 
-    fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(V0s, ft0, collision.posZ(), collision.posY(), collision.posX(), SameEvent, multiplicity, kFT0C, 1.0f);
+    fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(V0s, ft0, collision.posZ(), collision.posY(), collision.posX(), SameEvent, kFT0C, 1.0f);
   }
   PROCESS_SWITCH(CorrReso, processSameTpcFt0c, "Process same event for TPC-FT0C correlation", false);
 
@@ -1525,7 +1525,7 @@ struct CorrReso {
         return;
       }
 
-      fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(v0s1, ft0, collision1.posZ(), collision1.posY(), collision1.posX(), MixedEvent, multiplicity, kFT0C, eventWeight);
+      fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(v0s1, ft0, collision1.posZ(), collision1.posY(), collision1.posX(), MixedEvent, kFT0C, eventWeight);
     }
   }
   PROCESS_SWITCH(CorrReso, processMixedTpcFt0c, "Process mixed events for TPC-FT0C correlation", false);
