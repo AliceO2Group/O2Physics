@@ -407,9 +407,6 @@ DECLARE_SOA_TABLE(EMMLDielectronsAtSV, "AOD", "EMMLEESV", //!
                   emmldilepton::Signed1Pt1, emmldilepton::Eta1, emmldilepton::ImpParXY1, emmldilepton::ImpParZ1, emmldilepton::ImpParCYY1, emmldilepton::ImpParCZY1, emmldilepton::ImpParCZZ1, emmldilepton::IsCorrectCollision1, emmldilepton::IsReassociated1, emmldilepton::PdgCodeMother1,
                   emmldilepton::Signed1Pt2, emmldilepton::Eta2, emmldilepton::ImpParXY2, emmldilepton::ImpParZ2, emmldilepton::ImpParCYY2, emmldilepton::ImpParCZY2, emmldilepton::ImpParCZZ2, emmldilepton::IsCorrectCollision2, emmldilepton::IsReassociated2, emmldilepton::PdgCodeMother2,
 
-                  emmldilepton::UnbiasedImpParXY1, emmldilepton::UnbiasedImpParZ1, emmldilepton::UnbiasedImpParCYY1, emmldilepton::UnbiasedImpParCZY1, emmldilepton::UnbiasedImpParCZZ1,
-                  emmldilepton::UnbiasedImpParXY2, emmldilepton::UnbiasedImpParZ2, emmldilepton::UnbiasedImpParCYY2, emmldilepton::UnbiasedImpParCZY2, emmldilepton::UnbiasedImpParCZZ2,
-
                   emmldilepton::Mass, emmldilepton::Pt, emmldilepton::Rapidity,
                   emmldilepton::Chi2PCA,
                   emmldilepton::CPA, emmldilepton::CPAXY, emmldilepton::CPARZ,
