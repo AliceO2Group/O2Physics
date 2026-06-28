@@ -419,7 +419,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       return;
     }
     // Print current run number:
-    // LOGF(info, "Run number: %d", collision.bc().runNumber());
     int currentRun = collision.bc().runNumber();
     auto it = phih.histMap.find(currentRun);
     auto histweight = wh.weightsmap.find(currentRun);
@@ -532,8 +531,14 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
           it->second->Fill(phi);
         }
 
-        if (cfUseWeights && histweight != wh.weightsmap.end())
-          weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
+        if (cfUseWeights){
+          if (histweight != wh.weightsmap.end() && histweight->second)
+            weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
+          else{
+            LOG(warning) << "No weights found for run " << currentRun << ", using weight=1";
+            weight = 1;
+          }
+        }
         else
           weight = 1;
 
@@ -573,9 +578,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float wFour = Four(0, 0, 0, 0).Re();
     float four32 = Four(3, 2, -3, -2).Re() / wFour;
     float four42 = Four(4, 2, -4, -2).Re() / wFour;
-    float v22 = Two(2, -2) / wTwo;
-    float v32 = Two(3, -3) / wTwo;
-    float v42 = Two(4, -4) / wTwo;
+    float v22 = Two(2, -2).Re() / wTwo;
+    float v32 = Two(3, -3).Re() / wTwo;
+    float v42 = Two(4, -4).Re() / wTwo;
     if (std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)) {
       LOGF(info, "\033[1;31m%s std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)\033[0m", __FUNCTION__);
       LOGF(error, "v22 = %f\nv32 = %f\nv42 = %f\nfour32=%f\nv42 = %f\n", v22, v32, v42, four32, four42);
@@ -802,6 +807,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         LOG(fatal) << "Failed to load weights for run " << run;
         return;
       }
+      histweights->SetName(Form("histWithEfficiencyCorrections_%d", run));
       wh.fWeightsHistList->Add(histweights);
       wh.weightsmap[run] = histweights;
     }
