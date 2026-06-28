@@ -1172,38 +1172,6 @@ struct MultiplicityPt {
         if (centIndex == -1)
           continue;
 
-        // ====================================================================
-        // DEDX VS MOMENTUM HISTOGRAMS FILLING - ALL TRACKS
-        // ====================================================================
-        hDedxVspTMomentumVsCent[10]->Fill(track.pt(), tpcSignal, eta);
-        if (charge > 0) {
-          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
-          hDedxVsMomentumVsCentPos[centIndex]->Fill(momentum, tpcSignal, eta);
-          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
-          hMomentumVsEtaPos[centIndex]->Fill(eta, momentum);
-          hMomentumVsEtaPos[10]->Fill(eta, momentum);
-          hpTVsEtaPos[centIndex]->Fill(eta, track.pt());
-          hpTVsEtaPos[10]->Fill(eta, track.pt());
-          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
-        } else {
-          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
-          hDedxVsMomentumVsCentNeg[centIndex]->Fill(momentum, tpcSignal, eta);
-          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
-          hMomentumVsEtaNeg[centIndex]->Fill(eta, momentum);
-          hMomentumVsEtaNeg[10]->Fill(eta, momentum);
-          hpTVsEtaNeg[centIndex]->Fill(eta, track.pt());
-          hpTVsEtaNeg[10]->Fill(eta, track.pt());
-          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
-        }
-
-        if (isPrimary) {
-          if (charge > 0) {
-            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri"), eta, track.pt(), momentum);
-          } else {
-            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri"), eta, track.pt(), momentum);
-          }
-        }
-
         registry.fill(HIST("hEta"), track.eta());
         registry.fill(HIST("hPhi"), track.phi());
         registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
@@ -1315,6 +1283,38 @@ struct MultiplicityPt {
           } else if (isPr) {
             registry.fill(HIST("Proton/hPtSecReco"), track.pt());
             registry.fill(HIST("Proton/hPtSecRecoVsMult"), track.pt(), nchF);
+          }
+        }
+
+        // ====================================================================
+        // DEDX VS MOMENTUM HISTOGRAMS FILLING - ALL TRACKS
+        // ====================================================================
+        hDedxVspTMomentumVsCent[10]->Fill(track.pt(), tpcSignal, eta);
+        if (charge > 0) {
+          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
+          hDedxVsMomentumVsCentPos[centIndex]->Fill(momentum, tpcSignal, eta);
+          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
+          hMomentumVsEtaPos[centIndex]->Fill(eta, momentum);
+          hMomentumVsEtaPos[10]->Fill(eta, momentum);
+          hpTVsEtaPos[centIndex]->Fill(eta, track.pt());
+          hpTVsEtaPos[10]->Fill(eta, track.pt());
+          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
+        } else {
+          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
+          hDedxVsMomentumVsCentNeg[centIndex]->Fill(momentum, tpcSignal, eta);
+          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
+          hMomentumVsEtaNeg[centIndex]->Fill(eta, momentum);
+          hMomentumVsEtaNeg[10]->Fill(eta, momentum);
+          hpTVsEtaNeg[centIndex]->Fill(eta, track.pt());
+          hpTVsEtaNeg[10]->Fill(eta, track.pt());
+          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
+        }
+
+        if (isPrimary) {
+          if (charge > 0) {
+            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri"), eta, track.pt(), momentum);
+          } else {
+            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri"), eta, track.pt(), momentum);
           }
         }
 
