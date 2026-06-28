@@ -531,16 +531,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
           it->second->Fill(phi);
         }
 
-        if (cfUseWeights){
-          if (histweight != wh.weightsmap.end() && histweight->second)
+        if (cfUseWeights) {
+          if (histweight != wh.weightsmap.end() && histweight->second) {
             weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
-          else{
+          } else {
             LOG(warning) << "No weights found for run " << currentRun << ", using weight=1";
             weight = 1;
           }
-        }
-        else
+        } else {
           weight = 1;
+        }
 
         // ... and corresponding MC truth simulated:
         // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
