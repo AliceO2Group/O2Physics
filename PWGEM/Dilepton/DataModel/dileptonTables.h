@@ -1042,22 +1042,23 @@ DECLARE_SOA_COLUMN(MCHTrackId, mchtrackId, int);                                
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMCHMID, globalMuonsWithSameMCHMID); //! self indices to global muons that have the same MCHTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMFT, globalMuonsWithSameMFT);       //! self indices to global muons that have the same MFTTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousMuons, ambiguousMuons);
-DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                         //! DCAx resolution squared at DCA
-DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                         //! DCAy resolution squared at DCA
-DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                         //! correlation term of DCAx,y resolution at DCA
-DECLARE_SOA_COLUMN(PtMatchedMCHMID, ptMatchedMCHMID, float);           //! pt of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);         //! eta of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);         //! phi of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(EtaMatchedMCHMIDatMP, etaMatchedMCHMIDatMP, float); //! eta of MCH-MID track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(PhiMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, float); //! phi of MCH-MID track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(EtaMatchedMFTatMP, etaMatchedMFTatMP, float);       //! eta of MFT track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(PhiMatchedMFTatMP, phiMatchedMFTatMP, float);       //! phi of MFT track in MFT-MCH-MID track at matching plane
-DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);        //! is associated to most probable collision
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                    //! is ambiguous
-DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);  //! is correct match between MFT and MCH, only for MC
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //!
-DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                           //! chi2 of MFT standalone track
-DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);         //!
+DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                          //! DCAx resolution squared at DCA
+DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                          //! DCAy resolution squared at DCA
+DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                          //! correlation term of DCAx,y resolution at DCA
+DECLARE_SOA_COLUMN(PtMatchedMCHMID, ptMatchedMCHMID, float);            //! pt of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);          //! eta of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);          //! phi of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(EtaMatchedMCHMIDatMP, etaMatchedMCHMIDatMP, float);  //! eta of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(PhiMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, float);  //! phi of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(EtaMatchedMFTatMP, etaMatchedMFTatMP, float);        //! eta of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(PhiMatchedMFTatMP, phiMatchedMFTatMP, float);        //! phi of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);         //! is associated to most probable collision
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                     //! is ambiguous
+DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);   //! is correct match between MFT and MCH, only for MC
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                 //!
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                            //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(DiffChi2MatchMCHMFT, diffChi2MatchingMCHMFT, float); //! difference of matching chi2 between the best and the 2nd-best matched candidates
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);          //!
 DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float eta) -> float { return std::tan(o2::constants::math::PIHalf - 2 * std::atan(std::exp(-eta))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
@@ -1156,7 +1157,30 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_002, "AOD", "EMPRIMARYMU", 2, //!
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-using EMPrimaryMuons = EMPrimaryMuons_002;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_003, "AOD", "EMPRIMARYMU", 3, //!
+                            o2::soa::Index<>, emprimarymuon::CollisionId,
+                            emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
+                            fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, o2::aod::fwdtrack::CXX, o2::aod::fwdtrack::CYY, o2::aod::fwdtrack::CXY,
+                            emprimarymuon::PtMatchedMCHMID, emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT, emprimarymuon::DiffChi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
+
+                            // dynamic column
+                            emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
+                            emprimarymuon::Tgl<fwdtrack::Eta>,
+                            emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
+
+using EMPrimaryMuons = EMPrimaryMuons_003;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 

@@ -122,6 +122,8 @@ struct SlimCandidate {
   uint64_t mcProcess = TMCProcess::kPNoProcess;
   float nsigmaTpc = -999.f;
   float nsigmaTof = -999.f;
+  float vx = -999.f; // production vertex x coordinate
+  float vy = -999.f;
 };
 
 enum Species {

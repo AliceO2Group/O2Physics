@@ -1008,7 +1008,7 @@ struct HeavyionMultiplicity {
     } // collision loop
   }
 
-  void processBcData(soa::Join<aod::BC2Mults, aod::MultBCs, aod::BCCentFT0Cs, aod::BCCentFT0Ms>::iterator const& multbc)
+  void processBcData(soa::Join<aod::BC2Mults, aod::MultBCs, aod::BCCentFT0Cs, aod::BCCentFT0Ms, aod::MultBcSel>::iterator const& multbc)
   {
     histos.fill(HIST("BcHist"), 1); // all BCs
     if (selectCollidingBCs && !multbc.multCollidingBC())

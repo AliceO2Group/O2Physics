@@ -29,10 +29,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BS(FEATURE)                                                 \
-  {                                                                          \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBsToJpsiPhiReduced::FEATURE) \
-  }
+#define FILL_MAP_BS(FEATURE) \
+  {                          \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBsToJpsiPhiReduced::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -112,6 +111,7 @@ class HfMlResponseBsToJpsiPhiReduced : public HfMlResponse<TypeOutputScore>
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the Bs candidate
   /// \param prong1 is the candidate's prong1
+  /// \param prong2 is the candidate's prong2
   /// \return inputFeatures vector
   template <typename T1, typename T2, typename T3>
   std::vector<float> getInputFeatures(T1 const& candidate,

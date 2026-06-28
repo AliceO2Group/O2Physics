@@ -26,6 +26,7 @@
 
 #include <TCollection.h>
 #include <TComplex.h>
+#include <TF1.h>
 #include <TFile.h>
 #include <TGrid.h>
 #include <TH1.h>
@@ -98,11 +99,12 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"}; // example for built-in type (float, string, etc.)
   Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 8.}, "nPtBins, ptMin, ptMax"};                     // example for an array
   Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {360, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
-  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {100, 0., 80.}, "nCentrBins, centrMin, centrMax"};
+  Configurable<std::vector<float>> cfCentrBins{"cfCentrBins", {80, 0., 80.}, "nCentrBins, centrMin, centrMax"};
   Configurable<std::vector<float>> cfXBins{"cfXBins", {1000, -0.04, -0.01}, "nXBins, xMin, xMax"};
   Configurable<std::vector<float>> cfYBins{"cfYBins", {1000, -0.01, 0.006}, "nYBins, yMin, yMax"};
   Configurable<std::vector<float>> cfZBins{"cfZBins", {1000, -20., 20.}, "nZBins, zMin, zMax"};
   Configurable<std::vector<float>> cfMultBins{"cfMultBins", {50, 0, 2e4}, "nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfMselBins{"cfMselBins", {50, 0, 1e3}, "nMselBins, mselMin, mselMax"};
   Configurable<std::vector<float>> cfTPCnclsBins{"cfTPCnclsBins", {100, 0., 200.}, "ntpcnclsBins, tpnclsMin, tpcnclsMax"};
   Configurable<std::vector<float>> cfDCAxyBins{"cfDCAxyBins", {1000, -0.5, 0.5}, "ndcaxyBins, dcaxyMin, dcaxyMax"};
   Configurable<std::vector<float>> cfDCAzBins{"cfDCAzBins", {1000, -3., 3.}, "ndcazBins, dcazMin, dcazMax"};
@@ -111,13 +113,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<std::string> cfCent{"cfCent", "FT0C", "centrality estimator"};
   Configurable<std::string> cfMult{"cfMult", "TPC", "multiplicity"};
   Configurable<bool> cfQA{"cfQA", true, "quality assurance"};
+  Configurable<bool> cfInitsim{"cfInitsim", false, "init histograms of sim"};
+  Configurable<bool> cfUseWeights{"cfUseWeights", true, "use weights"};
+  Configurable<bool> cfToyModel{"cfToyModel", true, "phi-distribution from toy model"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
 
   Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
-  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile01", "path to external ROOT file which holds all particle weights"};
+  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile06", "path to external ROOT file which holds all particle weights"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -142,10 +147,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TList* fEventHistogramsList = NULL;
     TH1F* fHistCentr[2] = {NULL};
     TH1I* fHistMult[2] = {NULL};
+    TH1F* fHistMsel[2] = {NULL};
     TH1F* fHistX[2] = {NULL};
     TH1F* fHistY[2] = {NULL};
     TH1F* fHistZ[2] = {NULL};
-    TH1I* fHistNContr = NULL;
+    TH1I* fHistNContr[2] = {NULL};
     TH1F* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
   } event;
 
@@ -156,6 +162,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   } qa;
 
   static constexpr int maxHarmonic = 7;
+  static constexpr int maxPower = 5;
   struct CorrelationVariables {
     TList* fCorrelationVariablesList = NULL;
     TProfile* pv22_centr = NULL;
@@ -163,13 +170,18 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TProfile* pv42_centr = NULL;
     TProfile* pfour32_centr = NULL;
     TProfile* pfour42_centr = NULL;
-    TComplex Qvector[maxHarmonic];
+    TComplex Qvector[maxHarmonic][maxPower];
   } cor;
 
   struct PhiHist {
     TList* fPhiHistList = NULL;
     std::unordered_map<int, TH1F*> histMap;
   } phih;
+
+  struct WeightsHist {
+    TList* fWeightsHistList = NULL;
+    std::unordered_map<int, TH1F*> weightsmap;
+  } wh;
 
   TObject* GetObjectFromList(TList* list, const char* objectName)
   {
@@ -345,7 +357,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float vertexZmin = static_cast<float>(vertexZ[0]);
     float vertexZmax = static_cast<float>(vertexZ[1]);
     float posZ = collision.posZ();
-    if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()))
+    float NContrcut = 2.;
+    if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()) || collision.numContrib() < NContrcut)
       return false;
     return true;
   }
@@ -366,22 +379,37 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     return true;
   }
 
-  TComplex Q(Int_t n)
+  TComplex Q(int n, int p)
   {
     // Using the fact that Q{-n,p} = Q{n,p}^*.
     if (n >= 0) {
-      return cor.Qvector[n];
+      return cor.Qvector[n][p];
     }
-    return TComplex::Conjugate(cor.Qvector[-n]);
+    return TComplex::Conjugate(cor.Qvector[-n][p]);
   }
 
+  TComplex Two(Int_t n1, Int_t n2)
+  {
+    // Generic two-particle correlation <exp[i(n1*phi1+n2*phi2)]>.
+    TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
+    return two;
+
+  } // TComplex Two(Int_t n1, Int_t n2)
   TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
   { // Generic four-particle correlation <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4)]>.
-    TComplex four = Q(n1) * Q(n2) * Q(n3) * Q(n4) - Q(n1 + n2) * Q(n3) * Q(n4) - Q(n2) * Q(n1 + n3) * Q(n4) - Q(n1) * Q(n2 + n3) * Q(n4) + 2. * Q(n1 + n2 + n3) * Q(n4) - Q(n2) * Q(n3) * Q(n1 + n4) + Q(n2 + n3) * Q(n1 + n4) - Q(n1) * Q(n3) * Q(n2 + n4) + Q(n1 + n3) * Q(n2 + n4) + 2. * Q(n3) * Q(n1 + n2 + n4) - Q(n1) * Q(n2) * Q(n3 + n4) + Q(n1 + n2) * Q(n3 + n4) + 2. * Q(n2) * Q(n1 + n3 + n4) + 2. * Q(n1) * Q(n2 + n3 + n4) - 6. * Q(n1 + n2 + n3 + n4);
-
+    TComplex four = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
     return four;
-
   } // TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
+
+  static double pdf(double* x, double* par)
+  {
+    double y = 1;
+    int harm = 6;
+    for (int i = 0; i < harm; i = i + 1) {
+      y = y + 2 * (0.04 + (i + 1.) * 0.01) * TMath::Cos((i + 1) * (x[0] - par[0]));
+    }
+    return y;
+  }
 
   template <eRecSim rs, typename T1, typename T2>
   void Steer(T1 const& collision, T2 const& tracks)
@@ -394,24 +422,19 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // LOGF(info, "Run number: %d", collision.bc().runNumber());
     int currentRun = collision.bc().runNumber();
     auto it = phih.histMap.find(currentRun);
-    float zrec = 0., zsim = 0., centr = 0, M = 0.;
+    auto histweight = wh.weightsmap.find(currentRun);
+    float centr = 0, M = 0., msel = 0.;
+    TF1* f = new TF1("f", pdf, 0, TMath::TwoPi(), 1);
+    f->SetParameters(0.);
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      event.fHistX[eRec]->Fill(collision.posX());
-      event.fHistY[eRec]->Fill(collision.posY());
-      event.fHistZ[eRec]->Fill(collision.posZ());
-      event.fEventHistograms[eVertexZ][eRec][0]->Fill(collision.posZ());
-      zrec = collision.posZ();
-      event.fHistNContr->Fill(collision.numContrib());
       if (cfCent.value == "FT0C")
         centr = collision.centFT0C();
       else if (cfCent.value == "FT0M")
         centr = collision.centFT0M();
       else if (cfCent.value == "FT0A")
         centr = collision.centFT0A();
-      event.fHistCentr[eRec]->Fill(centr);
 
-      std::string multType = "TPC";
       if (cfMult.value == "TPC")
         M = collision.multTPC();
       else if (cfMult.value == "FV0M")
@@ -422,7 +445,30 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         M = collision.multFT0M();
       else if (cfMult.value == "NTracksPV")
         M = collision.multNTracksPV();
-      event.fHistMult[eRec]->Fill(M);
+
+      event.fHistX[eBefore]->Fill(collision.posX());
+      event.fHistY[eBefore]->Fill(collision.posY());
+      event.fHistZ[eBefore]->Fill(collision.posZ());
+      event.fHistCentr[eBefore]->Fill(centr);
+      event.fHistMult[eBefore]->Fill(M);
+      event.fHistNContr[eBefore]->Fill(collision.numContrib());
+
+      event.fEventHistograms[eVertexZ][eRec][0]->Fill(collision.posZ());
+
+      // *) Event cuts:
+      float centrcut = 80.;
+      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
+        return;
+      }
+
+      event.fHistX[eAfter]->Fill(collision.posX());
+      event.fHistY[eAfter]->Fill(collision.posY());
+      event.fHistZ[eAfter]->Fill(collision.posZ());
+      event.fHistCentr[eAfter]->Fill(centr);
+      event.fHistMult[eAfter]->Fill(M);
+      event.fHistNContr[eAfter]->Fill(collision.numContrib());
+
+      event.fEventHistograms[eVertexZ][eRec][1]->Fill(collision.posZ());
       qa.fQAM_NC->Fill(M, collision.numContrib());
 
       if constexpr (rs == eRecAndSim) {
@@ -432,27 +478,19 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         event.fHistX[eSim]->Fill(mccollision.posX());
         event.fHistY[eSim]->Fill(mccollision.posY());
         event.fHistZ[eSim]->Fill(mccollision.posZ());
-        event.fEventHistograms[eVertexZ][eSim][0]->Fill(mccollision.posZ());
-        zsim = mccollision.posZ();
+        event.fEventHistograms[eVertexZ][eSim][1]->Fill(mccollision.posZ());
         event.fHistCentr[eSim]->Fill(centrsim);
         qa.fQA->Fill(centrsim, centr);
         centr = centrsim;
       }
-
-      // *) Event cuts:
-      float centrcut = 80.;
-      if (!EventCuts<rs>(collision) || centr > centrcut) { // Main call for event cuts
-        return;
-      }
-      event.fEventHistograms[eVertexZ][eRec][1]->Fill(zrec);
-      if constexpr (rs == eRecAndSim)
-        event.fEventHistograms[eVertexZ][eSim][1]->Fill(zsim);
     }
 
     // before loop over particles
-    float phi = 0, weight = 0;
+    float phi = 0, weight = 1.;
     for (int ih = 0; ih < maxHarmonic; ih++) {
-      cor.Qvector[ih] = TComplex(0., 0.);
+      for (int ip = 0; ip < maxPower; ip++) {
+        cor.Qvector[ih][ip] = TComplex(0., 0.);
+      }
     }
 
     // Main loop over particles:
@@ -462,20 +500,42 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       float ptrec = 0., ptsim = 0.;
       if constexpr (rs == eRec || rs == eRecAndSim) {
         // Fill track pt distribution:
-        pc.fHistPt[eRec]->Fill(track.pt());
+
+        pc.fHistPt[eBefore]->Fill(track.pt());
+        pc.fHistPhi[eBefore]->Fill(track.phi());
+        pc.fHistCharge[eBefore]->Fill(track.sign());
+        pc.fHistTPCncls[eBefore]->Fill(track.tpcNClsFindable());
+        pc.fHistTracksdcaXY[eBefore]->Fill(track.dcaXY());
+        pc.fHistTracksdcaZ[eBefore]->Fill(track.dcaZ());
+
         event.fEventHistograms[ePt][eRec][0]->Fill(track.pt());
         ptrec = track.pt();
+
+        // *) Particle cuts:
+        if (!ParticleCuts<rs>(track)) { // Main call for particle cuts.
+          continue;                     // not return!!
+        }
+        pc.fHistPt[eAfter]->Fill(track.pt());
+        pc.fHistPhi[eAfter]->Fill(track.phi());
+        pc.fHistCharge[eAfter]->Fill(track.sign());
+        pc.fHistTPCncls[eAfter]->Fill(track.tpcNClsFindable());
+        pc.fHistTracksdcaXY[eAfter]->Fill(track.dcaXY());
+        pc.fHistTracksdcaZ[eAfter]->Fill(track.dcaZ());
+
+        event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
+
         phi = track.phi();
+        if (cfToyModel) {
+          phi = f->GetRandom();
+        }
         if (it != phih.histMap.end()) {
           it->second->Fill(phi);
         }
-        pc.fHistPhi[eRec]->Fill(track.phi());
-        pc.fHistCharge[eRec]->Fill(track.sign());
-        pc.fHistTPCncls[eRec]->Fill(track.tpcNClsFindable());
-        pc.fHistTracksdcaXY[eRec]->Fill(track.dcaXY());
-        pc.fHistTracksdcaZ[eRec]->Fill(track.dcaZ());
 
-        weight = 1.; // pc.histWeights->GetBinContent(phi);
+        if (cfUseWeights && histweight != wh.weightsmap.end())
+          weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
+        else
+          weight = 1;
 
         // ... and corresponding MC truth simulated:
         // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -489,41 +549,44 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
           pc.fHistPt[eSim]->Fill(mcparticle.pt());
           event.fEventHistograms[ePt][eSim][0]->Fill(mcparticle.pt());
           ptsim = mcparticle.pt();
+          event.fEventHistograms[ePt][eSim][0]->Fill(ptsim);
           phi = mcparticle.phi();
           pc.fHistPhi[eSim]->Fill(mcparticle.phi());
-          // pc.fHistCharge[eSim]->Fill(mcparticle.sign());
-          // pc.fHistTPCncls[eSim]->Fill(mcparticle.tpcNClsFindable());
-          // pc.fHistTracksdcaXY[eSim]->Fill(mcparticle.dcaXY());
-          // pc.fHistTracksdcaZ[eSim]->Fill(mcparticle.dcaZ());
         } // end of if constexpr (rs == eRecAndSim)
-
-        // *) Particle cuts:
-        if (!ParticleCuts<rs>(track)) { // Main call for particle cuts.
-          continue;                     // not return!!
-        }
-        event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
-        if constexpr (rs == eRecAndSim)
-          event.fEventHistograms[ePt][eSim][0]->Fill(ptsim);
 
       } // if constexpr (rs == eRec || rs == eRecAndSim)
 
       // analysis in the loop over particle
+      msel = msel + 1;
       for (int ih = 0; ih < maxHarmonic; ih++) {
-        cor.Qvector[ih] += TComplex(weight * TMath::Cos(ih * phi), weight * TMath::Sin(ih * phi));
+        for (int ip = 0; ip < maxPower; ip++) {
+          cor.Qvector[ih][ip] += TComplex(std::pow(weight, ip) * TMath::Cos(ih * phi), std::pow(weight, ip) * TMath::Sin(ih * phi));
+        }
       }
     } // end of for (auto track: tracks)
+    event.fHistMsel[eAfter]->Fill(msel);
     // calculate correlations
-    float four32 = Four(3, 2, -3, -2).Re() / Four(0, 0, 0, 0).Re();
-    float four42 = Four(4, 2, -4, -2).Re() / Four(0, 0, 0, 0).Re();
-    float v22 = (Q(2).Rho2() - M) / (M * (M - 1.));
-    float v32 = (Q(3).Rho2() - M) / (M * (M - 1.));
-    float v42 = (Q(4).Rho2() - M) / (M * (M - 1.));
+    float Mmin = 4.;
+    if (msel < Mmin)
+      return;
+    float wTwo = Two(0, 0).Re();
+    float wFour = Four(0, 0, 0, 0).Re();
+    float four32 = Four(3, 2, -3, -2).Re() / wFour;
+    float four42 = Four(4, 2, -4, -2).Re() / wFour;
+    float v22 = Two(2, -2) / wTwo;
+    float v32 = Two(3, -3) / wTwo;
+    float v42 = Two(4, -4) / wTwo;
+    if (std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)) {
+      LOGF(info, "\033[1;31m%s std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)\033[0m", __FUNCTION__);
+      LOGF(error, "v22 = %f\nv32 = %f\nv42 = %f\nfour32=%f\nv42 = %f\n", v22, v32, v42, four32, four42);
+      return;
+    }
 
-    cor.pv22_centr->Fill(centr, v22, M * (M - 1));
-    cor.pv32_centr->Fill(centr, v32, M * (M - 1));
-    cor.pv42_centr->Fill(centr, v42, M * (M - 1));
-    cor.pfour32_centr->Fill(centr, four32, M * (M - 1));
-    cor.pfour42_centr->Fill(centr, four42, M * (M - 1));
+    cor.pv22_centr->Fill(centr, v22, wTwo);
+    cor.pv32_centr->Fill(centr, v32, wTwo);
+    cor.pv42_centr->Fill(centr, v42, wTwo);
+    cor.pfour32_centr->Fill(centr, four32, wFour);
+    cor.pfour42_centr->Fill(centr, four42, wFour);
 
   } // end of template <eRecSim rs, typename T1, typename T2> void Steer(T1 const& collision, T2 const& tracks)
 
@@ -571,6 +634,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     phih.fPhiHistList->SetOwner(true);
     fBaseList->Add(phih.fPhiHistList);
 
+    wh.fWeightsHistList = new TList();
+    wh.fWeightsHistList->SetName("WeightsHistograms");
+    wh.fWeightsHistList->SetOwner(true);
+    fBaseList->Add(wh.fWeightsHistList);
+
     // *) Book pt distribution with binning defined through configurables in the json file:
     vector<float> l_pt_bins = cfPtBins.value; // define local array and initialize it from an array set in the configurables
     vector<float> l_phi_bins = cfPhiBins.value;
@@ -579,6 +647,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     vector<float> l_y_bins = cfYBins.value;
     vector<float> l_z_bins = cfZBins.value;
     vector<float> l_mult_bins = cfMultBins.value;
+    vector<float> l_msel_bins = cfMselBins.value;
     vector<float> l_tpcncls_bins = cfTPCnclsBins.value;
     vector<float> l_dcaxy_bins = cfDCAxyBins.value;
     vector<float> l_dcaz_bins = cfDCAzBins.value;
@@ -591,6 +660,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     int nBinsy = static_cast<int>(l_y_bins[0]);
     int nBinsz = static_cast<int>(l_z_bins[0]);
     int nBinsmult = static_cast<int>(l_mult_bins[0]);
+    int nBinsmsel = static_cast<int>(l_msel_bins[0]);
     int nBinscharge = 2;
     int nBinstpcncls = static_cast<int>(l_tpcncls_bins[0]);
     int nBinsdcaxy = static_cast<int>(l_dcaxy_bins[0]);
@@ -611,6 +681,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float maxz = l_z_bins[2];
     float minmult = l_mult_bins[1];
     float maxmult = l_mult_bins[2];
+    float minmsel = l_msel_bins[1];
+    float maxmsel = l_msel_bins[2];
     float mincharge = -2.;
     float maxcharge = 2.;
     float mintpcncls = l_tpcncls_bins[1];
@@ -619,84 +691,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float maxdcaxy = l_dcaxy_bins[2];
     float mindcaz = l_dcaz_bins[1];
     float maxdcaz = l_dcaz_bins[2];
-    float maxncontr = l_ncontr_bins[1];
-    float minncontr = l_ncontr_bins[2];
-
-    pc.fHistPt[eRec] = new TH1F("fHistPt[eRec]", "pt distribution for reconstructed particles", nBins, min, max);
-    pc.fHistPhi[eRec] = new TH1F("fHistPhi[eRec]", "phi distribution for reconstructed particles", nBinsphi, minphi, maxphi);
-    pc.fHistCharge[eRec] = new TH1F("fHistCharge[eRec]", "charge distribution for reconstructed particles", nBinscharge, mincharge, maxcharge);
-    pc.fHistTPCncls[eRec] = new TH1F("fHistTPCncls[eRec]", "tpcncls distribution for reconstructed particles", nBinstpcncls, mintpcncls, maxtpcncls);
-    pc.fHistTracksdcaXY[eRec] = new TH1F("fHistTracksdcaXY[eRec]", "dcaxy distribution for reconstructed particles", nBinsdcaxy, mindcaxy, maxdcaxy);
-    pc.fHistTracksdcaZ[eRec] = new TH1F("fHistTracksdcaZ[eRec]", "dcaz distribution for reconstructed particles", nBinsdcaz, mindcaz, maxdcaz);
-    pc.fHistPt[eRec]->GetXaxis()->SetTitle("p_{T}");
-    pc.fHistPhi[eRec]->GetXaxis()->SetTitle("phi");
-    pc.fHistCharge[eRec]->GetXaxis()->SetTitle("charge");
-    pc.fHistTPCncls[eRec]->GetXaxis()->SetTitle("TPCNClsFindable");
-    pc.fHistTracksdcaXY[eRec]->GetXaxis()->SetTitle("DCA XY");
-    pc.fHistTracksdcaZ[eRec]->GetXaxis()->SetTitle("DCA Z");
-    pc.fParticleHistogramsList->Add(pc.fHistPt[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistPhi[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistCharge[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistTPCncls[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eRec]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eRec]);
-
-    pc.fHistPt[eSim] = new TH1F("fHistPt[eSim]", "pt distribution for simulated particles", nBins, min, max);
-    pc.fHistPhi[eSim] = new TH1F("fHistPhi[eSim]", "phi distribution for simulated particles", nBinsphi, minphi, maxphi);
-    pc.fHistCharge[eSim] = new TH1F("fHistCharge[eSim]", "charge distribution for simulated particles", nBinscharge, mincharge, maxcharge);
-    pc.fHistTPCncls[eSim] = new TH1F("fHistTPCncls[eSim]", "tpcncls distribution for simulated particles", nBinstpcncls, minphi, maxtpcncls);
-    pc.fHistTracksdcaXY[eSim] = new TH1F("fHistTracksdcaXY[eSim]", "dcaxy distribution for simulated particles", nBinsdcaxy, mindcaxy, maxdcaxy);
-    pc.fHistTracksdcaZ[eSim] = new TH1F("fHistTracksdcaZ[eSim]", "dcaz distribution for simulated particles", nBinsdcaz, mindcaz, maxdcaz);
-    pc.fHistPt[eSim]->GetXaxis()->SetTitle("p_{T}");
-    pc.fHistPhi[eSim]->GetXaxis()->SetTitle("phi");
-    pc.fHistCharge[eSim]->GetXaxis()->SetTitle("charge");
-    pc.fHistTPCncls[eSim]->GetXaxis()->SetTitle("TPCNClsFindable");
-    pc.fHistTracksdcaXY[eSim]->GetXaxis()->SetTitle("DCA XY");
-    pc.fHistTracksdcaZ[eSim]->GetXaxis()->SetTitle("DCA Z");
-    pc.fParticleHistogramsList->Add(pc.fHistPt[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistPhi[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistCharge[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistTPCncls[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eSim]);
-    pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eSim]);
-
-    pc.histWeights = GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
-    pc.fParticleHistogramsList->Add(pc.histWeights);
-
-    event.fHistCentr[eRec] = new TH1F("fHistCentr[eRec]", "centrality distribution for reconstructed particles", nBinscentr, mincentr, maxcentr);
-    event.fHistX[eRec] = new TH1F("fHistX[eRec]", "posX distribution for reconstructed particles", nBinsx, minx, maxx);
-    event.fHistY[eRec] = new TH1F("fHistY[eRec]", "posY distribution for reconstructed particles", nBinsy, miny, maxy);
-    event.fHistZ[eRec] = new TH1F("fHistZ[eRec]", "posZ distribution for reconstructed particles", nBinsz, minz, maxz);
-    event.fHistMult[eRec] = new TH1I("fHistMult[eRec]", "mult distribution for reconstructed particles", nBinsmult, minmult, maxmult);
-    event.fHistNContr = new TH1I("fHistNContr", "NContr distribution", nBinsncontr, minncontr, maxncontr);
-    event.fHistCentr[eRec]->GetXaxis()->SetTitle("centrality");
-    event.fHistX[eRec]->GetXaxis()->SetTitle("x");
-    event.fHistY[eRec]->GetXaxis()->SetTitle("y");
-    event.fHistZ[eRec]->GetXaxis()->SetTitle("z");
-    event.fHistMult[eRec]->GetXaxis()->SetTitle("multiplicity");
-    event.fHistNContr->GetXaxis()->SetTitle("numContrib");
-    event.fEventHistogramsList->Add(event.fHistCentr[eRec]);
-    event.fEventHistogramsList->Add(event.fHistX[eRec]);
-    event.fEventHistogramsList->Add(event.fHistY[eRec]);
-    event.fEventHistogramsList->Add(event.fHistZ[eRec]);
-    event.fEventHistogramsList->Add(event.fHistMult[eRec]);
-    event.fEventHistogramsList->Add(event.fHistNContr);
-
-    event.fHistCentr[eSim] = new TH1F("fHistCentr[eSim]", "centrality distribution for simulated particles", nBinscentr, mincentr, maxcentr);
-    event.fHistX[eSim] = new TH1F("fHistX[eSim]", "posX distribution for simulated particles", nBinsx, minx, maxx);
-    event.fHistY[eSim] = new TH1F("fHistY[eSim]", "posY distribution for simulated particles", nBinsy, miny, maxy);
-    event.fHistZ[eSim] = new TH1F("fHistZ[eSim]", "posZ distribution for simulated particles", nBinsz, minz, maxz);
-    event.fHistMult[eSim] = new TH1I("fHistMult[eSim]", "mult distribution for simulated particles", nBinsmult, minmult, maxmult);
-    event.fHistCentr[eSim]->GetXaxis()->SetTitle("centrality");
-    event.fHistX[eSim]->GetXaxis()->SetTitle("x");
-    event.fHistY[eSim]->GetXaxis()->SetTitle("y");
-    event.fHistZ[eSim]->GetXaxis()->SetTitle("z");
-    event.fHistMult[eSim]->GetXaxis()->SetTitle("multiplicity");
-    event.fEventHistogramsList->Add(event.fHistCentr[eSim]);
-    event.fEventHistogramsList->Add(event.fHistX[eSim]);
-    event.fEventHistogramsList->Add(event.fHistY[eSim]);
-    event.fEventHistogramsList->Add(event.fHistZ[eSim]);
-    event.fEventHistogramsList->Add(event.fHistMult[eSim]);
+    float minncontr = l_ncontr_bins[1];
+    float maxncontr = l_ncontr_bins[2];
 
     const char* cevent[] = {"vertexZ", "Pt"};
     const char* cpro[] = {"rec", "sim"};
@@ -711,15 +707,110 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
           if (i == 1)
             event.fEventHistograms[i][j][k] = new TH1F(histname, histtitle, nBins, min, max);
           event.fEventHistograms[i][j][k]->GetXaxis()->SetTitle(Form("%s", cevent[i]));
-          event.fEventHistogramsList->Add(event.fEventHistograms[i][j][k]);
+          // event.fEventHistogramsList->Add(event.fEventHistograms[i][j][k]);
         }
       }
+    }
+
+    for (int icut = 0; icut < eCut_N; icut++) {
+      pc.fHistPt[icut] = new TH1F(Form("fHistPt[%s]", ccut[icut]), Form("pt distribution %s cut for reconstructed particles", ccut[icut]), nBins, min, max);
+      pc.fHistPhi[icut] = new TH1F(Form("fHistPhi[%s]", ccut[icut]), Form("phi distribution %s cut for reconstructed particles", ccut[icut]), nBinsphi, minphi, maxphi);
+      pc.fHistCharge[icut] = new TH1F(Form("fHistCharge[%s]", ccut[icut]), Form("charge distribution %s cut for reconstructed particles", ccut[icut]), nBinscharge, mincharge, maxcharge);
+      pc.fHistTPCncls[icut] = new TH1F(Form("fHistTPCncls[%s]", ccut[icut]), Form("tpcncls distribution %s cut for reconstructed particles", ccut[icut]), nBinstpcncls, mintpcncls, maxtpcncls);
+      pc.fHistTracksdcaXY[icut] = new TH1F(Form("fHistTracksdcaXY[%s]", ccut[icut]), Form("dcaxy distribution %s cut for reconstructed particles", ccut[icut]), nBinsdcaxy, mindcaxy, maxdcaxy);
+      pc.fHistTracksdcaZ[icut] = new TH1F(Form("fHistTracksdcaZ[%s]", ccut[icut]), Form("dcaz distribution %s cut for reconstructed particles", ccut[icut]), nBinsdcaz, mindcaz, maxdcaz);
+      pc.fHistPt[icut]->GetXaxis()->SetTitle("p_{T}");
+      pc.fHistPhi[icut]->GetXaxis()->SetTitle("phi");
+      pc.fHistCharge[icut]->GetXaxis()->SetTitle("charge");
+      pc.fHistTPCncls[icut]->GetXaxis()->SetTitle("TPCNClsFindable");
+      pc.fHistTracksdcaXY[icut]->GetXaxis()->SetTitle("DCA XY");
+      pc.fHistTracksdcaZ[icut]->GetXaxis()->SetTitle("DCA Z");
+      pc.fParticleHistogramsList->Add(pc.fHistPt[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistPhi[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistCharge[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistTPCncls[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[icut]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[icut]);
+
+      // init eventhist
+      event.fHistCentr[icut] = new TH1F(Form("fHistCentr[%s]", ccut[icut]), Form("centrality distribution %s cut for reconstructed particles", ccut[icut]), nBinscentr, mincentr, maxcentr);
+      event.fHistX[icut] = new TH1F(Form("fHistX[%s]", ccut[icut]), Form("posX distribution %s cut for reconstructed particles", ccut[icut]), nBinsx, minx, maxx);
+      event.fHistY[icut] = new TH1F(Form("fHistY[%s]", ccut[icut]), Form("posY distribution %s cut for reconstructed particles", ccut[icut]), nBinsy, miny, maxy);
+      event.fHistZ[icut] = new TH1F(Form("fHistZ[%s]", ccut[icut]), Form("posZ distribution %s cut for reconstructed particles", ccut[icut]), nBinsz, minz, maxz);
+      event.fHistMult[icut] = new TH1I(Form("fHistMult[%s]", ccut[icut]), Form("mult distribution %s cut for reconstructed particles", ccut[icut]), nBinsmult, minmult, maxmult);
+      event.fHistMsel[icut] = new TH1F(Form("fHistMsel[%s]", ccut[icut]), Form("selected tracks %s cut", ccut[icut]), nBinsmsel, minmsel, maxmsel);
+      event.fHistNContr[icut] = new TH1I(Form("fHistNContr[%s]", ccut[icut]), Form("NContr distribution %s cut", ccut[icut]), nBinsncontr, minncontr, maxncontr);
+      event.fHistCentr[icut]->GetXaxis()->SetTitle(Form("centrality, %s", cfCent.value.c_str()));
+      event.fHistX[icut]->GetXaxis()->SetTitle("x");
+      event.fHistY[icut]->GetXaxis()->SetTitle("y");
+      event.fHistZ[icut]->GetXaxis()->SetTitle("z");
+      event.fHistMult[icut]->GetXaxis()->SetTitle(Form("multiplicity, %s", cfMult.value.c_str()));
+      event.fHistMsel[icut]->GetXaxis()->SetTitle("selected tracks");
+      event.fHistNContr[icut]->GetXaxis()->SetTitle("numContrib");
+      event.fEventHistogramsList->Add(event.fHistCentr[icut]);
+      event.fEventHistogramsList->Add(event.fHistX[icut]);
+      event.fEventHistogramsList->Add(event.fHistY[icut]);
+      event.fEventHistogramsList->Add(event.fHistZ[icut]);
+      event.fEventHistogramsList->Add(event.fHistMult[icut]);
+      event.fEventHistogramsList->Add(event.fHistMsel[icut]);
+      event.fEventHistogramsList->Add(event.fHistNContr[icut]);
+    }
+
+    // init of sim histograms
+    if (cfInitsim) {
+      pc.fHistPt[eSim] = new TH1F("fHistPt[eSim]", "pt distribution for simulated particles", nBins, min, max);
+      pc.fHistPhi[eSim] = new TH1F("fHistPhi[eSim]", "phi distribution for simulated particles", nBinsphi, minphi, maxphi);
+      pc.fHistCharge[eSim] = new TH1F("fHistCharge[eSim]", "charge distribution for simulated particles", nBinscharge, mincharge, maxcharge);
+      pc.fHistTPCncls[eSim] = new TH1F("fHistTPCncls[eSim]", "tpcncls distribution for simulated particles", nBinstpcncls, minphi, maxtpcncls);
+      pc.fHistTracksdcaXY[eSim] = new TH1F("fHistTracksdcaXY[eSim]", "dcaxy distribution for simulated particles", nBinsdcaxy, mindcaxy, maxdcaxy);
+      pc.fHistTracksdcaZ[eSim] = new TH1F("fHistTracksdcaZ[eSim]", "dcaz distribution for simulated particles", nBinsdcaz, mindcaz, maxdcaz);
+      pc.fHistPt[eSim]->GetXaxis()->SetTitle("p_{T}");
+      pc.fHistPhi[eSim]->GetXaxis()->SetTitle("phi");
+      pc.fHistCharge[eSim]->GetXaxis()->SetTitle("charge");
+      pc.fHistTPCncls[eSim]->GetXaxis()->SetTitle("TPCNClsFindable");
+      pc.fHistTracksdcaXY[eSim]->GetXaxis()->SetTitle("DCA XY");
+      pc.fHistTracksdcaZ[eSim]->GetXaxis()->SetTitle("DCA Z");
+      pc.fParticleHistogramsList->Add(pc.fHistPt[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistPhi[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistCharge[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistTPCncls[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaXY[eSim]);
+      pc.fParticleHistogramsList->Add(pc.fHistTracksdcaZ[eSim]);
+
+      event.fHistCentr[eSim] = new TH1F("fHistCentr[eSim]", "centrality distribution for simulated particles", nBinscentr, mincentr, maxcentr);
+      event.fHistX[eSim] = new TH1F("fHistX[eSim]", "posX distribution for simulated particles", nBinsx, minx, maxx);
+      event.fHistY[eSim] = new TH1F("fHistY[eSim]", "posY distribution for simulated particles", nBinsy, miny, maxy);
+      event.fHistZ[eSim] = new TH1F("fHistZ[eSim]", "posZ distribution for simulated particles", nBinsz, minz, maxz);
+      event.fHistMult[eSim] = new TH1I("fHistMult[eSim]", "mult distribution for simulated particles", nBinsmult, minmult, maxmult);
+      event.fHistCentr[eSim]->GetXaxis()->SetTitle("centrality");
+      event.fHistX[eSim]->GetXaxis()->SetTitle("x");
+      event.fHistY[eSim]->GetXaxis()->SetTitle("y");
+      event.fHistZ[eSim]->GetXaxis()->SetTitle("z");
+      event.fHistMult[eSim]->GetXaxis()->SetTitle("multiplicity");
+      event.fEventHistogramsList->Add(event.fHistCentr[eSim]);
+      event.fEventHistogramsList->Add(event.fHistX[eSim]);
+      event.fEventHistogramsList->Add(event.fHistY[eSim]);
+      event.fEventHistogramsList->Add(event.fHistZ[eSim]);
+      event.fEventHistogramsList->Add(event.fHistMult[eSim]);
+    }
+
+    // loading weights
+    for (const int& run : targetRuns) {
+      std::string runStr = std::to_string(run);
+      TH1F* histweights = GetHistogramWithWeights(cfFileWithWeights.value.c_str(), runStr.c_str());
+      if (!histweights) {
+        LOG(fatal) << "Failed to load weights for run " << run;
+        return;
+      }
+      wh.fWeightsHistList->Add(histweights);
+      wh.weightsmap[run] = histweights;
     }
 
     qa.fQA = new TH2F("QA_centr", "quality assurance of centrality", nBinscentr, mincentr, maxcentr, nBinscentr, mincentr, maxcentr);
     qa.fQAM_NC = new TH2F("QAM_NC", "quality assurance of mult vs. NContributors", nBinsmult, minmult, maxmult, nBinsncontr, minncontr, maxncontr);
     if (cfQA) {
-      qa.fQAList->Add(qa.fQA);
+      if (cfInitsim)
+        qa.fQAList->Add(qa.fQA);
       qa.fQAList->Add(qa.fQAM_NC);
     }
 
