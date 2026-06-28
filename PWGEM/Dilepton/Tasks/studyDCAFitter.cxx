@@ -393,7 +393,7 @@ struct studyDCAFitter {
   }
 
   template <typename TCollision, typename TTrack, typename TMCParticles, typename TRefittedPV>
-  void fillElectronHistograms(TCollision const& collision, TTrack const& track, TMCParticles const& mcParticles, TRefittedPV const& refittedPV)
+  void fillElectronHistograms(TCollision const&, TTrack const& track, TMCParticles const& mcParticles, TRefittedPV const& refittedPV)
   {
     mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto trackParCov = getTrackParCov(track);
