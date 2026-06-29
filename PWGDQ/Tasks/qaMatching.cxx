@@ -2120,10 +2120,10 @@ struct QaMatching {
           int64_t mchTrackIndex = muonTrack.globalIndex();
           auto& mchTrackInfo = collisionInfo.mchTracks[mchTrackIndex];
           mchTrackInfo.index = mchTrackIndex;
-          getMftMchMatchAttempts(mchTrackInfo, collisionInfo.mftTimeInfos);
           mchTrackInfo.bc = bc.globalBC();
           mchTrackInfo.time = muonTrack.trackTime();
           mchTrackInfo.timeRes = muonTrack.trackTimeRes();
+          getMftMchMatchAttempts(mchTrackInfo, collisionInfo.mftTimeInfos);
 
           collisionInfo.reducedMchTrackIds[mchTrackIndex] = reducedMchTrackId;
           reducedMchTrackId += 1;
