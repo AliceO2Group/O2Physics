@@ -988,8 +988,8 @@ struct HfTaskCorrelationDsHadrons {
         }
         const float centralityRec = getCentralityColl(collision, centEstimator);
         if (centralityRec < centralityMin || centralityRec > centralityMax) {
-           continue;
-          }
+          continue;
+        }
 
         if (!collision.has_mcCollision()) {
           registry.fill(HIST("hFakeCollision"), 0.);
