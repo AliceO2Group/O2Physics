@@ -1108,15 +1108,15 @@ struct DileptonSV {
       candidate.phi2 = t2.phi();
     }
 
-    // if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-    //   if (!cut.IsSelectedPair(t1, t2)) {
-    //     return false;
-    //   }
-    // } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-    //   if (!cut.IsSelectedPair(t1, t2)) {
-    //     return false;
-    //   }
-    // }
+    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+      if (!cut.IsSelectedPair(t1, t2)) {
+        return false;
+      }
+    } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      if (!cut.IsSelectedPair(t1, t2)) {
+        return false;
+      }
+    }
 
     float weight = 1.f;
     if constexpr (ev_id == 0) {

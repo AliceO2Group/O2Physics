@@ -43,8 +43,6 @@
 
 using namespace o2::constants::physics;
 
-ClassImp(VarManager);
-
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
 std::map<TString, int> VarManager::fgVarNamesMap;
