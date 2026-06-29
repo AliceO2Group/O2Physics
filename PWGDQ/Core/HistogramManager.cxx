@@ -43,8 +43,6 @@ using namespace std;
 #include <TProfile2D.h>
 #include <TProfile3D.h>
 
-ClassImp(HistogramManager);
-
 //_______________________________________________________________________________
 HistogramManager::HistogramManager() : TNamed("", ""),
                                        fMainList(nullptr),
