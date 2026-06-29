@@ -206,7 +206,7 @@ struct TableMaker {
     Produces<ReducedMuonsAssoc> muonAssoc;
     Produces<ReducedMFTs> mftTrack;
     Produces<ReducedMFTsExtra> mftTrackExtra;
-    Produces<ReducedMFTAssoc> mftAssoc;  
+    Produces<ReducedMFTAssoc> mftAssoc;
     // Q-vector related tables, to be filled only if the user selects the corresponding option
     Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
     Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
@@ -1182,7 +1182,7 @@ struct TableMaker {
         centFT0M = collision.centFT0M();
       }
       outTables.eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
-                    multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C, centFT0A, centFT0M);
+                              multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C, centFT0A, centFT0M);
       outTables.eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       outTables.eventInfo(collision.globalIndex());
 
@@ -1200,14 +1200,14 @@ struct TableMaker {
           if (newbc.has_zdc()) {
             auto newbc_zdc = newbc.zdc();
             outTables.zdc(newbc_zdc.energyCommonZNA(), newbc_zdc.energyCommonZNC(), newbc_zdc.energyCommonZPA(), newbc_zdc.energyCommonZPC(),
-                newbc_zdc.timeZNA(), newbc_zdc.timeZNC(), newbc_zdc.timeZPA(), newbc_zdc.timeZPC());
+                          newbc_zdc.timeZNA(), newbc_zdc.timeZNC(), newbc_zdc.timeZPA(), newbc_zdc.timeZPC());
           } else {
             outTables.zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
           }
         } else if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
           outTables.zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
-              bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
+                        bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
         } else {
           outTables.zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
         }
@@ -1215,51 +1215,51 @@ struct TableMaker {
       // Fill FIT table if requested
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Fit) > 0) {
         outTables.fit(VarManager::fgValues[VarManager::kAmplitudeFT0A], VarManager::fgValues[VarManager::kAmplitudeFT0C],
-            VarManager::fgValues[VarManager::kTimeFT0A], VarManager::fgValues[VarManager::kTimeFT0C],
-            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFT0]),
-            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0A]),
-            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0C]),
-            VarManager::fgValues[VarManager::kAmplitudeFDDA], VarManager::fgValues[VarManager::kAmplitudeFDDC],
-            VarManager::fgValues[VarManager::kTimeFDDA], VarManager::fgValues[VarManager::kTimeFDDC],
-            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFDD]),
-            VarManager::fgValues[VarManager::kAmplitudeFV0A], VarManager::fgValues[VarManager::kTimeFV0A],
-            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFV0A]),
-            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFV0A]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Cpf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Cpf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFV0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFV0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDApf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDApf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDCpf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDCpf]));
+                      VarManager::fgValues[VarManager::kTimeFT0A], VarManager::fgValues[VarManager::kTimeFT0C],
+                      static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFT0]),
+                      static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0A]),
+                      static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0C]),
+                      VarManager::fgValues[VarManager::kAmplitudeFDDA], VarManager::fgValues[VarManager::kAmplitudeFDDC],
+                      VarManager::fgValues[VarManager::kTimeFDDA], VarManager::fgValues[VarManager::kTimeFDDC],
+                      static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFDD]),
+                      VarManager::fgValues[VarManager::kAmplitudeFV0A], VarManager::fgValues[VarManager::kTimeFV0A],
+                      static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFV0A]),
+                      static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFV0A]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Cpf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Cpf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFV0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFV0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDApf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDApf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDCpf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDCpf]));
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         outTables.multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
-               collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+                         collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
+                         collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
         outTables.multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                fOccup.oContribLongA[collision.globalIndex()], fOccup.oContribLongC[collision.globalIndex()],
-                fOccup.oMeanTimeLongA[collision.globalIndex()], fOccup.oMeanTimeLongC[collision.globalIndex()],
-                fOccup.oMedianTimeLongA[collision.globalIndex()], fOccup.oMedianTimeLongC[collision.globalIndex()],
-                fOccup.oContribShortA[collision.globalIndex()], fOccup.oContribShortC[collision.globalIndex()],
-                fOccup.oMeanTimeShortA[collision.globalIndex()], fOccup.oMeanTimeShortC[collision.globalIndex()],
-                fOccup.oMedianTimeShortA[collision.globalIndex()], fOccup.oMedianTimeShortC[collision.globalIndex()]);
+                          fOccup.oContribLongA[collision.globalIndex()], fOccup.oContribLongC[collision.globalIndex()],
+                          fOccup.oMeanTimeLongA[collision.globalIndex()], fOccup.oMeanTimeLongC[collision.globalIndex()],
+                          fOccup.oMedianTimeLongA[collision.globalIndex()], fOccup.oMedianTimeLongC[collision.globalIndex()],
+                          fOccup.oContribShortA[collision.globalIndex()], fOccup.oContribShortC[collision.globalIndex()],
+                          fOccup.oMeanTimeShortA[collision.globalIndex()], fOccup.oMeanTimeShortC[collision.globalIndex()],
+                          fOccup.oMedianTimeShortA[collision.globalIndex()], fOccup.oMedianTimeShortC[collision.globalIndex()]);
       }
       outTables.mergingTable(fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()],
-                   fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()],
-                   fCollMergingTag.meanDCAz[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()],
-                   fCollMergingTag.rmsDCAz[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()],
-                   fCollMergingTag.skewnessDCAz[collision.globalIndex()], fCollMergingTag.kurtosisDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction100umDCAz[collision.globalIndex()], fCollMergingTag.fraction200umDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction500umDCAz[collision.globalIndex()], fCollMergingTag.fraction1mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction2mmDCAz[collision.globalIndex()], fCollMergingTag.fraction5mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction10mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.nPeaksDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()],
-                   fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()]);
+                             fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()],
+                             fCollMergingTag.meanDCAz[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()],
+                             fCollMergingTag.rmsDCAz[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()],
+                             fCollMergingTag.skewnessDCAz[collision.globalIndex()], fCollMergingTag.kurtosisDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction100umDCAz[collision.globalIndex()], fCollMergingTag.fraction200umDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction500umDCAz[collision.globalIndex()], fCollMergingTag.fraction1mmDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction2mmDCAz[collision.globalIndex()], fCollMergingTag.fraction5mmDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction10mmDCAz[collision.globalIndex()],
+                             fCollMergingTag.nPeaksDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()],
+                             fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()]);
 
       //
       fCollIndexMap[collision.globalIndex()] = outTables.event.lastIndex();
@@ -1388,17 +1388,17 @@ struct TableMaker {
       outTables.trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
       outTables.trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
       outTables.trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
-                  track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
-                  track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                  track.tpcNClsShared(), track.tpcChi2NCl(),
-                  track.trdChi2(), track.trdPattern(), track.tofChi2(),
-                  track.length(), track.dcaXY(), track.dcaZ(),
-                  track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
-                  track.detectorMap());
+                            track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
+                            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                            track.tpcNClsShared(), track.tpcChi2NCl(),
+                            track.trdChi2(), track.trdPattern(), track.tofChi2(),
+                            track.length(), track.dcaXY(), track.dcaZ(),
+                            track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
+                            track.detectorMap());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         outTables.trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
-                       track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
-                       track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
+                                 track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
+                                 track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
       }
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
         float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
@@ -1406,18 +1406,18 @@ struct TableMaker {
         float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
         float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
         outTables.trackBarrelPID(track.tpcSignal(),
-                       nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
-                       track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                       track.trdSignal());
+                                 nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
+                                 track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                                 track.trdSignal());
       } else if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
         float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
         float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
         float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
         float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
         outTables.trackBarrelPID(track.tpcSignal(),
-                       nSigmaEl, -999.0, nSigmaPi, nSigmaKa, nSigmaPr,
-                       -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
-                       -999.0);
+                                 nSigmaEl, -999.0, nSigmaPi, nSigmaKa, nSigmaPr,
+                                 -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
+                                 -999.0);
       }
 
       fTrackIndexMap[track.globalIndex()] = outTables.trackBasic.lastIndex();
@@ -1665,17 +1665,17 @@ struct TableMaker {
       }
       outTables.muonBasic(reducedEventIdx, mchIdx, mftIdx, fFwdTrackFilterMap[muon.globalIndex()], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), 0);
       outTables.muonExtra(globalClusters, VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
-                VarManager::fgValues[VarManager::kMuonChi2], muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                muon.matchScoreMCHMFT(),
-                muon.mchBitMap(), muon.midBitMap(),
-                muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
-                muon.trackTime(), muon.trackTimeRes());
+                          VarManager::fgValues[VarManager::kMuonChi2], muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                          muon.matchScoreMCHMFT(),
+                          muon.mchBitMap(), muon.midBitMap(),
+                          muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
+                          muon.trackTime(), muon.trackTimeRes());
       outTables.muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
       if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov) || static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCovRealign)) {
         outTables.muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
-                VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
-                VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
-                VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+                          VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
+                          VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
+                          VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
       }
     } // end loop over selected muons
   } // end skimMuons
