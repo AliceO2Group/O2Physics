@@ -618,16 +618,16 @@ class CascadeHistManager
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get mother
-    if (cascadeCandidate.has_fMcMother()) {
-      auto mother = cascadeCandidate.template fMcMother_as<T3>();
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
     // get partonic mother
-    if (cascadeCandidate.has_fMcPartMoth()) {
-      auto partonicMother = cascadeCandidate.template fMcPartMoth_as<T4>();
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -652,8 +652,8 @@ class CascadeHistManager
               mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
-              if (cascadeCandidate.has_fMcMother()) {
-                auto mother = cascadeCandidate.template fMcMother_as<T3>();
+              if (mcParticle.has_fMcMother()) {
+                auto mother = mcParticle.template fMcMother_as<T3>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

@@ -52,6 +52,7 @@ enum ColHist {
   kCentVsSphericity,
   kMultVsSphericity,
   // mc
+  kTruePosZVsPosZ,
   kTrueCentVsCent,
   kTrueMultVsMult,
   kColHistLast
@@ -80,6 +81,7 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMultVsSphericity, o2::framework::HistType::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::HistType::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
     // mc
+    {kTruePosZVsPosZ, o2::framework::HistType::kTH2F, "hTruePosZVsPosZ", "True Vertex Z vs Vertex Z; V_{Z,True} (cm); V_{Z} (cm)"},
     {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
     {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
@@ -102,9 +104,10 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMultVsSphericity, {confAnalysis.mult, confQa.sphericity}}, \
     {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
 
-#define COL_HIST_MC_MAP(conf)                \
-  {kTrueMultVsMult, {conf.mult, conf.mult}}, \
-    {kTrueCentVsCent, {conf.cent, conf.cent}},
+#define COL_HIST_MC_MAP(conf)                  \
+  {kTruePosZVsPosZ, {conf.vtxZ, conf.vtxZ}},   \
+    {kTrueCentVsCent, {conf.cent, conf.cent}}, \
+    {kTrueMultVsMult, {conf.mult, conf.mult}},
 
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
@@ -253,8 +256,9 @@ class CollisionHistManager
   void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string mcDir = std::string(McDir);
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePosZVsPosZ, HistTable), getHistDesc(kTruePosZVsPosZ, HistTable), getHistType(kTruePosZVsPosZ, HistTable), {Specs.at(kTruePosZVsPosZ)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
   }
 
   template <typename T>
@@ -290,8 +294,9 @@ class CollisionHistManager
       return;
     }
     auto mcCol = col.template fMcCol_as<T2>();
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTruePosZVsPosZ, HistTable)), mcCol.posZ(), col.posZ());
     mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;

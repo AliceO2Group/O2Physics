@@ -131,7 +131,7 @@ void processSameEvent(T1 const& SliceParticle,
       continue;
     }
     // check if pair is clean
-    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
     }
     // check if pair is close
@@ -264,7 +264,7 @@ void processSameEvent(T1 const& SliceParticle1,
       continue;
     }
     // pair cleaning
-    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
     }
     // Close pair rejection

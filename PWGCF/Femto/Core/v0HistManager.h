@@ -629,16 +629,16 @@ class V0HistManager
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get mother
-    if (v0Candidate.has_fMcMother()) {
-      auto mother = v0Candidate.template fMcMother_as<T3>();
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
     // get partonic mother
-    if (v0Candidate.has_fMcPartMoth()) {
-      auto partonicMother = v0Candidate.template fMcPartMoth_as<T4>();
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -663,8 +663,8 @@ class V0HistManager
               mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
-              if (v0Candidate.has_fMcMother()) {
-                auto mother = v0Candidate.template fMcMother_as<T3>();
+              if (mcParticle.has_fMcMother()) {
+                auto mother = mcParticle.template fMcMother_as<T3>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
