@@ -4818,19 +4818,6 @@ struct AnalysisDileptonTrackTrack {
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<AnalysisEventSelection>(cfgc),
-    adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
-    adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
-    adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
-    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-    adaptAnalysisTask<AnalysisAsymmetricPairing>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
-}
-
 void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups)
 {
   //
