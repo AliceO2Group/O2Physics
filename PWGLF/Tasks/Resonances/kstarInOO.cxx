@@ -53,7 +53,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include <stdlib.h>
 
 using namespace o2;
@@ -1041,9 +1040,8 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       nJetEvents++;
-      if ((nJetEvents + 1) % 10000 == 0) {
+      if ((nJetEvents + 1) % 10000 == 0)
 	LOG(info) << "Processed Jet Data Events: " << nJetEvents;
-      }
     }
     histos.fill(HIST("nEvents"), 0.5); // Raw event
 
@@ -1164,9 +1162,8 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       nJetMCEvents++;
-      if ((nJetMCEvents + 1) % 10000 == 0) {
+      if ((nJetMCEvents + 1) % 10000 == 0)
 	LOG(info) << "Processed Jet MC Events: " << nJetMCEvents;
-      }
     }
     histos.fill(HIST("nEvents"), 0.5); // Gen event
 
@@ -1357,9 +1354,8 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       nEvents++;
-      if ((nEvents + 1) % 10000 == 0) {
+      if ((nEvents + 1) % 10000 == 0)
 	LOG(info) << "Processed Data Events: " << nEvents;
-      }
     }
     histos.fill(HIST("nEvents"), 0.5);
 
@@ -1404,9 +1400,8 @@ struct kstarInOO {
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {
         nEventsMix++;
-        if ((nEventsMix + 1) % 10000 == 0) {
+        if ((nEventsMix + 1) % 10000 == 0)
 	  LOG(info) << "Processed DATA Mixed Events : " << nEventsMix;
-        }
       }
       auto [goodEv1, code1] = eventSelection(collision1, false);
       auto [goodEv2, code2] = eventSelection(collision2, false);
@@ -1488,9 +1483,8 @@ struct kstarInOO {
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {
         nEventsMCMix++;
-        if ((nEventsMCMix + 1) % 10000 == 0) {
+        if ((nEventsMCMix + 1) % 10000 == 0)
 	  LOG(info) << "Processed Mixed Events: " << nEventsMCMix;
-        }
       }
       auto [goodEv1, code1] = eventSelection(collision1, false);
       auto [goodEv2, code2] = eventSelection(collision2, false);
@@ -1513,9 +1507,8 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       ++nEventsGen;
-      if (nEventsGen % 10000 == 0) {
+      if (nEventsGen % 10000 == 0)
 	LOG(info) << "Processed MC (GEN) Events: " << nEventsGen;
-      }
     }
     if (cfgMCHistos) {
       histos.fill(HIST("nEvents_Gen"), 0.5); // Gen events
@@ -1610,9 +1603,8 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       ++nprocessGenEvents;
-      if (nprocessGenEvents % 10000 == 0) {
+      if (nprocessGenEvents % 10000 == 0)
 	LOG(info) << "Processed MC (GEN) Events: " << nprocessGenEvents;
-      }
     }
     if (cfgJetMCHistos) {
       histos.fill(HIST("nEvents_Gen"), 0.5);
@@ -1715,9 +1707,8 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       ++ndRtest;
-      if (ndRtest % 10000 == 0) {
+      if (ndRtest % 10000 == 0)
 	LOG(info) << "Processed dR test: " << ndRtest;
-      }
     }
 
     bool INELgt0 = false;
