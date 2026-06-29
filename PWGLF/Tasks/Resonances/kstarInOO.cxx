@@ -127,7 +127,7 @@ struct kstarInOO {
   Configurable<int> cfgMinvNBins{"cfgMinvNBins", 300, "Number of bins for Minv axis"};
   Configurable<float> cfgMinvMin{"cfgMinvMin", 0.60, "Minimum Minv value"};
   Configurable<float> cfgMinvMax{"cfgMinvMax", 1.20, "Maximum Minv value"};
-
+  
   // Histogram
   ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2, 0.2}, ""};
   ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2, 0.2}, ""};
@@ -152,7 +152,7 @@ struct kstarInOO {
   Configurable<float> cfgJetR{"cfgJetR", 0.4, "Anti-kT Radius"};
   Configurable<float> cfgJetdR{"cfgJetdR", 0.4, "Set Jet radius parameter"};
   Configurable<float> cfgJetMaxEta{"cfgJetMaxEta", 0.9, "Set Jet Max Eta"};
-
+  
   Configurable<bool> cfgSingleJet{"cfgSingleJet", false, "Enforces strict phi-jet correspondance"};
   Configurable<bool> cfgReqJets{"cfgReqJets", false, "False: MB, True: Inside Jets"};
   Configurable<std::string> cfgRealTriggerMasks{"cfgRealTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
@@ -378,9 +378,9 @@ struct kstarInOO {
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
 
+  static constexpr int Kstar0PDG = 313;
   static constexpr int KaonPDG = 321;
   static constexpr int PionPDG = 211;
-  static constexpr int Kstar0PDG = 313;
 
   //==================================
   //||
@@ -905,7 +905,7 @@ struct kstarInOO {
   double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector lResonance)
   {
     if (cDebugLevel > 0)
-      std::cout << "Finded multiple jets to the same phi." << std::endl;
+      LOG(info) << "Found multiple jets to the same phi.";
 
     double bestR = 0;
     double bestJetpT = 0;
@@ -1043,7 +1043,7 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       nJetEvents++;
       if ((nJetEvents + 1) % 10000 == 0) {
-        std::cout << "Processed Jet Data Events: " << nJetEvents << std::endl;
+	LOG(info) << "Processed Jet Data Events: " << nJetEvents;
       }
     }
     histos.fill(HIST("nEvents"), 0.5); // Raw event
@@ -1112,8 +1112,8 @@ struct kstarInOO {
     int nJets = 0;
     for (auto chargedjet : chargedjets) {
       if (std::abs(chargedjet.eta()) > cfgJetMaxEta - cfgJetdR)
-        return;
-
+	return;
+      
       jetpT.push_back(chargedjet.pt());
       jetEta.push_back(chargedjet.eta());
       jetPhi.push_back(chargedjet.phi());
@@ -1166,7 +1166,7 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       nJetMCEvents++;
       if ((nJetMCEvents + 1) % 10000 == 0) {
-        std::cout << "Processed Jet MC Events: " << nJetMCEvents << std::endl;
+	LOG(info) << "Processed Jet MC Events: " << nJetMCEvents;
       }
     }
     histos.fill(HIST("nEvents"), 0.5); // Gen event
@@ -1200,8 +1200,8 @@ struct kstarInOO {
     int nJets = 0;
     for (auto mcdjet : mcdjets) {
       if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR)
-        return;
-
+	return;
+      
       mcdjetpT.push_back(mcdjet.pt());
       mcdjetEta.push_back(mcdjet.eta());
       mcdjetPhi.push_back(mcdjet.phi());
@@ -1359,7 +1359,7 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       nEvents++;
       if ((nEvents + 1) % 10000 == 0) {
-        std::cout << "Processed Data Events: " << nEvents << std::endl;
+	LOG(info) << "Processed Data Events: " << nEvents;
       }
     }
     histos.fill(HIST("nEvents"), 0.5);
@@ -1406,7 +1406,7 @@ struct kstarInOO {
       if (cDebugLevel > 0) {
         nEventsMix++;
         if ((nEventsMix + 1) % 10000 == 0) {
-          std::cout << "Processed DATA Mixed Events : " << nEventsMix << std::endl;
+	  LOG(info) << "Processed DATA Mixed Events : " << nEventsMix;
         }
       }
       auto [goodEv1, code1] = eventSelection(collision1, false);
@@ -1443,8 +1443,8 @@ struct kstarInOO {
       nEventsMC++;
       if ((nEventsMC + 1) % 10000 == 0) {
         double histmem = histos.getSize();
-        std::cout << histmem << std::endl;
-        std::cout << "process_SameEvent_MC: " << nEventsMC << std::endl;
+	LOG(info) << histmem;
+	LOG(info) << "process_SameEvent_MC: " << nEventsMC;
       }
     }
     histos.fill(HIST("nEvents"), 0.5);
@@ -1490,7 +1490,7 @@ struct kstarInOO {
       if (cDebugLevel > 0) {
         nEventsMCMix++;
         if ((nEventsMCMix + 1) % 10000 == 0) {
-          std::cout << "Processed Mixed Events: " << nEventsMCMix << std::endl;
+	  LOG(info) << "Processed Mixed Events: " << nEventsMCMix;
         }
       }
       auto [goodEv1, code1] = eventSelection(collision1, false);
@@ -1515,7 +1515,7 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       ++nEventsGen;
       if (nEventsGen % 10000 == 0) {
-        std::cout << "Processed MC (GEN) Events: " << nEventsGen << std::endl;
+	LOG(info) << "Processed MC (GEN) Events: " << nEventsGen;
       }
     }
     if (cfgMCHistos) {
@@ -1547,7 +1547,7 @@ struct kstarInOO {
       return;
 
     for (auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG)
         continue;
       if (std::abs(particle.eta()) > cfgTrackMaxEta)
         continue;
@@ -1586,7 +1586,7 @@ struct kstarInOO {
     }
 
     for (auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG)
         continue; // Not K*0
       if (std::abs(particle.eta()) > cfgTrackMaxEta)
         continue;
@@ -1612,7 +1612,7 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       ++nprocessGenEvents;
       if (nprocessGenEvents % 10000 == 0) {
-        std::cout << "Processed MC (GEN) Events: " << nprocessGenEvents << std::endl;
+	LOG(info) << "Processed MC (GEN) Events: " << nprocessGenEvents;
       }
     }
     if (cfgJetMCHistos) {
@@ -1675,7 +1675,7 @@ struct kstarInOO {
     }
 
     for (auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG)
         continue;
       if (std::abs(particle.eta()) > cfgTrackMaxEta)
         continue;
@@ -1717,7 +1717,7 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       ++ndRtest;
       if (ndRtest % 10000 == 0) {
-        std::cout << "Processed dR test: " << ndRtest << std::endl;
+	LOG(info) << "Processed dR test: " << ndRtest;
       }
     }
 
