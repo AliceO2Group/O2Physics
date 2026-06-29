@@ -107,6 +107,7 @@ Checks:
   - readability-string-compare
   - readability-suspicious-call-argument
 CheckOptions:
+  modernize-avoid-c-arrays.AllowStringArrays: true
   # Common tolerated conversions
   bugprone-narrowing-conversions.WarnOnFloatingPointNarrowingConversion: false
   bugprone-narrowing-conversions.WarnOnIntegerNarrowingConversion: false
