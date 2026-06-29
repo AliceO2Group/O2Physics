@@ -151,6 +151,8 @@ struct kstarInOO {
   Configurable<float> cfgJetpT{"cfgJetpT", 8.0, "Set Jet pT minimum"};
   Configurable<float> cfgJetR{"cfgJetR", 0.4, "Anti-kT Radius"};
   Configurable<float> cfgJetdR{"cfgJetdR", 0.4, "Set Jet radius parameter"};
+  Configurable<float> cfgJetMaxEta{"cfgJetMaxEta", 0.9, "Set Jet Max Eta"};
+
   Configurable<bool> cfgSingleJet{"cfgSingleJet", false, "Enforces strict phi-jet correspondance"};
   Configurable<bool> cfgReqJets{"cfgReqJets", false, "False: MB, True: Inside Jets"};
   Configurable<std::string> cfgRealTriggerMasks{"cfgRealTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
@@ -376,6 +378,10 @@ struct kstarInOO {
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
 
+  static constexpr int KaonPDG = 321;
+  static constexpr int PionPDG = 211;
+  static constexpr int Kstar0PDG = 313;
+
   //==================================
   //||
   //||       Helper Templates
@@ -395,19 +401,8 @@ struct kstarInOO {
         }
       }
     } // eventSelection histogram
-    if (objecttype == 2) {
-      if constexpr (requires { obj.posZ(); }) {
-        if (!pass) {
-          histos.fill(HIST("hPosZ_BC"), obj.posZ());
-          histos.fill(HIST("hcentFT0C_BC"), obj.centFT0C());
-        } else {
-          histos.fill(HIST("hPosZ_AC"), obj.posZ());
-          histos.fill(HIST("hcentFT0C_AC"), obj.centFT0C());
-        }
-      }
-    } // Jet eventSelection histogram
     if constexpr (requires { obj.tpcCrossedRowsOverFindableCls(); }) {
-      if (objecttype == 3) {
+      if (objecttype == 2) {
         if (!pass) {
           histos.fill(HIST("hDCArToPv_BC"), obj.dcaXY());
           histos.fill(HIST("hDCAzToPv_BC"), obj.dcaZ());
@@ -435,7 +430,7 @@ struct kstarInOO {
         }
       }
     } // trackSelection
-    if (objecttype == 4) {
+    if (objecttype == 3) {
       if constexpr (requires { obj.pt(); }) {
         if (!pass) {
           histos.fill(HIST("QA_nSigma_kaon_TPC_BC"), obj.pt(), obj.tpcNSigmaKa());
@@ -448,7 +443,7 @@ struct kstarInOO {
         }
       }
     } // kaon pid Selection
-    if (objecttype == 5) {
+    if (objecttype == 4) {
       if constexpr (requires { obj.pt(); }) {
         if (!pass) {
           histos.fill(HIST("QA_nSigma_pion_TPC_BC"), obj.pt(), obj.tpcNSigmaPi());
@@ -594,10 +589,10 @@ struct kstarInOO {
   };
 
   template <typename EventType>
-  std::pair<bool, int> JeteventSelection(const EventType event, const bool QA)
+  std::pair<bool, int> JetEventSelection(const EventType event, const bool QA)
   {
     if (cfgEventCutQA && QA) {
-      fillQA(false, event, 2);
+      fillQA(false, event, 1);
     }
 
     if (!jetderiveddatautilities::selectCollision(event, eventSelectionBits)) { // sel8
@@ -607,7 +602,7 @@ struct kstarInOO {
       return {false, 2};
 
     if (cfgEventCutQA && QA) {
-      fillQA(true, event, 2);
+      fillQA(true, event, 1);
     }
     return {true, 8};
   };
@@ -616,7 +611,7 @@ struct kstarInOO {
   bool trackSelection(const TracksType track, const bool QA)
   {
     if (cfgTrackCutQA && QA) {
-      fillQA(false, track, 3);
+      fillQA(false, track, 2);
     }
 
     if (cfgTrackGlobalSel && !track.isGlobalTrack())
@@ -647,7 +642,7 @@ struct kstarInOO {
       return false;
 
     if (cfgTrackCutQA && QA) {
-      fillQA(true, track, 3);
+      fillQA(true, track, 2);
     }
     return true;
   };
@@ -660,7 +655,7 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
     if (cfgTrackCutQA && QA) {
-      fillQA(false, candidate, 4);
+      fillQA(false, candidate, 3);
     }
 
     // TPC
@@ -700,7 +695,7 @@ struct kstarInOO {
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
       if (cfgTrackCutQA && QA) {
-        fillQA(true, candidate, 4);
+        fillQA(true, candidate, 3);
       }
       return true;
     }
@@ -715,7 +710,7 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
     if (cfgTrackCutQA && QA) {
-      fillQA(false, candidate, 5);
+      fillQA(false, candidate, 4);
     }
 
     // TPC
@@ -755,7 +750,7 @@ struct kstarInOO {
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
       if (cfgTrackCutQA && QA) {
-        fillQA(true, candidate, 5);
+        fillQA(true, candidate, 4);
       }
       return true;
     }
@@ -791,9 +786,6 @@ struct kstarInOO {
   template <typename TracksType>
   ROOT::Math::PxPyPzMVector TrueReconstruction(const TracksType& trk1, const TracksType& trk2)
   {
-    constexpr int kaonPdg = 321;
-    constexpr int pionPdg = 211;
-    constexpr int kstar0Pdg = 313;
     double conjugate = trk1.sign() * trk2.sign();
     if (conjugate > 0)
       return {};
@@ -822,26 +814,26 @@ struct kstarInOO {
       mothers2PDG.push_back(particle2_mom.pdgCode());
     }
 
-    if (mothers1PDG[0] != kstar0Pdg)
+    if (mothers1PDG[0] != Kstar0PDG)
       return {}; // mother not K*0
-    if (mothers2PDG[0] != kstar0Pdg)
+    if (mothers2PDG[0] != Kstar0PDG)
       return {}; // mothers not K*0
     if (mothers1[0] != mothers2[0])
       return {}; // Kaon and pion not from the same K*0
 
-    if (std::abs(particle1.pdgCode()) != pionPdg && std::abs(particle1.pdgCode()) != kaonPdg)
+    if (std::abs(particle1.pdgCode()) != PionPDG && std::abs(particle1.pdgCode()) != KaonPDG)
       return {};
-    if (std::abs(particle2.pdgCode()) != pionPdg && std::abs(particle2.pdgCode()) != kaonPdg)
+    if (std::abs(particle2.pdgCode()) != PionPDG && std::abs(particle2.pdgCode()) != KaonPDG)
       return {};
 
     double track1_mass, track2_mass;
-    if (std::abs(particle1.pdgCode()) == pionPdg) {
+    if (std::abs(particle1.pdgCode()) == PionPDG) {
       track1_mass = massPi;
     } else {
       track1_mass = massKa;
     }
 
-    if (std::abs(particle2.pdgCode()) == pionPdg) {
+    if (std::abs(particle2.pdgCode()) == PionPDG) {
       track2_mass = massPi;
     } else {
       track2_mass = massKa;
@@ -1067,11 +1059,9 @@ struct kstarInOO {
       return;
     histos.fill(HIST("nEvents"), 1.5); // INEL>0 event
 
-    if (std::abs(collision.posZ()) > cfgEventVtxCut)
+    auto [goodEv, code] = JetEventSelection(collision, true);
+    if (!goodEv)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
     histos.fill(HIST("nEvents"), 2.5); // After selection
 
     // Trigger before we start jet finding
@@ -1121,6 +1111,9 @@ struct kstarInOO {
     bool HasJets = false;
     int nJets = 0;
     for (auto chargedjet : chargedjets) {
+      if (std::abs(chargedjet.eta()) > cfgJetMaxEta - cfgJetdR)
+        return;
+
       jetpT.push_back(chargedjet.pt());
       jetEta.push_back(chargedjet.eta());
       jetPhi.push_back(chargedjet.phi());
@@ -1170,10 +1163,6 @@ struct kstarInOO {
   int nJetMCEvents = 0;
   void processMCJets(o2::aod::JetCollision const& collision, JetTrackCandidatesMC const& jetTracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, aod::McParticles const&, aod::JetParticles const&)
   {
-    constexpr int kaonPdg = 321;
-    constexpr int pionPdg = 211;
-    constexpr int kstar0Pdg = 313;
-
     if (cDebugLevel > 0) {
       nJetMCEvents++;
       if ((nJetMCEvents + 1) % 10000 == 0) {
@@ -1193,9 +1182,8 @@ struct kstarInOO {
       return;
     histos.fill(HIST("nEvents"), 1.5); // INEL>0 event
 
-    if (std::abs(collision.posZ()) > cfgEventVtxCut)
-      return;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+    auto [goodEv, code] = JetEventSelection(collision, true);
+    if (!goodEv)
       return;
     histos.fill(HIST("nEvents"), 2.5); // Inclusive event
 
@@ -1211,6 +1199,9 @@ struct kstarInOO {
     bool HasJets = false;
     int nJets = 0;
     for (auto mcdjet : mcdjets) {
+      if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR)
+        return;
+
       mcdjetpT.push_back(mcdjet.pt());
       mcdjetEta.push_back(mcdjet.eta());
       mcdjetPhi.push_back(mcdjet.phi());
@@ -1322,21 +1313,21 @@ struct kstarInOO {
         histos.fill(HIST("hEffRecTest5_pT"), lResonanceTest1.Pt());
       }
 
-      if (std::abs(particle1.pdgCode()) != kaonPdg) // kaon
+      if (std::abs(particle1.pdgCode()) != KaonPDG) // kaon
         continue;
 
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest6_pT"), lResonanceTest1.Pt());
       }
 
-      if (std::abs(particle2.pdgCode()) != pionPdg) // pion
+      if (std::abs(particle2.pdgCode()) != PionPDG) // pion
         continue;
 
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest7_pT"), lResonanceTest1.Pt());
       }
 
-      if (std::abs(mothers1PDG[0]) != kstar0Pdg)
+      if (std::abs(mothers1PDG[0]) != Kstar0PDG)
         continue; // mother not K*0
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest8_pT"), lResonanceTest1.Pt());
@@ -1346,7 +1337,7 @@ struct kstarInOO {
         }
       }
 
-      if (std::abs(mothers2PDG[0]) != kstar0Pdg)
+      if (std::abs(mothers2PDG[0]) != Kstar0PDG)
         continue; // mothers not K*0
 
       if (cfgJetMCHistos) {
@@ -1375,7 +1366,7 @@ struct kstarInOO {
 
     bool INELgt0 = false;
     for (const auto& track : tracks) {
-      if (std::abs(track.eta()) < cfgEventMaxEta) { // cfgTrackMaxEta --> cfgEventMaxEta
+      if (std::abs(track.eta()) < cfgEventMaxEta) {
         INELgt0 = true;
         break;
       }
@@ -1652,7 +1643,7 @@ struct kstarInOO {
       return;
 
     for (auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG)
         continue;
       if (std::abs(particle.eta()) > cfgTrackMaxEta)
         continue;
@@ -1771,19 +1762,17 @@ struct kstarInOO {
       bool skip = false;
       int daughter_kaon = 0;
       int daughter_pion = 0;
-      constexpr int kaonPdg = 321;
-      constexpr int pionPdg = 211;
 
       if (!cfgIsKstar) {
         for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
-          if (std::abs(daughter.pdgCode()) != kaonPdg)
+          if (std::abs(daughter.pdgCode()) != KaonPDG)
             skip = true;
         }
       } else {
         for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
-          if (std::abs(daughter.pdgCode()) == kaonPdg)
+          if (std::abs(daughter.pdgCode()) == KaonPDG)
             ++daughter_kaon;
-          else if (std::abs(daughter.pdgCode()) == pionPdg)
+          else if (std::abs(daughter.pdgCode()) == PionPDG)
             ++daughter_pion;
         }
         if (daughter_kaon != 1 || daughter_pion != 1)
@@ -1835,7 +1824,7 @@ struct kstarInOO {
       bool pion_out = false;
       for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
         if (cfgIsKstar) {
-          if (std::abs(daughter.pdgCode()) == kaonPdg) {
+          if (std::abs(daughter.pdgCode()) == KaonPDG) {
 
             double dphi_kaon = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_kaon = bestJetEta - daughter.eta();
@@ -1852,7 +1841,7 @@ struct kstarInOO {
               }
             } // INSIDE Jets
           } // kaon daughter
-          if (std::abs(daughter.pdgCode()) == pionPdg) {
+          if (std::abs(daughter.pdgCode()) == PionPDG) {
 
             double dphi_pion = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_pion = bestJetEta - daughter.eta();
@@ -1873,7 +1862,7 @@ struct kstarInOO {
             } // INSIDE Jets
           } // pion daughter
         } else {
-          if (std::abs(daughter.pdgCode()) == kaonPdg) {
+          if (std::abs(daughter.pdgCode()) == KaonPDG) {
             double dphi_kaon = TVector2::Phi_mpi_pi(bestJetPhi - daughter.phi());
             double deta_kaon = bestJetEta - daughter.eta();
             dR_kaon = TMath::Sqrt((dphi_kaon * dphi_kaon) + (deta_kaon * deta_kaon));
