@@ -39,7 +39,7 @@
 #include <TString.h>
 
 #include <cstring>
-#include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -77,20 +77,6 @@ struct SinglePhotonMC {
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
-  // Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
-  // Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
-
-  //// Configurable for EMCal cuts
-  // Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
-  // Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
-  // Configurable<float> EMC_minM02{"EMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
-  // Configurable<float> EMC_maxM02{"EMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
-  // Configurable<float> EMC_minE{"EMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
-  // Configurable<int> EMC_minNCell{"EMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
-  // Configurable<std::vector<float>> EMC_TM_Eta{"EMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-  // Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-  // Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
-  // Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMPhotonEventCut fEMEventCut;
@@ -111,16 +97,8 @@ struct SinglePhotonMC {
     if (context.mOptions.get<bool>("processPCM")) {
       fDetNames.push_back("PCM");
     }
-    // if (context.mOptions.get<bool>("processPHOS")) {
-    //   fDetNames.push_back("PHOS");
-    // }
-    // if (context.mOptions.get<bool>("processEMC")) {
-    //   fDetNames.push_back("EMC");
-    // }
 
     DefinePCMCuts();
-    // DefinePHOSCuts();
-    // DefineEMCCuts();
     addhistograms();
     TString ev_cut_name = fConfigEMEventCut.value;
     fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
@@ -175,77 +153,27 @@ struct SinglePhotonMC {
       if (detname == "PCM") {
         add_photon_histograms(list_photon, detname, fPCMCuts);
       }
-      // if (detname == "PHOS") {
-      //   add_photon_histograms(list_photon, detname, fPHOSCuts);
-      // }
-      // if (detname == "EMC") {
-      //   add_photon_histograms(list_photon, detname, fEMCCuts);
-      // }
-
     } // end of detector name loop
   }
 
   void DefinePCMCuts()
   {
-    TString cutNamesStr = fConfigPCMCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
-      }
+    if (fConfigPCMCuts.value.empty()) {
+      return;
+    }
+
+    std::string_view namesView(fConfigPCMCuts.value);
+
+    for (auto name : namesView | std::views::split(',')) {
+      std::string cutString(name.begin(), name.end());
+      const char* cutname = cutString.c_str();
+      LOGF(info, "add tag cut : %s", cutname);
+      fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
     }
     LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
   }
 
-  //  void DefinePHOSCuts()
-  //  {
-  //    TString cutNamesStr = fConfigPHOSCuts.value;
-  //    if (!cutNamesStr.IsNull()) {
-  //      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-  //      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-  //        const char* cutname = objArray->At(icut)->GetName();
-  //        LOGF(info, "add cut : %s", cutname);
-  //        fPHOSCuts.push_back(*phoscuts::GetCut(cutname));
-  //      }
-  //    }
-  //    LOGF(info, "Number of PHOS cuts = %d", fPHOSCuts.size());
-  //  }
-  //
-  //  void DefineEMCCuts()
-  //  {
-  //
-  //    TString cutNamesStr = fConfigEMCCuts.value;
-  //    if (!cutNamesStr.IsNull()) {
-  //      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-  //      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-  //        const char* cutname = objArray->At(icut)->GetName();
-  //        LOGF(info, "add cut : %s", cutname);
-  //        if (std::strcmp(cutname, "custom") == 0) {
-  //          EMCPhotonCut* custom_cut = new EMCPhotonCut(cutname, cutname);
-  //          custom_cut->SetMinE(EMC_minE);
-  //          custom_cut->SetMinNCell(EMC_minNCell);
-  //          custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
-  //          custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
-  //
-  //          custom_cut->SetTrackMatchingEtaParams(EMC_TM_Eta->at(0), EMC_TM_Eta->at(1), EMC_TM_Eta->at(2));
-  //          custom_cut->SetTrackMatchingPhiParams(EMC_TM_Phi->at(0), EMC_TM_Phi->at(1), EMC_TM_Phi->at(2));
-  //
-  //          custom_cut->SetMinEoverP(EMC_Eoverp);
-  //          custom_cut->SetUseExoticCut(EMC_UseExoticCut);
-  //          fEMCCuts.push_back(*custom_cut);
-  //        } else {
-  //          fEMCCuts.push_back(*emccuts::GetCut(cutname));
-  //        }
-  //      }
-  //    }
-  //    LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
-  //  }
-
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::pmeventId;
-  // Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
-  // Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <EMDetType photontype, typename TG1, typename TCut1>
   bool IsSelected(TG1 const& g1, TCut1 const& cut1)
@@ -293,7 +221,7 @@ struct SinglePhotonMC {
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       for (auto& cut : cuts1) {
-        THashList* list_photon_det_cut = static_cast<THashList*>(list_photon_det->FindObject(cut.GetName()));
+        THashList* list_photon_det_cut = static_cast<THashList*>(list_photon_det->FindObject(cut.getName().c_str()));
         for (auto& photon : photons1_coll) {
           if (!IsSelected<photontype>(photon, cut)) {
             continue;
