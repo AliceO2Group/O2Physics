@@ -765,11 +765,8 @@ struct Kstar892LightIon {
     if (!c.hasTOF() || c.beta() <= selectionConfig.cfgTOFBetaCut)
       return false;
 
-    const float tpc = tpcSigma(c, pid);
-    const float tof = tofSigma(c, pid);
     const float cut = combinedCut(pid);
-
-    return tpc * tpc + tof * tof < cut * cut;
+    return combinedNSigma2(c, pid) < cut * cut;
   }
 
   template <typename T>
@@ -845,26 +842,31 @@ struct Kstar892LightIon {
         return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
       }
 
-      case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, above lowPtCutPid, require TOF and accept the candidate only if its combined nsigma is smaller than that of the alternate PID hypothesis
+      case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, within lowPtCutPid and highPtCutPid, require TOF and accept the track only if its combined nsigma is smaller than that of the alternate PID hypothesis and above highPtCutPid if TOF is available, accept if the track passes combined cut and if TOF is not available, check if it passes TPC cut
       {
         if (candidate.pt() < selectionConfig.lowPtCutPid) {
           if (candidate.hasTOF())
             return passTPC(candidate, pid) && passTOF(candidate, pid);
           return passTPC(candidate, pid);
+        } else if (candidate.pt() < selectionConfig.highPtCutPid) {
+          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+            return false;
+
+          const float sigmaComb2 = combinedNSigma2(candidate, pid);
+
+          const float cut = combinedCut(pid);
+          if (sigmaComb2 >= cut * cut)
+            return false;
+
+          const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
+
+          return sigmaComb2 < combinedNSigma2(candidate, otherPID);
+        } else {
+          if (candidate.hasTOF())
+            return passCombined(candidate, pid);
+
+          return passTPC(candidate, pid);
         }
-
-        if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
-          return false;
-
-        const float sigmaComb2 = combinedNSigma2(candidate, pid);
-
-        const float cut = combinedCut(pid);
-        if (sigmaComb2 >= cut * cut)
-          return false;
-
-        const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
-
-        return sigmaComb2 < combinedNSigma2(candidate, otherPID);
       }
 
       default:
