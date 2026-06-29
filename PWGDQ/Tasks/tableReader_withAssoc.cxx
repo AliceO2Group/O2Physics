@@ -1958,7 +1958,7 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      if (fillFlowReso) {
+      if (fConfigOptions.useFlowReso) {
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
         }
