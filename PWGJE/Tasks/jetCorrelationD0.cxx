@@ -345,7 +345,7 @@ struct JetCorrelationD0 {
 
       // flagMcMatchRec() = sign * DecayChannelMain
       // |value| identifies the decay channel (D0ToPiK=1, ..., D0ToKK=5), sign identifies D0(+)/D0bar(-), 0 = no match.
-      int8_t d0DecayChannel = d0Candidate.a();
+      int8_t d0DecayChannel = d0Candidate.flagMcMatchRec();
 
       int matchedFrom = 0;
       int selectedAs = 0;
