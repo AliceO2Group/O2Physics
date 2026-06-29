@@ -27,7 +27,7 @@ o2physics_add_dpl_workflow(table-reader-with-assoc-same-event-pairing-barrel-onl
 o2physics_add_dpl_workflow(table-reader-with-assoc-same-event-pairing-muon-only
                     SOURCES tableReader_withAssoc_SameEventPairingMuonOnly_workflowSpec.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)                    
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-reader-with-assoc-same-event-pairing
                     SOURCES tableReader_withAssoc_SameEventPairing_workflowSpec.cxx
@@ -37,17 +37,17 @@ o2physics_add_dpl_workflow(table-reader-with-assoc-same-event-pairing
 o2physics_add_dpl_workflow(table-reader-with-assoc-asymmetric-pairing
                     SOURCES tableReader_withAssoc_AsymmetricPairing_workflowSpec.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)  
-                    
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(table-reader-with-assoc-dilepton-track-pairing
                     SOURCES tableReader_withAssoc_DileptonTrackPairing_workflowSpec.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)                   
-                    
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(table-reader-with-assoc-dilepton-track-track-pairing
                     SOURCES tableReader_withAssoc_DileptonTrackTrackPairing_workflowSpec.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)                    
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-reader-with-assoc-direct
                     SOURCES tableReader_withAssoc_direct.cxx
