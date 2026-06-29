@@ -1110,7 +1110,7 @@ struct kstarInOO {
     int nJets = 0;
     for (auto chargedjet : chargedjets) {
       if (std::abs(chargedjet.eta()) > cfgJetMaxEta - cfgJetdR)
-  return;
+        return;
 
       jetpT.push_back(chargedjet.pt());
       jetEta.push_back(chargedjet.eta());
@@ -1197,7 +1197,7 @@ struct kstarInOO {
     int nJets = 0;
     for (auto mcdjet : mcdjets) {
       if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR)
-  return;
+        return;
 
       mcdjetpT.push_back(mcdjet.pt());
       mcdjetEta.push_back(mcdjet.eta());
@@ -1438,8 +1438,8 @@ struct kstarInOO {
       nEventsMC++;
       if ((nEventsMC + 1) % 10000 == 0) {
         double histmem = histos.getSize();
-  LOG(info) << histmem;
-  LOG(info) << "process_SameEvent_MC: " << nEventsMC;
+        LOG(info) << histmem;
+        LOG(info) << "process_SameEvent_MC: " << nEventsMC;
       }
     }
     histos.fill(HIST("nEvents"), 0.5);
