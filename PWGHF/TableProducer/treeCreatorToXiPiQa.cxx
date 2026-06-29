@@ -222,7 +222,7 @@ DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
 DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
 DECLARE_SOA_COLUMN(NContribMax, nContribMax, int);
 DECLARE_SOA_COLUMN(NRecoColl, nRecoColl, int);
-DECLARE_SOA_COLUMN(IsXic0WithSel8, isXic0WithSel8, bool);
+DECLARE_SOA_COLUMN(IsXic0WithRecoCollSel8, isXic0WithRecoCollSel8, bool);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
@@ -326,7 +326,7 @@ DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
                   full::PtGenB,
                   full::NContribMax,
                   full::NRecoColl,
-                  full::IsXic0WithSel8);
+                  full::IsXic0WithRecoCollSel8);
 
 } // namespace o2::aod
 
