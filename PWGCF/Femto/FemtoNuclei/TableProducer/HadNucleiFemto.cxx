@@ -410,7 +410,6 @@ struct HadNucleiFemto {
     for (int i = 0; i < Selections::kAll; i++) {
       mQaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(i + 1, eventsLabels[i].c_str());
     }
-
   }
 
   void initCCDB(const aod::BCsWithTimestamps::iterator& bc)
