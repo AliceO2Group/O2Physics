@@ -204,7 +204,7 @@ struct JetCorrelationD0 {
   // Configurables
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "decide to run over MB gap events or not"};
-  Configurable<bool> applyRCTSelections{"applyRCTSelections", false, "decide to apply RCT selections"};
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
   Configurable<float> jetPtCutMin{"jetPtCutMin", 5.0, "minimum value of jet pt"};
   Configurable<float> d0PtCutMin{"d0PtCutMin", 1.0, "minimum value of d0 pt"};
   Configurable<float> jetMcPtCutMin{"jetMcPtCutMin", 3.0, "minimum value of jet pt particle level"};
