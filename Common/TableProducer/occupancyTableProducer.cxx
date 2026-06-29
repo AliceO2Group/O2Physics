@@ -469,7 +469,7 @@ struct OccupancyTableProducer {
       return;
     }
 
-    if constexpr (tableMode == checkTableMode || meanTableMode == checkTableMode || robustTableMode == checkTableMode || meanRobustTableMode == checkTableMode) {
+    if constexpr (tableMode == checkTableMode || meanTableMode == checkTableMode || robustTableMode == checkTableMode) {
       return;
     } else {
 
@@ -1791,7 +1791,7 @@ struct TrackMeanOccTableProducer {
     // BCs.bindExternalIndices(&occsNTrackDet);
     // BCs.bindExternalIndices(&occsRobust);
 
-    if constexpr (meanTableMode == checkTableMode || weightMeanTableMode == checkTableMode || qaMode == checkQAMode) {
+    if constexpr (meanTableMode == checkTableMode || weightMeanTableMode == checkTableMode) {
       return;
     } else {
       occupancyQA.fill(HIST("h_DFcount_Lvl2"), processMode);
