@@ -37,8 +37,8 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
            this->isCleanTrackPair(track1, track3);
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& trackTable, T5 const& partonicMothers) const
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& trackTable, T5 const& mcParticles, T6 const& partonicMothers) const
   {
     if (!this->isCleanTriplet(track1, track2, track3, trackTable)) {
       return false;
@@ -46,14 +46,14 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
     // pair is clean
     // no check if we require common or non-common ancestry
     if (mMixPairsWithCommonAncestor) {
-      return this->pairHasCommonAncestor(track1, track2, partonicMothers) &&
-             this->pairHasCommonAncestor(track2, track3, partonicMothers) &&
-             this->pairHasCommonAncestor(track1, track3, partonicMothers);
+      return this->pairHasCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, track3, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, track3, mcParticles, partonicMothers);
     }
     if (mMixPairsWithNonCommonAncestor) {
-      return this->pairHasNonCommonAncestor(track1, track2, partonicMothers) &&
-             this->pairHasNonCommonAncestor(track2, track3, partonicMothers) &&
-             this->pairHasNonCommonAncestor(track1, track3, partonicMothers);
+      return this->pairHasNonCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, track3, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, track3, mcParticles, partonicMothers);
     }
     return true;
   }
@@ -77,8 +77,8 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner
            this->isCleanTrackPair(track2, negDaughter);
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable, T5 const& partonicMothers) const
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable, T5 const& mcParticles, T6 const& partonicMothers) const
   {
     if (!this->isCleanTriplet(track1, track2, v0, trackTable)) {
       return false;
@@ -86,14 +86,14 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner
     // pair is clean
     // no check if we require common or non-common ancestry
     if (mMixPairsWithCommonAncestor) {
-      return this->pairHasCommonAncestor(track1, track2, partonicMothers) &&
-             this->pairHasCommonAncestor(track1, v0, partonicMothers) &&
-             this->pairHasCommonAncestor(track2, v0, partonicMothers);
+      return this->pairHasCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, v0, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, v0, mcParticles, partonicMothers);
     }
     if (mMixPairsWithNonCommonAncestor) {
-      return this->pairHasNonCommonAncestor(track1, track2, partonicMothers) &&
-             this->pairHasNonCommonAncestor(track1, v0, partonicMothers) &&
-             this->pairHasNonCommonAncestor(track2, v0, partonicMothers);
+      return this->pairHasNonCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, v0, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, v0, mcParticles, partonicMothers);
     }
     return true;
   }
@@ -120,8 +120,8 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
            this->isCleanTrackPair(track2, bachelor);
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable, T5 const& partonicMothers) const
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable, T5 const& mcParticles, T6 const& partonicMothers) const
   {
     if (!this->isCleanTriplet(track1, track2, cascade, trackTable)) {
       return false;
@@ -129,14 +129,14 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
     // pair is clean
     // no check if we require common or non-common ancestry
     if (mMixPairsWithCommonAncestor) {
-      return this->pairHasCommonAncestor(track1, track2, partonicMothers) &&
-             this->pairHasCommonAncestor(track1, cascade, partonicMothers) &&
-             this->pairHasCommonAncestor(track2, cascade, partonicMothers);
+      return this->pairHasCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, cascade, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, cascade, mcParticles, partonicMothers);
     }
     if (mMixPairsWithNonCommonAncestor) {
-      return this->pairHasNonCommonAncestor(track1, track2, partonicMothers) &&
-             this->pairHasNonCommonAncestor(track1, cascade, partonicMothers) &&
-             this->pairHasNonCommonAncestor(track2, cascade, partonicMothers);
+      return this->pairHasNonCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, cascade, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, cascade, mcParticles, partonicMothers);
     }
     return true;
   }
