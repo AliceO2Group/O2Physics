@@ -2020,6 +2020,45 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "DY_y", "", false, 20, 2.0, 4.0, VarManager::kRap);
         hm->AddHistogram(histClass, "DY_phi", "", false, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
       }
+      if (subGroupStr.Contains("dimuon-a2")) {
+        int bins_A2[5] = {50, 20, 20, 6, 200};
+        double minBins_A2[5] = {2.0, 0.0, 2.5, 0.0, -20.0};
+        double maxBins_A2[5] = {4.0, 2.0, 4.0, 90.0, 20.0};
+        int bins_DeltaPhi[5] = {50, 20, 20, 6, 10};
+        double minBins_DeltaPhi[5] = {2.0, 0.0, 2.5, 0.0, 0};
+        double maxBins_DeltaPhi[5] = {4.0, 2.0, 4.0, 90.0, 3.14};
+        TString labels[5] = {"kMass", "kPt", "kRapidity", "kCentFT0C", "kA2EP"};
+        if (subGroupStr.Contains("tpc")) {
+          int varA2_TPC_PP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_TPC};
+          int varA2_TPC_RP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_TPC};
+          int varDeltaPhi_TPC_PP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_TPC};
+          int varDeltaPhi_TPC_RP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_TPC};
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_TPC", "", 5, varA2_TPC_PP, bins_A2, minBins_A2, maxBins_A2, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_TPC", "", 5, varA2_TPC_RP, bins_A2, minBins_A2, maxBins_A2, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_TPC", "", 5, varDeltaPhi_TPC_PP, bins_DeltaPhi, minBins_DeltaPhi, maxBins_DeltaPhi, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_TPC", "", 5, varDeltaPhi_TPC_RP, bins_DeltaPhi, minBins_DeltaPhi, maxBins_DeltaPhi, 0, -1, kTRUE);
+        }
+        if (subGroupStr.Contains("ft0c")) {
+          int varA2_FT0C_PP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_FT0C};
+          int varA2_FT0C_RP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_FT0C};
+          int varDeltaPhi_FT0C_PP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_FT0C};
+          int varDeltaPhi_FT0C_RP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_FT0C};
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0C", "", 5, varA2_FT0C_PP, bins_A2, minBins_A2, maxBins_A2, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0C", "", 5, varA2_FT0C_RP, bins_A2, minBins_A2, maxBins_A2, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0C", "", 5, varDeltaPhi_FT0C_PP, bins_DeltaPhi, minBins_DeltaPhi, maxBins_DeltaPhi, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0C", "", 5, varDeltaPhi_FT0C_RP, bins_DeltaPhi, minBins_DeltaPhi, maxBins_DeltaPhi, 0, -1, kTRUE);
+        }
+        if (subGroupStr.Contains("ft0a")) {
+          int varA2_FT0A_PP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_FT0A};
+          int varA2_FT0A_RP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_FT0A};
+          int varDeltaPhi_FT0A_PP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_FT0A};
+          int varDeltaPhi_FT0A_RP[5] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_FT0A};
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0A", "", 5, varA2_FT0A_PP, bins_A2, minBins_A2, maxBins_A2, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0A", "", 5, varA2_FT0A_RP, bins_A2, minBins_A2, maxBins_A2, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0A", "", 5, varDeltaPhi_FT0A_PP, bins_DeltaPhi, minBins_DeltaPhi, maxBins_DeltaPhi, 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0A", "", 5, varDeltaPhi_FT0A_RP, bins_DeltaPhi, minBins_DeltaPhi, maxBins_DeltaPhi, 0, -1, kTRUE);
+        }
+      }
     } else if (subGroupStr.Contains("electronmuon")) {
       hm->AddHistogram(histClass, "Mass", "", false, 750, 0.0, 30.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Pt", "", false, 120, 0.0, 30.0, VarManager::kPt);
