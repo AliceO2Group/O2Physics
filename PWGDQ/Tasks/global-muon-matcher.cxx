@@ -1288,12 +1288,10 @@ struct GlobalMuonMatching {
     }
   }
 
-  template <class EVT, class BC, class TMUON, class TMFT>
+  template <class EVT, class BC, class TMUON>
   void prepareEventMixingMatchingCandidates(EVT const& collisions,
                                  BC const& bcs,
-                                 TMUON const& muonTracks,
-                                 TMFT const& mftTracks,
-                                 MyMFTCovariances const& mftCovs)
+                                 TMUON const& muonTracks)
   {
     LOGF(info, "Filling mixed matching candidate tables");
 
@@ -1301,7 +1299,7 @@ struct GlobalMuonMatching {
     const int64_t minDeltaBc = configEventMixing.cfgMinDeltaBc.value;
     const float maxDeltaPhi = configEventMixing.cfgMaxDeltaPhi.value;
     const float maxDeltaR = configEventMixing.cfgMaxDeltaR.value;
-    const float maxDeltaAttemptsRel = configEventMixing.cfgMaxDeltaAttemptsRel.value;
+    const float maxDeltaAttemptsRel = configEventMixing.cfgMaxDeltaAttempts.value;
     const float maxDeltaZ = configEventMixing.cfgMaxDeltaZ.value;
 
     for (auto& [mchIndex1, mchTrackInfo1] : mMchTrackInfos) {
@@ -1811,7 +1809,7 @@ struct GlobalMuonMatching {
     LOGF(info, "Preparing candidates");
     prepareMatchingCandidates(collisions, bcs, muonTracks, mftTracks, mftCovs);
     if (useMixedMatchingCandidates) {
-      prepareEventMixingMatchingCandidates(collisions, bcs, muonTracks, mftTracks, mftCovs);
+      prepareEventMixingMatchingCandidates(collisions, bcs, muonTracks);
     }
 
     LOGF(info, "Processing candidates");
