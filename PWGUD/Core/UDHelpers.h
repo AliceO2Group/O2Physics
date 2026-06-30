@@ -24,6 +24,7 @@
 
 #include <CommonConstants/LHCConstants.h>
 #include <DataFormatsFIT/Triggers.h>
+#include "DataFormatsFT0/Digit.h"
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
 #include <Framework/SliceCache.h>
@@ -543,12 +544,12 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
 
 inline void setBit(uint64_t w[4], int bit, bool val)
 {
-  if (!val) {
-    return;
-  }
-  const int word = bit >> 6;
-  const int offs = bit & 63;
-  w[word] |= (static_cast<uint64_t>(1) << offs);
+	if (!val) {
+		return;
+	}
+	const int word = bit >> 6;
+	const int offs = bit & 63;
+	w[word] |= (static_cast<uint64_t>(1) << offs);
 }
 
 template <typename TFT0, typename TFV0A>
@@ -565,27 +566,51 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
   constexpr int kFV0Offset = 208;
 
   auto ampsA = ft0.amplitudeA();
-  const int nA = std::min<int>(ampsA.size(), 96);
+  auto chanA = ft0.channelA();
+  const int nA = std::min<int>(ampsA.size(), chanA.size());
+
   for (int i = 0; i < nA; ++i) {
     const auto a = ampsA[i];
-    setBit(thr1, kFT0AOffset + i, a >= thr1_FT0A);
-    setBit(thr2, kFT0AOffset + i, a >= thr2_FT0A);
+    const int c = chanA[i];
+
+    if (c < 0 || c >= 96) {
+      continue;
+    }
+
+    setBit(thr1, kFT0AOffset + c, a >= thr1_FT0A);
+    setBit(thr2, kFT0AOffset + c, a >= thr2_FT0A);
   }
 
   auto ampsC = ft0.amplitudeC();
-  const int nC = std::min<int>(ampsC.size(), 112);
+  auto chanC = ft0.channelC();
+  const int nC = std::min<int>(ampsC.size(), chanC.size());
+
   for (int i = 0; i < nC; ++i) {
     const auto a = ampsC[i];
-    setBit(thr1, kFT0COffset + i, a >= thr1_FT0C);
-    setBit(thr2, kFT0COffset + i, a >= thr2_FT0C);
+    const int c = chanC[i]; // physical FT0C channel id
+
+    if (c < 0 || c >= 112) {
+      continue;
+    }
+
+    setBit(thr1, kFT0COffset + c, a >= thr1_FT0C);
+    setBit(thr2, kFT0COffset + c, a >= thr2_FT0C);
   }
 
   auto ampsV = fv0a.amplitude();
-  const int nV = std::min<int>(ampsV.size(), 48);
+  auto chanV = fv0a.channel();
+  const int nV = std::min<int>(ampsV.size(), chanV.size());
+
   for (int i = 0; i < nV; ++i) {
     const auto a = ampsV[i];
-    setBit(thr1, kFV0Offset + i, a >= thr1_FV0A);
-    setBit(thr2, kFV0Offset + i, a >= thr2_FV0A);
+    const int c = chanV[i];
+
+    if (c < 0 || c >= 48) {
+      continue;
+    }
+
+    setBit(thr1, kFV0Offset + c, a >= thr1_FV0A);
+    setBit(thr2, kFV0Offset + c, a >= thr2_FV0A);
   }
 }
 
@@ -664,7 +689,7 @@ inline double getEtaFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& 
   double y = chPos.Y() + offsetFT0[i].getY();
   double z = chPos.Z() + offsetFT0[i].getZ();
 
-  // If this channel belongs to FT0C, flip z (matches your original intent)
+  // If this channel belongs to FT0C, flip z
   const bool isC = (ft0Ch >= kFT0AChannels);
   if (isC) {
     z = -z;
