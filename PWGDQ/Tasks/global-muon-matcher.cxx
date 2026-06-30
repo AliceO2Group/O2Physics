@@ -78,9 +78,9 @@ namespace o2::aod
 {
 namespace globalmuonmatching
 {
-DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);               //! Whether the MCH(-MID) track passes tagging cuts
-DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);      //! Match candidate ranking (-1 for base MCH entries)
-DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t); //! Mixed-event group index (-1 for same-event candidates)
+DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                                               //! Whether the MCH(-MID) track passes tagging cuts
+DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);                                    //! Match candidate ranking (-1 for base MCH entries)
+DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t);                              //! Mixed-event group index (-1 for same-event candidates)
 DECLARE_SOA_INDEX_COLUMN_FULL(FwdTrackRealign, fwdTrackRealign, int, FwdTracksReAlign, ""); //! Index of ambiguous FwdTracksReAlign entry
 DECLARE_SOA_SLICE_INDEX_COLUMN_FULL(Bc, bc, int32_t, BCs, "");                              //! BC index slice compatible with the track time window
 } // namespace globalmuonmatching
@@ -1205,9 +1205,9 @@ struct GlobalMuonMatching {
       mMchTrackPars.try_emplace(mchTrackIndex, TrackParExt(fwdtrackutils::getTrackParCovFwd(muonTrack, muonTrack), muonTrack.nClusters()));
 
       mMchTrackInfos.try_emplace(mchTrackIndex, MchTrackInfo{
-        .nMatchAttempts = 0,
-        .matchingCandidates = std::vector<MatchingCandidate>(),
-        .mixedMatchingCandidates = std::vector<std::vector<MatchingCandidate>>()});
+                                                  .nMatchAttempts = 0,
+                                                  .matchingCandidates = std::vector<MatchingCandidate>(),
+                                                  .mixedMatchingCandidates = std::vector<std::vector<MatchingCandidate>>()});
     }
 
     for (const auto& mftTrack : mftTracks) {
@@ -1757,7 +1757,6 @@ struct GlobalMuonMatching {
         auto mchTrackParIt = mMchTrackPars.find(mchTrackIndex);
         fillBaseGmmCandFwdTrack(track, mchTrackParIt->second, gmmMchTrackId, -1.f, -1.f,
                                 isMchTrackTagged(mchTrackIndex));
-
 
         if (candidateIterator != mStoredMatchingCandidates.end()) {
           for (const auto& candidate : candidateIterator->second) {
