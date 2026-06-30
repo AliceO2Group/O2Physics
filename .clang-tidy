@@ -1,7 +1,7 @@
 ---
 Checks:
-  # - clang-diagnostic-* # enabled by default
   # - clang-analyzer-* # enabled by default
+  # - clang-diagnostic-* # enabled by default
   - -clang-diagnostic-unknown-pragmas
   - bugprone-*
   - -bugprone-assert-side-effect
