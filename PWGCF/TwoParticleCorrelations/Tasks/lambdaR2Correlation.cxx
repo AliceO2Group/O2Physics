@@ -521,7 +521,7 @@ struct LambdaTableProducer {
   }
 
   // Get magnetic field
-  float getMagneticField(long const& timestamp)
+  float getMagneticField(int64_t const& timestamp)
   {
     if (grpo == nullptr) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
