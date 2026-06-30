@@ -382,7 +382,7 @@ struct QaEfficiency {
     hPtTrkItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
     hDeltaPtVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco_delta", PDGs[histogramIndex]), "Abs(Gen - Reco) pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
     hPtGenVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco", PDGs[histogramIndex]), "Reco pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
-    hPtGenVsPIDTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco_pid_tracking", PDGs[histogramIndex]), "PID for tracking vs Gen pT (primaries) " + tagPt, kTH2D, {axisPIDFlag, axisPt});
+    hPtGenVsPIDTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco_pid_tracking", PDGs[histogramIndex]), "PID for tracking vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPIDFlag});
     hPtItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagPt, kTH1D, {axisPt});
@@ -1165,7 +1165,7 @@ struct QaEfficiency {
         hPtTrkItsTpcPrm[histogramIndex]->Fill(track.pt());
         hDeltaPtVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), abs(track.pt() - mcParticle.pt()));
         hPtGenVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), track.pt());
-        hPtGenVsPIDTrkItsTpcPrm[histogramIndex]->Fill(track.pidForTracking(), track.pt());
+        hPtGenVsPIDTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), track.pidForTracking());
         hEtaItsTpcPrm[histogramIndex]->Fill(mcParticle.eta());
         hEtaTrkItsTpcPrm[histogramIndex]->Fill(track.eta());
         hPhiItsTpcPrm[histogramIndex]->Fill(mcParticle.phi());
