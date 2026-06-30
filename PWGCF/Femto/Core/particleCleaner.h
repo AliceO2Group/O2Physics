@@ -140,6 +140,7 @@ class ParticleCleaner
                T2 const& /*mcMothers*/,
                T3 const& /*mcPartonicMothers*/)
   {
+
     if (!mActivate) {
       return true;
     }

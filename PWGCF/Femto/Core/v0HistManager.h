@@ -337,7 +337,7 @@ class V0HistManager
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(V0Specs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
@@ -385,7 +385,7 @@ class V0HistManager
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCode, ConfPosDauBinningQa);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCode, ConfNegDauBinningQa);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(V0Specs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -404,7 +404,7 @@ class V0HistManager
     auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
     mNegDauManager.template fill<mode>(negDaughter, tracks);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -419,7 +419,7 @@ class V0HistManager
     mPosDauManager.template fill<mode>(posDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
     auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
     mNegDauManager.template fill<mode>(negDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {

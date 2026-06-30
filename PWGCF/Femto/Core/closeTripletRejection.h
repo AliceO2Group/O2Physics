@@ -21,7 +21,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
-#include <cmath>
 #include <map>
 #include <vector>
 

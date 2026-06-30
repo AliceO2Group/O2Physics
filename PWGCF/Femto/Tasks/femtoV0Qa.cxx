@@ -138,29 +138,29 @@ struct FemtoV0Qa {
 
     if (processData) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
       negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
       if (doprocessLambda) {
         lambdaHistSpec = v0histmanager::makeV0QaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-        lambdaHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        lambdaHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
       if (doprocessK0short) {
         k0shortHistSpec = v0histmanager::makeV0QaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-        k0shortHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        k0shortHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       posDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
       negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
       if (doprocessLambdaMc) {
         lambdaHistSpec = v0histmanager::makeV0McQaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-        lambdaHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        lambdaHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
       if (doprocessK0shortMc) {
         k0shortHistSpec = v0histmanager::makeV0McQaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-        k0shortHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        k0shortHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
     }
     hRegistry.print();
@@ -172,9 +172,9 @@ struct FemtoV0Qa {
     if (k0shortSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& k0short : k0shortSlice) {
-      k0shortHistManager.fill<modes::Mode::kAnalysis_Qa>(k0short, tracks);
+      k0shortHistManager.fill<modes::Mode::kReco_Qa>(k0short, tracks);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0short, "Process k0shorts", false);
@@ -185,12 +185,12 @@ struct FemtoV0Qa {
     if (k0shortSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& k0short : k0shortSlice) {
       if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      k0shortHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(k0short, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      k0shortHistManager.fill<modes::Mode::kReco_Qa_Mc>(k0short, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts with MC information", false);
@@ -201,9 +201,9 @@ struct FemtoV0Qa {
     if (lambdaSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& lambda : lambdaSlice) {
-      lambdaHistManager.fill<modes::Mode::kAnalysis_Qa>(lambda, tracks);
+      lambdaHistManager.fill<modes::Mode::kReco_Qa>(lambda, tracks);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processLambda, "Process lambdas", true);
@@ -214,12 +214,12 @@ struct FemtoV0Qa {
     if (lambdaSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& lambda : lambdaSlice) {
       if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      lambdaHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(lambda, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      lambdaHistManager.fill<modes::Mode::kReco_Qa_Mc>(lambda, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processLambdaMc, "Process lambdas with MC informaton", false);

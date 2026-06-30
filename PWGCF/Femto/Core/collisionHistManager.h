@@ -52,9 +52,12 @@ enum ColHist {
   kCentVsSphericity,
   kMultVsSphericity,
   // mc
-  kTruePosZVsPosZ,
-  kTrueCentVsCent,
-  kTrueMultVsMult,
+  kTruePosZ,       // pure mc-truth, no reco collision (kMc without kReco)
+  kTrueCent,       // pure mc-truth, no reco collision (kMc without kReco)
+  kTrueMult,       // pure mc-truth, no reco collision (kMc without kReco)
+  kTruePosZVsPosZ, // reco-vs-truth correlation (kReco and kMc both set)
+  kTrueCentVsCent, // reco-vs-truth correlation (kReco and kMc both set)
+  kTrueMultVsMult, // reco-vs-truth correlation (kReco and kMc both set)
   kColHistLast
 };
 
@@ -81,6 +84,9 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMultVsSphericity, o2::framework::HistType::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::HistType::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
     // mc
+    {kTruePosZ, o2::framework::HistType::kTH1F, "hTruePosZ", "True vertex Z (mc-truth collision); V_{Z,True} (cm); Entries"},
+    {kTrueCent, o2::framework::HistType::kTH1F, "hTrueCent", "True centrality (mc-truth collision); Centrality_{True} (%); Entries"},
+    {kTrueMult, o2::framework::HistType::kTH1F, "hTrueMult", "True multiplicity (mc-truth collision); Multiplicity_{True}; Entries"},
     {kTruePosZVsPosZ, o2::framework::HistType::kTH2F, "hTruePosZVsPosZ", "True Vertex Z vs Vertex Z; V_{Z,True} (cm); V_{Z} (cm)"},
     {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
     {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
@@ -105,7 +111,10 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
 
 #define COL_HIST_MC_MAP(conf)                  \
-  {kTruePosZVsPosZ, {conf.vtxZ, conf.vtxZ}},   \
+  {kTruePosZ, {conf.vtxZ}},                    \
+    {kTrueCent, {conf.cent}},                  \
+    {kTrueMult, {conf.mult}},                  \
+    {kTruePosZVsPosZ, {conf.vtxZ, conf.vtxZ}}, \
     {kTrueCentVsCent, {conf.cent, conf.cent}}, \
     {kTrueMultVsMult, {conf.mult, conf.mult}},
 
@@ -141,6 +150,10 @@ auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinning
         COL_HIST_MC_MAP(confBinningAnalysis)};
 }
 
+// pure mc-truth collision (no reco counterpart) uses kTruePosZ/kTrueCent/kTrueMult,
+// which are already included in makeColMcHistSpecMap()/makeColMcQaHistSpecMap() above —
+// no separate spec-map builder needed; just don't pass a reco collision to fill().
+
 #undef COL_HIST_ANALYSIS_MAP
 #undef COL_HIST_QA_MAP
 #undef COL_HIST_MC_MAP
@@ -158,8 +171,8 @@ struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d QA histograms"};
   o2::framework::ConfigurableAxis vtx{"vtx", {120, 0.f, 12.f}, "Vertex position binning"};
   o2::framework::ConfigurableAxis vtxXY{"vtxXY", {100, -1.f, 1.f}, "Vertex X/Y binning"};
-  o2::framework::ConfigurableAxis sphericity{"sphericity", {100, 0.f, 1.f}, "Spericity Binning"};
-  o2::framework::ConfigurableAxis occupancy{"occupancy", {500, 0.f, 5000.f}, "Spericity Binning"};
+  o2::framework::ConfigurableAxis sphericity{"sphericity", {100, 0.f, 1.f}, "Sphericity Binning"};
+  o2::framework::ConfigurableAxis occupancy{"occupancy", {500, 0.f, 5000.f}, "Occupancy Binning"};
 };
 
 class CollisionHistManager
@@ -174,14 +187,19 @@ class CollisionHistManager
             T const& /*ConfCollisionBinning*/)
   {
     mHistogramRegistry = registry;
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       initQa(Specs);
     }
-    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+    // reco-vs-truth correlation: requires BOTH a reco collision and mc info
+    if constexpr (isFlagSet(mode, modes::Mode::kReco) && isFlagSet(mode, modes::Mode::kMc)) {
       initMc(Specs);
+    }
+    // pure mc-truth collision: requires mc info WITHOUT a reco collision
+    if constexpr (isFlagSet(mode, modes::Mode::kMc) && !isFlagSet(mode, modes::Mode::kReco)) {
+      initMcTruth(Specs);
     }
   }
 
@@ -201,27 +219,32 @@ class CollisionHistManager
     init<mode>(registry, Specs, ConfCollisionBinning);
   }
 
+  // single-collision fill: reco-only, qa-only, or pure mc-truth (kMc without kReco)
   template <modes::Mode mode, typename T>
   void fill(T const& col)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis(col);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       fillQa(col);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc) && !isFlagSet(mode, modes::Mode::kReco)) {
+      fillMc(col);
     }
   }
 
+  // two-argument fill: reco collision + its matched mc collision, for True-vs-Reco correlation
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& col, T2 const& mcCols)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis(col);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       fillQa(col);
     }
-    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco) && isFlagSet(mode, modes::Mode::kMc)) {
       fillMc(col, mcCols);
     }
   }
@@ -253,12 +276,22 @@ class CollisionHistManager
     }
   }
 
+  // reco-vs-truth correlation histograms (kReco and kMc both set)
   void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string mcDir = std::string(McDir);
     mHistogramRegistry->add(mcDir + getHistNameV2(kTruePosZVsPosZ, HistTable), getHistDesc(kTruePosZVsPosZ, HistTable), getHistType(kTruePosZVsPosZ, HistTable), {Specs.at(kTruePosZVsPosZ)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
+  }
+
+  // pure mc-truth collision: 1D only, no reco collision exists (kMc without kReco)
+  void initMcTruth(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string mcDir = std::string(McDir);
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePosZ, HistTable), getHistDesc(kTruePosZ, HistTable), getHistType(kTruePosZ, HistTable), {Specs.at(kTruePosZ)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCent, HistTable), getHistDesc(kTrueCent, HistTable), getHistType(kTrueCent, HistTable), {Specs.at(kTrueCent)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMult, HistTable), getHistDesc(kTrueMult, HistTable), getHistType(kTrueMult, HistTable), {Specs.at(kTrueMult)});
   }
 
   template <typename T>
@@ -287,6 +320,7 @@ class CollisionHistManager
     }
   }
 
+  // reco collision + matched mc collision: fill reco-vs-truth 2D correlations
   template <typename T1, typename T2>
   void fillMc(T1 const& col, T2 const& /*mcCols*/)
   {
@@ -299,9 +333,18 @@ class CollisionHistManager
     mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
   }
 
+  // pure mc-truth collision: 'col' here IS the truth collision, no reco object exists
+  template <typename T>
+  void fillMc(T const& col)
+  {
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTruePosZ, HistTable)), col.posZ());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCent, HistTable)), col.cent());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMult, HistTable)), col.mult());
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlot2d = false;
-}; // namespace femtounitedcolhistmanager
-}; // namespace colhistmanager
-}; // namespace o2::analysis::femto
+};
+} // namespace colhistmanager
+} // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_COLLISIONHISTMANAGER_H_

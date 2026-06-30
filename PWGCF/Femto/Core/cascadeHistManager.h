@@ -331,7 +331,7 @@ class CascadeHistManager
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(cascadeSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
@@ -397,7 +397,7 @@ class CascadeHistManager
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs, ConfPosDauQaBinning);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs, ConfNegDauQaBinning);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(cascadeSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -418,7 +418,7 @@ class CascadeHistManager
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
     mBachelorManager.template fill<mode>(bachelor, tracks);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -436,7 +436,7 @@ class CascadeHistManager
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
     mBachelorManager.template fill<mode>(bachelor, tracks, mcParticles, mcMothers, mcPartonicMothers);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {

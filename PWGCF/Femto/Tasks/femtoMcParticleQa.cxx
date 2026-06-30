@@ -13,9 +13,10 @@
 /// \brief QA task for tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
+#include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/mcBuilder.h"
-#include "PWGCF/Femto/Core/mcCollisionHistManager.h"
 #include "PWGCF/Femto/Core/mcParticleHistManager.h"
+#include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
@@ -23,7 +24,6 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -50,8 +50,8 @@ struct FemtoMcParticleQa {
   // setup collisions
   mcbuilder::ConfMcCollisionFilters collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_MC_COLLISION_FILTER(collisionSelection);
-  mccollisionhistmanager::ConfMcCollisionBinning confCollisionBinning;
-  mccollisionhistmanager::McCollisionHistManager<mccollisionhistmanager::PrefixMcCollsion> colHistManager;
+  colhistmanager::ConfCollisionBinning confCollisionBinning;
+  colhistmanager::CollisionHistManager colHistManager;
 
   // setup mc particles
   mcbuilder::ConfMcParticleSelection1 confMcParticleSelection1;
@@ -70,13 +70,13 @@ struct FemtoMcParticleQa {
   {
     mcParticleCleaner.init(confMcParticleCleaner1);
 
-    std::map<mccollisionhistmanager::McCollisionHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
+    std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
     std::map<mcparticlehistmanager::McParticleHist, std::vector<o2::framework::AxisSpec>> mcParticleHistSpec;
 
-    colHistSpec = mccollisionhistmanager::makeMcCollisionHistSpecMap(confCollisionBinning);
-    colHistManager.init(&hRegistry, colHistSpec);
+    colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
+    colHistManager.init<modes::Mode::kMc>(&hRegistry, colHistSpec, confCollisionBinning);
     mcParticleHistSpec = mcparticlehistmanager::makeMcParticleHistSpecMap(confMcParticleBinning1);
-    mcParticleHistManager1.init(&hRegistry, mcParticleHistSpec);
+    mcParticleHistManager1.init(&hRegistry, mcParticleHistSpec, confMcParticleBinning1);
 
     hRegistry.print();
   };
@@ -87,7 +87,7 @@ struct FemtoMcParticleQa {
     if (mcParticleSlice.size() == 0) {
       return;
     }
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kMc>(col);
     for (auto const& mcParticle : mcParticleSlice) {
       if (!mcParticleCleaner.isClean(mcParticle, mcMothers, mcPartonicMothers)) {
         continue;

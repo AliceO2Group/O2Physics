@@ -546,7 +546,7 @@ class TrackHistManager
     mHistogramRegistry = registry;
     mAbsCharge = std::abs(ConfTrackSelection.chargeAbs.value);
     mPdgCode = std::abs(ConfTrackSelection.pdgCodeAbs.value) * ConfTrackSelection.chargeSign.value;
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -567,7 +567,7 @@ class TrackHistManager
     mHistogramRegistry = registry;
     mAbsCharge = std::abs(ChargeAbs);
     mPdgCode = std::abs(PdgCodeAbs) * ChargeSign;
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -604,7 +604,7 @@ class TrackHistManager
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& track, T2 const& /*trackTable*/)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(track);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -615,7 +615,7 @@ class TrackHistManager
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
   void fill(T1 const& track, T2 const& /*trackTable*/, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(track);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {

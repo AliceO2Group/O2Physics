@@ -32,9 +32,9 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
   template <typename T1, typename T2, typename T3, typename T4>
   bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& /*trackTable*/) const
   {
-    return this->isCleanTrackPair(track1, track2) &&
-           this->isCleanTrackPair(track2, track3) &&
-           this->isCleanTrackPair(track1, track3);
+    return this->isCleanParticlePair(track1, track2) &&
+           this->isCleanParticlePair(track2, track3) &&
+           this->isCleanParticlePair(track1, track3);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
@@ -70,11 +70,11 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner
   {
     auto posDaughter = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
     auto negDaughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
-    return this->isCleanTrackPair(track1, track2) &&
-           this->isCleanTrackPair(track1, posDaughter) &&
-           this->isCleanTrackPair(track1, negDaughter) &&
-           this->isCleanTrackPair(track2, posDaughter) &&
-           this->isCleanTrackPair(track2, negDaughter);
+    return this->isCleanParticlePair(track1, track2) &&
+           this->isCleanParticlePair(track1, posDaughter) &&
+           this->isCleanParticlePair(track1, negDaughter) &&
+           this->isCleanParticlePair(track2, posDaughter) &&
+           this->isCleanParticlePair(track2, negDaughter);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
@@ -111,13 +111,13 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
     auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
     auto posDaughter = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
     auto negDaughter = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
-    return this->isCleanTrackPair(track1, track2) &&
-           this->isCleanTrackPair(track1, posDaughter) &&
-           this->isCleanTrackPair(track1, negDaughter) &&
-           this->isCleanTrackPair(track1, bachelor) &&
-           this->isCleanTrackPair(track2, posDaughter) &&
-           this->isCleanTrackPair(track2, negDaughter) &&
-           this->isCleanTrackPair(track2, bachelor);
+    return this->isCleanParticlePair(track1, track2) &&
+           this->isCleanParticlePair(track1, posDaughter) &&
+           this->isCleanParticlePair(track1, negDaughter) &&
+           this->isCleanParticlePair(track1, bachelor) &&
+           this->isCleanParticlePair(track2, posDaughter) &&
+           this->isCleanParticlePair(track2, negDaughter) &&
+           this->isCleanParticlePair(track2, bachelor);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>

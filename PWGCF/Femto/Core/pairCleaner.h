@@ -45,37 +45,45 @@ class BasePairCleaner
 
  protected:
   template <typename T1, typename T2>
-  bool isCleanTrackPair(T1 const& track1, T2 const& track2) const
+  bool isCleanParticlePair(T1 const& particle1, T2 const& particle2) const
   {
-    return track1.globalIndex() != track2.globalIndex();
+    return particle1.globalIndex() != particle2.globalIndex();
   };
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  bool pairHasCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*mcparticles*/, T4 const& /*partonicMothers*/) const
+  // mc only
+  template <typename T1, typename T2, typename T3>
+  bool mcPairHasCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*partonicMothers*/) const
   {
-    // if one of the two particles has no associated mc particle, we cannot know if they have a common anchestor, so we break out with false
-    if (!particle1.has_fMcParticle() || !particle2.has_fMcParticle()) {
-      return false;
-    }
-
-    // get mc particles
-    auto mcParticle1 = particle1.template fMcParticle_as<T3>();
-    auto mcParticle2 = particle2.template fMcParticle_as<T3>();
-
     // if one of the two particles has no associated partonic mother, we cannot know if they have a common anchestor, so we break out with false
-    if (!mcParticle1.has_fMcPartMoth() || !mcParticle2.has_fMcPartMoth()) {
+    if (!particle1.has_fMcPartMoth() || !particle2.has_fMcPartMoth()) {
       return false;
     }
 
     // get partonic mothers
-    auto partonicMother1 = mcParticle1.template fMcPartMoth_as<T3>();
-    auto partonicMother2 = mcParticle2.template fMcPartMoth_as<T3>();
+    auto partonicMother1 = particle1.template fMcPartMoth_as<T3>();
+    auto partonicMother2 = particle2.template fMcPartMoth_as<T3>();
 
     return partonicMother1.globalIndex() == partonicMother2.globalIndex();
   };
 
+  template <typename T1, typename T2, typename T3>
+  bool mcPairHasNonCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*partonicMothers*/) const
+  {
+    // if one of the two particles has no associated partonic mother, we cannot know if they have a common anchestor, so we break out with false
+    if (!particle1.has_fMcPartMoth() || !particle2.has_fMcPartMoth()) {
+      return false;
+    }
+
+    // get partonic mothers
+    auto partonicMother1 = particle1.template fMcPartMoth_as<T3>();
+    auto partonicMother2 = particle2.template fMcPartMoth_as<T3>();
+
+    return partonicMother1.globalIndex() != partonicMother2.globalIndex();
+  };
+
+  // reco + mc
   template <typename T1, typename T2, typename T3, typename T4>
-  bool pairHasNonCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*mcparticles*/, T4 const& /*partonicMothers*/) const
+  bool pairHasCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*mcparticles*/, T4 const& partonicMothers) const
   {
     // if one of the two particles has no associated mc particle, we cannot know if they have a common anchestor, so we break out with false
     if (!particle1.has_fMcParticle() || !particle2.has_fMcParticle()) {
@@ -86,16 +94,22 @@ class BasePairCleaner
     auto mcParticle1 = particle1.template fMcParticle_as<T3>();
     auto mcParticle2 = particle2.template fMcParticle_as<T3>();
 
-    // if one of the two particles has no associated partonic mother, we cannot know if they have a common anchestor, so we break out with false
-    if (!mcParticle1.has_fMcPartMoth() || !mcParticle2.has_fMcPartMoth()) {
+    return this->mcPairHasCommonAncestor(mcParticle1, mcParticle2, partonicMothers);
+  };
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool pairHasNonCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*mcparticles*/, T4 const& partonicMothers) const
+  {
+    // if one of the two particles has no associated mc particle, we cannot know if they have a common anchestor, so we break out with false
+    if (!particle1.has_fMcParticle() || !particle2.has_fMcParticle()) {
       return false;
     }
 
-    // get partonic mothers
-    auto partonicMother1 = mcParticle1.template fMcPartMoth_as<T3>();
-    auto partonicMother2 = mcParticle2.template fMcPartMoth_as<T3>();
+    // get mc particles
+    auto mcParticle1 = particle1.template fMcParticle_as<T3>();
+    auto mcParticle2 = particle2.template fMcParticle_as<T3>();
 
-    return partonicMother1.globalIndex() != partonicMother2.globalIndex();
+    return this->mcPairHasNonCommonAncestor(mcParticle1, mcParticle2, partonicMothers);
   };
 
   bool mMixPairsWithCommonAncestor = false;
@@ -110,7 +124,7 @@ class TrackTrackPairCleaner : public BasePairCleaner
   template <typename T1, typename T2, typename T3>
   bool isCleanPair(T1 const& track1, T2 const& track2, T3 const& /*trackTable*/) const
   {
-    return this->isCleanTrackPair(track1, track2);
+    return this->isCleanParticlePair(track1, track2);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -143,8 +157,8 @@ class V0V0PairCleaner : public BasePairCleaner // also works for particles decay
     auto posDaughter2 = trackTable.rawIteratorAt(v02.posDauId() - trackTable.offset());
     auto negDaughter2 = trackTable.rawIteratorAt(v02.negDauId() - trackTable.offset());
     // check all charge combinations
-    return this->isCleanTrackPair(posDaughter1, posDaughter2) && this->isCleanTrackPair(negDaughter1, negDaughter2) &&
-           this->isCleanTrackPair(posDaughter1, negDaughter2) && this->isCleanTrackPair(negDaughter1, posDaughter2);
+    return this->isCleanParticlePair(posDaughter1, posDaughter2) && this->isCleanParticlePair(negDaughter1, negDaughter2) &&
+           this->isCleanParticlePair(posDaughter1, negDaughter2) && this->isCleanParticlePair(negDaughter1, posDaughter2);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -174,7 +188,7 @@ class TrackV0PairCleaner : public BasePairCleaner // also works for particles de
   {
     auto posDaughter = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
     auto negDaughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
-    return (this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
+    return (this->isCleanParticlePair(posDaughter, track) && this->isCleanParticlePair(negDaughter, track));
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -203,7 +217,7 @@ class TrackKinkPairCleaner : public BasePairCleaner
   bool isCleanPair(const T1& track, const T2& kink, const T3& trackTable) const
   {
     auto chaDaughter = trackTable.rawIteratorAt(kink.chaDauId() - trackTable.offset());
-    return this->isCleanTrackPair(chaDaughter, track);
+    return this->isCleanParticlePair(chaDaughter, track);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -234,7 +248,7 @@ class TrackCascadePairCleaner : public BasePairCleaner
     auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
     auto posDaughter = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
     auto negDaughter = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
-    return (this->isCleanTrackPair(bachelor, track) && this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
+    return (this->isCleanParticlePair(bachelor, track) && this->isCleanParticlePair(posDaughter, track) && this->isCleanParticlePair(negDaughter, track));
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -254,6 +268,36 @@ class TrackCascadePairCleaner : public BasePairCleaner
     return true;
   }
 };
+
+class McParticleMcParticlePairCleaner : public BasePairCleaner
+{
+ public:
+  McParticleMcParticlePairCleaner() = default;
+
+  template <typename T1, typename T2>
+  bool isCleanPair(T1 const& particle1, T2 const& particle2) const
+  {
+    return this->isCleanParticlePair(particle1, particle2);
+  }
+
+  template <typename T1, typename T2, typename T3>
+  bool isCleanPair(T1 const& particle1, T2 const& particle2, T3 const& partonicMothers) const
+  {
+    if (!this->isCleanPair(particle1, particle2)) {
+      return false;
+    }
+    // pair is clean
+    // no check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->mcPairHasCommonAncestor(particle1, particle2, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->mcPairHasNonCommonAncestor(particle1, particle2, partonicMothers);
+    }
+    return true;
+  }
+};
+
 } // namespace paircleaner
 } // namespace o2::analysis::femto
 
