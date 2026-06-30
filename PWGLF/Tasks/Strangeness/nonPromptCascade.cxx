@@ -1156,7 +1156,8 @@ struct NonPromptCascadeTask {
                      coll.multNTracksGlobal(),
                      multreco,
                      coll.centFT0M(),
-                     coll.multFT0M());
+                     coll.multFT0M(),
+                     coll.selection_bit(aod::evsel::kNoSameBunchPileup));
         auto collIdx = NPCollsTable.lastIndex();
         for (auto const& pt : recoPts) {
           NPRecoCandTable(collIdx, pt);
@@ -1191,7 +1192,7 @@ struct NonPromptCascadeTask {
         }
         float centFT0M = coll.centFT0M();
         float multFT0M = coll.multFT0M();
-        NPCollsTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), 0, centFT0M, multFT0M);
+        NPCollsTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), 0, centFT0M, multFT0M, coll.selection_bit(aod::evsel::kNoSameBunchPileup));
       }
     }
   };
