@@ -13,7 +13,7 @@
 /// \brief Correlation-balance functions of multistrange baryons
 /// \author Oveis Sheibani <oveis.sheibani@cern.ch>
 //
-// o2-linter: disable=name/workflow-file (filename retained for back-compat with existing alienv install and user JSON configs; file contains three structs LambdaCascadeProducer / LambdaTracksExtProducer / LambdaXiCorrelation so no single struct name can be the file name)
+// o2-linter: disable=name/workflow-file
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/inelGt.h"
@@ -221,14 +221,14 @@ DECLARE_SOA_COLUMN(CutBits, cutBits, uint32_t);
 // Raw cut-input values exposed on the Λ row so post-hoc cuts
 // can be tightened/loosened without re-running. tpcNSigma values are
 // matched to the v0Type hypothesis (proton-leg vs pion-leg).
-DECLARE_SOA_COLUMN(TpcNSigmaPosPr, tpcNSigmaPosPr, float);  // proton hypothesis on positive daughter
-DECLARE_SOA_COLUMN(TpcNSigmaNegPi, tpcNSigmaNegPi, float);  // pion hypothesis on negative daughter
-DECLARE_SOA_COLUMN(TpcNSigmaPosPi, tpcNSigmaPosPi, float);  // pion hypothesis on positive daughter
-DECLARE_SOA_COLUMN(TpcNSigmaNegPr, tpcNSigmaNegPr, float);  // proton hypothesis on negative daughter
-DECLARE_SOA_COLUMN(MK0Short, mK0Short, float); // K0s mass hypothesis (for sideband studies)
-DECLARE_SOA_COLUMN(QtArm, qtArm, float); // Armenteros qT
-DECLARE_SOA_COLUMN(AlphaArm, alphaArm, float); // Armenteros α
-DECLARE_SOA_COLUMN(CTau, cTau, float); // proper time × c (ctau)
+DECLARE_SOA_COLUMN(TpcNSigmaPosPr, tpcNSigmaPosPr, float); // proton hypothesis on positive daughter
+DECLARE_SOA_COLUMN(TpcNSigmaNegPi, tpcNSigmaNegPi, float); // pion hypothesis on negative daughter
+DECLARE_SOA_COLUMN(TpcNSigmaPosPi, tpcNSigmaPosPi, float); // pion hypothesis on positive daughter
+DECLARE_SOA_COLUMN(TpcNSigmaNegPr, tpcNSigmaNegPr, float); // proton hypothesis on negative daughter
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);             // K0s mass hypothesis (for sideband studies)
+DECLARE_SOA_COLUMN(QtArm, qtArm, float);                   // Armenteros qT
+DECLARE_SOA_COLUMN(AlphaArm, alphaArm, float);             // Armenteros α
+DECLARE_SOA_COLUMN(CTau, cTau, float);                     // proper time × c (ctau)
 } // namespace lambdatrack
 DECLARE_SOA_TABLE(LambdaTracks, "AOD", "LAMBDATRACKS", o2::soa::Index<>,
                   lambdatrack::LambdaCollisionId,
@@ -393,9 +393,9 @@ namespace lcorr_const
 {
 // PDG codes for the cascades we tag/filter on. Drawn from ::kXiMinus etc.
 // in <TPDGCode.h> so the magic-literal-detector won't complain.
-constexpr int kLambdaPdg = ::kLambda0; // 3122, Λ (uds)
-constexpr int kXiMinusPdg = ::kXiMinus; // 3312, Ξ⁻ (dss)
-constexpr int kOmegaMinusPdg = ::kOmegaMinus;  // 3334, Ω⁻ (sss)
+constexpr int kLambdaPdg = ::kLambda0;                 // 3122, Λ (uds)
+constexpr int kXiMinusPdg = ::kXiMinus;                // 3312, Ξ⁻ (dss)
+constexpr int kOmegaMinusPdg = ::kOmegaMinus;          // 3334, Ω⁻ (sss)
 [[maybe_unused]] constexpr int kSigma0Pdg = ::kSigma0; // 3212, Σ⁰ (uds, EM-decay → Λγ)
 
 // ITS Inner-Barrel layer mask (Layers 0,1,2 in itsClusterMap bitfield).
@@ -406,20 +406,20 @@ constexpr uint8_t kItsIBMask = 0x07;
 // cascadeflags::IsSelected column. Promoted to namespace scope so both
 // LambdaCascadeProducer (sets them) and LambdaXiCorrelation (consumes
 // them) can refer to the same names.
-constexpr int kFlagRejected = 0; // rejected by processCandidate cut chain
-constexpr int kFlagXiOnly = 1; // bachelor passes pion-PID only → Ξ-eligible
+constexpr int kFlagRejected = 0;   // rejected by processCandidate cut chain
+constexpr int kFlagXiOnly = 1;     // bachelor passes pion-PID only → Ξ-eligible
 constexpr int kFlagXiAndOmega = 2; // bachelor passes both pion AND kaon PID → both
-constexpr int kFlagOmegaOnly  = 3; // bachelor passes kaon-PID only → Ω-eligible
+constexpr int kFlagOmegaOnly = 3;  // bachelor passes kaon-PID only → Ω-eligible
 
 // cVetoMode values for the auto-correlation veto policy.
-constexpr int kVetoModeOff = 0; // no veto
+constexpr int kVetoModeOff = 0;    // no veto
 constexpr int kVetoModeStrict = 1; // veto only when BOTH daughters shared
-constexpr int kVetoModeLoose  = 2; // veto when EITHER daughter shared
+constexpr int kVetoModeLoose = 2;  // veto when EITHER daughter shared
 
 // cItsTrackMode values.
 [[maybe_unused]] constexpr int kItsTrackModeOff = 0; // ignore ITS-tracking flag
-constexpr int kItsTrackModeRequired = 1; // require isItsTracked == true
-constexpr int kItsTrackModeRescue = 2; // accept isItsTracked OR truth-match
+constexpr int kItsTrackModeRequired = 1;             // require isItsTracked == true
+constexpr int kItsTrackModeRescue = 2;               // accept isItsTracked OR truth-match
 } // namespace lcorr_const
 
 // Per-Λ cut-bit enum. Bit i in lambdatrack::cutBits = 1 iff the
@@ -428,20 +428,20 @@ constexpr int kItsTrackModeRescue = 2; // accept isItsTracked OR truth-match
 // in selV0Particle do NOT hide later-stage results. This lets an offline
 // macro reconstruct any cut combination from the tree without re-running.
 enum LambdaCutBit : uint32_t {
-  kCutMassWindow = 0, // cMinV0Mass < mLambda < cMaxV0Mass (matched to v0Type)
-  kCutDauPid = 1, // |nσ(p)| < cTpcNsigmaCut AND |nσ(π)| < cut
-  kCutDauTrackQual = 2, // selTrack on both daughters
-  kCutDauDcaToPV = 3, // proton-leg DCA > min AND pion-leg DCA > min
-  kCutKinematic = 4, // pT and |y or η| within cMinV0Pt..cMaxV0Pt and cMaxV0Rap
-  kCutDcaV0Dau = 5, // dcaV0daughters in [min,max]
-  kCutDcaV0ToPV = 6, // dcav0topv in [min,max]
-  kCutV0Radius = 7, // v0radius in [min,max]
-  kCutCtau = 8, // ctau in [min,max]
-  kCutCosPA = 9, // v0cosPA > cMinV0CosPA
-  kCutK0sRej = 10,  // K0s mass-window rejection passed (or flag off)
-  kCutAmbiguousVeto = 11,  // !hasAmbiguousDaughters or veto disabled
+  kCutMassWindow = 0,     // cMinV0Mass < mLambda < cMaxV0Mass (matched to v0Type)
+  kCutDauPid = 1,         // |nσ(p)| < cTpcNsigmaCut AND |nσ(π)| < cut
+  kCutDauTrackQual = 2,   // selTrack on both daughters
+  kCutDauDcaToPV = 3,     // proton-leg DCA > min AND pion-leg DCA > min
+  kCutKinematic = 4,      // pT and |y or η| within cMinV0Pt..cMaxV0Pt and cMaxV0Rap
+  kCutDcaV0Dau = 5,       // dcaV0daughters in [min,max]
+  kCutDcaV0ToPV = 6,      // dcav0topv in [min,max]
+  kCutV0Radius = 7,       // v0radius in [min,max]
+  kCutCtau = 8,           // ctau in [min,max]
+  kCutCosPA = 9,          // v0cosPA > cMinV0CosPA
+  kCutK0sRej = 10,        // K0s mass-window rejection passed (or flag off)
+  kCutAmbiguousVeto = 11, // !hasAmbiguousDaughters or veto disabled
   kCutMcTrueLambda = 12,  // MC: selTrueMcRecLambda (always true on data)
-  kCutPhase10Prim = 13,  // passesPrimaryTopo (set in V0 loop)
+  kCutPhase10Prim = 13,   // passesPrimaryTopo (set in V0 loop)
   kCutBitMax = 14
 };
 
@@ -449,24 +449,24 @@ enum LambdaCutBit : uint32_t {
 // = 1 iff the candidate passed cut i. Mirrors the structure of
 // LambdaCutBit but for the cascade selection chain in processCandidate.
 enum CascCutBit : uint32_t {
-  kCascCutTpcRowsV0Dau = 0, // V0-daughter tpcNClsCrossedRows
-  kCascCutTpcRowsBach = 1, // bachelor tpcNClsCrossedRows
-  kCascCutItsClsV0Dau = 2, // V0-daughter itsNCls
-  kCascCutItsClsBach = 3, // bachelor itsNCls
-  kCascCutItsChi2 = 4, // ITS chi²/cluster (V0 + bachelor)
-  kCascCutTpcChi2 = 5, // TPC chi²/cluster (V0 + bachelor)
-  kCascCutCascPt = 6, // casc.pt() > cMinCascPt
-  kCascCutTopology = 7, // v0radius/cascradius/cosPA/dcav0topv/v0mass
-  kCascCutRadiusOrder = 8, // cascRadius < v0Radius (consistency)
-  kCascCutTrackEta = 9, // |η| of V0 dau + bachelor
-  kCascCutCascEta = 10,  // |η| of cascade
-  kCascCutTpcNSigPr = 11,  // proton-leg TPC nσ
-  kCascCutTpcNSigPi = 12,  // pion-leg TPC nσ
-  kCascCutBachPidXi = 13,  // bachelor pion nσ (Ξ hypothesis)
-  kCascCutBachPidOm = 14,  // bachelor kaon nσ (Ω hypothesis)
-  kCascCutCompetingMass  = 15,  // competing-mass cut (Ω vs Ξ)
-  kCascCutMcTrueXiOmega  = 16,  // MC: pdgCode ∈ {±3312,±3334} && isPhysPrim
-  kCascCutItsTracked = 17,  // matched in aod::AssignedTrackedCascades
+  kCascCutTpcRowsV0Dau = 0,   // V0-daughter tpcNClsCrossedRows
+  kCascCutTpcRowsBach = 1,    // bachelor tpcNClsCrossedRows
+  kCascCutItsClsV0Dau = 2,    // V0-daughter itsNCls
+  kCascCutItsClsBach = 3,     // bachelor itsNCls
+  kCascCutItsChi2 = 4,        // ITS chi²/cluster (V0 + bachelor)
+  kCascCutTpcChi2 = 5,        // TPC chi²/cluster (V0 + bachelor)
+  kCascCutCascPt = 6,         // casc.pt() > cMinCascPt
+  kCascCutTopology = 7,       // v0radius/cascradius/cosPA/dcav0topv/v0mass
+  kCascCutRadiusOrder = 8,    // cascRadius < v0Radius (consistency)
+  kCascCutTrackEta = 9,       // |η| of V0 dau + bachelor
+  kCascCutCascEta = 10,       // |η| of cascade
+  kCascCutTpcNSigPr = 11,     // proton-leg TPC nσ
+  kCascCutTpcNSigPi = 12,     // pion-leg TPC nσ
+  kCascCutBachPidXi = 13,     // bachelor pion nσ (Ξ hypothesis)
+  kCascCutBachPidOm = 14,     // bachelor kaon nσ (Ω hypothesis)
+  kCascCutCompetingMass = 15, // competing-mass cut (Ω vs Ξ)
+  kCascCutMcTrueXiOmega = 16, // MC: pdgCode ∈ {±3312,±3334} && isPhysPrim
+  kCascCutItsTracked = 17,    // matched in aod::AssignedTrackedCascades
   kCascCutBitMax = 18
 };
 
@@ -639,14 +639,14 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
        "trigTvx=%d tfBorder=%d itsROBorder=%d itsTpcVtx=%d "
        "noBunchPileup=%d zVtxTimeDiff=%d goodITSLayers=%d",
        tag,
-       (int)cuts.useVtxZ, (double)cuts.minVtxZ, (double)cuts.maxVtxZ,
-       (int)cuts.useSel8, (int)cuts.useInt7, (int)cuts.useSel7,
-       (int)cuts.useCentRange, (double)cuts.minCent, (double)cuts.maxCent,
-       (int)cuts.useInel, cuts.inelMin,
-       (int)cuts.useTriggerTvx, (int)cuts.useTfBorder,
-       (int)cuts.useItsRoBorder, (int)cuts.useItsTpcVtx,
-       (int)cuts.useNoSameBunchPileup, (int)cuts.useZVtxTimeDiff,
-       (int)cuts.useIsGoodITSLayers);
+       static_cast<int>(cuts).useVtxZ, static_cast<double>(cuts).minVtxZ, static_cast<double>(cuts).maxVtxZ,
+       static_cast<int>(cuts).useSel8, static_cast<int>(cuts).useInt7, static_cast<int>(cuts).useSel7,
+       static_cast<int>(cuts).useCentRange, static_cast<double>(cuts).minCent, static_cast<double>(cuts).maxCent,
+       static_cast<int>(cuts).useInel, cuts.inelMin,
+       static_cast<int>(cuts).useTriggerTvx, static_cast<int>(cuts).useTfBorder,
+       static_cast<int>(cuts).useItsRoBorder, static_cast<int>(cuts).useItsTpcVtx,
+       static_cast<int>(cuts).useNoSameBunchPileup, static_cast<int>(cuts).useZVtxTimeDiff,
+       static_cast<int>(cuts).useIsGoodITSLayers);
 }
 
 } // namespace lcorr_evsel
@@ -752,7 +752,7 @@ struct LambdaCascadeProducer {
   // it inflates the table by ~5-10× and downstream consumers need to
   // gate on cutBits / passesPrimaryTopo.
   Configurable<bool> cFillLambdaTreeAllCandidates{"cFillLambdaTreeAllCandidates", false,
-      "Diagnostic: emit all V0 candidates with cutBits, not only the ones passing selV0Particle"};
+                                                  "Diagnostic: emit all V0 candidates with cutBits, not only the ones passing selV0Particle"};
 
   // Efficiency Correction
   Configurable<bool> cCorrectionFlag{"cCorrectionFlag", false, "Correction Flag"};
@@ -793,7 +793,7 @@ struct LambdaCascadeProducer {
     Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "[DEPRECATED] event selection delegated to LTP"};
     Configurable<bool> doSel8{"doSel8", true, "[DEPRECATED] sel8 is enforced by LTP's cSel8Trig"};
     Configurable<bool> doNoSameBunchPileUp{"doNoSameBunchPileUp", true, "[DEPRECATED] pileup veto is enforced by LTP's cPileupReject"};
-    Configurable<int> INEL{"INEL", 0, "[DEPRECATED] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable (back-compat: deprecated ALICE INEL knob name kept for JSON config compatibility)
+    Configurable<int> INEL{"INEL", 0, "[DEPRECATED] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable
     Configurable<double> maxVertexZ{"maxVertexZ", 10., "[DEPRECATED] |Vz| cut is enforced by LTP's cMin/cMaxZVtx"};
 
     // Cascade kinematic / selection.
@@ -830,20 +830,20 @@ struct LambdaCascadeProducer {
     // names matching the long-standing ALICE V0/cascade-builder JSON
     // convention shared across PWGCF / PWGLF tasks. Renaming would break
     // back-compat with every existing config file.
-    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "v0setting_cospa"}; // o2-linter: disable=name/configurable (back-compat: V0-builder JSON key)
-    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
-    Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
-    Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
-    Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
-    Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"}; // o2-linter: disable=name/configurable (back-compat: cascade-builder JSON key)
+    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "v0setting_cospa"};               // o2-linter: disable=name/configurable
+    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};         // o2-linter: disable=name/configurable
+    Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};   // o2-linter: disable=name/configurable
+    Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};   // o2-linter: disable=name/configurable
+    Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};               // o2-linter: disable=name/configurable
+    Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"}; // o2-linter: disable=name/configurable
     // Removed unused Configurables: cascadesetting_dcacascdau /
     // cascadesetting_dcabachtopv. These were declared but never used in the
     // cut chain — only `casc.dcacascdaughters()` / `casc.dcabachtopv()` (the
     // row values) are read for QA fills. The cascade-builder upstream applies
     // the analogous cuts at table-production time; our task didn't re-cut.
-    Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.9, "cascadesetting_cascradius"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
-    Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
-    Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"}; // o2-linter: disable=name/configurable (back-compat: V0/cascade-builder JSON key)
+    Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.9, "cascadesetting_cascradius"};        // o2-linter: disable=name/configurable
+    Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"}; // o2-linter: disable=name/configurable
+    Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"}; // o2-linter: disable=name/configurable
 
     // Cascade-side ConfigurableAxes.
     ConfigurableAxis cascRadiusAxis{"cascRadiusAxis", {100, 0.0f, 50.0f}, "cm"};
@@ -973,28 +973,28 @@ struct LambdaCascadeProducer {
          "V0kin: m=[%.3f,%.3f] pT=[%.2f,%.2f] |y|<%.2f doEta=%d | "
          "MC: trueLambda=%d primSec=%d checkDau=%d "
          "genDecCh=%d momReso=%d | corr=%d effFlag=%d primFracFlag=%d",
-         (int)cCentEstimator, (float)cMinZVtx, (float)cMaxZVtx,
-         (float)cMinMult, (float)cMaxMult,
-         (int)cSel8Trig, (int)cInt7Trig, (int)cSel7Trig,
-         (int)cTriggerTvxSel, (int)cTFBorder, (int)cNoItsROBorder,
-         (int)cItsTpcVtx, (int)cPileupReject, (int)cZVtxTimeDiff,
-         (int)cIsGoodITSLayers,
-         (float)cTrackMinPt, (float)cTrackMaxPt, (float)cTrackEtaCut,
-         (int)cMinTpcCrossedRows, (float)cMinTpcCROverCls,
-         (float)cMaxTpcSharedClusters, (float)cMaxChi2Tpc,
-         (double)cTpcNsigmaCut, (int)cRemoveAmbiguousTracks,
-         (double)cMinDcaProtonToPV, (double)cMinDcaPionToPV,
-         (double)cMinV0DcaDaughters, (double)cMaxV0DcaDaughters,
-         (double)cMinDcaV0ToPV, (double)cMaxDcaV0ToPV,
-         (double)cMinV0TransRadius, (double)cMaxV0TransRadius,
-         (double)cMinV0CTau, (double)cMaxV0CTau,
-         (double)cMinV0CosPA, (double)cKshortRejMassWindow, (int)cKshortRejFlag,
-         (float)cMinV0Mass, (float)cMaxV0Mass,
-         (float)cMinV0Pt, (float)cMaxV0Pt, (float)cMaxV0Rap, (int)cDoEtaAnalysis,
-         (int)cSelectTrueLambda, (int)cSelMCPSV0,
-         (int)cCheckRecoDauFlag,
-         (int)cGenDecayChannel, (int)cRecoMomResoFlag,
-         (int)cCorrectionFlag, (int)cGetEffFact, (int)cGetPrimFrac);
+         static_cast<int>(cCentEstimator), static_cast<float>(cMinZVtx), static_cast<float>(cMaxZVtx),
+         static_cast<float>(cMinMult), static_cast<float>(cMaxMult),
+         static_cast<int>(cSel8Trig), static_cast<int>(cInt7Trig), static_cast<int>(cSel7Trig),
+         static_cast<int>(cTriggerTvxSel), static_cast<int>(cTFBorder), static_cast<int>(cNoItsROBorder),
+         static_cast<int>(cItsTpcVtx), static_cast<int>(cPileupReject), static_cast<int>(cZVtxTimeDiff),
+         static_cast<int>(cIsGoodITSLayers),
+         static_cast<float>(cTrackMinPt), static_cast<float>(cTrackMaxPt), static_cast<float>(cTrackEtaCut),
+         static_cast<int>(cMinTpcCrossedRows), static_cast<float>(cMinTpcCROverCls),
+         static_cast<float>(cMaxTpcSharedClusters), static_cast<float>(cMaxChi2Tpc),
+         static_cast<double>(cTpcNsigmaCut), static_cast<int>(cRemoveAmbiguousTracks),
+         static_cast<double>(cMinDcaProtonToPV), static_cast<double>(cMinDcaPionToPV),
+         static_cast<double>(cMinV0DcaDaughters), static_cast<double>(cMaxV0DcaDaughters),
+         static_cast<double>(cMinDcaV0ToPV), static_cast<double>(cMaxDcaV0ToPV),
+         static_cast<double>(cMinV0TransRadius), static_cast<double>(cMaxV0TransRadius),
+         static_cast<double>(cMinV0CTau), static_cast<double>(cMaxV0CTau),
+         static_cast<double>(cMinV0CosPA), static_cast<double>(cKshortRejMassWindow), static_cast<int>(cKshortRejFlag),
+         static_cast<float>(cMinV0Mass), static_cast<float>(cMaxV0Mass),
+         static_cast<float>(cMinV0Pt), static_cast<float>(cMaxV0Pt), static_cast<float>(cMaxV0Rap), static_cast<int>(cDoEtaAnalysis),
+         static_cast<int>(cSelectTrueLambda), static_cast<int>(cSelMCPSV0),
+         static_cast<int>(cCheckRecoDauFlag),
+         static_cast<int>(cGenDecayChannel), static_cast<int>(cRecoMomResoFlag),
+         static_cast<int>(cCorrectionFlag), static_cast<int>(cGetEffFact), static_cast<int>(cGetPrimFrac));
 
     // Unified event-selection log (compare to [EVENTSEL-CSEL]).
     lcorr_evsel::logEventCuts("EVENTSEL-LTP", buildEventCuts());
@@ -1005,13 +1005,13 @@ struct LambdaCascadeProducer {
          "maxDcaV0ToPv=%.4f minV0CosPA=%.6f maxV0Radius=%.2f maxLProper=%.2f "
          "maxDauDcaToPv=%.4f minDauItsNCls=%d "
          "cascRadius<v0Radius=%d cFillLambdaTreeAllCandidates=%d",
-         (int)primCfg.cPrimEnable, (int)primCfg.cPrimRequireBothDauItsHits,
-         (int)primCfg.cPrimRequireItsIBHit,
-         (float)primCfg.cPrimMaxDcaV0ToPv, (float)primCfg.cPrimMinV0CosPA,
-         (float)primCfg.cPrimMaxV0Radius, (float)primCfg.cPrimMaxLProper,
-         (float)primCfg.cPrimMaxDauDcaToPv, (int)primCfg.cPrimMinDauItsNCls,
-         (int)primCfg.cReqCascRadiusLessThanV0Radius,
-         (int)cFillLambdaTreeAllCandidates);
+         static_cast<int>(primCfg).cPrimEnable, static_cast<int>(primCfg).cPrimRequireBothDauItsHits,
+         static_cast<int>(primCfg).cPrimRequireItsIBHit,
+         static_cast<float>(primCfg).cPrimMaxDcaV0ToPv, static_cast<float>(primCfg).cPrimMinV0CosPA,
+         static_cast<float>(primCfg).cPrimMaxV0Radius, static_cast<float>(primCfg).cPrimMaxLProper,
+         static_cast<float>(primCfg).cPrimMaxDauDcaToPv, static_cast<int>(primCfg).cPrimMinDauItsNCls,
+         static_cast<int>(primCfg).cReqCascRadiusLessThanV0Radius,
+         static_cast<int>(cFillLambdaTreeAllCandidates));
 
     // initialize axis specifications
     const AxisSpec axisCols(5, 0.5, 5.5, "");
@@ -1231,8 +1231,8 @@ struct LambdaCascadeProducer {
          "Event acceptance is driven exclusively by LTP's selCollision (see "
          "[CFG-LTP] above). To change event cuts, set the corresponding "
          "cSel8Trig / cPileupReject / cTriggerTvxSel / etc. on this same task.",
-         (int)cascCfg.doSel8, (int)cascCfg.doNoSameBunchPileUp, (int)cascCfg.INEL,
-         (double)cascCfg.maxVertexZ, (int)cascCfg.doTFBorderCut);
+         static_cast<int>(cascCfg).doSel8, static_cast<int>(cascCfg).doNoSameBunchPileUp, static_cast<int>(cascCfg).INEL,
+         static_cast<double>(cascCfg).maxVertexZ, static_cast<int>(cascCfg).doTFBorderCut);
 
     // CCDB URL conflict check.
     if (std::string(cUrlCCDB.value) != std::string(cascCfg.ccdbUrl.value)) {
@@ -1294,7 +1294,7 @@ struct LambdaCascadeProducer {
     const char* reason = "ok";
     if (!lcorr_evsel::applyEventSelection<run>(col, cuts, cent, reason)) {
       LOGF(debug, "[LTP] reject: %s (Vz=%.3f cent=%.2f)",
-           reason, (double)col.posZ(), (double)cent);
+           reason, static_cast<double>(col).posZ(), static_cast<double>(cent));
       return false;
     }
 
@@ -1539,9 +1539,10 @@ struct LambdaCascadeProducer {
     float nSPosPr = posTrack.tpcNSigmaPr(), nSNegPi = negTrack.tpcNSigmaPi();
     float nSPosPi = posTrack.tpcNSigmaPi(), nSNegPr = negTrack.tpcNSigmaPr();
     bool pidOk = (v0Type == kLambda)
-        ? (std::abs(nSPosPr) < cTpcNsigmaCut && std::abs(nSNegPi) < cTpcNsigmaCut)
-        : (std::abs(nSNegPr) < cTpcNsigmaCut && std::abs(nSPosPi) < cTpcNsigmaCut);
-    if (pidOk) bits |= (1u << kCutDauPid);
+                   ? (std::abs(nSPosPr) < cTpcNsigmaCut && std::abs(nSNegPi) < cTpcNsigmaCut)
+                   : (std::abs(nSNegPr) < cTpcNsigmaCut && std::abs(nSPosPi) < cTpcNsigmaCut);
+    if (pidOk)
+      bits |= (1u << kCutDauPid);
 
     // 2. Daughter track quality
     if (selTrack(posTrack) && selTrack(negTrack))
@@ -1702,17 +1703,17 @@ struct LambdaCascadeProducer {
         effCorrFact = 1.f;
       } else {
         TH1F* histEff = reinterpret_cast<TH1F*>(objEff->Clone());
-      if (histEff->GetDimension() == TwoDimCorr) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
-        effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt()));
-      } else if (histEff->GetDimension() == ThreeDimCorr) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapCent);
-        effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt(), rap));
-      } else {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
-        LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
-        effCorrFact = 1.;
-      }
+        if (histEff->GetDimension() == TwoDimCorr) {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
+          effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt()));
+        } else if (histEff->GetDimension() == ThreeDimCorr) {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapCent);
+          effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt(), rap));
+        } else {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
+          LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
+          effCorrFact = 1.;
+        }
         delete histEff;
       }
     }
@@ -1728,17 +1729,17 @@ struct LambdaCascadeProducer {
         primFrac = 1.f;
       } else {
         TH1F* histPrm = reinterpret_cast<TH1F*>(objPrm->Clone());
-      if (histPrm->GetDimension() == TwoDimCorr) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtCent);
-        primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt()));
-      } else if (histPrm->GetDimension() == ThreeDimCorr) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtRapCent);
-        primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt(), rap));
-      } else {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kNoPFCorr);
-        LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
-        primFrac = 1.;
-      }
+        if (histPrm->GetDimension() == TwoDimCorr) {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtCent);
+          primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt()));
+        } else if (histPrm->GetDimension() == ThreeDimCorr) {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtRapCent);
+          primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt(), rap));
+        } else {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kNoPFCorr);
+          LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
+          primFrac = 1.;
+        }
         delete histPrm;
       }
     }
@@ -1971,7 +1972,7 @@ struct LambdaCascadeProducer {
       auto posTrk = v0.template posTrack_as<T>();
       auto negTrk = v0.template negTrack_as<T>();
       float dcaV0ToPV_v = v0.dcav0topv(); // V0 line vs PV
-      float v0Radius_v = v0.v0radius(); // transverse decay radius
+      float v0Radius_v = v0.v0radius();   // transverse decay radius
       int8_t posItsNCls_v = static_cast<int8_t>(posTrk.itsNCls());
       int8_t negItsNCls_v = static_cast<int8_t>(negTrk.itsNCls());
       // ITS hit-map per daughter (uint8_t bitmask, bit i = layer i).
@@ -1996,8 +1997,9 @@ struct LambdaCascadeProducer {
       float qtArm_v = v0.qtarm();
       float alphaArm_v = v0.alpha();
       float cTau_v = v0.distovertotmom(collision.posX(),
-                                                 collision.posY(),
-                                                 collision.posZ()) * MassLambda0;
+                                       collision.posY(),
+                                       collision.posZ()) *
+                     MassLambda0;
       // When the producer-side gate is disabled, default to
       // `true` so the column means "no opinion / everything passes". The
       // previous default of `false` silently emptied the partition when the
@@ -2006,20 +2008,19 @@ struct LambdaCascadeProducer {
       bool passesPrim = !primCfg.cPrimEnable;
       if (primCfg.cPrimEnable) {
         bool topoOk =
-            std::abs(dcaV0ToPV_v) < primCfg.cPrimMaxDcaV0ToPv  &&
-            v0.v0cosPA() > primCfg.cPrimMinV0CosPA &&
-            v0Radius_v < primCfg.cPrimMaxV0Radius  &&
-            std::abs(posDcaXY_v) < primCfg.cPrimMaxDauDcaToPv &&
-            std::abs(negDcaXY_v) < primCfg.cPrimMaxDauDcaToPv &&
-            lProper_v < primCfg.cPrimMaxLProper;
+          std::abs(dcaV0ToPV_v) < primCfg.cPrimMaxDcaV0ToPv &&
+          v0.v0cosPA() > primCfg.cPrimMinV0CosPA &&
+          v0Radius_v < primCfg.cPrimMaxV0Radius &&
+          std::abs(posDcaXY_v) < primCfg.cPrimMaxDauDcaToPv &&
+          std::abs(negDcaXY_v) < primCfg.cPrimMaxDauDcaToPv &&
+          lProper_v < primCfg.cPrimMaxLProper;
         bool itsOk = primCfg.cPrimRequireBothDauItsHits
-                         ? (posItsNCls_v >= primCfg.cPrimMinDauItsNCls && negItsNCls_v >= primCfg.cPrimMinDauItsNCls)
-                         : (posItsNCls_v >= primCfg.cPrimMinDauItsNCls || negItsNCls_v >= primCfg.cPrimMinDauItsNCls);
+                       ? (posItsNCls_v >= primCfg.cPrimMinDauItsNCls && negItsNCls_v >= primCfg.cPrimMinDauItsNCls)
+                       : (posItsNCls_v >= primCfg.cPrimMinDauItsNCls || negItsNCls_v >= primCfg.cPrimMinDauItsNCls);
         // ITS-IB requirement (bits 0,1,2 = Layers 0,1,2).
         // OR'd across both daughters: at least ONE daughter must have an
         // IB hit. Optional via the Configurable.
-        bool itsIBOk = !primCfg.cPrimRequireItsIBHit
-                         || (((posItsClusterMap_v | negItsClusterMap_v) & lcorr_const::kItsIBMask) != 0);
+        bool itsIBOk = !primCfg.cPrimRequireItsIBHit || (((posItsClusterMap_v | negItsClusterMap_v) & lcorr_const::kItsIBMask) != 0);
         passesPrim = topoOk && itsOk && itsIBOk;
       }
 
@@ -2052,7 +2053,7 @@ struct LambdaCascadeProducer {
       // Fill Λ/Λ̄ row — motherPdg · topo+flag · ITS maps · L_proper + dau DCAs · cutBits + raw inputs
       lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0.px(), v0.py(), v0.pz(),
                        pt, eta, phi, rap, mass, posTrk.index(), negTrk.index(),
-                       v0.v0cosPA(), v0.dcaV0daughters(), (int8_t)v0Type, v0PrmScdType, corr_fact, motherPdg,
+                       v0.v0cosPA(), v0.dcaV0daughters(), static_cast<int8_t>(v0Type), v0PrmScdType, corr_fact, motherPdg,
                        dcaV0ToPV_v, v0Radius_v, posItsNCls_v, negItsNCls_v, passesPrim,
                        posItsClusterMap_v, negItsClusterMap_v,
                        lProper_v, posDcaXY_v, negDcaXY_v,
@@ -2166,7 +2167,7 @@ struct LambdaCascadeProducer {
       // Fill Lambda McGen Table
       lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(),
                             mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), RecoDecay::m(mcpart.p(), mcpart.e()),
-                            daughterIDs[0], daughterIDs[1], (int8_t)v0Type, -999., -999., v0PrmScdType, 1.);
+                            daughterIDs[0], daughterIDs[1], static_cast<int8_t>(v0Type), -999., -999., v0PrmScdType, 1.);
     }
   }
 
@@ -2429,8 +2430,8 @@ struct LambdaCascadeProducer {
   {
     uint32_t bits = 0;
     auto bachTrack = casc.template bachelor_as<TTracks>();
-    auto posTrack  = casc.template posTrack_as<TTracks>();
-    auto negTrack  = casc.template negTrack_as<TTracks>();
+    auto posTrack = casc.template posTrack_as<TTracks>();
+    auto negTrack = casc.template negTrack_as<TTracks>();
 
     if (posTrack.tpcNClsCrossedRows() >= cascCfg.minTPCCrossedRows &&
         negTrack.tpcNClsCrossedRows() >= cascCfg.minTPCCrossedRows)
@@ -2454,16 +2455,18 @@ struct LambdaCascadeProducer {
         bachTrack.tpcChi2NCl() <= cascCfg.maxBachTpcChi2)
       bits |= (1u << kCascCutTpcChi2);
 
-    if (casc.pt() >= cascCfg.cMinCascPt) bits |= (1u << kCascCutCascPt);
+    if (casc.pt() >= cascCfg.cMinCascPt)
+      bits |= (1u << kCascCutCascPt);
 
     double pvx = collision.posX(), pvy = collision.posY(), pvz = collision.posZ();
     bool topoOk = (casc.v0radius() >= cascCfg.v0setting_radius &&
-                   casc.cascradius() >= cascCfg.cascadesetting_cascradius  &&
-                   casc.v0cosPA(pvx,pvy,pvz) >= cascCfg.v0setting_cospa &&
-                   casc.casccosPA(pvx,pvy,pvz) >= cascCfg.cascadesetting_cospa &&
-                   casc.dcav0topv(pvx,pvy,pvz) >= cascCfg.cascadesetting_mindcav0topv &&
+                   casc.cascradius() >= cascCfg.cascadesetting_cascradius &&
+                   casc.v0cosPA(pvx, pvy, pvz) >= cascCfg.v0setting_cospa &&
+                   casc.casccosPA(pvx, pvy, pvz) >= cascCfg.cascadesetting_cospa &&
+                   casc.dcav0topv(pvx, pvy, pvz) >= cascCfg.cascadesetting_mindcav0topv &&
                    std::abs(casc.mLambda() - MassLambda0) <= cascCfg.cascadesetting_v0masswindow);
-    if (topoOk) bits |= (1u << kCascCutTopology);
+    if (topoOk)
+      bits |= (1u << kCascCutTopology);
 
     if (casc.cascradius() < casc.v0radius())
       bits |= (1u << kCascCutRadiusOrder);
@@ -2540,8 +2543,10 @@ struct LambdaCascadeProducer {
       // computeCascadeCutBits; bits 16-17 set here from the truth /
       // ITS-tracking lookups above.
       uint32_t cascCutBits = computeCascadeCutBits<TTracks>(casc, collision);
-      if (isTrueCasc) cascCutBits |= (1u << kCascCutMcTrueXiOmega);
-      if (isItsTracked)  cascCutBits |= (1u << kCascCutItsTracked);
+      if (isTrueCasc)
+        cascCutBits |= (1u << kCascCutMcTrueXiOmega);
+      if (isItsTracked)
+        cascCutBits |= (1u << kCascCutItsTracked);
 
       cascflags(flag, isTrueCasc, isItsTracked, cascCutBits);
       if constexpr (ApplyMcMatch) {
@@ -2603,7 +2608,8 @@ struct LambdaCascadeProducer {
   {
     bool eventOk = selCollision<kRun3>(collision);
     std::unordered_set<int64_t> itsTrackedCascIds;
-    for (auto const& tc : trackedCascades) itsTrackedCascIds.insert(tc.cascadeId());
+    for (auto const& tc : trackedCascades)
+      itsTrackedCascIds.insert(tc.cascadeId());
     cascadeFlagLoop<false, Tracks>(Cascades, collision, eventOk, itsTrackedCascIds);
     if (!eventOk) {
       return;
@@ -2650,7 +2656,8 @@ struct LambdaCascadeProducer {
   {
     bool eventOk = selCollision<kRun3>(collision);
     std::unordered_set<int64_t> itsTrackedCascIds;
-    for (auto const& tc : trackedCascades) itsTrackedCascIds.insert(tc.cascadeId());
+    for (auto const& tc : trackedCascades)
+      itsTrackedCascIds.insert(tc.cascadeId());
     cascadeFlagLoop<true, TracksMC>(Cascades, collision, eventOk, itsTrackedCascIds);
     if (!eventOk) {
       return;
@@ -2732,8 +2739,8 @@ struct LambdaCascadeProducer {
   // Use CollisionsRun3 (which carries CentFT0Ms etc.) instead of
   // the old CSEL MyCollisions Join — selCollision<kRun3> needs centFT0M().
   void processCascadeGenMC(aod::McCollision const& mcCollision,
-                            soa::SmallGroups<soa::Join<aod::McCollisionLabels, CollisionsRun3>> const& collisions,
-                            aod::McParticles const& mcParticles)
+                           soa::SmallGroups<soa::Join<aod::McCollisionLabels, CollisionsRun3>> const& collisions,
+                           aod::McParticles const& mcParticles)
   {
     // MC-truth event-level selection (mirror of CSEL::processGenMC).
     if (cascCfg.INEL >= 0 && !pwglf::isINELgtNmc(mcParticles, cascCfg.INEL, pdgDB))
@@ -2749,10 +2756,18 @@ struct LambdaCascadeProducer {
       if (std::abs(mcPart.eta()) > cascCfg.etaCascades)
         continue;
       switch (mcPart.pdgCode()) {
-        case lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("gen/hXiMinus"), mcPart.pt(), mcPart.y()); break;
-        case -lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("gen/hXiPlus"), mcPart.pt(), mcPart.y()); break;
-        case lcorr_const::kOmegaMinusPdg:  cascRegistry.fill(HIST("gen/hOmegaMinus"), mcPart.pt(), mcPart.y()); break;
-        case -lcorr_const::kOmegaMinusPdg: cascRegistry.fill(HIST("gen/hOmegaPlus"),  mcPart.pt(), mcPart.y()); break;
+        case lcorr_const::kXiMinusPdg:
+          cascRegistry.fill(HIST("gen/hXiMinus"), mcPart.pt(), mcPart.y());
+          break;
+        case -lcorr_const::kXiMinusPdg:
+          cascRegistry.fill(HIST("gen/hXiPlus"), mcPart.pt(), mcPart.y());
+          break;
+        case lcorr_const::kOmegaMinusPdg:
+          cascRegistry.fill(HIST("gen/hOmegaMinus"), mcPart.pt(), mcPart.y());
+          break;
+        case -lcorr_const::kOmegaMinusPdg:
+          cascRegistry.fill(HIST("gen/hOmegaPlus"), mcPart.pt(), mcPart.y());
+          break;
       }
     }
 
@@ -2780,10 +2795,18 @@ struct LambdaCascadeProducer {
       if (std::abs(mcPart.eta()) > cascCfg.etaCascades)
         continue;
       switch (mcPart.pdgCode()) {
-        case lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y()); break;
-        case -lcorr_const::kXiMinusPdg: cascRegistry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y()); break;
-        case lcorr_const::kOmegaMinusPdg:  cascRegistry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y()); break;
-        case -lcorr_const::kOmegaMinusPdg: cascRegistry.fill(HIST("genwithrec/hOmegaPlus"),  mcPart.pt(), mcPart.y()); break;
+        case lcorr_const::kXiMinusPdg:
+          cascRegistry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y());
+          break;
+        case -lcorr_const::kXiMinusPdg:
+          cascRegistry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y());
+          break;
+        case lcorr_const::kOmegaMinusPdg:
+          cascRegistry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y());
+          break;
+        case -lcorr_const::kOmegaMinusPdg:
+          cascRegistry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.y());
+          break;
       }
     }
   }
@@ -2856,10 +2879,10 @@ struct LambdaTracksExtProducer {
     } else {
       LOGF(info,
            "[LambdaTracksExtProducer] true-Lambda strategy: %s",
-           cAcceptAllLambda ? "cAcceptAllLambda"
-                            : cRejAllLambdaShaDau ? "cRejAllLambdaShaDau"
-                            : cSelLambdaMassPdg ? "cSelLambdaMassPdg"
-                                                : "cSelLambdaTScore");
+           cAcceptAllLambda      ? "cAcceptAllLambda"
+           : cRejAllLambdaShaDau ? "cRejAllLambdaShaDau"
+           : cSelLambdaMassPdg   ? "cSelLambdaMassPdg"
+                                 : "cSelLambdaTScore");
     }
   }
 
@@ -2988,7 +3011,6 @@ struct LambdaTracksExtProducer {
   }
 };
 
-
 // =============================================================================
 // Dead structs removed:
 //
@@ -3002,9 +3024,6 @@ struct LambdaTracksExtProducer {
 // Total: roughly 1370 fewer lines compiled per build. All three structs are
 // available in git history if anyone wants to revive them.
 // =============================================================================
-
-
-
 
 // TTree branch structs + connectors inlined
 // back into the .cxx (ALICE submission policy: one source file). Plain POD,
@@ -3047,14 +3066,14 @@ struct GenBranches {
 struct LambdaBranches {
   float pt, eta, rap, phi, mass;
   float cosPA, dcaDau;
-  int v0Type; // 0=Λ, 1=Λ̄  (matches enum ParticleType)
+  int v0Type;   // 0=Λ, 1=Λ̄  (matches enum ParticleType)
   int v0PrmScd; // 0=primary, 1=secondary (only meaningful in MC)
-  bool  trueLambdaFlag;
+  bool trueLambdaFlag;
   float corrFact;
   float cent, pvZ;
   // MC-only
   int pdgCode{0};
-  bool  isPhysPrim{false};
+  bool isPhysPrim{false};
   int motherPdg{0};
   // Topology snapshot — the inputs of a downstream
   // primary-fraction template fit. Per-V0, filled on every row.
@@ -3062,7 +3081,7 @@ struct LambdaBranches {
   float v0Radius{0.f};
   int posItsNCls{0};
   int negItsNCls{0};
-  bool  passesPrimaryTopo{false};
+  bool passesPrimaryTopo{false};
   // Per-daughter 7-bit ITS hit-map for geometric consistency
   // checks downstream (vetoes against impossible inner-layer hits when
   // the V0 vertex is outside that layer).
@@ -3198,7 +3217,6 @@ inline void connectLambdaGenBranches(TTree* t, LambdaGenBranches* b)
 }
 } // namespace lxicorr
 
-
 struct LambdaXiCorrelation {
 
   // --- Configurables ---
@@ -3223,13 +3241,13 @@ struct LambdaXiCorrelation {
   // — combine with a tighter cMaxDcaV0ToPV in lambda-cascade-producer for
   // topological enrichment of the primary fraction.
   Configurable<bool> cUsePrimaryLambdasOnly{"cUsePrimaryLambdasOnly", true,
-      "Restrict the trigger Λ list to v0PrmScd==kPrimary (MC-meaningful)"};
+                                            "Restrict the trigger Λ list to v0PrmScd==kPrimary (MC-meaningful)"};
 
   // Save a per-Λ TTree of the standalone V0 candidates. Useful for
   // offline cut tuning, primary-fraction template fits, and feed-down
   // post-tagging via the motherPdg branch.
   Configurable<bool> saveLambdaTree{"saveLambdaTree", false,
-      "Save TTree of standalone-Λ candidates into AnalysisResults.root"};
+                                    "Save TTree of standalone-Λ candidates into AnalysisResults.root"};
 
   // Auto-correlation veto policy (replaces previous bool
   // cVetoSharedDau). Three modes for systematic studies:
@@ -3244,9 +3262,9 @@ struct LambdaXiCorrelation {
   // for backward compatibility but ignored at runtime — set cVetoMode
   // instead.
   Configurable<int> cVetoMode{"cVetoMode", 1,
-      "Auto-correlation veto: 0=off, 1=strict (both daughters shared), 2=loose (any daughter)"};
+                              "Auto-correlation veto: 0=off, 1=strict (both daughters shared), 2=loose (any daughter)"};
   Configurable<bool> cVetoSharedDau{"cVetoSharedDau", true,
-      "[DEPRECATED] use cVetoMode instead. Value is ignored at runtime."};
+                                    "[DEPRECATED] use cVetoMode instead. Value is ignored at runtime."};
 
   // Histogram-axis bundle. ConfigurableGroup makes this one
   // StructToTuple slot while still exposing every axis as JSON-tunable
@@ -3379,8 +3397,8 @@ struct LambdaXiCorrelation {
   // Primary-only Λ partition (MC-meaningful; on data v0PrmScd is
   // always kPrimary so the partition coincides with goodLambda).
   Partition<GoodLambdas> goodPrimaryLambda =
-      aod::lambdatrackext::trueLambdaFlag == true &&
-      aod::lambdatrack::v0PrmScd == (int8_t)kPrimary;
+    aod::lambdatrackext::trueLambdaFlag == true &&
+    aod::lambdatrack::v0PrmScd == static_cast<int8_t>(kPrimary);
 
   // Topology-only primary-Λ partition. Combine with the truth
   // partition to get the strictest trigger list: AND of (trueLambdaFlag,
@@ -3389,15 +3407,15 @@ struct LambdaXiCorrelation {
   // passesPrimaryTopo) — i.e., topology alone, which is the only handle
   // available without truth.
   Partition<GoodLambdas> goodPureLambda =
-      aod::lambdatrackext::trueLambdaFlag == true &&
-      aod::lambdatrack::v0PrmScd == (int8_t)kPrimary &&
-      aod::lambdatrack::passesPrimaryTopo == true;
+    aod::lambdatrackext::trueLambdaFlag == true &&
+    aod::lambdatrack::v0PrmScd == static_cast<int8_t>(kPrimary) &&
+    aod::lambdatrack::passesPrimaryTopo == true;
 
   // Pick which "primary Λ" partition the trigger uses.
   // true  → goodPureLambda (truth AND topology; recommended for data)
   // false → goodPrimaryLambda (truth-only; use for MC closure tests)
   Configurable<bool> cPrimaryRequireTopo{"cPrimaryRequireTopo", true,
-      "Require passesPrimaryTopo on the trigger Λ list (data-friendly tightening)"};
+                                         "Require passesPrimaryTopo on the trigger Λ list (data-friendly tightening)"};
 
   // MC-only filter: reject cascades whose CascadeFlags::IsTrueCascade
   // is false (i.e., the cascade was not truth-matched to a physical-primary
@@ -3407,7 +3425,7 @@ struct LambdaXiCorrelation {
   // <IsMC=true>. Use this for closure/purity studies; turn off when measuring
   // the residual combinatorial contamination of your topological selection.
   Configurable<bool> cRequireTrueCascade{"cRequireTrueCascade", true,
-      "MC: drop cascade candidates not flagged IsTrueCascade==true"};
+                                         "MC: drop cascade candidates not flagged IsTrueCascade==true"};
 
   // ITS strangeness-tracking gating policy. Lets you A/B-compare
   // what the IsItsTracked flag adds without recompiling.
@@ -3428,12 +3446,12 @@ struct LambdaXiCorrelation {
   // QA histograms are filled regardless of the mode so the comparison is
   // always available downstream.
   Configurable<int> cItsTrackMode{"cItsTrackMode", 0,
-      "ITS strangeness-tracking gate: 0=off, 1=require, 2=rescue, 3=qa-only"};
+                                  "ITS strangeness-tracking gate: 0=off, 1=require, 2=rescue, 3=qa-only"};
 
   // Trigger-pT-differential pair histograms (off by default to
   // avoid bloating output for the centrality-only analyses).
   Configurable<bool> cFillPtDifferentialPairs{"cFillPtDifferentialPairs", false,
-      "Fill PairsPt/<sign>/hPtDeltaPhiDeltaY (3D pT_Λ × Δφ × Δy)"};
+                                              "Fill PairsPt/<sign>/hPtDeltaPhiDeltaY (3D pT_Λ × Δφ × Δy)"};
 
   // Pair-type selectors. Each toggle gates BOTH the histogram
   // booking and the fill, so disabled pair types cost zero memory and
@@ -3536,7 +3554,7 @@ struct LambdaXiCorrelation {
   {
     if (!cUseCascEff)
       return 1.0f;
-    // TODO: load from CCDB and compute weight when an efficiency map exists.
+    // TODO(oveis): load from CCDB and compute weight when an efficiency map exists.
     return 1.0f;
   }
 
@@ -3578,17 +3596,17 @@ struct LambdaXiCorrelation {
          "(processXi=%d processOmega=%d processMCRecoXi=%d processMCRecoOmega=%d "
          "processAllPairs=%d processYields=%d "
          "processMCGenXi=%d processMCGenOmega=%d)",
-         (float)maxY, (int)useEff, (int)cUseCascEff, (float)tpcNsigmaBachKaon,
-         (int)cVetoMode, (int)cUsePrimaryLambdasOnly,
-         (int)cPrimaryRequireTopo, (int)cRequireTrueCascade, (int)cItsTrackMode,
-         (int)saveCascTree, (int)saveLambdaTree,
-         (int)pairCfg.cFillLamXi, (int)pairCfg.cFillLamOm, (int)pairCfg.cFillLamLam,
-         (int)pairCfg.cFillXiXi, (int)pairCfg.cFillOmOm, (int)pairCfg.cFillXiOm,
-         (int)yieldCfg.cFillEventYields,
-         (int)doprocessXi, (int)doprocessOmega,
-         (int)doprocessMCRecoXi, (int)doprocessMCRecoOmega,
-         (int)doprocessAllPairs, (int)doprocessYields,
-         (int)doprocessMCGenXi, (int)doprocessMCGenOmega);
+         static_cast<float>(maxY), static_cast<int>(useEff), static_cast<int>(cUseCascEff), static_cast<float>(tpcNsigmaBachKaon),
+         static_cast<int>(cVetoMode), static_cast<int>(cUsePrimaryLambdasOnly),
+         static_cast<int>(cPrimaryRequireTopo), static_cast<int>(cRequireTrueCascade), static_cast<int>(cItsTrackMode),
+         static_cast<int>(saveCascTree), static_cast<int>(saveLambdaTree),
+         static_cast<int>(pairCfg).cFillLamXi, static_cast<int>(pairCfg).cFillLamOm, static_cast<int>(pairCfg).cFillLamLam,
+         static_cast<int>(pairCfg).cFillXiXi, static_cast<int>(pairCfg).cFillOmOm, static_cast<int>(pairCfg).cFillXiOm,
+         static_cast<int>(yieldCfg).cFillEventYields,
+         static_cast<int>(doprocessXi), static_cast<int>(doprocessOmega),
+         static_cast<int>(doprocessMCRecoXi), static_cast<int>(doprocessMCRecoOmega),
+         static_cast<int>(doprocessAllPairs), static_cast<int>(doprocessYields),
+         static_cast<int>(doprocessMCGenXi), static_cast<int>(doprocessMCGenOmega));
 
     // Three-way veto policy. Loud warning when the user disables
     // it or picks the loose mode for a systematic study.
@@ -3605,7 +3623,7 @@ struct LambdaXiCorrelation {
     } else if (cVetoMode != lcorr_const::kVetoModeStrict) {
       LOGF(warning,
            "[LXi] cVetoMode=%d is not one of {0,1,2}; treating as 0 (off).",
-           (int)cVetoMode);
+           static_cast<int>(cVetoMode));
     }
     // Legacy cVetoSharedDau is parsed for back-compat but not used.
     // If the user set it to false on the assumption it'd disable the veto,
@@ -3614,7 +3632,7 @@ struct LambdaXiCorrelation {
       LOGF(warning,
            "[LXi] cVetoSharedDau=false is DEPRECATED and ignored at runtime. "
            "To disable the veto, set cVetoMode=0 instead. Current cVetoMode=%d.",
-           (int)cVetoMode);
+           static_cast<int>(cVetoMode));
     }
 
     // Data-side primary tag is not informative.
@@ -3721,7 +3739,7 @@ struct LambdaXiCorrelation {
 
     // 2D (y, φ) singles for Ξ.
     histos.add("Singles/XiMinus/hYPhi", "Xi^{-} (y, φ)", kTH2F, {rap, phi});
-    histos.add("Singles/XiPlus/hYPhi",  "Xi^{+} (y, φ)", kTH2F, {rap, phi});
+    histos.add("Singles/XiPlus/hYPhi", "Xi^{+} (y, φ)", kTH2F, {rap, phi});
 
     // --- Omega QA ---
     histos.add("QA/Om/hRadius", "Omega Radius", kTH1F, {radius});
@@ -3741,7 +3759,7 @@ struct LambdaXiCorrelation {
 
     // 2D (y, φ) singles for Ω.
     histos.add("Singles/OmegaMinus/hYPhi", "Omega^{-} (y, φ)", kTH2F, {rap, phi});
-    histos.add("Singles/OmegaPlus/hYPhi",  "Omega^{+} (y, φ)", kTH2F, {rap, phi});
+    histos.add("Singles/OmegaPlus/hYPhi", "Omega^{+} (y, φ)", kTH2F, {rap, phi});
 
     // All pair-type bookings gated by pairCfg toggles.
     // Pairs: Λ–Ξ (R2 inputs)
@@ -3820,9 +3838,9 @@ struct LambdaXiCorrelation {
     // to estimate the bias of running without the veto.
     const AxisSpec axisPairCount{200, 0., 200., "pairs/event"};
     histos.add("QA/AutoCorr/hXiPairsTotal", "Λ-Ξ total pairs/event", kTH1F, {axisPairCount});
-    histos.add("QA/AutoCorr/hXiPairsVetoed",  "Λ-Ξ vetoed pairs/event",  kTH1F, {axisPairCount});
+    histos.add("QA/AutoCorr/hXiPairsVetoed", "Λ-Ξ vetoed pairs/event", kTH1F, {axisPairCount});
     histos.add("QA/AutoCorr/hOmPairsTotal", "Λ-Ω total pairs/event", kTH1F, {axisPairCount});
-    histos.add("QA/AutoCorr/hOmPairsVetoed",  "Λ-Ω vetoed pairs/event",  kTH1F, {axisPairCount});
+    histos.add("QA/AutoCorr/hOmPairsVetoed", "Λ-Ω vetoed pairs/event", kTH1F, {axisPairCount});
 
     // ITS strangeness-tracking diagnostics. Filled regardless
     // of cItsTrackMode so the comparison is always available downstream.
@@ -3831,21 +3849,21 @@ struct LambdaXiCorrelation {
     const AxisSpec axisItsTrackBin{2, -0.5, 1.5, "ITS-tracked"};
     const AxisSpec axisCascPt{50, 0, 10, "p_{T} (GeV/c)"};
     histos.add("QA/ItsTrack/hXiTotalVsTracked", "Ξ topology-pass vs ITS-tracked", kTH2F, {axisItsTrackBin, axisCascPt});
-    histos.add("QA/ItsTrack/hOmegaTotalVsTracked","Ω topology-pass vs ITS-tracked", kTH2F, {axisItsTrackBin, axisCascPt});
+    histos.add("QA/ItsTrack/hOmegaTotalVsTracked", "Ω topology-pass vs ITS-tracked", kTH2F, {axisItsTrackBin, axisCascPt});
 
     // Per-event yield histograms — one block per species,
     // 5 histos each: hNPerEvent, hMeanPtPerEvent, hMeanNvsCent,
     // hMeanPtVsCent, hNvsPt2D. Filled exclusively by processYields so
     // counts are correct regardless of which pair-process functions run.
     if (yieldCfg.cFillEventYields) {
-      const AxisSpec axisYieldN {yieldCfg.cYieldNAxis,  "N per event"};
+      const AxisSpec axisYieldN{yieldCfg.cYieldNAxis, "N per event"};
       const AxisSpec axisYieldPt{yieldCfg.cYieldPtAxis, "⟨p_{T}⟩ per event (GeV/c)"};
       const std::array<const char*, 6> species{"Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
       for (const auto& sp : species) {
         histos.add(Form("Yields/%s/hNPerEvent", sp), Form("%s N/event", sp), kTH1F, {axisYieldN});
         histos.add(Form("Yields/%s/hMeanPtPerEvent", sp), Form("%s ⟨pT⟩/event", sp), kTH1F, {axisYieldPt});
-        histos.add(Form("Yields/%s/hMeanNvsCent", sp), Form("%s ⟨N⟩ vs cent", sp), kTProfile,{cent});
-        histos.add(Form("Yields/%s/hMeanPtVsCent", sp), Form("%s ⟨pT⟩ vs cent", sp), kTProfile,{cent});
+        histos.add(Form("Yields/%s/hMeanNvsCent", sp), Form("%s ⟨N⟩ vs cent", sp), kTProfile, {cent});
+        histos.add(Form("Yields/%s/hMeanPtVsCent", sp), Form("%s ⟨pT⟩ vs cent", sp), kTProfile, {cent});
         histos.add(Form("Yields/%s/hNvsPt2D", sp), Form("%s (N, ⟨pT⟩)", sp), kTH2F, {axisYieldN, axisYieldPt});
       }
     }
@@ -3870,8 +3888,8 @@ struct LambdaXiCorrelation {
     histos.add("McGen/Singles/AntiLambda/hYPhi", "Gen #bar{#Lambda} (y, #varphi)", kTH2F, {rap, phi});
     histos.add("McGen/Singles/XiMinus/hYPhi", "Gen #Xi^{-} (y, #varphi)", kTH2F, {rap, phi});
     histos.add("McGen/Singles/XiPlus/hYPhi", "Gen #Xi^{+} (y, #varphi)", kTH2F, {rap, phi});
-    histos.add("McGen/Singles/OmegaMinus/hYPhi", "Gen #Omega^{-} (y, #varphi)",  kTH2F, {rap, phi});
-    histos.add("McGen/Singles/OmegaPlus/hYPhi",  "Gen #Omega^{+} (y, #varphi)",  kTH2F, {rap, phi});
+    histos.add("McGen/Singles/OmegaMinus/hYPhi", "Gen #Omega^{-} (y, #varphi)", kTH2F, {rap, phi});
+    histos.add("McGen/Singles/OmegaPlus/hYPhi", "Gen #Omega^{+} (y, #varphi)", kTH2F, {rap, phi});
 
     // Gen event counter (canonical denominator for gen-level R₂).
     histos.add("McGen/Event/hEventCount", "Gen Event Counter", kTH1F, {{1, 0, 1, "Count"}});
@@ -3897,9 +3915,9 @@ struct LambdaXiCorrelation {
     // row > 0, col 0  → events with only Λ
     // row 0, col > 0  → events with only cascade
     // row > 0, col > 0→ events that contribute pair candidates
-    const AxisSpec axisCoincLam{31, -0.5,  30.5, "N_{primary Λ}"};
-    const AxisSpec axisCoincXi {16, -0.5,  15.5, "N_{Ξ}"};
-    const AxisSpec axisCoincOm {16, -0.5,  15.5, "N_{Ω}"};
+    const AxisSpec axisCoincLam{31, -0.5, 30.5, "N_{primary Λ}"};
+    const AxisSpec axisCoincXi{16, -0.5, 15.5, "N_{Ξ}"};
+    const AxisSpec axisCoincOm{16, -0.5, 15.5, "N_{Ω}"};
     histos.add("Yields/Coincidence/hLamXi", "events: (N_Λ, N_Ξ)", kTH2F, {axisCoincLam, axisCoincXi});
     histos.add("Yields/Coincidence/hLamOm", "events: (N_Λ, N_Ω)", kTH2F, {axisCoincLam, axisCoincOm});
 
@@ -3968,7 +3986,7 @@ struct LambdaXiCorrelation {
 
       float w = useEff ? track.corrFact() : 1.0f;
       // Use the typed enum instead of magic literal "1".
-      bool isAnti = (track.v0Type() == (int8_t)kAntiLambda);
+      bool isAnti = (track.v0Type() == static_cast<int8_t>(kAntiLambda));
 
       // φ wrapped to [0, 2π) for ρ₁(y, φ) accumulation.
       float phiWrapped = RecoDecay::constrainAngle(track.phi(), 0.f);
@@ -4008,13 +4026,13 @@ struct LambdaXiCorrelation {
         // makes pdgCode best-effort but never wrong: it is non-zero only when
         // we have a real Λ-tagged candidate.
         if (track.trueLambdaFlag()) {
-          b.pdgCode = (track.v0Type() == (int8_t)kLambda)
-                          ? lcorr_const::kLambdaPdg
-                          : -lcorr_const::kLambdaPdg;
+          b.pdgCode = (track.v0Type() == static_cast<int8_t>(kLambda))
+                        ? lcorr_const::kLambdaPdg
+                        : -lcorr_const::kLambdaPdg;
         } else {
           b.pdgCode = 0;
         }
-        b.isPhysPrim = (track.v0PrmScd() == (int8_t)kPrimary);
+        b.isPhysPrim = (track.v0PrmScd() == static_cast<int8_t>(kPrimary));
         // Topology snapshot — primary-fraction template-fit inputs.
         b.dcaV0ToPV = track.dcaV0ToPV();
         b.v0Radius = track.v0Radius();
@@ -4025,7 +4043,7 @@ struct LambdaXiCorrelation {
         b.posItsClusterMap = static_cast<unsigned int>(track.posItsClusterMap());
         b.negItsClusterMap = static_cast<unsigned int>(track.negItsClusterMap());
         // L_proper + per-daughter DCAs.
-        b.lProper  = track.lProper();
+        b.lProper = track.lProper();
         b.posDcaXY = track.posDcaXY();
         b.negDcaXY = track.negDcaXY();
         // cut bitmask + raw cut inputs.
@@ -4284,7 +4302,7 @@ struct LambdaXiCorrelation {
         continue;
       float wLam = useEff ? lam.corrFact() : 1.0f;
       // Use the typed enum instead of magic literal "1".
-      bool isAntiLam = (lam.v0Type() == (int8_t)kAntiLambda);
+      bool isAntiLam = (lam.v0Type() == static_cast<int8_t>(kAntiLambda));
 
       for (const auto& casc : cascades) {
         auto fr = flagsStart + casc.globalIndex();
@@ -4311,8 +4329,8 @@ struct LambdaXiCorrelation {
         const bool posMatch = (lam.posTrackId() == casc.posTrackId());
         const bool negMatch = (lam.negTrackId() == casc.negTrackId());
         const bool veto =
-            (cVetoMode == lcorr_const::kVetoModeStrict && posMatch && negMatch) ||
-            (cVetoMode == lcorr_const::kVetoModeLoose  && (posMatch || negMatch));
+          (cVetoMode == lcorr_const::kVetoModeStrict && posMatch && negMatch) ||
+          (cVetoMode == lcorr_const::kVetoModeLoose && (posMatch || negMatch));
         if (veto) {
           ++nXiPairsVetoed;
           continue;
@@ -4332,7 +4350,7 @@ struct LambdaXiCorrelation {
         // Baryon-number labels:
         // Λ:B=+1, Λ̄:B=-1, Ξ⁻:B=+1 (sign<0), Ξ⁺:B=-1 (sign>0)
         // LS = same baryon number, OS = opposite.
-        bool isLS = (isAntiLam == isXiPlus);  // (Λ̄, Ξ⁺) ↔ (Λ, Ξ⁻) both LS
+        bool isLS = (isAntiLam == isXiPlus); // (Λ̄, Ξ⁺) ↔ (Λ, Ξ⁻) both LS
 
         if (pairCfg.cFillLamXi) {
           if (!isAntiLam && !isXiPlus)
@@ -4390,7 +4408,7 @@ struct LambdaXiCorrelation {
         continue;
       float wLam = useEff ? lam.corrFact() : 1.0f;
       // Use the typed enum instead of magic literal "1".
-      bool isAntiLam = (lam.v0Type() == (int8_t)kAntiLambda);
+      bool isAntiLam = (lam.v0Type() == static_cast<int8_t>(kAntiLambda));
 
       for (const auto& casc : cascades) {
         auto fr = flagsStart + casc.globalIndex();
@@ -4418,8 +4436,8 @@ struct LambdaXiCorrelation {
         const bool posMatch = (lam.posTrackId() == casc.posTrackId());
         const bool negMatch = (lam.negTrackId() == casc.negTrackId());
         const bool veto =
-            (cVetoMode == lcorr_const::kVetoModeStrict && posMatch && negMatch) ||
-            (cVetoMode == lcorr_const::kVetoModeLoose  && (posMatch || negMatch));
+          (cVetoMode == lcorr_const::kVetoModeStrict && posMatch && negMatch) ||
+          (cVetoMode == lcorr_const::kVetoModeLoose && (posMatch || negMatch));
         if (veto) {
           ++nOmPairsVetoed;
           continue;
@@ -4482,7 +4500,7 @@ struct LambdaXiCorrelation {
                  GoodLambdas const& /*lambdas*/,
                  aod::CascDataExt const& cascades,
                  aod::CascadeFlags const& cascflags,
-                 FullTracksExtIUWithPID const& /*tracks*/)  // needed for bachelor_as<>
+                 FullTracksExtIUWithPID const& /*tracks*/) // needed for bachelor_as<>
   {
     // Event count is now owned by processYields (always-on by
     // default). Removed from here to avoid N× inflation under DPL's
@@ -4557,7 +4575,7 @@ struct LambdaXiCorrelation {
                        GoodLambdas const& /*lambdas*/,
                        LabeledCascades const& cascades,
                        aod::CascadeFlags const& cascflags,
-                       FullTracksExtIUWithPID const& /*tracks*/,  // for bachelor_as<>
+                       FullTracksExtIUWithPID const& /*tracks*/, // for bachelor_as<>
                        aod::McParticles const& /*mcparts*/)
   {
     // Event count is now owned by processYields (always-on by
@@ -4638,7 +4656,7 @@ struct LambdaXiCorrelation {
       const auto& lam1 = *i;
       if (std::abs(lam1.rap()) > maxY)
         continue;
-      bool isAnti1 = (lam1.v0Type() == (int8_t)kAntiLambda);
+      bool isAnti1 = (lam1.v0Type() == static_cast<int8_t>(kAntiLambda));
       float w1 = useEff ? lam1.corrFact() : 1.0f;
       auto j = i;
       for (++j; j != lambdas.end(); ++j) {
@@ -4649,11 +4667,11 @@ struct LambdaXiCorrelation {
         const bool posMatch = (lam1.posTrackId() == lam2.posTrackId());
         const bool negMatch = (lam1.negTrackId() == lam2.negTrackId());
         const bool veto = (cVetoMode == lcorr_const::kVetoModeStrict && posMatch && negMatch) ||
-                          (cVetoMode == lcorr_const::kVetoModeLoose  && (posMatch || negMatch));
+                          (cVetoMode == lcorr_const::kVetoModeLoose && (posMatch || negMatch));
         if (veto)
           continue;
 
-        bool isAnti2 = (lam2.v0Type() == (int8_t)kAntiLambda);
+        bool isAnti2 = (lam2.v0Type() == static_cast<int8_t>(kAntiLambda));
         float w2 = useEff ? lam2.corrFact() : 1.0f;
         float wPair = w1 * w2;
         float dphi = RecoDecay::constrainAngle(lam2.phi() - lam1.phi(), -PIHalf);
@@ -4866,8 +4884,13 @@ struct LambdaXiCorrelation {
     for (const auto& l : lambdasInThisEvent) {
       if (std::abs(l.rap()) > maxY)
         continue;
-      if (l.v0Type() == (int8_t)kLambda) { ++nLam;  sLam  += l.pt(); }
-      else { ++nALam; sALam += l.pt(); }
+      if (l.v0Type() == static_cast<int8_t>(kLambda)) {
+        ++nLam;
+        sLam += l.pt();
+      } else {
+        ++nALam;
+        sALam += l.pt();
+      }
     }
     for (const auto& c : cascadesInThisEvent) {
       auto fr = flagsStart + c.globalIndex();
@@ -4876,13 +4899,23 @@ struct LambdaXiCorrelation {
         continue;
       // Ξ-eligible (flag 1 or 2)
       if ((f == kFlagXiOnly || f == kFlagXiAndOmega) && std::abs(c.yXi()) <= maxY) {
-        if (c.sign() < 0) { ++nXiM; sXiM += c.pt(); }
-        else { ++nXiP; sXiP += c.pt(); }
+        if (c.sign() < 0) {
+          ++nXiM;
+          sXiM += c.pt();
+        } else {
+          ++nXiP;
+          sXiP += c.pt();
+        }
       }
       // Ω-eligible (flag 2 or 3)
       if ((f == kFlagXiAndOmega || f == kFlagOmegaOnly) && std::abs(c.yOmega()) <= maxY) {
-        if (c.sign() < 0) { ++nOmM; sOmM += c.pt(); }
-        else { ++nOmP; sOmP += c.pt(); }
+        if (c.sign() < 0) {
+          ++nOmM;
+          sOmM += c.pt();
+        } else {
+          ++nOmP;
+          sOmP += c.pt();
+        }
       }
     }
 
@@ -4975,10 +5008,15 @@ struct LambdaXiCorrelation {
 
     // Pre-classified caches. Reserved sizes are heuristic for typical
     // Pb-Pb central event populations.
-    struct LamLite { float pt, rap, phi; };
-    struct XiLite  { float pt, rap, phi; bool isPlus; };
+    struct LamLite {
+      float pt, rap, phi;
+    };
+    struct XiLite {
+      float pt, rap, phi;
+      bool isPlus;
+    };
     std::vector<LamLite> goodLam, goodAntiLam;
-    std::vector<XiLite>  goodXi;
+    std::vector<XiLite> goodXi;
     goodLam.reserve(32);
     goodAntiLam.reserve(32);
     goodXi.reserve(16);
@@ -4987,18 +5025,18 @@ struct LambdaXiCorrelation {
     for (const auto& lam : genLambdasAll) {
       if (lam.lambdaMcGenCollisionId() != thisColId)
         continue;
-      if (lam.v0PrmScd() != (int8_t)kPrimary)
+      if (lam.v0PrmScd() != static_cast<int8_t>(kPrimary))
         continue;
       if (std::abs(lam.rap()) > maxY)
         continue;
       LamLite l{static_cast<float>(lam.pt()), static_cast<float>(lam.rap()), static_cast<float>(lam.phi())};
       // Wrap φ to [0, 2π) to match the reco-side convention.
       float phiWrapped = RecoDecay::constrainAngle(lam.phi(), 0.f);
-      if (lam.v0Type() == (int8_t)kLambda) {
+      if (lam.v0Type() == static_cast<int8_t>(kLambda)) {
         histos.fill(HIST("McGen/Singles/Lambda/hPt"), lam.pt());
         histos.fill(HIST("McGen/Singles/Lambda/hYPhi"), lam.rap(), phiWrapped);
         goodLam.push_back(l);
-      } else if (lam.v0Type() == (int8_t)kAntiLambda) {
+      } else if (lam.v0Type() == static_cast<int8_t>(kAntiLambda)) {
         histos.fill(HIST("McGen/Singles/AntiLambda/hPt"), lam.pt());
         histos.fill(HIST("McGen/Singles/AntiLambda/hYPhi"), lam.rap(), phiWrapped);
         goodAntiLam.push_back(l);
@@ -5102,10 +5140,15 @@ struct LambdaXiCorrelation {
     // batches by process function, so a per-event guard would fail). Here
     // we only need to BUILD the goodLam/goodAntiLam vectors for the local
     // Λ-Ω pair loop — no histogram or tree side effects.
-    struct LamLite { float pt, rap, phi; };
-    struct OmLite  { float pt, rap, phi; bool isPlus; };
+    struct LamLite {
+      float pt, rap, phi;
+    };
+    struct OmLite {
+      float pt, rap, phi;
+      bool isPlus;
+    };
     std::vector<LamLite> goodLam, goodAntiLam;
-    std::vector<OmLite>  goodOm;
+    std::vector<OmLite> goodOm;
     goodLam.reserve(32);
     goodAntiLam.reserve(32);
     goodOm.reserve(8);
@@ -5114,14 +5157,14 @@ struct LambdaXiCorrelation {
     for (const auto& lam : genLambdasAll) {
       if (lam.lambdaMcGenCollisionId() != thisColId)
         continue;
-      if (lam.v0PrmScd() != (int8_t)kPrimary)
+      if (lam.v0PrmScd() != static_cast<int8_t>(kPrimary))
         continue;
       if (std::abs(lam.rap()) > maxY)
         continue;
       LamLite l{static_cast<float>(lam.pt()), static_cast<float>(lam.rap()), static_cast<float>(lam.phi())};
-      if (lam.v0Type() == (int8_t)kLambda) {
+      if (lam.v0Type() == static_cast<int8_t>(kLambda)) {
         goodLam.push_back(l);
-      } else if (lam.v0Type() == (int8_t)kAntiLambda) {
+      } else if (lam.v0Type() == static_cast<int8_t>(kAntiLambda)) {
         goodAntiLam.push_back(l);
       }
     }
