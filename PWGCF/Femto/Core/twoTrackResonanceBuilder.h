@@ -33,7 +33,6 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
-#include <cmath>
 #include <string>
 
 namespace o2::analysis::femto

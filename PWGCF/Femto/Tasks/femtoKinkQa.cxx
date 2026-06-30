@@ -136,27 +136,27 @@ struct FemtoKinkQa {
 
     if (processData) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       chaDauHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
       if (doprocessSigma) {
         sigmaHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
-        sigmaHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaHistSpec, confSigmaSelection, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+        sigmaHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, sigmaHistSpec, confSigmaSelection, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
       if (doprocessSigmaPlus) {
         sigmaPlusHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning);
-        sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusSelection, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+        sigmaPlusHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusSelection, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       chaDauHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
       if (doprocessSigmaMc) {
         sigmaHistSpec = kinkhistmanager::makeKinkMcQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
-        sigmaHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, sigmaHistSpec, confSigmaSelection, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+        sigmaHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, sigmaHistSpec, confSigmaSelection, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
       if (doprocessSigmaPlusMc) {
         sigmaPlusHistSpec = kinkhistmanager::makeKinkMcQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning);
-        sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusSelection, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+        sigmaPlusHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusSelection, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
     }
     hRegistry.print();
@@ -168,9 +168,9 @@ struct FemtoKinkQa {
     if (sigmaSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& sigma : sigmaSlice) {
-      sigmaHistManager.fill<modes::Mode::kAnalysis_Qa>(sigma, tracks);
+      sigmaHistManager.fill<modes::Mode::kReco_Qa>(sigma, tracks);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigma, "Process sigmas", true);
@@ -181,12 +181,12 @@ struct FemtoKinkQa {
     if (sigmaSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& sigma : sigmaSlice) {
       if (!sigmaCleaner.isClean(sigma, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(sigma, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaMc, "Process sigmas", false);
@@ -197,9 +197,9 @@ struct FemtoKinkQa {
     if (sigmaPlusSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& sp : sigmaPlusSlice) {
-      sigmaPlusHistManager.fill<modes::Mode::kAnalysis_Qa>(sp, tracks);
+      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa>(sp, tracks);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlus, "Process sigma plus", false);
@@ -210,12 +210,12 @@ struct FemtoKinkQa {
     if (sigmaPlusSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& sigmaPlus : sigmaPlusSlice) {
       if (!sigmaPlusCleaner.isClean(sigmaPlus, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaPlusHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(sigmaPlus, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlusMc, "Process sigmas", false);

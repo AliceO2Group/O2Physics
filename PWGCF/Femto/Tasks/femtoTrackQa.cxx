@@ -94,14 +94,14 @@ struct FemtoTrackQa {
 
     if (processData) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
     }
     hRegistry.print();
   };
@@ -112,9 +112,9 @@ struct FemtoTrackQa {
     if (trackSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& track : trackSlice) {
-      trackHistManager.fill<modes::Mode::kAnalysis_Qa>(track, tracks);
+      trackHistManager.fill<modes::Mode::kReco_Qa>(track, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTrackQa, processData, "Track QA in Data", true);
@@ -125,12 +125,12 @@ struct FemtoTrackQa {
     if (trackSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& track : trackSlice) {
       if (!trackCleaner.isClean(track, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      trackHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(track, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      trackHistManager.fill<modes::Mode::kReco_Qa_Mc>(track, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoTrackQa, processMc, "Track QA in Monte Carlo", false);
