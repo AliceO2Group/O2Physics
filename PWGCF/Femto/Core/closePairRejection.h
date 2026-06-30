@@ -80,6 +80,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis binningCorrelationPhi{"binningCorrelationPhi", {{720, 0, o2::constants::math::TwoPI}}, "Phi binning for correlation plot"};
   o2::framework::ConfigurableAxis binningCorrelationEta{"binningCorrelationEta", {{160, -0.8, 0.8}}, "Eta binning for correlation plot"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2. Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
+  o2::framework::Configurable<float> magField{"magField", 5, "MC ONLY: In case of pure MC processing (no reconstruction), set magnetic field in kG"};
 };
 
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
@@ -126,6 +127,8 @@ constexpr char PrefixTrackCascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
 constexpr char PrefixTrackCascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
 constexpr char PrefixTrackKinkSe[] = "CPR_TrackKink/SE/";
 constexpr char PrefixTrackKinkMe[] = "CPR_TrackKink/ME/";
+constexpr char PrefixMcParticleMcParticleSe[] = "CPR_McParticleMcParticle/SE/";
+constexpr char PrefixMcParticleMcParticleMe[] = "CPR_McParticleMcParticle/ME/";
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -434,7 +437,7 @@ class ClosePairRejectionTrackTrack
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
   template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/)
+  void setPair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/) // pass track table for compatibility with other classes
   {
     mCtr.compute(track1, track2);
   }
@@ -605,6 +608,30 @@ class ClosePairRejectionTrackKink
     mCtr.compute(track, daughter);
   }
 
+  bool isClosePair() const { return mCtr.isClosePair(); }
+  void fill(float kstar) { mCtr.fill(kstar); }
+
+ private:
+  CloseTrackRejection<prefix> mCtr;
+};
+
+template <const char* prefix>
+class ClosePairRejectionMcParticleMcParticle
+{
+ public:
+  template <typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            T const& confCpr)
+  {
+    mCtr.init(registry, specs, confCpr, 1, 1);
+    mCtr.setMagField(confCpr.magField.value);
+  }
+  template <typename T1, typename T2>
+  void setPair(T1 const& mcParticle1, T2 const& mcParticle2)
+  {
+    mCtr.compute(mcParticle1, mcParticle2);
+  }
   bool isClosePair() const { return mCtr.isClosePair(); }
   void fill(float kstar) { mCtr.fill(kstar); }
 
