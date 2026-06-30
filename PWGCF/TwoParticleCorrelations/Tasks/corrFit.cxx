@@ -160,7 +160,7 @@ struct CorrFit {
     O2_DEFINE_CONFIGURABLE(cfgGetdEdx, bool, false, "Get dEdx histograms for pions, kaons, and protons")
     O2_DEFINE_CONFIGURABLE(cfgPIDUseRejection, bool, true, "True: use exclusion exclusion criteria for PID determination, false: don't use exclusion")
     Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-  } cfgPIDConfgs;
+  } cfgPIDConfigs;
 
   Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
   Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
@@ -272,10 +272,6 @@ struct CorrFit {
 
   RCTFlagsChecker rctChecker{"CBT"};
 
-  std::array<float, 6> tofNsigmaCut;
-  std::array<float, 6> itsNsigmaCut;
-  std::array<float, 6> tpcNsigmaCut;
-
   void init(InitContext&)
   {
 
@@ -285,27 +281,6 @@ struct CorrFit {
     ccdb->setCreatedNotAfter(now);
 
     LOGF(info, "Starting init");
-
-    tpcNsigmaCut[iPionUp] = cfgPIDConfgs.nSigmas->getData()[iPionUp][kTPC];
-    tpcNsigmaCut[iKaonUp] = cfgPIDConfgs.nSigmas->getData()[iKaonUp][kTPC];
-    tpcNsigmaCut[iProtonUp] = cfgPIDConfgs.nSigmas->getData()[iProtonUp][kTPC];
-    tpcNsigmaCut[iPionLow] = cfgPIDConfgs.nSigmas->getData()[iPionLow][kTPC];
-    tpcNsigmaCut[iKaonLow] = cfgPIDConfgs.nSigmas->getData()[iKaonLow][kTPC];
-    tpcNsigmaCut[iProtonLow] = cfgPIDConfgs.nSigmas->getData()[iProtonLow][kTPC];
-
-    tofNsigmaCut[iPionUp] = cfgPIDConfgs.nSigmas->getData()[iPionUp][kTOF];
-    tofNsigmaCut[iKaonUp] = cfgPIDConfgs.nSigmas->getData()[iKaonUp][kTOF];
-    tofNsigmaCut[iProtonUp] = cfgPIDConfgs.nSigmas->getData()[iProtonUp][kTOF];
-    tofNsigmaCut[iPionLow] = cfgPIDConfgs.nSigmas->getData()[iPionLow][kTOF];
-    tofNsigmaCut[iKaonLow] = cfgPIDConfgs.nSigmas->getData()[iKaonLow][kTOF];
-    tofNsigmaCut[iProtonLow] = cfgPIDConfgs.nSigmas->getData()[iProtonLow][kTOF];
-
-    itsNsigmaCut[iPionUp] = cfgPIDConfgs.nSigmas->getData()[iPionUp][kITS];
-    itsNsigmaCut[iKaonUp] = cfgPIDConfgs.nSigmas->getData()[iKaonUp][kITS];
-    itsNsigmaCut[iProtonUp] = cfgPIDConfgs.nSigmas->getData()[iProtonUp][kITS];
-    itsNsigmaCut[iPionLow] = cfgPIDConfgs.nSigmas->getData()[iPionLow][kITS];
-    itsNsigmaCut[iKaonLow] = cfgPIDConfgs.nSigmas->getData()[iKaonLow][kITS];
-    itsNsigmaCut[iProtonLow] = cfgPIDConfgs.nSigmas->getData()[iProtonLow][kITS];
 
     if (doprocessSameFt0aFt0c || doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameTPC) {
       registry.add("hEventCountRct", "Number of Event;; Count", {HistType::kTH1D, {{2, 0, 2}}});
@@ -357,18 +332,18 @@ struct CorrFit {
         registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
         registry.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, axisFit}});
       }
-      if (cfgPIDConfgs.cfgGetNsigmaQA) {
-        if (!cfgPIDConfgs.cfgUseItsPID) {
+      if (cfgPIDConfigs.cfgGetNsigmaQA) {
+        if (!cfgPIDConfigs.cfgUseItsPID) {
           registry.add("TofTpcNsigma_before", "", {HistType::kTHnSparseD, {{axisNsigmaTPC, axisNsigmaTOF, axisPtTrigger}}});
           registry.add("TofTpcNsigma_after", "", {HistType::kTHnSparseD, {{axisNsigmaTPC, axisNsigmaTOF, axisPtTrigger}}});
         } // TPC-TOF PID QA hists
-        if (cfgPIDConfgs.cfgUseItsPID) {
+        if (cfgPIDConfigs.cfgUseItsPID) {
           registry.add("TofItsNsigma_before", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPtTrigger}}});
           registry.add("TofItsNsigma_after", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPtTrigger}}});
         } // ITS-TOF PID QA hists
       } // end of PID QA hists
 
-      if (cfgPIDConfgs.cfgGetdEdx) {
+      if (cfgPIDConfigs.cfgGetdEdx) {
         registry.add("TpcdEdx_ptwise_beforeCut", "", {HistType::kTHnSparseD, {{axisPtTrigger, axisTpcSignal, axisNsigmaTOF}}});
         registry.add("ExpTpcdEdx_ptwise_beforeCut", "", {HistType::kTHnSparseD, {{axisPtTrigger, axisTpcSignal, axisNsigmaTOF}}});
         registry.add("ExpSigma_ptwise_beforeCut", "", {HistType::kTHnSparseD, {{axisPtTrigger, axisSigma, axisNsigmaTOF}}});
@@ -764,21 +739,21 @@ struct CorrFit {
     std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
     int pid = -1; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
 
-    std::array<float, 3> nSigmaToUse = cfgPIDConfgs.cfgUseItsPID ? nSigmaITS : nSigmaTPC;             // Choose which nSigma to use: TPC or ITS
-    std::array<float, 6> detectorNsigmaCut = cfgPIDConfgs.cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
+    std::array<float, 3> nSigmaToUse = cfgPIDConfigs.cfgUseItsPID ? nSigmaITS : nSigmaTPC; // Choose which nSigma to use: TPC or ITS
+    int kIndexDetector = cfgPIDConfigs.cfgUseItsPID ? kITS : kTPC;                         // Choose which nSigma to use: TPC or ITS
 
     bool isPion, isKaon, isProton;
-    bool isDetectedPion = nSigmaToUse[iPionUp] < detectorNsigmaCut[iPionUp] && nSigmaToUse[iPionUp] > detectorNsigmaCut[iPionLow];
-    bool isDetectedKaon = nSigmaToUse[iKaonUp] < detectorNsigmaCut[iKaonUp] && nSigmaToUse[iKaonUp] > detectorNsigmaCut[iKaonLow];
-    bool isDetectedProton = nSigmaToUse[iProtonUp] < detectorNsigmaCut[iProtonUp] && nSigmaToUse[iProtonUp] > detectorNsigmaCut[iProtonLow];
+    bool isDetectedPion = nSigmaToUse[iPionUp] < cfgPIDConfigs.nSigmas->getData()[iPionUp][kIndexDetector] && nSigmaToUse[iPionUp] > cfgPIDConfigs.nSigmas->getData()[iPionLow][kIndexDetector];
+    bool isDetectedKaon = nSigmaToUse[iKaonUp] < cfgPIDConfigs.nSigmas->getData()[iKaonUp][kIndexDetector] && nSigmaToUse[iKaonUp] > cfgPIDConfigs.nSigmas->getData()[iKaonLow][kIndexDetector];
+    bool isDetectedProton = nSigmaToUse[iProtonUp] < cfgPIDConfigs.nSigmas->getData()[iProtonUp][kIndexDetector] && nSigmaToUse[iProtonUp] > cfgPIDConfigs.nSigmas->getData()[iProtonLow][kIndexDetector];
 
-    bool isTofPion = nSigmaTOF[iPionUp] < tofNsigmaCut[iPionUp] && nSigmaTOF[iPionUp] > tofNsigmaCut[iPionLow];
-    bool isTofKaon = nSigmaTOF[iKaonUp] < tofNsigmaCut[iKaonUp] && nSigmaTOF[iKaonUp] > tofNsigmaCut[iKaonLow];
-    bool isTofProton = nSigmaTOF[iProtonUp] < tofNsigmaCut[iProtonUp] && nSigmaTOF[iProtonUp] > tofNsigmaCut[iProtonLow];
+    bool isTofPion = nSigmaTOF[iPionUp] < cfgPIDConfigs.nSigmas->getData()[iPionUp][kTOF] && nSigmaTOF[iPionUp] > cfgPIDConfigs.nSigmas->getData()[iPionLow][kTOF];
+    bool isTofKaon = nSigmaTOF[iKaonUp] < cfgPIDConfigs.nSigmas->getData()[iKaonUp][kTOF] && nSigmaTOF[iKaonUp] > cfgPIDConfigs.nSigmas->getData()[iKaonLow][kTOF];
+    bool isTofProton = nSigmaTOF[iProtonUp] < cfgPIDConfigs.nSigmas->getData()[iProtonUp][kTOF] && nSigmaTOF[iProtonUp] > cfgPIDConfigs.nSigmas->getData()[iProtonLow][kTOF];
 
-    if (track.pt() > cfgPIDConfgs.cfgTofPtCut && !track.hasTOF()) {
+    if (track.pt() > cfgPIDConfigs.cfgTofPtCut && !track.hasTOF()) {
       return -1;
-    } else if (track.pt() > cfgPIDConfgs.cfgTofPtCut && track.hasTOF()) {
+    } else if (track.pt() > cfgPIDConfigs.cfgTofPtCut && track.hasTOF()) {
       isPion = isTofPion && isDetectedPion;
       isKaon = isTofKaon && isDetectedKaon;
       isProton = isTofProton && isDetectedProton;
@@ -788,7 +763,7 @@ struct CorrFit {
       isProton = isDetectedProton;
     }
 
-    if (cfgPIDConfgs.cfgPIDUseRejection && ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton))) {
+    if (cfgPIDConfigs.cfgPIDUseRejection && ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton))) {
       return -1; // more than one particle satisfy the criteria
     }
 
@@ -939,7 +914,7 @@ struct CorrFit {
       if (!trackSelected(track1)) {
         continue;
       }
-      if (cfgPIDConfgs.cfgPIDParticle && getNsigmaPID(track1, true) != cfgPIDConfgs.cfgPIDParticle)
+      if (cfgPIDConfigs.cfgPIDParticle && getNsigmaPID(track1, true) != cfgPIDConfigs.cfgPIDParticle)
         continue; // if PID is selected, check if the track has the right PID
 
       if (!getEfficiencyCorrection(weff1, track1.eta(), track1.pt(), zvtx)) {
@@ -951,7 +926,7 @@ struct CorrFit {
       registry.fill(HIST("EtaCorrected"), track1.eta(), weff1);
       registry.fill(HIST("pTFiner"), track1.pt());
       registry.fill(HIST("pTFinerCorrected"), track1.pt(), weff1);
-      registry.fill(HIST("hParticleSelected"), cfgPIDConfgs.cfgPIDParticle.value, track1.pt());
+      registry.fill(HIST("hParticleSelected"), cfgPIDConfigs.cfgPIDParticle.value, track1.pt());
     }
   }
 
@@ -960,10 +935,10 @@ struct CorrFit {
   {
     switch (pid) {
       case kPions: // For Pions
-        if (!cfgPIDConfgs.cfgUseItsPID) {
-          if (cfgPIDConfgs.cfgGetNsigmaQA)
+        if (!cfgPIDConfigs.cfgUseItsPID) {
+          if (cfgPIDConfigs.cfgGetNsigmaQA)
             registry.fill(HIST("TofTpcNsigma_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
-          if (cfgPIDConfgs.cfgGetdEdx) {
+          if (cfgPIDConfigs.cfgGetdEdx) {
             double tpcExpSignalPi = track1.tpcSignal() - (track1.tpcNSigmaPi() * track1.tpcExpSigmaPi());
 
             registry.fill(HIST("TpcdEdx_ptwise_beforeCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaPi());
@@ -971,14 +946,14 @@ struct CorrFit {
             registry.fill(HIST("ExpSigma_ptwise_beforeCut"), track1.pt(), track1.tpcExpSigmaPi(), track1.tofNSigmaPi());
           }
         }
-        if (cfgPIDConfgs.cfgGetNsigmaQA && cfgPIDConfgs.cfgUseItsPID)
+        if (cfgPIDConfigs.cfgGetNsigmaQA && cfgPIDConfigs.cfgUseItsPID)
           registry.fill(HIST("TofItsNsigma_before"), itsResponse.nSigmaITS<o2::track::PID::Pion>(track1), track1.tofNSigmaPi(), track1.pt());
         break;
       case kKaons: // For Kaons
-        if (!cfgPIDConfgs.cfgUseItsPID) {
-          if (cfgPIDConfgs.cfgGetNsigmaQA)
+        if (!cfgPIDConfigs.cfgUseItsPID) {
+          if (cfgPIDConfigs.cfgGetNsigmaQA)
             registry.fill(HIST("TofTpcNsigma_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-          if (cfgPIDConfgs.cfgGetdEdx) {
+          if (cfgPIDConfigs.cfgGetdEdx) {
             double tpcExpSignalKa = track1.tpcSignal() - (track1.tpcNSigmaKa() * track1.tpcExpSigmaKa());
 
             registry.fill(HIST("TpcdEdx_ptwise_beforeCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaKa());
@@ -986,14 +961,14 @@ struct CorrFit {
             registry.fill(HIST("ExpSigma_ptwise_beforeCut"), track1.pt(), track1.tpcExpSigmaKa(), track1.tofNSigmaKa());
           }
         }
-        if (cfgPIDConfgs.cfgGetNsigmaQA && cfgPIDConfgs.cfgUseItsPID)
+        if (cfgPIDConfigs.cfgGetNsigmaQA && cfgPIDConfigs.cfgUseItsPID)
           registry.fill(HIST("TofItsNsigma_before"), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1), track1.tofNSigmaKa(), track1.pt());
         break;
       case kProtons: // For Protons
-        if (!cfgPIDConfgs.cfgUseItsPID) {
-          if (cfgPIDConfgs.cfgGetNsigmaQA)
+        if (!cfgPIDConfigs.cfgUseItsPID) {
+          if (cfgPIDConfigs.cfgGetNsigmaQA)
             registry.fill(HIST("TofTpcNsigma_before"), track1.tpcNSigmaPr(), track1.tofNSigmaPr(), track1.pt());
-          if (cfgPIDConfgs.cfgGetdEdx) {
+          if (cfgPIDConfigs.cfgGetdEdx) {
             double tpcExpSignalPr = track1.tpcSignal() - (track1.tpcNSigmaPr() * track1.tpcExpSigmaPr());
 
             registry.fill(HIST("TpcdEdx_ptwise_beforeCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaPr());
@@ -1001,7 +976,7 @@ struct CorrFit {
             registry.fill(HIST("ExpSigma_ptwise_beforeCut"), track1.pt(), track1.tpcExpSigmaPr(), track1.tofNSigmaPr());
           }
         }
-        if (cfgPIDConfgs.cfgGetNsigmaQA && cfgPIDConfgs.cfgUseItsPID)
+        if (cfgPIDConfigs.cfgGetNsigmaQA && cfgPIDConfigs.cfgUseItsPID)
           registry.fill(HIST("TofItsNsigma_before"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
         break;
     }
@@ -1012,48 +987,48 @@ struct CorrFit {
   {
     switch (pid) {
       case kPions: // For Pions
-        if (!cfgPIDConfgs.cfgUseItsPID) {
-          if (cfgPIDConfgs.cfgGetdEdx) {
+        if (!cfgPIDConfigs.cfgUseItsPID) {
+          if (cfgPIDConfigs.cfgGetdEdx) {
             double tpcExpSignalPi = track1.tpcSignal() - (track1.tpcNSigmaPi() * track1.tpcExpSigmaPi());
 
             registry.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaPi());
             registry.fill(HIST("ExpTpcdEdx_ptwise_afterCut"), track1.pt(), tpcExpSignalPi, track1.tofNSigmaPi());
             registry.fill(HIST("ExpSigma_ptwise_afterCut"), track1.pt(), track1.tpcExpSigmaPi(), track1.tofNSigmaPi());
           }
-          if (cfgPIDConfgs.cfgGetNsigmaQA)
+          if (cfgPIDConfigs.cfgGetNsigmaQA)
             registry.fill(HIST("TofTpcNsigma_after"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
         }
-        if (cfgPIDConfgs.cfgUseItsPID)
+        if (cfgPIDConfigs.cfgUseItsPID)
           registry.fill(HIST("TofItsNsigma_after"), itsResponse.nSigmaITS<o2::track::PID::Pion>(track1), track1.tofNSigmaPi(), track1.pt());
         break;
       case kKaons: // For Kaons
-        if (!cfgPIDConfgs.cfgUseItsPID) {
-          if (cfgPIDConfgs.cfgGetdEdx) {
+        if (!cfgPIDConfigs.cfgUseItsPID) {
+          if (cfgPIDConfigs.cfgGetdEdx) {
             double tpcExpSignalKa = track1.tpcSignal() - (track1.tpcNSigmaKa() * track1.tpcExpSigmaKa());
 
             registry.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaKa());
             registry.fill(HIST("ExpTpcdEdx_ptwise_afterCut"), track1.pt(), tpcExpSignalKa, track1.tofNSigmaKa());
             registry.fill(HIST("ExpSigma_ptwise_afterCut"), track1.pt(), track1.tpcExpSigmaKa(), track1.tofNSigmaKa());
           }
-          if (cfgPIDConfgs.cfgGetNsigmaQA)
+          if (cfgPIDConfigs.cfgGetNsigmaQA)
             registry.fill(HIST("TofTpcNsigma_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
         }
-        if (cfgPIDConfgs.cfgUseItsPID)
+        if (cfgPIDConfigs.cfgUseItsPID)
           registry.fill(HIST("TofItsNsigma_after"), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1), track1.tofNSigmaKa(), track1.pt());
         break;
       case kProtons: // For Protons
-        if (!cfgPIDConfgs.cfgUseItsPID) {
-          if (cfgPIDConfgs.cfgGetdEdx) {
+        if (!cfgPIDConfigs.cfgUseItsPID) {
+          if (cfgPIDConfigs.cfgGetdEdx) {
             double tpcExpSignalPr = track1.tpcSignal() - (track1.tpcNSigmaPr() * track1.tpcExpSigmaPr());
 
             registry.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaPr());
             registry.fill(HIST("ExpTpcdEdx_ptwise_afterCut"), track1.pt(), tpcExpSignalPr, track1.tofNSigmaPr());
             registry.fill(HIST("ExpSigma_ptwise_afterCut"), track1.pt(), track1.tpcExpSigmaPr(), track1.tofNSigmaPr());
           }
-          if (cfgPIDConfgs.cfgGetNsigmaQA)
+          if (cfgPIDConfigs.cfgGetNsigmaQA)
             registry.fill(HIST("TofTpcNsigma_after"), track1.tpcNSigmaPr(), track1.tofNSigmaPr(), track1.pt());
         }
-        if (cfgPIDConfgs.cfgUseItsPID && cfgPIDConfgs.cfgGetNsigmaQA)
+        if (cfgPIDConfigs.cfgUseItsPID && cfgPIDConfigs.cfgGetNsigmaQA)
           registry.fill(HIST("TofItsNsigma_after"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
         break;
     } // end of switch
@@ -1072,14 +1047,14 @@ struct CorrFit {
       if (!trackSelected(track1))
         continue;
 
-      if (cfgPIDConfgs.cfgPIDParticle > kCharged)
-        fillNsigmaBeforeCut(track1, cfgPIDConfgs.cfgPIDParticle);
+      if (cfgPIDConfigs.cfgPIDParticle > kCharged)
+        fillNsigmaBeforeCut(track1, cfgPIDConfigs.cfgPIDParticle);
 
-      if (cfgPIDConfgs.cfgPIDParticle && getNsigmaPID(track1, false) != cfgPIDConfgs.cfgPIDParticle)
+      if (cfgPIDConfigs.cfgPIDParticle && getNsigmaPID(track1, false) != cfgPIDConfigs.cfgPIDParticle)
         continue; // if PID is selected, check if the track has the right PID
 
-      if (cfgPIDConfgs.cfgPIDParticle > kCharged)
-        fillNsigmaAfterCut(track1, cfgPIDConfgs.cfgPIDParticle);
+      if (cfgPIDConfigs.cfgPIDParticle > kCharged)
+        fillNsigmaAfterCut(track1, cfgPIDConfigs.cfgPIDParticle);
 
       if (!getEfficiencyCorrection(triggerWeight, track1.pt(), track1.eta(), posZ))
         continue;
@@ -1212,14 +1187,14 @@ struct CorrFit {
         continue;
 
       // Fill Nsigma QA
-      if (cfgPIDConfgs.cfgPIDParticle > kCharged)
-        fillNsigmaBeforeCut(track1, cfgPIDConfgs.cfgPIDParticle);
+      if (cfgPIDConfigs.cfgPIDParticle > kCharged)
+        fillNsigmaBeforeCut(track1, cfgPIDConfigs.cfgPIDParticle);
 
-      if (cfgPIDConfgs.cfgPIDParticle && getNsigmaPID(track1, false) != cfgPIDConfgs.cfgPIDParticle)
+      if (cfgPIDConfigs.cfgPIDParticle && getNsigmaPID(track1, false) != cfgPIDConfigs.cfgPIDParticle)
         continue; // if PID is selected, check if the track has the right PID
 
-      if (cfgPIDConfgs.cfgPIDParticle > kCharged)
-        fillNsigmaAfterCut(track1, cfgPIDConfgs.cfgPIDParticle);
+      if (cfgPIDConfigs.cfgPIDParticle > kCharged)
+        fillNsigmaAfterCut(track1, cfgPIDConfigs.cfgPIDParticle);
 
       if (!getEfficiencyCorrectionNch(triggerWeight, track1.pt()))
         continue;

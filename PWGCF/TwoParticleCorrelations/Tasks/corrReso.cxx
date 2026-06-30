@@ -351,13 +351,6 @@ struct CorrReso {
     kCount_CentEstimators
   };
 
-  std::array<std::array<int, 1>, 14> eventCuts;
-  std::array<std::array<float, 3>, 12> resoCutVals;
-  std::array<std::array<int, 3>, 7> resoSwitchVals;
-  std::array<float, 6> tofNsigmaCut;
-  std::array<float, 6> itsNsigmaCut;
-  std::array<float, 6> tpcNsigmaCut;
-
   RCTFlagsChecker rctChecker{"CBT"};
 
   void init(InitContext&)
@@ -374,39 +367,14 @@ struct CorrReso {
       return;
     }
 
-    readMatrix(cfgUseEventCuts->getData(), eventCuts, kFilteredEvents, kNEventCuts, kEvCut1, kNEvCutTypes);
-    readMatrix(cfgPIDConfigs.cfgResoCuts->getData(), resoCutVals, kCosPA, kNParticleCuts, iK0, NResoParticles);
-    readMatrix(cfgPIDConfigs.cfgResoSwitches->getData(), resoSwitchVals, kUseCosPA, kNParticleSwitches, iK0, NResoParticles);
-
-    tpcNsigmaCut[iPionUp] = cfgPIDConfigs.nSigmas->getData()[iPionUp][kTPC];
-    tpcNsigmaCut[iKaonUp] = cfgPIDConfigs.nSigmas->getData()[iKaonUp][kTPC];
-    tpcNsigmaCut[iProtonUp] = cfgPIDConfigs.nSigmas->getData()[iProtonUp][kTPC];
-    tpcNsigmaCut[iPionLow] = cfgPIDConfigs.nSigmas->getData()[iPionLow][kTPC];
-    tpcNsigmaCut[iKaonLow] = cfgPIDConfigs.nSigmas->getData()[iKaonLow][kTPC];
-    tpcNsigmaCut[iProtonLow] = cfgPIDConfigs.nSigmas->getData()[iProtonLow][kTPC];
-
-    tofNsigmaCut[iPionUp] = cfgPIDConfigs.nSigmas->getData()[iPionUp][kTOF];
-    tofNsigmaCut[iKaonUp] = cfgPIDConfigs.nSigmas->getData()[iKaonUp][kTOF];
-    tofNsigmaCut[iProtonUp] = cfgPIDConfigs.nSigmas->getData()[iProtonUp][kTOF];
-    tofNsigmaCut[iPionLow] = cfgPIDConfigs.nSigmas->getData()[iPionLow][kTOF];
-    tofNsigmaCut[iKaonLow] = cfgPIDConfigs.nSigmas->getData()[iKaonLow][kTOF];
-    tofNsigmaCut[iProtonLow] = cfgPIDConfigs.nSigmas->getData()[iProtonLow][kTOF];
-
-    itsNsigmaCut[iPionUp] = cfgPIDConfigs.nSigmas->getData()[iPionUp][kITS];
-    itsNsigmaCut[iKaonUp] = cfgPIDConfigs.nSigmas->getData()[iKaonUp][kITS];
-    itsNsigmaCut[iProtonUp] = cfgPIDConfigs.nSigmas->getData()[iProtonUp][kITS];
-    itsNsigmaCut[iPionLow] = cfgPIDConfigs.nSigmas->getData()[iPionLow][kITS];
-    itsNsigmaCut[iKaonLow] = cfgPIDConfigs.nSigmas->getData()[iKaonLow][kITS];
-    itsNsigmaCut[iProtonLow] = cfgPIDConfigs.nSigmas->getData()[iProtonLow][kITS];
-
     // Creating mass axis depending on particle - 4 = kshort, 5 = lambda, 6 = phi
     AxisSpec axisInvMass = {10, 0, 1, "mass"};
     if (cfgPIDConfigs.cfgPIDParticle == kK0)
-      axisInvMass = {resoSwitchVals[kMassBins][iK0], resoCutVals[kMassMin][iK0], resoCutVals[kMassMax][iK0], "M_{#pi^{+}#pi^{-}} (GeV/c^{2})"};
+      axisInvMass = {cfgPIDConfigs.cfgResoSwitches->getData()[kMassBins][iK0], cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iK0], cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iK0], "M_{#pi^{+}#pi^{-}} (GeV/c^{2})"};
     if (cfgPIDConfigs.cfgPIDParticle == kLambda)
-      axisInvMass = {resoSwitchVals[kMassBins][iLambda], resoCutVals[kMassMin][iLambda], resoCutVals[kMassMax][iLambda], "M_{p#pi^{-}} (GeV/c^{2})"};
+      axisInvMass = {cfgPIDConfigs.cfgResoSwitches->getData()[kMassBins][iLambda], cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iLambda], cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iLambda], "M_{p#pi^{-}} (GeV/c^{2})"};
     if (cfgPIDConfigs.cfgPIDParticle == kPhi)
-      axisInvMass = {resoSwitchVals[kMassBins][iPhi], resoCutVals[kMassMin][iPhi], resoCutVals[kMassMax][iPhi], "M_{K^{+}K^{-}} (GeV/c^{2})"};
+      axisInvMass = {cfgPIDConfigs.cfgResoSwitches->getData()[kMassBins][iPhi], cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iPhi], cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iPhi], "M_{K^{+}K^{-}} (GeV/c^{2})"};
 
     if (doprocessSameTpcFt0a || doprocessSameTpcFt0c) {
       if (cfgPIDConfigs.cfgPIDParticle == kK0) { // For K0
@@ -497,7 +465,7 @@ struct CorrReso {
     }
 
     // Multiplicity correlation cuts
-    if (eventCuts[kUseMultCorrCut][kEvCut1]) {
+    if (cfgUseEventCuts->getData()[kUseMultCorrCut][kEvCut1]) {
       cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
       cfgFuncParas.multPVT0CCutPars = cfgFuncParas.cfgMultPVT0CCutPars;
       cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
@@ -522,7 +490,7 @@ struct CorrReso {
       cfgFuncParas.fMultMultV0ACutHigh = new TF1("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
       cfgFuncParas.fMultMultV0ACutHigh->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
     }
-    if (eventCuts[kUseT0AV0ACut][kEvCut1]) {
+    if (cfgUseEventCuts->getData()[kUseT0AV0ACut][kEvCut1]) {
       cfgFuncParas.fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
       cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
@@ -657,82 +625,82 @@ struct CorrReso {
   template <typename TCollision>
   bool eventSelected(TCollision const& collision, const int mult, const bool fillCounter)
   {
-    if (eventCuts[kUseNoTimeFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (cfgUseEventCuts->getData()[kUseNoTimeFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return 0;
     }
-    if (fillCounter && eventCuts[kUseNoTimeFrameBorder][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseNoTimeFrameBorder][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseNoTimeFrameBorder);
 
-    if (eventCuts[kUseNoITSROFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (cfgUseEventCuts->getData()[kUseNoITSROFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return 0;
     }
-    if (fillCounter && eventCuts[kUseNoITSROFrameBorder][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseNoITSROFrameBorder][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseNoITSROFrameBorder);
 
-    if (eventCuts[kUseNoSameBunchPileup][kEvCut1] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (cfgUseEventCuts->getData()[kUseNoSameBunchPileup][kEvCut1] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (fillCounter && eventCuts[kUseNoSameBunchPileup][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseNoSameBunchPileup][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseNoSameBunchPileup);
 
-    if (eventCuts[kUseGoodZvtxFT0vsPV][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (cfgUseEventCuts->getData()[kUseGoodZvtxFT0vsPV][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return 0;
     }
-    if (fillCounter && eventCuts[kUseGoodZvtxFT0vsPV][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseGoodZvtxFT0vsPV][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseGoodZvtxFT0vsPV);
 
-    if (eventCuts[kUseNoCollInTimeRangeStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (cfgUseEventCuts->getData()[kUseNoCollInTimeRangeStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
 
-    if (fillCounter && eventCuts[kUseNoCollInTimeRangeStandard][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseNoCollInTimeRangeStandard][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseNoCollInTimeRangeStandard);
 
-    if (eventCuts[kUseGoodITSLayersAll][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgUseEventCuts->getData()[kUseGoodITSLayersAll][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
       return 0;
     }
 
-    if (fillCounter && eventCuts[kUseGoodITSLayersAll][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseGoodITSLayersAll][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseGoodITSLayersAll);
 
-    if (eventCuts[kUseGoodITSLayer0123][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+    if (cfgUseEventCuts->getData()[kUseGoodITSLayer0123][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
       return 0;
     }
-    if (fillCounter && eventCuts[kUseGoodITSLayer0123][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseGoodITSLayer0123][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseGoodITSLayer0123);
 
-    if (eventCuts[kUseNoCollInRofStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (cfgUseEventCuts->getData()[kUseNoCollInRofStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
 
-    if (fillCounter && eventCuts[kUseNoCollInRofStandard][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseNoCollInRofStandard][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseNoCollInRofStandard);
 
-    if (eventCuts[kUseNoHighMultCollInPrevRof][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (cfgUseEventCuts->getData()[kUseNoHighMultCollInPrevRof][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
-    if (fillCounter && eventCuts[kUseNoHighMultCollInPrevRof][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseNoHighMultCollInPrevRof][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseNoHighMultCollInPrevRof);
 
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (eventCuts[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
+    if (cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
       return 0;
     }
-    if (fillCounter && eventCuts[kUseOccupancy][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseOccupancy);
 
-    if (eventCuts[kUseMultCorrCut][kEvCut1]) {
+    if (cfgUseEventCuts->getData()[kUseMultCorrCut][kEvCut1]) {
       float cent = getCentrality(collision);
       if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
         if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(cent))
@@ -760,13 +728,13 @@ struct CorrReso {
       }
     }
 
-    if (fillCounter && eventCuts[kUseMultCorrCut][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseMultCorrCut][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseMultCorrCut);
 
     // V0A T0A 5 sigma cut
-    if (eventCuts[kUseT0AV0ACut][kEvCut1] && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > cfgFuncParas.cfgV0AT0Acut * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (cfgUseEventCuts->getData()[kUseT0AV0ACut][kEvCut1] && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > cfgFuncParas.cfgV0AT0Acut * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
-    if (fillCounter && eventCuts[kUseT0AV0ACut][kEvCut1])
+    if (fillCounter && cfgUseEventCuts->getData()[kUseT0AV0ACut][kEvCut1])
       registry.fill(HIST("hEventCount"), kUseT0AV0ACut);
 
     return 1;
@@ -930,17 +898,17 @@ struct CorrReso {
     std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
     int pid = -1; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
 
-    std::array<float, 3> nSigmaToUse = cfgPIDConfigs.cfgUseItsPID ? nSigmaITS : nSigmaTPC;             // Choose which nSigma to use: TPC or ITS
-    std::array<float, 6> detectorNsigmaCut = cfgPIDConfigs.cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
+    std::array<float, 3> nSigmaToUse = cfgPIDConfigs.cfgUseItsPID ? nSigmaITS : nSigmaTPC; // Choose which nSigma to use: TPC or ITS
+    int kIndexDetector = cfgPIDConfigs.cfgUseItsPID ? kITS : kTPC;                         // Choose which nSigma to use: TPC or ITS
 
     bool isPion, isKaon, isProton;
-    bool isDetectedPion = nSigmaToUse[iPionUp] < detectorNsigmaCut[iPionUp] && nSigmaToUse[iPionUp] > detectorNsigmaCut[iPionLow];
-    bool isDetectedKaon = nSigmaToUse[iKaonUp] < detectorNsigmaCut[iKaonUp] && nSigmaToUse[iKaonUp] > detectorNsigmaCut[iKaonLow];
-    bool isDetectedProton = nSigmaToUse[iProtonUp] < detectorNsigmaCut[iProtonUp] && nSigmaToUse[iProtonUp] > detectorNsigmaCut[iProtonLow];
+    bool isDetectedPion = nSigmaToUse[iPionUp] < cfgPIDConfigs.nSigmas->getData()[iPionUp][kIndexDetector] && nSigmaToUse[iPionUp] > cfgPIDConfigs.nSigmas->getData()[iPionLow][kIndexDetector];
+    bool isDetectedKaon = nSigmaToUse[iKaonUp] < cfgPIDConfigs.nSigmas->getData()[iKaonUp][kIndexDetector] && nSigmaToUse[iKaonUp] > cfgPIDConfigs.nSigmas->getData()[iKaonLow][kIndexDetector];
+    bool isDetectedProton = nSigmaToUse[iProtonUp] < cfgPIDConfigs.nSigmas->getData()[iProtonUp][kIndexDetector] && nSigmaToUse[iProtonUp] > cfgPIDConfigs.nSigmas->getData()[iProtonLow][kIndexDetector];
 
-    bool isTofPion = nSigmaTOF[iPionUp] < tofNsigmaCut[iPionUp] && nSigmaTOF[iPionUp] > tofNsigmaCut[iPionLow];
-    bool isTofKaon = nSigmaTOF[iKaonUp] < tofNsigmaCut[iKaonUp] && nSigmaTOF[iKaonUp] > tofNsigmaCut[iKaonLow];
-    bool isTofProton = nSigmaTOF[iProtonUp] < tofNsigmaCut[iProtonUp] && nSigmaTOF[iProtonUp] > tofNsigmaCut[iProtonLow];
+    bool isTofPion = nSigmaTOF[iPionUp] < cfgPIDConfigs.nSigmas->getData()[iPionUp][kTOF] && nSigmaTOF[iPionUp] > cfgPIDConfigs.nSigmas->getData()[iPionLow][kTOF];
+    bool isTofKaon = nSigmaTOF[iKaonUp] < cfgPIDConfigs.nSigmas->getData()[iKaonUp][kTOF] && nSigmaTOF[iKaonUp] > cfgPIDConfigs.nSigmas->getData()[iKaonLow][kTOF];
+    bool isTofProton = nSigmaTOF[iProtonUp] < cfgPIDConfigs.nSigmas->getData()[iProtonUp][kTOF] && nSigmaTOF[iProtonUp] > cfgPIDConfigs.nSigmas->getData()[iProtonLow][kTOF];
 
     if (track.pt() > cfgPIDConfigs.cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -1135,38 +1103,38 @@ struct CorrReso {
     auto negtrack = candidate.template negTrack_as<FilteredTracks>();
 
     registry.fill(HIST("hK0Count"), 0.5);
-    if (postrack.pt() < resoCutVals[kPosTrackPt][iK0] || negtrack.pt() < resoCutVals[kNegTrackPt][iK0])
+    if (postrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kPosTrackPt][iK0] || negtrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kNegTrackPt][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 1.5);
-    if (mk0 < resoCutVals[kMassMin][iK0] && mk0 > resoCutVals[kMassMax][iK0])
+    if (mk0 < cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iK0] && mk0 > cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 2.5);
     // Rapidity correction
-    if (candidate.yK0Short() > resoCutVals[kRapidity][iK0])
+    if (candidate.yK0Short() > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 3.5);
     // DCA cuts for K0short
-    if (std::abs(candidate.dcapostopv()) < resoCutVals[kDCAPosToPVMin][iK0] || std::abs(candidate.dcanegtopv()) < resoCutVals[kDCANegToPVMin][iK0])
+    if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iK0] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 4.5);
-    if (std::abs(candidate.dcaV0daughters()) > resoSwitchVals[kDCABetDaug][iK0])
+    if (std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoSwitches->getData()[kDCABetDaug][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 5.5);
     // v0 radius cuts
-    if (resoSwitchVals[kUseV0Radius][iK0] && (candidate.v0radius() < resoCutVals[kRadiusMin][iK0] || candidate.v0radius() > resoCutVals[kRadiusMax][iK0]))
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseV0Radius][iK0] && (candidate.v0radius() < cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMin][iK0] || candidate.v0radius() > cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMax][iK0]))
       return false;
     registry.fill(HIST("hK0Count"), 6.5);
     // cosine pointing angle cuts
-    if (candidate.v0cosPA() < resoCutVals[kCosPA][iK0])
+    if (candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 7.5);
     // Proper lifetime
     float cTauK0 = candidate.distovertotmom(posX, posY, posZ) * massK0Short;
-    if (resoSwitchVals[kUseProperLifetime][iK0] && std::abs(cTauK0) > resoCutVals[kLifeTime][iK0])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iK0] && std::abs(cTauK0) > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 8.5);
     // ArmenterosPodolanskiCut
-    if (resoSwitchVals[kUseArmPodCut][iK0] && (candidate.qtarm() / std::abs(candidate.alpha())) < resoCutVals[kArmPodMinVal][iK0])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseArmPodCut][iK0] && (candidate.qtarm() / std::abs(candidate.alpha())) < cfgPIDConfigs.cfgResoCuts->getData()[kArmPodMinVal][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 9.5);
     // Selection on V0 daughters
@@ -1198,13 +1166,13 @@ struct CorrReso {
     auto negtrack = candidate.template negTrack_as<FilteredTracks>();
 
     registry.fill(HIST("hLambdaCount"), 0.5);
-    if (postrack.pt() < resoCutVals[kPosTrackPt][iLambda] || negtrack.pt() < resoCutVals[kNegTrackPt][iLambda])
+    if (postrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kPosTrackPt][iLambda] || negtrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kNegTrackPt][iLambda])
       return false;
 
     registry.fill(HIST("hLambdaCount"), 1.5);
-    if (mlambda > resoCutVals[kMassMin][iLambda] && mlambda < resoCutVals[kMassMax][iLambda])
+    if (mlambda > cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iLambda] && mlambda < cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iLambda])
       isL = true;
-    if (mantilambda > resoCutVals[kMassMin][iLambda] && mantilambda < resoCutVals[kMassMax][iLambda])
+    if (mantilambda > cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iLambda] && mantilambda < cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iLambda])
       isAL = true;
 
     if (!isL && !isAL) {
@@ -1213,33 +1181,33 @@ struct CorrReso {
     registry.fill(HIST("hLambdaCount"), 2.5);
 
     // Rapidity correction
-    if (candidate.yLambda() > resoCutVals[kRapidity][iLambda])
+    if (candidate.yLambda() > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 3.5);
     // DCA cuts for lambda and antilambda
     if (isL) {
-      if (std::abs(candidate.dcapostopv()) < resoCutVals[kDCAPosToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < resoCutVals[kDCANegToPVMin][iLambda])
+      if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda])
         return false;
     }
     if (isAL) {
-      if (std::abs(candidate.dcapostopv()) < resoCutVals[kDCANegToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < resoCutVals[kDCAPosToPVMin][iLambda])
+      if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda])
         return false;
     }
     registry.fill(HIST("hLambdaCount"), 4.5);
-    if (std::abs(candidate.dcaV0daughters()) > resoSwitchVals[kDCABetDaug][iLambda])
+    if (std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoSwitches->getData()[kDCABetDaug][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 5.5);
     // v0 radius cuts
-    if (resoSwitchVals[kUseV0Radius][iLambda] && (candidate.v0radius() < resoCutVals[kRadiusMin][iLambda] || candidate.v0radius() > resoCutVals[kRadiusMax][iLambda]))
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseV0Radius][iLambda] && (candidate.v0radius() < cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMin][iLambda] || candidate.v0radius() > cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMax][iLambda]))
       return false;
     registry.fill(HIST("hLambdaCount"), 6.5);
     // cosine pointing angle cuts
-    if (candidate.v0cosPA() < resoCutVals[kCosPA][iLambda])
+    if (candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 7.5);
     // Proper lifetime
     float cTauLambda = candidate.distovertotmom(posX, posY, posZ) * massLambda;
-    if (resoSwitchVals[kUseProperLifetime][iLambda] && cTauLambda > resoCutVals[kLifeTime][iLambda])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iLambda] && cTauLambda > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 8.5);
     if (isL) {
