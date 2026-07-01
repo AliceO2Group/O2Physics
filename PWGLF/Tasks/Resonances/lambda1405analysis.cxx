@@ -961,9 +961,9 @@ struct lambda1405analysis {
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
         auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
 
-        bool isSigmaMinusKink    = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
-        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus,  PDG_t::kPiPlus, particlesMC);
-        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus,  PDG_t::kProton, particlesMC);
+        bool isSigmaMinusKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kProton, particlesMC);
 
         if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
           continue; // Skip if not a valid Sigma kink decay
