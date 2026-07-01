@@ -80,6 +80,7 @@ DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
 DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
 DECLARE_SOA_COLUMN(D0MatchedFrom, d0MatchedFrom, int);
 DECLARE_SOA_COLUMN(D0SelectedAs, d0SelectedAs, int);
+DECLARE_SOA_COLUMN(D0DecayChannel, d0DecayChannel, int8_t);
 } // namespace d0Info
 
 DECLARE_SOA_TABLE(D0Tables, "AOD", "D0TABLE",
@@ -106,7 +107,8 @@ DECLARE_SOA_TABLE(D0McDTables, "AOD", "D0MCDTABLE",
                   d0Info::D0Phi,
                   d0Info::D0Y,
                   d0Info::D0MatchedFrom,
-                  d0Info::D0SelectedAs);
+                  d0Info::D0SelectedAs,
+                  d0Info::D0DecayChannel);
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
                   o2::soa::Index<>,
@@ -115,7 +117,8 @@ DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
                   d0Info::D0Pt,
                   d0Info::D0Eta,
                   d0Info::D0Phi,
-                  d0Info::D0Y);
+                  d0Info::D0Y,
+                  d0Info::D0DecayChannel);
 
 namespace jetInfo
 {
@@ -192,7 +195,7 @@ struct JetCorrelationD0 {
   // Configurables
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "decide to run over MB gap events or not"};
-  Configurable<bool> applyRCTSelections{"applyRCTSelections", false, "decide to apply RCT selections"};
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
   Configurable<float> jetPtCutMin{"jetPtCutMin", 5.0, "minimum value of jet pt"};
   Configurable<float> d0PtCutMin{"d0PtCutMin", 1.0, "minimum value of d0 pt"};
   Configurable<float> jetMcPtCutMin{"jetMcPtCutMin", 3.0, "minimum value of jet pt particle level"};
@@ -340,13 +343,16 @@ struct JetCorrelationD0 {
       const auto scores = d0Candidate.mlScores();
       fillD0Histograms(d0Candidate, scores);
 
+      // flagMcMatchRec() = sign * DecayChannelMain
+      // |value| identifies the decay channel (D0ToPiK=1, ..., D0ToKK=5), sign identifies D0(+)/D0bar(-), 0 = no match.
+      int8_t d0DecayChannel = d0Candidate.flagMcMatchRec();
+
       int matchedFrom = 0;
-      int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
       int selectedAs = 0;
 
-      if (d0Candidate.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
+      if (d0DecayChannel > 0) { // matched to a D0 on truth level (any channel)
         matchedFrom = 1;
-      } else if (d0Candidate.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
+      } else if (d0DecayChannel < 0) { // matched to a D0bar on truth level (any channel)
         matchedFrom = -1;
       }
       if (d0Candidate.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
@@ -365,7 +371,8 @@ struct JetCorrelationD0 {
                         d0Candidate.phi(),
                         d0Candidate.y(),
                         matchedFrom,
-                        selectedAs);
+                        selectedAs,
+                        d0DecayChannel);
       for (const auto& jet : jets) {
         if (jet.pt() < jetPtCutMin) {
           continue;
@@ -403,7 +410,8 @@ struct JetCorrelationD0 {
                         d0McPCandidate.pt(),
                         d0McPCandidate.eta(),
                         d0McPCandidate.phi(),
-                        d0McPCandidate.y());
+                        d0McPCandidate.y(),
+                        d0McPCandidate.flagMcMatchGen());
 
       for (const auto& jet : jets) {
         if (jet.pt() < jetMcPtCutMin) {

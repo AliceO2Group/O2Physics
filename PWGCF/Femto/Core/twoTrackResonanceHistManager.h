@@ -173,7 +173,7 @@ class TwoTrackResonanceHistManager
 
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(ResoSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -221,7 +221,7 @@ class TwoTrackResonanceHistManager
 
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs, ConfPosDauBinningQa);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs, ConfNegDauBinningQa);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(ResoSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -239,7 +239,7 @@ class TwoTrackResonanceHistManager
     mPosDauManager.template fill<mode>(posDaughter, tracks);
     auto negDaughter = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
     mNegDauManager.template fill<mode>(negDaughter, tracks);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis(resonance);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {

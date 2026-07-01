@@ -30,6 +30,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>
@@ -270,7 +271,7 @@ class TripletHistManager
     mPairCorrelationQa = ConfMixing.enablePairCorrelationQa.value;
     mEventMixingQa = ConfMixing.enableEventMixingQa.value;
 
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(Specs);
     }
 
@@ -407,7 +408,7 @@ class TripletHistManager
   template <modes::Mode mode>
   void fill()
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
     if constexpr (isFlagSet(mode, modes::Mode::kMc)) {

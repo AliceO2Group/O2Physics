@@ -307,7 +307,7 @@ class KinkHistManager
     }
 
     mChaDauManager.template init<mode>(registry, ChaDauSpecs, absCharge, chaDauCharge, chaDauPdgCodeAbs);
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -356,7 +356,7 @@ class KinkHistManager
     }
 
     mChaDauManager.template init<mode>(registry, ChaDauSpecs, absCharge, chaDauCharge, chaDauPdgCodeAbs, ConfChaDauBinningQa);
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -374,7 +374,7 @@ class KinkHistManager
     // auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
     auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks);
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(kinkCandidate);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -387,7 +387,7 @@ class KinkHistManager
   {
     auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(kinkCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -559,16 +559,16 @@ class KinkHistManager
     mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get mother
-    if (kinkCandidate.has_fMcMother()) {
-      auto mother = kinkCandidate.template fMcMother_as<T3>();
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
     // get partonic mother
-    if (kinkCandidate.has_fMcPartMoth()) {
-      auto partonicMother = kinkCandidate.template fMcPartMoth_as<T4>();
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -593,8 +593,8 @@ class KinkHistManager
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
-              if (kinkCandidate.has_fMcMother()) {
-                auto mother = kinkCandidate.template fMcMother_as<T3>();
+              if (mcParticle.has_fMcMother()) {
+                auto mother = mcParticle.template fMcMother_as<T3>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

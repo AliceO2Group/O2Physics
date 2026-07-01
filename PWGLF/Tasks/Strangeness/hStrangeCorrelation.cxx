@@ -1861,7 +1861,7 @@ struct HStrangeCorrelation {
 
     bool hStrange = false;
     for (int i = 0; i < AssocParticleTypes; i++) {
-      if (TESTBIT(doCorrelation, i) && (doprocessSameEventHV0s || doprocessSameEventHCascades)) {
+      if (TESTBIT(doCorrelation, i)) {
         if (masterConfigurations.doFullCorrelationStudy && !masterConfigurations.fillCorrelationHistWithMass)
           histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         if (doDeltaPhiStarCheck && masterConfigurations.doFullCorrelationStudy) {

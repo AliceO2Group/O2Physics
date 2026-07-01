@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -57,7 +58,7 @@ class MixingHandler : public TNamed
     // bit map for active filtering bits of all the tracks
     uint32_t filteringMask = 0;
     // counters to keep track of how many times the event was used for mixing (for each track cut separately)
-    std::array<short, 64> counters = {0};
+    std::array<int16_t, 64> counters = {0};
     // add a track to the event and update the filtering mask accordingly
     void AddTrack1(const MixingTrack& track)
     {
@@ -74,7 +75,7 @@ class MixingHandler : public TNamed
     // 1) increment the counters for a given track cut bit mask and if the counters reached the pool depth,
     // 2) clear the corresponding bit in the tracks filtering flags to exclude them from further mixing
     // 3) for each track, if there are no more active bits in the filtering mask, then remove the track from the event
-    void IncrementCounters(uint32_t mask, short poolDepth)
+    void IncrementCounters(uint32_t mask, int16_t poolDepth)
     {
       for (int i = 0; i < 32; i++) {
         uint32_t bitMask = (static_cast<uint32_t>(1) << i);
@@ -150,7 +151,7 @@ class MixingHandler : public TNamed
     }
     // The function that performs the mixing is called outside this class, but the pool provides the events and tracks to be mixed and takes care of updating the events after mixing
     // (e.g. incrementing the counters and removing the tracks that reached the pool depth for a given cut)
-    void UpdatePool(const MixingEvent& event, short poolDepth)
+    void UpdatePool(const MixingEvent& event, int16_t poolDepth)
     {
       for (auto& event : events) {
         event.IncrementCounters(event.filteringMask, poolDepth);
@@ -176,14 +177,14 @@ class MixingHandler : public TNamed
 
   // setters
   void AddMixingVariable(int var, std::vector<float> binLims);
-  void SetPoolDepth(short depth) { fPoolDepth = depth; }
+  void SetPoolDepth(int16_t depth) { fPoolDepth = depth; }
 
   // getters
   // int GetNMixingVariables() const { return fVariables.size(); }
   // int GetMixingVariable(VarManager::Variables var); // returns the position in the internal varible list of the handler. Useful for checks, mostly
   // std::vector<float> GetMixingVariableLimits(VarManager::Variables var);
   MixingPool& GetPool(int category) { return fPools[category]; }
-  short GetPoolDepth() const { return fPoolDepth; }
+  int16_t GetPoolDepth() const { return fPoolDepth; }
 
   void Init();
   int FindEventCategory(float* values);
@@ -200,10 +201,8 @@ class MixingHandler : public TNamed
   std::vector<std::vector<float>> fVariableLimits;
   std::map<int, int> fVariables; // key: variable, value: position in the internal variable list of the handler (used to map the variables to the values passed to FindEventCategory)
 
-  short fPoolDepth;                 // number of events to be kept in each pool
+  int16_t fPoolDepth;               // number of events to be kept in each pool
   std::map<int, MixingPool> fPools; // key: category, value: pool of events corresponding to that category
-
-  ClassDef(MixingHandler, 2);
 };
 
 #endif // PWGDQ_CORE_MIXINGHANDLER_H_

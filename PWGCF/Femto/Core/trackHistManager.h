@@ -354,7 +354,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of selected tracks; PDG Code; Entries"},
       {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of selected tracks; PDG Code; Entries"},
       {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother selected tracks; PDG Code; Entries"},
-      {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T,True} (GeV/#it{c})"},
+      {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T} (GeV/#it{c})"},
       {kTrueEtaVsEta, o2::framework::HistType::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
       {kTruePhiVsPhi, o2::framework::HistType::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"},
       {kNoMcParticle, o2::framework::HistType::kTHnSparseF, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
@@ -546,7 +546,7 @@ class TrackHistManager
     mHistogramRegistry = registry;
     mAbsCharge = std::abs(ConfTrackSelection.chargeAbs.value);
     mPdgCode = std::abs(ConfTrackSelection.pdgCodeAbs.value) * ConfTrackSelection.chargeSign.value;
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -567,7 +567,7 @@ class TrackHistManager
     mHistogramRegistry = registry;
     mAbsCharge = std::abs(ChargeAbs);
     mPdgCode = std::abs(PdgCodeAbs) * ChargeSign;
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -604,7 +604,7 @@ class TrackHistManager
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& track, T2 const& /*trackTable*/)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(track);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -615,7 +615,7 @@ class TrackHistManager
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
   void fill(T1 const& track, T2 const& /*trackTable*/, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(track);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -963,16 +963,16 @@ class TrackHistManager
     mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get mother
-    if (track.has_fMcMother()) {
-      auto mother = track.template fMcMother_as<T3>();
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
     // get partonic mother
-    if (track.has_fMcPartMoth()) {
-      auto partonicMother = track.template fMcPartMoth_as<T4>();
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -997,8 +997,8 @@ class TrackHistManager
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
-              if (track.has_fMcMother()) {
-                auto mother = track.template fMcMother_as<T3>();
+              if (mcParticle.has_fMcMother()) {
+                auto mother = mcParticle.template fMcMother_as<T3>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

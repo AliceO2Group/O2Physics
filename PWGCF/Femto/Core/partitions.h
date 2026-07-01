@@ -152,4 +152,22 @@
     (o2::aod::femtobase::stored::mass < selection.massMax) &&                                                                                \
     ncheckbit(o2::aod::femtokinks::mask, selection.mask)
 
+// macros for mc collisions (mc only)
+#define MAKE_MC_COLLISION_FILTER(selection)                                                                         \
+  (o2::aod::femtocollisions::posZ >= selection.vtxZMin && o2::aod::femtocollisions::posZ <= selection.vtxZMax) &&   \
+    (o2::aod::femtocollisions::mult >= selection.multMin && o2::aod::femtocollisions::mult <= selection.multMax) && \
+    (o2::aod::femtocollisions::cent >= selection.centMin && o2::aod::femtocollisions::cent <= selection.centMax)
+
+// macros for mc particle (mc only)
+#define MAKE_MC_PARTICLE_PARTITION(selection)                                                                                                                                          \
+  ifnode(selection.pdgCodeAbs.node() == 0, true, selection.pdgCodeAbs == nabs(o2::aod::femtomcparticle::pdgCode)) &&                                                                   \
+    ifnode(selection.chargeSign.node() != 0, ifnode(selection.chargeSign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
+    (nabs(o2::aod::femtobase::stored::signedPt) > selection.ptMin) &&                                                                                                                  \
+    (nabs(o2::aod::femtobase::stored::signedPt) < selection.ptMax) &&                                                                                                                  \
+    (o2::aod::femtobase::stored::eta > selection.etaMin) &&                                                                                                                            \
+    (o2::aod::femtobase::stored::eta < selection.etaMax) &&                                                                                                                            \
+    (o2::aod::femtobase::stored::phi > selection.phiMin) &&                                                                                                                            \
+    (o2::aod::femtobase::stored::phi < selection.phiMax)
+
 #endif // PWGCF_FEMTO_CORE_PARTITIONS_H_
+//

@@ -984,7 +984,7 @@ struct DileptonSVMC {
     trackParCov0.getPxPyPzGlo(pvec0);
     trackParCov1.getPxPyPzGlo(pvec1);
     std::array<float, 3> momDilepton = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
-    candidate.cpa = RecoDecay::cpa(pvertex, secondaryVertex, momDilepton);
+    candidate.cpa = std::clamp(RecoDecay::cpa(pvertex, secondaryVertex, momDilepton), -1.0, std::nextafter(1.0, 0.0));
 
     candidate.lxy = std::sqrt(std::pow(secondaryVertex[0] - collision.posX(), 2) + std::pow(secondaryVertex[1] - collision.posY(), 2));
     candidate.lz = secondaryVertex[2] - collision.posZ();
@@ -1031,7 +1031,7 @@ struct DileptonSVMC {
     auto trackParCov0 = mFwdDCAFitter.getTrack(0);
     auto trackParCov1 = mFwdDCAFitter.getTrack(1);
     std::array<float, 3> momDilepton = {static_cast<float>(trackParCov0.getPx() + trackParCov1.getPx()), static_cast<float>(trackParCov0.getPy() + trackParCov1.getPy()), static_cast<float>(trackParCov0.getPz() + trackParCov1.getPz())};
-    candidate.cpa = RecoDecay::cpa(pvertex, secondaryVertex, momDilepton);
+    candidate.cpa = std::clamp(RecoDecay::cpa(pvertex, secondaryVertex, momDilepton), -1.0, std::nextafter(1.0, 0.0));
 
     candidate.lxy = std::sqrt(std::pow(secondaryVertex[0] - collision.posX(), 2) + std::pow(secondaryVertex[1] - collision.posY(), 2));
     candidate.lz = secondaryVertex[2] - collision.posZ();
@@ -1573,9 +1573,9 @@ struct DileptonSVMC {
         return false;
       }
 
-      // if (!cut.IsSelectedPair(t1, t2)) {
-      //   return false;
-      // }
+      if (!cut.IsSelectedPair(t1, t2)) {
+        return false;
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
         return false;
@@ -1617,9 +1617,9 @@ struct DileptonSVMC {
         return false;
       }
 
-      // if (!cut.IsSelectedPair(t1, t2)) {
-      //   return false;
-      // }
+      if (!cut.IsSelectedPair(t1, t2)) {
+        return false;
+      }
     }
 
     float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
