@@ -20,11 +20,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -62,8 +59,6 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::aod::rctsel;
 
-using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
-
 struct spvector {
 
   Produces<aod::SPCalibrationTables> spcalibrationtable;
@@ -76,7 +71,6 @@ struct spvector {
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -302,7 +296,6 @@ struct spvector {
     fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     */
     ccdb->setURL(cfgCcdbParam.cfgURL);
-    ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -323,7 +316,7 @@ struct spvector {
   TH2F* hrecentereTimeSp2 = nullptr;
   TH2F* hrecentereTimeSp3 = nullptr;
 
-  Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     int binCoords[5];
@@ -367,7 +360,7 @@ struct spvector {
     return kTRUE;
   }
 
-  Bool_t Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     if (!hrecenterecentSp || !hrecenterevxSp || !hrecenterevySp || !hrecenterevzSp) {
@@ -427,19 +420,12 @@ struct spvector {
     return true;
   }
 
+  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
-  using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
 
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&, AllTrackCandidates const& tracks)
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
   {
-
-    if (usemem) {
-      for (const auto& track : tracks) {
-        histos.fill(HIST("htpcnsigmapi"), track.tpcNSigmaPi());
-      }
-    }
-
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     auto centrality = collision.centFT0C();
     bool triggerevent = false;
@@ -637,9 +623,9 @@ struct spvector {
         vy = vy - gainprofilevxy->GetBinContent(2);
       }
 
-      Bool_t res = 0;
-      Bool_t resfine = 0;
-      Int_t check = 1;
+      bool res = false;
+      bool resfine = false;
+      int check = 1;
 
       if (coarse1) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
