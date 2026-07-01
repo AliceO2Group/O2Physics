@@ -662,7 +662,7 @@ struct kinkBuilder {
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
-  template <bool isMC, typename TColls, typename TTracks, typename TAmbiTracks>
+  template <bool KeepOnlyKinks, typename TColls, typename TTracks, typename TAmbiTracks>
   void buildSvPool(const TColls& collisions, const TTracks& tracks, const TAmbiTracks& ambiguousTracks, const aod::BCs& bcs)
   {
     svCreator.clearPools();
@@ -676,11 +676,9 @@ struct kinkBuilder {
       bool canBeMoth = true;
       bool canBeDaug = true;
 
-      if constexpr (isMC) {
+      if constexpr (KeepOnlyKinks) {
         if (!track.has_mcParticle()) {
           LOG(debug) << "Track has no MC particle";
-          canBeMoth = false;
-          canBeDaug = false;
           continue;
         }
         auto genPart = track.template mcParticle_as<aod::McParticles>();
@@ -691,7 +689,7 @@ struct kinkBuilder {
                       std::abs(genPart.pdgCode())) != mothMatchPdgCodes.end();
 
         canBeDaug = false;
-        for (auto mother : genPart.template mothers_as<aod::McParticles>()) {
+        for (const auto& mother : genPart.template mothers_as<aod::McParticles>()) {
           if (std::find(
                 mothMatchPdgCodes.begin(),
                 mothMatchPdgCodes.end(),

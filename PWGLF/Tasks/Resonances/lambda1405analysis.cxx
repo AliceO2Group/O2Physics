@@ -101,8 +101,7 @@ struct lambda1405candidate {
 
 struct lambda1405analysis {
   int lambda1405PdgCode = 102132;                     // PDG code for Lambda(1405)
-  int sigmaMinusPdgCode = 3112;                       // PDG code for Lambda(1405)
-  int sigmaPlusPdgCode = 3222;                        // PDG code for Lambda(1405)
+
   Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
   Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
   Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
@@ -962,9 +961,9 @@ struct lambda1405analysis {
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
         auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
 
-        bool isSigmaMinusKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaMinusPdgCode, 211, particlesMC);
-        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaPlusPdgCode, 211, particlesMC);
-        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaPlusPdgCode, 2212, particlesMC);
+        bool isSigmaMinusKink    = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus,  PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus,  PDG_t::kProton, particlesMC);
 
         if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
           continue; // Skip if not a valid Sigma kink decay
@@ -1040,8 +1039,8 @@ struct lambda1405analysis {
     // Loop over generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
       if (std::abs(mcPart.pdgCode()) != lambda1405PdgCode &&
-          std::abs(mcPart.pdgCode()) != sigmaMinusPdgCode &&
-          std::abs(mcPart.pdgCode()) != sigmaPlusPdgCode) {
+          std::abs(mcPart.pdgCode()) != PDG_t::kSigmaMinus &&
+          std::abs(mcPart.pdgCode()) != PDG_t::kSigmaPlus) {
         continue; // Only consider Lambda(1405) and Sigma candidates
       }
 
@@ -1056,10 +1055,10 @@ struct lambda1405analysis {
       }
 
       // Needed for Sigma efficiency vs PV contributors
-      if (std::abs(mcPart.pdgCode()) == sigmaMinusPdgCode) {
+      if (std::abs(mcPart.pdgCode()) == PDG_t::kSigmaMinus) {
         rSigmaMinus.fill(HIST("h2GenSigmaMinusPvContribPt"), maxNumContrib, mcPart.pt());
       }
-      if (std::abs(mcPart.pdgCode()) == sigmaPlusPdgCode) {
+      if (std::abs(mcPart.pdgCode()) == PDG_t::kSigmaPlus) {
         rSigmaPlus.fill(HIST("h2GenSigmaPlusPvContribPt"), maxNumContrib, mcPart.pt());
       }
       if (std::abs(mcPart.pdgCode()) != lambda1405PdgCode) {
