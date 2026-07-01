@@ -29,8 +29,8 @@
 #include <vector>
 
 void o2::upgrade::convertTLorentzVectorToO2Track(const int charge,
-                                                 const TLorentzVector particle,
-                                                 const std::vector<double> productionVertex,
+                                                 const TLorentzVector& particle,
+                                                 const std::vector<double>& productionVertex,
                                                  o2::track::TrackParCov& o2track)
 {
   std::array<float, 5> params;

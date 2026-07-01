@@ -36,8 +36,8 @@ namespace o2::upgrade
 /// \param productionVertex where the particle was produced
 /// \param o2track the address of the resulting TrackParCov
 void convertTLorentzVectorToO2Track(const int charge,
-                                    const TLorentzVector particle,
-                                    const std::vector<double> productionVertex,
+                                    const TLorentzVector& particle,
+                                    const std::vector<double>& productionVertex,
                                     o2::track::TrackParCov& o2track);
 
 /// Function to convert a TLorentzVector into a perfect Track
@@ -47,9 +47,9 @@ void convertTLorentzVectorToO2Track(const int charge,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename PdgService>
-void convertTLorentzVectorToO2Track(int pdgCode,
-                                    TLorentzVector particle,
-                                    std::vector<double> productionVertex,
+void convertTLorentzVectorToO2Track(const int pdgCode,
+                                    const TLorentzVector& particle,
+                                    const std::vector<double>& productionVertex,
                                     o2::track::TrackParCov& o2track,
                                     const PdgService& pdg)
 {
@@ -80,7 +80,7 @@ void convertOTFParticleToO2Track(const OTFParticle& particle,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename McParticleType, typename PdgService>
-void convertMCParticleToO2Track(McParticleType& particle,
+void convertMCParticleToO2Track(const McParticleType& particle,
                                 o2::track::TrackParCov& o2track,
                                 const PdgService& pdg)
 {
@@ -94,7 +94,7 @@ void convertMCParticleToO2Track(McParticleType& particle,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename McParticleType, typename PdgService>
-o2::track::TrackParCov convertMCParticleToO2Track(McParticleType& particle,
+o2::track::TrackParCov convertMCParticleToO2Track(const McParticleType& particle,
                                                   const PdgService& pdg)
 {
   o2::track::TrackParCov o2track;
