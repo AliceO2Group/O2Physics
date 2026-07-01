@@ -22,13 +22,11 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 // Event selection: Only events that contain track above some threshold
@@ -67,7 +65,6 @@ namespace o2::aod
 namespace testcol
 {
 // Event properties
-// DECLARE_SOA_COLUMN(Gi, gi, int64_t);
 DECLARE_SOA_COLUMN(Rn, rn, int32_t);         // run number
 DECLARE_SOA_COLUMN(Cent, cent, float);       // FT0C centrality
 DECLARE_SOA_COLUMN(Mult, mult, int32_t);     // TPC multiplicity
@@ -107,7 +104,6 @@ DECLARE_SOA_COLUMN(Dcaz, dcaz, int16_t);
 } // namespace testtrack
 
 DECLARE_SOA_TABLE(TableTrack, "AOD", "TABLETRACK",
-                  o2::soa::Index<>,
                   testtrack::TableColId,
                   testtrack::Charge,
                   testtrack::P,
@@ -127,8 +123,6 @@ struct DiffWakeTreeProducer {
   Configurable<float> centMax{"centMax", 10, "centrality"};
   Configurable<float> zVertCut{"zVertCut", 10.0, "z_vertex cut"};
   Configurable<float> etaCut{"etaCut", 0.9, "eta cut"};
-
-  int64_t collisionCounter = 0;
 
   Produces<o2::aod::TableCols> testcol;
   Produces<o2::aod::TableTrack> testtrack;
@@ -231,28 +225,28 @@ struct DiffWakeTreeProducer {
       uint64_t bitmask20Bits = 0b11111111111111111111;
 
       int64_t particlePx = (track.px() * 6000);
-      if (particlePx < 0)
+      if (particlePx < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
-      if (particlePx < 0)
         particlePx = (-1) * particlePx;
+      }
       substituteP |= (particlePx & bitmask20Bits) << lowermostBit;
 
       uppermostBit = 41;
       lowermostBit = 21;
       int64_t particlePy = (track.py() * 6000);
-      if (particlePy < 0)
+      if (particlePy < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
-      if (particlePy < 0)
         particlePy = (-1) * particlePy;
+      }
       substituteP |= (particlePy & bitmask20Bits) << lowermostBit;
 
       uppermostBit = 62;
       lowermostBit = 42;
       int64_t particlePz = (track.pz() * 6000);
-      if (particlePz < 0)
+      if (particlePz < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
-      if (particlePz < 0)
         particlePz = (-1) * particlePz;
+      }
       substituteP |= (particlePz & bitmask20Bits) << lowermostBit;
 
       // dEdx
@@ -263,14 +257,13 @@ struct DiffWakeTreeProducer {
       int16_t substituteDCAZ = static_cast<int16_t>(track.dcaZ() * 100);
 
       //--------------- Fill track table ------------------
-      testtrack(collisionCounter,
+      testtrack(testcol.lastIndex(),
                 track.sign(),
                 substituteP,
                 substituteDEDX,
                 substituteDCAXY,
                 substituteDCAZ);
     }
-    collisionCounter++;
   }
 };
 
