@@ -745,20 +745,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("tpcpid_fine")) {
         // fine binning for pIN: steps in 10 MeV/c from 0 to 1 GeV/c and 100 MeV/c up to 10 GeV/c
         std::array<double, 281> pIN_bins;
-        for (int i = 0; i <= 200; i++)
+        for (int i = 0; i <= 200; i++) {
           pIN_bins[i] = 0.01 * i;
-        for (int i = 1; i <= 80; i++)
+}
+        for (int i = 1; i <= 80; i++) {
           pIN_bins[200 + i] = 2. + 0.1 * i;
+}
         int nbins_pIN = static_cast<int>(pIN_bins.size()) - 1;
 
         std::array<double, 201> TPCdEdx_bins;
-        for (int i = 0; i <= 200; i++)
+        for (int i = 0; i <= 200; i++) {
           TPCdEdx_bins[i] = i;
+}
         int nbins_TPCdEdx = static_cast<int>(TPCdEdx_bins.size()) - 1;
 
         std::array<double, 101> nSigma_bins;
-        for (int i = 0; i <= 100; i++)
+        for (int i = 0; i <= 100; i++) {
           nSigma_bins[i] = -5. + 0.1 * i;
+}
         int nbins_nSigma = static_cast<int>(nSigma_bins.size()) - 1;
 
         hm->AddHistogram(histClass, "TPCdedx_pIN", "TPC dE/dx vs pIN", false, nbins_pIN, pIN_bins.data(), VarManager::kPin, nbins_TPCdEdx, TPCdEdx_bins.data(), VarManager::kTPCsignal);
@@ -819,8 +823,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       const int kNvarsPID = 4;
       const int kTPCnsigmaNbins = 70;
       std::array<double, kTPCnsigmaNbins + 1> tpcNsigmaBinLims;
-      for (int i = 0; i <= kTPCnsigmaNbins; ++i)
+      for (int i = 0; i <= kTPCnsigmaNbins; ++i) {
         tpcNsigmaBinLims[i] = -7.0 + 0.2 * i;
+}
 
       const int kPinEleNbins = 20;
       std::array<double, kPinEleNbins + 1> pinEleBinLims = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10.0, 12.0, 16.0, 20.0};
@@ -830,8 +835,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       const int kTPCnClusterbins = 16;
       std::array<double, kTPCnClusterbins + 1> tpcNclusterBinLims;
-      for (int i = 0; i <= kTPCnClusterbins; ++i)
+      for (int i = 0; i <= kTPCnClusterbins; ++i) {
         tpcNclusterBinLims[i] = 10 * i;
+}
 
       std::array<TArrayD, kNvarsPID> nSigBinLimits;
       nSigBinLimits[0] = TArrayD(kTPCnsigmaNbins + 1, tpcNsigmaBinLims.data());
@@ -877,20 +883,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("tofpid_fine")) {
         // fine binning for pIN: steps in 10 MeV/c from 0 to 1 GeV/c and 100 MeV/c up to 10 GeV/c
         std::array<double, 281> pIN_bins;
-        for (int i = 0; i <= 200; i++)
+        for (int i = 0; i <= 200; i++) {
           pIN_bins[i] = 0.01 * i;
-        for (int i = 1; i <= 80; i++)
+}
+        for (int i = 1; i <= 80; i++) {
           pIN_bins[200 + i] = 2. + 0.1 * i;
+}
         int nbins_pIN = static_cast<int>(pIN_bins.size()) - 1;
 
         std::array<double, 241> TOFbeta_bins;
-        for (int i = 0; i <= 240; i++)
+        for (int i = 0; i <= 240; i++) {
           TOFbeta_bins[i] = 0.005 * i;
+}
         int nbins_TOFbeta = static_cast<int>(TOFbeta_bins.size()) - 1;
 
         std::array<double, 101> nSigma_bins;
-        for (int i = 0; i <= 100; i++)
+        for (int i = 0; i <= 100; i++) {
           nSigma_bins[i] = -5. + 0.1 * i;
+}
         int nbins_nSigma = static_cast<int>(nSigma_bins.size()) - 1;
 
         hm->AddHistogram(histClass, "TOFbeta_pIN", "TOF #beta vs pIN", false, nbins_pIN, pIN_bins.data(), VarManager::kPin, nbins_TOFbeta, TOFbeta_bins.data(), VarManager::kTOFbeta);
@@ -910,19 +920,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       const int kNvarsPID = 3;
       const int kNbins_pIN = 169;
       std::array<double, kNbins_pIN + 1> pIN_bins;
-      for (int i = 0; i <= 140; i++)
+      for (int i = 0; i <= 140; i++) {
         pIN_bins[i] = 0.01 * i + 0.1;
-      for (int i = 1; i <= 15; i++)
+}
+      for (int i = 1; i <= 15; i++) {
         pIN_bins[140 + i] = 1.5 + 0.1 * i;
-      for (int i = 1; i <= 14; i++)
+}
+      for (int i = 1; i <= 14; i++) {
         pIN_bins[155 + i] = 3. + 0.5 * i;
+}
 
       const int kNbins_pINmore = 135;
       std::array<double, kNbins_pINmore + 1> pIN_binsmore;
-      for (int i = 0; i <= 120; i++)
+      for (int i = 0; i <= 120; i++) {
         pIN_binsmore[i] = 0.01 * i + 0.3;
-      for (int i = 1; i <= 10; i++)
+}
+      for (int i = 1; i <= 10; i++) {
         pIN_binsmore[120 + i] = 1.5 + 0.2 * i;
+}
       pIN_binsmore[131] = 4.;
       pIN_binsmore[132] = 5.;
       pIN_binsmore[133] = 6.;
@@ -931,28 +946,33 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       const int kNbins_nSigma = 100;
       std::array<double, kNbins_nSigma + 1> nSigma_bins;
-      for (int i = 0; i <= kNbins_nSigma; i++)
+      for (int i = 0; i <= kNbins_nSigma; i++) {
         nSigma_bins[i] = -5. + 0.1 * i;
+}
 
       const int kNbins_nSigmamore = 50;
       std::array<double, kNbins_nSigmamore + 1> nSigma_binsmore;
-      for (int i = 0; i <= kNbins_nSigmamore; i++)
+      for (int i = 0; i <= kNbins_nSigmamore; i++) {
         nSigma_binsmore[i] = -5. + 0.2 * i;
+}
 
       const int kNbins_nSigmagrob = 24;
       std::array<double, kNbins_nSigmagrob + 1> nSigma_binsgrob;
-      for (int i = 0; i <= kNbins_nSigmagrob; i++)
+      for (int i = 0; i <= kNbins_nSigmagrob; i++) {
         nSigma_binsgrob[i] = -6. + 0.5 * i;
+}
 
       const int kNbins_TOFbeta = 120;
       std::array<double, kNbins_TOFbeta + 1> TOFbeta_bins;
-      for (int i = 0; i <= kNbins_TOFbeta; i++)
+      for (int i = 0; i <= kNbins_TOFbeta; i++) {
         TOFbeta_bins[i] = 0.01 * i;
+}
 
       const int kNbins_TPCdEdx = 140;
       std::array<double, kNbins_TPCdEdx + 1> TPCdEdx_bins;
-      for (int i = 0; i <= kNbins_TPCdEdx; i++)
+      for (int i = 0; i <= kNbins_TPCdEdx; i++) {
         TPCdEdx_bins[i] = i + 20;
+}
 
       std::array<TArrayD, kNvarsPID> nSigmaBinLimits;
       nSigmaBinLimits[0] = TArrayD(kNbins_pIN + 1, pIN_bins.data());
@@ -1544,8 +1564,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
         const int kTauNBins = 500;
         std::array<double, kTauNBins + 1> TauBinLims;
-        for (int i = 0; i <= kTauNBins; ++i)
+        for (int i = 0; i <= kTauNBins; ++i) {
           TauBinLims[i] = -0.3 + (0.0015 * i);
+}
 
         std::array<TArrayD, kNvarsPair> nCutsBinLimits;
         nCutsBinLimits[0] = TArrayD(kInvMassNbins + 1, InvMassBinLims.data());
@@ -2059,19 +2080,23 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         // every 100 MeV from 0.2 to 1. GeV/c2
         // every 500 GeV from 1 to 5 GeV/c2
         std::array<double, 37> mee_bins;
-        for (int i = 0; i <= 20; i++)
+        for (int i = 0; i <= 20; i++) {
           mee_bins[i] = 0.01 * i;
-        for (int i = 1; i <= 8; i++)
+}
+        for (int i = 1; i <= 8; i++) {
           mee_bins[20 + i] = 0.2 + 0.1 * i;
-        for (int i = 1; i <= 8; i++)
+}
+        for (int i = 1; i <= 8; i++) {
           mee_bins[28 + i] = 1. + 0.5 * i;
+}
         int nbins_mee = static_cast<int>(mee_bins.size()) - 1;
 
         // binning for ptee at large scales:
         // every 0.2 GeV/c from 0 to 10 GeV/c
         std::array<double, 51> ptee_bins;
-        for (int i = 0; i <= 50; i++)
+        for (int i = 0; i <= 50; i++) {
           ptee_bins[i] = 0.2 * i;
+}
         int nbins_ptee = static_cast<int>(ptee_bins.size()) - 1;
 
         // binning for phiv:
@@ -2103,24 +2128,30 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         // every 10 MeV from 2.7 to 3.2 GeV/c2
         // every 50 MeV from 3.2 to 12 GeV/c2
         std::array<double, 369> mee_bins;
-        for (int i = 0; i <= 110; i++)
+        for (int i = 0; i <= 110; i++) {
           mee_bins[i] = 0.01 * i;
-        for (int i = 1; i <= 32; i++)
+}
+        for (int i = 1; i <= 32; i++) {
           mee_bins[110 + i] = 1.1 + 0.05 * i;
-        for (int i = 1; i <= 50; i++)
+}
+        for (int i = 1; i <= 50; i++) {
           mee_bins[142 + i] = 2.7 + 0.01 * i;
-        for (int i = 1; i <= 176; i++)
+}
+        for (int i = 1; i <= 176; i++) {
           mee_bins[192 + i] = 3.2 + 0.05 * i;
+}
         int nbins_mee = static_cast<int>(mee_bins.size()) - 1;
 
         // binning for ptee at large scales:
         // every 0.1 GeV/c from 0 to 10 GeV/c
         // every 0.5 GeV/c from 10 to 30 GeV/c
         std::array<double, 201> ptee_bins;
-        for (int i = 0; i <= 100; i++)
+        for (int i = 0; i <= 100; i++) {
           ptee_bins[i] = 0.1 * i;
-        for (int i = 1; i <= 100; i++)
+}
+        for (int i = 1; i <= 100; i++) {
           ptee_bins[100 + i] = 10 + 0.2 * i;
+}
         int nbins_ptee = static_cast<int>(ptee_bins.size()) - 1;
 
         // binning for dca at large scales:
@@ -2128,12 +2159,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         // every 0.5 sigma from 5 to 10 sigma
         // every 1.0 sigma from 10 to 40 sigma
         std::array<double, 91> dca_bins;
-        for (int i = 0; i <= 50; i++)
+        for (int i = 0; i <= 50; i++) {
           dca_bins[i] = 0.1 * i;
-        for (int i = 1; i <= 10; i++)
+}
+        for (int i = 1; i <= 10; i++) {
           dca_bins[50 + i] = 5 + 0.5 * i;
-        for (int i = 1; i <= 30; i++)
+}
+        for (int i = 1; i <= 30; i++) {
           dca_bins[60 + i] = 10 + 1 * i;
+}
         int nbins_dca = static_cast<int>(dca_bins.size()) - 1;
 
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXY", "", false, nbins_mee, mee_bins.data(), VarManager::kMass, nbins_dca, dca_bins.data(), VarManager::kQuadDCAsigXY);
@@ -2218,8 +2252,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       const int kNvarsTripletCuts = 4;
       const int kInvMassNbins = 100;
       std::array<double, kInvMassNbins + 1> InvMassBinLims;
-      for (int i = 0; i <= kInvMassNbins; ++i)
+      for (int i = 0; i <= kInvMassNbins; ++i) {
         InvMassBinLims[i] = 4.0 + 0.02 * i;
+}
 
       const int kPtNbins = 6;
       std::array<double, kPtNbins + 1> PtBinLims = {0., 2., 4., 6., 8., 10., 20.};
@@ -2245,13 +2280,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("dilepton-hadron-array-correlation")) {
       const int kInvMassBins = 500;
       std::array<double, kInvMassBins + 1> InvMassBinLims;
-      for (int i = 0; i <= kInvMassBins; i++)
+      for (int i = 0; i <= kInvMassBins; i++) {
         InvMassBinLims[i] = 0 + i * 0.01;
+}
 
       const int kDelEtaBins = 20;
       std::array<double, kDelEtaBins + 1> DelEtaBinLims;
-      for (int i = 0; i <= kDelEtaBins; i++)
+      for (int i = 0; i <= kDelEtaBins; i++) {
         DelEtaBinLims[i] = -2 + i * 0.2;
+}
 
       const int kDelPhiBins = 26;
       std::array<double, kDelPhiBins + 1> DelPhiBinLims = {-1.69647, -1.44513, -1.19381, -0.94248, -0.69115, -0.43982, -0.18850, 0.06283, 0.31416, 0.56549, 0.81681, 1.06814, 1.31947, 1.57080, 1.82212, 2.07345, 2.32478, 2.57611, 2.82743, 3.07876, 3.33009, 3.58142, 3.83274, 4.08407, 4.33540, 4.58673, 4.83806};
