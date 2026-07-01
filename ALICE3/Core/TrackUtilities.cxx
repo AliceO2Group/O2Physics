@@ -29,8 +29,8 @@
 #include <vector>
 
 void o2::upgrade::convertTLorentzVectorToO2Track(const int charge,
-                                                 const TLorentzVector particle,
-                                                 const std::vector<double> productionVertex,
+                                                 const TLorentzVector& particle,
+                                                 const std::vector<double>& productionVertex,
                                                  o2::track::TrackParCov& o2track)
 {
   std::array<float, 5> params;
@@ -48,14 +48,14 @@ void o2::upgrade::convertTLorentzVectorToO2Track(const int charge,
   new (&o2track)(o2::track::TrackParCov)(x, particle.Phi(), params, covm);
 }
 
-float o2::upgrade::computeParticleVelocity(float momentum, float mass)
+float o2::upgrade::computeParticleVelocity(const float momentum, const float mass)
 {
   const float a = momentum / mass;
   // uses light speed in cm/ps so output is in those units
   return o2::constants::physics::LightSpeedCm2PS * a / std::sqrt((1.f + a * a));
 }
 
-float o2::upgrade::computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField)
+float o2::upgrade::computeTrackLength(const o2::track::TrackParCov& track, const float radius, const float magneticField)
 {
   // don't make use of the track parametrization
   float length = -100;
