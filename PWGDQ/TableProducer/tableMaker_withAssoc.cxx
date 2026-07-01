@@ -1766,7 +1766,7 @@ struct TableMaker {
       outTables.trackBarrel.reserve(tracksBarrel.size());
       outTables.trackBarrelCov.reserve(tracksBarrel.size());
       outTables.trackBarrelPID.reserve(tracksBarrel.size());
-      outTables.trackBarrelAssoc.reserve(tracksBarrel.size());
+      outTables.trackBarrelAssoc.reserve(trackAssocs.size());
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap)) {
@@ -1774,7 +1774,7 @@ struct TableMaker {
       map_mfttrackcovs.clear();
       outTables.mftTrack.reserve(mftTracks.size());
       outTables.mftTrackExtra.reserve(mftTracks.size());
-      outTables.mftAssoc.reserve(mftTracks.size());
+      outTables.mftAssoc.reserve(mftAssocs.size());
     }
 
     if constexpr (static_cast<bool>(TMuonFillMap)) {
@@ -1785,7 +1785,7 @@ struct TableMaker {
       outTables.muonExtra.reserve(muons.size());
       outTables.muonInfo.reserve(muons.size());
       outTables.muonCov.reserve(muons.size());
-      outTables.muonAssoc.reserve(muons.size());
+      outTables.muonAssoc.reserve(fwdTrackAssocs.size());
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {

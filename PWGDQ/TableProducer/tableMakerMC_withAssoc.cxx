@@ -1368,7 +1368,7 @@ struct TableMakerMC {
       trackBarrel.reserve(tracksBarrel.size());
       trackBarrelCov.reserve(tracksBarrel.size());
       trackBarrelPID.reserve(tracksBarrel.size());
-      trackBarrelAssoc.reserve(tracksBarrel.size());
+      trackBarrelAssoc.reserve(trackAssocs.size());
       trackBarrelLabels.reserve(tracksBarrel.size());
     }
 
@@ -1378,7 +1378,7 @@ struct TableMakerMC {
       map_mfttrackcovs.clear();
       mftTrack.reserve(mftTracks.size());
       mftTrackExtra.reserve(mftTracks.size());
-      mftAssoc.reserve(mftTracks.size());
+      mftAssoc.reserve(mftAssocs.size());
       mftLabels.reserve(mftTracks.size());
     }
 
@@ -1390,7 +1390,7 @@ struct TableMakerMC {
       muonBasic.reserve(muons.size());
       muonExtra.reserve(muons.size());
       muonCov.reserve(muons.size());
-      muonAssoc.reserve(muons.size());
+      muonAssoc.reserve(fwdTrackAssocs.size());
       muonLabels.reserve(muons.size());
     }
 
