@@ -106,7 +106,8 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
   Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
   // Configurable<bool> cfgApplyPreselectionInBestMatch{"cfgApplyPreselectionInBestMatch", false, "flag to apply preselection in find best match function"};
-  Configurable<bool> cfgRequireSameSign{"cfgRequireSameSign", false, "flag to require same sign between MFT and MCH-MID"};
+  Configurable<bool> cfgKeepOnlySAmuons{"cfgKeepOnlySAmuons", false, "flag to store only MCH-MID tracks"};
+  Configurable<bool> cfgKeepOnlyGLmuons{"cfgKeepOnlyGLmuons", false, "flag to store only MFT-MCH-MID tracks"};
 
   // for z shift for propagation
   Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
@@ -124,6 +125,10 @@ struct skimmerPrimaryMuon {
 
   void init(InitContext&)
   {
+    if (cfgKeepOnlySAmuons && cfgKeepOnlyGLmuons) {
+      LOGF(fatal, "cfgKeepOnlySAmuons and cfgKeepOnlyGLmuons cannot be true simultaneously. Please disable both or choose one.");
+    }
+
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -341,10 +346,6 @@ struct skimmerPrimaryMuon {
       auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
       auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
       if (mfttrack.chi2() < 0.f) {
-        return false;
-      }
-
-      if (cfgRequireSameSign && (mfttrack.sign() != mchtrack.sign())) {
         return false;
       }
 
@@ -641,9 +642,6 @@ struct skimmerPrimaryMuon {
         //   if (muon_tmp.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
         //     continue;
         //   }
-        //   if (cfgRequireSameSign && (mfttrack.sign() != mchtrack.sign())) {
-        //     continue;
-        //   }
         // }
 
         vec_chi2tmp.emplace_back(muon_tmp.chi2MatchMCHMFT());
@@ -706,6 +704,13 @@ struct skimmerPrimaryMuon {
         }
 
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+          continue;
+        }
+
+        if (cfgKeepOnlyGLmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+        if (cfgKeepOnlySAmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
 
@@ -793,6 +798,13 @@ struct skimmerPrimaryMuon {
         }
 
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+          continue;
+        }
+
+        if (cfgKeepOnlyGLmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+        if (cfgKeepOnlySAmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
 
@@ -966,6 +978,13 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
+        if (cfgKeepOnlyGLmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+        if (cfgKeepOnlySAmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+          continue;
+        }
+
         if (!fillFwdTrackTable<false, false, MyFwdTracks, aod::MFTTracks, false>(collision, fwdtrack, nullptr, false)) {
           continue;
         }
@@ -1049,6 +1068,13 @@ struct skimmerPrimaryMuon {
           continue;
         }
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+          continue;
+        }
+
+        if (cfgKeepOnlyGLmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+        if (cfgKeepOnlySAmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
 
@@ -1223,6 +1249,13 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
+        if (cfgKeepOnlyGLmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+        if (cfgKeepOnlySAmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+          continue;
+        }
+
         if (!fillFwdTrackTable<true, false, MyFwdTracksMC, MFTTracksMC, false>(collision, fwdtrack, nullptr, false)) {
           continue;
         }
@@ -1309,6 +1342,13 @@ struct skimmerPrimaryMuon {
           continue;
         }
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+          continue;
+        }
+
+        if (cfgKeepOnlyGLmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+        if (cfgKeepOnlySAmuons && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
 
