@@ -275,6 +275,34 @@ struct DerivedDataCreatorD0Calibration {
             continue;
           }
 
+          // preselections
+          // pt
+          std::array<float, 3> pVecNoVtxD0 = RecoDecay::pVec(trackPos.pVector(), trackNeg.pVector());
+          float ptNoVtxD0 = RecoDecay::pt(pVecNoVtxD0);
+          if (ptNoVtxD0 - ptTolerance < cfgCandCuts.ptMin) {
+            continue;
+          }
+          int ptBinNoVtxD0 = findBin(cfgTrackCuts.binsPt, ptNoVtxD0 + ptTolerance); // assuming tighter selections at lower pT
+          if (ptBinNoVtxD0 < 0) {
+            continue;
+          }
+
+          // random downsampling already here
+          if (cfgDownsampling.apply) {
+            int ptBinWeights{0};
+            if (ptNoVtxD0 < histDownSampl->GetBinLowEdge(1)) {
+              ptBinWeights = 1;
+            } else if (ptNoVtxD0 > histDownSampl->GetXaxis()->GetBinUpEdge(histDownSampl->GetNbinsX())) {
+              ptBinWeights = histDownSampl->GetNbinsX();
+            } else {
+              ptBinWeights = histDownSampl->GetXaxis()->FindBin(ptNoVtxD0);
+            }
+            float weight = histDownSampl->GetBinContent(ptBinWeights);
+            if (gRandom->Rndm() > weight) {
+              continue;
+            }
+          }
+
           int pidTrackNegKaon{-1};
           int pidTrackNegPion{-1};
           if (cfgTrackCuts.usePidTpcOnly) {
@@ -289,7 +317,6 @@ struct DerivedDataCreatorD0Calibration {
             pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
           }
 
-          // preselections
           // PID
           uint8_t massHypo{D0MassHypo::D0AndD0Bar}; // both mass hypotheses a priori
           if (pidTrackPosPion == TrackSelectorPID::Rejected || pidTrackNegKaon == TrackSelectorPID::Rejected) {
@@ -299,17 +326,6 @@ struct DerivedDataCreatorD0Calibration {
             massHypo -= D0MassHypo::D0Bar; // exclude D0Bar
           }
           if (massHypo == 0) {
-            continue;
-          }
-
-          // pt
-          std::array<float, 3> pVecNoVtxD0 = RecoDecay::pVec(trackPos.pVector(), trackNeg.pVector());
-          float ptNoVtxD0 = RecoDecay::pt(pVecNoVtxD0);
-          if (ptNoVtxD0 - ptTolerance < cfgCandCuts.ptMin) {
-            continue;
-          }
-          int ptBinNoVtxD0 = findBin(cfgTrackCuts.binsPt, ptNoVtxD0 + ptTolerance); // assuming tighter selections at lower pT
-          if (ptBinNoVtxD0 < 0) {
             continue;
           }
 
@@ -360,22 +376,6 @@ struct DerivedDataCreatorD0Calibration {
           int ptBinD0 = findBin(cfgTrackCuts.binsPt, ptD0);
           if (ptBinD0 < 0) {
             continue;
-          }
-
-          // random downsampling already here
-          if (cfgDownsampling.apply) {
-            int ptBinWeights{0};
-            if (ptD0 < histDownSampl->GetBinLowEdge(1)) {
-              ptBinWeights = 1;
-            } else if (ptD0 > histDownSampl->GetXaxis()->GetBinUpEdge(histDownSampl->GetNbinsX())) {
-              ptBinWeights = histDownSampl->GetNbinsX();
-            } else {
-              ptBinWeights = histDownSampl->GetXaxis()->FindBin(ptD0);
-            }
-            float weight = histDownSampl->GetBinContent(ptBinWeights);
-            if (gRandom->Rndm() > weight) {
-              continue;
-            }
           }
 
           // d0xd0
