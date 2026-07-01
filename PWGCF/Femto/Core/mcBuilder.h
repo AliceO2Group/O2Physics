@@ -184,16 +184,19 @@ class McBuilder
   void fillMcCollision(T1 const& mcCol, T2& mcProducts)
   {
     float centrality = -1;
+    float multiplicity = -1;
     if constexpr (modes::isFlagSet(system, modes::System::kPP)) {
       centrality = mcCol.centFT0M();
+      multiplicity = mcCol.multMCNParticlesEta08();
     }
     if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
       centrality = mcCol.centFT0C();
+      multiplicity = mcCol.multMCNParticlesEta08();
     }
 
     mcProducts.producedMcCollisions(
       mcCol.posZ(),
-      mcCol.multMCNParticlesEta08(),
+      multiplicity,
       centrality);
     mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
   }

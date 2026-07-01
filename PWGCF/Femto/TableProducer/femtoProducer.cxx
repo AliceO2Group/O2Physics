@@ -166,7 +166,7 @@ struct FemtoProducer {
         (!doprocessTracksV0sRun3ppMc && !doprocessTracksKinksRun3ppMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
          !doprocessTracksRun3ppMc && !doprocessTracksRun3PbPbMc && !doprocessTracksV0sRun3PbPbMc &&
-         !doprocessRun3ppMcOnly)) {
+         !doprocessMcOnly)) {
       LOG(fatal) << "At least one mc table is enabled, but wrong process function is enabled. Breaking...";
     }
 
@@ -531,18 +531,18 @@ struct FemtoProducer {
 
   // process generator level only input (for MCGEN datasets)
   // do not preslice mcParticles tables for each collision, otherwise the finding of the partonic mother can fail
-  void processRun3ppMcOnly(consumeddata::Run3PpMcGenCollisions const& mcCols, consumeddata::Run3McGenParticles const& mcParticles)
+  void processMcOnly(o2::aod::McCollisions const& mcCols, o2::aod::McParticles const& mcParticles)
   {
     mcBuilder.reset(mcParticles);
     for (const auto& mcCol : mcCols) {
-      mcBuilder.fillMcCollision<modes::System::kPP_Run3_MC>(mcCol, mcProducts);
+      mcBuilder.fillMcCollision<modes::System::kMC>(mcCol, mcProducts);
       auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
       for (const auto& mcParticle : particlesThisCollision) {
-        mcBuilder.fillMcParticle<modes::System::kPP_Run3_MC>(mcParticle, mcParticles, mcCol, mcProducts);
+        mcBuilder.fillMcParticle<modes::System::kMC>(mcParticle, mcParticles, mcCol, mcProducts);
       }
     }
   }
-  PROCESS_SWITCH(FemtoProducer, processRun3ppMcOnly, "Provide generated particles", false);
+  PROCESS_SWITCH(FemtoProducer, processMcOnly, "Provide generated particles", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
