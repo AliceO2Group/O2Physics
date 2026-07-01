@@ -258,7 +258,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     LOGF(info, "bFileIsInCCDB= %d", bFileIsInCCDB);
 
     if (bFileIsInAliEn) {
-      TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
+      const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
       if (!alien) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
