@@ -423,7 +423,7 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling candidate properties
     if (fillCandidateLiteTable) {
-      // Account for candidates passing both D0 and D0bar 
+      // Account for candidates passing both D0 and D0bar
       // selection, which will be stored twice in the lite table
       rowCandidateLite.reserve(candidates.size() * 2);
     } else {
