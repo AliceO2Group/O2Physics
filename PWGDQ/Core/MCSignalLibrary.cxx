@@ -37,7 +37,7 @@ using namespace o2::constants::physics;
 MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 {
   std::string nameStr = name;
-  MCSignal* signal;
+  MCSignal* signal = nullptr;
   // 1-prong signals
   if (!nameStr.compare("alicePrimary")) {
     MCProng prong(1);                                  // 1-generation prong
@@ -2136,7 +2136,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
     }
 
     // Create the signal and add it to the output vector
-    MCSignal* mcSignal = new MCSignal(sigName, title, prongs, commonAncestors, excludeCommonAncestor);
+    auto* mcSignal = new MCSignal(sigName, title, prongs, commonAncestors, excludeCommonAncestor);
     LOG(debug) << "MCSignal defined, adding to the output vector";
     mcSignal->PrintConfig();
     signals.push_back(mcSignal);
@@ -2422,7 +2422,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   }
 
   // Calling the MCProng constructor
-  MCProng* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap,
+  auto* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap,
                                checkGenerationsInTime, checkIfPDGInHistory, excludePDGInHistory);
   // Print the configuration
   prong->Print();
