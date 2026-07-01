@@ -250,9 +250,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     string pathstr = filePath;
     const string pathalien = "/alice/cern.ch/";
     const string pathccdb = "/alice-ccdb.cern.ch/";
-    if (pathstr.find(pathalien) == 0) {
+    if (pathstr.starts_with(pathalien)) {
       bFileIsInAliEn = true;
-    } else if (pathstr.find(pathccdb) == 0) {
+    } else if (pathstr.starts_with(pathccdb)) {
       bFileIsInCCDB = true;
     }
     LOGF(info, "bFileIsInCCDB= %d", bFileIsInCCDB);
@@ -408,7 +408,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     return four;
   } // TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
 
-  static double pdf(double* x, double* par)
+  static double pdf(const double* x, const double* par)
   {
     double y = 1;
     int harm = 6;
@@ -430,7 +430,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     auto it = phih.histMap.find(currentRun);
     auto histweight = wh.weightsmap.find(currentRun);
     float centr = 0, M = 0., msel = 0.;
-    TF1* f = new TF1("f", pdf, 0, TMath::TwoPi(), 1);
+    // TF1* f = new TF1("f", pdf, 0, TMath::TwoPi(), 1);
+    TF1* f = new TF1("f",
+                     "1 +"
+                     "2 * (0.05) * cos(1 * (x - [0])) +"
+                     "2 * (0.06) * cos(2 * (x - [0])) +"
+                     "2 * (0.07) * cos(3 * (x - [0])) +"
+                     "2 * (0.08) * cos(4 * (x - [0])) +"
+                     "2 * (0.09) * cos(5 * (x - [0])) +"
+                     "2 * (0.10) * cos(6 * (x - [0]))",
+                     0, TMath::TwoPi());
     f->SetParameters(0.);
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
