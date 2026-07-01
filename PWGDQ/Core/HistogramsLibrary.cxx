@@ -2545,7 +2545,7 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
   }
   // Check if the histogram uses constant binning
   bool isConstantBinning = true;
-  if (!(hist->HasMember("xmin.data()") && hist->HasMember("xmax.data()"))) {
+  if (!(hist->HasMember("xmin") && hist->HasMember("xmax"))) {
     isConstantBinning = false;
   }
 
@@ -2556,17 +2556,17 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
   bool isProfile = (hist->HasMember("isProfile") ? hist->FindMember("isProfile")->value.GetBool() : false);
 
   if (isConstantBinning) {
-    if (!hist->HasMember("xmin.data()") || !hist->HasMember("xmax.data()")) {
-      LOG(fatal) << "Missing xmin.data() or xmax.data() information for histogram";
+    if (!hist->HasMember("xmin") || !hist->HasMember("xmax")) {
+      LOG(fatal) << "Missing xmin or xmax information for histogram";
       return false;
     }
     if (isTHn) {
-      if (!hist->FindMember("xmin.data()")->value.IsArray()) {
-        LOG(fatal) << "xmin.data() field should be an array of arrays";
+      if (!hist->FindMember("xmin")->value.IsArray()) {
+        LOG(fatal) << "xmin field should be an array of arrays";
         return false;
       }
-      if (!hist->FindMember("xmax.data()")->value.IsArray()) {
-        LOG(fatal) << "xmax.data() field should be an array of arrays";
+      if (!hist->FindMember("xmax")->value.IsArray()) {
+        LOG(fatal) << "xmax field should be an array of arrays";
         return false;
       }
     }
@@ -2594,8 +2594,8 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
   }
 
   if (isTHn) {
-    if (!hist->HasMember("nDimensions") || !hist->HasMember("vars.data()")) {
-      LOG(fatal) << "Missing nDimensions or vars.data() fields for histogram";
+    if (!hist->HasMember("nDimensions") || !hist->HasMember("vars")) {
+      LOG(fatal) << "Missing nDimensions or vars fields for histogram";
       return false;
     }
     if (isConstantBinning) {
@@ -2683,9 +2683,9 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
     }
   }
   if (isTHn) {
-    for (auto& v : hist->FindMember("vars.data()")->value.GetArray()) {
+    for (auto& v : hist->FindMember("vars")->value.GetArray()) {
       if (VarManager::fgVarNamesMap.find(v.GetString()) == VarManager::fgVarNamesMap.end()) {
-        LOG(fatal) << "Bad variable in vars.data() (" << v.GetString() << ") specified for histogram";
+        LOG(fatal) << "Bad variable in vars (" << v.GetString() << ") specified for histogram";
         return false;
       }
     }
@@ -2740,7 +2740,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
     bool isTH3 = (histTypeStr.CompareTo("TH3") == 0);
     bool isTHn = (histTypeStr.CompareTo("THn") == 0);
     bool isConstantBinning = true;
-    if (!(hist.HasMember("xmin.data()") && hist.HasMember("xmax.data()"))) {
+    if (!(hist.HasMember("xmin") && hist.HasMember("xmax"))) {
       isConstantBinning = false;
     }
 
@@ -2757,7 +2757,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
 
       int* vars = new int[nDimensions];
       int iDim = 0;
-      for (auto& v : hist.FindMember("vars.data()")->value.GetArray()) {
+      for (auto& v : hist.FindMember("vars")->value.GetArray()) {
         LOG(debug) << "iDim " << iDim << ": " << v.GetString();
         vars[iDim++] = VarManager::fgVarNamesMap[v.GetString()];
       }
@@ -2776,14 +2776,14 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
           LOG(debug) << "nBins " << iDim << ": " << nBins[iDim - 1];
         }
         iDim = 0;
-        for (auto& v : hist.FindMember("xmin.data()")->value.GetArray()) {
+        for (auto& v : hist.FindMember("xmin")->value.GetArray()) {
           xmin[iDim++] = v.GetDouble();
-          LOG(debug) << "xmin.data() " << iDim << ": " << xmin[iDim - 1];
+          LOG(debug) << "xmin " << iDim << ": " << xmin[iDim - 1];
         }
         iDim = 0;
-        for (auto& v : hist.FindMember("xmax.data()")->value.GetArray()) {
+        for (auto& v : hist.FindMember("xmax")->value.GetArray()) {
           xmax[iDim++] = v.GetDouble();
-          LOG(debug) << "xmax.data() " << iDim << ": " << xmax[iDim - 1];
+          LOG(debug) << "xmax " << iDim << ": " << xmax[iDim - 1];
         }
       } else {
         int iDim = 0;
@@ -2813,11 +2813,11 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
 
       if (isConstantBinning) {
         for (auto histClass : histClasses) {
-          hm->AddHistogram(histClass, histName, title, nDimensions, vars.data(), nBins, xmin.data(), xmax.data(), axLabels, varW, useSparse, isDouble);
+          hm->AddHistogram(histClass, histName, title, nDimensions, vars, nBins, xmin, xmax, axLabels, varW, useSparse, isDouble);
         }
       } else {
         for (auto histClass : histClasses) {
-          hm->AddHistogram(histClass, histName, title, nDimensions, vars.data(), binLimits, axLabels, varW, useSparse, isDouble);
+          hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
         }
       }
 
@@ -2834,11 +2834,11 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       const char* varX = hist.FindMember("varX")->value.GetString();
       LOG(debug) << "varX: " << varX;
 
-      double xmin = (hist.HasMember("xmin.data()") ? hist.FindMember("xmin.data()")->value.GetDouble() : 0.0);
-      LOG(debug) << "xmin.data(): " << xmin.data();
+      double xmin = (hist.HasMember("xmin") ? hist.FindMember("xmin")->value.GetDouble() : 0.0);
+      LOG(debug) << "xmin: " << xmin;
 
-      double xmax = (hist.HasMember("xmax.data()") ? hist.FindMember("xmax.data()")->value.GetDouble() : 0.0);
-      LOG(debug) << "xmax.data(): " << xmax.data();
+      double xmax = (hist.HasMember("xmax") ? hist.FindMember("xmax")->value.GetDouble() : 0.0);
+      LOG(debug) << "xmax: " << xmax;
 
       std::vector<double> xbinsVec;
       if (hist.HasMember("xbins")) {
@@ -2915,7 +2915,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       if (isConstantBinning) {
         for (auto histClass : histClasses) {
           hm->AddHistogram(histClass, histName, title, isProfile,
-                           nXbins, xmin.data(), xmax.data(), VarManager::fgVarNamesMap[varX],
+                           nXbins, xmin, xmax, VarManager::fgVarNamesMap[varX],
                            nYbins, ymin, ymax, VarManager::fgVarNamesMap[varY],
                            nZbins, zmin, zmax, VarManager::fgVarNamesMap[varZ],
                            xLabels, yLabels, zLabels,
