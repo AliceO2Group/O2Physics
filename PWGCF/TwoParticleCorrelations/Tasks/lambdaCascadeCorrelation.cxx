@@ -12,8 +12,7 @@
 /// \file Lambdacascadecorrelation.cxx
 /// \brief Correlation-balance functions of multistrange baryons
 /// \author Oveis Sheibani <oveis.sheibani@cern.ch>
-//
-// o2-linter: disable=name/workflow-file
+
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/inelGt.h"
@@ -404,7 +403,7 @@ constexpr uint8_t kItsIBMask = 0x07;
 
 // Cascade species-selection flag values written into the
 // cascadeflags::IsSelected column. Promoted to namespace scope so both
-// LambdaCascadeProducer (sets them) and LambdaXiCorrelation (consumes
+// LambdaCascadeProducer (sets them) and LambdaCascadeCorrelation (consumes
 // them) can refer to the same names.
 constexpr int kFlagRejected = 0;   // rejected by processCandidate cut chain
 constexpr int kFlagXiOnly = 1;     // bachelor passes pion-PID only → Ξ-eligible
@@ -639,14 +638,14 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
        "trigTvx=%d tfBorder=%d itsROBorder=%d itsTpcVtx=%d "
        "noBunchPileup=%d zVtxTimeDiff=%d goodITSLayers=%d",
        tag,
-       static_cast<int>(cuts).useVtxZ, static_cast<double>(cuts).minVtxZ, static_cast<double>(cuts).maxVtxZ,
-       static_cast<int>(cuts).useSel8, static_cast<int>(cuts).useInt7, static_cast<int>(cuts).useSel7,
-       static_cast<int>(cuts).useCentRange, static_cast<double>(cuts).minCent, static_cast<double>(cuts).maxCent,
-       static_cast<int>(cuts).useInel, cuts.inelMin,
-       static_cast<int>(cuts).useTriggerTvx, static_cast<int>(cuts).useTfBorder,
-       static_cast<int>(cuts).useItsRoBorder, static_cast<int>(cuts).useItsTpcVtx,
-       static_cast<int>(cuts).useNoSameBunchPileup, static_cast<int>(cuts).useZVtxTimeDiff,
-       static_cast<int>(cuts).useIsGoodITSLayers);
+       static_cast<int>(cuts.useVtxZ), static_cast<double>(cuts.minVtxZ), static_cast<double>(cuts.maxVtxZ),
+       static_cast<int>(cuts.useSel8), static_cast<int>(cuts.useInt7), static_cast<int>(cuts.useSel7),
+       static_cast<int>(cuts.useCentRange), static_cast<double>(cuts.minCent), static_cast<double>(cuts.maxCent),
+       static_cast<int>(cuts.useInel), cuts.inelMin,
+       static_cast<int>(cuts.useTriggerTvx), static_cast<int>(cuts.useTfBorder),
+       static_cast<int>(cuts.useItsRoBorder), static_cast<int>(cuts.useItsTpcVtx),
+       static_cast<int>(cuts.useNoSameBunchPileup), static_cast<int>(cuts.useZVtxTimeDiff),
+       static_cast<int>(cuts.useIsGoodITSLayers));
 }
 
 } // namespace lcorr_evsel
@@ -657,7 +656,7 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
 //
 // Why merged: event selection used to run twice (once in LTP, once in CSEL),
 // with subtly different defaults, producing inconsistent collision populations
-// in the downstream LambdaXiCorrelation. The merge guarantees a single
+// in the downstream LambdaCascadeCorrelation. The merge guarantees a single
 // `selCollision()` call per event drives BOTH the Lambda table production
 // and the cascade flagging — they can no longer disagree.
 //
@@ -793,7 +792,7 @@ struct LambdaCascadeProducer {
     Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "[DEPRECATED] event selection delegated to LTP"};
     Configurable<bool> doSel8{"doSel8", true, "[DEPRECATED] sel8 is enforced by LTP's cSel8Trig"};
     Configurable<bool> doNoSameBunchPileUp{"doNoSameBunchPileUp", true, "[DEPRECATED] pileup veto is enforced by LTP's cPileupReject"};
-    Configurable<int> INEL{"INEL", 0, "[DEPRECATED] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable
+    Configurable<int> INEL{"INEL", 0, "[DEPRECATED] INEL>N enforcement is no longer applied"}; // o2-linter: disable=name/configurable (back-compat: JSON key)
     Configurable<double> maxVertexZ{"maxVertexZ", 10., "[DEPRECATED] |Vz| cut is enforced by LTP's cMin/cMaxZVtx"};
 
     // Cascade kinematic / selection.
@@ -830,20 +829,20 @@ struct LambdaCascadeProducer {
     // names matching the long-standing ALICE V0/cascade-builder JSON
     // convention shared across PWGCF / PWGLF tasks. Renaming would break
     // back-compat with every existing config file.
-    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "v0setting_cospa"};               // o2-linter: disable=name/configurable
-    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};         // o2-linter: disable=name/configurable
-    Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};   // o2-linter: disable=name/configurable
-    Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};   // o2-linter: disable=name/configurable
-    Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};               // o2-linter: disable=name/configurable
-    Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"}; // o2-linter: disable=name/configurable
+    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "v0setting_cospa"};               // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};         // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};   // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};   // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};               // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"}; // o2-linter: disable=name/configurable (back-compat: JSON key)
     // Removed unused Configurables: cascadesetting_dcacascdau /
     // cascadesetting_dcabachtopv. These were declared but never used in the
     // cut chain — only `casc.dcacascdaughters()` / `casc.dcabachtopv()` (the
     // row values) are read for QA fills. The cascade-builder upstream applies
     // the analogous cuts at table-production time; our task didn't re-cut.
-    Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.9, "cascadesetting_cascradius"};        // o2-linter: disable=name/configurable
-    Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"}; // o2-linter: disable=name/configurable
-    Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"}; // o2-linter: disable=name/configurable
+    Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.9, "cascadesetting_cascradius"};        // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"}; // o2-linter: disable=name/configurable (back-compat: JSON key)
+    Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"}; // o2-linter: disable=name/configurable (back-compat: JSON key)
 
     // Cascade-side ConfigurableAxes.
     ConfigurableAxis cascRadiusAxis{"cascRadiusAxis", {100, 0.0f, 50.0f}, "cm"};
@@ -1005,12 +1004,12 @@ struct LambdaCascadeProducer {
          "maxDcaV0ToPv=%.4f minV0CosPA=%.6f maxV0Radius=%.2f maxLProper=%.2f "
          "maxDauDcaToPv=%.4f minDauItsNCls=%d "
          "cascRadius<v0Radius=%d cFillLambdaTreeAllCandidates=%d",
-         static_cast<int>(primCfg).cPrimEnable, static_cast<int>(primCfg).cPrimRequireBothDauItsHits,
-         static_cast<int>(primCfg).cPrimRequireItsIBHit,
-         static_cast<float>(primCfg).cPrimMaxDcaV0ToPv, static_cast<float>(primCfg).cPrimMinV0CosPA,
-         static_cast<float>(primCfg).cPrimMaxV0Radius, static_cast<float>(primCfg).cPrimMaxLProper,
-         static_cast<float>(primCfg).cPrimMaxDauDcaToPv, static_cast<int>(primCfg).cPrimMinDauItsNCls,
-         static_cast<int>(primCfg).cReqCascRadiusLessThanV0Radius,
+         static_cast<int>(primCfg.cPrimEnable), static_cast<int>(primCfg.cPrimRequireBothDauItsHits),
+         static_cast<int>(primCfg.cPrimRequireItsIBHit),
+         static_cast<float>(primCfg.cPrimMaxDcaV0ToPv), static_cast<float>(primCfg.cPrimMinV0CosPA),
+         static_cast<float>(primCfg.cPrimMaxV0Radius), static_cast<float>(primCfg.cPrimMaxLProper),
+         static_cast<float>(primCfg.cPrimMaxDauDcaToPv), static_cast<int>(primCfg.cPrimMinDauItsNCls),
+         static_cast<int>(primCfg.cReqCascRadiusLessThanV0Radius),
          static_cast<int>(cFillLambdaTreeAllCandidates));
 
     // initialize axis specifications
@@ -1231,8 +1230,8 @@ struct LambdaCascadeProducer {
          "Event acceptance is driven exclusively by LTP's selCollision (see "
          "[CFG-LTP] above). To change event cuts, set the corresponding "
          "cSel8Trig / cPileupReject / cTriggerTvxSel / etc. on this same task.",
-         static_cast<int>(cascCfg).doSel8, static_cast<int>(cascCfg).doNoSameBunchPileUp, static_cast<int>(cascCfg).INEL,
-         static_cast<double>(cascCfg).maxVertexZ, static_cast<int>(cascCfg).doTFBorderCut);
+         static_cast<int>(cascCfg.doSel8), static_cast<int>(cascCfg.doNoSameBunchPileUp), static_cast<int>(cascCfg.INEL),
+         static_cast<double>(cascCfg.maxVertexZ), static_cast<int>(cascCfg.doTFBorderCut));
 
     // CCDB URL conflict check.
     if (std::string(cUrlCCDB.value) != std::string(cascCfg.ccdbUrl.value)) {
@@ -1294,7 +1293,7 @@ struct LambdaCascadeProducer {
     const char* reason = "ok";
     if (!lcorr_evsel::applyEventSelection<run>(col, cuts, cent, reason)) {
       LOGF(debug, "[LTP] reject: %s (Vz=%.3f cent=%.2f)",
-           reason, static_cast<double>(col).posZ(), static_cast<double>(cent));
+           reason, static_cast<double>(col.posZ()), static_cast<double>(cent));
       return false;
     }
 
@@ -3217,7 +3216,7 @@ inline void connectLambdaGenBranches(TTree* t, LambdaGenBranches* b)
 }
 } // namespace lxicorr
 
-struct LambdaXiCorrelation {
+struct LambdaCascadeCorrelation {
 
   // --- Configurables ---
   Configurable<float> maxY{"maxY", 0.5, "Max |y| for Lambda, Xi and Omega"};
@@ -3600,9 +3599,9 @@ struct LambdaXiCorrelation {
          static_cast<int>(cVetoMode), static_cast<int>(cUsePrimaryLambdasOnly),
          static_cast<int>(cPrimaryRequireTopo), static_cast<int>(cRequireTrueCascade), static_cast<int>(cItsTrackMode),
          static_cast<int>(saveCascTree), static_cast<int>(saveLambdaTree),
-         static_cast<int>(pairCfg).cFillLamXi, static_cast<int>(pairCfg).cFillLamOm, static_cast<int>(pairCfg).cFillLamLam,
-         static_cast<int>(pairCfg).cFillXiXi, static_cast<int>(pairCfg).cFillOmOm, static_cast<int>(pairCfg).cFillXiOm,
-         static_cast<int>(yieldCfg).cFillEventYields,
+         static_cast<int>(pairCfg.cFillLamXi), static_cast<int>(pairCfg.cFillLamOm), static_cast<int>(pairCfg.cFillLamLam),
+         static_cast<int>(pairCfg.cFillXiXi), static_cast<int>(pairCfg.cFillOmOm), static_cast<int>(pairCfg.cFillXiOm),
+         static_cast<int>(yieldCfg.cFillEventYields),
          static_cast<int>(doprocessXi), static_cast<int>(doprocessOmega),
          static_cast<int>(doprocessMCRecoXi), static_cast<int>(doprocessMCRecoOmega),
          static_cast<int>(doprocessAllPairs), static_cast<int>(doprocessYields),
@@ -4533,7 +4532,7 @@ struct LambdaXiCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<false>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processXi, "Λ–Ξ correlation", true);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processXi, "Λ–Ξ correlation", true);
 
   void processOmega(LambdaCollisionsExt::iterator const& lambdacoll,
                     GoodLambdas const& /*lambdas*/,
@@ -4565,7 +4564,7 @@ struct LambdaXiCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<true>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processOmega, "Λ–Ω correlation", false);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processOmega, "Λ–Ω correlation", false);
 
   // ---------------------------------------------------------------------------
   // MC Reco-level with truth matching: Λ–Ξ
@@ -4601,7 +4600,7 @@ struct LambdaXiCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<false>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processMCRecoXi, "MC reco Λ–Ξ (truth-tagged tree)", false);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCRecoXi, "MC reco Λ–Ξ (truth-tagged tree)", false);
 
   // ---------------------------------------------------------------------------
   // MC Reco-level with truth matching: Λ–Ω
@@ -4637,7 +4636,7 @@ struct LambdaXiCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<true>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processMCRecoOmega, "MC reco Λ–Ω (truth-tagged tree)", false);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCRecoOmega, "MC reco Λ–Ω (truth-tagged tree)", false);
 
   // ===========================================================================
   // Same-species and cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)
@@ -4848,7 +4847,7 @@ struct LambdaXiCorrelation {
     analyzeOmegaOmegaPairs(cascadesInThisEvent, flagsStart, centVal);
     analyzeXiOmegaPairs(cascadesInThisEvent, flagsStart, centVal);
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processAllPairs, "All same-/cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)", false);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processAllPairs, "All same-/cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)", false);
 
   // ---------------------------------------------------------------------------
   // processYields — fills the per-event multiplicity + ⟨pT⟩
@@ -4970,7 +4969,7 @@ struct LambdaXiCorrelation {
                 HIST("Yields/OmegaPlus/hNvsPt2D"),
                 nOmP, sOmP);
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processYields, "Per-event multiplicity + ⟨pT⟩ for each species", true);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processYields, "Per-event multiplicity + ⟨pT⟩ for each species", true);
 
   // ---------------------------------------------------------------------------
   // MC Gen-level: Λ–Ξ truth correlation (closure test)
@@ -5114,7 +5113,7 @@ struct LambdaXiCorrelation {
       }
     }
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processMCGenXi, "MC gen-level Λ–Ξ closure", false);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCGenXi, "MC gen-level Λ–Ξ closure", false);
 
   // ---------------------------------------------------------------------------
   // MC Gen-level: Λ–Ω truth correlation (closure test)
@@ -5226,7 +5225,7 @@ struct LambdaXiCorrelation {
       }
     }
   }
-  PROCESS_SWITCH(LambdaXiCorrelation, processMCGenOmega, "MC gen-level Λ–Ω closure", false);
+  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCGenOmega, "MC gen-level Λ–Ω closure", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -5239,7 +5238,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     // CascadeCorrelations were removed entirely from this file.
     adaptAnalysisTask<LambdaCascadeProducer>(cfgc),
     adaptAnalysisTask<LambdaTracksExtProducer>(cfgc),
-    adaptAnalysisTask<LambdaXiCorrelation>(cfgc)
+    adaptAnalysisTask<LambdaCascadeCorrelation>(cfgc)
 
   };
 }
