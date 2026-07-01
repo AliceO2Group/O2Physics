@@ -32,6 +32,7 @@ jobs:
           fetch-depth: 0
           # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
           persist-credentials: false
+          allow-unsafe-pr-checkout: true # needed for pull_request_target
 
       # MegaLinter
       - name: MegaLinter
