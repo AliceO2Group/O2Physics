@@ -34,6 +34,7 @@ jobs:
         with:
           ref: ${{ env.BRANCH_HEAD }}
           fetch-depth: 0 # needed to get the full history
+          allow-unsafe-pr-checkout: true # needed for pull_request_target
       - name: Run tests
         id: linter
         run: |
