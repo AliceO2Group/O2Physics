@@ -7945,6 +7945,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
     }
 
     std::vector<std::string> labelsClass;
+    labelsClass.reserve(cutsMl[0].size());
     for (size_t j = 0; j < cutsMl[0].size(); ++j) {
       labelsClass.push_back(Form("score class %d", static_cast<int>(j)));
     }
