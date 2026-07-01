@@ -216,10 +216,6 @@ struct Alice3MulticharmFinder {
     std::array<float, 3> prong0mom;
     std::array<float, 3> prong1mom;
     std::array<float, o2::track::kLabCovMatSize> parentTrackCovMatrix;
-
-    // charm daughters
-    int nSiliconHitsPiCC;
-    int nTPCHitsPiCC;
   } thisXiccCandidate;
 
   struct ProngInfo {
