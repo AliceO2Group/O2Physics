@@ -105,13 +105,13 @@ o2::track::TrackParCov convertMCParticleToO2Track(McParticleType& particle,
 /// returns velocity in centimeters per picoseconds
 /// \param momentum the momentum of the track
 /// \param mass the mass of the particle
-float computeParticleVelocity(float momentum, float mass);
+float computeParticleVelocity(const float momentum, const float mass);
 
 /// function to calculate track length of this track up to a certain radius
 /// \param track the input track (TrackParCov)
 /// \param radius the radius of the layer you're calculating the length to
 /// \param magneticField the magnetic field to use when propagating
-float computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField);
+float computeTrackLength(const o2::track::TrackParCov& track, const float radius, const float magneticField);
 
 } // namespace o2::upgrade
 
