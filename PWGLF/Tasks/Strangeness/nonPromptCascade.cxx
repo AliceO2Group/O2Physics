@@ -50,7 +50,6 @@
 #include <Math/GenVector/LorentzVector.h>
 #include <Math/GenVector/PtEtaPhiM4D.h>
 #include <TH2.h>
-#include <TParticlePDG.h>
 
 #include <GPUROOTSMatrixFwd.h>
 
