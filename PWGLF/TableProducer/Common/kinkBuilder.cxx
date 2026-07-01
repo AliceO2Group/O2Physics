@@ -835,8 +835,8 @@ struct kinkBuilder {
         if (decayChannel < 0) {
           continue; // Skip candidates that do not match the decay channels of interest
         }
-        hRecCandidatesRecoPt->Fill(decayChannel, trackMoth.pt()); // Decay channel match bin
-        hRecCandidatesGenPt->Fill(decayChannel, genMothPart.pt()); // Decay channel match bin
+        hRecCandidatesRecoPt->Fill(decayChannel, trackMoth.pt());                                              // Decay channel match bin
+        hRecCandidatesGenPt->Fill(decayChannel, genMothPart.pt());                                             // Decay channel match bin
         hRecCandidatesDeltaPt->Fill((trackMoth.pt() - genMothPart.pt()) / genMothPart.pt(), genMothPart.pt()); // Decay channel match bin
       }
       bool isAccepted = false;

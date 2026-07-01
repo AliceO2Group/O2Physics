@@ -91,10 +91,10 @@ struct lambda1405candidate {
   float bachPiNSigTof = -1; // Number of sigmas for the pion candidate using Tof
   int kinkDauId = 0;        // Id of the pion from Sigma decay in MC
   int sigmaId = 0;          // Id of the Sigma candidate in MC
-  int bachPiId = 0;             // Id of the pion candidate in MC
+  int bachPiId = 0;         // Id of the pion candidate in MC
 
-  float cent = -1;          // Centrality of the collision
-  float pvContrib = -1;     // Number of contributors to the primary vertex
+  float cent = -1;      // Centrality of the collision
+  float pvContrib = -1; // Number of contributors to the primary vertex
 
   float scalarProd = -1; // Scalar product for flow analysis
 };
@@ -623,18 +623,18 @@ struct lambda1405analysis {
     }
 
     auto kinkDauMom = std::array{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
-    auto sigmaMom   = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+    auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
     // Sigma properties
-    lambda1405Cand.sigmaId        = sigmaCand.globalIndex();
+    lambda1405Cand.sigmaId = sigmaCand.globalIndex();
     lambda1405Cand.sigmaMinusMass = sigmaCand.mSigmaMinus();
-    lambda1405Cand.sigmaPlusMass  = sigmaCand.mSigmaPlus();
-    lambda1405Cand.xiMinusMass    = sigmaCand.mXiMinus();
-    lambda1405Cand.sigmaSign      = sigmaCand.mothSign();
-    lambda1405Cand.sigmaAlphaAP   = alphaAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaQtAP      = qtAP(sigmaMom, kinkDauMom);
-    lambda1405Cand.sigmaPt        = sigmaCand.ptMoth();
-    lambda1405Cand.sigmaRadius    = sigmaRad;
-    lambda1405Cand.dcaSigmaToPv   = sigmaCand.dcaMothPv();
+    lambda1405Cand.sigmaPlusMass = sigmaCand.mSigmaPlus();
+    lambda1405Cand.xiMinusMass = sigmaCand.mXiMinus();
+    lambda1405Cand.sigmaSign = sigmaCand.mothSign();
+    lambda1405Cand.sigmaAlphaAP = alphaAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaQtAP = qtAP(sigmaMom, kinkDauMom);
+    lambda1405Cand.sigmaPt = sigmaCand.ptMoth();
+    lambda1405Cand.sigmaRadius = sigmaRad;
+    lambda1405Cand.dcaSigmaToPv = sigmaCand.dcaMothPv();
 
     if (lambda1405Cand.sigmaQtAP < funcMinQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP) ||
         lambda1405Cand.sigmaQtAP > funcMaxQtAlphaAP.Eval(lambda1405Cand.sigmaAlphaAP)) {
@@ -659,7 +659,7 @@ struct lambda1405analysis {
 
     // Collision properties
     lambda1405Cand.pvContrib = collision.numContrib();
-    if constexpr ( requires{collision.centFT0C();} ) {
+    if constexpr (requires { collision.centFT0C(); }) {
       lambda1405Cand.cent = collision.centFT0C();
     } else {
       lambda1405Cand.cent = -1; // Not available
@@ -720,7 +720,7 @@ struct lambda1405analysis {
       lambda1405Cand.px = sigmaMom[0] + piMom[0];
       lambda1405Cand.py = sigmaMom[1] + piMom[1];
       lambda1405Cand.pz = sigmaMom[2] + piMom[2];
-      
+
       lambda1405Cand.phi = std::atan2(lambda1405Cand.py, lambda1405Cand.px);
       lambda1405Cand.scalarProd = -1;
       if constexpr (requires { collision.qvecFT0CRe(); }) {
@@ -736,13 +736,13 @@ struct lambda1405analysis {
           std::hypot(sigmaCand.pxMoth(), sigmaCand.pyMoth()) > funcMaxSigmaPtVsL1405Pt.Eval(lambda1405Cand.pt())) {
         continue;
       }
-      
+
       if (piTrack.pt() < funcMinBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt()) ||
-      piTrack.pt() > funcMaxBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt())) {
+          piTrack.pt() > funcMaxBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt())) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 4); // Pt correlations
-      
+
       if (lambda1405Cand.pt() < cutMinPtL1405) {
         continue;
       }
@@ -962,9 +962,9 @@ struct lambda1405analysis {
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
         auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
 
-        bool isSigmaMinusKink    = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaMinusPdgCode, 211,  particlesMC);
-        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaPlusPdgCode,  211,  particlesMC);
-        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaPlusPdgCode,  2212, particlesMC);
+        bool isSigmaMinusKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaMinusPdgCode, 211, particlesMC);
+        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaPlusPdgCode, 211, particlesMC);
+        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, sigmaPlusPdgCode, 2212, particlesMC);
 
         if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
           continue; // Skip if not a valid Sigma kink decay
@@ -973,7 +973,7 @@ struct lambda1405analysis {
         std::vector<lambda1405candidate> selectedCandidates;
         constructCollCandidates(collision, sigmaCand, tracksPerCol, selectedCandidates);
         for (auto& lambda1405Cand : selectedCandidates) {
-            rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
+          rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
 
           // Do MC association
           auto labelBachPi = trackLabelsMC.rawIteratorAt(lambda1405Cand.bachPiId);
