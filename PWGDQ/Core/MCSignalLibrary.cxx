@@ -2423,7 +2423,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
 
   // Calling the MCProng constructor
   auto* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap,
-                               checkGenerationsInTime, checkIfPDGInHistory, excludePDGInHistory);
+                            checkGenerationsInTime, checkIfPDGInHistory, excludePDGInHistory);
   // Print the configuration
   prong->Print();
   return prong;

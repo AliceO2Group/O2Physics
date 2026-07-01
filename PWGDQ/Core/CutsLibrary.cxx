@@ -865,7 +865,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "kaonPID3_withDCA") { // same as kaonPID3 but with cut on DCA and SPDAny->ITSAny
+  if (nameStr == "kaonPID3_withDCA") {        // same as kaonPID3 but with cut on DCA and SPDAny->ITSAny
     cut->AddCut(GetAnalysisCut("AssocKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
     cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
@@ -7861,7 +7861,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
       TString centKey = centMember->name.GetString();
       if (!centKey.Contains("AddCentCut")) {
         continue;
-}
+      }
 
       const auto& centCut = centMember->value;
 
@@ -7877,7 +7877,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
         TString ptKey = ptMember->name.GetString();
         if (!ptKey.Contains("AddPtCut")) {
           continue;
-}
+        }
 
         const auto& ptCut = ptMember->value;
 
@@ -7897,7 +7897,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
           TString mlKey = mlMember->name.GetString();
           if (!mlKey.Contains("AddMLCut")) {
             continue;
-}
+          }
 
           const auto& mlcut = mlMember->value;
 
@@ -7930,7 +7930,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
           msg += std::to_string(binCuts[i]);
           if (i != binCuts.size() - 1) {
             msg += ", ";
-}
+          }
         }
         msg += "] and direction: ";
         msg += (exclude ? "CutGreater" : "CutSmaller");
