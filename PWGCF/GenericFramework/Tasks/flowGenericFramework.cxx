@@ -699,7 +699,6 @@ struct FlowGenericFramework {
           registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
-          registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
           registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
           registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
