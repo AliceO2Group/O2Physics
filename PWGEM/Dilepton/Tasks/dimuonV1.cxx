@@ -370,7 +370,7 @@ struct dimuonV1 {
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
-      int nuls = 0, nlspp = 0, nlsmm = 0;
+      int nuls = 0; /*, nlspp = 0, nlsmm = 0;*/
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         bool is_pair_ok = fillPairInfo<0>(collision, pos, neg, cut);
         if (is_pair_ok) {
