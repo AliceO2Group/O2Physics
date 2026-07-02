@@ -884,7 +884,7 @@ struct NetchargeFluctuations {
       int sign = 0;
       auto* pd = pdgService->GetParticle(pid);
       if (pd != nullptr) {
-        sign = pd->Charge() / 3;
+        sign = static_cast<int>(pd->Charge() / 3.0);
       }
       if (sign == 0) {
         continue;
@@ -1187,7 +1187,7 @@ struct NetchargeFluctuations {
       auto sign = 0;
       auto* pd = pdgService->GetParticle(pid);
       if (pd != nullptr) {
-        sign = pd->Charge() / 3;
+        sign = static_cast<int>(pd->Charge() / 3.0);
       }
       if (sign == 0) {
         continue;
@@ -1331,7 +1331,7 @@ struct NetchargeFluctuations {
       auto sign = 0;
       auto* pd = pdgService->GetParticle(pid);
       if (pd != nullptr) {
-        sign = pd->Charge() / 3;
+        sign = static_cast<int>(pd->Charge() / 3.0);
       }
       if (sign == 0) {
         continue;
@@ -1408,7 +1408,7 @@ struct NetchargeFluctuations {
       auto sign = 0;
       auto* pd = pdgService->GetParticle(pid);
       if (pd != nullptr) {
-        sign = pd->Charge() / 3;
+        sign = static_cast<int>(pd->Charge() / 3.0);
       }
       if (sign == 0) {
         continue;
