@@ -54,6 +54,7 @@
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <array>
 #include <bitset>
 #include <cmath>
 #include <cstdint>
@@ -68,8 +69,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lfNucleiBATask {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -259,7 +260,7 @@ struct lfNucleiBATask {
   static constexpr int PDGTriton = o2::constants::physics::Pdg::kTriton;
   static constexpr int PDGHelium = o2::constants::physics::Pdg::kHelium3;
   static constexpr int PDGAlpha = o2::constants::physics::Pdg::kAlpha;
-  static constexpr int PDGHyperTriton = o2::constants::physics::Pdg::kHyperTriton;
+  // static constexpr int PDGHyperTriton = o2::constants::physics::Pdg::kHyperTriton; // not used
   static constexpr float MassProtonVal = o2::constants::physics::MassProton;
   static constexpr float MassDeuteronVal = o2::constants::physics::MassDeuteron;
   static constexpr float MassTritonVal = o2::constants::physics::MassTriton;
@@ -267,11 +268,11 @@ struct lfNucleiBATask {
   static constexpr float MassAlphaVal = o2::constants::physics::MassAlpha;
 
   // PDG of Mothers
-  static constexpr int PdgMotherList[] = {PDG_t::kPiPlus, PDG_t::kKPlus, PDG_t::kK0Short, PDG_t::kNeutron, PDG_t::kProton, PDG_t::kLambda0, o2::constants::physics::Pdg::kDeuteron, o2::constants::physics::Pdg::kHelium3, o2::constants::physics::Pdg::kTriton, o2::constants::physics::Pdg::kHyperTriton, o2::constants::physics::Pdg::kAlpha};
+  static constexpr std::array<int, 11> PdgMotherList = {PDG_t::kPiPlus, PDG_t::kKPlus, PDG_t::kK0Short, PDG_t::kNeutron, PDG_t::kProton, PDG_t::kLambda0, o2::constants::physics::Pdg::kDeuteron, o2::constants::physics::Pdg::kHelium3, o2::constants::physics::Pdg::kTriton, o2::constants::physics::Pdg::kHyperTriton, o2::constants::physics::Pdg::kAlpha};
 
-  static constexpr int NumMotherList = sizeof(PdgMotherList) / sizeof(PdgMotherList[0]);
+  static constexpr int NumMotherList = PdgMotherList.size();
 
-  static constexpr const char* MotherNames[NumMotherList] = {"#pi^{+}", "K^{+}", "K^{0}_{S}", "n", "p", "#Lambda", "d", "He3", "t", "^{3}_{#Lambda}H", "He4"};
+  static constexpr std::array<const char*, NumMotherList> MotherNames = {"#pi^{+}", "K^{+}", "K^{0}_{S}", "n", "p", "#Lambda", "d", "He3", "t", "^{3}_{#Lambda}H", "He4"};
 
   static constexpr int MaxNumMom = 2; // X: 0..4, overflow=5
 
@@ -527,10 +528,11 @@ struct lfNucleiBATask {
     if (enableCentrality) {
       histos.add<TH2>("event/eventSelection", "eventSelection", HistType::kTH2D, {{11, -0.5, 10.5}, {binsPercentile, "Centrality FT0M"}});
       auto h2d = histos.get<TH2>(HIST("event/eventSelection"));
-      if (skimmingOptions.applySkimming)
+      if (skimmingOptions.applySkimming) {
         h2d->GetXaxis()->SetBinLabel(1, "Skimmed events");
-      else
+      } else {
         h2d->GetXaxis()->SetBinLabel(1, "Total");
+      }
 
       h2d->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
       h2d->GetXaxis()->SetBinLabel(3, "TF border cut");
@@ -545,10 +547,11 @@ struct lfNucleiBATask {
     } else {
       histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{11, -0.5, 10.5}});
       auto h1d = histos.get<TH1>(HIST("event/eventSelection"));
-      if (skimmingOptions.applySkimming)
+      if (skimmingOptions.applySkimming) {
         h1d->GetXaxis()->SetBinLabel(1, "Skimmed events");
-      else
+      } else {
         h1d->GetXaxis()->SetBinLabel(1, "Total");
+      }
 
       h1d->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
       h1d->GetXaxis()->SetBinLabel(3, "TF border cut");
@@ -3490,8 +3493,8 @@ struct lfNucleiBATask {
         [[maybe_unused]] int firstMotherId = -1;
         [[maybe_unused]] int firstMotherPdg = -1;
         [[maybe_unused]] float firstMotherPt = -1.f;
-        [[maybe_unused]] int pdgMomList[MaxNumMom];
-        [[maybe_unused]] float ptMomList[MaxNumMom];
+        [[maybe_unused]] std::array<int, MaxNumMom> pdgMomList{};
+        [[maybe_unused]] std::array<float, MaxNumMom> ptMomList{};
         [[maybe_unused]] int nSaved = 0;
 
         if constexpr (IsFilteredData) {
@@ -4370,6 +4373,8 @@ struct lfNucleiBATask {
                     histos.fill(HIST("tracks/proton/h2ProtonVspTNSigmaTOF"), track.pt(), track.tofNSigmaPr());
                   }
                   break;
+                default:
+                  break;
               }
               if (outFlagOptions.enableExpSignalTOF)
                 histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPt"), track.pt(), track.tofExpSignalDiffPr());
@@ -4702,6 +4707,8 @@ struct lfNucleiBATask {
             if (!track.hasTRD() && !enableCentrality) {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             }
+            break;
+          default:
             break;
         }
       }
@@ -6512,7 +6519,7 @@ struct lfNucleiBATask {
     if (enableEffEvtSet) {
       if (!effEvtSetReady)
         return;
-      if (!effEvtSet.count(mcIdx))
+      if (!effEvtSet.contains(mcIdx))
         return;
     }
 
