@@ -107,7 +107,7 @@ struct PhotonChargedTriggerProducer {
   HistogramRegistry histos{"histogramRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   // for mc
-  Service<framework::O2DatabasePDG> pdg;
+  Service<framework::O2DatabasePDG> pdg{};
 
   // partitions++
   SliceCache cache;
@@ -125,14 +125,18 @@ struct PhotonChargedTriggerProducer {
   template <typename T_collision>
   bool checkEventSelection(T_collision const& collision)
   {
-    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits))
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return false;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRctSelection, rctLabel))
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRctSelection, rctLabel)) {
       return false;
-    if (std::abs(collision.posZ()) > zPvMax)
+    }
+    if (std::abs(collision.posZ()) > zPvMax) {
       return false;
-    if (collision.trackOccupancyInTimeRange() < occupancyMin || collision.trackOccupancyInTimeRange() > occupancyMax)
+    }
+    if (collision.trackOccupancyInTimeRange() < occupancyMin || collision.trackOccupancyInTimeRange() > occupancyMax) {
       return false;
+    }
     return true;
   }
 
@@ -141,7 +145,7 @@ struct PhotonChargedTriggerProducer {
   int getThirdDecimalTruePosZ(T_collision const& collision)
   {
     // get third decimal
-    double absPosZ;
+    double absPosZ = -1;
     if constexpr (IsJetCollisionMCD<T_collision>) {
       absPosZ = std::abs(collision.template mcCollision_as<aod::JetMcCollisions>().posZ());
     } else {
@@ -155,10 +159,12 @@ struct PhotonChargedTriggerProducer {
   template <typename T_track>
   bool checkGlobalTrackEta(T_track const& track)
   {
-    if (!jetderiveddatautilities::selectTrack(track, trackSelection))
+    if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
       return false;
-    if (!jetderiveddatautilities::applyTrackKinematics(track, 0.1, 1000, -1 * absEtaMax, absEtaMax))
+    }
+    if (!jetderiveddatautilities::applyTrackKinematics(track, 0.1, 1000, -1 * absEtaMax, absEtaMax)) {
       return false;
+    }
     return true;
   }
 
@@ -168,10 +174,7 @@ struct PhotonChargedTriggerProducer {
   {
     // too low for tof
     if (track.pt() < piPIDLowPt) {
-      if (track.tpcNSigmaPi() > nSigmaPiTpcLowPt.value[0] && track.tpcNSigmaPi() < nSigmaPiTpcLowPt.value[1]) {
-        return true;
-      }
-      return false;
+      return (track.tpcNSigmaPi() > nSigmaPiTpcLowPt.value[0] && track.tpcNSigmaPi() < nSigmaPiTpcLowPt.value[1]);
     }
     // Bethe-Bloch overlap (-> tpc + tof)
     if (track.pt() < piPIDHighPt) {
@@ -184,10 +187,7 @@ struct PhotonChargedTriggerProducer {
       return false;
     }
     // Bethe-Bloch rel rise (too high for tof)
-    if (track.tpcNSigmaPi() > nSigmaPiRelRise.value[0] && track.tpcNSigmaPi() < nSigmaPiRelRise.value[1]) {
-      return true;
-    }
-    return false;
+    return (track.tpcNSigmaPi() > nSigmaPiRelRise.value[0] && track.tpcNSigmaPi() < nSigmaPiRelRise.value[1]);
   }
 
   // checks pipm selection (just PID (no additional track cuts))
@@ -254,8 +254,9 @@ struct PhotonChargedTriggerProducer {
     // count global tracks (for independence of multiplicity task (uses only JE derieved data))
     for (auto const& track : tracks) {
       // track selection
-      if (!checkGlobalTrackEta(track))
+      if (!checkGlobalTrackEta(track)) {
         continue;
+      }
 
       nGlobalTracks++;
       if (track.pt() > maxTrackPt) {
@@ -266,12 +267,15 @@ struct PhotonChargedTriggerProducer {
         maxTriggerEta = track.eta();
       }
 
-      if (!isSelectedEvent)
+      if (!isSelectedEvent) {
         continue;
-      if (track.pt() < ptTrigMin)
+      }
+      if (track.pt() < ptTrigMin) {
         continue;
-      if (oneTriggerPerEvent)
+      }
+      if (oneTriggerPerEvent) {
         continue;
+      }
 
       // trigger info
       histos.fill(HIST("reco/h3_ptPhiEta_trigger"), track.pt(), track.phi(), track.eta());
@@ -305,14 +309,16 @@ struct PhotonChargedTriggerProducer {
                              soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi> const&)
   {
     // event selection
-    if (!checkEventSelection(collision))
+    if (!checkEventSelection(collision)) {
       return;
+    }
 
     // hadron/pipm
     for (auto const& track : tracks) {
       // track selection
-      if (!checkGlobalTrackEta(track))
+      if (!checkGlobalTrackEta(track)) {
         continue;
+      }
 
       // hadron
       histos.fill(HIST("reco/h3_ptPhiEta_hadron"), track.pt(), track.phi(), track.eta());
@@ -320,8 +326,9 @@ struct PhotonChargedTriggerProducer {
 
       // pipm selection
       auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi>>();
-      if (!checkPipmTPCTOF(trackPID))
+      if (!checkPipmTPCTOF(trackPID)) {
         continue;
+      }
 
       // pipm
       histos.fill(HIST("reco/h3_ptPhiEta_pipm"), track.pt(), track.phi(), track.eta());
@@ -334,14 +341,16 @@ struct PhotonChargedTriggerProducer {
                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::pidTPCPi> const&)
   {
     // event selection
-    if (!checkEventSelection(collision))
+    if (!checkEventSelection(collision)) {
       return;
+    }
 
     // hadron/pipm
     for (auto const& track : tracks) {
       // track selection
-      if (!checkGlobalTrackEta(track))
+      if (!checkGlobalTrackEta(track)) {
         continue;
+      }
 
       // hadron
       histos.fill(HIST("reco/h3_ptPhiEta_hadron"), track.pt(), track.phi(), track.eta());
@@ -349,8 +358,9 @@ struct PhotonChargedTriggerProducer {
 
       // pipm selection
       auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::pidTPCPi>>();
-      if (!checkPipmTPC(trackPID))
+      if (!checkPipmTPC(trackPID)) {
         continue;
+      }
 
       // pipm
       histos.fill(HIST("reco/h3_ptPhiEta_pipm"), track.pt(), track.phi(), track.eta());
@@ -363,8 +373,9 @@ struct PhotonChargedTriggerProducer {
                             aod::V0PhotonsKF const& v0Photons, aod::V0Legs const&)
   {
     // event selection
-    if (!checkEventSelection(collision))
+    if (!checkEventSelection(collision)) {
       return;
+    }
 
     // photonsPCM (for some reason collsionId not an index column (?))
     auto const v0PhotonsThisEvent = v0Photons.sliceBy(perColV0Photons, collision.collisionId());
@@ -372,8 +383,9 @@ struct PhotonChargedTriggerProducer {
     // photonPCM
     for (auto const& v0Photon : v0PhotonsThisEvent) {
       // photon selection
-      if (std::abs(v0Photon.eta()) > absEtaMax)
+      if (std::abs(v0Photon.eta()) > absEtaMax) {
         continue;
+      }
       if (std::abs(v0Photon.dcaZtopv()) < pcmAbsDcaZLim.value[0] || std::abs(v0Photon.dcaZtopv()) > pcmAbsDcaZLim.value[1]) {
         continue;
       }
@@ -392,8 +404,9 @@ struct PhotonChargedTriggerProducer {
       ROOT::Math::PtEtaPhiMVector const p4V0PCMPair = p4V0PCM1 + p4V0PCM2;
 
       // pi0 selection
-      if (std::abs(p4V0PCMPair.Eta()) > absEtaMax)
+      if (std::abs(p4V0PCMPair.Eta()) > absEtaMax) {
         continue;
+      }
 
       // save info
       histos.fill(HIST("reco/h3_ptPhiEta_photonPCMPair"), p4V0PCMPair.Pt(), RecoDecay::constrainAngle(p4V0PCMPair.Phi(), 0), p4V0PCMPair.Eta());
@@ -421,12 +434,15 @@ struct PhotonChargedTriggerProducer {
     for (auto const& mcParticle : mcParticles) {
       // track selection
       auto const pdgParticle = pdg->GetParticle(mcParticle.pdgCode());
-      if (!pdgParticle || pdgParticle->Charge() == 0)
+      if (!pdgParticle || pdgParticle->Charge() == 0) {
         continue;
-      if (!mcParticle.isPhysicalPrimary())
+      }
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
-      if (std::abs(mcParticle.eta()) > absEtaMax)
+      }
+      if (std::abs(mcParticle.eta()) > absEtaMax) {
         continue;
+      }
 
       nCharged++;
       if (mcParticle.pt() > maxChargedPt) {
@@ -438,10 +454,12 @@ struct PhotonChargedTriggerProducer {
       }
 
       // trigger selection
-      if (mcParticle.pt() < ptTrigMin)
+      if (mcParticle.pt() < ptTrigMin) {
         continue;
-      if (oneTriggerPerEvent)
+      }
+      if (oneTriggerPerEvent) {
         continue;
+      }
 
       // trigger info
       histos.fill(HIST("true/h3_ptPhiEta_trigger"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
