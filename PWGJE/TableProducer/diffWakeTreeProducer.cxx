@@ -28,7 +28,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/OutputObjHandlingPolicy.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Configurable.h>
