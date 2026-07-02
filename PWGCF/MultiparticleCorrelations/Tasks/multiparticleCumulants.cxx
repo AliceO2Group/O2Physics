@@ -217,7 +217,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
   // *) Others
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/scratch3/go52dab/O2tutorial/tutorial3-6/weights.root", "path to external ROOT file which holds all particle weights in O2 format"};
-  Configurable<std::string> cfRunNumber{"cfRunNumber", "000123456", "run number"};
 
   // *) Bins
   Configurable<std::vector<float>> cfPtBins{"cfPtBins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};
@@ -277,8 +276,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     std::vector<float> fVerZBins = {-50., 50.};
     std::vector<float> fNumContribBins = {0, 5000};
 
-    std::string fFileWithWeights = "/scratch3/go52dab/O2tutorial/tutorial3-6/weights.root";
-    std::string fRunNumber = "000123456";
+    std::string fFileWithWeights = "/scratch3/go52dab/O2tutorial/analysis_code/weights.root";
 
   } tc;
 
@@ -306,10 +304,21 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   struct WeightHistograms {
     bool fWeightSwitch = kTRUE;
     TList* fWeightHistogramsList = NULL;
-    std::vector<TH1F*> fWeightHistograms;
+    // Fill phi/pt histograms with that run number:
+    std::map<int, TH1F*> fPtRealByRunMap;   // MC rec (too lazy to change name) data pt histograms, valid if processMonteCarlo
+    std::map<int, TH1F*> fPtMCByRunMap;     // MC sim (too lazy to change name) data pt histograms, valid if processMonteCarlo
+    std::map<int, TH1F*> fPhiByRunMap;      // Phi histograms, valid if processRealData
+    // Make weight histograms locally. Upload weight histograms to CCDB:
+    std::vector<TH1F*> fWeightHistograms;           // Get all weight histograms with that run number
+    std::map<int, TH1F*> fPhiWeightHistogramsMap;   // Get phi weight histograms
+    std::map<int, TH1F*> fPtWeightHistogramsMap;    // Get pt weight histograms
+    // Null weight histograms. Use them when no weight histograms found in the given run number:
+    TH1F* fDummyPhiWeightHistogram = NULL;
+    TH1F* fDummyPtWeightHistogram = NULL;
   } wt;
 
   struct EventByEventQuantities {
+    int fRunNumber = 0;
     float fReferenceMultiplicity = 0.;
     float fCentrality = 0.;
     float fCentralitySim = 0.;
@@ -322,6 +331,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
   struct MultiparticleCorrelationProfile {
     TList* fMultiparticleCorrelationProfilesList = NULL;
+    std::map<int, TList*> fMultiparticleCorrelationByRunMap;
     TProfile* fTwoParticleCorrelationProfiles[eCutBeforeAfter_N] = {NULL};
     TProfile* fFourParticleCorrelationProfiles[eCutBeforeAfter_N] = {NULL};
   } mc;
@@ -661,8 +671,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       // Check if the external ROOT file exists at specified path:
 
       if (gSystem->AccessPathName(filePath, kFileExists)) {
-        LOGF(info,
-             "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
+        LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath, kFileExists)), filePath = %s \033[0m", filePath);
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
@@ -685,7 +694,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           baseList->ls();
-          LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+          LOGF(warning, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+          histograms = {nullptr};
+          return histograms;
         }
       }
     }
@@ -727,8 +738,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       return;
     }
 
-    // TH1F* histAcceptanceWeight = wt.fWeightHistograms[1];
-
+    // Book Q-vector arrays:
     for (int h = 0; h < mcc.MaxHarmonic; h++) {
       for (int p = 0; p < mcc.MaxPower; p++) {
         mcc.fQvectorBefore[h][p] = TComplex(0., 0.);
@@ -736,11 +746,101 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
     }
 
-    if (tc.fPrintSwitch) {
-      // Print current run number:
-      LOGF(info, "Run number: %d", collision.bc().runNumber());
+    // Get run number:
+    ebye.fRunNumber = collision.bc().runNumber();
+    std::string stringRunNumber = std::to_string(ebye.fRunNumber);
+
+    // Book phi histogram with this run number:
+    if (wt.fPhiByRunMap.find(ebye.fRunNumber) == wt.fPhiByRunMap.end()) {
+      wt.fPhiByRunMap[ebye.fRunNumber] = new TH1F(Form("hPhi_run%d", ebye.fRunNumber), Form("phi distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPhiBins[0]), tc.fPhiBins[1], tc.fPhiBins[2]);
+      wt.fPhiByRunMap[ebye.fRunNumber]->SetDirectory(nullptr);
+      wt.fWeightHistogramsList->Add(wt.fPhiByRunMap[ebye.fRunNumber]);
     }
 
+    // Book pt MC rec histogram with this run number:
+    if (wt.fPtRealByRunMap.find(ebye.fRunNumber) == wt.fPtRealByRunMap.end()) {
+      wt.fPtRealByRunMap[ebye.fRunNumber] = new TH1F(Form("hPtReal_run%d", ebye.fRunNumber), Form("pt MC rec distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
+      wt.fPtRealByRunMap[ebye.fRunNumber]->SetDirectory(nullptr);
+      wt.fWeightHistogramsList->Add(wt.fPtRealByRunMap[ebye.fRunNumber]);
+    }
+    
+    // Book pt MC sim histogram with this run number:
+    if (wt.fPtMCByRunMap.find(ebye.fRunNumber) == wt.fPtMCByRunMap.end()) {
+      wt.fPtMCByRunMap[ebye.fRunNumber] = new TH1F(Form("hPtMC_run%d", ebye.fRunNumber), Form("pt MC sim distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
+      wt.fPtMCByRunMap[ebye.fRunNumber]->SetDirectory(nullptr);
+      wt.fWeightHistogramsList->Add(wt.fPtMCByRunMap[ebye.fRunNumber]);
+    }
+
+    // Get phi and pt weight histogram with this run number:
+    if (wt.fWeightSwitch && wt.fPhiWeightHistogramsMap.find(ebye.fRunNumber) == wt.fPhiWeightHistogramsMap.end()) {
+      
+      TH1F* phiWeightHist = dynamic_cast<TH1F*>(wt.fDummyPhiWeightHistogram->Clone(Form("wPhi_run%d", ebye.fRunNumber)));
+      TH1F* ptWeightHist = dynamic_cast<TH1F*>(wt.fDummyPtWeightHistogram->Clone(Form("wPt_run%d", ebye.fRunNumber)));
+
+      wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), stringRunNumber.c_str());
+
+      for(TH1F* const hist : wt.fWeightHistograms){
+        if (!hist) {
+          LOGF(warning, "Fail to loop weight histograms");
+          continue;
+        }
+        TString histName = hist->GetName();
+        if (histName.BeginsWith("wPhi")) {
+          delete phiWeightHist;
+          phiWeightHist = dynamic_cast<TH1F*>(hist->Clone(Form("wPhi_run%d", ebye.fRunNumber)));
+          break;
+        }
+      }
+
+      for(TH1F* const hist : wt.fWeightHistograms){
+        if (!hist) {
+          LOGF(warning, "Fail to loop weight histograms");
+          continue;
+        }
+        TString histName = hist->GetName();
+        if (histName.BeginsWith("wPt")) {
+          delete ptWeightHist;
+          ptWeightHist = dynamic_cast<TH1F*>(hist->Clone(Form("wPt_run%d", ebye.fRunNumber)));
+          break;
+        }
+      }
+
+      phiWeightHist->SetDirectory(nullptr);
+      wt.fPhiWeightHistogramsMap[ebye.fRunNumber] = phiWeightHist;
+      wt.fWeightHistogramsList->Add(wt.fPhiWeightHistogramsMap[ebye.fRunNumber]);
+
+      ptWeightHist->SetDirectory(nullptr);
+      wt.fPtWeightHistogramsMap[ebye.fRunNumber] = ptWeightHist;
+      wt.fWeightHistogramsList->Add(wt.fPtWeightHistogramsMap[ebye.fRunNumber]);
+    }
+
+    // Multiparticle correlation list with this run number:
+    if (mc.fMultiparticleCorrelationByRunMap.find(ebye.fRunNumber) == mc.fMultiparticleCorrelationByRunMap.end()) {
+      mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber] = new TList();
+      mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->SetName(Form("mcc_run%d", ebye.fRunNumber));
+      mc.fMultiparticleCorrelationProfilesList->Add(mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]);
+
+      mc.fTwoParticleCorrelationProfiles[eBefore] = nullptr;
+      mc.fTwoParticleCorrelationProfiles[eAfter] = nullptr;
+      mc.fFourParticleCorrelationProfiles[eBefore] = nullptr;
+      mc.fFourParticleCorrelationProfiles[eAfter] = nullptr;
+
+      mc.fTwoParticleCorrelationProfiles[eBefore] = new TProfile("prof2Before", "2-p correlation before cut", 3, 2., 5.);
+      mc.fTwoParticleCorrelationProfiles[eAfter] = new TProfile("prof2After", "2-p correlation after cut", 3, 2., 5.);
+      mc.fTwoParticleCorrelationProfiles[eBefore]->Sumw2();
+      mc.fTwoParticleCorrelationProfiles[eAfter]->Sumw2();
+      mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fTwoParticleCorrelationProfiles[eBefore]);
+      mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fTwoParticleCorrelationProfiles[eAfter]);
+
+      mc.fFourParticleCorrelationProfiles[eBefore] = new TProfile("prof4Before", "4-p correlation before cut", 2, 3., 5.);
+      mc.fFourParticleCorrelationProfiles[eAfter] = new TProfile("prof4After", "4-p correlation after cut", 2, 3., 5.);
+      mc.fFourParticleCorrelationProfiles[eBefore]->Sumw2();
+      mc.fFourParticleCorrelationProfiles[eAfter]->Sumw2();
+      mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fFourParticleCorrelationProfiles[eBefore]);
+      mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fFourParticleCorrelationProfiles[eAfter]);
+    }
+
+    // Real data centrality:
     float rlCollisionCentAll[eCentEstm_N] = {
       collision.centFT0C(),
       collision.centFT0M(),
@@ -758,6 +858,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
     }
 
+    // Real data multiplicity:
     float rlCollisionMultAll[eMultEstm_N] = {
       static_cast<float>(collision.multFT0C()),
       static_cast<float>(collision.multFT0M()),
@@ -773,30 +874,34 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
     }
 
+    // Real data nContrib:
     float rlCollisionNumContrib = 0.;
     rlCollisionNumContrib = static_cast<float>(collision.numContrib());
 
-    if (tc.fPrintSwitch) {
-      // Print centrality estimated with "FT0M" estimator:
-      LOGF(info, "Centrality: %f", rlCollisionCent);
-
-      // Print multiplicity:
-      LOGF(info, "Multiplicity: %f", static_cast<float>(rlCollisionMult));
-
-      // Print vertex position:
-      LOGF(info, "Vertex X position: %f", collision.posX());
-      LOGF(info, "Vertex Y position: %f", collision.posY());
-      LOGF(info, "Vertex Z position: %f", collision.posZ());
-
-      // Print NContributors
-      LOGF(info, "NContributors: %f",
-           static_cast<float>(rlCollisionNumContrib));
-    }
+    // Event-by-event quantity:
     ebye.fCentrality = rlCollisionCent;
     ebye.fReferenceMultiplicity = rlCollisionMult;
     ebye.fNumContrib = rlCollisionNumContrib;
 
+    // Print...
+    if (tc.fPrintSwitch) {
+
+      LOGF(info, "Run number: %d", ebye.fRunNumber);
+      
+      LOGF(info, "Centrality: %f", rlCollisionCent);
+      LOGF(info, "Multiplicity: %f", static_cast<float>(rlCollisionMult));
+
+      LOGF(info, "Vertex X position: %f", collision.posX());
+      LOGF(info, "Vertex Y position: %f", collision.posY());
+      LOGF(info, "Vertex Z position: %f", collision.posZ());
+
+      LOGF(info, "NContributors: %f", static_cast<float>(rlCollisionNumContrib));
+    }
+
+    // If Rec or RecAndSim:
     if constexpr (rs == eRec || rs == eRecAndSim) {
+
+      // Fill real event histograms before cut:
       ev.fEventHistograms[eCent][eRec][eBefore]->Fill(rlCollisionCent);
       ev.fEventHistograms[eMult][eRec][eBefore]->Fill(rlCollisionMult);
       ev.fEventHistograms[eVertexX][eRec][eBefore]->Fill(collision.posX());
@@ -804,6 +909,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       ev.fEventHistograms[eVertexZ][eRec][eBefore]->Fill(collision.posZ());
       ev.fEventHistograms[eNumContrib][eRec][eBefore]->Fill(rlCollisionNumContrib);
 
+      // Fill centrality correlation histograms before cut:
       for (int i = 0; i < eCentEstm_N; i++) {
         for (int j = i + 1; j < eCentEstm_N; j++) {
           auto* h = cr.fCorrHistograms[eCorrCent][i][j][eBefore];
@@ -814,6 +920,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         }
       }
 
+      // Fill multiplicity correlation histograms before cut:
       for (int i = 0; i < eMultEstm_N; i++) {
         for (int j = i + 1; j < eMultEstm_N; j++) {
           auto* h = cr.fCorrHistograms[eCorrMult][i][j][eBefore];
@@ -824,53 +931,59 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         }
       }
 
+      // If RecAndSim:
       if constexpr (rs == eRecAndSim) {
+
         if (!collision.has_mcCollision()) {
           if (tc.fPrintSwitch) {
             LOGF(warning, "  No MC collision for this collision, skip...");
           }
-          return;
-        }
+        } else {
+          // Define MC collision:
+          auto mccollision = collision.mcCollision();
 
-        auto mccollision = collision.mcCollision();
+          // Define MC centrality:
+          float mcCollisionCent = 0.;
+          float b = mccollision.impactParameter() * std::pow(10, -15); // convert fm to m
+          float xs = 7.71 * std::pow(10, -28);                         // convert barn to m^2
+          mcCollisionCent = o2::constants::math::PI * b * b / xs * 100;
 
-        float mcCollisionCent = 0.;
+          // Event-by-event quantity:
+          ebye.fCentralitySim = mcCollisionCent;
+          ebye.fImpactParameter = b;
 
-        float b = mccollision.impactParameter() * std::pow(10, -15); // convert fm to m
-        float xs = 7.71 * std::pow(10, -28);                         // convert barn to m^2
-        mcCollisionCent = o2::constants::math::PI * b * b / xs * 100;
+          if (tc.fPrintSwitch) {
+            LOGF(info, "mc impact param (fm): %f", mccollision.impactParameter());
+            LOGF(info, "mc centrality: %f", mcCollisionCent);
+          }
 
-        ebye.fCentralitySim = mcCollisionCent;
-        ebye.fImpactParameter = b;
+          // Fill MC event histograms before cut:
+          ev.fEventHistograms[eCent][eSim][eBefore]->Fill(mcCollisionCent);
+          ev.fEventHistograms[eVertexX][eSim][eBefore]->Fill(mccollision.posX());
+          ev.fEventHistograms[eVertexY][eSim][eBefore]->Fill(mccollision.posY());
+          ev.fEventHistograms[eVertexZ][eSim][eBefore]->Fill(mccollision.posZ());
 
-        if (tc.fPrintSwitch) {
-          LOGF(info, "mc impact param (fm): %f", mccollision.impactParameter());
-          LOGF(info, "mc centrality: %f", mcCollisionCent);
-        }
+          // Fill MC event histograms after cut:
+          if (ctEventCuts<eMc>(mccollision, rlCollisionCentAll, rlCollisionMultAll)) {
+            ev.fEventHistograms[eCent][eSim][eAfter]->Fill(mcCollisionCent);
+            ev.fEventHistograms[eVertexX][eSim][eAfter]->Fill(mccollision.posX());
+            ev.fEventHistograms[eVertexY][eSim][eAfter]->Fill(mccollision.posY());
+            ev.fEventHistograms[eVertexZ][eSim][eAfter]->Fill(mccollision.posZ());
+          }
 
-        ev.fEventHistograms[eCent][eSim][eBefore]->Fill(mcCollisionCent);
-        ev.fEventHistograms[eVertexX][eSim][eBefore]->Fill(mccollision.posX());
-        ev.fEventHistograms[eVertexY][eSim][eBefore]->Fill(mccollision.posY());
-        ev.fEventHistograms[eVertexZ][eSim][eBefore]->Fill(mccollision.posZ());
-
-        if (ctEventCuts<eMc>(mccollision, rlCollisionCentAll, rlCollisionMultAll)) {
-          ev.fEventHistograms[eCent][eSim][eAfter]->Fill(mcCollisionCent);
-          ev.fEventHistograms[eVertexX][eSim][eAfter]->Fill(mccollision.posX());
-          ev.fEventHistograms[eVertexY][eSim][eAfter]->Fill(mccollision.posY());
-          ev.fEventHistograms[eVertexZ][eSim][eAfter]->Fill(mccollision.posZ());
-        }
-
-        if (qa.fQASwitch) {
-          qa.fQAHistograms[eQACent][eBefore]->Fill(rlCollisionCent, mcCollisionCent);
-          qa.fQAHistograms[eQAMultNumContrib][eBefore]->Fill(rlCollisionMult, rlCollisionNumContrib);
-          if (ctEventCuts<eRl>(collision, rlCollisionCentAll, rlCollisionMultAll) &&
-              ctEventCuts<eMc>(mccollision, rlCollisionCentAll, rlCollisionMultAll)) {
-            qa.fQAHistograms[eQACent][eAfter]->Fill(rlCollisionCent, mcCollisionCent);
-            qa.fQAHistograms[eQAMultNumContrib][eAfter]->Fill(rlCollisionMult, rlCollisionNumContrib);
+          if (qa.fQASwitch) {
+            qa.fQAHistograms[eQACent][eBefore]->Fill(rlCollisionCent, mcCollisionCent);
+            qa.fQAHistograms[eQAMultNumContrib][eBefore]->Fill(rlCollisionMult, rlCollisionNumContrib);
+            if (ctEventCuts<eRl>(collision, rlCollisionCentAll, rlCollisionMultAll) &&
+                ctEventCuts<eMc>(mccollision, rlCollisionCentAll, rlCollisionMultAll)) {
+              qa.fQAHistograms[eQACent][eAfter]->Fill(rlCollisionCent, mcCollisionCent);
+              qa.fQAHistograms[eQAMultNumContrib][eAfter]->Fill(rlCollisionMult, rlCollisionNumContrib);
+            }
           }
         }
       }
 
+      // Fill real event histograms after cut
       if (ctEventCuts<eRl>(collision, rlCollisionCentAll, rlCollisionMultAll)) {
         ev.fEventHistograms[eCent][eRec][eAfter]->Fill(rlCollisionCent);
         ev.fEventHistograms[eMult][eRec][eAfter]->Fill(rlCollisionMult);
@@ -879,6 +992,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         ev.fEventHistograms[eVertexZ][eRec][eAfter]->Fill(collision.posZ());
         ev.fEventHistograms[eNumContrib][eRec][eAfter]->Fill(rlCollisionNumContrib);
 
+        // Fill centrality correlation histograms after cut:
         if (tc.fCentCorrCutSwitch) {
           for (int i = 0; i < eCentEstm_N; i++) {
             for (int j = i + 1; j < eCentEstm_N; j++) {
@@ -891,8 +1005,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
           }
         }
 
+        // Fill multiplicity correlation histograms after cut:
         if (tc.fMultCorrCutSwitch) {
-
           for (int i = 0; i < eMultEstm_N; i++) {
             for (int j = i + 1; j < eMultEstm_N; j++) {
               auto* h = cr.fCorrHistograms[eCorrMult][i][j][eAfter];
@@ -904,6 +1018,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
           }
         }
 
+      // Fail the event cut, skip this collision:
       } else {
         return;
       }
@@ -914,25 +1029,44 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     // Calculate Q-vectors for available angles and weights:
     double dPhi = 0.;         // particle angle
+    double dPt = 0.;
     double wPhi = 1.;         // particle weight
-    double wPhiToPowerP = 1.; // particle weight raised to power p
+    double wPt = 1.;
+    double wPhiToPowerP = 1.; // particle weight raised to power p. wPhi is actually wPt*wPhi but I'm too lazy to change the name.
 
     // Main loop over particles:
     for (auto const& track : tracks) {
       // LOGF(info, "Track azimuthal angle: %f", track.phi());
       // LOGF(info, "Transverse momentum: %f", track.pt());
 
-      // Fill reconstructed ...:
       if constexpr (rs == eRec || rs == eRecAndSim) {
 
-        // Fill track pt distribution:
+        // Fill phi/pt real histogram with this run number:
+        wt.fPhiByRunMap[ebye.fRunNumber]->Fill(track.phi());
+        wt.fPtRealByRunMap[ebye.fRunNumber]->Fill(track.pt());
+
+        // Fill track histograms before cut:
         pc.fParticleHistograms[ePt][eRec][eBefore]->Fill(track.pt());
         pc.fParticleHistograms[ePhi][eRec][eBefore]->Fill(track.phi());
 
+        // Calculating Q-vector before cut:
         dPhi = track.phi();
+        dPt = track.pt();
         if (wt.fWeightSwitch) {
-          auto* hist = wt.fWeightHistograms[1];
-          wPhi = hist->GetBinContent(wt.fWeightHistograms[1]->GetXaxis()->FindBin(dPhi));
+          auto itPhi = wt.fPhiWeightHistogramsMap.find(ebye.fRunNumber);
+          if (itPhi == wt.fPhiWeightHistogramsMap.end() || !itPhi->second) {
+            LOGF(fatal, "Missing Phi weight histogram for run %d", ebye.fRunNumber);
+          }
+          auto itPt = wt.fPtWeightHistogramsMap.find(ebye.fRunNumber);
+          if (itPt == wt.fPtWeightHistogramsMap.end() || !itPt->second) {
+            LOGF(fatal, "Missing Pt weight histogram for run %d", ebye.fRunNumber);
+          }
+
+          auto* histPhi = itPhi->second;
+          auto* histPt = itPt->second;
+          wPhi = histPhi->GetBinContent(histPhi->GetXaxis()->FindBin(dPhi));
+          wPt = histPt->GetBinContent(histPt->GetXaxis()->FindBin(dPt));
+          wPhi *= wPt;
         }
 
         for (int h = 0; h < mcc.MaxHarmonic; h++) {
@@ -945,9 +1079,12 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         }
 
         if (ctParticleCuts<eRl>(track)) {
+
+          // Fill particle histograms after cut:
           pc.fParticleHistograms[ePt][eRec][eAfter]->Fill(track.pt());
           pc.fParticleHistograms[ePhi][eRec][eAfter]->Fill(track.phi());
 
+          // Calculating Q-vector after cut:
           for (int h = 0; h < mcc.MaxHarmonic; h++) {
             for (int p = 0; p < mcc.MaxPower; p++) {
               if (wt.fWeightSwitch) {
@@ -971,19 +1108,25 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
             if (tc.fPrintSwitch) {
               LOGF(warning, "  No MC particle for this track, skip...");
             }
-            return;
-          }
-          auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
-          pc.fParticleHistograms[ePt][eSim][eBefore]->Fill(mcparticle.pt());
-          pc.fParticleHistograms[ePhi][eSim][eBefore]->Fill(mcparticle.phi());
-          if (ctParticleCuts<eMc>(mcparticle)) {
-            pc.fParticleHistograms[ePt][eSim][eAfter]->Fill(mcparticle.pt());
-            pc.fParticleHistograms[ePhi][eSim][eAfter]->Fill(mcparticle.phi());
+          } else {
+            // Corresponding MC truth simulated particle
+            auto mcparticle = track.mcParticle();
+
+            //  Fill pt MC sim histogram with this run number:
+            wt.fPtMCByRunMap[ebye.fRunNumber]->Fill(mcparticle.pt());
+
+            // Fill MC particle histograms before cut:
+            pc.fParticleHistograms[ePt][eSim][eBefore]->Fill(mcparticle.pt());
+            pc.fParticleHistograms[ePhi][eSim][eBefore]->Fill(mcparticle.phi());
+
+            if (ctParticleCuts<eMc>(mcparticle)) {
+              // Fill MC particle histograms after cut:
+              pc.fParticleHistograms[ePt][eSim][eAfter]->Fill(mcparticle.pt());
+              pc.fParticleHistograms[ePhi][eSim][eAfter]->Fill(mcparticle.phi());
+            }
           }
         } // end of if constexpr (rs == eRecAndSim) {
-
       } // if constexpr (rs == eRec || rs == eRecAndSim) {
-
     } // end of for (int64_t i = 0; i < tracks.size(); i++) {
 
     for (int i = 0; i < mcc.MaxHarmonic - 2; i++) {
@@ -1266,7 +1409,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     tc.fPrintSwitch = cfPrintSwitch;
     tc.fFileWithWeights = cfFileWithWeights;
-    tc.fRunNumber = cfRunNumber;
 
     qa.fQASwitch = cfQASwitch;
     wt.fWeightSwitch = cfWeightSwitch;
@@ -1279,32 +1421,32 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     // *) Book and nest all other TLists:
     pc.fParticleHistogramsList = new TList();
     pc.fParticleHistogramsList->SetName("ParticleHistograms");
-    pc.fParticleHistogramsList->SetOwner(kFALSE);
+    pc.fParticleHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(pc.fParticleHistogramsList); // any nested TList in the base TList appears as a subdir in the output ROOT file
 
     ev.fEventHistogramsList = new TList();
     ev.fEventHistogramsList->SetName("EventHistograms");
-    ev.fEventHistogramsList->SetOwner(kFALSE);
+    ev.fEventHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(ev.fEventHistogramsList);
 
     qa.fQAHistogramsList = new TList();
     qa.fQAHistogramsList->SetName("QualityAssuranceHistograms");
-    qa.fQAHistogramsList->SetOwner(kFALSE);
+    qa.fQAHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(qa.fQAHistogramsList);
 
     wt.fWeightHistogramsList = new TList();
     wt.fWeightHistogramsList->SetName("WeightHistograms");
-    wt.fWeightHistogramsList->SetOwner(kFALSE);
+    wt.fWeightHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(wt.fWeightHistogramsList);
 
     cr.fCorrHistogramsList = new TList();
     cr.fCorrHistogramsList->SetName("CorrelationHistograms");
-    cr.fCorrHistogramsList->SetOwner(kFALSE);
+    cr.fCorrHistogramsList->SetOwner(kTRUE);
     fBaseList->Add(cr.fCorrHistogramsList);
 
     mc.fMultiparticleCorrelationProfilesList = new TList();
     mc.fMultiparticleCorrelationProfilesList->SetName("MultiparticleCorrelationProfiles");
-    mc.fMultiparticleCorrelationProfilesList->SetOwner(kFALSE);
+    mc.fMultiparticleCorrelationProfilesList->SetOwner(kTRUE);
     fBaseList->Add(mc.fMultiparticleCorrelationProfilesList);
 
     std::vector<std::vector<float>> lPcBins = {tc.fPtBins, tc.fPhiBins};
@@ -1325,26 +1467,14 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     bookCorrHistograms<eCorrCent>(lCrBins, cr); // if switch on ...
     bookCorrHistograms<eCorrMult>(lCrBins, cr);
 
-    if (wt.fWeightSwitch) {
-      wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
-      for (auto* const& hist : wt.fWeightHistograms) { // o2-linter: disable=const-ref-in-for-loop
-        wt.fWeightHistogramsList->Add(hist);
-      }
+    wt.fDummyPhiWeightHistogram = new TH1F("fDummyPhiWeightHistogram", "Dummy phi weight histogram", tc.fPhiBins[0], tc.fPhiBins[1], tc.fPhiBins[2]);
+    for(int i=1; i<=wt.fDummyPhiWeightHistogram->GetNbinsX(); i++){
+      wt.fDummyPhiWeightHistogram->SetBinContent(i, 1.);
     }
-
-    mc.fTwoParticleCorrelationProfiles[eBefore] = new TProfile("prof2Before", "2-p correlation before cut", 3, 2., 5.);
-    mc.fTwoParticleCorrelationProfiles[eAfter] = new TProfile("prof2After", "2-p correlation after cut", 3, 2., 5.);
-    mc.fTwoParticleCorrelationProfiles[eBefore]->Sumw2();
-    mc.fTwoParticleCorrelationProfiles[eAfter]->Sumw2();
-    mc.fMultiparticleCorrelationProfilesList->Add(mc.fTwoParticleCorrelationProfiles[eBefore]);
-    mc.fMultiparticleCorrelationProfilesList->Add(mc.fTwoParticleCorrelationProfiles[eAfter]);
-
-    mc.fFourParticleCorrelationProfiles[eBefore] = new TProfile("prof4Before", "4-p correlation before cut", 2, 3., 5.);
-    mc.fFourParticleCorrelationProfiles[eAfter] = new TProfile("prof4After", "4-p correlation after cut", 2, 3., 5.);
-    mc.fFourParticleCorrelationProfiles[eBefore]->Sumw2();
-    mc.fFourParticleCorrelationProfiles[eAfter]->Sumw2();
-    mc.fMultiparticleCorrelationProfilesList->Add(mc.fFourParticleCorrelationProfiles[eBefore]);
-    mc.fMultiparticleCorrelationProfilesList->Add(mc.fFourParticleCorrelationProfiles[eAfter]);
+    wt.fDummyPtWeightHistogram = new TH1F("fDummyPtWeightHistogram", "Dummy pt weight histogram", tc.fPtBins[0], tc.fPtBins[1], tc.fPtBins[2]);
+    for(int i=1; i<=wt.fDummyPtWeightHistogram->GetNbinsX(); i++){
+      wt.fDummyPtWeightHistogram->SetBinContent(i, 1.);
+    }
 
   } // end of void init(InitContext&) {
 
