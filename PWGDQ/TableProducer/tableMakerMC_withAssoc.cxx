@@ -612,7 +612,7 @@ struct TableMakerMC {
       }
 
       // If this MC track was not already added to the map, add it now
-      if (fLabelsMap.find(mctrack.globalIndex()) == fLabelsMap.end()) {
+      if (!fLabelsMap.contains(mctrack.globalIndex())) {
         fLabelsMap[mctrack.globalIndex()] = trackCounter;
         fLabelsMapReversed[trackCounter] = mctrack.globalIndex();
         fMCFlags[mctrack.globalIndex()] = mcflags;
@@ -1454,7 +1454,7 @@ struct TableMakerMC {
       if (mctrack.has_mothers()) {
         for (auto& m : mctrack.mothersIds()) {
           if (m < mcParticles.size()) { // protect against bad mother indices
-            if (fLabelsMap.find(m) != fLabelsMap.end()) {
+            if (fLabelsMap.contains(m)) {
               mothers.push_back(fLabelsMap.find(m)->second);
             }
           } else {
@@ -1471,7 +1471,7 @@ struct TableMakerMC {
         for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
           // TODO: remove this check as soon as issues with MC production are fixed
           if (d < mcParticles.size()) { // protect against bad daughter indices
-            if (fLabelsMap.find(d) != fLabelsMap.end()) {
+            if (fLabelsMap.contains(d)) {
               daughters.push_back(fLabelsMap.find(d)->second);
             }
           } else {

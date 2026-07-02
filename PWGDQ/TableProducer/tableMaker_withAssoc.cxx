@@ -757,7 +757,7 @@ struct TableMaker {
       oVtxZ[collision.globalIndex()] = collision.posZ();
 
       // if more than one collision per bunch, add that collision to the list for that bunch
-      if (oBCreversed.find(bc) == oBCreversed.end()) {
+      if (!oBCreversed.contains(bc)) {
         std::vector<int64_t> evs = {collision.globalIndex()};
         oBCreversed[bc] = evs;
       } else {
@@ -1449,7 +1449,7 @@ struct TableMaker {
       }
 
       // write the MFT track global index in the map for skimming (to make sure we have it just once)
-      if (fMftIndexMap.find(track.globalIndex()) == fMftIndexMap.end()) {
+      if (!fMftIndexMap.contains(track.globalIndex())) {
         uint32_t reducedEventIdx = fCollIndexMap[collision.globalIndex()];
         outTables.mftTrack(reducedEventIdx, static_cast<uint64_t>(0), track.pt(), track.eta(), track.phi());
         // TODO: We are not writing the DCA at the moment, because this depend on the collision association
