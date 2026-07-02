@@ -790,6 +790,8 @@ DECLARE_SOA_COLUMN(PhotonMCPz, photonmcpz, float);
 DECLARE_SOA_COLUMN(IsPhotonPrimary, isPhotonPrimary, bool);
 DECLARE_SOA_COLUMN(PhotonPDGCode, photonPDGCode, int);
 DECLARE_SOA_COLUMN(PhotonPDGCodeMother, photonPDGCodeMother, int);
+DECLARE_SOA_COLUMN(PhotonPDGCodeGrandMother, photonPDGCodeGrandMother, int);
+DECLARE_SOA_COLUMN(PhotonGlobalIndexGrandMother, photonGlobalIndexGrandMother, int);
 DECLARE_SOA_COLUMN(PhotonIsCorrectlyAssoc, photonIsCorrectlyAssoc, bool);
 
 DECLARE_SOA_COLUMN(KShortMCPx, kshortmcpx, float);
@@ -798,6 +800,8 @@ DECLARE_SOA_COLUMN(KShortMCPz, kshortmcpz, float);
 DECLARE_SOA_COLUMN(IsKShortPrimary, isKShortPrimary, bool);
 DECLARE_SOA_COLUMN(KShortPDGCode, kshortPDGCode, int);
 DECLARE_SOA_COLUMN(KShortPDGCodeMother, kshortPDGCodeMother, int);
+DECLARE_SOA_COLUMN(KShortPDGCodeGrandMother, kshortPDGCodeGrandMother, int);
+DECLARE_SOA_COLUMN(KShortGlobalIndexGrandMother, kshortGlobalIndexGrandMother, int);
 DECLARE_SOA_COLUMN(KShortIsCorrectlyAssoc, kshortIsCorrectlyAssoc, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                                  //! IsSigma0
@@ -903,10 +907,10 @@ DECLARE_SOA_TABLE(KStarMCCores, "AOD", "KSTARMCCORES",
                   kstarMCCore::MCradius, kstarMCCore::PDGCode, kstarMCCore::PDGCodeMother, kstarMCCore::MCprocess, kstarMCCore::IsProducedByGenerator,
 
                   kstarMCCore::PhotonMCPx, kstarMCCore::PhotonMCPy, kstarMCCore::PhotonMCPz,
-                  kstarMCCore::IsPhotonPrimary, kstarMCCore::PhotonPDGCode, kstarMCCore::PhotonPDGCodeMother, kstarMCCore::PhotonIsCorrectlyAssoc,
+                  kstarMCCore::IsPhotonPrimary, kstarMCCore::PhotonPDGCode, kstarMCCore::PhotonPDGCodeMother, kstarMCCore::PhotonPDGCodeGrandMother, kstarMCCore::PhotonGlobalIndexGrandMother, kstarMCCore::PhotonIsCorrectlyAssoc,
 
                   kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy, kstarMCCore::KShortMCPz,
-                  kstarMCCore::IsKShortPrimary, kstarMCCore::KShortPDGCode, kstarMCCore::KShortPDGCodeMother, kstarMCCore::KShortIsCorrectlyAssoc,
+                  kstarMCCore::IsKShortPrimary, kstarMCCore::KShortPDGCode, kstarMCCore::KShortPDGCodeMother, kstarMCCore::KShortPDGCodeGrandMother, kstarMCCore::KShortGlobalIndexGrandMother, kstarMCCore::KShortIsCorrectlyAssoc,
 
                   // Dynamic columns
                   kstarMCCore::IsKStar<kstarMCCore::PDGCode>,
