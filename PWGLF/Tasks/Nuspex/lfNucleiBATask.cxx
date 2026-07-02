@@ -248,7 +248,7 @@ struct lfNucleiBATask {
   // ITS to TPC - Fake hit loop
   static constexpr int IntFakeLoop = 10; // Fixed O2Linter error
   // TPC low/high momentum range
-  static constexpr float CfgTpcClasses[] = {0.5f, 1.5f};
+  static constexpr std::array<float, 2> CfgTpcClasses = {0.5f, 1.5f};
   static constexpr float CfgKaonCut = 5.f;
 
   // PDG codes and masses used in this analysis
@@ -352,7 +352,7 @@ struct lfNucleiBATask {
     const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
     const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
-    if (((doprocessData == true) || (doprocessDataLfPid == true)) && ((doprocessMCReco == true) || (doprocessMCRecoLfPid == true) || (doprocessMCGen == true))) {
+    if (((doprocessData) || (doprocessDataLfPid)) && ((doprocessMCReco) || (doprocessMCRecoLfPid) || (doprocessMCGen))) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
     }
     if (enablePtShiftHe && enablePtShiftPID) {
@@ -2537,17 +2537,22 @@ struct lfNucleiBATask {
       // Init all temp variables inside the track loop
       float gamma = 0.;
 
-      float DPt = track.pt();
-      float antiDPt = track.pt();
+      // Deuteron and helium pt init, before applying shift
+      const float trackPt = track.pt();
+      const float trackP = track.p();
+      const float trackTPCmomentum = track.tpcInnerParam();
 
-      float hePt = track.pt();
-      float antihePt = track.pt();
+      float DPt = trackPt;
+      float antiDPt = trackPt;
 
-      float heP = track.p();
-      float antiheP = track.p();
+      float hePt = trackPt;
+      float antihePt = trackPt;
 
-      float heTPCmomentum = track.tpcInnerParam();
-      float antiheTPCmomentum = track.tpcInnerParam();
+      float heP = trackP;
+      float antiheP = trackP;
+
+      float heTPCmomentum = trackTPCmomentum;
+      float antiheTPCmomentum = trackTPCmomentum;
 
       float massTOF = -99.f, massTOFhe = -99.f, massTOFantihe = -99.f;
 
@@ -2820,6 +2825,8 @@ struct lfNucleiBATask {
           passDCAzCutHe = dcaXY2 / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(hePt, parDCAxy[2])), 2) + dcaZ2 / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(hePt, parDCAz[2])), 2) <= 1;
           passDCAxyCutAntiHe = dcaXY2 / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])), 2) + dcaZ2 / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])), 2) <= 1;
           passDCAzCutAntiHe = dcaXY2 / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])), 2) + dcaZ2 / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])), 2) <= 1;
+          break;
+        default:
           break;
       }
 
@@ -3564,20 +3571,20 @@ struct lfNucleiBATask {
                     histos.fill(HIST("tracks/proton/dca/before/hNumMothers"), nSaved);
                     if (nSaved > 0) {
                       for (int iMom = 0; iMom < nSaved; iMom++) {
-                        int pdgMom = pdgMomList[iMom];
-                        float pdgSign = (pdgMom > 0) ? 1.0 : -1.0;
-                        float ptMom = ptMomList[iMom];
+                        const int pdgMomCurrent = pdgMomList[iMom];
+                        const float pdgSign = (pdgMomCurrent > 0) ? 1.0f : -1.0f;
+                        const float ptMomCurrent = ptMomList[iMom];
                         int motherSpeciesBin = -1;
-                        if (pdgMom != -1) {
+                        if (pdgMomCurrent != -1) {
                           motherSpeciesBin = 0;
                           for (int j = 0; j < NumMotherList; j++) {
-                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
+                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMomCurrent)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
                           }
                         }
-                        histos.fill(HIST("tracks/proton/dca/before/hMomTrueMaterial"), pdgSign, motherSpeciesBin, ptMom);
+                        histos.fill(HIST("tracks/proton/dca/before/hMomTrueMaterial"), pdgSign, motherSpeciesBin, ptMomCurrent);
                       }
                     }
                   }
@@ -3657,20 +3664,20 @@ struct lfNucleiBATask {
                       histos.fill(HIST("tracks/deuteron/dca/before/hNumMothers"), nSaved);
                       if (nSaved > 0) {
                         for (int iMom = 0; iMom < nSaved; iMom++) {
-                          int pdgMom = pdgMomList[iMom];
-                          float pdgSign = (pdgMom > 0) ? 1.0 : -1.0;
-                          float ptMom = ptMomList[iMom];
+                          const int pdgMomCurrent = pdgMomList[iMom];
+                          const float pdgSign = (pdgMomCurrent > 0) ? 1.0f : -1.0f;
+                          const float ptMomCurrent = ptMomList[iMom];
                           int motherSpeciesBin = -1;
-                          if (pdgMom != -1) {
+                          if (pdgMomCurrent != -1) {
                             motherSpeciesBin = 0;
                             for (int j = 0; j < NumMotherList; j++) {
-                              if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
+                              if (std::abs(PdgMotherList[j]) == std::abs(pdgMomCurrent)) {
                                 motherSpeciesBin = j + 1;
                                 break;
                               }
                             }
                           }
-                          histos.fill(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"), pdgSign, motherSpeciesBin, ptMom);
+                          histos.fill(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"), pdgSign, motherSpeciesBin, ptMomCurrent);
                         }
                       }
                     }
@@ -3803,20 +3810,20 @@ struct lfNucleiBATask {
                     histos.fill(HIST("tracks/helium/dca/before/hNumMothers"), nSaved);
                     if (nSaved > 0) {
                       for (int iMom = 0; iMom < nSaved; iMom++) {
-                        int pdgMom = pdgMomList[iMom];
-                        float pdgSign = (pdgMom > 0) ? 1.0 : -1.0;
-                        float ptMom = ptMomList[iMom];
+                        const int pdgMomCurrent = pdgMomList[iMom];
+                        const float pdgSign = (pdgMomCurrent > 0) ? 1.0f : -1.0f;
+                        const float ptMomCurrent = ptMomList[iMom];
                         int motherSpeciesBin = -1;
-                        if (pdgMom != -1) {
+                        if (pdgMomCurrent != -1) {
                           motherSpeciesBin = 0;
                           for (int j = 0; j < NumMotherList; j++) {
-                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMom)) {
+                            if (std::abs(PdgMotherList[j]) == std::abs(pdgMomCurrent)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
                           }
                         }
-                        histos.fill(HIST("tracks/helium/dca/before/hMomTrueMaterial"), pdgSign, motherSpeciesBin, ptMom);
+                        histos.fill(HIST("tracks/helium/dca/before/hMomTrueMaterial"), pdgSign, motherSpeciesBin, ptMomCurrent);
                       }
                     }
                   }
@@ -4300,6 +4307,8 @@ struct lfNucleiBATask {
                   histos.fill(HIST("tracks/proton/h2ProtonVspTNSigmaTPC"), track.pt(), track.tpcNSigmaPr());
                 }
                 break;
+              default:
+                break;
             }
           }
           if (enableTr && trRapCut) {
@@ -4325,6 +4334,8 @@ struct lfNucleiBATask {
                 if (!track.hasTRD()) {
                   histos.fill(HIST("tracks/proton/h2antiProtonVspTNSigmaTPC"), track.pt(), track.tpcNSigmaPr());
                 }
+                break;
+              default:
                 break;
             }
           }
@@ -4511,6 +4522,8 @@ struct lfNucleiBATask {
                     histos.fill(HIST("tracks/proton/h2antiProtonVspTNSigmaTOF"), track.pt(), track.tofNSigmaPr());
                   }
                   break;
+                default:
+                  break;
               }
               if (outFlagOptions.enableExpSignalTOF)
                 histos.fill(HIST("tracks/proton/h2antiProtonTOFExpSignalDiffVsPt"), track.pt(), track.tofExpSignalDiffPr());
@@ -4663,6 +4676,8 @@ struct lfNucleiBATask {
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             }
             break;
+          default:
+            break;
         }
       }
       if (isAntiDeWoTPCpid) {
@@ -4743,6 +4758,8 @@ struct lfNucleiBATask {
                 histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTOF"), DPt, track.tofNSigmaDe());
               }
               break;
+            default:
+              break;
           }
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/deuteron/h2DeuteronTOFExpSignalDiffVsPt"), DPt, track.tofExpSignalDiffDe());
@@ -4762,6 +4779,8 @@ struct lfNucleiBATask {
               if (!track.hasTRD()) {
                 histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTOF"), antiDPt, track.tofNSigmaDe());
               }
+              break;
+            default:
               break;
           }
           if (outFlagOptions.enableExpSignalTOF)
@@ -4876,6 +4895,8 @@ struct lfNucleiBATask {
                 if (!track.hasTRD()) {
                   histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
                 }
+                break;
+              default:
                 break;
             }
           }
@@ -5046,6 +5067,11 @@ struct lfNucleiBATask {
               massTOF = track.p() * std::sqrt(1.f / (track.beta() * track.beta()) - 1.f);
               massTOFhe = heP * std::sqrt(1.f / (track.beta() * track.beta()) - 1.f);
               massTOFantihe = antiheP * std::sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+              break;
+            default:
+              massTOF = -99.f;
+              massTOFhe = -99.f;
+              massTOFantihe = -99.f;
               break;
           }
           if (passDCAxyzCut && outFlagOptions.doTOFplots && outFlagOptions.enablePIDplot)
@@ -6840,6 +6866,8 @@ struct lfNucleiBATask {
             evLossHistos.fill(HIST("evLoss/pt/hAntiHeliumTriggeredSel8"), pt);
           if (isMCSel8Event)
             evLossHistos.fill(HIST("evLoss/pt/hAntiHeliumTriggeredMCSel8"), pt);
+          break;
+        default:
           break;
       }
     }
