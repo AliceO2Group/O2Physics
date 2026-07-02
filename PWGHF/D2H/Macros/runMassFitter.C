@@ -442,24 +442,24 @@ void runMassFitter(const std::string& configFileName)
 
   int constexpr NCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
   const int nCanvases = std::ceil(static_cast<float>(nHistograms) / NCanvasesMax);
+  const int nPads = (nCanvases == 1) ? nHistograms : NCanvasesMax;
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
   std::vector<TCanvas*> canvasRatio(nCanvases);
   std::vector<TCanvas*> canvasRefl(nCanvases);
-  for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
-    const int nPads = (nCanvases == 1) ? nHistograms : NCanvasesMax;
-    canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas), canvasSize[0], canvasSize[1]);
-    divideCanvas(canvasMass[iCanvas], nPads);
 
-    canvasResiduals[iCanvas] = new TCanvas(Form("canvasResiduals%d", iCanvas), Form("canvasResiduals%d", iCanvas), canvasSize[0], canvasSize[1]);
-    divideCanvas(canvasResiduals[iCanvas], nPads);
-
-    canvasRatio[iCanvas] = new TCanvas(Form("canvasRatio%d", iCanvas), Form("canvasRatio%d", iCanvas), canvasSize[0], canvasSize[1]);
-    divideCanvas(canvasRatio[iCanvas], nPads);
-
-    if (enableRefl) {
-      canvasRefl[iCanvas] = new TCanvas(Form("canvasRefl%d", iCanvas), Form("canvasRefl%d", iCanvas), canvasSize[0], canvasSize[1]);
-      divideCanvas(canvasRefl[iCanvas], nPads);
+  std::vector<std::vector<TCanvas*>*> canvasTypes{&canvasMass, &canvasResiduals, &canvasRatio};
+  std::vector<std::string> canvasTypeNames{"canvasMass", "canvasResiduals", "canvasRatio"};
+  if (enableRefl) {
+    canvasTypes.push_back(&canvasRefl);
+    canvasTypeNames.push_back("canvasRefl");
+  }
+  for (int iCanvasType = 0, nCanvasTypeNames = canvasTypes.size(); iCanvasType < nCanvasTypeNames; ++iCanvasType) {
+    for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
+      auto& canvas = (*canvasTypes.at(iCanvasType))[iCanvas];
+      canvas = new TCanvas(Form((canvasTypeNames.at(iCanvasType) + "%d").c_str(), iCanvas), Form((canvasTypeNames.at(iCanvasType) + "%d").c_str(), iCanvas), canvasSize[0], canvasSize[1]);
+      canvas->SetTicks(1, 1);
+      divideCanvas(canvas, nPads);
     }
   }
 
