@@ -9,11 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file Lambdacascadecorrelation.cxx
+/// \file lambdaCascadeCorrelation.cxx
 /// \brief Correlation-balance functions of multistrange baryons
 /// \author Oveis Sheibani <oveis.sheibani@cern.ch>
-
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/inelGt.h"
 
@@ -312,7 +310,7 @@ using MyCascades = soa::Filtered<aod::CascDataExtSelected>;
 using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
 // All Λ-side data-model declarations live in
-// Lambdacascadecorrelation_DataModel.h, included above.
+// lambdaCascadeCorrelation_DataModel.h, included above.
 
 enum CollisionLabels {
   kTotColBeforeHasMcCollision = 1,
@@ -3030,13 +3028,13 @@ struct LambdaTracksExtProducer {
 namespace lxicorr
 {
 struct CascBranches {
-  float pt, rap, mass;
-  int sign;
-  float cascCosPA, v0CosPA;
-  float cascRadius, v0Radius;
-  float dcaV0Dau, dcaCascDau;
-  float dcaV0ToPV, dcaPosToPV, dcaNegToPV, dcaBachToPV;
-  float cent, pvZ;
+  float pt{}, rap{}, mass{};
+  int sign{};
+  float cascCosPA{}, v0CosPA{};
+  float cascRadius{}, v0Radius{};
+  float dcaV0Dau{}, dcaCascDau{};
+  float dcaV0ToPV{}, dcaPosToPV{}, dcaNegToPV{}, dcaBachToPV{};
+  float cent{}, pvZ{};
   // MC truth-matching (filled only in MC mode; default = no match)
   int pdgCode{0}; // PDG of matched McParticle (0 = no match = background)
   bool isPhysPrim{false};
@@ -3053,9 +3051,9 @@ struct CascBranches {
 // Holds branch data for both Xi and Omega — one raw pointer covers both.
 // Gen-level branches — kinematics + truth only, no topology
 struct GenBranches {
-  float pt, rap, cent, pvZ;
-  int pdgCode;
-  bool isPhysPrim;
+  float pt{}, rap{}, cent{}, pvZ{};
+  int pdgCode{};
+  bool isPhysPrim{};
 };
 
 // Λ TTree branches. Both reco-level (with topo + truth fields)
@@ -3063,13 +3061,13 @@ struct GenBranches {
 // post-hoc (e.g., motherPdg==±3312 → Ξ-feeddown). isPhysPrim duplicates the
 // primary/secondary tag from lambdatrack::V0PrmScd for convenience.
 struct LambdaBranches {
-  float pt, eta, rap, phi, mass;
-  float cosPA, dcaDau;
-  int v0Type;   // 0=Λ, 1=Λ̄  (matches enum ParticleType)
-  int v0PrmScd; // 0=primary, 1=secondary (only meaningful in MC)
-  bool trueLambdaFlag;
-  float corrFact;
-  float cent, pvZ;
+  float pt{}, eta{}, rap{}, phi{}, mass{};
+  float cosPA{}, dcaDau{};
+  int v0Type{};   // 0=Λ, 1=Λ̄  (matches enum ParticleType)
+  int v0PrmScd{}; // 0=primary, 1=secondary (only meaningful in MC)
+  bool trueLambdaFlag{};
+  float corrFact{};
+  float cent{}, pvZ{};
   // MC-only
   int pdgCode{0};
   bool isPhysPrim{false};
@@ -3103,10 +3101,10 @@ struct LambdaBranches {
 };
 
 struct LambdaGenBranches {
-  float pt, eta, rap, phi;
-  int v0Type;
-  int v0PrmScd;
-  float cent, pvZ;
+  float pt{}, eta{}, rap{}, phi{};
+  int v0Type{};
+  int v0PrmScd{};
+  float cent{}, pvZ{};
 };
 
 // Single pointer covers all six branch sets — 1 StructToTuple slot
