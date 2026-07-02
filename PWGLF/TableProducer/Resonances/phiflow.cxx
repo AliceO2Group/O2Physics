@@ -27,7 +27,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -41,7 +40,6 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -428,15 +426,15 @@ struct phiflow {
 
     histos.fill(HIST("hEvtSelInfo"), 1.5);
 
-    if (!((!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
-          collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
-          collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
-          (!useNoCollInTimeRangeStandard ||
-           collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) &&
-          collision.sel8() &&
-          (!useGoodITSLayersAll ||
-           collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
-          occupancy < cfgCutOccupancy)) {
+    if ((rctCut.requireRCTFlagChecker && !rctChecker(collision)) ||
+        !collision.selection_bit(aod::evsel::kNoSameBunchPileup) ||
+        !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) ||
+        (useNoCollInTimeRangeStandard &&
+         !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) ||
+        !collision.sel8() ||
+        (useGoodITSLayersAll &&
+         !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) ||
+        occupancy >= cfgCutOccupancy) {
       return;
     }
 
@@ -490,7 +488,7 @@ struct phiflow {
                                track1.py(),
                                track1.pz(),
                                +1,
-                               static_cast<int64_t>(track1.globalIndex()),
+                               track1.globalIndex(),
                                mask1});
     }
 
@@ -527,7 +525,7 @@ struct phiflow {
                                track2.py(),
                                track2.pz(),
                                -1,
-                               static_cast<int64_t>(track2.globalIndex()),
+                               track2.globalIndex(),
                                mask2});
     }
 
