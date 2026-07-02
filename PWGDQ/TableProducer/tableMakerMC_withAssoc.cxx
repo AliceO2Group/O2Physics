@@ -393,7 +393,7 @@ struct TableMakerMC {
       // loop over MC signals and add them to the signals array
       for (int isig = 0; isig < objArray->GetEntries(); ++isig) {
         MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objArray->At(isig)->GetName());
-        if (sig) {
+        if (sig != nullptr) {
           fMCSignals.push_back(sig);
         }
       }
@@ -403,7 +403,7 @@ struct TableMakerMC {
     if (addMCSignalsStr != "") {
       std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
       for (auto& mcIt : addMCSignals) {
-        if (mcIt) {
+        if (mcIt != nullptr) {
           fMCSignals.push_back(mcIt);
         }
       }
@@ -625,7 +625,7 @@ struct TableMakerMC {
           VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
           int j = 0;
           for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
-            if (mcflags & (static_cast<uint16_t>(1) << j)) {
+            if ((mcflags & (static_cast<uint16_t>(1) << j)) != 0) {
               fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), dqtablemakermc_helpers::varValues());
             }
           }
@@ -1691,7 +1691,7 @@ struct TableMakerMC {
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
     for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
-      if (bc.alias_bit(i) > 0) {
+      if (static_cast<int>(bc.alias_bit(i)) > 0) {
         (static_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
       }
     }

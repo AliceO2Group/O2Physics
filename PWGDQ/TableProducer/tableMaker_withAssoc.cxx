@@ -2043,7 +2043,7 @@ struct TableMaker {
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
     for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
-      if (bc.selection_bit(i) > 0) {
+      if (static_cast<int>(bc.selection_bit(i)) > 0) {
         (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(i));
       }
     }
