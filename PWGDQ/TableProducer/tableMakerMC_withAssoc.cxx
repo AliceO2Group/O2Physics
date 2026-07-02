@@ -1490,7 +1490,7 @@ struct TableMakerMC {
       // NOTE: Here we assume that MC collisions are not filtered, so there is no new vs old index map for translation
       auto mcCollision = mctrack.template mcCollision_as<MyEventsMcWithMults>();
       trackMC(mcCollision.globalIndex(), mctrack.pdgCode(), mctrack.statusCode(), mctrack.flags(),
-              mothers, daughterRange,
+              mothers, daughterRange.data(),
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
