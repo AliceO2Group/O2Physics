@@ -32,6 +32,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Configurable.h>
+
 #include <cstdint>
 #include <cstdlib>
 
