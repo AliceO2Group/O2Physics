@@ -1213,7 +1213,7 @@ struct DedxPidAnalysis {
   }
   // Phi cut
   template <typename T>
-  bool passedPhiCutPri(const T& trk, float magField, const TF1& fphiCutLow, const TF1& fphiCutHigh)
+  bool passedPhiCutPri(const T& trk, float magField)
   {
     float p = trk.p();
     float pt = trk.pt();
@@ -1240,7 +1240,7 @@ struct DedxPidAnalysis {
     registryDeDx.fill(HIST("hp_vs_phi_NclPID_TPC_Before"), p, phi, nTPCPIDCl);
 
     // cut phi
-    if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
+    if (phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt))
       return false; // reject track
 
     registryDeDx.fill(HIST("hpt_vs_phi_NclFound_TPC_After"), pt, phi, nTPCCl);
@@ -1481,7 +1481,7 @@ struct DedxPidAnalysis {
 
   // Phi cut Secondaries
   template <typename T>
-  bool passedPhiCutSecondaries(const T& trk, float magField, const TF1& fphiCutLow, const TF1& fphiCutHigh)
+  bool passedPhiCutSecondaries(const T& trk, float magField)
   {
     float pt = trk.pt();
     float phi = trk.phi();
@@ -1500,7 +1500,7 @@ struct DedxPidAnalysis {
     phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
 
     // cut phi
-    if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
+    if (phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt))
       return false; // reject track
 
     return true;
@@ -1659,7 +1659,7 @@ struct DedxPidAnalysis {
 
       // phi and Ncl cut
       if (phiVarCut) {
-        if (!passedPhiCutPri(trk, magField, *fphiCutLow, *fphiCutHigh))
+        if (!passedPhiCutPri(trk, magField))
           continue;
         registryDeDx.fill(HIST("trackselAll"), TrkPriCutLabel::PhiVarCutPri);
       }
@@ -1825,10 +1825,10 @@ struct DedxPidAnalysis {
         // registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::TPCRefit);
         //  phi and Ncl cut
         if (phiVarCut) {
-          if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
+          if (!passedPhiCutSecondaries(posTrack, magField))
             continue;
 
-          if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
+          if (!passedPhiCutSecondaries(negTrack, magField))
             continue;
 
           registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel ::PhiVarCutSec);

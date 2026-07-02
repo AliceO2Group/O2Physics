@@ -217,7 +217,6 @@ struct MultiplicityPt {
 
   static constexpr float MinCharge = 3.0f;
   static constexpr int CentralityClasses = 10;
-  static constexpr double CentClasses[CentralityClasses + 1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
 
   static constexpr int ParticleTypes = 4;
   // Response Matrix histogram names
