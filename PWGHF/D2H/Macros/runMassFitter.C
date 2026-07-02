@@ -441,7 +441,7 @@ void runMassFitter(const std::string& configFileName)
   }
 
   int constexpr NCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
-  const int nCanvases = std::ceil(static_cast<float>(nHistograms) / NCanvasesMax);
+  const int nCanvases = (nHistograms + NCanvasesMax - 1) / NCanvasesMax;
   const int nPads = (nCanvases == 1) ? nHistograms : NCanvasesMax;
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
@@ -449,15 +449,17 @@ void runMassFitter(const std::string& configFileName)
   std::vector<TCanvas*> canvasRefl(nCanvases);
 
   std::vector<std::vector<TCanvas*>*> canvasTypes{&canvasMass, &canvasResiduals, &canvasRatio};
-  std::vector<std::string> canvasTypeNames{"canvasMass", "canvasResiduals", "canvasRatio"};
+  std::vector<const char*> canvasTypeNames{"canvasMass", "canvasResiduals", "canvasRatio"};
   if (enableRefl) {
     canvasTypes.push_back(&canvasRefl);
     canvasTypeNames.push_back("canvasRefl");
   }
-  for (int iCanvasType = 0, nCanvasTypeNames = canvasTypes.size(); iCanvasType < nCanvasTypeNames; ++iCanvasType) {
+  for (int iCanvasType = 0, nCanvasTypeNames = static_cast<int>(canvasTypes.size()); iCanvasType < nCanvasTypeNames; ++iCanvasType) {
+    const auto canvasTypeName = canvasTypeNames[iCanvasType];
     for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
-      auto& canvas = (*canvasTypes.at(iCanvasType))[iCanvas];
-      canvas = new TCanvas(Form((canvasTypeNames.at(iCanvasType) + "%d").c_str(), iCanvas), Form((canvasTypeNames.at(iCanvasType) + "%d").c_str(), iCanvas), canvasSize[0], canvasSize[1]);
+      auto& canvas = (*canvasTypes[iCanvasType])[iCanvas];
+      const auto canvasName = Form("%s%d", canvasTypeName, iCanvas);
+      canvas = new TCanvas(canvasName, canvasName, canvasSize[0], canvasSize[1]);
       canvas->SetTicks(1, 1);
       divideCanvas(canvas, nPads);
     }
