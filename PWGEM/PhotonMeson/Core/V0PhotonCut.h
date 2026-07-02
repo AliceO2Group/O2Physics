@@ -30,6 +30,7 @@
 #include <Framework/Logger.h>
 
 #include <TH2.h>
+#include <TNamed.h>
 
 #include <sys/types.h>
 

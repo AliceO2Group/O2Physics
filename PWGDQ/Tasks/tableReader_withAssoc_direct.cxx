@@ -27,11 +27,13 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -52,6 +54,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
 #include <TH2.h>
 #include <THashList.h>
 #include <TList.h>

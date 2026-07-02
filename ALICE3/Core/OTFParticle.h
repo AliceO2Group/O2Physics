@@ -23,6 +23,7 @@
 #include <array>
 #include <bitset>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 

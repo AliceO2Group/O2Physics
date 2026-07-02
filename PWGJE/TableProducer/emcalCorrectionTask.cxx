@@ -56,6 +56,8 @@
 
 #include <TH1.h>
 
+#include <sys/types.h>
+
 #include <GPUROOTCartesianFwd.h>
 
 #include <cmath>

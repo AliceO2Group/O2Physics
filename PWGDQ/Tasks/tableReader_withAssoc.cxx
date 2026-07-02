@@ -50,7 +50,6 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TMath.h>
@@ -1410,8 +1409,8 @@ struct AnalysisSameEventPairing {
   std::vector<TString> fMuonCuts;
   std::map<std::pair<uint32_t, uint32_t>, uint32_t> fAmbiguousPairs;
 
-  uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
-  uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  uint32_t fTrackFilterMask = 0;   // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
+  uint32_t fMuonFilterMask = 0;    // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
   uint32_t fQvectorFilterMask = 0; // mask for the track cuts applied in TPC Q-vector calculation, used to remove auto-correlation in flow analysis
   int fNCutsBarrel = 0;
   int fNCutsMuon = 0;

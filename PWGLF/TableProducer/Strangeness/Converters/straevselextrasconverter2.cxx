@@ -11,11 +11,9 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
 
 using namespace o2;
 using namespace o2::framework;

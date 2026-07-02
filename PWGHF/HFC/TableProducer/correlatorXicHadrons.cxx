@@ -13,14 +13,10 @@
 /// \brief Xic-Hadrons correlator task - data-like, Mc-Reco and Mc-Gen analyses
 /// \author Ravindra Singh <ravindra.singh@cern.ch>
 
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/DecayChannelsLegacy.h"
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/Utils/utilsCorrelations.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -48,17 +44,19 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TPDGCode.h>
 #include <TRandom3.h>
 
+#include <Rtypes.h>
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <experimental/type_traits>
 #include <vector>
 
 using namespace o2;

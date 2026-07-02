@@ -36,6 +36,8 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Rtypes.h>
+
 #include <cstdint>
 
 using namespace o2;

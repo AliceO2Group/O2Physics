@@ -31,6 +31,7 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
+#include "PID/PIDTOFParamService.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -50,6 +51,7 @@
 #include <Framework/PID.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Primitive2D.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackLTIntegral.h>
 
@@ -64,8 +66,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <iterator>
-#include <map>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -1705,7 +1706,7 @@ struct strangenesstofpid {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
         collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
-        collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTime[collision.globalIndex()] = -1e+6;    // undefined
         collisionEventTimeErr[collision.globalIndex()] = -1e+6; // undefined
       }
       histos.fill(HIST("hCollisionTimes"), collisionEventTime[collision.globalIndex()]);

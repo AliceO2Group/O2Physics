@@ -44,8 +44,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
-#include <TH2.h>
-#include <TH3.h>
 #include <TPDGCode.h>
 #include <TRandom2.h>
 #include <TString.h>

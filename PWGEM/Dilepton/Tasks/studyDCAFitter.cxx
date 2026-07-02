@@ -24,11 +24,10 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DCAFitter/DCAFitterN.h>
 // #include <DataFormatsCalibration/MeanVertexObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -36,6 +35,7 @@
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <DetectorsVertexing/PVertexer.h> // for PV refit
+#include <DetectorsVertexing/PVertexerHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -46,6 +46,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h> // for PV refit
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -54,13 +55,13 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <random>
 #include <string>
-#include <string_view>
-#include <unordered_map>
-#include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::soa;

@@ -13,8 +13,6 @@
 
 #include "AnalysisCut.h"
 
-#include <Rtypes.h>
-
 #include <vector>
 
 //____________________________________________________________________________

@@ -54,6 +54,8 @@
 #include <Math/SVector.h>
 #include <TGeoGlobalMagField.h>
 
+#include <GPUROOTCartesianFwd.h>
+
 #include <algorithm>
 #include <array>
 #include <chrono>

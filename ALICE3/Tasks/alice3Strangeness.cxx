@@ -36,6 +36,9 @@
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TPDGCode.h>
+
 #include <Rtypes.h>
 
 #include <cmath>

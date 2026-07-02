@@ -43,6 +43,7 @@
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <map>
