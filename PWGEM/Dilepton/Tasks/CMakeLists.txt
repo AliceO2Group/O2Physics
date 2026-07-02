@@ -115,6 +115,11 @@ o2physics_add_dpl_workflow(dimuon-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(dimuon-v1
+                    SOURCES dimuonV1.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(associate-mccollision-to-collision
                     SOURCES associateMCcollision.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
