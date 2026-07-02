@@ -134,6 +134,13 @@ constexpr static uint32_t gkMuonRealignFillMapWithCov = VarManager::ObjTypes::Mu
 constexpr static uint32_t gkMFTFillMap = VarManager::ObjTypes::TrackMFT;
 constexpr static uint32_t gkMFTCovFillMap = VarManager::ObjTypes::TrackMFT | VarManager::ObjTypes::MFTCov;
 
+namespace dqtablemakermc_helpers
+{
+inline float* varValues() { return static_cast<float*>(VarManager::fgValues); }
+inline TString* varNames() { return static_cast<TString*>(VarManager::fgVariableNames); }
+inline TString* varUnits() { return static_cast<TString*>(VarManager::fgVariableUnits); }
+} // namespace dqtablemakermc_helpers
+
 template <typename TMap>
 void PrintBitMap(TMap map, int nbits)
 {
@@ -334,7 +341,7 @@ struct TableMakerMC {
 
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->SetDefaultVarNames(dqtablemakermc_helpers::varNames(), dqtablemakermc_helpers::varUnits());
 
     // Only use detailed QA when QA is set true
     if (fConfigHistOutput.fConfigQA && fConfigHistOutput.fConfigDetailedQA) {
@@ -529,7 +536,7 @@ struct TableMakerMC {
       // Get MC collision information into the VarManager
       VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
       // Fill histograms
-      fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_MCTruth", dqtablemakermc_helpers::varValues());
       // Create the skimmed table entry for this collision
       eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
               mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), mcCollision.bestCollisionCentFT0C(),
@@ -619,7 +626,7 @@ struct TableMakerMC {
           int j = 0;
           for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
             if (mcflags & (static_cast<uint16_t>(1) << j)) {
-              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), VarManager::fgValues);
+              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), dqtablemakermc_helpers::varValues());
             }
           }
         }
@@ -749,7 +756,7 @@ struct TableMakerMC {
         VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
       }
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_BeforeCuts", dqtablemakermc_helpers::varValues());
       }
 
       // fill stats information, before selections
@@ -761,7 +768,7 @@ struct TableMakerMC {
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // Apply the user specified event selection
-      if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !(rctChecker(collision)))) {
+      if (!fEventCut->IsSelected(dqtablemakermc_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !(rctChecker(collision)))) {
         continue;
       }
 
@@ -774,7 +781,7 @@ struct TableMakerMC {
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // Fill historams after event cuts
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_AfterCuts", dqtablemakermc_helpers::varValues());
 
       // create the event tables
       event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
@@ -861,16 +868,16 @@ struct TableMakerMC {
         VarManager::FillTrackCollision<TTrackFillMap>(track, collision);
       }
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", dqtablemakermc_helpers::varValues());
       }
 
       // apply track cuts and fill histograms
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqtablemakermc_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigHistOutput.fConfigQA) {
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), dqtablemakermc_helpers::varValues());
           }
           (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
         }
@@ -950,7 +957,7 @@ struct TableMakerMC {
               j = 0;
               for (auto& cut : fTrackCuts) {
                 if (trackTempFilterMap & (uint8_t(1) << j)) {
-                  fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
+                  fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
                 }
                 j++;
               }
@@ -987,7 +994,7 @@ struct TableMakerMC {
 
       if (fConfigHistOutput.fConfigQA) {
         VarManager::FillTrack<TMFTFillMap>(track);
-        fHistMan->FillHistClass("MftTracks", VarManager::fgValues);
+        fHistMan->FillHistClass("MftTracks", dqtablemakermc_helpers::varValues());
       }
 
       // write the MFT track global index in the map for skimming (to make sure we have it just once)
@@ -1012,7 +1019,7 @@ struct TableMakerMC {
               mcflags |= (static_cast<uint16_t>(1) << i);
               // If detailed QA is on, fill histograms for each MC signal and track cut combination
               if (fDoDetailedQA) {
-                fHistMan->FillHistClass(Form("MFTTrack_%s", sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
+                fHistMan->FillHistClass(Form("MFTTrack_%s", sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
               }
             }
             i++;
@@ -1148,15 +1155,15 @@ struct TableMakerMC {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Muons_BeforeCuts", dqtablemakermc_helpers::varValues());
       }
       // check the cuts and fill histograms for each fulfilled cut
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqtablemakermc_helpers::varValues())) {
           trackTempFilterMap |= (uint8_t(1) << i);
           if (fConfigHistOutput.fConfigQA) {
-            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), dqtablemakermc_helpers::varValues());
           }
           (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
         }
@@ -1196,7 +1203,7 @@ struct TableMakerMC {
                 j = 0;
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
-                    fHistMan->FillHistClass(Form("Muons_%s_%s", cut->GetName(), sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
+                    fHistMan->FillHistClass(Form("Muons_%s_%s", cut->GetName(), sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
                   }
                   j++;
                 }

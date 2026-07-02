@@ -181,6 +181,13 @@ enum SkimStatsHists {
   kStatsZorroSel
 };
 
+namespace dqtablemaker_helpers
+{
+inline float* varValues() { return static_cast<float*>(VarManager::fgValues); }
+inline TString* varNames() { return static_cast<TString*>(VarManager::fgVariableNames); }
+inline TString* varUnits() { return static_cast<TString*>(VarManager::fgVariableUnits); }
+} // namespace dqtablemaker_helpers
+
 struct TableMaker {
 
   struct : ProducesGroup {
@@ -454,7 +461,7 @@ struct TableMaker {
     // Initialize the histogram manager
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->SetDefaultVarNames(dqtablemaker_helpers::varNames(), dqtablemaker_helpers::varUnits());
 
     // Only use detailed QA when QA is set true
     if (fConfigHistOutput.fConfigQA && fConfigHistOutput.fConfigDetailedQA) {
@@ -1117,7 +1124,7 @@ struct TableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_BeforeCuts", dqtablemaker_helpers::varValues());
       }
 
       // fill stats information, before selections
@@ -1134,7 +1141,7 @@ struct TableMaker {
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
         zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
-        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
+        if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
 
@@ -1146,7 +1153,7 @@ struct TableMaker {
           continue;
         }
       } else {
-        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
+        if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
       }
@@ -1159,7 +1166,7 @@ struct TableMaker {
       }
       (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_AfterCuts", dqtablemaker_helpers::varValues());
 
       // create the event tables
       outTables.event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
@@ -1303,18 +1310,18 @@ struct TableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", dqtablemaker_helpers::varValues());
       }
 
       // apply track cuts and fill stats histogram
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this track.
           //    So if there are histograms of quantities which depend on the collision association, these will not be accurate
           if (fConfigHistOutput.fConfigQA && (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end())) {
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
           }
           (reinterpret_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(static_cast<float>(i));
         }
@@ -1341,16 +1348,16 @@ struct TableMaker {
         // TODO: this part should be removed since the calibration histogram can be filled as any other histogram
         if (fConfigPostCalibTPC.fConfigIsOnlyforMaps) {
           if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsConversionLeg)) { // for electron
-            fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", dqtablemaker_helpers::varValues());
           }
           if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsK0sLeg)) { // for pion
-            fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibPion", dqtablemaker_helpers::varValues());
           }
           if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
-            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", dqtablemaker_helpers::varValues());
           }
           if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
-            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", dqtablemaker_helpers::varValues());
           }
         }
         if (fConfigPostCalibTPC.fConfigSaveElectronSample) { // only save electron sample
@@ -1438,7 +1445,7 @@ struct TableMaker {
 
       if (fConfigHistOutput.fConfigQA) {
         VarManager::FillTrack<TMFTFillMap>(track);
-        fHistMan->FillHistClass("MftTracks", VarManager::fgValues);
+        fHistMan->FillHistClass("MftTracks", dqtablemaker_helpers::varValues());
       }
 
       // write the MFT track global index in the map for skimming (to make sure we have it just once)
@@ -1573,18 +1580,18 @@ struct TableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Muons_BeforeCuts", dqtablemaker_helpers::varValues());
       }
       // check the cuts and filters
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this muon, which means the current association
           //     will be skipped from histograms if this muon was already filled in the skimming map.
           //    So if there are histograms of quantities which depend on the collision association, these histograms will not be completely accurate
           if (fConfigHistOutput.fConfigQA && (fFwdTrackIndexMap.find(muon.globalIndex()) == fFwdTrackIndexMap.end())) {
-            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
           }
           (reinterpret_cast<TH1D*>(fStatsList->At(kStatsMuons)))->Fill(static_cast<float>(i));
         }
