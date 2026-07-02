@@ -64,6 +64,7 @@
 
 #include <RtypesCore.h>
 
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -1480,7 +1481,7 @@ struct TableMakerMC {
           }
         }
       }
-      int daughterRange[2] = {-1, -1};
+      std::array<int, 2> daughterRange{-1, -1};
       if (!daughters.empty()) {
         daughterRange[0] = daughters[0];
         daughterRange[1] = daughters[daughters.size() - 1];
@@ -1564,7 +1565,7 @@ struct TableMakerMC {
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
-    const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
+    constexpr std::array<const char*, 5> v0TagNames = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
     for (int ib = 0; ib < 5; ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
