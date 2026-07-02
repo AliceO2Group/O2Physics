@@ -1274,8 +1274,8 @@ struct TableMaker {
     //     One can apply here cuts which depend on the association (e.g. DCA), which will discard (hopefully most) wrong associations.
     //     Tracks are written only once, even if they constribute to more than one association
 
-    uint64_t trackFilteringTag = static_cast<uint64_t>(0);
-    uint32_t trackTempFilterMap = static_cast<uint32_t>(0);
+    auto trackFilteringTag = static_cast<uint64_t>(0);
+    auto trackTempFilterMap = static_cast<uint32_t>(0);
 
     // material correction for track propagation
     // TODO: Do we need a configurable to switch between different material correction options?
@@ -1520,8 +1520,8 @@ struct TableMaker {
 
     // TODO: Currently, the TMFTFillMap is not used in this function. Is it needed ?
 
-    uint8_t trackFilteringTag = static_cast<uint8_t>(0);
-    uint8_t trackTempFilterMap = static_cast<uint8_t>(0);
+    auto trackFilteringTag = static_cast<uint8_t>(0);
+    auto trackTempFilterMap = static_cast<uint8_t>(0);
     fFwdTrackIndexMapReversed.clear();
 
     uint32_t offset = outTables.muonBasic.lastIndex();
