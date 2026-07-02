@@ -789,17 +789,17 @@ struct NetchargeFluctuations {
       if (track.sign() == 1) {
         histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_np"), track.pt(), track.eta());
-      if (cent >= centMin && cent < centMax) {
-	histogramRegistry.fill(HIST("eff/cent/hPt_np"), track.pt());
-        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_np"), track.pt(), track.eta());
-	}
+        if (cent >= centMin && cent < centMax) {
+          histogramRegistry.fill(HIST("eff/cent/hPt_np"), track.pt());
+          histogramRegistry.fill(HIST("eff/cent/hPt_hEta_np"), track.pt(), track.eta());
+        }
       } else if (track.sign() == -1) {
         histogramRegistry.fill(HIST("eff/hPt_nm"), track.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_nm"), track.pt(), track.eta());
-	if (cent >= centMin && cent < centMax) {
-	histogramRegistry.fill(HIST("eff/cent/hPt_nm"), track.pt());
-        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_nm"), track.pt(), track.eta());
-	}
+        if (cent >= centMin && cent < centMax) {
+          histogramRegistry.fill(HIST("eff/cent/hPt_nm"), track.pt());
+          histogramRegistry.fill(HIST("eff/cent/hPt_hEta_nm"), track.pt(), track.eta());
+        }
       }
 
       histogramRegistry.fill(HIST("QA/cent_hEta"), cent, track.eta());
@@ -878,19 +878,18 @@ struct NetchargeFluctuations {
       if (sign == 1) {
         histogramRegistry.fill(HIST("eff/hPt_np_gen"), mcpart.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_np_gen"), mcpart.pt(), mcpart.eta());
-	 if (cent >= centMin && cent < centMax) {
-        histogramRegistry.fill(HIST("eff/cent/hPt_np_gen"), mcpart.pt());
-        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_np_gen"), mcpart.pt(), mcpart.eta());
-	 }
+        if (cent >= centMin && cent < centMax) {
+          histogramRegistry.fill(HIST("eff/cent/hPt_np_gen"), mcpart.pt());
+          histogramRegistry.fill(HIST("eff/cent/hPt_hEta_np_gen"), mcpart.pt(), mcpart.eta());
+        }
 
       } else if (sign == -1) {
         histogramRegistry.fill(HIST("eff/hPt_nm_gen"), mcpart.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_nm_gen"), mcpart.pt(), mcpart.eta());
-	 if (cent >= centMin && cent < centMax) {
-        histogramRegistry.fill(HIST("eff/cent/hPt_nm_gen"), mcpart.pt());
-        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_nm_gen"), mcpart.pt(), mcpart.eta());
-	 }
-
+        if (cent >= centMin && cent < centMax) {
+          histogramRegistry.fill(HIST("eff/cent/hPt_nm_gen"), mcpart.pt());
+          histogramRegistry.fill(HIST("eff/cent/hPt_hEta_nm_gen"), mcpart.pt(), mcpart.eta());
+        }
       }
       histogramRegistry.fill(HIST("gen/hPt"), mcpart.pt());
       histogramRegistry.fill(HIST("gen/cent_hPt"), cent, mcpart.pt());
