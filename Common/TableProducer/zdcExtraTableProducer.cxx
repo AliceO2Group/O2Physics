@@ -32,11 +32,12 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TRandom3.h>
+
 #include <Rtypes.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
-#include <array>
 
 using namespace o2;
 using namespace o2::framework;
