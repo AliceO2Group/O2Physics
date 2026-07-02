@@ -604,7 +604,7 @@ struct TableMaker {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void DefineHistograms(TString histClasses)
+  void DefineHistograms(const TString& histClasses)
   {
     // Create histograms via HistogramManager
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
@@ -2075,7 +2075,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
 };
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.
