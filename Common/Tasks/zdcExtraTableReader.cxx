@@ -13,14 +13,10 @@
 /// \brief Task reading AOD/ZDCEXTRA table
 /// \author Uliana Dmitrieva <uliana.dmitrieva@cern.ch>, INFN Torino
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/ZDCExtra.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -29,7 +25,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
@@ -39,7 +34,13 @@
 #include <TProfile3D.h>
 
 #include <Rtypes.h>
+#include <TAxis.h>
+#include <TString.h>
 
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -185,8 +186,8 @@ double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
   int binVy = axVy->FindFixBin(vy);
   int binVz = axVz->FindFixBin(vz);
 
-  int idx[4] = {binCent, binVx, binVy, binVz};
-  return h->GetBinContent(idx);
+  std::array<int, 4> idx = {binCent, binVx, binVy, binVz};
+  return h->GetBinContent(idx.data());
 }
 
 // Helper for 1D recentering maps: returns mean Q for coordinate x
@@ -258,7 +259,7 @@ struct ZdcExtraTableReader {
   Configurable<std::string> qRecenteringCcdb{"qRecenteringCcdb", "Users/u/udmitrie/ZDC/LHC24ar_apass2", "Recentering maps containing step folder"};
 
   // CCDB
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // Struct to hold calibration data for a single step
   struct CalibStepData {
@@ -351,8 +352,9 @@ struct ZdcExtraTableReader {
   template <typename T>
   T* safeClone(TObject* obj)
   {
-    if (!obj)
+    if (!obj) {
       return nullptr;
+    }
     T* cloned = dynamic_cast<T*>(obj->Clone());
     if (cloned) {
 
@@ -740,17 +742,19 @@ struct ZdcExtraTableReader {
     constexpr float QvectorMaxValue = 990.0;
 
     if (isZNAhit) {
-      int activeTowersZNA = (zdc.znaTow1() > 0.) + (zdc.znaTow2() > 0.) + (zdc.znaTow3() > 0.) + (zdc.znaTow4() > 0.);
+      int activeTowersZNA = static_cast<int>(zdc.znaTow1() > 0.) + static_cast<int>(zdc.znaTow2() > 0.) + static_cast<int>(zdc.znaTow3() > 0.) + static_cast<int>(zdc.znaTow4() > 0.);
       float znaSum = zdc.znaTow1() + zdc.znaTow2() + zdc.znaTow3() + zdc.znaTow4();
-      if (activeTowersZNA >= minNTowersFired && znaSum > 0 && zdc.znaQx() < QvectorMaxValue)
+      if (activeTowersZNA >= minNTowersFired && znaSum > 0 && zdc.znaQx() < QvectorMaxValue) {
         isZNASpDeterminable = true;
+      }
     }
 
     if (isZNChit) {
-      int activeTowersZNC = (zdc.zncTow1() > 0.) + (zdc.zncTow2() > 0.) + (zdc.zncTow3() > 0.) + (zdc.zncTow4() > 0.);
+      int activeTowersZNC = static_cast<int>(zdc.zncTow1() > 0.) + static_cast<int>(zdc.zncTow2() > 0.) + static_cast<int>(zdc.zncTow3() > 0.) + static_cast<int>(zdc.zncTow4() > 0.);
       float zncSum = zdc.zncTow1() + zdc.zncTow2() + zdc.zncTow3() + zdc.zncTow4();
-      if (activeTowersZNC >= minNTowersFired && zncSum > 0 && zdc.zncQx() < QvectorMaxValue)
+      if (activeTowersZNC >= minNTowersFired && zncSum > 0 && zdc.zncQx() < QvectorMaxValue) {
         isZNCSpDeterminable = true;
+      }
     }
 
     if (plotPMs) {
@@ -805,8 +809,9 @@ struct ZdcExtraTableReader {
 
         int cacheIdx = step - 1;
         // Check if index is valid within cached vector
-        if (cacheIdx >= static_cast<int>(calibCache.size()))
+        if (cacheIdx >= static_cast<int>(calibCache.size())) {
           continue;
+        }
 
         const auto& calib = calibCache[cacheIdx];
 
@@ -832,8 +837,8 @@ struct ZdcExtraTableReader {
         }
       }
 
-      double valuesQxZNA[5] = {cent, vx, vy, vz, qxZNArec};
-      double valuesQyZNA[5] = {cent, vx, vy, vz, qyZNArec};
+      std::array<double, 5> valuesQxZNA = {cent, vx, vy, vz, qxZNArec};
+      std::array<double, 5> valuesQyZNA = {cent, vx, vy, vz, qyZNArec};
 
       gCurrentCentroidZNA->Fill(qxZNArec, qyZNArec);
 
@@ -851,8 +856,8 @@ struct ZdcExtraTableReader {
       gCurrentQyVsTimeZNA->Fill(timeInMinutes, qyZNArec);
 
       if (plot5D) {
-        gCurrentQxZNA->Fill(valuesQxZNA);
-        gCurrentQyZNA->Fill(valuesQyZNA);
+        gCurrentQxZNA->Fill(valuesQxZNA.data());
+        gCurrentQyZNA->Fill(valuesQyZNA.data());
       }
 
       //  Calculate raw/recentered angle
@@ -955,8 +960,8 @@ struct ZdcExtraTableReader {
         }
       }
 
-      double valuesQxZNC[5] = {cent, vx, vy, vz, qxZNCrec};
-      double valuesQyZNC[5] = {cent, vx, vy, vz, qyZNCrec};
+      std::array<double, 5> valuesQxZNC = {cent, vx, vy, vz, qxZNCrec};
+      std::array<double, 5> valuesQyZNC = {cent, vx, vy, vz, qyZNCrec};
 
       gCurrentCentroidZNC->Fill(qxZNCrec, qyZNCrec);
 
@@ -974,8 +979,8 @@ struct ZdcExtraTableReader {
       gCurrentQyVsTimeZNC->Fill(timeInMinutes, qyZNCrec);
 
       if (plot5D) {
-        gCurrentQxZNC->Fill(valuesQxZNC);
-        gCurrentQyZNC->Fill(valuesQyZNC);
+        gCurrentQxZNC->Fill(valuesQxZNC.data());
+        gCurrentQyZNC->Fill(valuesQyZNC.data());
       }
 
       //  Calculate raw/recentered angle
