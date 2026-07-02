@@ -49,8 +49,6 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TH1.h>
-#include <TH2.h>
 #include <TString.h>
 
 #include <sys/types.h>
@@ -66,7 +64,6 @@
 #include <string>
 #include <string_view>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -92,6 +89,10 @@ struct dimuonV1 {
   o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {10, 0, 10}, "pTll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {3, -4.0, -2.5}, "yll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {200, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::Configurable<int> cfgNrotation{"cfgNrotation", 1, "number of rotation bkg"};
+  o2::framework::Configurable<int> cfgRandomSeed{"cfgRandomSeed", 1, "randam seed for rotation bkg"};
+  o2::framework::Configurable<float> cfgRotationMin{"cfgRotationMin", -M_PI / 4, "min. rotation angle for rotation bkg"};
+  o2::framework::Configurable<float> cfgRotationMax{"cfgRotationMax", +M_PI / 4, "max. rotation angle for rotation bkg"};
 
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -175,6 +176,8 @@ struct dimuonV1 {
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   int mRunNumber{0};
+  std::mt19937 engine;
+  std::uniform_real_distribution<float> distDPhi;
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
@@ -182,6 +185,10 @@ struct dimuonV1 {
   void init(o2::framework::InitContext& /*context*/)
   {
     mRunNumber = 0;
+
+    // std::random_device seed_gen;
+    engine = std::mt19937(cfgRandomSeed);
+    distDPhi = std::uniform_real_distribution<float>(cfgRotationMin, cfgRotationMax);
 
     rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
@@ -231,9 +238,11 @@ struct dimuonV1 {
     const o2::framework::AxisSpec axis_uyQyp{ConfUQBins, "u_{y}Q_{y}^{p}"};
 
     fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQxt, axis_uxQxp, axis_uyQyt, axis_uyQyp}, true);
-    fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
-    fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-    fRegistry.addClone("Pair/same/", "Pair/mix/");
+    fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y}, true);
+
+    // fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
+    // fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
+    // fRegistry.addClone("Pair/same/", "Pair/mix/");
   }
 
   void DefineEMEventCut()
@@ -307,8 +316,8 @@ struct dimuonV1 {
       }
     }
 
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), RecoDecay::constrainAngle(t1.phi(), 0, 1U), o2::constants::physics::MassMuon);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), RecoDecay::constrainAngle(t2.phi(), 0, 1U), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
     float phi = RecoDecay::constrainAngle(v12.Phi(), 0, 1U);
 
@@ -320,10 +329,18 @@ struct dimuonV1 {
 
     if (t1.sign() * t2.sign() < 0) { // ULS
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
-    } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
-    } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+
+      for (int i = 0; i < cfgNrotation; i++) {
+        float dphi = distDPhi(engine);
+        ROOT::Math::PtEtaPhiMVector v2rot(t2.pt(), t2.eta(), RecoDecay::constrainAngle(t2.phi() + M_PI + dphi, 0, 1U), o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v12bkg = v1 + v2rot;
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Rapidity(), weight * 1.f / static_cast<float>(cfgNrotation));
+      }
+
+      // } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
+      //   fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+      // } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
+      //   fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
     }
     return true;
   }
@@ -373,21 +390,15 @@ struct dimuonV1 {
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         fillPairInfo<0>(collision, pos, neg, cut);
       }
+
       // for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-      //   bool is_pair_ok = fillPairInfo<0>(collision, pos1, pos2, cut);
-      //   if (is_pair_ok) {
-      //     nlspp++;
-      //   }
+      //   fillPairInfo<0>(collision, pos1, pos2, cut);
       // }
       // for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-      //   bool is_pair_ok = fillPairInfo<0>(collision, neg1, neg2, cut);
-      //   if (is_pair_ok) {
-      //     nlsmm++;
-      //   }
+      //   fillPairInfo<0>(collision, neg1, neg2, cut);
       // }
 
     } // end of collision loop
-
   } // end of DF
 
   template <typename TTrack1, typename TTrack2, typename TCut>
