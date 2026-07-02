@@ -1374,11 +1374,11 @@ struct sigma0builder {
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
-    if (fillHists){
+    if (fillHists) {
       histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
       // Fill centrality histogram after event selection
       histos.fill(HIST("hEventCentrality"), centrality);
-    } 
+    }
     return true;
   }
 
@@ -2807,7 +2807,7 @@ struct sigma0builder {
           }
         }
 
-        if constexpr (!soa::is_table<TEMCal>) {// Don't use EMCal clusters here
+        if constexpr (!soa::is_table<TEMCal>) { // Don't use EMCal clusters here
           //_______________________________________________
           // KStar loop
           if (fillKStarTables) {
