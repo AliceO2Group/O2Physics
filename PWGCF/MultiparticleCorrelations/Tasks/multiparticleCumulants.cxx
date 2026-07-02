@@ -45,6 +45,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -305,13 +306,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     bool fWeightSwitch = kTRUE;
     TList* fWeightHistogramsList = NULL;
     // Fill phi/pt histograms with that run number:
-    std::map<int, TH1F*> fPtRealByRunMap;   // MC rec (too lazy to change name) data pt histograms, valid if processMonteCarlo
-    std::map<int, TH1F*> fPtMCByRunMap;     // MC sim (too lazy to change name) data pt histograms, valid if processMonteCarlo
-    std::map<int, TH1F*> fPhiByRunMap;      // Phi histograms, valid if processRealData
+    std::map<int, TH1F*> fPtRealByRunMap; // MC rec (too lazy to change name) data pt histograms, valid if processMonteCarlo
+    std::map<int, TH1F*> fPtMCByRunMap;   // MC sim (too lazy to change name) data pt histograms, valid if processMonteCarlo
+    std::map<int, TH1F*> fPhiByRunMap;    // Phi histograms, valid if processRealData
     // Make weight histograms locally. Upload weight histograms to CCDB:
-    std::vector<TH1F*> fWeightHistograms;           // Get all weight histograms with that run number
-    std::map<int, TH1F*> fPhiWeightHistogramsMap;   // Get phi weight histograms
-    std::map<int, TH1F*> fPtWeightHistogramsMap;    // Get pt weight histograms
+    std::vector<TH1F*> fWeightHistograms;         // Get all weight histograms with that run number
+    std::map<int, TH1F*> fPhiWeightHistogramsMap; // Get phi weight histograms
+    std::map<int, TH1F*> fPtWeightHistogramsMap;  // Get pt weight histograms
     // Null weight histograms. Use them when no weight histograms found in the given run number:
     TH1F* fDummyPhiWeightHistogram = NULL;
     TH1F* fDummyPtWeightHistogram = NULL;
@@ -337,7 +338,14 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   } mc;
 
   struct MultiparticleCorrelationCalculation {
-    int h1, h2, h3, h4, h5, h6, h7, h8;
+    int h1 = 0;
+    int h2 = 0;
+    int h3 = 0;
+    int h4 = 0;
+    int h5 = 0;
+    int h6 = 0;
+    int h7 = 0;
+    int h8 = 0;
     // Book Q-vector components:
     static constexpr int MaxCorrelator = 4; // <<m>>
     static constexpr int MaxHarmonic = 5;   // n+1 in vn, in this case n=4 as we need v2, v3, v4
@@ -627,7 +635,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
       weightsFile->GetObject("ccdb_object", baseList);
       if (!baseList) {
-        weightsFile->ls();
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
@@ -639,7 +646,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
-          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          LOGF(warning, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+          histograms = {nullptr};
+          return histograms;
         }
       }
     } else if (bFileIsInCCDB) {
@@ -648,7 +657,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       // My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/ => adapt for your case
       ccdb->setURL("https://alice-ccdb.cern.ch"); // to be able to use "ccdb" this object in your analysis task, see 4b/ below
       baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
-      baseList->ls();
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
@@ -659,7 +667,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
-          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          LOGF(warning, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+          histograms = {nullptr};
+          return histograms;
         }
       }
 
@@ -683,7 +693,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       weightsFile->GetObject("ccdb_object", baseList);
 
       if (!baseList) {
-        weightsFile->ls();
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
@@ -693,7 +702,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
-          baseList->ls();
           LOGF(warning, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current runnumber = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
           histograms = {nullptr};
           return histograms;
@@ -763,7 +771,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       wt.fPtRealByRunMap[ebye.fRunNumber]->SetDirectory(nullptr);
       wt.fWeightHistogramsList->Add(wt.fPtRealByRunMap[ebye.fRunNumber]);
     }
-    
+
     // Book pt MC sim histogram with this run number:
     if (wt.fPtMCByRunMap.find(ebye.fRunNumber) == wt.fPtMCByRunMap.end()) {
       wt.fPtMCByRunMap[ebye.fRunNumber] = new TH1F(Form("hPtMC_run%d", ebye.fRunNumber), Form("pt MC sim distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
@@ -773,13 +781,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     // Get phi and pt weight histogram with this run number:
     if (wt.fWeightSwitch && wt.fPhiWeightHistogramsMap.find(ebye.fRunNumber) == wt.fPhiWeightHistogramsMap.end()) {
-      
+
       TH1F* phiWeightHist = dynamic_cast<TH1F*>(wt.fDummyPhiWeightHistogram->Clone(Form("wPhi_run%d", ebye.fRunNumber)));
       TH1F* ptWeightHist = dynamic_cast<TH1F*>(wt.fDummyPtWeightHistogram->Clone(Form("wPt_run%d", ebye.fRunNumber)));
 
       wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), stringRunNumber.c_str());
 
-      for(TH1F* const hist : wt.fWeightHistograms){
+      for (auto const& hist : wt.fWeightHistograms) {
         if (!hist) {
           LOGF(warning, "Fail to loop weight histograms");
           continue;
@@ -792,7 +800,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         }
       }
 
-      for(TH1F* const hist : wt.fWeightHistograms){
+      for (auto const& hist : wt.fWeightHistograms) {
         if (!hist) {
           LOGF(warning, "Fail to loop weight histograms");
           continue;
@@ -887,7 +895,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     if (tc.fPrintSwitch) {
 
       LOGF(info, "Run number: %d", ebye.fRunNumber);
-      
+
       LOGF(info, "Centrality: %f", rlCollisionCent);
       LOGF(info, "Multiplicity: %f", static_cast<float>(rlCollisionMult));
 
@@ -1018,7 +1026,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
           }
         }
 
-      // Fail the event cut, skip this collision:
+        // Fail the event cut, skip this collision:
       } else {
         return;
       }
@@ -1468,11 +1476,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     bookCorrHistograms<eCorrMult>(lCrBins, cr);
 
     wt.fDummyPhiWeightHistogram = new TH1F("fDummyPhiWeightHistogram", "Dummy phi weight histogram", tc.fPhiBins[0], tc.fPhiBins[1], tc.fPhiBins[2]);
-    for(int i=1; i<=wt.fDummyPhiWeightHistogram->GetNbinsX(); i++){
+    for (int i = 1; i <= wt.fDummyPhiWeightHistogram->GetNbinsX(); i++) {
       wt.fDummyPhiWeightHistogram->SetBinContent(i, 1.);
     }
     wt.fDummyPtWeightHistogram = new TH1F("fDummyPtWeightHistogram", "Dummy pt weight histogram", tc.fPtBins[0], tc.fPtBins[1], tc.fPtBins[2]);
-    for(int i=1; i<=wt.fDummyPtWeightHistogram->GetNbinsX(); i++){
+    for (int i = 1; i <= wt.fDummyPtWeightHistogram->GetNbinsX(); i++) {
       wt.fDummyPtWeightHistogram->SetBinContent(i, 1.);
     }
 
