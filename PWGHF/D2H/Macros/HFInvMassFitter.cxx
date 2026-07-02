@@ -275,7 +275,7 @@ void HFInvMassFitter::doFit()
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
     std::cout << "estimatedSignal = " << estimatedSignal << "\n";
-    const ParameterRanges rooNSgnParamRanges{0.001 * estimatedSignal, 1000 * estimatedSignal, estimatedSignal};
+    const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 10 * estimatedSignal, estimatedSignal};
     mRooNSgn = new RooRealVar("mNSgn", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
@@ -1173,7 +1173,11 @@ double HFInvMassFitter::integrateHistoInvMassOverWorkspaceRanges(const std::vect
   double sumLengths{0.};
   for (const auto& range : ranges) {
     const auto [lo, hi] = mWorkspace->var("mass")->getRange(range.c_str());
-    sumEntries += mHistoInvMass->Integral(mHistoInvMass->FindBin(lo), mHistoInvMass->FindBin(hi));
+    const auto binLo = mHistoInvMass->FindBin(lo);
+    const auto binHi = mHistoInvMass->FindBin(hi);
+    sumEntries += mHistoInvMass->Integral(binLo + 1, binHi - 1);
+    sumEntries += mHistoInvMass->GetBinContent(binLo) * (mHistoInvMass->GetBinLowEdge(binLo + 1) - lo) / mHistoInvMass->GetBinWidth(binLo);
+    sumEntries += mHistoInvMass->GetBinContent(binHi) * (hi - mHistoInvMass->GetBinLowEdge(binHi)) / mHistoInvMass->GetBinWidth(binHi);
     sumLengths += (hi - lo);
     std::cout << "lo = " << lo << ", hi = " << hi << "\n";
     std::cout << "sumEntries = " << sumEntries << "\n";
