@@ -87,11 +87,6 @@ struct DedxPidAnalysis {
   static constexpr int EtaIntervals = 8;
   static constexpr int ParticlesType = 4;
   static constexpr int CentralityClasses = 10;
-  float pionMin = 0.35;
-  float pionMax = 0.45;
-  float elTofCut = 0.1;
-  float pionTofCut = 1.0;
-  float pTcut = 2.0;
 
   bool fillHist = false;
 
@@ -114,6 +109,12 @@ struct DedxPidAnalysis {
     V0TOF = 2,
     V0TPCTOF = 3
 
+  };
+
+  enum V0SigmaMode {
+    V0NoSigmaCut = 0,
+    V0SigmaOnly = 1,
+    V0TOFAndSigma = 2
   };
 
   enum NINELSelectionMode : int {
@@ -203,9 +204,17 @@ struct DedxPidAnalysis {
   Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 3.0, "nSigma DCAxy selection"};
   Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
   Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
-  Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCA_xy p2 parameter"};
+  Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCAxy p2 parameter"};
+  Configurable<float> dcaZp0{"dcaZp0", 0.0105f, "DCAz formula: p0 + p1/pt^p2"};
+  Configurable<float> dcaZp1{"dcaZp1", 0.0350f, "DCAz p1 parameter"};
+  Configurable<float> dcaZp2{"dcaZp2", 1.1f, "DCAz p2 parameter"};
   Configurable<float> nSigmaDCAz{"nSigmaDCAz", 3.0, "nSigma DCAz selection"};
-  Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
+  // Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
+  Configurable<float> pionMin{"pionMin", 0.35f, "pionMin"};
+  Configurable<float> pionMax{"pionMax", 0.45f, "pionMax"};
+  Configurable<float> elTofCut{"elTofCut", 0.1f, "elTofCut"};
+  Configurable<float> pionTofCut{"pionTofCut", 1.0f, "pionTofCut"};
+  Configurable<float> pTcut{"pTcut", 2.f, "pTcut"};
   // v0 cuts
   Configurable<float> v0cospaMin{"v0cospaMin", 0.999f, "Minimum V0 CosPA"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 1.2f,
@@ -225,6 +234,7 @@ struct DedxPidAnalysis {
   Configurable<float> v0ProperLifetimeCutLambda{"v0ProperLifetimeCutLambda", 30.f, "V0 proper lifetime cut for Lambda"};
   Configurable<float> nsigmaMax{"nsigmaMax", 3.0f, "Maximum nsigma cut"};
   Configurable<float> tpcMomentumCut{"tpcMomentumCut", 0.6f, "Momentum threshold above which TOF is required"};
+  Configurable<int> v0SigmaMode{"v0SigmaMode", 0, "0: no cut, 1: sigma only, 2: TOF + sigma above tpcMomentumCut"};
   Configurable<float> invMassCutK0s{"invMassCutK0s", 0.015f, "invariant Mass Cut for K0s"};
   Configurable<float> invMassCutLambda{"invMassCutLambda", 0.015f, "invariant Mass Cut for Lambda"};
   Configurable<float> invMassCutGamma{"invMassCutGamma", 0.015f, "invariant Mass Cut for Gamma"};
@@ -271,9 +281,10 @@ struct DedxPidAnalysis {
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
-  ConfigurableAxis centBins{"centBins", {100, 0, 100}, "Binning for centralidad"};
-  ConfigurableAxis dedxBins{"dedxBins", {100, 0, 100}, "Binning for dedx"};
-  ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum"};
+  ConfigurableAxis centBins{"centBins", {100, 0, 100}, "Binning for centralidad plots"};
+  ConfigurableAxis dedxBins{"dedxBins", {100, 0, 100}, "Binning for dedx plots"};
+  ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum plots"};
+  ConfigurableAxis dcaBins{"dcaBins", {500, -0.5, 0.5}, "Binning for DCA plots"};
 
   // phi cut fits
   TF1* fphiCutHigh = nullptr;
@@ -331,6 +342,13 @@ struct DedxPidAnalysis {
     } else if (v0SelectionMode == V0TPCTOF) {
       LOGF(info, "V0 seleccion using TOF + TPC");
     }
+    if (v0SigmaMode == V0NoSigmaCut) {
+      LOGF(info, "V0 sigma mode: no cut");
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      LOGF(info, "V0 sigma mode: sigma only");
+    } else if (v0SigmaMode == V0TOFAndSigma) {
+      LOGF(info, "V0 sigma mode: TOF + sigma above tpcMomentumCut");
+    }
     if (calibrationMode) {
       LOGF(info, "Calibration mode activated");
     } else {
@@ -369,6 +387,7 @@ struct DedxPidAnalysis {
     AxisSpec centAxis{centBins, "Undefined multiplicity estimator"};
     AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
     AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
+    AxisSpec dcaAxis{dcaBins, ""};
     switch (multiplicityEstimator) {
       case MultSelectionMode::NoMultiplicity: // No multiplicity
         LOGF(info, "No multiplicity estimator applied");
@@ -718,14 +737,18 @@ struct DedxPidAnalysis {
     registryDeDx.add("hTPCPIDAfter", "N clusters TPC PID After", HistType::kTH1F, {{200, 0, 200, "N_{cl,PID, After}"}});
 
     // DCA cut
+    registryDeDx.add("hDCAxyVsPt_beforeAnyCut", "DCAxy vs pT before any tkr cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
+    registryDeDx.add("hDCAzVsPt_beforeAnyCut", "DCAz vs pT before any tkr cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAxyVsPt_before", "DCAxy vs pT before cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAzVsPt_before", "DCAz vs pT before cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAxyVsPt_after", "DCAxy vs pT after cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
 
     // Event Counter
     registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
@@ -816,7 +839,7 @@ struct DedxPidAnalysis {
   template <typename T1>
   bool passesDCAzCut(const T1& track) const
   {
-    const float maxiDcaZ = nSigmaDCAz.value * (maxDCAz.value) / 3.0;
+    const float maxiDcaZ = nSigmaDCAz.value * (dcaZp0.value + dcaZp1.value / std::pow(track.pt(), dcaZp2.value)) / 3.0;
     return std::abs(track.dcaZ()) < maxiDcaZ;
   }
   // Momentum
@@ -872,15 +895,23 @@ struct DedxPidAnalysis {
       sigman = std::hypot(ntrack.tpcNSigmaPi(), ntrack.tofNSigmaPi());
     }
 
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
       if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
-
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
@@ -953,15 +984,23 @@ struct DedxPidAnalysis {
       sigman = std::hypot(ntrack.tpcNSigmaPi(), ntrack.tofNSigmaPi());
     }
 
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
       if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
-
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
@@ -1027,15 +1066,24 @@ struct DedxPidAnalysis {
       sigmap = std::hypot(ptrack.tpcNSigmaPi(), ptrack.tofNSigmaPi());
       sigman = std::hypot(ntrack.tpcNSigmaPr(), ntrack.tofNSigmaPr());
     }
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
-      if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
 
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
+      if (std::abs(sigmap) > nsigmaMax)
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
@@ -1104,19 +1152,28 @@ struct DedxPidAnalysis {
       sigman = std::hypot(ntrack.tpcNSigmaEl(), ntrack.tofNSigmaEl());
     }
 
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
       if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
-
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
     }
+
     const float gammaMass = 2 * MassElectron; // GeV/c^2
 
     if (fillHist)
@@ -1573,6 +1630,10 @@ struct DedxPidAnalysis {
       // Ncl distribution before cuts
       registryDeDx.fill(HIST("hTPCClustersBefore"), trk.tpcNClsFound());
       registryDeDx.fill(HIST("hTPCPIDBefore"), trk.tpcNClsPID());
+
+      // Before DCA any tkr cuts
+      registryDeDx.fill(HIST("hDCAxyVsPt_beforeAnyCut"), trk.pt(), trk.dcaXY());
+      registryDeDx.fill(HIST("hDCAzVsPt_beforeAnyCut"), trk.pt(), trk.dcaZ());
 
       // track Selection wo DCA
       if (!mySelectionPrim.IsSelected(trk))
