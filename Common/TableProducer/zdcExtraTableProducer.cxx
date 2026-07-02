@@ -32,9 +32,11 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TRandom3.h>
+#include <Rtypes.h>
 
 #include <cmath>
 #include <cstdint>
+#include <array>
 
 using namespace o2;
 using namespace o2::framework;
@@ -125,10 +127,10 @@ struct ZdcExtraTableProducer {
   }
 
   template <typename TCollision>
-  uint8_t eventSelected(TCollision collision)
+  uint8_t eventSelected(TCollision const& collision)
   {
     uint8_t selectionBits = 0;
-    bool selected;
+    bool selected = false;
 
     registry.fill(HIST("hEventCount"), AllEvents);
 
@@ -253,8 +255,8 @@ struct ZdcExtraTableProducer {
         //
         double sumZNC = 0;
         double sumZNA = 0;
-        double pmqZNC[4] = {};
-        double pmqZNA[4] = {};
+        std::array<double, 4> pmqZNC = {};
+        std::array<double, 4> pmqZNA = {};
         //
         if (isZNChit) {
           for (int it = 0; it < NTowers; it++) {
@@ -292,8 +294,8 @@ struct ZdcExtraTableProducer {
         constexpr float kBeamEne = 5.36 * 0.5;
 
         // Provide coordinates of centroid over ZN (side C) front face
-        constexpr float X[4] = {-1.75, 1.75, -1.75, 1.75};
-        constexpr float Y[4] = {-1.75, -1.75, 1.75, 1.75};
+        constexpr std::array<float, 4> X = {-1.75, 1.75, -1.75, 1.75};
+        constexpr std::array<float, 4> Y = {-1.75, -1.75, 1.75, 1.75};
         constexpr float kAlpha = 0.395; // saturation correction
 
         float numXZNC = 0., numYZNC = 0., denZNC = 0.;
@@ -328,7 +330,8 @@ struct ZdcExtraTableProducer {
           znaCommon = sumZNA;
         }
 
-        float centroidZNC[2], centroidZNA[2];
+        std::array<float, 2> centroidZNC = {};
+        std::array<float, 2> centroidZNA = {};
 
         if (denZNC != 0.) {
           float cZNC = 1.0;
