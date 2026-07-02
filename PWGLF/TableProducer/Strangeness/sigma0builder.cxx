@@ -981,9 +981,7 @@ struct sigma0builder {
         kShortMotherCode = MCMother_v02.pdgCode();
 
         // If the KShort mother is a (anti)Kaon, use the grandmother instead
-        if (std::abs(kShortMotherCode) == PDG_t::kK0 ||
-            std::abs(kShortMotherCode) == PDG_t::kK0Long ||
-            std::abs(kShortMotherCode) == PDG_t::kKPlus) {
+        if (std::abs(kShortMotherCode) == PDG_t::kK0) {
           auto const& kShortGrandMothers = MCMother_v02.template mothers_as<aod::McParticles>();
           if (!kShortGrandMothers.empty()) {
             kShortMotherCode = kShortGrandMothers.front().pdgCode();
@@ -1376,13 +1374,11 @@ struct sigma0builder {
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
-    if (fillHists)
+    if (fillHists){
       histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
-
-    // Fill centrality histogram after event selection
-    if (fillHists)
+      // Fill centrality histogram after event selection
       histos.fill(HIST("hEventCentrality"), centrality);
-
+    } 
     return true;
   }
 
@@ -2811,9 +2807,9 @@ struct sigma0builder {
           }
         }
 
-        //_______________________________________________
-        // KStar loop
-        if constexpr (!soa::is_table<TEMCal>) { // Don't use EMCal clusters here
+        if constexpr (!soa::is_table<TEMCal>) {// Don't use EMCal clusters here
+          //_______________________________________________
+          // KStar loop
           if (fillKStarTables) {
             auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
             for (size_t j = 0; j < bestKShortsArray.size(); ++j) {
@@ -2824,11 +2820,9 @@ struct sigma0builder {
                 continue;
             }
           }
-        }
 
-        //_______________________________________________
-        // pi0 loop
-        if constexpr (!soa::is_table<TEMCal>) { // Don't use EMCal clusters here
+          //_______________________________________________
+          // pi0 loop
           if (fillPi0Tables) {
             auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
             for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {

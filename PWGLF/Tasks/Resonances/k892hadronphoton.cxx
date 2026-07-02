@@ -579,13 +579,13 @@ struct k892hadronphoton {
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
-    if (fillHists)
+
+    if (fillHists){
       histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
-
-    // Fill centrality histogram after event selection
-    if (fillHists)
+      // Fill centrality histogram after event selection
       histos.fill(HIST("hEventCentrality"), centrality);
-
+    }
+    
     return true;
   }
 
