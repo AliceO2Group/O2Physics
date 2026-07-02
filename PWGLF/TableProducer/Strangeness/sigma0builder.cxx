@@ -811,6 +811,10 @@ struct sigma0builder {
     int V02PDGCode = 0;
     int V01PDGCodeMother = 0;
     int V02PDGCodeMother = 0;
+    int V01PDGCodeGrandMother = 0;
+    int V02PDGCodeGrandMother = 0;
+    int V01GlobalIndexGrandMother = 0;
+    int V02GlobalIndexGrandMother = 0;
     int V0PairPDGCode = 0;
     int V0PairPDGCodeMother = 0;
     int V0PairMCProcess = -1;
@@ -955,6 +959,48 @@ struct sigma0builder {
     if (!MCMothersList_v01.empty() && !MCMothersList_v02.empty()) { // Are there mothers?
       auto const& MCMother_v01 = MCMothersList_v01.front();         // First mother
       auto const& MCMother_v02 = MCMothersList_v02.front();         // First mother
+
+      // Add the grandmothers
+      auto const& GrandMothersList_v01 = MCMother_v01.template mothers_as<aod::McParticles>();
+      if (!GrandMothersList_v01.empty()) {
+        MCinfo.V01PDGCodeGrandMother = GrandMothersList_v01.front().pdgCode();
+        MCinfo.V01GlobalIndexGrandMother = GrandMothersList_v01.front().globalIndex();
+      }
+
+      auto const& GrandMothersList_v02 = MCMother_v02.template mothers_as<aod::McParticles>();
+      if (!GrandMothersList_v02.empty()) {
+        MCinfo.V02PDGCodeGrandMother = GrandMothersList_v02.front().pdgCode();
+        MCinfo.V02GlobalIndexGrandMother = GrandMothersList_v02.front().globalIndex();
+      }
+
+      // check grandmothers and fill histograms
+      int kShortMotherCode = 0;
+      int photonMotherCode = 0;
+      if ((std::abs(MCParticle_v01.pdgCode()) == PDG_t::kGamma) && (std::abs(MCParticle_v02.pdgCode()) == PDG_t::kK0Short) && (!fIsKStar)) {
+
+        kShortMotherCode = MCMother_v02.pdgCode();
+
+        // If the KShort mother is a (anti)Kaon, use the grandmother instead
+        if (std::abs(kShortMotherCode) == PDG_t::kK0 ||
+            std::abs(kShortMotherCode) == PDG_t::kK0Long ||
+            std::abs(kShortMotherCode) == PDG_t::kKPlus) {
+          auto const& kShortGrandMothers = MCMother_v02.template mothers_as<aod::McParticles>();
+          if (!kShortGrandMothers.empty()) {
+            kShortMotherCode = kShortGrandMothers.front().pdgCode();
+          }
+        }
+
+        photonMotherCode = MCMother_v01.pdgCode();
+        // If the photon mother is a pi0, climb to grandmother
+        if (std::abs(photonMotherCode) == PDG_t::kPi0) {
+          auto const& photonGrandMothers = MCMother_v01.template mothers_as<aod::McParticles>();
+          if (!photonGrandMothers.empty()) {
+            photonMotherCode = photonGrandMothers.front().pdgCode();
+          }
+        }
+
+        histos.fill(HIST("MCQA/h2dTrueDaughtersMatrix"), kShortMotherCode, photonMotherCode);
+      }
 
       if (MCMother_v01.globalIndex() == MCMother_v02.globalIndex()) { // Is it the same mother?
 
@@ -2561,9 +2607,9 @@ struct sigma0builder {
 
       kstarmccores(kstarMCInfo.V0PairMCRadius, kstarMCInfo.V0PairPDGCode, kstarMCInfo.V0PairPDGCodeMother, kstarMCInfo.V0PairMCProcess, kstarMCInfo.fV0PairProducedByGenerator,
                    kstarMCInfo.V01MCpx, kstarMCInfo.V01MCpy, kstarMCInfo.V01MCpz,
-                   kstarMCInfo.fIsV01Primary, kstarMCInfo.V01PDGCode, kstarMCInfo.V01PDGCodeMother, kstarMCInfo.fIsV01CorrectlyAssign,
+                   kstarMCInfo.fIsV01Primary, kstarMCInfo.V01PDGCode, kstarMCInfo.V01PDGCodeMother, kstarMCInfo.V01PDGCodeGrandMother, kstarMCInfo.V01GlobalIndexGrandMother, kstarMCInfo.fIsV01CorrectlyAssign,
                    kstarMCInfo.V02MCpx, kstarMCInfo.V02MCpy, kstarMCInfo.V02MCpz,
-                   kstarMCInfo.fIsV02Primary, kstarMCInfo.V02PDGCode, kstarMCInfo.V02PDGCodeMother, kstarMCInfo.fIsV02CorrectlyAssign);
+                   kstarMCInfo.fIsV02Primary, kstarMCInfo.V02PDGCode, kstarMCInfo.V02PDGCodeMother, kstarMCInfo.V02PDGCodeGrandMother, kstarMCInfo.V02GlobalIndexGrandMother, kstarMCInfo.fIsV02CorrectlyAssign);
     }
 
     // KStar -> stracollisions link
