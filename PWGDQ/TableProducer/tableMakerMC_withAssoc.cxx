@@ -549,7 +549,7 @@ struct TableMakerMC {
     fLabelsMapReversed.clear();
     fMCFlags.clear();
 
-    uint16_t mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
+    auto mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
     int trackCounter = 0;
 
     for (auto& mctrack : mcTracks) {
@@ -728,7 +728,7 @@ struct TableMakerMC {
 
       auto bc = collision.template bc_as<BCsWithTimestamps>();
       // store the selection decisions
-      uint64_t tag = static_cast<uint64_t>(0);
+      auto tag = static_cast<uint64_t>(0);
       // store some more information in the tag
       // if the BC found by event selection does not coincide with the collision.bc(), toggle the first bit
       auto bcEvSel = collision.template foundBC_as<BCsWithTimestamps>();
@@ -836,9 +836,9 @@ struct TableMakerMC {
     //         so in case of multiple associations, the variables depending on the collision association (e.g. DCA, secondary vertexing, etc)
     //         have to be recomputed at analysis time for each association.
 
-    uint64_t trackFilteringTag = static_cast<uint64_t>(0);
-    uint32_t trackTempFilterMap = static_cast<uint32_t>(0);
-    uint16_t mcflags = static_cast<uint16_t>(0);
+    auto trackFilteringTag = static_cast<uint64_t>(0);
+    auto trackTempFilterMap = static_cast<uint32_t>(0);
+    auto mcflags = static_cast<uint16_t>(0);
     int trackCounter = fLabelsMap.size();
 
     // Loop over associations
@@ -979,7 +979,7 @@ struct TableMakerMC {
   {
     // Skim MFT tracks
     // So far no cuts are applied here
-    uint16_t mcflags = static_cast<uint16_t>(0);
+    auto mcflags = static_cast<uint16_t>(0);
     int trackCounter = fLabelsMap.size();
 
     for (const auto& assoc : mftAssocs) {
@@ -1096,10 +1096,10 @@ struct TableMakerMC {
     // Loop over the collision-track associations, recompute track properties depending on the collision assigned, and apply track cuts for selection
     //     Muons are written only once, even if they constribute to more than one association,
     //         which means that in the case of multiple associations, the track parameters are wrong and should be computed again at analysis time.
-    uint8_t trackFilteringTag = static_cast<uint8_t>(0);
-    uint8_t trackTempFilterMap = static_cast<uint8_t>(0);
+    auto trackFilteringTag = static_cast<uint8_t>(0);
+    auto trackTempFilterMap = static_cast<uint8_t>(0);
     fFwdTrackIndexMapReversed.clear();
-    uint16_t mcflags = static_cast<uint16_t>(0);
+    auto mcflags = static_cast<uint16_t>(0);
     int trackCounter = fLabelsMap.size();
 
     uint32_t offset = muonBasic.lastIndex();
