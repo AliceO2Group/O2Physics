@@ -240,7 +240,7 @@ struct lfNucleiBATask {
   Configurable<std::vector<float>> parShiftPtAntiHe{"parShiftPtAntiHe", {0.0f, 0.1f, 0.1f, 0.1f, 0.1f}, "Parameters for anti-helium3-Pt shift (if enabled)."};
 
   Configurable<bool> enablePtShiftPID{"enablePtShiftPID", true, "Flag to enable wrong PID in tracking pT correction shift"};
-  Configurable<std::vector<float>> parShiftPtPID{"parShiftPtPID", {0.000048972, 12.2439, -0.493803, -9.06264, 3.4022, -0.17518, -0.087316}, "Parameters for helium3-Pt wrong pid shift (if enabled)."};
+  Configurable<std::vector<float>> parShiftPtPID{"parShiftPtPID", {0.000048972, 12.2439, -0.493803, -9.06264, 3.4022, -0.17518, -0.087316}, "Parameters for helium3-Pt wrong pid shift (if enabled)."}; // o2-linter: disable=pdg/explicit-mass (there are not masses but calibration values)
   Configurable<float> cfgPtShiftPID{"cfgPtShiftPID", 1.25f, "Default upper limit for PID pt-shift correction"};
 
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
