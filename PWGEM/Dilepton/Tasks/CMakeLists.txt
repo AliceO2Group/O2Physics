@@ -55,6 +55,11 @@ o2physics_add_dpl_workflow(table-reader-barrel
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(create-ttp
+                    SOURCES createTTP.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(event-qc
                     SOURCES eventQC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
@@ -95,9 +100,9 @@ o2physics_add_dpl_workflow(dielectron-sv
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dielectron-sct
-                    SOURCES dielectronSCT.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
+o2physics_add_dpl_workflow(dielectron-sv-mc
+                    SOURCES dielectronSVMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dimuon
@@ -108,11 +113,6 @@ o2physics_add_dpl_workflow(dimuon
 o2physics_add_dpl_workflow(dimuon-mc
                     SOURCES dimuonMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(prefilter-dielectron
-                    SOURCES prefilterDielectron.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(associate-mccollision-to-collision
@@ -152,16 +152,11 @@ o2physics_add_dpl_workflow(mc-particle-predictions-otf
 
 o2physics_add_dpl_workflow(study-dcafitter
                     SOURCES studyDCAFitter.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(evaluate-acceptance
                     SOURCES evaluateAcceptance.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dilepton-polarization
-                    SOURCES dileptonPolarization.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

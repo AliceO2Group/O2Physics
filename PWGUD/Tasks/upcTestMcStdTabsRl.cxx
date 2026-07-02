@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file testMcStdTabsRl.cxx
+/// \file upcTestMcStdTabsRl.cxx
 /// \brief task to test the Monte Carlo UD production generatorIDs on hyperloop
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
@@ -41,7 +41,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-struct TestMcStdTabsRl {
+struct UpcTestMcStdTabsRl {
 
   // Global varialbes
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -103,11 +103,11 @@ struct TestMcStdTabsRl {
 
   } // end processMCgenDG
 
-  PROCESS_SWITCH(TestMcStdTabsRl, processMCgen, "Iterate Monte Carlo UD tables with truth data.", true);
+  PROCESS_SWITCH(UpcTestMcStdTabsRl, processMCgen, "Iterate Monte Carlo UD tables with truth data.", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TestMcStdTabsRl>(cfgc)};
+    adaptAnalysisTask<UpcTestMcStdTabsRl>(cfgc)};
 }

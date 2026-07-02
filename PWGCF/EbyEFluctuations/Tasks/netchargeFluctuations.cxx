@@ -1430,7 +1430,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", true);
 
   // process function for Data Run2
   void processDataRun2(MyCollisionRun2 const& coll, MyTracks const& tracks)
@@ -1458,7 +1458,7 @@ struct NetchargeFluctuations {
       calculationMcDeltaEta<kRun3>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
     }
   }
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", false);
 
   // process function for MC Run2
 

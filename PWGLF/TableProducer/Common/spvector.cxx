@@ -20,11 +20,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -62,8 +59,6 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::aod::rctsel;
 
-using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
-
 struct spvector {
 
   Produces<aod::SPCalibrationTables> spcalibrationtable;
@@ -76,7 +71,6 @@ struct spvector {
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -127,10 +121,13 @@ struct spvector {
   Configurable<bool> useCallibvertex{"useCallibvertex", false, "use calibration for vxy"};
   Configurable<bool> coarse1{"coarse1", false, "RE1"};
   Configurable<bool> fine1{"fine1", false, "REfine1"};
+  Configurable<bool> finetime1{"finetime1", false, "REfinetime1"};
   Configurable<bool> coarse2{"coarse2", false, "RE2"};
   Configurable<bool> fine2{"fine2", false, "REfine2"};
+  Configurable<bool> finetime2{"finetime2", false, "REfinetime2"};
   Configurable<bool> coarse3{"coarse3", false, "RE3"};
   Configurable<bool> fine3{"fine3", false, "REfine3"};
+  Configurable<bool> finetime3{"finetime3", false, "REfinetime3"};
   Configurable<bool> coarse4{"coarse4", false, "RE4"};
   Configurable<bool> fine4{"fine4", false, "REfine4"};
   Configurable<bool> coarse5{"coarse5", false, "RE5"};
@@ -139,6 +136,7 @@ struct spvector {
   Configurable<bool> fine6{"fine6", false, "REfine6"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with THn"};
+  Configurable<bool> useTimeRecentering{"useTimeRecentering", false, "Use residual time recentering"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfGainPathvxy{"ConfGainPathvxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
   Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
@@ -173,6 +171,9 @@ struct spvector {
   Configurable<std::string> ConfRecenterevzSp6{"ConfRecenterevzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere6"};
   Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
   Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
+  Configurable<std::string> confRecentereTimeSp1{"confRecentereTimeSp1", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast2", "Path to time recentering map 1"};
+  Configurable<std::string> confRecentereTimeSp2{"confRecentereTimeSp2", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast2", "Path to time recentering map 2"};
+  Configurable<std::string> confRecentereTimeSp3{"confRecentereTimeSp3", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast3", "Path to time recentering map 3"};
 
   // Event selection cuts - Alex
   /*
@@ -276,6 +277,10 @@ struct spvector {
     histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centfineAxis});
     histos.add("hpSinPsiAPsiC", "hpSinPsiAPsiC", kTProfile, {centfineAxis});
     histos.add("AvgVxy", "AvgVxy", kTProfile, {VxyAxis});
+    histos.add("hpQxZDCAvstime", "hpQxZDCAvstime", kTProfile, {{timefineAxis}});
+    histos.add("hpQxZDCCvstime", "hpQxZDCCvstime", kTProfile, {{timefineAxis}});
+    histos.add("hpQyZDCAvstime", "hpQyZDCAvstime", kTProfile, {{timefineAxis}});
+    histos.add("hpQyZDCCvstime", "hpQyZDCCvstime", kTProfile, {{timefineAxis}});
 
     // Event selection cut additional - Alex
     /*
@@ -291,7 +296,6 @@ struct spvector {
     fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     */
     ccdb->setURL(cfgCcdbParam.cfgURL);
-    ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -308,8 +312,11 @@ struct spvector {
   std::array<TH2F*, 6> hrecenterevzSpA;   // Array of 5 histograms
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
+  TH2F* hrecentereTimeSp1 = nullptr;
+  TH2F* hrecentereTimeSp2 = nullptr;
+  TH2F* hrecentereTimeSp3 = nullptr;
 
-  Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     int binCoords[5];
@@ -353,7 +360,7 @@ struct spvector {
     return kTRUE;
   }
 
-  Bool_t Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     if (!hrecenterecentSp || !hrecenterevxSp || !hrecenterevySp || !hrecenterevzSp) {
@@ -389,19 +396,36 @@ struct spvector {
     return kTRUE;
   }
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
-  using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
-  Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
-
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&, AllTrackCandidates const& tracks)
+  bool Correcttime(TH2F* hrecentereTimeSp,
+                   auto timeMin,
+                   auto& qxZDCA,
+                   auto& qyZDCA,
+                   auto& qxZDCC,
+                   auto& qyZDCC)
   {
-
-    if (usemem) {
-      for (const auto& track : tracks) {
-        histos.fill(HIST("htpcnsigmapi"), track.tpcNSigmaPi());
-      }
+    if (!hrecentereTimeSp) {
+      return false;
     }
 
+    double meanxA = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 0.5));
+    double meanyA = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 1.5));
+    double meanxC = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 2.5));
+    double meanyC = hrecentereTimeSp->GetBinContent(hrecentereTimeSp->FindBin(timeMin + 1.e-7, 3.5));
+
+    qxZDCA -= meanxA;
+    qyZDCA -= meanyA;
+    qxZDCC -= meanxC;
+    qyZDCC -= meanyC;
+
+    return true;
+  }
+
+  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
+  Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
+
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
+  {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     auto centrality = collision.centFT0C();
     bool triggerevent = false;
@@ -443,7 +467,7 @@ struct spvector {
       runStartTime[currentRunNumber] = timestampzdc;
     }
 
-    double timeInMinutes = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
+    double timeMin = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
 
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
@@ -599,9 +623,9 @@ struct spvector {
         vy = vy - gainprofilevxy->GetBinContent(2);
       }
 
-      Bool_t res = 0;
-      Bool_t resfine = 0;
-      Int_t check = 1;
+      bool res = false;
+      bool resfine = false;
+      int check = 1;
 
       if (coarse1) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
@@ -621,6 +645,14 @@ struct spvector {
         resfine = Correctfine(hrecenterecentSpA[0], hrecenterevxSpA[0], hrecenterevySpA[0], hrecenterevzSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
+      if (finetime1 && (currentRunNumber != lastRunNumber)) {
+        hrecentereTimeSp1 = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp1.value, bc.timestamp());
+      }
+      bool restime = false;
+      if (useTimeRecentering) {
+        restime = Correcttime(hrecentereTimeSp1, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+      }
+
       if (coarse2) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
           hrecentereSpA[1] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp2.value, bc.timestamp());
@@ -638,6 +670,13 @@ struct spvector {
         resfine = Correctfine(hrecenterecentSpA[1], hrecenterevxSpA[1], hrecenterevySpA[1], hrecenterevzSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
+      if (finetime2 && (currentRunNumber != lastRunNumber)) {
+        hrecentereTimeSp2 = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp2.value, bc.timestamp());
+      }
+      if (useTimeRecentering) {
+        restime = Correcttime(hrecentereTimeSp2, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+      }
+
       if (coarse3) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
           hrecentereSpA[2] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp3.value, bc.timestamp());
@@ -653,6 +692,13 @@ struct spvector {
           hrecenterevzSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp3.value, bc.timestamp());
         }
         resfine = Correctfine(hrecenterecentSpA[2], hrecenterevxSpA[2], hrecenterevySpA[2], hrecenterevzSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+      }
+
+      if (finetime3 && (currentRunNumber != lastRunNumber)) {
+        hrecentereTimeSp3 = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp3.value, bc.timestamp());
+      }
+      if (useTimeRecentering) {
+        restime = Correcttime(hrecentereTimeSp3, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse4) {
@@ -709,6 +755,16 @@ struct spvector {
       if (res == 0 && resfine == 0 && check == 0) {
         LOG(info) << "Histograms are null";
       }
+
+      if (useTimeRecentering && restime == 0 && check == 0) {
+        LOG(info) << "Histograms are null";
+      }
+
+      histos.fill(HIST("hpQxZDCAvstime"), timeMin, qxZDCA);
+      histos.fill(HIST("hpQxZDCCvstime"), timeMin, qxZDCC);
+      histos.fill(HIST("hpQyZDCAvstime"), timeMin, qyZDCA);
+      histos.fill(HIST("hpQyZDCCvstime"), timeMin, qyZDCC);
+
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
 
@@ -771,11 +827,6 @@ struct spvector {
         histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
         histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
         histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
-
-        histos.fill(HIST("htimeQxZDCA"), timeInMinutes, qxZDCA);
-        histos.fill(HIST("htimeQyZDCA"), timeInMinutes, qyZDCA);
-        histos.fill(HIST("htimeQxZDCC"), timeInMinutes, qxZDCC);
-        histos.fill(HIST("htimeQyZDCC"), timeInMinutes, qyZDCC);
       }
 
       histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));

@@ -524,7 +524,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
           // get direct mother
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode());
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode(), pdgCode);
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
@@ -720,6 +720,14 @@ struct HfProducerCharmHadronsV0FemtoDream {
     if (isNoSelectedV0s(col, tracks, fullV0s, k0sCuts) && sizeCand <= 0) {
       qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejNoV0sAndCharm);
       return;
+    }
+
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      rowCandCharm3Prong.reserve(rowCandCharm3Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      rowCandCharm2Prong.reserve(rowCandCharm2Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      rowCandCharmDstar.reserve(rowCandCharmDstar.lastIndex() + sizeCand + 1);
     }
 
     outputCollision(vtxZ, mult, multNtr, spher, magField);
@@ -1124,7 +1132,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    rowCandCharmHadGen.reserve(particles.size());
+    rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {

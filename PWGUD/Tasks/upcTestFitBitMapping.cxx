@@ -9,14 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \FIT bits to phi, eta mapping
-// \author Sandor Lokos, sandor.lokos@cern.ch
-// \since  March 2026
+
+/// \file upcTestFitBitMapping.cxx
+/// \brief FIT bits to phi, eta mapping
+/// \author Sandor Lokos, sandor.lokos@cern.ch
+/// \since  March 2026
 
 #include "PWGUD/Core/UDHelpers.h"     // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
 #include "PWGUD/DataModel/UDTables.h" // aod::UDCollisionFITBits
 
-#include <FT0Base/Geometry.h> // o2::ft0::Geometry
+#include <CommonConstants/MathConstants.h> // o2::constants::math::TwoPI
+#include <FT0Base/Geometry.h>              // o2::ft0::Geometry
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -25,15 +28,14 @@
 #include <Framework/runDataProcessing.h>
 
 #include <array>
-#include <cmath>
 #include <cstdint>
-
-#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
 
-struct UpcTestFITBitMapping {
+struct UpcTestFitBitMapping {
+  static constexpr int Thr2Selector = 2; // value of whichThr that selects the Thr2 bit set
+
   Configurable<int> whichThr{"whichThr", 1, "Use 1=Thr1 bits or 2=Thr2 bits"};
   Configurable<int> maxEvents{"maxEvents", -1, "Process at most this many rows (-1 = all)"};
 
@@ -53,13 +55,13 @@ struct UpcTestFITBitMapping {
   HistogramRegistry registry{
     "registry",
     {
-      {"hPhiA", "FT0A #varphi;#varphi;counts", {HistType::kTH1F, {{18, 0.0, 2. * M_PI}}}},
+      {"hPhiA", "FT0A #varphi;#varphi;counts", {HistType::kTH1F, {{18, 0.0, o2::constants::math::TwoPI}}}},
       {"hEtaA", "FT0A #eta;#eta;counts", {HistType::kTH1F, {{8, 3.5, 5.0}}}},
-      {"hEtaPhiA", "FT0A #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, 3.5, 5.0}, {18, 0.0, 2. * M_PI}}}},
+      {"hEtaPhiA", "FT0A #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, 3.5, 5.0}, {18, 0.0, o2::constants::math::TwoPI}}}},
 
-      {"hPhiC", "FT0C #varphi;#varphi;counts", {HistType::kTH1F, {{18, 0.0, 2. * M_PI}}}},
+      {"hPhiC", "FT0C #varphi;#varphi;counts", {HistType::kTH1F, {{18, 0.0, o2::constants::math::TwoPI}}}},
       {"hEtaC", "FT0C #eta;#eta;counts", {HistType::kTH1F, {{8, -3.5, -2.0}}}},
-      {"hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, -3.5, -2.0}, {18, 0.0, 2. * M_PI}}}},
+      {"hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, -3.5, -2.0}, {18, 0.0, o2::constants::math::TwoPI}}}},
     }};
 
   void init(InitContext&)
@@ -80,7 +82,7 @@ struct UpcTestFITBitMapping {
 
       // Use udhelpers' canonical packed type + builder
       udhelpers::Bits256 w{};
-      if (whichThr == 2) {
+      if (whichThr == Thr2Selector) {
         w = udhelpers::makeBits256(row.thr2W0(), row.thr2W1(), row.thr2W2(), row.thr2W3());
       } else {
         w = udhelpers::makeBits256(row.thr1W0(), row.thr1W1(), row.thr1W2(), row.thr1W3());
@@ -115,5 +117,5 @@ struct UpcTestFITBitMapping {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcTestFITBitMapping>(cfgc, TaskName{"fitbit-mapping"})};
+    adaptAnalysisTask<UpcTestFitBitMapping>(cfgc)};
 }

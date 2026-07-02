@@ -297,6 +297,7 @@ struct nucleiSpectra {
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
+  Produces<o2::aod::NucleiTableCent> nucleiTableCent;
   Produces<o2::aod::NucleiPairTable> nucleiPairTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
   Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension;
@@ -841,6 +842,16 @@ struct nucleiSpectra {
             std::hypot(collision.qvecBTotIm(), collision.qvecBTotRe()),
             std::hypot(collision.qvecBNegIm(), collision.qvecBNegRe()),
             std::hypot(collision.qvecBPosIm(), collision.qvecBPosRe())});
+        } else if constexpr (requires {
+                               collision.centFT0C();
+                             }) {
+          nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
+            collision.centFV0A(),
+            collision.centFT0M(),
+            collision.centFT0A(),
+            collision.centFT0C(),
+            0.f, 0.f, 0.f, 0.f, 0.f,
+            0.f, 0.f, 0.f, 0.f, 0.f});
         }
         if (fillTree) {
           if (flag & kTriton) {
@@ -860,9 +871,10 @@ struct nucleiSpectra {
     nuclei::hGloTOFtracks[1]->Fill(nGloTracks[1], nTOFTracks[1]);
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processData(CollWithCent const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    nuclei::candidates_flow.clear();
     if (!eventSelectionWithHisto(collision)) {
       return;
     }
@@ -870,8 +882,10 @@ struct nucleiSpectra {
     fillDataInfo(collision, tracks);
     for (size_t i1{0}; i1 < nuclei::candidates.size(); ++i1) {
       auto& c1 = nuclei::candidates[i1];
+      auto& c1Cent = nuclei::candidates_flow[i1];
       if (c1.fillTree) {
         nucleiTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.beta, c1.zVertex, c1.nContrib, c1.DCAxy, c1.DCAz, c1.TPCsignal, c1.ITSchi2, c1.TPCchi2, c1.TOFchi2, c1.flags, c1.TPCfindableCls, c1.TPCcrossedRows, c1.ITSclsMap, c1.TPCnCls, c1.TPCnClsShared, c1.clusterSizesITS);
+        nucleiTableCent(c1Cent.centFV0A, c1Cent.centFT0M, c1Cent.centFT0A, c1Cent.centFT0C);
         if (cfgFillPairTree) {
           for (size_t i2{i1 + 1}; i2 < nuclei::candidates.size(); ++i2) {
             auto& c2 = nuclei::candidates[i2];

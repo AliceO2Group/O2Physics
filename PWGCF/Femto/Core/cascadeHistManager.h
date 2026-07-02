@@ -331,7 +331,7 @@ class CascadeHistManager
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(cascadeSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
@@ -397,7 +397,7 @@ class CascadeHistManager
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs, ConfPosDauQaBinning);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs, ConfNegDauQaBinning);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(cascadeSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -418,7 +418,7 @@ class CascadeHistManager
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
     mBachelorManager.template fill<mode>(bachelor, tracks);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -436,7 +436,7 @@ class CascadeHistManager
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
     mBachelorManager.template fill<mode>(bachelor, tracks, mcParticles, mcMothers, mcPartonicMothers);
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -618,16 +618,16 @@ class CascadeHistManager
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get mother
-    if (cascadeCandidate.has_fMcMother()) {
-      auto mother = cascadeCandidate.template fMcMother_as<T3>();
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
     // get partonic mother
-    if (cascadeCandidate.has_fMcPartMoth()) {
-      auto partonicMother = cascadeCandidate.template fMcPartMoth_as<T4>();
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -652,8 +652,8 @@ class CascadeHistManager
               mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
-              if (cascadeCandidate.has_fMcMother()) {
-                auto mother = cascadeCandidate.template fMcMother_as<T3>();
+              if (mcParticle.has_fMcMother()) {
+                auto mother = mcParticle.template fMcMother_as<T3>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

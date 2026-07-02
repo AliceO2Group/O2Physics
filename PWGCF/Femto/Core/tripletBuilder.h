@@ -65,7 +65,8 @@ class TripletTrackTrackTrackBuilder
   TripletTrackTrackTrackBuilder() = default;
   ~TripletTrackTrackTrackBuilder() = default;
 
-  template <modes::Mode mode,
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
             typename T1,
             typename T2,
             typename T3,
@@ -104,15 +105,15 @@ class TripletTrackTrackTrackBuilder
       LOG(fatal) << "Option Track 1&2 are identical and Option Track 1&2&3 are identical is activated. Breaking...";
     }
 
-    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
-    mTripletHistManagerSe.template init<mode>(registry, pairHistSpec, confTripletBinning, confTripletCuts);
-    mTripletHistManagerMe.template init<mode>(registry, pairHistSpec, confTripletBinning, confTripletCuts);
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mTripletHistManagerSe.template init<modeSe>(registry, pairHistSpec, confTripletBinning, confTripletCuts, confMixing);
+    mTripletHistManagerMe.template init<modeMe>(registry, pairHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<mode>(confTripletCuts);
+    mTc.template init<modeSe>(confTripletCuts);
 
     if (mTrack1Track2Track3AreSameSpecies) {
       // Track1 & Track2 & Track3 are the same particle species
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
@@ -123,8 +124,8 @@ class TripletTrackTrackTrackBuilder
       mCtrMe.init(registry, cprHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager3.template init<mode>(registry, trackHistSpec3, confTrackSelection2);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager3.template init<modeSe>(registry, trackHistSpec3, confTrackSelection3);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confTrackSelection3.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection3.chargeAbs.value);
@@ -135,9 +136,9 @@ class TripletTrackTrackTrackBuilder
       mCtrMe.init(registry, cprHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confTrackSelection3.chargeAbs.value);
     } else {
       // all three tracks are different
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mTrackHistManager3.template init<mode>(registry, trackHistSpec3, confTrackSelection3);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
+      mTrackHistManager3.template init<modeSe>(registry, trackHistSpec3, confTrackSelection3);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confTrackSelection3.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, confTrackSelection3.chargeAbs.value);
@@ -268,7 +269,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
@@ -282,7 +283,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -296,7 +297,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -316,7 +317,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
@@ -330,7 +331,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -344,7 +345,7 @@ class TripletTrackTrackTrackBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -389,7 +390,8 @@ class TripletTrackTrackV0Builder
   TripletTrackTrackV0Builder() = default;
   ~TripletTrackTrackV0Builder() = default;
 
-  template <modes::Mode mode,
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
             typename T1,
             typename T2,
             typename T3,
@@ -427,16 +429,16 @@ class TripletTrackTrackV0Builder
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
 
-    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
-    mTripletHistManagerSe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
-    mTripletHistManagerMe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mTripletHistManagerSe.template init<modeSe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
+    mTripletHistManagerMe.template init<modeMe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<mode>(confTripletCuts);
+    mTc.template init<modeSe>(confTripletCuts);
 
     if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mV0HistManager.template init<mode>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mV0HistManager.template init<modeSe>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
@@ -447,9 +449,9 @@ class TripletTrackTrackV0Builder
       mCtrMe.init(registry, ctrHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else {
       // all three tracks are different
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mV0HistManager.template init<mode>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
+      mV0HistManager.template init<modeSe>(registry, v0histSpec, confV0Selection, posDauhistSpec, negDauhistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);
@@ -553,7 +555,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -567,7 +569,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -587,7 +589,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -601,7 +603,7 @@ class TripletTrackTrackV0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -650,7 +652,8 @@ class TripletTrackTrackCascadeBuilder
   TripletTrackTrackCascadeBuilder() = default;
   ~TripletTrackTrackCascadeBuilder() = default;
 
-  template <modes::Mode mode,
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
             typename T1,
             typename T2,
             typename T3,
@@ -688,29 +691,29 @@ class TripletTrackTrackCascadeBuilder
             T10 const& confMixing,
             T11 const& confTripletBinning,
             T12 const& confTripletCuts,
-            std::map<T13, std::vector<o2::framework::AxisSpec>>& colHistSpec,
-            std::map<T14, std::vector<o2::framework::AxisSpec>>& trackHistSpec1,
-            std::map<T15, std::vector<o2::framework::AxisSpec>>& trackHistSpec2,
-            std::map<T16, std::vector<o2::framework::AxisSpec>>& cascadeHistSpec,
-            std::map<T17, std::vector<o2::framework::AxisSpec>>& bachelorHistSpec,
-            std::map<T18, std::vector<o2::framework::AxisSpec>>& posDauHistSpec,
-            std::map<T19, std::vector<o2::framework::AxisSpec>>& negDauHistSpec,
-            std::map<T20, std::vector<o2::framework::AxisSpec>>& tripletHistSpec,
-            std::map<T21, std::vector<o2::framework::AxisSpec>>& cprHistSpecBachelor,
-            std::map<T22, std::vector<o2::framework::AxisSpec>>& cprHistSpecV0Daughter,
-            std::map<T23, std::vector<o2::framework::AxisSpec>>& ctrHistSpec)
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& cascadeHistSpec,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& bachelorHistSpec,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& posDauHistSpec,
+            std::map<T19, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
+            std::map<T20, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
+            std::map<T21, std::vector<o2::framework::AxisSpec>> const& cprHistSpecBachelor,
+            std::map<T22, std::vector<o2::framework::AxisSpec>> const& cprHistSpecV0Daughter,
+            std::map<T23, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
-    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
-    mTripletHistManagerSe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
-    mTripletHistManagerMe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mTripletHistManagerSe.template init<modeSe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
+    mTripletHistManagerMe.template init<modeMe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<mode>(confTripletCuts);
+    mTc.template init<modeSe>(confTripletCuts);
     if (mTrack1Track2AreSameSpecies) {
       // Track1 & Track2 & are the same particle species and track 3 is something else
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mCascadeHistManager.template init<modeSe>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
       mTrackCleaner.init(confTrackCleaner);
       mCascadeCleaner.init(confCascadeCleaner);
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
@@ -721,9 +724,9 @@ class TripletTrackTrackCascadeBuilder
       mCtrMe.init(registry, ctrHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, confCtr, confCprBachelor, confCprV0Daughter, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else {
       // all three tracks are different
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
-      mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+      mTrackHistManager1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
+      mCascadeHistManager.template init<modeSe>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);
@@ -827,7 +830,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -841,7 +844,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }
@@ -861,7 +864,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     } else {
       switch (mMixingPolicy) {
@@ -875,7 +878,7 @@ class TripletTrackTrackCascadeBuilder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
           break;
         default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+          LOG(fatal) << "Invalid binning policy specifed. Breaking...";
       }
     }
   }

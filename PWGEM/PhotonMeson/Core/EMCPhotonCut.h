@@ -25,11 +25,8 @@
 #include <Framework/HistogramSpec.h>
 
 #include <TH2.h>
-#include <TNamed.h>
 
 #include <sys/types.h>
-
-#include <Rtypes.h>
 
 #include <cmath>
 #include <concepts>
@@ -108,11 +105,11 @@ struct TrackMatchingParams {
   float c{-2.5f};
 };
 
-class EMCPhotonCut : public TNamed
+class EMCPhotonCut
 {
  public:
   EMCPhotonCut() = default;
-  EMCPhotonCut(const char* name, const char* title) : TNamed(name, title) {}
+  EMCPhotonCut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class EMCPhotonCuts : std::uint8_t {
     // cluster cut
@@ -132,6 +129,9 @@ class EMCPhotonCut : public TNamed
     kPrimary = 0,
     kSecondary,
   };
+
+  const std::string getName() const { return name; }
+  const std::string getTitle() const { return title; }
 
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
@@ -701,6 +701,8 @@ class EMCPhotonCut : public TNamed
   void print() const;
 
  private:
+  std::string name;
+  std::string title;
   // EMCal cluster cuts
   int mDefinition{10};         ///< clusterizer definition
   float mMinE{0.7f};           ///< minimum energy
@@ -723,8 +725,6 @@ class EMCPhotonCut : public TNamed
   TrackMatchingParams mTrackMatchingPhiParams = {-1.f, 0.f, 0.f};
   TrackMatchingParams mSecTrackMatchingEtaParams = {-1.f, 0.f, 0.f};
   TrackMatchingParams mSecTrackMatchingPhiParams = {-1.f, 0.f, 0.f};
-
-  ClassDef(EMCPhotonCut, 3);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_

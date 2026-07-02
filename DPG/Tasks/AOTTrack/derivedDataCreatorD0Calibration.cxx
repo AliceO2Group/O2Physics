@@ -117,8 +117,9 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-  using TracksWCovExtraPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraTmoPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraTmoPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
@@ -183,12 +184,12 @@ struct DerivedDataCreatorD0Calibration {
   }
 
   // main function
-  template <bool withTrackQa, typename TTrackQa, typename TTracks>
+  template <bool withTrackQa, bool withTrackOcc, typename TTrackQa, typename TTracks, typename TTrackMeanOccs>
   void runDataCreation(CollisionsWEvSel const& collisions,
                        aod::TrackAssoc const& trackIndices,
                        TTracks const&,
                        aod::BCsWithTimestamps const&,
-                       TrackMeanOccs const&,
+                       TTrackMeanOccs const&,
                        TTrackQa const&)
   {
     std::map<int, int> selectedCollisions; // map with indices of selected collisions (key: original AOD Collision table index, value: D0 collision index)
@@ -274,6 +275,34 @@ struct DerivedDataCreatorD0Calibration {
             continue;
           }
 
+          // preselections
+          // pt
+          std::array<float, 3> pVecNoVtxD0 = RecoDecay::pVec(trackPos.pVector(), trackNeg.pVector());
+          float ptNoVtxD0 = RecoDecay::pt(pVecNoVtxD0);
+          if (ptNoVtxD0 - ptTolerance < cfgCandCuts.ptMin) {
+            continue;
+          }
+          int ptBinNoVtxD0 = findBin(cfgTrackCuts.binsPt, ptNoVtxD0 + ptTolerance); // assuming tighter selections at lower pT
+          if (ptBinNoVtxD0 < 0) {
+            continue;
+          }
+
+          // random downsampling already here
+          if (cfgDownsampling.apply) {
+            int ptBinWeights{0};
+            if (ptNoVtxD0 < histDownSampl->GetBinLowEdge(1)) {
+              ptBinWeights = 1;
+            } else if (ptNoVtxD0 > histDownSampl->GetXaxis()->GetBinUpEdge(histDownSampl->GetNbinsX())) {
+              ptBinWeights = histDownSampl->GetNbinsX();
+            } else {
+              ptBinWeights = histDownSampl->GetXaxis()->FindBin(ptNoVtxD0);
+            }
+            float weight = histDownSampl->GetBinContent(ptBinWeights);
+            if (gRandom->Rndm() > weight) {
+              continue;
+            }
+          }
+
           int pidTrackNegKaon{-1};
           int pidTrackNegPion{-1};
           if (cfgTrackCuts.usePidTpcOnly) {
@@ -288,7 +317,6 @@ struct DerivedDataCreatorD0Calibration {
             pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
           }
 
-          // preselections
           // PID
           uint8_t massHypo{D0MassHypo::D0AndD0Bar}; // both mass hypotheses a priori
           if (pidTrackPosPion == TrackSelectorPID::Rejected || pidTrackNegKaon == TrackSelectorPID::Rejected) {
@@ -298,17 +326,6 @@ struct DerivedDataCreatorD0Calibration {
             massHypo -= D0MassHypo::D0Bar; // exclude D0Bar
           }
           if (massHypo == 0) {
-            continue;
-          }
-
-          // pt
-          std::array<float, 3> pVecNoVtxD0 = RecoDecay::pVec(trackPos.pVector(), trackNeg.pVector());
-          float ptNoVtxD0 = RecoDecay::pt(pVecNoVtxD0);
-          if (ptNoVtxD0 - ptTolerance < cfgCandCuts.ptMin) {
-            continue;
-          }
-          int ptBinNoVtxD0 = findBin(cfgTrackCuts.binsPt, ptNoVtxD0 + ptTolerance); // assuming tighter selections at lower pT
-          if (ptBinNoVtxD0 < 0) {
             continue;
           }
 
@@ -359,22 +376,6 @@ struct DerivedDataCreatorD0Calibration {
           int ptBinD0 = findBin(cfgTrackCuts.binsPt, ptD0);
           if (ptBinD0 < 0) {
             continue;
-          }
-
-          // random downsampling already here
-          if (cfgDownsampling.apply) {
-            int ptBinWeights{0};
-            if (ptD0 < histDownSampl->GetBinLowEdge(1)) {
-              ptBinWeights = 1;
-            } else if (ptD0 > histDownSampl->GetXaxis()->GetBinUpEdge(histDownSampl->GetNbinsX())) {
-              ptBinWeights = histDownSampl->GetNbinsX();
-            } else {
-              ptBinWeights = histDownSampl->GetXaxis()->FindBin(ptD0);
-            }
-            float weight = histDownSampl->GetBinContent(ptBinWeights);
-            if (gRandom->Rndm() > weight) {
-              continue;
-            }
           }
 
           // d0xd0
@@ -514,18 +515,20 @@ struct DerivedDataCreatorD0Calibration {
             uint8_t twmoFT0CUnfm80{0u};
             uint8_t tmoRobustT0V0PrimUnfm80{0u};
             uint8_t twmoRobustT0V0PrimUnfm80{0u};
-            if (trackPos.has_tmo()) {
-              auto tmoFromTrack = trackPos.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
-              tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
-              tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
-              tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
-              tmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80());
-              twmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80());
-              twmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80());
-              twmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80());
-              twmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80());
-              tmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80());
-              twmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80());
+            if constexpr (withTrackOcc) {
+              if (trackPos.has_tmo()) {
+                auto tmoFromTrack = trackPos.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+                tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
+                tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
+                tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
+                tmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80());
+                twmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80());
+                twmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80());
+                twmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80());
+                twmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80());
+                tmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80());
+                twmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80());
+              }
             }
             float tpcTime0{0.f};
             float tpcdEdxNorm{0.f};
@@ -679,18 +682,20 @@ struct DerivedDataCreatorD0Calibration {
             uint8_t twmoFT0CUnfm80{0u};
             uint8_t tmoRobustT0V0PrimUnfm80{0u};
             uint8_t twmoRobustT0V0PrimUnfm80{0u};
-            if (trackNeg.has_tmo()) {
-              auto tmoFromTrack = trackNeg.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
-              tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
-              tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
-              tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
-              tmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80());
-              twmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80());
-              twmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80());
-              twmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80());
-              twmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80());
-              tmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80());
-              twmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80());
+            if constexpr (withTrackOcc) {
+              if (trackNeg.has_tmo()) {
+                auto tmoFromTrack = trackNeg.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+                tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
+                tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
+                tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
+                tmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80());
+                twmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80());
+                twmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80());
+                twmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80());
+                twmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80());
+                tmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80());
+                twmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80());
+              }
             }
             float tpcTime0{0.f};
             float tpcdEdxNorm{0.f};
@@ -868,24 +873,33 @@ struct DerivedDataCreatorD0Calibration {
   // process functions
   void processWithTrackQa(CollisionsWEvSel const& collisions,
                           aod::TrackAssoc const& trackIndices,
-                          TracksWCovExtraPidAndQa const& tracks,
+                          TracksWCovExtraTmoPidAndQa const& tracks,
                           aod::BCsWithTimestamps const& bcs,
                           TrackMeanOccs const& occ,
                           aod::TracksQAVersion const& trackQa)
   {
-    runDataCreation<true>(collisions, trackIndices, tracks, bcs, occ, trackQa);
+    runDataCreation<true, true>(collisions, trackIndices, tracks, bcs, occ, trackQa);
   }
   PROCESS_SWITCH(DerivedDataCreatorD0Calibration, processWithTrackQa, "Process with trackQA enabled", false);
 
   void processNoTrackQa(CollisionsWEvSel const& collisions,
                         aod::TrackAssoc const& trackIndices,
-                        TracksWCovExtraPid const& tracks,
+                        TracksWCovExtraTmoPid const& tracks,
                         aod::BCsWithTimestamps const& bcs,
                         TrackMeanOccs const& occ)
   {
-    runDataCreation<false>(collisions, trackIndices, tracks, bcs, occ, nullptr);
+    runDataCreation<false, true>(collisions, trackIndices, tracks, bcs, occ, nullptr);
   }
-  PROCESS_SWITCH(DerivedDataCreatorD0Calibration, processNoTrackQa, "Process without trackQA enabled", true);
+  PROCESS_SWITCH(DerivedDataCreatorD0Calibration, processNoTrackQa, "Process without trackQA enabled", false);
+
+  void processNoTrackQaAndOcc(CollisionsWEvSel const& collisions,
+                              aod::TrackAssoc const& trackIndices,
+                              TracksWCovExtraPid const& tracks,
+                              aod::BCsWithTimestamps const& bcs)
+  {
+    runDataCreation<false, false>(collisions, trackIndices, tracks, bcs, nullptr, nullptr);
+  }
+  PROCESS_SWITCH(DerivedDataCreatorD0Calibration, processNoTrackQaAndOcc, "Process without trackQA and trackMeanOcc enabled", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -91,7 +91,14 @@ DECLARE_SOA_TABLE(HfCandFlowInfos, "AOD", "HFCANDFLOWINFO",
                   full::MlScore1,
                   full::ScalarProd,
                   full::Cent);
-DECLARE_SOA_TABLE(HfRedQVecEsEs, "AOD", "HFREDQVECESE", full::RedQVec);
+DECLARE_SOA_TABLE(HfCandFlowEses, "AOD", "HFCANDFLOWESE",
+                  full::M,
+                  full::Pt,
+                  full::MlScore0,
+                  full::MlScore1,
+                  full::ScalarProd,
+                  full::Cent,
+                  full::RedQVec);
 } // namespace o2::aod
 
 enum DecayChannel { DplusToPiKPi = 0,
@@ -115,7 +122,7 @@ enum RunMode {
 struct HfTaskFlowCharmHadrons {
   Produces<o2::aod::HfCandMPtInfos> rowCandMassPtMl;
   Produces<o2::aod::HfCandFlowInfos> rowCandMassPtMlSpCent;
-  Produces<o2::aod::HfRedQVecEsEs> rowRedQVecEsE;
+  Produces<o2::aod::HfCandFlowEses> rowCandFlowEsE;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
@@ -299,23 +306,23 @@ struct HfTaskFlowCharmHadrons {
     }
 
     if (doprocessResolutionSP || doprocessResolutionSPEsE) { // enable resolution histograms only for resolution process
-      registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cFV0a", "hSpResoFT0cFV0a; centrality; Q_{FT0c} #bullet Q_{FV0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aFV0a", "hSpResoFT0aFV0a; centrality; Q_{FT0a} #bullet Q_{FV0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mFV0a", "hSpResoFT0mFV0a; centrality; Q_{FT0m} #bullet Q_{FV0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFV0aTPCpos", "hSpResoFV0aTPCpos; centrality; Q_{FV0a} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFV0aTPCneg", "hSpResoFV0aTPCneg; centrality; Q_{FV0a} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFV0aTPCtot", "hSpResoFV0aTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
+      registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0cFV0a", "hSpResoFT0cFV0a; centrality; Q_{FT0c} #bullet Q_{FV0a}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0aFV0a", "hSpResoFT0aFV0a; centrality; Q_{FT0a} #bullet Q_{FV0a}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0mFV0a", "hSpResoFT0mFV0a; centrality; Q_{FT0m} #bullet Q_{FV0a}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFV0aTPCpos", "hSpResoFV0aTPCpos; centrality; Q_{FV0a} #bullet Q_{TPCpos}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFV0aTPCneg", "hSpResoFV0aTPCneg; centrality; Q_{FV0a} #bullet Q_{TPCneg}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoFV0aTPCtot", "hSpResoFV0aTPCtot; centrality; Q_{FV0a} #bullet Q_{TPCtot}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
+      registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}; |q_{2}|", {HistType::kTH3F, {thnAxisCent, thnAxisScalarProd, thnAxisRedQVec}});
 
       if (doprocessResolutionSPEsE) {
         registry.add("redQVecs/hSparseRedQVecs", "hSpResoRedQVec; centrality; Q_{red} #bullet Q_{TPCtot}", {HistType::kTHnSparseF, {thnAxisCent, thnAxisRedQVec, thnAxisRedQVec, thnAxisRedQVec, thnAxisRedQVec}});
@@ -812,7 +819,7 @@ struct HfTaskFlowCharmHadrons {
         }
       }
       if (storeRedQVec) {
-        rowRedQVecEsE(redQVec);
+        rowCandFlowEsE(massCand, ptCand, outputMl[0], outputMl[1], scalprodCand, cent, redQVec);
       }
       if (fillSparse) {
         fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi,
@@ -1037,23 +1044,30 @@ struct HfTaskFlowCharmHadrons {
       return;
     }
 
-    registry.fill(HIST("spReso/hSpResoFT0cFT0a"), centrality, xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a);
-    registry.fill(HIST("spReso/hSpResoFT0cFV0a"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a);
-    registry.fill(HIST("spReso/hSpResoFT0cTPCpos"), centrality, xQVecFT0c * xQVecTPCPos + yQVecFT0c * yQVecTPCPos);
-    registry.fill(HIST("spReso/hSpResoFT0cTPCneg"), centrality, xQVecFT0c * xQVecTPCNeg + yQVecFT0c * yQVecTPCNeg);
-    registry.fill(HIST("spReso/hSpResoFT0cTPCtot"), centrality, xQVecFT0c * xQVecTPCAll + yQVecFT0c * yQVecTPCAll);
-    registry.fill(HIST("spReso/hSpResoFT0aFV0a"), centrality, xQVecFT0a * xQVecFV0a + yQVecFT0a * yQVecFV0a);
-    registry.fill(HIST("spReso/hSpResoFT0aTPCpos"), centrality, xQVecFT0a * xQVecTPCPos + yQVecFT0a * yQVecTPCPos);
-    registry.fill(HIST("spReso/hSpResoFT0aTPCneg"), centrality, xQVecFT0a * xQVecTPCNeg + yQVecFT0a * yQVecTPCNeg);
-    registry.fill(HIST("spReso/hSpResoFT0aTPCtot"), centrality, xQVecFT0a * xQVecTPCAll + yQVecFT0a * yQVecTPCAll);
-    registry.fill(HIST("spReso/hSpResoFT0mFV0a"), centrality, xQVecFT0m * xQVecFV0a + yQVecFT0m * yQVecFV0a);
-    registry.fill(HIST("spReso/hSpResoFT0mTPCpos"), centrality, xQVecFT0m * xQVecTPCPos + yQVecFT0m * yQVecTPCPos);
-    registry.fill(HIST("spReso/hSpResoFT0mTPCneg"), centrality, xQVecFT0m * xQVecTPCNeg + yQVecFT0m * yQVecTPCNeg);
-    registry.fill(HIST("spReso/hSpResoFT0mTPCtot"), centrality, xQVecFT0m * xQVecTPCAll + yQVecFT0m * yQVecTPCAll);
-    registry.fill(HIST("spReso/hSpResoFV0aTPCpos"), centrality, xQVecFV0a * xQVecTPCPos + yQVecFV0a * yQVecTPCPos);
-    registry.fill(HIST("spReso/hSpResoFV0aTPCneg"), centrality, xQVecFV0a * xQVecTPCNeg + yQVecFV0a * yQVecTPCNeg);
-    registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecTPCAll + yQVecFV0a * yQVecTPCAll);
-    registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecTPCPos * xQVecTPCNeg + yQVecTPCPos * yQVecTPCNeg);
+    float redQVec{-999.f};
+    std::array<float, 3> qVecRedComps{-999.f, -999.f, -999.f};
+    if constexpr (HasRedQVecs) {
+      qVecRedComps = getEseQvec(collision, qVecRedDetector.value);
+    }
+    redQVec = std::hypot(qVecRedComps[0], qVecRedComps[1]);
+
+    registry.fill(HIST("spReso/hSpResoFT0cFT0a"), centrality, xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0cFV0a"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0cTPCpos"), centrality, xQVecFT0c * xQVecTPCPos + yQVecFT0c * yQVecTPCPos, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0cTPCneg"), centrality, xQVecFT0c * xQVecTPCNeg + yQVecFT0c * yQVecTPCNeg, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0cTPCtot"), centrality, xQVecFT0c * xQVecTPCAll + yQVecFT0c * yQVecTPCAll, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0aFV0a"), centrality, xQVecFT0a * xQVecFV0a + yQVecFT0a * yQVecFV0a, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0aTPCpos"), centrality, xQVecFT0a * xQVecTPCPos + yQVecFT0a * yQVecTPCPos, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0aTPCneg"), centrality, xQVecFT0a * xQVecTPCNeg + yQVecFT0a * yQVecTPCNeg, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0aTPCtot"), centrality, xQVecFT0a * xQVecTPCAll + yQVecFT0a * yQVecTPCAll, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0mFV0a"), centrality, xQVecFT0m * xQVecFV0a + yQVecFT0m * yQVecFV0a, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0mTPCpos"), centrality, xQVecFT0m * xQVecTPCPos + yQVecFT0m * yQVecTPCPos, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0mTPCneg"), centrality, xQVecFT0m * xQVecTPCNeg + yQVecFT0m * yQVecTPCNeg, redQVec);
+    registry.fill(HIST("spReso/hSpResoFT0mTPCtot"), centrality, xQVecFT0m * xQVecTPCAll + yQVecFT0m * yQVecTPCAll, redQVec);
+    registry.fill(HIST("spReso/hSpResoFV0aTPCpos"), centrality, xQVecFV0a * xQVecTPCPos + yQVecFV0a * yQVecTPCPos, redQVec);
+    registry.fill(HIST("spReso/hSpResoFV0aTPCneg"), centrality, xQVecFV0a * xQVecTPCNeg + yQVecFV0a * yQVecTPCNeg, redQVec);
+    registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecTPCAll + yQVecFV0a * yQVecTPCAll, redQVec);
+    registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecTPCPos * xQVecTPCNeg + yQVecTPCPos * yQVecTPCNeg, redQVec);
 
     if constexpr (HasRedQVecs) {
       registry.fill(HIST("redQVecs/hRedQVecFT0C"), centrality, std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()));

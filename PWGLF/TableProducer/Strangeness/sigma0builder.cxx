@@ -9,16 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This is a task that employs the standard V0 tables and attempts to combine
-// two V0s into a Sigma0 -> Lambda + gamma candidate.
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//  Sigma0 builder task
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    gianni.shigeru.setoue.liveraro@cern.ch
-//
+
+/// \file sigma0builder.cxx
+/// \brief This is a task that employs the standard V0 tables and attempts to combine two V0s into a Sigma0 -> Lambda + gamma candidate.
+/// \author Gianni Shigeru Setoue Liveraro
+/// \author Oussama Benchikhi
 
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
@@ -285,6 +280,7 @@ struct sigma0builder {
     Configurable<bool> KShortRejectPosITSafterburner{"KShortRejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
     Configurable<bool> KShortRejectNegITSafterburner{"KShortRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
     Configurable<float> KShortArmenterosCoefficient{"KShortArmenterosCoefficient", 0.2, "Armenteros-Podolanski coefficient to reject lambdas"};
+    Configurable<float> KShortMaxTPCNSigmas{"KShortMaxTPCNSigmas", 1e+9, "Max |TPC NSigma| (pion hypothesis) for K0S daughters"};
   } kshortSelections;
 
   // KStar criteria:
@@ -310,46 +306,48 @@ struct sigma0builder {
     Configurable<float> mc_rapidityMax{"mc_rapidityMax", 0.5, "Max generated particle rapidity"};
   } genSelections;
 
-  // Axis
-  // base properties
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
-  ConfigurableAxis axisNch{"axisNch", {300, 0.0f, 3000.0f}, "N_{ch}"};
+  struct : ConfigurableGroup {
+    // base properties
+    std::string prefix = "axisConfig"; // JSON group name
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
+    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
+    ConfigurableAxis axisNch{"axisNch", {300, 0.0f, 3000.0f}, "N_{ch}"};
 
-  // Invariant Mass
-  ConfigurableAxis axisSigmaMass{"axisSigmaMass", {500, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "M_{#Lambda} (GeV/c^{2})"};
-  ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, 0.0f, 0.3f}, "M_{#Gamma}"};
-  ConfigurableAxis axisK0SMass{"axisK0SMass", {200, 0.4f, 0.6f}, "M_{K^{0}}"};
-  ConfigurableAxis axisKStarMass{"axisKStarMass", {500, 0.6f, 1.6f}, "M_{K^{*}} (GeV/c^{2})"};
+    // Invariant Mass
+    ConfigurableAxis axisSigmaMass{"axisSigmaMass", {500, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
+    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "M_{#Lambda} (GeV/c^{2})"};
+    ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, 0.0f, 0.3f}, "M_{#Gamma}"};
+    ConfigurableAxis axisK0SMass{"axisK0SMass", {200, 0.4f, 0.6f}, "M_{K^{0}}"};
+    ConfigurableAxis axisKStarMass{"axisKStarMass", {500, 0.6f, 1.6f}, "M_{K^{*}} (GeV/c^{2})"};
 
-  // AP plot axes
-  ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
-  ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
+    // AP plot axes
+    ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
+    ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
 
-  // topological variable QA axes
-  ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
-  ConfigurableAxis axisNCls{"axisNCls", {8, -0.5, 7.5}, "NCls"};
-  ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {40, -10, 10}, "TPC NSigma"};
-  ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
-  ConfigurableAxis axisXY{"axisXY", {120, -120.0f, 120.0f}, "XY axis"};
-  ConfigurableAxis axisZ{"axisZ", {120, -120.0f, 120.0f}, "V0 Z position (cm)"};
-  ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
-  ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
-  ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
-  ConfigurableAxis axisPhi{"axisPhi", {200, 0, 2 * o2::constants::math::PI}, "Phi for photons"};
-  ConfigurableAxis axisPA{"axisPA", {100, 0.0f, 1}, "Pointing angle"};
-  ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {15, 0.5f, +15.5f}, "Candidate Selection"};
-  ConfigurableAxis axisIRBinning{"axisIRBinning", {151, -10, 1500}, "Binning for the interaction rate (kHz)"};
-  ConfigurableAxis axisLifetime{"axisLifetime", {200, 0, 50}, "Lifetime"};
+    // topological variable QA axes
+    ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
+    ConfigurableAxis axisNCls{"axisNCls", {8, -0.5, 7.5}, "NCls"};
+    ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {40, -10, 10}, "TPC NSigma"};
+    ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
+    ConfigurableAxis axisXY{"axisXY", {120, -120.0f, 120.0f}, "XY axis"};
+    ConfigurableAxis axisZ{"axisZ", {120, -120.0f, 120.0f}, "V0 Z position (cm)"};
+    ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
+    ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
+    ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
+    ConfigurableAxis axisPhi{"axisPhi", {200, 0, 2 * o2::constants::math::PI}, "Phi for photons"};
+    ConfigurableAxis axisPA{"axisPA", {100, 0.0f, 1}, "Pointing angle"};
+    ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
+    ConfigurableAxis axisCandSel{"axisCandSel", {15, 0.5f, +15.5f}, "Candidate Selection"};
+    ConfigurableAxis axisIRBinning{"axisIRBinning", {151, -10, 1500}, "Binning for the interaction rate (kHz)"};
+    ConfigurableAxis axisLifetime{"axisLifetime", {200, 0, 50}, "Lifetime"};
 
-  // EMCal-specifc
-  ConfigurableAxis axisClrDefinition{"axisClrDefinition", {51, -0.5, 50.5}, "Cluster Definition"};
-  ConfigurableAxis axisClrNCells{"axisClrNCells", {25, 0.0, 25}, "N cells per cluster"};
-  ConfigurableAxis axisClrEnergy{"axisClrEnergy", {400, 0.0, 10}, "Energy per cluster"};
-  ConfigurableAxis axisClrTime{"axisClrTime", {300, -30.0, 30.0}, "cluster time (ns)"};
-  ConfigurableAxis axisClrShape{"axisClrShape", {100, 0.0, 1.0}, "cluster shape"};
+    // EMCal-specifc
+    ConfigurableAxis axisClrDefinition{"axisClrDefinition", {51, -0.5, 50.5}, "Cluster Definition"};
+    ConfigurableAxis axisClrNCells{"axisClrNCells", {25, 0.0, 25}, "N cells per cluster"};
+    ConfigurableAxis axisClrEnergy{"axisClrEnergy", {400, 0.0, 10}, "Energy per cluster"};
+    ConfigurableAxis axisClrTime{"axisClrTime", {300, -30.0, 30.0}, "cluster time (ns)"};
+    ConfigurableAxis axisClrShape{"axisClrShape", {100, 0.0, 1.0}, "cluster shape"};
+  } axisConfig;
 
   void init(InitContext const&)
   {
@@ -371,7 +369,7 @@ struct sigma0builder {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
-    histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisCentrality});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfig.axisCentrality});
 
     if (eventSelections.fUseEventSelection) {
       histos.add("hEventSelection", "hEventSelection", kTH1D, {{21, -0.5f, +20.5f}});
@@ -403,8 +401,8 @@ struct sigma0builder {
 
       if (fGetIR) {
         histos.add("GeneralQA/hRunNumberNegativeIR", "", kTH1D, {{1, 0., 1.}});
-        histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1D, {axisIRBinning});
-        histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {axisCentrality, axisIRBinning});
+        histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1D, {axisConfig.axisIRBinning});
+        histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {axisConfig.axisCentrality, axisConfig.axisIRBinning});
       }
     }
 
@@ -418,51 +416,51 @@ struct sigma0builder {
         continue;
       }
 
-      histos.add(histodir + "/hpT", "hpT", kTH1D, {axisPt});
+      histos.add(histodir + "/hpT", "hpT", kTH1D, {axisConfig.axisPt});
       histos.add(histodir + "/hV0Type", "hV0Type", kTH1D, {{8, 0.5f, 8.5f}});
-      histos.add(histodir + "/hNegEta", "hNegEta", kTH1D, {axisRapidity});
-      histos.add(histodir + "/hPosEta", "hPosEta", kTH1D, {axisRapidity});
-      histos.add(histodir + "/hDCANegToPV", "hDCANegToPV", kTH1D, {axisDCAtoPV});
-      histos.add(histodir + "/hDCAPosToPV", "hDCAPosToPV", kTH1D, {axisDCAtoPV});
-      histos.add(histodir + "/hDCADau", "hnDCADau", kTH1D, {axisDCAdau});
-      histos.add(histodir + "/hRadius", "hnRadius", kTH1D, {axisRadius});
-      histos.add(histodir + "/hZ", "hZ", kTH1D, {axisZ});
-      histos.add(histodir + "/hCosPA", "hCosPA", kTH1D, {axisCosPA});
-      histos.add(histodir + "/hPhi", "hPhi", kTH1D, {axisPhi});
-      histos.add(histodir + "/hPosTPCCR", "hPosTPCCR", kTH1D, {axisTPCrows});
-      histos.add(histodir + "/hNegTPCCR", "hNegTPCCR", kTH1D, {axisTPCrows});
-      histos.add(histodir + "/hPosITSNCls", "hPosITSNCls", kTH1D, {axisNCls});
-      histos.add(histodir + "/hNegITSNCls", "hNegITSNCls", kTH1D, {axisNCls});
-      histos.add(histodir + "/hPosTPCNSigmaEl", "hPosTPCNSigmaEl", kTH1D, {axisTPCNSigma});
-      histos.add(histodir + "/hNegTPCNSigmaEl", "hNegTPCNSigmaEl", kTH1D, {axisTPCNSigma});
-      histos.add(histodir + "/hPosTPCNSigmaPi", "hPosTPCNSigmaPi", kTH1D, {axisTPCNSigma});
-      histos.add(histodir + "/hNegTPCNSigmaPi", "hNegTPCNSigmaPi", kTH1D, {axisTPCNSigma});
-      histos.add(histodir + "/hPosTPCNSigmaPr", "hPosTPCNSigmaPr", kTH1D, {axisTPCNSigma});
-      histos.add(histodir + "/hNegTPCNSigmaPr", "hNegTPCNSigmaPr", kTH1D, {axisTPCNSigma});
-      histos.add(histodir + "/h2dArmenteros", "h2dArmenteros", kTH2D, {axisAPAlpha, axisAPQt});
+      histos.add(histodir + "/hNegEta", "hNegEta", kTH1D, {axisConfig.axisRapidity});
+      histos.add(histodir + "/hPosEta", "hPosEta", kTH1D, {axisConfig.axisRapidity});
+      histos.add(histodir + "/hDCANegToPV", "hDCANegToPV", kTH1D, {axisConfig.axisDCAtoPV});
+      histos.add(histodir + "/hDCAPosToPV", "hDCAPosToPV", kTH1D, {axisConfig.axisDCAtoPV});
+      histos.add(histodir + "/hDCADau", "hnDCADau", kTH1D, {axisConfig.axisDCAdau});
+      histos.add(histodir + "/hRadius", "hnRadius", kTH1D, {axisConfig.axisRadius});
+      histos.add(histodir + "/hZ", "hZ", kTH1D, {axisConfig.axisZ});
+      histos.add(histodir + "/hCosPA", "hCosPA", kTH1D, {axisConfig.axisCosPA});
+      histos.add(histodir + "/hPhi", "hPhi", kTH1D, {axisConfig.axisPhi});
+      histos.add(histodir + "/hPosTPCCR", "hPosTPCCR", kTH1D, {axisConfig.axisTPCrows});
+      histos.add(histodir + "/hNegTPCCR", "hNegTPCCR", kTH1D, {axisConfig.axisTPCrows});
+      histos.add(histodir + "/hPosITSNCls", "hPosITSNCls", kTH1D, {axisConfig.axisNCls});
+      histos.add(histodir + "/hNegITSNCls", "hNegITSNCls", kTH1D, {axisConfig.axisNCls});
+      histos.add(histodir + "/hPosTPCNSigmaEl", "hPosTPCNSigmaEl", kTH1D, {axisConfig.axisTPCNSigma});
+      histos.add(histodir + "/hNegTPCNSigmaEl", "hNegTPCNSigmaEl", kTH1D, {axisConfig.axisTPCNSigma});
+      histos.add(histodir + "/hPosTPCNSigmaPi", "hPosTPCNSigmaPi", kTH1D, {axisConfig.axisTPCNSigma});
+      histos.add(histodir + "/hNegTPCNSigmaPi", "hNegTPCNSigmaPi", kTH1D, {axisConfig.axisTPCNSigma});
+      histos.add(histodir + "/hPosTPCNSigmaPr", "hPosTPCNSigmaPr", kTH1D, {axisConfig.axisTPCNSigma});
+      histos.add(histodir + "/hNegTPCNSigmaPr", "hNegTPCNSigmaPr", kTH1D, {axisConfig.axisTPCNSigma});
+      histos.add(histodir + "/h2dArmenteros", "h2dArmenteros", kTH2D, {axisConfig.axisAPAlpha, axisConfig.axisAPQt});
 
-      histos.add(histodir + "/hPhotonY", "hPhotonY", kTH1D, {axisRapidity});
-      histos.add(histodir + "/hPhotonMass", "hPhotonMass", kTH1D, {axisPhotonMass});
-      histos.add(histodir + "/h2dMassPhotonVsK0S", "h2dMassPhotonVsK0S", kTH2D, {axisPhotonMass, axisK0SMass});
-      histos.add(histodir + "/h2dMassPhotonVsLambda", "h2dMassPhotonVsLambda", kTH2D, {axisPhotonMass, axisLambdaMass});
-      histos.add(histodir + "/hLambdaLifeTime", "hLambdaLifeTime", kTH1D, {axisLifetime});
-      histos.add(histodir + "/hLambdaY", "hLambdaY", kTH1D, {axisRapidity});
-      histos.add(histodir + "/hLambdaMass", "hLambdaMass", kTH1D, {axisLambdaMass});
-      histos.add(histodir + "/hALambdaMass", "hALambdaMass", kTH1D, {axisLambdaMass});
-      histos.add(histodir + "/h2dMassLambdaVsK0S", "h2dMassLambdaVsK0S", kTH2D, {axisLambdaMass, axisK0SMass});
-      histos.add(histodir + "/h2dMassLambdaVsGamma", "h2dMassLambdaVsGamma", kTH2D, {axisLambdaMass, axisPhotonMass});
-      histos.add(histodir + "/hKShortLifeTime", "hKShortLifeTime", kTH1D, {axisLifetime});
-      histos.add(histodir + "/hKShortY", "hKShortY", kTH1D, {axisRapidity});
-      histos.add(histodir + "/hKShortMass", "hKShortMass", kTH1D, {axisK0SMass});
-      histos.add(histodir + "/h2dMassK0SvsLambda", "h2dMassK0SvsLambda", kTH2D, {axisK0SMass, axisLambdaMass});
-      histos.add(histodir + "/h2dMassK0SVsGamma", "h2dMassK0SVsGamma", kTH2D, {axisK0SMass, axisPhotonMass});
+      histos.add(histodir + "/hPhotonY", "hPhotonY", kTH1D, {axisConfig.axisRapidity});
+      histos.add(histodir + "/hPhotonMass", "hPhotonMass", kTH1D, {axisConfig.axisPhotonMass});
+      histos.add(histodir + "/h2dMassPhotonVsK0S", "h2dMassPhotonVsK0S", kTH2D, {axisConfig.axisPhotonMass, axisConfig.axisK0SMass});
+      histos.add(histodir + "/h2dMassPhotonVsLambda", "h2dMassPhotonVsLambda", kTH2D, {axisConfig.axisPhotonMass, axisConfig.axisLambdaMass});
+      histos.add(histodir + "/hLambdaLifeTime", "hLambdaLifeTime", kTH1D, {axisConfig.axisLifetime});
+      histos.add(histodir + "/hLambdaY", "hLambdaY", kTH1D, {axisConfig.axisRapidity});
+      histos.add(histodir + "/hLambdaMass", "hLambdaMass", kTH1D, {axisConfig.axisLambdaMass});
+      histos.add(histodir + "/hALambdaMass", "hALambdaMass", kTH1D, {axisConfig.axisLambdaMass});
+      histos.add(histodir + "/h2dMassLambdaVsK0S", "h2dMassLambdaVsK0S", kTH2D, {axisConfig.axisLambdaMass, axisConfig.axisK0SMass});
+      histos.add(histodir + "/h2dMassLambdaVsGamma", "h2dMassLambdaVsGamma", kTH2D, {axisConfig.axisLambdaMass, axisConfig.axisPhotonMass});
+      histos.add(histodir + "/hKShortLifeTime", "hKShortLifeTime", kTH1D, {axisConfig.axisLifetime});
+      histos.add(histodir + "/hKShortY", "hKShortY", kTH1D, {axisConfig.axisRapidity});
+      histos.add(histodir + "/hKShortMass", "hKShortMass", kTH1D, {axisConfig.axisK0SMass});
+      histos.add(histodir + "/h2dMassK0SvsLambda", "h2dMassK0SvsLambda", kTH2D, {axisConfig.axisK0SMass, axisConfig.axisLambdaMass});
+      histos.add(histodir + "/h2dMassK0SVsGamma", "h2dMassK0SVsGamma", kTH2D, {axisConfig.axisK0SMass, axisConfig.axisPhotonMass});
 
       if (histodir != "V0BeforeSel" && fFillV03DPositionHistos) // We dont want this for all reco v0s!
-        histos.add(histodir + "/h3dV0XYZ", "h3dV0XYZ", kTH3D, {axisXY, axisXY, axisZ});
+        histos.add(histodir + "/h3dV0XYZ", "h3dV0XYZ", kTH3D, {axisConfig.axisXY, axisConfig.axisXY, axisConfig.axisZ});
     }
 
     if (fUsePCMPhoton || doprocessPCMVsEMCalQA) {
-      histos.add("PhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+      histos.add("PhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Mass");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "Y");
@@ -474,11 +472,12 @@ struct sigma0builder {
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(9, "Z");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(10, "CosPA");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(11, "Phi");
-      histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(12, "TPCCR");
-      histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "TPC NSigma");
+      histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(12, "Armenteros");
+      histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "TPCCR");
+      histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(14, "TPC NSigma");
 
       if (doprocessPCMVsEMCalQA) {
-        histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+        histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
         histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
         histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Definition");
         histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "MinCell");
@@ -491,16 +490,16 @@ struct sigma0builder {
 
     } else {
       for (const auto& histodir : DirList2) {
-        histos.add(histodir + "/hDefinition", "hDefinition", kTH1D, {axisClrDefinition});
-        histos.add(histodir + "/h2dNCells", "h2dNCells", kTH2D, {axisPt, axisClrNCells});
-        histos.add(histodir + "/h2dEnergy", "h2dEnergy", kTH2D, {axisPt, axisClrEnergy});
-        histos.add(histodir + "/h2dEtaVsPhi", "h2dEtaVsPhi", kTH2D, {axisRapidity, axisPhi});
-        histos.add(histodir + "/h2dTime", "h2dTime", kTH2D, {axisPt, axisClrTime});
+        histos.add(histodir + "/hDefinition", "hDefinition", kTH1D, {axisConfig.axisClrDefinition});
+        histos.add(histodir + "/h2dNCells", "h2dNCells", kTH2D, {axisConfig.axisPt, axisConfig.axisClrNCells});
+        histos.add(histodir + "/h2dEnergy", "h2dEnergy", kTH2D, {axisConfig.axisPt, axisConfig.axisClrEnergy});
+        histos.add(histodir + "/h2dEtaVsPhi", "h2dEtaVsPhi", kTH2D, {axisConfig.axisRapidity, axisConfig.axisPhi});
+        histos.add(histodir + "/h2dTime", "h2dTime", kTH2D, {axisConfig.axisPt, axisConfig.axisClrTime});
         histos.add(histodir + "/hExotic", "hExotic", kTH1D, {{2, -0.5f, 1.5f}});
-        histos.add(histodir + "/h2dShape", "h2dShape", kTH2D, {axisPt, axisClrShape});
+        histos.add(histodir + "/h2dShape", "h2dShape", kTH2D, {axisConfig.axisPt, axisConfig.axisClrShape});
       }
 
-      histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+      histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Definition");
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "MinCell");
@@ -511,7 +510,7 @@ struct sigma0builder {
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(8, "Shape");
     }
 
-    histos.add("LambdaSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+    histos.add("LambdaSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
     histos.get<TH1>(HIST("LambdaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
     histos.get<TH1>(HIST("LambdaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Mass");
     histos.get<TH1>(HIST("LambdaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "Y");
@@ -527,7 +526,7 @@ struct sigma0builder {
     histos.get<TH1>(HIST("LambdaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "ITSNCls");
     histos.get<TH1>(HIST("LambdaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(14, "Lifetime");
 
-    histos.add("KShortSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+    histos.add("KShortSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
     histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
     histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Mass");
     histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "Y");
@@ -542,40 +541,42 @@ struct sigma0builder {
     histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(12, "TPCCR");
     histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "ITSNCls");
     histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(14, "Lifetime");
+    histos.get<TH1>(HIST("KShortSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(15, "TPC NSigma");
 
     if (doprocessRealData || doprocessRealDataWithTOF || doprocessRealDataWithEMCal || doprocessMonteCarlo || doprocessMonteCarloWithTOF || doprocessMonteCarloWithEMCal) {
       histos.add("SigmaSel/hSigma0DauDeltaIndex", "hSigma0DauDeltaIndex", kTH1F, {{100, -49.5f, 50.5f}});
-      histos.add("SigmaSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+      histos.add("SigmaSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
       histos.get<TH1>(HIST("SigmaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
       histos.get<TH1>(HIST("SigmaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Sigma Mass Window");
       histos.get<TH1>(HIST("SigmaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "Sigma Y Window");
 
-      histos.add("SigmaSel/hSigmaMassBeforeSel", "hSigmaMassBeforeSel", kTH1F, {axisSigmaMass});
-      histos.add("SigmaSel/hSigmaMassSelected", "hSigmaMassSelected", kTH1F, {axisSigmaMass});
+      histos.add("SigmaSel/hSigmaMassBeforeSel", "hSigmaMassBeforeSel", kTH1F, {axisConfig.axisSigmaMass});
+      histos.add("SigmaSel/hSigmaMassSelected", "hSigmaMassSelected", kTH1F, {axisConfig.axisSigmaMass});
 
-      histos.add("KStarSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+      histos.add("KStarSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisConfig.axisCandSel});
       histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
       histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "KStar Mass Window");
       histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "KStar Y Window");
 
-      histos.add("KStarSel/hKStarMassSelected", "hKStarMassSelected", kTH1F, {axisKStarMass});
+      histos.add("KStarSel/hKStarMassSelected", "hKStarMassSelected", kTH1F, {axisConfig.axisKStarMass});
     }
 
     if (doAssocStudy && (doprocessMonteCarlo || doprocessMonteCarloWithTOF)) {
-      histos.add("V0AssoQA/h2dIRVsPt_TrueGamma", "h2dIRVsPt_TrueGamma", kTH2F, {axisIRBinning, axisPt});
-      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueGamma", "h3dPAVsIRVsPt_TrueGamma", kTH3F, {axisPA, axisIRBinning, axisPt});
-      histos.add("V0AssoQA/h2dIRVsPt_TrueGamma_BadCollAssig", "h2dIRVsPt_TrueGamma_BadCollAssig", kTH2F, {axisIRBinning, axisPt});
-      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueGamma_BadCollAssig", "h3dPAVsIRVsPt_TrueGamma_BadCollAssig", kTH3F, {axisPA, axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h2dIRVsPt_TrueGamma", "h2dIRVsPt_TrueGamma", kTH2F, {axisConfig.axisIRBinning, axisConfig.axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueGamma", "h3dPAVsIRVsPt_TrueGamma", kTH3F, {axisConfig.axisPA, axisConfig.axisIRBinning, axisConfig.axisPt});
+      histos.add("V0AssoQA/h2dIRVsPt_TrueGamma_BadCollAssig", "h2dIRVsPt_TrueGamma_BadCollAssig", kTH2F, {axisConfig.axisIRBinning, axisConfig.axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueGamma_BadCollAssig", "h3dPAVsIRVsPt_TrueGamma_BadCollAssig", kTH3F, {axisConfig.axisPA, axisConfig.axisIRBinning, axisConfig.axisPt});
 
-      histos.add("V0AssoQA/h2dIRVsPt_TrueLambda", "h2dIRVsPt_TrueLambda", kTH2F, {axisIRBinning, axisPt});
-      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueLambda", "h3dPAVsIRVsPt_TrueLambda", kTH3F, {axisPA, axisIRBinning, axisPt});
-      histos.add("V0AssoQA/h2dIRVsPt_TrueLambda_BadCollAssig", "h2dIRVsPt_TrueLambda_BadCollAssig", kTH2F, {axisIRBinning, axisPt});
-      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueLambda_BadCollAssig", "h3dPAVsIRVsPt_TrueLambda_BadCollAssig", kTH3F, {axisPA, axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h2dIRVsPt_TrueLambda", "h2dIRVsPt_TrueLambda", kTH2F, {axisConfig.axisIRBinning, axisConfig.axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueLambda", "h3dPAVsIRVsPt_TrueLambda", kTH3F, {axisConfig.axisPA, axisConfig.axisIRBinning, axisConfig.axisPt});
+      histos.add("V0AssoQA/h2dIRVsPt_TrueLambda_BadCollAssig", "h2dIRVsPt_TrueLambda_BadCollAssig", kTH2F, {axisConfig.axisIRBinning, axisConfig.axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueLambda_BadCollAssig", "h3dPAVsIRVsPt_TrueLambda_BadCollAssig", kTH3F, {axisConfig.axisPA, axisConfig.axisIRBinning, axisConfig.axisPt});
     }
 
     // MC
     if (doprocessMonteCarlo || doprocessMonteCarloWithTOF || doprocessMonteCarloWithEMCal) {
       histos.add("MCQA/h2dPhotonNMothersVsPDG", "h2dPhotonNMothersVsPDG", kTHnSparseD, {{10, -0.5f, +9.5f}, {10001, -5000.5f, +5000.5f}});
+      histos.add("MCQA/h2dTrueDaughtersMatrix", "h2dTrueDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
       histos.add("MCQA/h2dPhotonNMothersVsMCProcess", "h2dPhotonNMothersVsMCProcess", kTH2D, {{10, -0.5f, +9.5f}, {50, -0.5f, 49.5f}});
       histos.add("MCQA/hPhotonMotherSize", "hPhotonMotherSize", kTH1D, {{10, -0.5f, +9.5f}});
       histos.add("MCQA/hPhotonMCProcess", "hPhotonMCProcess", kTH1D, {{50, -0.5f, 49.5f}});
@@ -603,33 +604,33 @@ struct sigma0builder {
     }
 
     if (doprocessPCMVsEMCalQA) {
-      histos.add("PhotonMCQA/hPCMPhotonMCpT", "hPCMPhotonMCpT", kTH1D, {axisPt});
-      histos.add("PhotonMCQA/h2dPCMPhotonMCpTResolution", "h2dPCMPhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/hPCMSigma0PhotonMCpT", "hPCMSigma0PhotonMCpT", kTH1D, {axisPt});
-      histos.add("PhotonMCQA/h2dPCMSigma0PhotonMCpTResolution", "h2dPCMSigma0PhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/hPCMPhotonMCpT", "hPCMPhotonMCpT", kTH1D, {axisConfig.axisPt});
+      histos.add("PhotonMCQA/h2dPCMPhotonMCpTResolution", "h2dPCMPhotonMCpTResolution", kTH2D, {axisConfig.axisPt, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/hPCMSigma0PhotonMCpT", "hPCMSigma0PhotonMCpT", kTH1D, {axisConfig.axisPt});
+      histos.add("PhotonMCQA/h2dPCMSigma0PhotonMCpTResolution", "h2dPCMSigma0PhotonMCpTResolution", kTH2D, {axisConfig.axisPt, {100, -2.0f, 2.0f}});
 
-      histos.add("PhotonMCQA/hEMCalPhotonMCpT", "hEMCalPhotonMCpT", kTH1D, {axisPt});
-      histos.add("PhotonMCQA/h2dEMCalPhotonMCpTResolution", "h2dEMCalPhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalPhotonMCEnergyResolution", "h2dEMCalPhotonMCEnergyResolution", kTH2D, {axisClrEnergy, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalPhotonMCEtaResolution", "h2dEMCalPhotonMCEtaResolution", kTH2D, {axisRapidity, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalPhotonMCPhiResolution", "h2dEMCalPhotonMCPhiResolution", kTH2D, {axisPhi, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalPhotonMCFractionEnergy", "h2dEMCalPhotonMCFractionEnergy", kTH2D, {axisPt, {100, -1.0f, 1.0f}});
+      histos.add("PhotonMCQA/hEMCalPhotonMCpT", "hEMCalPhotonMCpT", kTH1D, {axisConfig.axisPt});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCpTResolution", "h2dEMCalPhotonMCpTResolution", kTH2D, {axisConfig.axisPt, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCEnergyResolution", "h2dEMCalPhotonMCEnergyResolution", kTH2D, {axisConfig.axisClrEnergy, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCEtaResolution", "h2dEMCalPhotonMCEtaResolution", kTH2D, {axisConfig.axisRapidity, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCPhiResolution", "h2dEMCalPhotonMCPhiResolution", kTH2D, {axisConfig.axisPhi, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCFractionEnergy", "h2dEMCalPhotonMCFractionEnergy", kTH2D, {axisConfig.axisPt, {100, -1.0f, 1.0f}});
 
-      histos.add("PhotonMCQA/hEMCalSigma0PhotonMCpT", "hEMCalSigma0PhotonMCpT", kTH1D, {axisPt});
-      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCpTResolution", "h2dEMCalSigma0PhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCEnergyResolution", "h2dEMCalSigma0PhotonMCEnergyResolution", kTH2D, {axisClrEnergy, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCEtaResolution", "h2dEMCalSigma0PhotonMCEtaResolution", kTH2D, {axisRapidity, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCPhiResolution", "h2dEMCalSigma0PhotonMCPhiResolution", kTH2D, {axisPhi, {100, -2.0f, 2.0f}});
-      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCFractionEnergy", "h2dEMCalSigma0PhotonMCFractionEnergy", kTH2D, {axisPt, {100, -1.0f, 1.0f}});
+      histos.add("PhotonMCQA/hEMCalSigma0PhotonMCpT", "hEMCalSigma0PhotonMCpT", kTH1D, {axisConfig.axisPt});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCpTResolution", "h2dEMCalSigma0PhotonMCpTResolution", kTH2D, {axisConfig.axisPt, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCEnergyResolution", "h2dEMCalSigma0PhotonMCEnergyResolution", kTH2D, {axisConfig.axisClrEnergy, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCEtaResolution", "h2dEMCalSigma0PhotonMCEtaResolution", kTH2D, {axisConfig.axisRapidity, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCPhiResolution", "h2dEMCalSigma0PhotonMCPhiResolution", kTH2D, {axisConfig.axisPhi, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCFractionEnergy", "h2dEMCalSigma0PhotonMCFractionEnergy", kTH2D, {axisConfig.axisPt, {100, -1.0f, 1.0f}});
 
-      histos.add("PhotonMCQA/hGenPhoton", "hGenPhoton", kTH1D, {axisPt});
-      histos.add("PhotonMCQA/hGenSigma0Photon", "hGenSigma0Photon", kTH1D, {axisPt});
+      histos.add("PhotonMCQA/hGenPhoton", "hGenPhoton", kTH1D, {axisConfig.axisPt});
+      histos.add("PhotonMCQA/hGenSigma0Photon", "hGenSigma0Photon", kTH1D, {axisConfig.axisPt});
     }
 
     if (doprocessGeneratedRun3 && genSelections.doQA) {
 
       // Pi0s
-      histos.add("GenQA/hGenPi0", "hGenPi0", kTH1D, {axisPt});
+      histos.add("GenQA/hGenPi0", "hGenPi0", kTH1D, {axisConfig.axisPt});
 
       auto hPrimaryPi0s = histos.add<TH1>("GenQA/hPrimaryPi0s", "hPrimaryPi0s", kTH1D, {{2, -0.5f, 1.5f}});
       hPrimaryPi0s->GetXaxis()->SetBinLabel(1, "All Pi0s");
@@ -646,16 +647,16 @@ struct sigma0builder {
 
       // ______________________________________________________
       // Sigma0s
-      histos.add("GenQA/hGenSigma0", "hGenSigma0", kTH1D, {axisPt});
-      histos.add("GenQA/hGenAntiSigma0", "hGenAntiSigma0", kTH1D, {axisPt});
+      histos.add("GenQA/hGenSigma0", "hGenSigma0", kTH1D, {axisConfig.axisPt});
+      histos.add("GenQA/hGenAntiSigma0", "hGenAntiSigma0", kTH1D, {axisConfig.axisPt});
 
-      histos.add("GenQA/h3dGenSigma0_pTMap", "h3dGenSigma0_pTMap", kTH3D, {axisPt, axisPt, axisPt});
-      histos.add("GenQA/h3dGenASigma0_pTMap", "h3dGenASigma0_pTMap", kTH3D, {axisPt, axisPt, axisPt});
+      histos.add("GenQA/h3dGenSigma0_pTMap", "h3dGenSigma0_pTMap", kTH3D, {axisConfig.axisPt, axisConfig.axisPt, axisConfig.axisPt});
+      histos.add("GenQA/h3dGenASigma0_pTMap", "h3dGenASigma0_pTMap", kTH3D, {axisConfig.axisPt, axisConfig.axisPt, axisConfig.axisPt});
 
-      histos.add("GenQA/h2dGenSigma0xy_Generator", "hGenSigma0xy_Generator", kTH2D, {axisXY, axisXY});
-      histos.add("GenQA/h2dGenSigma0xy_Transport", "hGenSigma0xy_Transport", kTH2D, {axisXY, axisXY});
-      histos.add("GenQA/hGenSigma0Radius_Generator", "hGenSigma0Radius_Generator", kTH1D, {axisRadius});
-      histos.add("GenQA/hGenSigma0Radius_Transport", "hGenSigma0Radius_Transport", kTH1D, {axisRadius});
+      histos.add("GenQA/h2dGenSigma0xy_Generator", "hGenSigma0xy_Generator", kTH2D, {axisConfig.axisXY, axisConfig.axisXY});
+      histos.add("GenQA/h2dGenSigma0xy_Transport", "hGenSigma0xy_Transport", kTH2D, {axisConfig.axisXY, axisConfig.axisXY});
+      histos.add("GenQA/hGenSigma0Radius_Generator", "hGenSigma0Radius_Generator", kTH1D, {axisConfig.axisRadius});
+      histos.add("GenQA/hGenSigma0Radius_Transport", "hGenSigma0Radius_Transport", kTH1D, {axisConfig.axisRadius});
 
       histos.add("GenQA/h2dSigma0MCSourceVsPDGMother", "h2dSigma0MCSourceVsPDGMother", kTHnSparseD, {{2, -0.5f, 1.5f}, {10001, -5000.5f, +5000.5f}});
       histos.add("GenQA/h2dSigma0NDaughtersVsPDG", "h2dSigma0NDaughtersVsPDG", kTHnSparseD, {{10, -0.5f, +9.5f}, {10001, -5000.5f, +5000.5f}});
@@ -681,12 +682,12 @@ struct sigma0builder {
 
       // ______________________________________________________
       // KStar
-      histos.add("GenQA/hGenKStar", "hGenKStar", kTH1D, {axisPt});
+      histos.add("GenQA/hGenKStar", "hGenKStar", kTH1D, {axisConfig.axisPt});
 
-      histos.add("GenQA/h2dGenKStarxy_Generator", "hGenKStarxy_Generator", kTH2D, {axisXY, axisXY});
-      histos.add("GenQA/h2dGenKStarxy_Transport", "hGenKStarxy_Transport", kTH2D, {axisXY, axisXY});
-      histos.add("GenQA/hGenKStarRadius_Generator", "hGenKStarRadius_Generator", kTH1D, {axisRadius});
-      histos.add("GenQA/hGenKStarRadius_Transport", "hGenKStarRadius_Transport", kTH1D, {axisRadius});
+      histos.add("GenQA/h2dGenKStarxy_Generator", "hGenKStarxy_Generator", kTH2D, {axisConfig.axisXY, axisConfig.axisXY});
+      histos.add("GenQA/h2dGenKStarxy_Transport", "hGenKStarxy_Transport", kTH2D, {axisConfig.axisXY, axisConfig.axisXY});
+      histos.add("GenQA/hGenKStarRadius_Generator", "hGenKStarRadius_Generator", kTH1D, {axisConfig.axisRadius});
+      histos.add("GenQA/hGenKStarRadius_Transport", "hGenKStarRadius_Transport", kTH1D, {axisConfig.axisRadius});
 
       histos.add("GenQA/h2dKStarMCSourceVsPDGMother", "h2dKStarMCSourceVsPDGMother", kTHnSparseD, {{2, -0.5f, 1.5f}, {10001, -5000.5f, +5000.5f}});
       histos.add("GenQA/h2dKStarNDaughtersVsPDG", "h2dKStarNDaughtersVsPDG", kTHnSparseD, {{10, -0.5f, +9.5f}, {10001, -5000.5f, +5000.5f}});
@@ -712,72 +713,72 @@ struct sigma0builder {
     if (doprocessV0QA || doprocessV0MCQA) {
 
       // Event selection:
-      histos.add("V0QA/hEventCentrality", "hEventCentrality", kTH1D, {axisCentrality});
+      histos.add("V0QA/hEventCentrality", "hEventCentrality", kTH1D, {axisConfig.axisCentrality});
 
       // Photon part:
-      histos.add("V0QA/h3dPhotonMass", "h3dPhotonMass", kTH3D, {axisCentrality, axisPt, axisPhotonMass});
-      histos.add("V0QA/h3dYPhotonMass", "h3dYPhotonMass", kTH3D, {axisRapidity, axisPt, axisPhotonMass});
-      histos.add("V0QA/h3dYPhotonRadius", "h3dYPhotonRadius", kTH3D, {axisRapidity, axisPt, axisRadius});
+      histos.add("V0QA/h3dPhotonMass", "h3dPhotonMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisPhotonMass});
+      histos.add("V0QA/h3dYPhotonMass", "h3dYPhotonMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisPt, axisConfig.axisPhotonMass});
+      histos.add("V0QA/h3dYPhotonRadius", "h3dYPhotonRadius", kTH3D, {axisConfig.axisRapidity, axisConfig.axisPt, axisConfig.axisRadius});
 
-      histos.add("V0QA/h3dTruePhotonMass", "h3dTruePhotonMass", kTH3D, {axisCentrality, axisPt, axisPhotonMass});
-      histos.add("V0QA/h2dTrueSigma0PhotonMass", "h2dTrueSigma0PhotonMass", kTH2D, {axisPt, axisPhotonMass});
-      histos.add("V0QA/h2dTrueKStarPhotonMass", "h2dTrueKStarPhotonMass", kTH2D, {axisPt, axisPhotonMass});
+      histos.add("V0QA/h3dTruePhotonMass", "h3dTruePhotonMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisPhotonMass});
+      histos.add("V0QA/h2dTrueSigma0PhotonMass", "h2dTrueSigma0PhotonMass", kTH2D, {axisConfig.axisPt, axisConfig.axisPhotonMass});
+      histos.add("V0QA/h2dTrueKStarPhotonMass", "h2dTrueKStarPhotonMass", kTH2D, {axisConfig.axisPt, axisConfig.axisPhotonMass});
 
       // Lambda part:
-      histos.add("V0QA/h3dLambdaMass", "h3dLambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("V0QA/h3dTrueLambdaMass", "h3dTrueLambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("V0QA/h3dYLambdaMass", "h3dYLambdaMass", kTH3D, {axisRapidity, axisPt, axisLambdaMass});
-      histos.add("V0QA/h3dYRLambdaMass", "h3dYRLambdaMass", kTH3D, {axisRapidity, axisRadius, axisLambdaMass});
+      histos.add("V0QA/h3dLambdaMass", "h3dLambdaMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisLambdaMass});
+      histos.add("V0QA/h3dTrueLambdaMass", "h3dTrueLambdaMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisLambdaMass});
+      histos.add("V0QA/h3dYLambdaMass", "h3dYLambdaMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisPt, axisConfig.axisLambdaMass});
+      histos.add("V0QA/h3dYRLambdaMass", "h3dYRLambdaMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisRadius, axisConfig.axisLambdaMass});
 
-      histos.add("V0QA/h2dTrueSigma0LambdaMass", "h2dTrueSigma0LambdaMass", kTH2D, {axisPt, axisLambdaMass});
+      histos.add("V0QA/h2dTrueSigma0LambdaMass", "h2dTrueSigma0LambdaMass", kTH2D, {axisConfig.axisPt, axisConfig.axisLambdaMass});
 
       // AntiLambda part:
-      histos.add("V0QA/h3dALambdaMass", "h3dALambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("V0QA/h3dTrueALambdaMass", "h3dTrueALambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("V0QA/h3dYALambdaMass", "h3dYALambdaMass", kTH3D, {axisRapidity, axisPt, axisLambdaMass});
-      histos.add("V0QA/h3dYRALambdaMass", "h3dYRALambdaMass", kTH3D, {axisRapidity, axisRadius, axisLambdaMass});
+      histos.add("V0QA/h3dALambdaMass", "h3dALambdaMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisLambdaMass});
+      histos.add("V0QA/h3dTrueALambdaMass", "h3dTrueALambdaMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisLambdaMass});
+      histos.add("V0QA/h3dYALambdaMass", "h3dYALambdaMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisPt, axisConfig.axisLambdaMass});
+      histos.add("V0QA/h3dYRALambdaMass", "h3dYRALambdaMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisRadius, axisConfig.axisLambdaMass});
 
-      histos.add("V0QA/h2dTrueASigma0ALambdaMass", "h2dTrueASigma0ALambdaMass", kTH2D, {axisPt, axisLambdaMass});
+      histos.add("V0QA/h2dTrueASigma0ALambdaMass", "h2dTrueASigma0ALambdaMass", kTH2D, {axisConfig.axisPt, axisConfig.axisLambdaMass});
 
       // KShort part:
-      histos.add("V0QA/h3dKShortMass", "h3dKShortMass", kTH3D, {axisCentrality, axisPt, axisK0SMass});
-      histos.add("V0QA/h3dTrueKShortMass", "h3dTrueKShortMass", kTH3D, {axisCentrality, axisPt, axisK0SMass});
-      histos.add("V0QA/h3dYKShortMass", "h3dYKShortMass", kTH3D, {axisRapidity, axisPt, axisK0SMass});
-      histos.add("V0QA/h3dYRKShortMass", "h3dYRKShortMass", kTH3D, {axisRapidity, axisRadius, axisK0SMass});
-      histos.add("V0QA/h2dTrueKStarKShortMass", "h2dTrueKStarKShortMass", kTH2D, {axisPt, axisK0SMass});
+      histos.add("V0QA/h3dKShortMass", "h3dKShortMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisK0SMass});
+      histos.add("V0QA/h3dTrueKShortMass", "h3dTrueKShortMass", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisK0SMass});
+      histos.add("V0QA/h3dYKShortMass", "h3dYKShortMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisPt, axisConfig.axisK0SMass});
+      histos.add("V0QA/h3dYRKShortMass", "h3dYRKShortMass", kTH3D, {axisConfig.axisRapidity, axisConfig.axisRadius, axisConfig.axisK0SMass});
+      histos.add("V0QA/h2dTrueKStarKShortMass", "h2dTrueKStarKShortMass", kTH2D, {axisConfig.axisPt, axisConfig.axisK0SMass});
     }
 
     if (doprocessV0Generated) {
 
-      histos.add("V0QA/hGenEvents", "hGenEvents", kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
+      histos.add("V0QA/hGenEvents", "hGenEvents", kTH2D, {{axisConfig.axisNch}, {2, -0.5f, +1.5f}});
       histos.get<TH2>(HIST("V0QA/hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       histos.get<TH2>(HIST("V0QA/hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
       histos.add("V0QA/hGenEventCentrality", "hGenEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
 
-      histos.add("V0QA/hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
-      histos.add("V0QA/hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("V0QA/hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisConfig.axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("V0QA/hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisConfig.axisCentrality, {50, -0.5f, 49.5f}});
 
-      histos.add("V0QA/hCentralityVsMultMC", "hCentralityVsMultMC", kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+      histos.add("V0QA/hCentralityVsMultMC", "hCentralityVsMultMC", kTH2D, {{101, 0.0f, 101.0f}, axisConfig.axisNch});
       histos.add("V0QA/hEventPVzMC", "hEventPVzMC", kTH1D, {{100, -20.0f, +20.0f}});
       histos.add("V0QA/hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
 
-      histos.add("V0QA/h2dGenPhoton", "h2dGenPhoton", kTH2D, {axisCentrality, axisPt});
-      histos.add("V0QA/h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
-      histos.add("V0QA/h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
+      histos.add("V0QA/h2dGenPhoton", "h2dGenPhoton", kTH2D, {axisConfig.axisCentrality, axisConfig.axisPt});
+      histos.add("V0QA/h2dGenLambda", "h2dGenLambda", kTH2D, {axisConfig.axisCentrality, axisConfig.axisPt});
+      histos.add("V0QA/h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisConfig.axisCentrality, axisConfig.axisPt});
 
-      histos.add("V0QA/h2dGenPhotonVsMultMC_RecoedEvt", "h2dGenPhotonVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("V0QA/h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("V0QA/h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
+      histos.add("V0QA/h2dGenPhotonVsMultMC_RecoedEvt", "h2dGenPhotonVsMultMC_RecoedEvt", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
+      histos.add("V0QA/h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
+      histos.add("V0QA/h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
 
-      histos.add("V0QA/h2dGenPhotonVsMultMC", "h2dGenPhotonVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("V0QA/h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("V0QA/h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("V0QA/h2dGenPhotonVsMultMC", "h2dGenPhotonVsMultMC", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
+      histos.add("V0QA/h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
+      histos.add("V0QA/h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
 
-      histos.add("V0QA/h2dGenKShort", "h2dGenKShort", kTH2D, {axisCentrality, axisPt});
+      histos.add("V0QA/h2dGenKShort", "h2dGenKShort", kTH2D, {axisConfig.axisCentrality, axisConfig.axisPt});
 
-      histos.add("V0QA/h2dGenKShortVsMultMC_RecoedEvt", "h2dGenKShortVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
+      histos.add("V0QA/h2dGenKShortVsMultMC_RecoedEvt", "h2dGenKShortVsMultMC_RecoedEvt", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
 
-      histos.add("V0QA/h2dGenKShortVsMultMC", "h2dGenKShortVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("V0QA/h2dGenKShortVsMultMC", "h2dGenKShortVsMultMC", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
     }
 
     // inspect histogram sizes, please
@@ -1466,7 +1467,7 @@ struct sigma0builder {
       else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
         ymc = v0MC.rapidityMC(1);
       else if (v0MC.pdgCode() == PDG_t::kK0Short)
-        ymc = v0MC.rapidityMC(2); // what is the 2 here?
+        ymc = v0MC.rapidityMC(0); // 0 = K0 mass hypothesis (1/2 = Lambda); see LFStrangenessTables.h:829
       if ((ymc < genSelections.mc_rapidityMin) || (ymc > genSelections.mc_rapidityMax))
         continue;
 
@@ -2202,6 +2203,11 @@ struct sigma0builder {
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 14.);
+      if (((TMath::Abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.KShortMaxTPCNSigmas) ||
+           (TMath::Abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.KShortMaxTPCNSigmas)))
+        return false;
+
+      histos.fill(HIST("KShortSel/hSelectionStatistics"), 15.);
     }
     return true;
   }

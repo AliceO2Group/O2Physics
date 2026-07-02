@@ -177,7 +177,7 @@ struct HfTaskCorrelationDsHadrons {
   Preslice<CandDsMcGen> perCollisionCandMc = o2::aod::mcparticle::mcCollisionId;
   Preslice<TracksWithMc> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::McCollisionLabels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.25}, "inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
@@ -306,22 +306,22 @@ struct HfTaskCorrelationDsHadrons {
       registry.add("hPtCandMcGenDaughterInAcc", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
 
       if (useHighDimHistoForEff) {
-        registry.add("hPtCandMcRecPrompt", "Ds prompt candidates", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
-        registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
-        registry.add("hPtCandMcGenPrompt", "Ds,Hadron particles prompt - MC Gen", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
-        registry.add("hPtCandMcGenNonPrompt", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
+        registry.add("hPtCandMcRecPrompt", "Ds prompt candidates", {HistType::kTH2F, {{axisPtD}, {axisCentrality}}});
+        registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH2F, {{axisPtD}, {axisCentrality}}});
+        registry.add("hPtCandMcGenPrompt", "Ds,Hadron particles prompt - MC Gen", {HistType::kTH2F, {{axisPtD}, {axisCentrality}}});
+        registry.add("hPtCandMcGenNonPrompt", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH2F, {{axisPtD}, {axisCentrality}}});
         registry.add("hPtParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTHnSparseF, {axisPtHadron}});
-        registry.add("hPtPrmPionMcRec", "Primary pions - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmKaonMcRec", "Primary kaons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmProtonMcRec", "Primary protons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmElectronMcRec", "Primary electrons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmMuonMcRec", "Primary muons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmPionMcGen", "Primary pions - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmKaonMcGen", "Primary kaons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmProtonMcGen", "Primary protons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmElectronMcGen", "Primary electrons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
-        registry.add("hPtPrmMuonMcGen", "Primary muons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmPionMcRec", "Primary pions - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmKaonMcRec", "Primary kaons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmProtonMcRec", "Primary protons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmElectronMcRec", "Primary electrons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmMuonMcRec", "Primary muons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmPionMcGen", "Primary pions - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmKaonMcGen", "Primary kaons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmProtonMcGen", "Primary protons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmElectronMcGen", "Primary electrons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
+        registry.add("hPtPrmMuonMcGen", "Primary muons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisCentrality}}});
       } else {
         registry.add("hPtCandMcRecPrompt", "Ds prompt candidates pt", {HistType::kTH1F, {axisPtD}});
         registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH1F, {axisPtD}});
@@ -952,7 +952,7 @@ struct HfTaskCorrelationDsHadrons {
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcRecME, "Process MC Reco ME", false);
 
   /// Ds-Hadron correlation - for calculating candidate reconstruction efficiency using MC reco-level analysis
-  void processMcCandEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
+  void processMcCandEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::McCollisionLabels> const& collisions,
                                soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                                CandDsMcGen const& mcParticles,
                                CandDsMcReco const& candidates,
@@ -971,6 +971,8 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
+      const float centralityMc = getCentralityGenColl(groupedCollisions, centEstimator);
+
       /// loop over reconstructed collisions
       for (const auto& collision : groupedCollisions) {
 
@@ -984,6 +986,11 @@ struct HfTaskCorrelationDsHadrons {
         if (selNoSameBunchPileUpColl && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
           continue;
         }
+        const float centralityRec = getCentralityColl(collision, centEstimator);
+        if (centralityRec < centralityMin || centralityRec > centralityMax) {
+          continue;
+        }
+
         if (!collision.has_mcCollision()) {
           registry.fill(HIST("hFakeCollision"), 0.);
           continue;
@@ -1000,14 +1007,14 @@ struct HfTaskCorrelationDsHadrons {
             if (std::abs(yDs) <= yCandGenMax) {
               if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
                 if (useHighDimHistoForEff) {
-                  registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt(), collision.numContrib());
+                  registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt(), centralityMc);
                 } else {
                   registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
                 }
               }
               if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
                 if (useHighDimHistoForEff) {
-                  registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt(), collision.numContrib());
+                  registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt(), centralityMc);
                 } else {
                   registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
                 }
@@ -1053,14 +1060,14 @@ struct HfTaskCorrelationDsHadrons {
               if (std::abs(HfHelper::yDs(candidate)) <= yCandMax) {
                 if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
                   if (useHighDimHistoForEff) {
-                    registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt(), collision.numContrib());
+                    registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt(), centralityRec);
                   } else {
                     registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
                   }
                 }
                 if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                   if (useHighDimHistoForEff) {
-                    registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt(), collision.numContrib());
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt(), centralityRec);
                   } else {
                     registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
                   }
@@ -1166,6 +1173,8 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
+      const float centralityMc = getCentralityGenColl(groupedCollisions, centEstimator);
+
       /// loop over reconstructed collisions
       for (const auto& collision : groupedCollisions) {
 
@@ -1179,8 +1188,8 @@ struct HfTaskCorrelationDsHadrons {
         if (selNoSameBunchPileUpColl && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
           continue;
         }
-        int centrality = getCentrality(collision);
-        if (centrality < centralityMin || centrality > centralityMax) {
+        const float centralityRec = getCentralityColl(collision, centEstimator);
+        if (centralityRec < centralityMin || centralityRec > centralityMax) {
           continue;
         }
         if (!collision.has_mcCollision()) {
@@ -1196,17 +1205,17 @@ struct HfTaskCorrelationDsHadrons {
             if (mcParticle.pt() > ptTrackMin && mcParticle.pt() < ptTrackMax) {
               if (std::abs(mcParticle.eta()) < etaTrackMax) {
                 if (useHighDimHistoForEff) {
-                  registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), centralityMc);
                   if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-                    registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), centralityMc);
                   } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-                    registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), centralityMc);
                   } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-                    registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), centralityMc);
                   } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-                    registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), centralityMc);
                   } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-                    registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), centralityMc);
                   }
                 } else {
                   registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
@@ -1255,15 +1264,15 @@ struct HfTaskCorrelationDsHadrons {
                 if (useHighDimHistoForEff) {
                   registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
                   if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-                    registry.fill(HIST("hPtPrmPionMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmPionMcRec"), track.pt(), track.eta(), collision.posZ(), centralityRec);
                   } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-                    registry.fill(HIST("hPtPrmKaonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmKaonMcRec"), track.pt(), track.eta(), collision.posZ(), centralityRec);
                   } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-                    registry.fill(HIST("hPtPrmProtonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmProtonMcRec"), track.pt(), track.eta(), collision.posZ(), centralityRec);
                   } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-                    registry.fill(HIST("hPtPrmElectronMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmElectronMcRec"), track.pt(), track.eta(), collision.posZ(), centralityRec);
                   } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-                    registry.fill(HIST("hPtPrmMuonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                    registry.fill(HIST("hPtPrmMuonMcRec"), track.pt(), track.eta(), collision.posZ(), centralityRec);
                   }
                 } else {
                   registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());

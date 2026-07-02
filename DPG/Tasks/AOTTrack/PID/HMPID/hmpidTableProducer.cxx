@@ -24,13 +24,8 @@
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TGeoManager.h>
@@ -51,6 +46,7 @@ using namespace o2::constants::physics;
 struct HmpidTableProducer {
 
   Produces<aod::HmpidAnalysis> hmpidAnalysis;
+  Produces<aod::HmpidAnalysisMC> hmpidAnalysisMC;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -79,6 +75,16 @@ struct HmpidTableProducer {
                                     aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTOFFullPi, aod::pidTOFFullKa,
                                     aod::pidTOFFullPr, aod::pidTOFFullDe>;
+
+  using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra,
+                                      aod::TracksDCA, aod::TrackSelection,
+                                      aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                      aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                      aod::pidTOFFullPi, aod::pidTOFFullKa,
+                                      aod::pidTOFFullPr, aod::pidTOFFullDe,
+                                      aod::McTrackLabels>;
+
+  std::unordered_set<uint32_t> mCollisionsWithHmpid;
 
   void init(o2::framework::InitContext&)
   {
@@ -294,42 +300,37 @@ struct HmpidTableProducer {
   }
   PROCESS_SWITCH(HmpidTableProducer, processEvent, "Process event level", true);
 
-  void processHmpid(
+  template <bool isMC, typename TTrackTable>
+  void runHmpidAnalysis(
     aod::HMPIDs const& hmpids,
-    TrackCandidates const&,
+    TTrackTable const&,
     CollisionCandidates const&,
     aod::BCsWithTimestamps const&)
   {
-    static std::unordered_set<uint32_t> collisionsWithHmpid;
-
     for (auto const& t : hmpids) {
 
-      const auto& globalTrack = t.track_as<TrackCandidates>();
+      const auto& globalTrack = t.template track_as<TTrackTable>();
 
       if (!globalTrack.has_collision())
         continue;
 
-      const auto& col = globalTrack.collision_as<CollisionCandidates>();
-      initCCDB(col.bc_as<aod::BCsWithTimestamps>());
+      const auto& col = globalTrack.template collision_as<CollisionCandidates>();
+      initCCDB(col.template bc_as<aod::BCsWithTimestamps>());
       uint32_t collId = col.globalIndex();
 
-      // Track quality selection
       if ((requireITS && !globalTrack.hasITS()) ||
           (requireTPC && !globalTrack.hasTPC()) ||
-          (requireTOF && !globalTrack.hasTOF())) {
+          (requireTOF && !globalTrack.hasTOF()))
         continue;
-      }
 
-      if (collisionsWithHmpid.insert(collId).second) {
+      if (mCollisionsWithHmpid.insert(collId).second)
         histos.fill(HIST("eventsHmpid"), 0.5);
-      }
 
       // clusSize diagnostics
       histos.fill(HIST("hClusSize"), t.hmpidClusSize());
       bool isCorrupt = (t.hmpidClusSize() <= 0);
-      if (isCorrupt) {
+      if (isCorrupt)
         histos.fill(HIST("hClusSizeCorrupt"), t.hmpidClusSize());
-      }
 
       // --- M2: clusSize encoding ---
       int chamberM2 = t.hmpidClusSize() / 1000000;
@@ -354,7 +355,7 @@ struct HmpidTableProducer {
       int16_t charge = globalTrack.sign();
 
       auto prop = o2::base::Propagator::Instance();
-      double bz = static_cast<double>(prop->getNominalBz()); // positive sign
+      double bz = static_cast<double>(prop->getNominalBz());
 
       int chamberM1 = getHmpidChamber(x, p, bz, charge);
 
@@ -374,35 +375,30 @@ struct HmpidTableProducer {
 
       // Legend:
       // bin 0 = clusSize > 0,  chamber found   (M2 ok)
-      // bin 1 = clusSize > 0,  chamber not found (non dovrebbe mai accadere)
+      // bin 1 = clusSize > 0,  chamber not found
       // bin 2 = clusSize <= 0, M1 recovery      (corrupt, M1 ok)
       // bin 3 = clusSize <= 0, M1 fails        (corrupt, skipped)
 
-      if (!isCorrupt && chamberM3 >= 0) {
+      if (!isCorrupt && chamberM3 >= 0)
         histos.fill(HIST("hChamberAssignment"), 0.);
-      } else if (!isCorrupt && chamberM3 < 0) {
+      else if (!isCorrupt && chamberM3 < 0)
         histos.fill(HIST("hChamberAssignment"), 1.);
-      } else if (isCorrupt && chamberM3 >= 0) {
+      else if (isCorrupt && chamberM3 >= 0)
         histos.fill(HIST("hChamberAssignment"), 2.);
-      } else {
+      else
         histos.fill(HIST("hChamberAssignment"), 3.);
-      }
 
       histos.fill(HIST("hChamberM3"), chamberM3);
       histos.fill(HIST("hChamberM3vsM2"), chamberM2, chamberM3);
 
-      // Skip track if chamber undetermined
-      if (chamberM3 < 0) {
+      if (chamberM3 < 0)
         continue;
-      }
 
-      // Fill photon charges
       float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
-      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
+      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++)
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
-      }
 
-      // Fill output table
+      // fill hmpid table
       hmpidAnalysis(
         t.hmpidSignal(), t.hmpidMom(),
         globalTrack.p(), t.hmpidXTrack(), t.hmpidYTrack(),
@@ -422,9 +418,40 @@ struct HmpidTableProducer {
         globalTrack.tpcNSigmaDe(), globalTrack.tofNSigmaDe(),
         col.centFV0A());
 
+      // fill hmpid table for mc tracks if running on MC
+      if constexpr (isMC) {
+        if (globalTrack.has_mcParticle()) {
+          const auto& mc = globalTrack.mcParticle();
+          hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(), mc.isPhysicalPrimary(), mc.getProcess());
+        } else {
+          hmpidAnalysisMC(-1, 0.f, 0.f, 0.f, false, -100);
+        }
+      }
+
     } // end HMPID loop
   }
+
+  // process real data
+  void processHmpid(aod::HMPIDs const& hmpids,
+                    TrackCandidates const& tracks,
+                    CollisionCandidates const& cols,
+                    aod::BCsWithTimestamps const& bcs)
+  {
+    // isMC False
+    runHmpidAnalysis<false>(hmpids, tracks, cols, bcs);
+  }
   PROCESS_SWITCH(HmpidTableProducer, processHmpid, "Process HMPID entries", true);
+
+  // process MC
+  void processHmpidMC(aod::HMPIDs const& hmpids,
+                      TrackCandidatesMC const& tracks,
+                      CollisionCandidates const& cols,
+                      aod::BCsWithTimestamps const& bcs,
+                      aod::McParticles const&)
+  {
+    runHmpidAnalysis<true>(hmpids, tracks, cols, bcs);
+  }
+  PROCESS_SWITCH(HmpidTableProducer, processHmpidMC, "Process HMPID MC entries", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)

@@ -1228,4 +1228,162 @@ std::vector<std::vector<int>> decayTree::combinations(int nPool)
   return copes;
 }
 
+void decayTree::createHistograms(o2::framework::HistogramRegistry& registry)
+{
+  // definitions
+  auto etax = o2::framework::AxisSpec(100, -1.5, 1.5);
+  auto nSax = o2::framework::AxisSpec(300, -15.0, 15.0);
+  auto chi2ax = o2::framework::AxisSpec(100, 0.0, 5.0);
+  auto nClax = o2::framework::AxisSpec(170, 0.0, 170.0);
+  auto angax = o2::framework::AxisSpec(315, 0.0, 3.15);
+  auto dcaxyax = o2::framework::AxisSpec(400, -0.2, 0.2);
+  auto dcazax = o2::framework::AxisSpec(600, -0.3, 0.3);
+  auto sTPCax = o2::framework::AxisSpec(1000, 0., 1000.);
+
+  std::string base;
+  std::string hname;
+  std::string annot;
+  fhistPointers.clear();
+  for (const auto& res : getResonances()) {
+    auto max = o2::framework::AxisSpec(res->nmassBins(), res->massHistRange()[0], res->massHistRange()[1]);
+    auto momax = o2::framework::AxisSpec(res->nmomBins(), res->momHistRange()[0], res->momHistRange()[1]);
+
+    // M-pT, M-eta, pT-eta
+    for (const auto& cc : fccs) {
+      base = cc;
+      base.append("/").append(res->name()).append("/");
+      hname = base + "mpt";
+      annot = "M versus pT; M (" + res->name() + ") GeV/c^{2}; pT (" + res->name() + ") GeV/c";
+      fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, momax}})});
+      hname = base + "meta";
+      annot = "M versus eta; M (" + res->name() + ") GeV/c^{2}; eta (" + res->name() + ")";
+      fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, etax}})});
+      hname = base + "pteta";
+      annot = "pT versus eta; pT (" + res->name() + ") GeV/c; eta (" + res->name() + ")";
+      fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {momax, etax}})});
+
+      // M versus daughters
+      auto daughs = res->getDaughters();
+      auto ndaughs = daughs.size();
+      for (auto i = 0; i < static_cast<int>(ndaughs); i++) {
+        auto d1 = getResonance(daughs[i]);
+
+        // M vs pT daughter
+        hname = base;
+        hname.append("MvspT_").append(res->name()).append(d1->name());
+        annot = "M versus pT; M (" + res->name() + ") GeV/c^{2}; pT (" + d1->name() + ") GeV/c";
+        auto momax1 = o2::framework::AxisSpec(d1->nmomBins(), d1->momHistRange()[0], d1->momHistRange()[1]);
+        fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, momax1}})});
+
+        // M vs eta daughter
+        hname = base;
+        hname.append("Mvseta_").append(res->name()).append(d1->name());
+        annot = "M versus eta; M (" + res->name() + ") GeV/c^{2}; eta (" + d1->name() + ")";
+        fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, etax}})});
+
+        if (d1->isFinal()) {
+          // M vs dcaXYZ
+          hname = base;
+          hname.append("MvsdcaXY_").append(res->name()).append(d1->name());
+          annot = "M versus dcaXY; M (" + res->name() + ") GeV/c^{2}; dca_{XY} (" + d1->name() + ") #mu m";
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, dcaxyax}})});
+          hname = base;
+          hname.append("MvsdcaZ_").append(res->name()).append(d1->name());
+          annot = "M versus dcaZ; M (" + res->name() + ") GeV/c^{2}; dca_{Z} (" + d1->name() + ") #mu m";
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, dcazax}})});
+
+          // M vs chi2 track
+          hname = base;
+          hname.append("Mvschi2_").append(res->name()).append(d1->name());
+          annot = "M versus chi2; M (" + res->name() + ") GeV/c^{2}; chi2 (" + d1->name() + ")";
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, chi2ax}})});
+
+          // M vs nCl track
+          hname = base;
+          hname.append("MvsnCl_").append(res->name()).append(d1->name());
+          annot = "M versus nCl; M (" + res->name() + ") GeV/c^{2}; nCl (" + d1->name() + ")";
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, nClax}})});
+
+          // M versus detector hits
+          hname = base;
+          hname.append("MvsdetHits_").append(res->name()).append(d1->name());
+          annot = "M versus detector hits; M (" + res->name() + ") GeV/c^{2}; ITS + 2*TPC + 4*TRD + 8*TOF (" + d1->name() + ")";
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, {16, -0.5, 15.5}}})});
+        } else {
+          // M vs Mi
+          hname = base;
+          hname.append("MvsM_").append(res->name()).append(d1->name());
+          annot = "M versus M; M (" + res->name() + ") GeV/c^{2}; M (" + d1->name() + ") GeV/c^{2}";
+          auto max1 = o2::framework::AxisSpec(res->nmassBins(), d1->massHistRange()[0], d1->massHistRange()[1]);
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, max1}})});
+        }
+      }
+
+      // daughters vs daughters
+      for (auto i = 0; i < static_cast<int>(ndaughs - 1); i++) {
+        auto d1 = getResonance(daughs[i]);
+        auto max1 = o2::framework::AxisSpec(d1->nmassBins(), d1->massHistRange()[0], d1->massHistRange()[1]);
+        for (auto j = i + 1; j < static_cast<int>(ndaughs); j++) {
+          auto d2 = getResonance(daughs[j]);
+          auto max2 = o2::framework::AxisSpec(d2->nmassBins(), d2->massHistRange()[0], d2->massHistRange()[1]);
+
+          // M1 vs M2
+          hname = base;
+          hname.append("MvsM_").append(d1->name()).append(d2->name());
+          annot = std::string("M versus M; M (").append(d1->name()).append(") GeV/c^{2}; M (").append(d2->name()).append(") GeV/c^{2}");
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max1, max2}})});
+
+          // angle(d1, d2)
+          hname = base;
+          hname.append("angle_").append(d1->name()).append(d2->name());
+          annot = std::string("angle; Angle (").append(d1->name()).append(", ").append(d2->name()).append(")");
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH1F, {angax}})});
+
+          // M vs angle(d1, d2)
+          hname = base;
+          hname.append("Mvsangle_").append(d1->name()).append(d2->name());
+          annot = std::string("M versus angle; M (").append(res->name()).append(") GeV/c^{2}; Angle (").append(d1->name()).append(", ").append(d2->name()).append(")");
+          fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {max, angax}})});
+
+          // both daughters are finals
+          if (d1->isFinal() && d2->isFinal()) {
+            hname = base;
+            hname.append("TPCsignal_").append(d1->name()).append(d2->name());
+            annot = std::string("TPC signal of both tracks; TPCsignal (").append(d1->name()).append("); TPCsignal (").append(d2->name()).append(")");
+            fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {sTPCax, sTPCax}})});
+          }
+        }
+      }
+
+      // for finals only
+      if (res->isFinal()) {
+        // dca
+        hname = base;
+        hname.append("dcaXY");
+        annot = std::string("dcaXY; dca_{XY}(").append(res->name()).append(")");
+        fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH1F, {dcaxyax}})});
+        hname = base;
+        hname.append("dcaZ");
+        annot = std::string("dcaZ; dca_{Z}(").append(res->name()).append(")");
+        fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH1F, {dcazax}})});
+
+        // nSIgma[TPC, TOF] vs pT
+        for (const auto& det : fdets) {
+          for (const auto& part : fparts) {
+            hname = base;
+            hname.append("nS").append(part).append(det);
+            annot = std::string("nSigma_").append(det).append(" versus p; p (").append(res->name()).append(") GeV/c; nSigma_{").append(det).append(", ").append(part).append("} (").append(res->name()).append(")");
+            fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH2F, {momax, nSax}})});
+          }
+        }
+
+        // detector hits
+        hname = base;
+        hname.append("detectorHits");
+        annot = std::string("detectorHits; Detector(").append(res->name()).append(")");
+        fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {o2::framework::HistType::kTH1F, {{4, 0.5, 4.5}}})});
+      }
+    }
+  }
+}
 // -----------------------------------------------------------------------------
