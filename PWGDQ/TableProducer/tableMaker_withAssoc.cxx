@@ -215,7 +215,7 @@ struct TableMaker {
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
 
   // Event and track AnalysisCut configurables
   struct : ConfigurableGroup {
@@ -320,18 +320,18 @@ struct TableMaker {
     Configurable<bool> fExcludeShort{"cfgTPCExcludeShort", true, "Exclude short term from long term occupancy (micro-seconds)"};
   } fConfigVariousOptions;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
 
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  AnalysisCompositeCut* fEventCut;               //! Event selection cut
+  AnalysisCompositeCut* fEventCut = nullptr;       //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
-  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1;         // needed to detect if the run changed and trigger update of calibrations etc.
 
   // maps used to store index info; NOTE: std::map are sorted in ascending order by default (needed for track to collision indices)
   std::map<uint32_t, uint32_t> fCollIndexMap;             // key: old collision index, value: skimmed collision index
@@ -346,7 +346,7 @@ struct TableMaker {
 
   o2::analysis::MlResponseMFTMuonMatch<float> matchingMlResponse;
   std::vector<double> binsPtMl;
-  std::array<double, 1> cutValues;
+  std::array<double, 1> cutValues{};
   std::vector<int> cutDirMl;
 
   // RCT flag checker

@@ -177,7 +177,7 @@ struct TableMakerMC {
 
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TList> fStatsList{"Statistics"}; //! skimming statistics
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
 
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
 
@@ -250,18 +250,18 @@ struct TableMakerMC {
     Configurable<std::vector<std::string>> fModelNames{"cfgModelNames", std::vector<std::string>{"model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   } fConfigVariousOptions;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
 
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  AnalysisCompositeCut* fEventCut;               //! Event selection cut
+  AnalysisCompositeCut* fEventCut = nullptr;       //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
-  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1;         // needed to detect if the run changed and trigger update of calibrations etc.
 
   // list of MCsignal objects
   std::vector<MCSignal*> fMCSignals;
@@ -280,7 +280,7 @@ struct TableMakerMC {
 
   o2::analysis::MlResponseMFTMuonMatch<float> matchingMlResponse;
   std::vector<double> binsPtMl;
-  std::array<double, 1> cutValues;
+  std::array<double, 1> cutValues{};
   std::vector<int> cutDirMl;
 
   // RCT flag checker
