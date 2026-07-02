@@ -847,7 +847,7 @@ struct TableMaker {
       // iterate over the time maps to obtain the median time
       fOccup.oMedianTimeLongA[collision] = 0.0;
       float sumMult = 0.0;
-      if (oTimeMapLongA.size() > 0) {
+      if (!oTimeMapLongA.empty()) {
         for (auto& [dt, mult] : oTimeMapLongA) {
           sumMult += mult;
           if (sumMult > fOccup.oContribLongA[collision] / 2.0) {
@@ -858,7 +858,7 @@ struct TableMaker {
       }
       fOccup.oMedianTimeLongC[collision] = 0.0;
       sumMult = 0.0;
-      if (oTimeMapLongC.size() > 0) {
+      if (!oTimeMapLongC.empty()) {
         for (auto& [dt, mult] : oTimeMapLongC) {
           sumMult += mult;
           if (sumMult > fOccup.oContribLongC[collision] / 2.0) {
@@ -869,7 +869,7 @@ struct TableMaker {
       }
       fOccup.oMedianTimeShortA[collision] = 0.0;
       sumMult = 0.0;
-      if (oTimeMapShortA.size() > 0) {
+      if (!oTimeMapShortA.empty()) {
         for (auto& [dt, mult] : oTimeMapShortA) {
           sumMult += mult;
           if (sumMult > fOccup.oContribShortA[collision] / 2.0) {
@@ -880,7 +880,7 @@ struct TableMaker {
       }
       fOccup.oMedianTimeShortC[collision] = 0.0;
       sumMult = 0.0;
-      if (oTimeMapShortC.size() > 0) {
+      if (!oTimeMapShortC.empty()) {
         for (auto& [dt, mult] : oTimeMapShortC) {
           sumMult += mult;
           if (sumMult > fOccup.oContribShortC[collision] / 2.0) {
@@ -1762,7 +1762,7 @@ struct TableMaker {
     outTables.eventVtxCov.reserve(collisions.size());
 
     skimCollisions<TEventFillMap>(collisions, bcs, zdcs, ft0s, fv0as, fdds);
-    if (fCollIndexMap.size() == 0) {
+    if (fCollIndexMap.empty()) {
       return;
     }
 

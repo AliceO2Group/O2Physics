@@ -1357,7 +1357,7 @@ struct TableMakerMC {
     eventMClabels.reserve(collisions.size());
     eventInfo.reserve(collisions.size());
     skimCollisions<TEventFillMap>(collisions, bcs);
-    if (fCollIndexMap.size() == 0) {
+    if (fCollIndexMap.empty()) {
       return;
     }
 
@@ -1408,7 +1408,7 @@ struct TableMakerMC {
     }
 
     // loop over selected collisions and select the tracks and fwd tracks to be skimmed
-    if (fCollIndexMap.size() > 0) {
+    if (!fCollIndexMap.empty()) {
       for (auto const& [origIdx, skimIdx] : fCollIndexMap) {
         auto collision = collisions.rawIteratorAt(origIdx);
         // group the tracks and muons for this collision
@@ -1481,7 +1481,7 @@ struct TableMakerMC {
         }
       }
       int daughterRange[2] = {-1, -1};
-      if (daughters.size() > 0) {
+      if (!daughters.empty()) {
         daughterRange[0] = daughters[0];
         daughterRange[1] = daughters[daughters.size() - 1];
       }
