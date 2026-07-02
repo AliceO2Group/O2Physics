@@ -401,7 +401,7 @@ constexpr uint8_t kItsIBMask = 0x07;
 
 // Cascade species-selection flag values written into the
 // cascadeflags::IsSelected column. Promoted to namespace scope so both
-// LambdaCascadeProducer (sets them) and LambdaCascadeCorrelation (consumes
+// LambdaCascadeProducer (sets them) and Lambdacascadecorrelation (consumes
 // them) can refer to the same names.
 constexpr int kFlagRejected = 0;   // rejected by processCandidate cut chain
 constexpr int kFlagXiOnly = 1;     // bachelor passes pion-PID only → Ξ-eligible
@@ -654,7 +654,7 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
 //
 // Why merged: event selection used to run twice (once in LTP, once in CSEL),
 // with subtly different defaults, producing inconsistent collision populations
-// in the downstream LambdaCascadeCorrelation. The merge guarantees a single
+// in the downstream Lambdacascadecorrelation. The merge guarantees a single
 // `selCollision()` call per event drives BOTH the Lambda table production
 // and the cascade flagging — they can no longer disagree.
 //
@@ -3214,7 +3214,7 @@ inline void connectLambdaGenBranches(TTree* t, LambdaGenBranches* b)
 }
 } // namespace lxicorr
 
-struct LambdaCascadeCorrelation {
+struct Lambdacascadecorrelation {
 
   // --- Configurables ---
   Configurable<float> maxY{"maxY", 0.5, "Max |y| for Lambda, Xi and Omega"};
@@ -4530,7 +4530,7 @@ struct LambdaCascadeCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<false>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processXi, "Λ–Ξ correlation", true);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processXi, "Λ–Ξ correlation", true);
 
   void processOmega(LambdaCollisionsExt::iterator const& lambdacoll,
                     GoodLambdas const& /*lambdas*/,
@@ -4562,7 +4562,7 @@ struct LambdaCascadeCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<true>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processOmega, "Λ–Ω correlation", false);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processOmega, "Λ–Ω correlation", false);
 
   // ---------------------------------------------------------------------------
   // MC Reco-level with truth matching: Λ–Ξ
@@ -4598,7 +4598,7 @@ struct LambdaCascadeCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<false>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCRecoXi, "MC reco Λ–Ξ (truth-tagged tree)", false);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processMCRecoXi, "MC reco Λ–Ξ (truth-tagged tree)", false);
 
   // ---------------------------------------------------------------------------
   // MC Reco-level with truth matching: Λ–Ω
@@ -4634,7 +4634,7 @@ struct LambdaCascadeCorrelation {
                 lambdasInThisEvent.size(),
                 countSpeciesEligible<true>(cascadesInThisEvent, flagsStart));
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCRecoOmega, "MC reco Λ–Ω (truth-tagged tree)", false);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processMCRecoOmega, "MC reco Λ–Ω (truth-tagged tree)", false);
 
   // ===========================================================================
   // Same-species and cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)
@@ -4845,7 +4845,7 @@ struct LambdaCascadeCorrelation {
     analyzeOmegaOmegaPairs(cascadesInThisEvent, flagsStart, centVal);
     analyzeXiOmegaPairs(cascadesInThisEvent, flagsStart, centVal);
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processAllPairs, "All same-/cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)", false);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processAllPairs, "All same-/cross-species pair loops (Λ-Λ, Ξ-Ξ, Ω-Ω, Ξ-Ω)", false);
 
   // ---------------------------------------------------------------------------
   // processYields — fills the per-event multiplicity + ⟨pT⟩
@@ -4967,7 +4967,7 @@ struct LambdaCascadeCorrelation {
                 HIST("Yields/OmegaPlus/hNvsPt2D"),
                 nOmP, sOmP);
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processYields, "Per-event multiplicity + ⟨pT⟩ for each species", true);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processYields, "Per-event multiplicity + ⟨pT⟩ for each species", true);
 
   // ---------------------------------------------------------------------------
   // MC Gen-level: Λ–Ξ truth correlation (closure test)
@@ -5111,7 +5111,7 @@ struct LambdaCascadeCorrelation {
       }
     }
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCGenXi, "MC gen-level Λ–Ξ closure", false);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processMCGenXi, "MC gen-level Λ–Ξ closure", false);
 
   // ---------------------------------------------------------------------------
   // MC Gen-level: Λ–Ω truth correlation (closure test)
@@ -5223,7 +5223,7 @@ struct LambdaCascadeCorrelation {
       }
     }
   }
-  PROCESS_SWITCH(LambdaCascadeCorrelation, processMCGenOmega, "MC gen-level Λ–Ω closure", false);
+  PROCESS_SWITCH(Lambdacascadecorrelation, processMCGenOmega, "MC gen-level Λ–Ω closure", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -5236,7 +5236,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     // CascadeCorrelations were removed entirely from this file.
     adaptAnalysisTask<LambdaCascadeProducer>(cfgc),
     adaptAnalysisTask<LambdaTracksExtProducer>(cfgc),
-    adaptAnalysisTask<LambdaCascadeCorrelation>(cfgc)
+    adaptAnalysisTask<Lambdacascadecorrelation>(cfgc)
 
   };
 }
