@@ -481,6 +481,17 @@ void runMassFitter(const std::string& configFileName)
       hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]);
     }
 
+    const auto hMassLo = hMass[iSliceVar]->GetXaxis()->GetXmin();
+    if (massMin[iSliceVar] < hMassLo) {
+      printf("Warning! massMin[%d] is less than hMass[%d] left edge (%f vs %f) and will be assigned the value of the latter\n", iSliceVar, iSliceVar, massMin[iSliceVar], hMassLo);
+      massMin[iSliceVar] = hMassLo;
+    }
+    const auto hMassUp = hMass[iSliceVar]->GetXaxis()->GetXmax();
+    if (massMax[iSliceVar] > hMassUp) {
+      printf("Warning! massMax[%d] is greater than hMass[%d] right edge (%f vs %f) and will be assigned the value of the latter\n", iSliceVar, iSliceVar, massMax[iSliceVar], hMassUp);
+      massMax[iSliceVar] = hMassUp;
+    }
+
     double reflOverSgn = 0;
 
     HFInvMassFitter* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar], randomSeed);
