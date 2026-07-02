@@ -107,7 +107,7 @@ struct NetchargeFluctuations {
   Configurable<float> itsChiCut{"itsChiCut", 36., "ITS chi2 cluster cut"};
   Configurable<float> tpcChiCut{"tpcChiCut", 4., "TPC chi2 cluster cut"};
   Configurable<float> centMin{"centMin", 0.0f, "cenrality min for delta eta"};
-  Configurable<float> centMax{"centMax", 10.0f, "cenrality max for delta eta"};
+  Configurable<float> centMax{"centMax", 5.0f, "cenrality max for delta eta"};
   Configurable<int> cfgNSubsample{"cfgNSubsample", 30, "Number of subsamples for Error"};
   Configurable<int> deltaEta{"deltaEta", 8, "Delta eta bin count"};
   Configurable<double> threshold{"threshold", 1e-6, "Delta eta bin count"};
@@ -370,10 +370,18 @@ struct NetchargeFluctuations {
     histogramRegistry.add("eff/hPt_hEta_np_gen", "", kTH2F, {ptAxis, etaAxis});
     histogramRegistry.add("eff/hPt_nm_gen", "", kTH1F, {ptAxis});
     histogramRegistry.add("eff/hPt_hEta_nm_gen", "", kTH2F, {ptAxis, etaAxis});
+    histogramRegistry.add("eff/cent/hPt_np_gen", "", kTH1F, {ptAxis});
+    histogramRegistry.add("eff/cent/hPt_hEta_np_gen", "", kTH2F, {ptAxis, etaAxis});
+    histogramRegistry.add("eff/cent/hPt_nm_gen", "", kTH1F, {ptAxis});
+    histogramRegistry.add("eff/cent/hPt_hEta_nm_gen", "", kTH2F, {ptAxis, etaAxis});
     histogramRegistry.add("eff/hPt_np", "", kTH1F, {ptAxis});
     histogramRegistry.add("eff/hPt_hEta_np", "", kTH2F, {ptAxis, etaAxis});
     histogramRegistry.add("eff/hPt_nm", "", kTH1F, {ptAxis});
     histogramRegistry.add("eff/hPt_hEta_nm", "", kTH2F, {ptAxis, etaAxis});
+    histogramRegistry.add("eff/cent/hPt_np", "", kTH1F, {ptAxis});
+    histogramRegistry.add("eff/cent/hPt_hEta_np", "", kTH2F, {ptAxis, etaAxis});
+    histogramRegistry.add("eff/cent/hPt_nm", "", kTH1F, {ptAxis});
+    histogramRegistry.add("eff/cent/hPt_hEta_nm", "", kTH2F, {ptAxis, etaAxis});
 
     // QA histograms for multiplicity correlations
     histogramRegistry.add("MultCorrelationPlots/globalTracks_PV_bef", "", {HistType::kTH2D, {nchAxis, nchAxis}});
@@ -781,9 +789,17 @@ struct NetchargeFluctuations {
       if (track.sign() == 1) {
         histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_np"), track.pt(), track.eta());
+      if (cent >= centMin && cent < centMax) {
+	histogramRegistry.fill(HIST("eff/cent/hPt_np"), track.pt());
+        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_np"), track.pt(), track.eta());
+	}
       } else if (track.sign() == -1) {
         histogramRegistry.fill(HIST("eff/hPt_nm"), track.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_nm"), track.pt(), track.eta());
+	if (cent >= centMin && cent < centMax) {
+	histogramRegistry.fill(HIST("eff/cent/hPt_nm"), track.pt());
+        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_nm"), track.pt(), track.eta());
+	}
       }
 
       histogramRegistry.fill(HIST("QA/cent_hEta"), cent, track.eta());
@@ -862,11 +878,20 @@ struct NetchargeFluctuations {
       if (sign == 1) {
         histogramRegistry.fill(HIST("eff/hPt_np_gen"), mcpart.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_np_gen"), mcpart.pt(), mcpart.eta());
+	 if (cent >= centMin && cent < centMax) {
+        histogramRegistry.fill(HIST("eff/cent/hPt_np_gen"), mcpart.pt());
+        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_np_gen"), mcpart.pt(), mcpart.eta());
+	 }
+
       } else if (sign == -1) {
         histogramRegistry.fill(HIST("eff/hPt_nm_gen"), mcpart.pt());
         histogramRegistry.fill(HIST("eff/hPt_hEta_nm_gen"), mcpart.pt(), mcpart.eta());
-      }
+	 if (cent >= centMin && cent < centMax) {
+        histogramRegistry.fill(HIST("eff/cent/hPt_nm_gen"), mcpart.pt());
+        histogramRegistry.fill(HIST("eff/cent/hPt_hEta_nm_gen"), mcpart.pt(), mcpart.eta());
+	 }
 
+      }
       histogramRegistry.fill(HIST("gen/hPt"), mcpart.pt());
       histogramRegistry.fill(HIST("gen/cent_hPt"), cent, mcpart.pt());
       histogramRegistry.fill(HIST("gen/hEta"), mcpart.eta());
@@ -1406,7 +1431,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", false);
 
   // process function for Data Run2
   void processDataRun2(MyCollisionRun2 const& coll, MyTracks const& tracks)
@@ -1434,7 +1459,7 @@ struct NetchargeFluctuations {
       calculationMcDeltaEta<kRun3>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
     }
   }
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
 
   // process function for MC Run2
 
