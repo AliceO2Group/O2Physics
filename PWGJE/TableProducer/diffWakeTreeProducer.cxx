@@ -31,8 +31,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Configurable.h>
-
 #include <cstdint>
 #include <cstdlib>
 
