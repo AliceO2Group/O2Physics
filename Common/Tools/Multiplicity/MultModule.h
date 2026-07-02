@@ -780,7 +780,7 @@ class MultModule
       cursors.tableFV0(mults.multFV0A, mults.multFV0C);
     }
     if (internalOpts.mEnabledTables[kFITExtraMults]) {
-      cursors.tableFITExtraMults(mults.multFV0AOuter, mults.fitTriggerMask);
+      cursors.tableFITExtraMults(mults.multFV0AOuter, mults.multFT0AOuter, mults.fitTriggerMask);
       cursors.tableFV0AOuterMults(mults.multFV0AOuter); // Keep for backwards compatibility
     }
     if (internalOpts.mEnabledTables[kFT0Mults]) {
