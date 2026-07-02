@@ -1936,7 +1936,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
-    constexpr bool fillFlowReso = eventHasQvector || eventHasQvectorCentr;
+    // constexpr bool fillFlowReso = eventHasQvector || eventHasQvectorCentr;
     bool isSelectedBDT = false;
     fNPairPerEvent = 0;
 
@@ -1958,7 +1958,7 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      if (fillFlowReso) {
+      if (fConfigOptions.useFlowReso) {
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
         }
@@ -4871,19 +4871,6 @@ struct AnalysisDileptonTrackTrack {
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processJpsiPiPi, "Run barrel pairing of J/psi with pion candidate", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", true);
 };
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<AnalysisEventSelection>(cfgc),
-    adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
-    adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
-    adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
-    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-    adaptAnalysisTask<AnalysisAsymmetricPairing>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
-}
 
 void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups)
 {

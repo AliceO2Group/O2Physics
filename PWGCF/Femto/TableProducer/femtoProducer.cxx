@@ -33,6 +33,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -82,6 +83,8 @@ using Run3McGenParticles = o2::aod::McParticles;
 } // namespace o2::analysis::femto
 
 struct FemtoProducer {
+
+  o2::framework::Preslice<consumeddata::Run3McGenParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
 
   // ccdb
   collisionbuilder::ConfCcdb confCcdb;
@@ -144,16 +147,26 @@ struct FemtoProducer {
 
   void init(o2::framework::InitContext& context)
   {
-    if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) && (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
+    if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) &&
+        (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesRun3ppMc)) {
       LOG(fatal) << "At least one cascade table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) && (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sRun3ppMc)) {
+    if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) &&
+        (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
+         !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
+         !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) && (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksKinksRun3ppMc)) {
+    if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) &&
+        (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
+         !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one kink table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (mcBuilder.fillAnyTable() && (!doprocessTracksV0sRun3ppMc && !doprocessTracksKinksRun3ppMc)) {
+    if (mcBuilder.fillAnyTable() &&
+        (!doprocessTracksV0sRun3ppMc && !doprocessTracksKinksRun3ppMc &&
+         !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
+         !doprocessTracksRun3ppMc && !doprocessTracksRun3PbPbMc && !doprocessTracksV0sRun3PbPbMc &&
+         !doprocessMcOnly)) {
       LOG(fatal) << "At least one mc table is enabled, but wrong process function is enabled. Breaking...";
     }
 
@@ -188,6 +201,7 @@ struct FemtoProducer {
     mcBuilder.init(confMc, confMcTables, context);
 
     hRegistry.print();
+    LOG(warn) << __LINE__;
   }
 
   // processing collisions
@@ -514,6 +528,21 @@ struct FemtoProducer {
     processMcCascades<modes::System::kPP_Run3_MC>(col, mcCols, tracks, cascades, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3ppMc, "Provide reconstructed and generated tracks and v0s", false);
+
+  // process generator level only input (for MCGEN datasets)
+  // do not preslice mcParticles tables for each collision, otherwise the finding of the partonic mother can fail
+  void processMcOnly(o2::aod::McCollisions const& mcCols, o2::aod::McParticles const& mcParticles)
+  {
+    mcBuilder.reset(mcParticles);
+    for (const auto& mcCol : mcCols) {
+      mcBuilder.fillMcCollision<modes::System::kMC>(mcCol, mcProducts);
+      auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
+      for (const auto& mcParticle : particlesThisCollision) {
+        mcBuilder.fillMcParticle<modes::System::kMC>(mcParticle, mcParticles, mcCol, mcProducts);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processMcOnly, "Provide generated particles", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

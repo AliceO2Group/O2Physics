@@ -18,8 +18,6 @@
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 
-#include <Rtypes.h>
-
 #include <cstdint>
 #include <type_traits>
 
@@ -27,6 +25,8 @@ namespace o2::analysis::femto
 {
 namespace modes
 {
+
+#define BIT(n) (1ULL << (n))
 
 // check if flag is set
 template <typename T>
@@ -45,18 +45,20 @@ constexpr bool isEqual(T lhs, T rhs)
 }
 
 enum class Mode : uint32_t {
-  kAnalysis = BIT(0),
+  kReco = BIT(0),
   kQa = BIT(1),
   kMc = BIT(2),
   kSe = BIT(3),
   kMe = BIT(4),
-  kAnalysis_Qa = kAnalysis | kQa,
-  kAnalysis_Mc = kAnalysis | kMc,
-  kAnalysis_Qa_Mc = kAnalysis | kQa | kMc,
-  kSe_Analysis = kAnalysis | kSe,
-  kMe_Analysis = kAnalysis | kMe,
-  kSe_Analysis_Mc = kAnalysis | kSe | kMc,
-  kMe_Analysis_Mc = kAnalysis | kMe | kMc,
+  kReco_Qa = kReco | kQa,
+  kReco_Mc = kReco | kMc,
+  kReco_Qa_Mc = kReco | kQa | kMc,
+  kSe_Reco = kSe | kReco,
+  kMe_Reco = kMe | kReco,
+  kSe_Reco_Mc = kSe | kReco | kMc,
+  kMe_Reco_Mc = kMe | kReco | kMc,
+  kSe_Mc = kSe | kMc,
+  kMe_Mc = kMe | kMc,
 };
 
 enum class System : uint32_t {
@@ -86,11 +88,12 @@ enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
 };
 
 enum class Particle : o2::aod::femtodatatypes::ParticleType {
-  kTrack = 0,
-  kTwoTrackResonance = 1,
-  kV0 = 2,
-  kKink = 3,
-  kCascade = 4,
+  mcParticle = 0,
+  kTrack = 1,
+  kTwoTrackResonance = 2,
+  kV0 = 3,
+  kKink = 4,
+  kCascade = 5,
 };
 
 enum class McOrigin : o2::aod::femtodatatypes::McOriginType {

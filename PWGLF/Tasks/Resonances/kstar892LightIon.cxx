@@ -468,6 +468,14 @@ struct Kstar892LightIon {
       hMC.add("CorrelatedBG/hK2_1770", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("CorrelatedBG/hK2_1820", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
     }
+    if (doprocessTemplateMC) {
+      hMC.add("Template/hSignal", "True K*0 signal", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hKstarReflection", "K*0 signal due to mis-identification", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hSameMotherOther", "Kpi pair from same mother other than K*0", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hDifferentMother", "Kpi pair from different mothers", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hPrimaryResonance", "Kpi pair one primary another from decay", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hPrimaryPrimary", "Primary Kpi pair", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+    }
 
     if (doprocessRecKinematics) {
       hMC.add("Kinematics/h1RecCent", "centrality reconstructed", kTH1F, {centralityAxis});
@@ -765,11 +773,8 @@ struct Kstar892LightIon {
     if (!c.hasTOF() || c.beta() <= selectionConfig.cfgTOFBetaCut)
       return false;
 
-    const float tpc = tpcSigma(c, pid);
-    const float tof = tofSigma(c, pid);
     const float cut = combinedCut(pid);
-
-    return tpc * tpc + tof * tof < cut * cut;
+    return combinedNSigma2(c, pid) < cut * cut;
   }
 
   template <typename T>
@@ -845,26 +850,31 @@ struct Kstar892LightIon {
         return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
       }
 
-      case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, above lowPtCutPid, require TOF and accept the candidate only if its combined nsigma is smaller than that of the alternate PID hypothesis
+      case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, within lowPtCutPid and highPtCutPid, require TOF and accept the track only if its combined nsigma is smaller than that of the alternate PID hypothesis and above highPtCutPid if TOF is available, accept if the track passes combined cut and if TOF is not available, check if it passes TPC cut
       {
         if (candidate.pt() < selectionConfig.lowPtCutPid) {
           if (candidate.hasTOF())
             return passTPC(candidate, pid) && passTOF(candidate, pid);
           return passTPC(candidate, pid);
+        } else if (candidate.pt() < selectionConfig.highPtCutPid) {
+          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+            return false;
+
+          const float sigmaComb2 = combinedNSigma2(candidate, pid);
+
+          const float cut = combinedCut(pid);
+          if (sigmaComb2 >= cut * cut)
+            return false;
+
+          const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
+
+          return sigmaComb2 < combinedNSigma2(candidate, otherPID);
+        } else {
+          if (candidate.hasTOF())
+            return passCombined(candidate, pid);
+
+          return passTPC(candidate, pid);
         }
-
-        if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
-          return false;
-
-        const float sigmaComb2 = combinedNSigma2(candidate, pid);
-
-        const float cut = combinedCut(pid);
-        if (sigmaComb2 >= cut * cut)
-          return false;
-
-        const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
-
-        return sigmaComb2 < combinedNSigma2(candidate, otherPID);
       }
 
       default:
@@ -2580,6 +2590,121 @@ struct Kstar892LightIon {
   }
 
   PROCESS_SWITCH(Kstar892LightIon, processRecCorrelatedBackground, "Process correlated background", false);
+
+  void processTemplateMC(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
+  {
+    if (!collision.has_mcCollision())
+      return;
+
+    if (!selectionEvent(collision, false))
+      return;
+
+    centrality = -1.f;
+    if (selectCentEstimator == kFT0M) {
+      centrality = collision.centFT0M();
+    } else if (selectCentEstimator == kFT0A) {
+      centrality = collision.centFT0A();
+    } else if (selectCentEstimator == kFT0C) {
+      centrality = collision.centFT0C();
+    } else if (selectCentEstimator == kFV0A) {
+      centrality = collision.centFV0A();
+    } else {
+      centrality = collision.centFT0M();
+    }
+
+    auto classifyOrigin = [](const aod::McParticle& part, int64_t& motherIdx) -> int {
+      motherIdx = -1;
+      if (!part.has_mothers())
+        return 0;
+      for (const auto& mom : part.mothers_as<aod::McParticles>()) {
+        if (!mom.producedByGenerator())
+          continue;
+        motherIdx = mom.globalIndex();
+        if (std::abs(mom.pdgCode()) == o2::constants::physics::kK0Star892)
+          return 1;
+        return 2;
+      }
+      return 0;
+    };
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+
+      if (!selectionTrack(track1) || !selectionTrack(track2))
+        continue;
+
+      if (track1.globalIndex() == track2.globalIndex())
+        continue;
+
+      if (!selectionPair(track1, track2))
+        continue;
+
+      if (!selectionPID(track1, PIDParticle::kKaon))
+        continue;
+      if (!selectionPID(track2, PIDParticle::kPion))
+        continue;
+
+      if (isMisidentified(track1, PIDParticle::kKaon))
+        continue;
+      if (isMisidentified(track2, PIDParticle::kPion))
+        continue;
+
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
+        continue;
+
+      if (!track1.has_mcParticle() || !track2.has_mcParticle())
+        continue;
+
+      daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+      daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+      mother = daughter1 + daughter2;
+
+      if (mother.Rapidity() < selectionConfig.motherRapidityMin ||
+          mother.Rapidity() > selectionConfig.motherRapidityMax)
+        continue;
+
+      const float recMass = mother.M();
+      const float recPt = mother.Pt();
+
+      const auto mcKa = track1.mcParticle();
+      const auto mcPi = track2.mcParticle();
+
+      if (selectionConfig.isPrimaryTrack && (!mcKa.isPhysicalPrimary() || !mcPi.isPhysicalPrimary()))
+        continue;
+
+      int64_t kaMotherIdx = -1;
+      int64_t piMotherIdx = -1;
+      const int kaOrigin = classifyOrigin(mcKa, kaMotherIdx);
+      const int piOrigin = classifyOrigin(mcPi, piMotherIdx);
+
+      const bool kaIsKstar = (kaOrigin == 1);
+      const bool piIsKstar = (piOrigin == 1);
+      const bool kaHasParent = (kaOrigin != 0);
+      const bool piHasParent = (piOrigin != 0);
+      const bool sameMother = (kaMotherIdx >= 0) && (piMotherIdx >= 0) && (kaMotherIdx == piMotherIdx);
+
+      if (kaIsKstar && piIsKstar && sameMother) {
+        const bool correctAssignment = (std::abs(mcKa.pdgCode()) == PDG_t::kKPlus) && (std::abs(mcPi.pdgCode()) == PDG_t::kPiPlus);
+        if (correctAssignment) {
+          hMC.fill(HIST("Template/hSignal"), recPt, centrality, recMass);
+        } else {
+          hMC.fill(HIST("Template/hKstarReflection"), recPt, centrality, recMass);
+        }
+
+      } else if (sameMother && kaHasParent && piHasParent) {
+        hMC.fill(HIST("Template/hSameMotherOther"), recPt, centrality, recMass);
+
+      } else if (!sameMother && kaHasParent && piHasParent) {
+        hMC.fill(HIST("Template/hDifferentMother"), recPt, centrality, recMass);
+
+      } else if (kaHasParent != piHasParent) {
+        hMC.fill(HIST("Template/hPrimaryResonance"), recPt, centrality, recMass);
+
+      } else {
+        hMC.fill(HIST("Template/hPrimaryPrimary"), recPt, centrality, recMass);
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processTemplateMC, "Process MC Template Background", false);
 
   void processRecKinematics(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
   {

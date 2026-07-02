@@ -126,6 +126,8 @@ static constexpr std::string_view CdEdxMcRecPrim = "/hdEdxMcRecPrim";
 static constexpr std::string_view CdEdxMcRecPrimF = "Tracks/{}/hdEdxMcRecPrim";
 static constexpr std::string_view CdEdxMcRecPrimSel = "/hdEdxMcRecPrimSel";
 static constexpr std::string_view CdEdxMcRecPrimSelF = "Tracks/{}/hdEdxMcRecPrimSel";
+static constexpr std::string_view CEtaVsPtVsPMcRecPrimSel = "/hEtaVsPtVsPMcRecPrimSel";
+static constexpr std::string_view CEtaVsPtVsPMcRecPrimSelF = "Tracks/{}/hEtaVsPtVsPMcRecPrimSel";
 static constexpr std::string_view CpTvsDCAxy = "/hPtVsDCAxy";
 static constexpr std::string_view CpTvsDCAxyF = "Tracks/{}/hPtVsDCAxy";
 static constexpr std::string_view CpTvsDCAxyAll = "/hPtVsDCAxyAll";
@@ -829,6 +831,7 @@ struct FlattenictyPikp {
         registryMC.add({fmt::format(CpTvsDCAxyMatAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
         registryMC.add({fmt::format(CdEdxMcRecPrimF.data(), CspeciesAll[i]).c_str(), "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
         registryMC.add({fmt::format(CdEdxMcRecPrimSelF.data(), CspeciesAll[i]).c_str(), "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+        registryMC.add({fmt::format(CEtaVsPtVsPMcRecPrimSelF.data(), CspeciesAll[i]).c_str(), "; #eta; #it{p}_{T} (GeV/#it{c}); #it{p} (GeV/#it{c})", {kTHnSparseF, {etaAxis, ptAxis, pAxis}}});
       }
 
       // Hash list for efficiency
@@ -2485,30 +2488,31 @@ struct FlattenictyPikp {
         });
         static_for<0, 4>([&](auto i) {
           constexpr int Cidx = i.value;
-          if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
-            if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
-              if (!particle.isPhysicalPrimary()) {
-                if (particle.getProcess() == CprocessIdWeak) {
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-                } else {
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-                }
+          if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
+            if (!particle.isPhysicalPrimary()) {
+              if (particle.getProcess() == CprocessIdWeak) {
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
               } else {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
               }
-              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+            } else {
+              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
             }
+            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
           }
         });
         if (isDCAxyCut(track)) {
           static_for<0, 4>([&](auto i) {
             constexpr int Cidx = i.value;
-            if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
-              if (particle.isPhysicalPrimary()) {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
+            if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
+              if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
+                if (particle.isPhysicalPrimary()) {
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CEtaVsPtVsPMcRecPrimSel), track.eta(), track.pt(), track.p());
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
+                }
               }
             }
           });

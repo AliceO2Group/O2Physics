@@ -216,10 +216,6 @@ struct Alice3MulticharmFinder {
     std::array<float, 3> prong0mom;
     std::array<float, 3> prong1mom;
     std::array<float, o2::track::kLabCovMatSize> parentTrackCovMatrix;
-
-    // charm daughters
-    int nSiliconHitsPiCC;
-    int nTPCHitsPiCC;
   } thisXiccCandidate;
 
   struct ProngInfo {
@@ -714,7 +710,7 @@ struct Alice3MulticharmFinder {
 
           o2::track::TrackParCov xicTrack(thisXicCandidate.xyz, momentumC, thisXicCandidate.parentTrackCovMatrix, +1);
           float xicDecayRadius2D = std::hypot(thisXicCandidate.xyz[0], thisXicCandidate.xyz[1]);
-          if (xicDecayRadius2D < xiccMinDecayRadius) {
+          if (xicDecayRadius2D < xicMinDecayRadius) {
             continue; // do not take if radius too small, likely a primary combination
           }
 
