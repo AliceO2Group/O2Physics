@@ -275,7 +275,7 @@ void HFInvMassFitter::doFit()
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
     std::cout << "estimatedSignal = " << estimatedSignal << "\n";
-    const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 20 * estimatedSignal, estimatedSignal};
+    const ParameterRanges rooNSgnParamRanges{0.001 * estimatedSignal, 1000 * estimatedSignal, estimatedSignal};
     mRooNSgn = new RooRealVar("mNSgn", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
@@ -789,18 +789,10 @@ void HFInvMassFitter::calculateSignificance(double& significance, double& errSig
 void HFInvMassFitter::checkForSignal(double& estimatedSignal)
 {
   std::cout << "checkForSignal()\n";
-  auto const [minForSgn, maxForSgn] = getRangesOfSignal();
-  int const binForMinSgn = mHistoInvMass->FindBin(minForSgn);
-  int const binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
-
-  double sum = 0;
-  for (int i = binForMinSgn; i <= binForMaxSgn; i++) {
-    sum += mHistoInvMass->GetBinContent(i);
-  }
-  double bkg{}, errBkg{};
-  calculateBackground(bkg, errBkg);
-  std::cout << "sum = " << sum << ", bkg = " << bkg << "\n";
-  estimatedSignal = sum - bkg;
+  const double integralHisto = integrateHistoInvMassOverWorkspaceRanges({"full"});
+  const double bkg = mRooNBkg->getVal();
+  std::cout << "integralHisto = " << integralHisto << ", bkg = " << bkg << "\n";
+  estimatedSignal = integralHisto - bkg;
 }
 
 // Estimate ranges where signal is located to be used in countSignal() and checkForSignal()
