@@ -61,7 +61,7 @@ using namespace constants::physics;
 
 using PIDTracks = soa::Join<
   aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection,
-  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCEl>;
+  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCEl, aod::pidTOFFlags>;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs,
                                      aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, o2::aod::BarrelMults>;
@@ -238,6 +238,7 @@ struct DedxPidAnalysis {
   Configurable<float> v0ProperLifetimeCutK0s{"v0ProperLifetimeCutK0s", 20.f, "V0 proper lifetime cut for K0s"};
   Configurable<float> v0ProperLifetimeCutLambda{"v0ProperLifetimeCutLambda", 30.f, "V0 proper lifetime cut for Lambda"};
   Configurable<float> nsigmaMax{"nsigmaMax", 3.0f, "Maximum nsigma cut"};
+  Configurable<float> nsigmaMaxTOF{"nsigmaMaxTOF", 3.0f, "Maximum nsigma cut for TOF"};
   Configurable<float> tpcMomentumCut{"tpcMomentumCut", 0.6f, "Momentum threshold above which TOF is required"};
   Configurable<int> v0SigmaMode{"v0SigmaMode", 0, "0: no cut, 1: sigma only, 2: TOF + sigma above tpcMomentumCut"};
   Configurable<float> invMassCutK0s{"invMassCutK0s", 0.015f, "invariant Mass Cut for K0s"};
@@ -485,6 +486,14 @@ struct DedxPidAnalysis {
 
       registryDeDx.add(
         "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_calibrated_TOF2", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF2", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
 
       // pt vs p
@@ -1600,6 +1609,24 @@ struct DedxPidAnalysis {
                 registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
               } else {
                 registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+              }
+            }
+          }
+        }
+      }
+
+      // pions from TOF w nsigma
+      if (!calibrationMode) {
+        if (trk.hasTOF() && trk.goodTOFMatch()) {
+          const double sigmaPi = std::hypot(trk.tpcNSigmaPi(), trk.tofNSigmaPi());
+          if (std::abs(sigmaPi) < nsigmaMaxTOF) {
+            for (int i = 0; i < EtaIntervals; ++i) {
+              if (trk.eta() >= EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+                if (signedP < 0) {
+                  registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF2"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+                } else {
+                  registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_TOF2"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+                }
               }
             }
           }
