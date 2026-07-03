@@ -69,7 +69,6 @@
 #include <array>
 #include <chrono>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <iterator>
 #include <map>
@@ -2184,7 +2183,7 @@ struct FlattenictyPikp {
     lhash->SetName(partName);
     listEfficiency->Add(lhash);
 
-    auto bookEff = [&](const TString& eName, auto h) {
+    auto bookEff = [&](const TString& eName, const auto& h) {
       const TAxis* axis = h->GetXaxis();
       TString eTitle = h->GetTitle();
       eTitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
@@ -2208,7 +2207,7 @@ struct FlattenictyPikp {
       return;
     }
 
-    auto fillEff = [&](const TString& eName, auto num, auto den) {
+    auto fillEff = [&](const TString& eName, const auto& num, const auto& den) {
       auto eff = dynamic_cast<TEfficiency*>(lhash->FindObject(eName));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << eName;
