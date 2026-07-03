@@ -486,26 +486,12 @@ enum PrmScdPairType {
 };
 
 // =============================================================================
-// Shared event-selection helpers
-//
-// Both LambdaTableProducer (selCollision) and CascadeSelector (eventSelection)
-// historically applied their own, slightly different, sets of event cuts. That
-// produced collision populations that disagreed in subtle ways (e.g. LTP did
-// not veto same-bunch pileup by default, CSEL did) and broke the downstream
-// Λ-Ξ correlator's normalisation.
-//
-// This namespace provides:
-// - a POD `EventCuts` describing every cut either producer might apply,
-// - a templated `applyEventSelection<RunType>(col, cuts, centValue, &reason)`
-// that evaluates only the cuts whose `use*` flag is true,
-// - a `logEventCuts(tag, cuts)` that prints the cut configuration in a
-// unified, single-line, grep-friendly format.
-//
-// Each producer builds an `EventCuts` from its own Configurables in init() and
-// uses the shared function. Defaults are unchanged — nothing differs at
-// runtime unless the user touches the configurables — but the duplicated logic
-// is gone and the [EVENTSEL-LTP] / [EVENTSEL-CSEL] log lines now make the
-// producer-mismatch visible side by side.
+// Shared event selection. Historically the Λ producer and the cascade
+// selector applied slightly different event cuts, breaking the downstream
+// correlator's normalisation. Now: one POD `EventCuts`, one templated
+// `applyEventSelection<RunType>()` evaluating only cuts with use*=true,
+// and `logEventCuts()` for a grep-friendly one-line config dump.
+// Defaults unchanged.
 // =============================================================================
 namespace lcorr_evsel
 {
@@ -649,24 +635,12 @@ inline void logEventCuts(const char* tag, EventCuts const& cuts)
 } // namespace lcorr_evsel
 
 // =============================================================================
-// LambdaCascadeProducer — merger of LambdaTableProducer (LTP) and
-// the standalone CascadeSelector (CSEL).
-//
-// Why merged: event selection used to run twice (once in LTP, once in CSEL),
-// with subtly different defaults, producing inconsistent collision populations
-// in the downstream Lambdacascadecorrelation. The merge guarantees a single
-// `selCollision()` call per event drives BOTH the Lambda table production
-// and the cascade flagging — they can no longer disagree.
-//
-// Output tables (unchanged from before):
-// - aod::LambdaCollisions, aod::LambdaTracks (Lambda)
-// - aod::LambdaMcGenCollisions, aod::LambdaMcGenTracks (Lambda MC)
-// - aod::CascadeFlags (Cascade)
-//
-// Histogram registries: kept distinct (`histos` for Lambda-side, `cascRegistry`
-// for cascade-side) so every existing path in AnalysisResults.root stays
-// byte-identical. Downstream macros / hyperloop wagons / plotting scripts
-// require no changes.
+// LambdaCascadeProducer — merger of the former LambdaTableProducer and
+// CascadeSelector. One selCollision() per event drives both the Λ tables
+// and the cascade flagging, so their collision populations cannot disagree.
+// Outputs: LambdaCollisions, LambdaTracks, LambdaMcGen*, CascadeFlags.
+// Registries stay separate (histos / cascRegistry) so every histogram path
+// in AnalysisResults.root is unchanged.
 // =============================================================================
 struct LambdaCascadeProducer {
 
@@ -771,14 +745,10 @@ struct LambdaCascadeProducer {
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // ===========================================================================
-  // All cascade-side Configurables and Axes bundled into a
-  // single ConfigurableGroup. Reason: the framework's StructToTuple has a
-  // hard cap of 99 task members (DPL_HOMOGENEOUS_APPLY_ENTRY (9,9)). Without
-  // grouping, the merged struct lands at 129 members. ConfigurableGroup
-  // makes the whole bundle count as one member while still exposing every
-  // inner Configurable to JSON/CLI (no behaviour change for users — JSON keys
-  // unchanged because each Configurable's first-arg name is preserved).
-  // Code references go from `tpcNsigmaProton` → `cascCfg.tpcNsigmaProton`.
+  // Cascade-side Configurables bundled into one ConfigurableGroup:
+  // StructToTuple caps a task at 99 members and the merged struct has 129.
+  // The group counts as one member; JSON keys are unchanged (first-arg
+  // names preserved). Access pattern: cascCfg.tpcNsigmaProton.
   // ===========================================================================
   struct : ConfigurableGroup {
     // Deprecated CSEL-style event-selection knobs. Echoed in the
@@ -1459,13 +1429,8 @@ struct LambdaCascadeProducer {
       return false;
     }
 
-    if (lambdaFlag || antiLambdaFlag) {
-      return true;
-    }
-
-    histos.fill(HIST("Tracks/h1f_tracks_info"), kNotLambdaAfterSel);
-
-    return false;
+    // Exactly one hypothesis survived.
+    return true;
   }
 
   template <typename C, typename V, typename T>
@@ -1510,15 +1475,10 @@ struct LambdaCascadeProducer {
     return true;
   }
 
-  // Compute the per-V0 cut bitmask UNCONDITIONALLY. Each bit
-  // mirrors a stage of the existing selV0Particle / topoCutSelection /
-  // selDaughterTracks chain, but no early-return short-circuits. The
-  // resulting uint32 captures the cut state of EVERY candidate so an
-  // offline macro can replay any cut combination from the tree alone.
-  //
-  // Note: this duplicates the cut conditions written elsewhere — keep
-  // in sync if you ever change a numerical bound. Cheap (~10 comparisons
-  // per V0), only called once per V0.
+  // Per-V0 cut bitmask, computed with NO short-circuit: each bit mirrors a
+  // stage of the selV0Particle chain, so any cut combination can be replayed
+  // offline from the tree alone. WARNING: duplicates the cut conditions —
+  // keep in sync when changing any bound. ~10 comparisons per V0.
   template <typename C, typename V, typename T>
   uint32_t computeLambdaCutBits(C const& col, V const& v0, T const&,
                                 ParticleType v0Type, bool ambVeto)
@@ -2718,19 +2678,12 @@ struct LambdaCascadeProducer {
   PROCESS_SWITCH(LambdaCascadeProducer, processMCGenOnlyRun3, "Gen-only Run3 (no reco tables)", false);
 
   // ===========================================================================
-  // Cascade-side MC truth-only path (port of former
-  // CascadeSelector::processGenMC). Self-contained MC-truth event selection
-  // (INELgtN on McParticles, MC z-vertex), distinct from the reco-level
-  // selCollision because it operates on McCollisions/McParticles directly.
-  // Used as a closure/efficiency check for the cascade MC truth side.
+  // Cascade MC truth-only path (former CascadeSelector::processGenMC):
+  // self-contained MC-truth event selection on McCollisions/McParticles,
+  // used as a closure/efficiency check.
   //
-  // DO NOT add `private:` access specifiers here. Any non-public
-  // non-static data member breaks the struct's aggregate-ness, and the
-  // framework's `brace_constructible_size` (which uses brace-init to count
-  // members for StructToTuple dispatch) collapses, mis-routing dispatch to
-  // the D == 0 chain. The original CascadeSelector kept all members in the
-  // implicit public section for the same reason. The previously-declared
-  // `mCascCounter` was unused and has been removed.
+  // DO NOT add `private:` here: a non-public data member breaks the
+  // struct's aggregate-ness and StructToTuple dispatch mis-routes.
   // ===========================================================================
 
   // Use CollisionsRun3 (which carries CentFT0Ms etc.) instead of
@@ -3009,17 +2962,8 @@ struct LambdaTracksExtProducer {
 };
 
 // =============================================================================
-// Dead structs removed:
-//
-// - LambdaR2Correlation  (was struct at this position; commented out of the
-// workflow, ~340 lines of unused code)
-// - CascadeSelector_REMOVED_PHASE4 (#if 0 block, kept temporarily
-// for reference, ~575 lines)
-// - CascadeCorrelations  (was struct CSEL block; commented out
-// of the workflow, ~450 lines)
-//
-// Total: roughly 1370 fewer lines compiled per build. All three structs are
-// available in git history if anyone wants to revive them.
+// Removed dead structs (LambdaR2Correlation, CascadeSelector,
+// CascadeCorrelations; ~1370 lines) — see git history to revive.
 // =============================================================================
 
 // TTree branch structs + connectors inlined
@@ -3246,18 +3190,11 @@ struct Lambdacascadecorrelation {
   Configurable<bool> saveLambdaTree{"saveLambdaTree", false,
                                     "Save TTree of standalone-Λ candidates into AnalysisResults.root"};
 
-  // Auto-correlation veto policy (replaces previous bool
-  // cVetoSharedDau). Three modes for systematic studies:
-  // 0 = off (keep all pairs, including same-Λ self-pairs)
-  // 1 = strict — drop pair if pos AND neg daughter tracks both match
-  // the cascade's V0 daughters. (Default; matches the old
-  // cVetoSharedDau=true behaviour.)
-  // 2 = loose  — drop pair if EITHER daughter matches. Catches the
-  // rare case where the standalone V0 was fit to one
-  // cascade-V0 daughter plus a different second track.
-  // The legacy `cVetoSharedDau` Configurable is still parsed from JSON
-  // for backward compatibility but ignored at runtime — set cVetoMode
-  // instead.
+  // Auto-correlation veto (replaces bool cVetoSharedDau; legacy key still
+  // parsed but ignored):
+  // 0 = off    — keep all pairs (systematics only).
+  // 1 = strict — drop if BOTH daughters match the cascade V0 (default).
+  // 2 = loose  — drop if EITHER daughter matches.
   Configurable<int> cVetoMode{"cVetoMode", 1,
                               "Auto-correlation veto: 0=off, 1=strict (both daughters shared), 2=loose (any daughter)"};
   Configurable<bool> cVetoSharedDau{"cVetoSharedDau", true,
@@ -3424,24 +3361,12 @@ struct Lambdacascadecorrelation {
   Configurable<bool> cRequireTrueCascade{"cRequireTrueCascade", true,
                                          "MC: drop cascade candidates not flagged IsTrueCascade==true"};
 
-  // ITS strangeness-tracking gating policy. Lets you A/B-compare
-  // what the IsItsTracked flag adds without recompiling.
-  //
-  // 0 = OFF — ignore IsItsTracked entirely (current behaviour).
-  // 1 = REQUIRE  — accept ONLY cascades flagged IsItsTracked. Highest
-  // purity on data (ITS confirmed the Ξ flight) but
-  // trades a lot of statistics: ITS strangeness-tracking
-  // efficiency is typically 5–20% of the topological
-  // cascade yield in pp, depending on pT and η.
-  // 2 = RESCUE — keep cascades that fail purity gates (in particular
-  // cRequireTrueCascade on MC) IF IsItsTracked is true.
-  // Useful for data-side high-purity systematic where
-  // the truth flag is unavailable but ITS confirms.
-  // 3 = QA-ONLY  — no gating; only fill QA histos so you can plot
-  // the IsItsTracked fraction vs cascade pT/centrality.
-  //
-  // QA histograms are filled regardless of the mode so the comparison is
-  // always available downstream.
+  // ITS strangeness-tracking gating policy (A/B-compare without recompiling):
+  // 0 = OFF     — ignore IsItsTracked (default behaviour).
+  // 1 = REQUIRE — accept only IsItsTracked cascades (high purity, low stats).
+  // 2 = RESCUE  — keep purity-gate failures IF IsItsTracked confirms them.
+  // 3 = QA-ONLY — no gating; QA histos only.
+  // QA histograms are filled in every mode.
   Configurable<int> cItsTrackMode{"cItsTrackMode", 0,
                                   "ITS strangeness-tracking gate: 0=off, 1=require, 2=rescue, 3=qa-only"};
 
@@ -3526,26 +3451,10 @@ struct Lambdacascadecorrelation {
   //  so |pdg|==3312 AND |pdg|==3334 would always be false.)
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
-  // Cascade efficiency weight (mirror of useEff for the Λ side).
-  // Returns 1/eff so multiplying it into the pair weight yields an
-  // efficiency-corrected count. The default implementation returns 1.0
-  // (no correction) — fill in the CCDB-load body once you have an
-  // efficiency map for cascades. The kKind template parameter is 0 for Ξ
-  // and 1 for Ω so the map can be specialised by particle.
-  //
-  // Usage in pair loops:
-  // float wCasc = getCascadeEfficiency<0/*Xi*/>(casc.sign(), casc.pt(), xiY);
-  // float wPair = wLam * wCasc;
-  //
-  // Suggested CCDB-load skeleton (uncomment + adapt when you have a map):
-  // if (!cUseCascEff) return 1.0f;
-  // static TList* effList = ccdb->getForTimeStamp<TList>(cCascEffPath, -1);
-  // const char* hName = (kKind == 0)
-  // ? (sign < 0 ? "hEffXiMinus" : "hEffXiPlus")
-  // : (sign < 0 ? "hEffOmegaMinus" : "hEffOmegaPlus");
-  // auto* h = static_cast<TH3*>(effList->FindObject(hName));
-  // double e = h->GetBinContent(h->FindBin(/*cent*/, pt, rap));
-  // return (e > 0) ? 1.0f / static_cast<float>(e) : 1.0f;
+  // Cascade efficiency weight: returns 1/eff for the pair weight
+  // (w = wLam * wCasc). Default returns 1.0 (no correction); load a CCDB
+  // efficiency map here when available. kKind: 0 = Xi, 1 = Omega.
+  // Usage: getCascadeEfficiency<0>(casc.sign(), casc.pt(), xiY).
   template <int kKind /*0=Xi, 1=Omega*/>
   float getCascadeEfficiency(int /*sign*/, float /*pt*/, float /*rap*/)
   {
