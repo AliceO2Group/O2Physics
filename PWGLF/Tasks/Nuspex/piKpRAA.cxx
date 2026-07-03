@@ -75,12 +75,14 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedT
 
 using ColEvSelsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms, o2::aod::CentFV0As, o2::aod::CentFT0Ms, o2::aod::BarrelMults>;
 
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCEl, aod::pidTOFFlags, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFullPi, aod::pidTOFFullEl>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCEl, aod::pidTOFFlags, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl>;
 
 using TracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCEl, aod::pidTOFFlags, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFullPi, aod::pidTOFFullEl, aod::McTrackLabels>;
 
 static constexpr int KnEtaHists{8};
 
+std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxPiTOF{};
+std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxPiTOF2{};
 std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxPiV0{};
 std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxPrV0{};
 std::array<std::shared_ptr<TH2>, KnEtaHists> dEdxElV0{};
@@ -148,6 +150,10 @@ struct PiKpRAA {
     Configurable<float> maxChi2ClsTPC{"maxChi2ClsTPC", 4.0, "Max chi2 per Cls TPC"};
     Configurable<float> chi2ClsITS{"chi2ClsITS", 36.0, "chi2 per Cls ITS selection"};
     Configurable<float> maxElTOFBeta{"maxElTOFBeta", 0.1, "Maximum beta TOF selection"};
+    Configurable<float> maxPiTOFBeta{"maxPiTOFBeta", 0.005, "Maximum beta TOF selection for Pions"};
+    // Configurable<float> maxKaTOFBeta{"maxKaTOFBeta", 0.001, "Maximum beta TOF selection for Kaons"};
+    // Configurable<float> maxPrTOFBeta{"maxPrTOFBeta", 0.001, "Maximum beta TOF selection for Protons"};
+    Configurable<float> nSigmaPIDselPrim{"nSigmaPIDselPrim", 1.0, "N sigma selection for primary pions with TOF"};
 
     // Phi cut
     Configurable<bool> applyPhiCut{"applyPhiCut", false, "Apply geometrical cut?"};
@@ -475,6 +481,8 @@ struct PiKpRAA {
       for (int i = 0; i < KnEtaHists; ++i) {
         dEdx[i] = registry.add<TH3>(Form("dEdx_%s", endingEta[i].c_str()), Form("%s;Momentum;dE/dx;", latexEta[i].c_str()), kTH3F, {axisPt, axisdEdx, axisCent});
         pTVsP[i] = registry.add<TH2>(Form("pTVsP_%s", endingEta[i].c_str()), Form("%s;Momentum;#it{p}_{T} (GeV/#it{c});", latexEta[i].c_str()), kTH2F, {axisPt, axisPt});
+        dEdxPiTOF[i] = registry.add<TH2>(Form("dEdxPiTOF_%s", endingEta[i].c_str()), Form("#pi^{+} + #pi^{-}, %s;Momentum;dE/dx;", latexEta[i].c_str()), kTH2F, {axisPtV0s, axisdEdx});
+        dEdxPiTOF2[i] = registry.add<TH2>(Form("dEdxPiTOF2_%s", endingEta[i].c_str()), Form("#pi^{+} + #pi^{-}, %s;Momentum;dE/dx;", latexEta[i].c_str()), kTH2F, {axisPtV0s, axisdEdx});
         dEdxPiV0[i] = registry.add<TH2>(Form("dEdxPiV0_%s", endingEta[i].c_str()), Form("#pi^{+} + #pi^{-}, %s;Momentum;dE/dx;", latexEta[i].c_str()), kTH2F, {axisPtV0s, axisdEdx});
         dEdxPrV0[i] = registry.add<TH2>(Form("dEdxPrV0_%s", endingEta[i].c_str()), Form("p + #bar{p}, %s;Momentum;dE/dx;", latexEta[i].c_str()), kTH2F, {axisPtV0s, axisdEdx});
         dEdxElV0[i] = registry.add<TH2>(Form("dEdxElV0_%s", endingEta[i].c_str()), Form("e^{+} + e^{-}, %s;Momentum;dE/dx;", latexEta[i].c_str()), kTH2F, {axisPtV0s, axisdEdx});
@@ -820,6 +828,24 @@ struct PiKpRAA {
         }
       }
 
+      if (track.hasTOF() && track.goodTOFMatch()) {
+        const float tTOF{track.tofSignal()};
+        const float trkLength{track.length()};
+        const float tExpPiTOF{track.tofExpSignalPi(tTOF)};
+        const float tOFNsigmaPi{std::fabs(track.tofNSigmaPi())};
+        const float tPCNsigmaPi{std::fabs(track.tpcNSigmaPi())};
+
+        if (tTOF > Kzero && trkLength > Kzero) {
+          if (std::abs((tExpPiTOF / tTOF) - Kone) < trackSelections.maxPiTOFBeta) {
+            dEdxPiTOF2[indexEta]->Fill(momentum, dedx);
+          }
+
+          if (std::sqrt(std::pow(tOFNsigmaPi, 2.0) + std::pow(tPCNsigmaPi, 2.0)) < trackSelections.nSigmaPIDselPrim) {
+            dEdxPiTOF[indexEta]->Fill(momentum, dedx);
+          }
+        }
+      }
+
       etaTest[indexEta]->Fill(eta);
       dEdx[indexEta]->Fill(momentum, dedx, centrality);
       pTVsP[indexEta]->Fill(momentum, pt);
@@ -998,9 +1024,7 @@ struct PiKpRAA {
           registry.fill(HIST("nSigPiFromL"), negTrkPt, negTrack.tpcNSigmaPi());
           // registry.fill(HIST("NclVsEtaPiV0"), negTrkEta, negNcl);
           // registry.fill(HIST("NclVsEtaPiV0p"), negTrkEta, negNcl);
-          // nClVsPPiV0[negIndexEta]->Fill(negPorPt, negNcl);
           // nClVsPpPiV0[negIndexEta]->Fill(negPorPt, negNcl);
-          // dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
         }
       }
 
@@ -1012,9 +1036,7 @@ struct PiKpRAA {
           registry.fill(HIST("nSigPiFromAL"), posTrkPt, posTrack.tpcNSigmaPi());
           // registry.fill(HIST("NclVsEtaPiV0"), posTrkEta, posNcl);
           // registry.fill(HIST("NclVsEtaPiV0p"), posTrkEta, posNcl);
-          // nClVsPPiV0[posIndexEta]->Fill(posPorPt, posNcl);
           // nClVsPpPiV0[posIndexEta]->Fill(posPorPt, posNcl);
-          // dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
         }
         if (negTrackCharge < Kzero) {
           registry.fill(HIST("nSigPrFromAL"), negTrkPt, negTrack.tpcNSigmaPr());
