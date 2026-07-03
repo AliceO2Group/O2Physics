@@ -92,8 +92,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::aod::rctsel;
 
-Zorro zorro;
-
 // Declaration of various Joins used in the different process functions
 // TODO: Since DCA depends on which collision the track is associated to, we should remove writing and subscribing to DCA tables, to optimize on CPU / memory
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -391,6 +389,7 @@ struct TableMaker {
   Partition<MyBarrelTracksWithCov> tracksNegWithCov = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl < static_cast<float>(-0.05)));
 
   ctpRateFetcher mRateFetcher;
+  Zorro zorro;
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
 
   struct {
@@ -687,13 +686,13 @@ struct TableMaker {
     fStatsList->AddAt(histBcs, kStatsBcs);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
-    TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
+    TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5, -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ib = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
     constexpr std::array v0TagNames{"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (ib = 0; ib < v0TagNames.size(); ib++) {
+    for (ib = 0; ib < static_cast<int>(v0TagNames.size()); ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
     fStatsList->AddAt(histTracks, kStatsTracks);
@@ -899,12 +898,9 @@ struct TableMaker {
     auto bfilling = mLHCIFdata->getBunchFilling();
     double nbc = bfilling.getFilledBCs().size();
 
-    double tvxRate;
-    if (fConfigHistOutput.fConfigIrEstimator.value.empty()) {
-      tvxRate = mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), "T0VTX");
-    } else {
-      tvxRate = mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
-    }
+    const double tvxRate = fConfigHistOutput.fConfigIrEstimator.value.empty()
+                             ? mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), "T0VTX")
+                             : mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
 
     double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
     double mu = -std::log(1 - nTriggersPerFilledBC);

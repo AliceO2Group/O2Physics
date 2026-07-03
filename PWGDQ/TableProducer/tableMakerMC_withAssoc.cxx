@@ -1559,7 +1559,7 @@ struct TableMakerMC {
     fStatsList->Add(histEvents);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
-    TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
+    TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5, -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ib = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
