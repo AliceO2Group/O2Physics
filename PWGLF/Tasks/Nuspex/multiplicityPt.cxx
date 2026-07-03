@@ -13,19 +13,11 @@
 /// \file multiplicityPt.cxx
 /// \brief Analysis to do PID with MC - Full correction factors for pions, kaons, protons
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/DataModel/spectraTOF.h"
-#include "PWGLF/Utils/inelGt.h"
-
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -34,6 +26,7 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
@@ -41,16 +34,14 @@
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TF1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
-#include <map>
 #include <memory>
-#include <numeric>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -81,31 +72,31 @@ using TracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                            aod::TrackSelection, aod::McTrackLabels,
                            aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-static constexpr int NCentHists{10};
-static constexpr int NPartHists{5};
-std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
-std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
-std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
-// Total counts
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomPosCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomNegCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtPosCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtNegCent{};
-// Counts for particles
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomPosCent{};
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomNegCent{};
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtPosCent{};
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtNegCent{};
-
 struct MultiplicityPt {
 
   // ── Services ──────────────────────────────────────────────
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<ccdb::BasicCCDBManager> ccdb{};
+
+  static constexpr int NCentHists{10};
+  static constexpr int NPartHists{5};
+  std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
+  std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
+  std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
+  // Total counts
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomPosCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomNegCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtPosCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtNegCent{};
+  // Counts for particles
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomPosCent{};
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomNegCent{};
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtPosCent{};
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtNegCent{};
 
   // ── Constant values ──────────────────────────────────
   static constexpr int CentBinMax = 100;

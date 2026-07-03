@@ -51,7 +51,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <string_view>
+// #include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -275,7 +275,7 @@ struct DedxPidAnalysis {
   // phi cut fits
   TF1* fphiCutHigh = nullptr;
   TF1* fphiCutLow = nullptr;
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   TrackSelection myTrackSelection()
   {
@@ -284,7 +284,7 @@ struct DedxPidAnalysis {
     selectedTracks.SetEtaRange(etaMin, etaMax);
     selectedTracks.SetRequireITSRefit(true);
     selectedTracks.SetRequireTPCRefit(true);
-    selectedTracks.SetMinNCrossedRowsTPC(minNCrossedRowsTPC);
+    selectedTracks.SetMinNCrossedRowsTPC(static_cast<int>(minNCrossedRowsTPC.value));
     selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC);
     selectedTracks.SetMaxChi2PerClusterTPC(maxChi2TPC);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2});
@@ -1353,36 +1353,24 @@ struct DedxPidAnalysis {
     phi += o2::constants::math::PI / 18.0f;
     phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
 
-    // cut phi
-    if (phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt))
-      return false; // reject track
-
-    return true;
+    // cut phi, reject track if inside the gap
+    return !(phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt));
   }
 
   // NclCutTPC
   template <typename T>
   bool passedNClTPCFoundCutSecondaries(const T& trk)
   {
-    auto nTPCCl = trk.tpcNClsFound();
-
-    if (nTPCCl < minTPCnClsFound)
-      return false;
-
-    return true;
+    return trk.tpcNClsFound() >= minTPCnClsFound;
   }
 
   // NclCutPIDTPC secondary
   template <typename T>
   bool passedNClTPCPIDCutSecondaries(const T& trk)
   {
-    auto nTPCCl = trk.tpcNClsPID();
-
-    if (nTPCCl < minTPCnClsPID)
-      return false;
-
-    return true;
+    return trk.tpcNClsPID() >= minTPCnClsPID;
   }
+
   // Get Multiplicity
   template <typename T>
   float getMultiplicity(const T& collision)
