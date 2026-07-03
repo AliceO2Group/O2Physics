@@ -255,7 +255,6 @@ struct QaMatching {
 
   static constexpr int GlobalTrackTypeMax = 2;
   static constexpr int MchMidTrackType = 3;
-  static constexpr int FirstDecayMotherRank = 2;
   static constexpr int MftTrackTypeStandard = 0;
   static constexpr int MftTrackTypeCA = 1;
   static constexpr int ThetaAbsBoundaryDeg = 3;
@@ -531,9 +530,6 @@ struct QaMatching {
 
   std::unordered_map<int64_t, int32_t> mftTrackCovs;
 
-  std::vector<std::pair<int64_t, int64_t>> fMatchablePairs;
-  MatchingCandidates fMatchingCandidates;
-  std::vector<int64_t> fTaggedMuons;
 
   using MuonPair = std::pair<std::pair<int64_t, uint64_t>, std::pair<int64_t, uint64_t>>;
   using GlobalMuonPair = std::pair<std::pair<int64_t, std::vector<MatchingCandidate>>, std::pair<int64_t, std::vector<MatchingCandidate>>>;
@@ -562,8 +558,6 @@ struct QaMatching {
                                                        &registryMatching9}};
   HistogramRegistry registryDimuon{"registryDimuon", {}};
 
-  std::unordered_map<std::string, o2::framework::HistPtr> matchingHistos;
-  Matrix<o2::framework::HistPtr, 4, 4> dimuonHistos;
 
   Produces<o2::aod::QaMatchingEvents> qaMatchingEvents;
   Produces<o2::aod::QaMatchingMCHTrack> qaMatchingMCHTrack;
@@ -587,7 +581,7 @@ struct QaMatching {
     o2::framework::HistPtr etaPdgNum;
     o2::framework::HistPtr etaPdgDen;
 
-    EfficiencyPlotter(std::string path, std::string title,
+    EfficiencyPlotter(const std::string& path, const std::string& title,
                       HistogramRegistry& registry, bool createPdgMomHistograms)
     {
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
@@ -845,7 +839,7 @@ struct QaMatching {
 
     HistogramRegistry* registry;
 
-    MatchingPlotter(std::string path,
+    MatchingPlotter(const std::string& path,
                     HistogramRegistry* reg,
                     bool createPdgMomHistograms,
                     int mftMultMax,
@@ -975,7 +969,6 @@ struct QaMatching {
     }
   };
   std::unique_ptr<MatchingPlotter> fChi2MatchingPlotter;
-  std::map<std::string, std::unique_ptr<HistogramRegistry>> fMatchingHistogramRegistries;
   std::map<std::string, std::unique_ptr<MatchingPlotter>> fMatchingPlotters;
   std::unique_ptr<MatchingPlotter> fTaggedMuonsMatchingPlotter;
 
@@ -2761,7 +2754,7 @@ struct QaMatching {
                        TMUON const& muonTracks,
                        TMFT const& mftTracks,
                        CMFT const& mftCovs,
-                       std::string funcName,
+                       const std::string& funcName,
                        float matchingPlaneZ,
                        int extrapMethod,
                        const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
