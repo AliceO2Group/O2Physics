@@ -497,7 +497,7 @@ struct TableMaker {
       }
       if (fConfigHistOutput.fConfigQA) {
         // Barrel track histograms after selections; one histogram directory for each user specified selection
-        for (auto& cut : fTrackCuts) {
+        for (const auto& cut : fTrackCuts) {
           histClasses += Form("TrackBarrel_%s;", cut->GetName());
         }
       }
@@ -516,7 +516,7 @@ struct TableMaker {
       }
       if (fConfigHistOutput.fConfigQA) {
         // Muon tracks after selections; one directory per selection
-        for (auto& muonCut : fMuonCuts) {
+        for (const auto& muonCut : fMuonCuts) {
           histClasses += Form("Muons_%s;", muonCut->GetName());
         }
       }
@@ -562,7 +562,7 @@ struct TableMaker {
     TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
     if (addEvCutsStr != "") {
       std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
-      for (auto& cutIt : addEvCuts) {
+      for (const auto& cutIt : addEvCuts) {
         fEventCut->AddCut(cutIt);
       }
     }
@@ -579,7 +579,7 @@ struct TableMaker {
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
-      for (auto& t : addTrackCuts) {
+      for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -596,7 +596,7 @@ struct TableMaker {
     TString addMuonCutsStr = fConfigCuts.fConfigMuonCutsJSON.value;
     if (addMuonCutsStr != "") {
       std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
-      for (auto& t : addMuonCuts) {
+      for (const auto& t : addMuonCuts) {
         fMuonCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -608,7 +608,7 @@ struct TableMaker {
   {
     // Create histograms via HistogramManager
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-    for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+    for (int iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
       TString classStr = objArray->At(iclass)->GetName();
       if (fConfigHistOutput.fConfigQA) {
         fHistMan->AddHistClass(classStr.Data());
@@ -801,7 +801,7 @@ struct TableMaker {
         // check if this collision is also within the short time range
         bool isShort = (thisBC >= pastShortBC && thisBC < futureShortBC);
         // loop over all collisions in this BC
-        for (auto& thisColl : colls) {
+        for (const auto& thisColl : colls) {
           // skip if this is the same collision
           if (thisColl == collision) {
             continue;
@@ -848,7 +848,7 @@ struct TableMaker {
       fOccup.oMedianTimeLongA[collision] = 0.0;
       float sumMult = 0.0;
       if (!oTimeMapLongA.empty()) {
-        for (auto& [dt, mult] : oTimeMapLongA) {
+        for (const auto& [dt, mult] : oTimeMapLongA) {
           sumMult += mult;
           if (sumMult > fOccup.oContribLongA[collision] / 2.0) {
             fOccup.oMedianTimeLongA[collision] = dt;
@@ -859,7 +859,7 @@ struct TableMaker {
       fOccup.oMedianTimeLongC[collision] = 0.0;
       sumMult = 0.0;
       if (!oTimeMapLongC.empty()) {
-        for (auto& [dt, mult] : oTimeMapLongC) {
+        for (const auto& [dt, mult] : oTimeMapLongC) {
           sumMult += mult;
           if (sumMult > fOccup.oContribLongC[collision] / 2.0) {
             fOccup.oMedianTimeLongC[collision] = dt;
@@ -870,7 +870,7 @@ struct TableMaker {
       fOccup.oMedianTimeShortA[collision] = 0.0;
       sumMult = 0.0;
       if (!oTimeMapShortA.empty()) {
-        for (auto& [dt, mult] : oTimeMapShortA) {
+        for (const auto& [dt, mult] : oTimeMapShortA) {
           sumMult += mult;
           if (sumMult > fOccup.oContribShortA[collision] / 2.0) {
             fOccup.oMedianTimeShortA[collision] = dt;
@@ -881,7 +881,7 @@ struct TableMaker {
       fOccup.oMedianTimeShortC[collision] = 0.0;
       sumMult = 0.0;
       if (!oTimeMapShortC.empty()) {
-        for (auto& [dt, mult] : oTimeMapShortC) {
+        for (const auto& [dt, mult] : oTimeMapShortC) {
           sumMult += mult;
           if (sumMult > fOccup.oContribShortC[collision] / 2.0) {
             fOccup.oMedianTimeShortC[collision] = dt;
@@ -1478,7 +1478,7 @@ struct TableMaker {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -1512,7 +1512,7 @@ struct TableMaker {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -1796,7 +1796,7 @@ struct TableMaker {
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-      for (auto& mfttrackConv : mftCovs) {
+      for (const auto& mfttrackConv : mftCovs) {
         map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
       }
     }
@@ -2083,7 +2083,7 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
   //  The histogram classes and their components histograms are defined below depending on the name of the histogram class
   //
   std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+  for (int iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
     TString classStr = objArray->At(iclass)->GetName();
     histMan->AddHistClass(classStr.Data());
 
