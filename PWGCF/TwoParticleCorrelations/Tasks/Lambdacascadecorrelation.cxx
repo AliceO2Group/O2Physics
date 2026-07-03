@@ -1451,14 +1451,14 @@ struct LambdaCascadeProducer {
     histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0DauTrackSel);
 
     // Apply Kinematic Selection
-    float rap = 0.;
+    float rapV0 = 0.;
     if (!cDoEtaAnalysis) {
-      rap = std::abs(v0.yLambda());
+      rapV0 = std::abs(v0.yLambda());
     } else {
-      rap = std::abs(v0.eta());
+      rapV0 = std::abs(v0.eta());
     }
 
-    if (!kinCutSelection(v0.pt(), rap, cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
+    if (!kinCutSelection(v0.pt(), rapV0, cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
       return false;
     }
 
@@ -1646,7 +1646,7 @@ struct LambdaCascadeProducer {
 
     // initialize efficiency factor and primary fraction values
     float effCorrFact = 1., primFrac = 1.;
-    float rap = (cDoEtaAnalysis) ? v0.eta() : v0.yLambda();
+    float rapV0 = (cDoEtaAnalysis) ? v0.eta() : v0.yLambda();
 
     // Get Efficiency Factor
     if (cGetEffFact) {
@@ -1665,7 +1665,7 @@ struct LambdaCascadeProducer {
           effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt()));
         } else if (histEff->GetDimension() == ThreeDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapCent);
-          effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt(), rap));
+          effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt(), rapV0));
         } else {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
           LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
@@ -1691,7 +1691,7 @@ struct LambdaCascadeProducer {
           primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt()));
         } else if (histPrm->GetDimension() == ThreeDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtRapCent);
-          primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt(), rap));
+          primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt(), rapV0));
         } else {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kNoPFCorr);
           LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
@@ -2030,7 +2030,7 @@ struct LambdaCascadeProducer {
     // initialize track objects
     ParticleType v0Type = kLambda;
     PrmScdType v0PrmScdType = kPrimary;
-    float rap = 0.;
+    float rapGen = 0.;
 
     for (auto const& mcpart : mcParticles) {
       // check for Lambda first
@@ -2051,13 +2051,13 @@ struct LambdaCascadeProducer {
 
       // Decide Eta/Rap
       if (!cDoEtaAnalysis) {
-        rap = mcpart.y();
+        rapGen = mcpart.y();
       } else {
-        rap = mcpart.eta();
+        rapGen = mcpart.eta();
       }
 
       // Apply Kinematic Acceptance
-      if (!kinCutSelection(mcpart.pt(), std::abs(rap), cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
+      if (!kinCutSelection(mcpart.pt(), std::abs(rapGen), cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
         continue;
       }
 
@@ -3253,13 +3253,6 @@ struct Lambdacascadecorrelation {
   // and is the one filled into the histogram.
   int64_t mLastEventCountRecoCollIdx{-1};
   int64_t mLastEventCountGenCollIdx{-1};
-
-  // Gen-Λ singles guard. processMCGenXi and processMCGenOmega
-  // both iterate the same LambdaMcGenTracks table and fill the same
-  // McGen/Singles/Lambda/* histograms. When both flags are on (typical for
-  // a full Λ-Ξ + Λ-Ω closure run) every gen Λ would be counted twice.
-  // The guard makes the singles fills idempotent per gen event.
-  int64_t mLastGenLamSinglesCollIdx{-1};
 
   // Helper: fill the per-event counter exactly once per reco collision.
   // Reco-side guard. The histogram itself is filled here so
