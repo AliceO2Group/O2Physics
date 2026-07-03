@@ -528,8 +528,6 @@ struct QaMatching {
 
   using CollisionInfos = std::map<int64_t, CollisionInfo>;
   std::unordered_map<int64_t, int32_t> mftTrackCovs;
-
-
   using MuonPair = std::pair<std::pair<int64_t, uint64_t>, std::pair<int64_t, uint64_t>>;
   using GlobalMuonPair = std::pair<std::pair<int64_t, std::vector<MatchingCandidate>>, std::pair<int64_t, std::vector<MatchingCandidate>>>;
 
