@@ -173,15 +173,15 @@ DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
                   qamatching::ReducedEventId,
                   qamatching::ReducedTrackId,
                   qamatching::MatchLabel,
-                  qamatching::P, 
-                  qamatching::Pt, 
-                  qamatching::Eta, 
+                  qamatching::P,
+                  qamatching::Pt,
+                  qamatching::Eta,
                   qamatching::Phi,
                   qamatching::InvQPt,
                   qamatching::Tanl,
-                  qamatching::MatchType, 
-                  qamatching::MatchChi2, 
-                  qamatching::MatchScore, 
+                  qamatching::MatchType,
+                  qamatching::MatchChi2,
+                  qamatching::MatchScore,
                   qamatching::MatchRanking,
                   qamatching::XAtVtx,
                   qamatching::YAtVtx,
@@ -467,7 +467,7 @@ struct QaMatching {
   } configMlOptions;
 
   std::vector<double> binsPtMl;
-  std::array<double, 1> cutValues;
+  std::array<double, 1> cutValues{};
   std::vector<int> cutDirMl;
   std::map<std::string, o2::analysis::MlResponseMFTMuonMatch<float>> matchingMlResponses;
   std::map<std::string, std::string> matchingChi2Functions;
