@@ -66,9 +66,9 @@ struct McCentrality {
   Service<o2::framework::O2DatabasePDG> pdgDB;
   ConfigurableAxis binsPercentile{"binsPercentile", {VARIABLE_WIDTH, 0, 0.001, 0.01, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the percentile axis"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {1000, 0, 5000}, "Binning of the multiplicity axis"};
-  Configurable<bool> fillFt0M{"fillFt0M", true, "Fills the FT0M histogram"};
-  Configurable<bool> fillFt0A{"fillFt0A", false, "Fills the FT0A histogram"};
-  Configurable<bool> fillFt0C{"fillFt0C", false, "Fills the FT0C histogram"};
+  Configurable<bool> fillFt0M{"fillFt0M", false, "Fills the FT0M histogram. False for topology autosetup."};
+  Configurable<bool> fillFt0A{"fillFt0A", false, "Fills the FT0A histogram. False for topology autosetup."};
+  Configurable<bool> fillFt0C{"fillFt0C", false, "Fills the FT0C histogram. False for topology autosetup."};
   Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, "If ccdb object does not exist, fill with dummy values"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
