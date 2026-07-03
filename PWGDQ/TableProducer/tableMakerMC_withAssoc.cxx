@@ -367,7 +367,7 @@ struct TableMakerMC {
       }
       // Barrel track histograms after cuts; one directory per cut
       if (fConfigHistOutput.fConfigQA) {
-        for (auto& cut : fTrackCuts) {
+        for (const auto& cut : fTrackCuts) {
           histClasses += Form("TrackBarrel_%s;", cut->GetName());
         }
       }
@@ -380,7 +380,7 @@ struct TableMakerMC {
       }
       // Muon track histograms after cuts; one directory per cut
       if (fConfigHistOutput.fConfigQA) {
-        for (auto& muonCut : fMuonCuts) {
+        for (const auto& muonCut : fMuonCuts) {
           histClasses += Form("Muons_%s;", muonCut->GetName());
         }
       }
@@ -402,27 +402,27 @@ struct TableMakerMC {
     TString addMCSignalsStr = fConfigMCSignalsJSON.value;
     if (addMCSignalsStr != "") {
       std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
-      for (auto& mcIt : addMCSignals) {
+      for (const auto& mcIt : addMCSignals) {
         if (mcIt != nullptr) {
           fMCSignals.push_back(mcIt);
         }
       }
     }
 
-    for (auto& mcIt : fMCSignals) {
+    for (const auto& mcIt : fMCSignals) {
       if (fConfigHistOutput.fConfigQA) {
         histClasses += Form("MCTruth_%s;", mcIt->GetName());
       }
       if (fDoDetailedQA) {
         if (isBarrelEnabled) {
           // in case of detailed QA, setup histogram directories for each combination of reconstructed track cuts and MC signals
-          for (auto& cut : fTrackCuts) {
+          for (const auto& cut : fTrackCuts) {
             histClasses += Form("TrackBarrel_%s_%s;", cut->GetName(), mcIt->GetName());
           }
         }
         if (isMuonEnabled) {
           // in case of detailed QA, setup histogram directories for each combination of reconstructed muon cuts and MC signals
-          for (auto& cut : fMuonCuts) {
+          for (const auto& cut : fMuonCuts) {
             histClasses += Form("Muons_%s_%s;", cut->GetName(), mcIt->GetName());
           }
         }
@@ -476,7 +476,7 @@ struct TableMakerMC {
     TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
     if (addEvCutsStr != "") {
       std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
-      for (auto& cutIt : addEvCuts) {
+      for (const auto& cutIt : addEvCuts) {
         fEventCut->AddCut(cutIt);
       }
     }
@@ -493,7 +493,7 @@ struct TableMakerMC {
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
-      for (auto& t : addTrackCuts) {
+      for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -510,7 +510,7 @@ struct TableMakerMC {
     TString addMuonCutsStr = fConfigCuts.fConfigMuonCutsJSON.value;
     if (addMuonCutsStr != "") {
       std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
-      for (auto& t : addMuonCuts) {
+      for (const auto& t : addMuonCuts) {
         fMuonCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -532,7 +532,7 @@ struct TableMakerMC {
     VarManager::ResetValues(0, VarManager::kNVars);
 
     // Loop over MC collisions
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       // Get MC collision information into the VarManager
       VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
       // Fill histograms
@@ -559,11 +559,11 @@ struct TableMakerMC {
     auto mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
     int trackCounter = 0;
 
-    for (auto& mctrack : mcTracks) {
+    for (const auto& mctrack : mcTracks) {
       // check all the requested MC signals and fill the decision bit map
       mcflags = 0;
       int i = 0;
-      for (auto& sig : fMCSignals) {
+      for (const auto& sig : fMCSignals) {
         bool checked = false;
         if constexpr (soa::is_soa_filtered_v<aod::McParticles>) {
           auto mctrack_raw = mcTracks.rawIteratorAt(mctrack.globalIndex());
@@ -587,7 +587,7 @@ struct TableMakerMC {
         PrintBitMap(mcflags, 16);
         cout << endl;
         if (mctrack.has_mothers()) {
-          for (auto& m : mctrack.mothersIds()) {
+          for (const auto& m : mctrack.mothersIds()) {
             if (m < mcTracks.size()) { // protect against bad mother indices
               auto aMother = mcTracks.rawIteratorAt(m);
               cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
@@ -949,13 +949,13 @@ struct TableMakerMC {
         int i = 0; // runs over the MC signals
         int j = 0; // runs over the track cuts
         // check all the specified signals and fill histograms for MC truth matched tracks
-        for (auto& sig : fMCSignals) {
+        for (const auto& sig : fMCSignals) {
           if (sig->CheckSignal(true, mctrack)) {
             mcflags |= (static_cast<uint16_t>(1) << i);
             // If detailed QA is on, fill histograms for each MC signal and track cut combination
             if (fDoDetailedQA) {
               j = 0;
-              for (auto& cut : fTrackCuts) {
+              for (const auto& cut : fTrackCuts) {
                 if (trackTempFilterMap & (uint8_t(1) << j)) {
                   fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
                 }
@@ -1014,7 +1014,7 @@ struct TableMakerMC {
           mcflags = 0;
           int i = 0; // runs over the MC signals
           // check all the specified signals and fill histograms for MC truth matched tracks
-          for (auto& sig : fMCSignals) {
+          for (const auto& sig : fMCSignals) {
             if (sig->CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               // If detailed QA is on, fill histograms for each MC signal and track cut combination
@@ -1057,7 +1057,7 @@ struct TableMakerMC {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -1091,7 +1091,7 @@ struct TableMakerMC {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -1196,12 +1196,12 @@ struct TableMakerMC {
           int i = 0; // runs over the MC signals
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
-          for (auto& sig : fMCSignals) {
+          for (const auto& sig : fMCSignals) {
             if (sig->CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
-                for (auto& cut : fMuonCuts) {
+                for (const auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut->GetName(), sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
                   }
@@ -1402,7 +1402,7 @@ struct TableMakerMC {
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-      for (auto& mfttrackConv : mftCovs) {
+      for (const auto& mfttrackConv : mftCovs) {
         map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
       }
     }
@@ -1452,7 +1452,7 @@ struct TableMakerMC {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
-        for (auto& m : mctrack.mothersIds()) {
+        for (const auto& m : mctrack.mothersIds()) {
           if (m < mcParticles.size()) { // protect against bad mother indices
             if (fLabelsMap.contains(m)) {
               mothers.push_back(fLabelsMap.find(m)->second);
@@ -1662,7 +1662,7 @@ struct TableMakerMC {
   {
     fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMapWithCent>(collisions, bcs, nullptr, tracksMuon, mftTracks, nullptr, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
     /*LOGP(info, "---------------------------");
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       LOGP(info, "Gen. FT0C centrality = {}", mcCollision.bestCollisionCentFT0C());
       //LOGP(info, "Gen. FT0C centrality = {}", mcCollision.posZ());
     }
