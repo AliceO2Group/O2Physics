@@ -117,10 +117,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfUseWeights{"cfUseWeights", true, "use weights"};
   Configurable<bool> cfToyModel{"cfToyModel", true, "phi-distribution from toy model"};
   Configurable<bool> cfNest{"cfNest", true, "nested loops"};
+  Configurable<bool> cfTechcuts{"cfTechcuts", true, "technical cuts"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
+  Configurable<std::vector<float>> cfDCAxy{"cfDCAxy", {-0.5, 0.5}, "dca xy range"};
+  Configurable<std::vector<float>> cfDCAz{"cfDCAz", {-0.2, 0.2}, "dca z range"};
+  Configurable<float> cftpcNClsFoundmin{"cftpcNClsFoundmin", 70., "tpcNClsFoundmin"};
+  Configurable<float> cftpcChi2NClmax{"cftpcChi2NClmax", 4., "tpcChi2NClmax"};
 
   Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile06", "path to external ROOT file which holds all particle weights"};
@@ -367,6 +372,10 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float NContrcut = 2.;
     if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()) || collision.numContrib() < NContrcut)
       return false;
+    if (cfTechcuts) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) || !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof))
+        return false;
+    }
     return true;
   }
 
@@ -381,7 +390,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float etacutmin = static_cast<float>(Eta[0]);
     float etacutmax = static_cast<float>(Eta[1]);
     float eta = track.eta();
-    if (pt < ptcutmin || pt > ptcutmax || eta < etacutmin || eta > etacutmax)
+    vector<float> dcaXY = cfDCAxy.value;
+    float dcaxycutmin = static_cast<float>(dcaXY[0]);
+    float dcaxycutmax = static_cast<float>(dcaXY[1]);
+    float dcaxy = track.dcaXY();
+    vector<float> dcaZ = cfDCAz.value;
+    float dcazcutmin = static_cast<float>(dcaZ[0]);
+    float dcazcutmax = static_cast<float>(dcaZ[1]);
+    float dcaz = track.dcaZ();
+    if (pt < ptcutmin || pt > ptcutmax || eta < etacutmin || eta > etacutmax || dcaxy < dcaxycutmin || dcaxy > dcaxycutmax || dcaz < dcazcutmin || dcaz > dcazcutmax || (!track.isPrimaryTrack()) || (!track.isPVContributor()) || track.tpcNClsFound() < cftpcNClsFoundmin.value || track.tpcChi2NCl() > cftpcChi2NClmax)
       return false;
     return true;
   }
