@@ -4643,7 +4643,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
 
   if (fgUsedVars[kCos2DeltaPhiRP_Random] || fgUsedVars[kCos2DeltaPhiPP_Random] || fgUsedVars[kCos2DeltaPhiRP_MC] || fgUsedVars[kCos2DeltaPhiPP_MC]) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.sign() > 0 ? v1 : v2);
+    ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.pdgCode() > 0 ? v1 : v2);
 
     // reaction plane
     float phi = v_daughter.Phi() > TMath::Pi() ? v_daughter.Phi() - 2. * TMath::Pi() : v_daughter.Phi();
