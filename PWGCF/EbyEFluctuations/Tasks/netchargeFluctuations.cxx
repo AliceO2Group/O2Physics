@@ -180,8 +180,8 @@ struct NetchargeFluctuations {
   // Histogram pointer for CCDB efficiency
   // TH1D* efficiency = nullptr;
 
-  TH2D* efficiencyPos = nullptr;
-  TH2D* efficiencyNeg = nullptr;
+  TH2F* efficiencyPos = nullptr;
+  TH2F* efficiencyNeg = nullptr;
 
   // Filters for selecting collisions and tracks
   Filter collisionFilter = nabs(aod::collision::posZ) <= vertexZcut;
@@ -447,8 +447,9 @@ struct NetchargeFluctuations {
       ccdb->setLocalObjectValidityChecking();
 
       auto* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, 1);
-      efficiencyPos = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Pos"));
-      efficiencyNeg = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Neg"));
+      efficiencyPos = dynamic_cast<TH2F*>(list->FindObject("efficiency_Pos"));
+      efficiencyNeg = dynamic_cast<TH2F*>(list->FindObject("efficiency_Neg"));
+
       // Log fatal error if efficiency histogram is not found
       if (!efficiencyPos || !efficiencyNeg) {
         LOGF(info, "FATAL!! Could not find required histograms in CCDB");
@@ -608,7 +609,7 @@ struct NetchargeFluctuations {
 
   double getEfficiency(float pt, float eta, int sign)
   {
-    TH2D* hEff = nullptr;
+    TH2F* hEff = nullptr;
 
     if (sign > 0) {
       hEff = efficiencyPos;
