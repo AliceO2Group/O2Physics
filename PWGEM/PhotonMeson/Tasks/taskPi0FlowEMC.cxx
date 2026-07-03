@@ -240,8 +240,8 @@ struct TaskPi0FlowEMC {
   struct : ConfigurableGroup {
     std::string prefix = "correctionConfig";
     Configurable<std::string> cfgSpresoPath{"cfgSpresoPath", "Users/m/mhemmer/EM/Flow/Resolution", "Path to SP resolution file"};
-    Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", 0, "Apply resolution correction"};
-    Configurable<bool> doEMCalCalib{"doEMCalCalib", 0, "Produce output for EMCal calibration"};
+    Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", false, "Apply resolution correction"};
+    Configurable<bool> doEMCalCalib{"doEMCalCalib", false, "Produce output for EMCal calibration"};
     Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
   } correctionConfig;
 
