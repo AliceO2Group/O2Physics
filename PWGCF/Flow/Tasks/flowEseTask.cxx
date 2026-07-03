@@ -186,20 +186,20 @@ struct FlowEseTask {
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
-  int detId;
-  int refAId;
-  int refBId;
+  int detId = -1;
+  int refAId = -1;
+  int refBId = -1;
 
-  int qvecDetInd;
-  int qvecRefAInd;
-  int qvecRefBInd;
+  int qvecDetInd = -1;
+  int qvecRefAInd = -1;
+  int qvecRefBInd = -1;
 
-  float centrality;
+  float centrality = -1.0f;
 
-  double angle;
-  double psi;
-  double relphi;
-  double productPhi;
+  double angle = 0.0;
+  double psi = 0.0;
+  double relphi = 0.0;
+  double productPhi = 0.0;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
@@ -560,7 +560,7 @@ struct FlowEseTask {
         return false;
       if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin)
         return false;
-    } else if (!lambdaTag) {
+    } else {
       if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin)
         return false;
       if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin)
