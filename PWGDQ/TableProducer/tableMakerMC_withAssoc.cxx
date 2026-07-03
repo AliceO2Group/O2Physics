@@ -53,6 +53,7 @@
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/GlobalFwdTrack.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
@@ -67,16 +68,12 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-using std::cout;
-using std::endl;
 
 using namespace o2;
 using namespace o2::framework;
@@ -142,6 +139,7 @@ inline TString* varNames() { return static_cast<TString*>(VarManager::fgVariable
 inline TString* varUnits() { return static_cast<TString*>(VarManager::fgVariableUnits); }
 } // namespace dqtablemakermc_helpers
 
+/*
 template <typename TMap>
 void PrintBitMap(TMap map, int nbits)
 {
@@ -149,6 +147,7 @@ void PrintBitMap(TMap map, int nbits)
     cout << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
   }
 }
+*/
 
 struct TableMakerMC {
 
@@ -1459,8 +1458,8 @@ struct TableMakerMC {
               mothers.push_back(fLabelsMap.find(m)->second);
             }
           } else {
-            cout << "Mother label (" << m << ") exceeds the McParticles size (" << mcParticles.size() << ")" << endl;
-            cout << " Check the MC generator" << endl;
+            LOG(warn) << "Mother label (" << m << ") exceeds the McParticles size (" << mcParticles.size() << ")";
+            LOG(warn) << "Check the MC generator";
           }
         }
       }
@@ -1476,8 +1475,8 @@ struct TableMakerMC {
               daughters.push_back(fLabelsMap.find(d)->second);
             }
           } else {
-            cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcParticles.size() << ")" << endl;
-            cout << " Check the MC generator" << endl;
+            LOG(warn) << "Daughter label (" << d << ") exceeds the McParticles size (" << mcParticles.size() << ")";
+            LOG(warn) << "Check the MC generator";
           }
         }
       }
@@ -1507,7 +1506,7 @@ struct TableMakerMC {
   void DefineHistograms(const TString& histClasses)
   {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-    for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+    for (int iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
       TString classStr = objArray->At(iclass)->GetName();
       if (fConfigHistOutput.fConfigQA) {
         fHistMan->AddHistClass(classStr.Data());
