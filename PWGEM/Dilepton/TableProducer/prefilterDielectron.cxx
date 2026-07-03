@@ -14,13 +14,12 @@
 // This code produces information on prefilter for dielectron.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "RecoDecay.h"
-
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 

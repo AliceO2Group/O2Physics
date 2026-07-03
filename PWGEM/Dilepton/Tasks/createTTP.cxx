@@ -14,8 +14,6 @@
 // This code creates parameters used in track tuner.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "trackUtilities.h"
-
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
@@ -23,6 +21,7 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"

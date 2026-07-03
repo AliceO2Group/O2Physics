@@ -15,8 +15,6 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università degli Studi and INFN Torino
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "RecoDecay.h"
-
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseBplusToJpsiKReduced.h"
@@ -26,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CCDB/CcdbApi.h>
