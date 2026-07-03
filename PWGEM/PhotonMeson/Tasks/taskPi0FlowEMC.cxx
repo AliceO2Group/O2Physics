@@ -803,7 +803,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi.value) {
             float dTheta = photon1.Theta() - photon3.Theta();
             float dPhi = photon1.Phi() - photon3.Phi();
-            if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               continue;
             }
           }
@@ -825,7 +825,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi.value) {
               float dTheta = photon2.Theta() - photon3.Theta();
               float dPhi = photon2.Phi() - photon3.Phi();
-              if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 continue;
               }
             }
@@ -909,7 +909,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi.value) {
             float dTheta = photonPCM.Theta() - photon3.Theta();
             float dPhi = photonPCM.Phi() - photon3.Phi();
-            if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               continue;
             }
           }
@@ -941,7 +941,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi.value) {
             float dTheta = photonEMC.Theta() - photon3.Theta();
             float dPhi = photonEMC.Phi() - photon3.Phi();
-            if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               continue;
             }
           }
