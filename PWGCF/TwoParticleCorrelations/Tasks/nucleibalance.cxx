@@ -2042,7 +2042,8 @@ struct Lambdastarproxy {
   {
     AxisSpec massAxis{200, 1.4, 1.9, "M_{pK} (GeV/c^{2})"};
     AxisSpec ptAxis{100, 0., 10., "p_{T} (GeV/c)"};
-    AxisSpec nsAxis{100, -10., 10., "n#sigma"};
+    AxisSpec nsAxis{500, -50., 50., "n#sigma"};
+    AxisSpec tofMatchAxis{2, -0.5, 1.5, "has TOF match"};
     AxisSpec pAxis{100, 0., 10., "p (GeV/c)"};
     AxisSpec etaAxis{80, -2., 2., "#eta"};
     AxisSpec phiAxis{64, 0., o2::constants::math::TwoPI, "#varphi"};
@@ -2119,6 +2120,14 @@ struct Lambdastarproxy {
                "TOF #beta vs p;p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
 
+    histos.add("hHasTOFVsP",
+               "TOF matching flag vs p;p (GeV/c);has TOF match;Counts",
+               HistType::kTH2F, {pAxis, tofMatchAxis});
+
+    histos.add("hHasTOFVsPt",
+               "TOF matching flag vs p_{T};p_{T} (GeV/c);has TOF match;Counts",
+               HistType::kTH2F, {ptAxis, tofMatchAxis});
+
     // --- Per-species inclusive PID QA before final candidate PID cuts ---
     // Species tagging here uses classifyPidSpecies() and is meant only for QA.
     histos.add("hTPCdEdxVsP_Pi",
@@ -2146,6 +2155,36 @@ struct Lambdastarproxy {
     histos.add("hTOFBetaVsP_D",
                "TOF #beta vs p (tagged d);p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
+
+    // Inclusive tagged nSigma QA before final candidate PID cuts: after track-quality cuts only.
+    // These are separate from the final-candidate PID QA histograms.
+    histos.add("hNsigmaTPCPionTaggedVsP",
+               "TPC n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TPC}_{#pi};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFPionTaggedVsP",
+               "TOF n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TOF}_{#pi};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCKaonTaggedVsP",
+               "TPC n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TPC}_{K};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFKaonTaggedVsP",
+               "TOF n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCProtonTaggedVsP",
+               "TPC n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonTaggedVsP",
+               "TOF n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCDeuteronTaggedVsP",
+               "TPC n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TPC}_{d};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFDeuteronTaggedVsP",
+               "TOF n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
 
     // --- MC QA (AO2D-MC mode) ---
     histos.add("hMcPrimariesPtEta",
@@ -2615,10 +2654,18 @@ struct Lambdastarproxy {
       fillTPCdEdxVsPIfAvailable(trk);
       fillTOFBetaVsPIfAvailable(trk);
 
+      const double pForPidQA = static_cast<double>(trk.pt()) * std::cosh(static_cast<double>(trk.eta()));
+      const bool hasTofForPidQA = hasTOFMatch(trk);
+
+      histos.fill(HIST("hHasTOFVsP"), pForPidQA, hasTofForPidQA ? 1.0 : 0.0);
+      histos.fill(HIST("hHasTOFVsPt"), trk.pt(), hasTofForPidQA ? 1.0 : 0.0);
+
       // Per-species PID-QA (tagged) histograms
       const int sp = classifyPidSpecies(trk);
       switch (sp) {
         case 0: { // pion
+          histos.fill(HIST("hNsigmaTPCPionTaggedVsP"), pForPidQA, trk.tpcNSigmaPi());
+          histos.fill(HIST("hNsigmaTOFPionTaggedVsP"), pForPidQA, trk.tofNSigmaPi());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_Pi"), trk.p(), trk.tpcSignal());
           }
@@ -2632,6 +2679,8 @@ struct Lambdastarproxy {
           break;
         }
         case 1: { // kaon
+          histos.fill(HIST("hNsigmaTPCKaonTaggedVsP"), pForPidQA, trk.tpcNSigmaKa());
+          histos.fill(HIST("hNsigmaTOFKaonTaggedVsP"), pForPidQA, trk.tofNSigmaKa());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_K"), trk.p(), trk.tpcSignal());
           }
@@ -2645,6 +2694,8 @@ struct Lambdastarproxy {
           break;
         }
         case 2: { // proton
+          histos.fill(HIST("hNsigmaTPCProtonTaggedVsP"), pForPidQA, trk.tpcNSigmaPr());
+          histos.fill(HIST("hNsigmaTOFProtonTaggedVsP"), pForPidQA, trk.tofNSigmaPr());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_P"), trk.p(), trk.tpcSignal());
           }
@@ -2658,6 +2709,8 @@ struct Lambdastarproxy {
           break;
         }
         case 3: { // deuteron
+          histos.fill(HIST("hNsigmaTPCDeuteronTaggedVsP"), pForPidQA, trk.tpcNSigmaDe());
+          histos.fill(HIST("hNsigmaTOFDeuteronTaggedVsP"), pForPidQA, trk.tofNSigmaDe());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_D"), trk.p(), trk.tpcSignal());
           }
