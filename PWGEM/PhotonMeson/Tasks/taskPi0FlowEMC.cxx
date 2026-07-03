@@ -76,19 +76,19 @@ using namespace o2::aod::pwgem::photon;
 enum QvecEstimator {
   FT0M = 0,
   FT0A = 1,
-  FT0C,
-  TPCPos,
-  TPCNeg,
-  TPCTot,
-  FV0A
+  FT0C = 2,
+  TPCPos = 3,
+  TPCNeg = 4,
+  TPCTot = 5,
+  FV0A = 6
 };
 
 enum CentralityEstimator {
   None = 0,
   CFT0A = 1,
-  CFT0C,
-  CFT0M,
-  NCentralityEstimators
+  CFT0C = 2,
+  CFT0M = 3,
+  NCentralityEstimators = 4
 };
 
 enum Harmonics {
@@ -233,21 +233,21 @@ struct TaskPi0FlowEMC {
     std::string prefix = "rotationConfig";
     Configurable<bool> cfgDoRotation{"cfgDoRotation", false, "Flag to enable rotation background method."};
     Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision."};
-    Configurable<float> cfgRotAngle{"cfgRotAngle", std::move(const_cast<float&>(o2::constants::math::PIHalf)), "Angle used for the rotation method."};
+    Configurable<float> cfgRotAngle{"cfgRotAngle", static_cast<float>(o2::constants::math::PIHalf), "Angle used for the rotation method."};
     Configurable<bool> cfgUseWeights{"cfgUseWeights", false, "Flag to enable weights for rotation background method."};
   } rotationConfig;
 
   struct : ConfigurableGroup {
     std::string prefix = "correctionConfig";
     Configurable<std::string> cfgSpresoPath{"cfgSpresoPath", "Users/m/mhemmer/EM/Flow/Resolution", "Path to SP resolution file"};
-    Configurable<int> cfgApplySPresolution{"cfgApplySPresolution", 0, "Apply resolution correction"};
-    Configurable<bool> doEMCalCalib{"doEMCalCalib", 0, "Produce output for EMCal calibration"};
+    Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", false, "Apply resolution correction"};
+    Configurable<bool> doEMCalCalib{"doEMCalCalib", false, "Produce output for EMCal calibration"};
     Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
   } correctionConfig;
 
   SliceCache cache;
   EventPlaneHelper epHelper;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int runNow = 0;
   int runBefore = -1;
 
@@ -269,8 +269,8 @@ struct TaskPi0FlowEMC {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  o2::emcal::Geometry* emcalGeom;
-  o2::emcal::BadChannelMap* mBadChannels;
+  o2::emcal::Geometry* emcalGeom = nullptr;
+  o2::emcal::BadChannelMap* mBadChannels = nullptr;
   TH1D* h1SPResolution = nullptr;
   // Constants for eta and phi ranges for the look up table
   static constexpr double EtaMin = -0.75, etaMax = 0.75;
@@ -279,7 +279,7 @@ struct TaskPi0FlowEMC {
   static constexpr double PhiMin = 1.35, phiMax = 5.75;
   static constexpr int NBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
 
-  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D;
+  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D{};
   float epsilon = 1.e-8;
 
   // static constexpr
@@ -506,8 +506,8 @@ struct TaskPi0FlowEMC {
   template <const int histType>
   void fillThn(const float mass, const float pt, const float cent, const float sp)
   {
-    static constexpr std::string_view FlowHistTypes[3] = {"hSparsePi0Flow", "hSparseBkgRotFlow", "hSparseBkgMixFlow"};
-    static constexpr std::string_view HistTypes[3] = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
+    static constexpr std::array<std::string_view, 3> FlowHistTypes = {"hSparsePi0Flow", "hSparseBkgRotFlow", "hSparseBkgMixFlow"};
+    static constexpr std::array<std::string_view, 3> HistTypes = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
     registry.fill(HIST(FlowHistTypes[histType]), mass, pt, cent, sp);
     registry.fill(HIST(HistTypes[histType]), mass, pt, cent);
   }
@@ -668,9 +668,8 @@ struct TaskPi0FlowEMC {
     int iRowLast = 24;
     if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
       iRowLast /= 2; // 2/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
-      iRowLast /= 3; // 1/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+    } else if ((emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) ||
+               (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT)) {
       iRowLast /= 3; // 1/3 sm case
     }
 
@@ -804,7 +803,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi.value) {
             float dTheta = photon1.Theta() - photon3.Theta();
             float dPhi = photon1.Phi() - photon3.Phi();
-            if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               continue;
             }
           }
@@ -826,7 +825,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi.value) {
               float dTheta = photon2.Theta() - photon3.Theta();
               float dPhi = photon2.Phi() - photon3.Phi();
-              if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 continue;
               }
             }
@@ -836,7 +835,6 @@ struct TaskPi0FlowEMC {
         } // end of loop over third photon
       }
     }
-    return;
   }
 
   /// \brief Calculate background using rotation background method
@@ -911,7 +909,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi.value) {
             float dTheta = photonPCM.Theta() - photon3.Theta();
             float dPhi = photonPCM.Phi() - photon3.Phi();
-            if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               continue;
             }
           }
@@ -943,7 +941,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi.value) {
             float dTheta = photonEMC.Theta() - photon3.Theta();
             float dPhi = photonEMC.Phi() - photon3.Phi();
-            if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi <= std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               continue;
             }
           }
@@ -952,7 +950,6 @@ struct TaskPi0FlowEMC {
         }
       } // end of loop over PCM photons
     } // if(iCellIDphotonEMC > -1)
-    return;
   }
 
   /// Compute the scalar product
@@ -983,7 +980,6 @@ struct TaskPi0FlowEMC {
     }
 
     fillThn<histType>(massCand, ptCand, cent, scalprodCand);
-    return;
   }
 
   /// \brief check if standard event cuts + FT0 occupancy + centrality + QVec good is
@@ -1105,7 +1101,7 @@ struct TaskPi0FlowEMC {
           if (!(fEMCCut.IsSelected(photon))) {
             continue;
           }
-          if (cfgDistanceToEdge.value && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {
+          if (cfgDistanceToEdge.value > 0 && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {
             continue;
           }
           registry.fill(HIST("clusterQA/hEClusterAfter"), photon.corrE());                  // accepted after cuts
@@ -1145,7 +1141,7 @@ struct TaskPi0FlowEMC {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -1168,7 +1164,7 @@ struct TaskPi0FlowEMC {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {
             continue;
           }
@@ -1259,7 +1255,7 @@ struct TaskPi0FlowEMC {
         }
 
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelSameEvent.value) {
             continue;
           }
@@ -1335,7 +1331,7 @@ struct TaskPi0FlowEMC {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -1358,7 +1354,7 @@ struct TaskPi0FlowEMC {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {
             continue;
           }
@@ -1431,7 +1427,7 @@ struct TaskPi0FlowEMC {
         if (!(emcFlags.test(photon.globalIndex()))) {
           continue;
         }
-        if (cfgDistanceToEdge.value && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {
+        if (cfgDistanceToEdge.value > 0 && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {
           continue;
         }
         if (emccuts.cfgEnableQA.value) {
@@ -1536,7 +1532,7 @@ struct TaskPi0FlowEMC {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -1586,7 +1582,7 @@ struct TaskPi0FlowEMC {
 
 }; // End struct TaskPi0FlowEMC
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskPi0FlowEMC>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TaskPi0FlowEMC>(context)};
 }

@@ -90,6 +90,7 @@ struct k892hadronphotonBkg {
     Configurable<float> kstarMaxRap{"kstarMaxRap", 0.5f, "Max |y(K*)|"};
     Configurable<int> nBkgRot{"nBkgRot", 3, "Rotations per pair (rotational bkg)"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "theta band: [pi - pi/cut, pi + pi/cut]"};
+    Configurable<float> rotationalFactor{"rotationalFactor", 1.f, "Factor to scale the angle of rotation (rotationalFactor * PI)"};
   } kstarBkgConfig;
 
   ConfigurableAxis axisVertexMixBkg{"axisVertexMixBkg", {VARIABLE_WIDTH, -10.f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "z-vertex bins for mixing"};
@@ -385,13 +386,11 @@ struct k892hadronphotonBkg {
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
-    if (fillHists)
+    if (fillHists) {
       histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
-
-    // Fill centrality histogram after event selection
-    if (fillHists)
+      // Fill centrality histogram after event selection
       histos.fill(HIST("hEventCentrality"), centrality);
-
+    }
     return true;
   }
 
@@ -595,8 +594,8 @@ struct k892hadronphotonBkg {
                                            0.0);
 
         for (int irot = 0; irot < kstarBkgConfig.nBkgRot; ++irot) {
-          float theta = rotRng.Uniform(o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
-                                       o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
+          float theta = rotRng.Uniform(kstarBkgConfig.rotationalFactor * o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
+                                       kstarBkgConfig.rotationalFactor * o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
 
           ROOT::Math::PtEtaPhiMVector kRot(kshort.pt(), kshort.eta(), kshort.phi() + theta, o2::constants::physics::MassK0Short);
 

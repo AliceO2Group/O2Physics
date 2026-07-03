@@ -383,11 +383,9 @@ struct k892hadronphoton {
           histos.add(histodir + "/MC/KStar/hDCAPairDauVsPt", "hDCAPairDauVsPt", kTH2D, {axisDCAdau, axisPt});
 
           // 1/pT Resolution:
-          if (fillResoQAhistos && histodir == "BeforeSel") {
-
+          if (fillResoQAhistos) {
             histos.add(histodir + "/MC/Reso/h2dKShortPtResolution", "h2dKShortPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
-            histos.add(histodir + "/MC/Reso/h3dKShortPtResoVsTPCCR", "h3dKShortPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
-            histos.add(histodir + "/MC/Reso/h3dKShortPtResoVsTPCCR", "h3dKShortPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+            histos.add(histodir + "/MC/Reso/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
             histos.add(histodir + "/MC/Reso/h2dKStarPtResolution", "h2dKStarPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
             histos.add(histodir + "/MC/Reso/h2dKStarRadiusResolution", "h2dKStarRadiusResolution", kTH2D, {axisPt, axisDeltaPt});
           }
@@ -396,10 +394,16 @@ struct k892hadronphoton {
           if (fillBkgQAhistos) {
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_All", "h2dPtVsMassKStar_All", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_TrueDaughters", "h2dPtVsMassKStar_TrueDaughters", kTH2D, {axisPt, axisKStarMass});
-            histos.add(histodir + "/MC/BkgStudy/h2dTrueDaughtersMatrix", "h2dTrueDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
+            histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_PhotonOmega", "h2dPtVsMassKStar_PhotonOmega", kTH2D, {axisPt, axisKStarMass});
+            histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_PhotonRho", "h2dPtVsMassKStar_PhotonRho", kTH2D, {axisPt, axisKStarMass});
+            histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_PhotonEta", "h2dPtVsMassKStar_PhotonEta", kTH2D, {axisPt, axisKStarMass});
+            histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_KShortKCharged", "h2dPtVsMassKStar_KShortKCharged", kTH2D, {axisPt, axisKStarMass});
+            histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon", "h2dPtVsMassKStar_KStarPionKaon", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_TrueGammaFakeKShort", "h2dPtVsMassKStar_TrueGammaFakeKShort", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_FakeGammaTrueKShort", "h2dPtVsMassKStar_FakeGammaTrueKShort", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_FakeDaughters", "h2dPtVsMassKStar_FakeDaughters", kTH2D, {axisPt, axisKStarMass});
+            histos.add(histodir + "/MC/BkgStudy/h2dTrueDaughtersMatrix", "h2dTrueDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
+            histos.add(histodir + "/MC/BkgStudy/h2dTrueDaughtersMatrixGrandMother", "h2dTrueDaughtersMatrixGrandMother", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
           }
         }
       }
@@ -575,12 +579,12 @@ struct k892hadronphoton {
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
 
-    // Fill centrality histogram after event selection
-    if (fillHists)
+    if (fillHists) {
+      histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
+      // Fill centrality histogram after event selection
       histos.fill(HIST("hEventCentrality"), centrality);
+    }
 
     return true;
   }
@@ -761,17 +765,18 @@ struct k892hadronphoton {
     return trkCode;
   }
 
-  template <typename TKStarObject>
+  template <int mode, typename TKStarObject>
   void getResolution(TKStarObject const& kstar)
   {
+    // Check whether it is before or after selections
+    static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
 
     //_______________________________________
     // Gamma MC association
     if (std::abs(kstar.photonPDGCode()) == PDG_t::kGamma) {
       if (kstar.photonmcpt() > 0) {
-        histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), -1 * kstar.photonNegTPCCrossedRows()); // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), kstar.photonPosTPCCrossedRows());      // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/Reso/h2dGammaPtResolution"), 1.f / kstar.photonmcpt(), 1.f / kstar.photonPt() - 1.f / kstar.photonmcpt());                                        // pT resolution
+        // histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dGammaPtResolution"), 1.f / kstar.photonmcpt(), kstar.photonPt() - kstar.photonmcpt());
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dGammaPtResolution"), 1.f / kstar.photonmcpt(), (kstar.photonPt() - kstar.photonmcpt()) / kstar.photonmcpt());
       }
     }
 
@@ -779,18 +784,17 @@ struct k892hadronphoton {
     // KShort MC association
     if (std::abs(kstar.kshortPDGCode()) == PDG_t::kK0Short) {
       if (kstar.kshortmcpt() > 0) {
-        histos.fill(HIST("BeforeSel/MC/Reso/h2dKShortPtResolution"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt());                                        // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/Reso/h3dKShortPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), -1 * kstar.kshortNegTPCCrossedRows()); // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/Reso/h3dKShortPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), kstar.kshortPosTPCCrossedRows());      // 1/pT resolution
+        // histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dKShortPtResolution"), 1.f / kstar.kshortmcpt(), kstar.kshortPt() - kstar.kshortmcpt());
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dKShortPtResolution"), 1.f / kstar.kshortmcpt(), (kstar.kshortPt() - kstar.kshortmcpt()) / kstar.kshortmcpt());
       }
     }
 
     //_______________________________________
     // KStar MC association
     if (kstar.isKStar()) {
-      histos.fill(HIST("BeforeSel/MC/Reso/h2dKStarRadiusResolution"), kstar.mcpt(), kstar.radius() - kstar.mcradius()); // pT resolution
+      histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dKStarRadiusResolution"), kstar.mcpt(), kstar.radius() - kstar.mcradius()); // pT resolution
       if (kstar.mcpt() > 0)
-        histos.fill(HIST("BeforeSel/MC/Reso/h2dKStarPtResolution"), 1.f / kstar.mcpt(), 1.f / kstar.pt() - 1.f / kstar.mcpt()); // pT resolution
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dKStarPtResolution"), 1.f / kstar.mcpt(), (1.f / kstar.pt() - 1.f / kstar.mcpt()) / (1.f / kstar.mcpt())); // pT resolution
     }
   }
 
@@ -804,18 +808,40 @@ struct k892hadronphoton {
     bool fIsKStar = kstar.isKStar();
     int photonPDGCode = kstar.photonPDGCode();
     int photonPDGCodeMother = kstar.photonPDGCodeMother();
+    int photonPDGCodeGrandMother = kstar.photonPDGCodeGrandMother();
+    int photonGlobalIndexGrandMother = kstar.photonGlobalIndexGrandMother();
     int kshortPDGCode = kstar.kshortPDGCode();
     int kshortPDGCodeMother = kstar.kshortPDGCodeMother();
+    int kshortPDGCodeGrandMother = kstar.kshortPDGCodeGrandMother();
+    int kshortGlobalIndexGrandMother = kstar.kshortGlobalIndexGrandMother();
     float kstarpT = kstar.pt();
     float kstarMass = kstar.kstarMass();
 
     histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_All"), kstarpT, kstarMass);
 
     //_______________________________________
-    // Real Gamma x Real KShort - but not from the same kstar!
-    if ((!fIsKStar)) { //(std::abs(photonPDGCode) == PDG_t::kGamma) && (std::abs(KShortPDGCode) == PDG_t::kK0Short) &&
+    // Real Gamma x Real KShort - but not direct decays from the same kstar!
+    if ((!fIsKStar) && (std::abs(photonPDGCode) == PDG_t::kGamma) && (std::abs(kshortPDGCode) == PDG_t::kK0Short)) {
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueDaughters"), kstarpT, kstarMass);
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), kshortPDGCodeMother, photonPDGCodeMother);
+      histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrixGrandMother"), kshortPDGCodeGrandMother, photonPDGCodeGrandMother);
+
+      // coming from the same kstar (coupled), but via a different decay channel (K* -> K0 pi0 -> K0s gamma)
+      if (std::abs(kshortPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) // K*(892)0
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon"), kstarpT, kstarMass);
+
+      // Break down of different photon / kshort sources
+      if (std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kOmega) // omega(782)
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PhotonOmega"), kstarpT, kstarMass);
+
+      if (std::abs(photonPDGCodeGrandMother) == PDG_t::kRho770Plus) // rho+-(770)
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PhotonRho"), kstarpT, kstarMass);
+
+      if (std::abs(photonPDGCodeMother) == o2::constants::physics::Pdg::kEta) // eta
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PhotonEta"), kstarpT, kstarMass);
+
+      if (std::abs(kshortPDGCodeGrandMother) == o2::constants::physics::Pdg::kKPlusStar892) // K*(892)+-
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_KShortKCharged"), kstarpT, kstarMass);
     }
 
     //_______________________________________
@@ -978,8 +1004,8 @@ struct k892hadronphoton {
 
         //_______________________________________
         // pT resolution histos
-        if ((mode == 0) && fillResoQAhistos)
-          getResolution(kstar);
+        if (fillResoQAhistos)
+          getResolution<mode>(kstar);
       }
     }
   }
