@@ -527,7 +527,6 @@ struct QaMatching {
   };
 
   using CollisionInfos = std::map<int64_t, CollisionInfo>;
-
   std::unordered_map<int64_t, int32_t> mftTrackCovs;
 
 
@@ -557,7 +556,6 @@ struct QaMatching {
                                                        &registryMatching8,
                                                        &registryMatching9}};
   HistogramRegistry registryDimuon{"registryDimuon", {}};
-
 
   Produces<o2::aod::QaMatchingEvents> qaMatchingEvents;
   Produces<o2::aod::QaMatchingMCHTrack> qaMatchingMCHTrack;
