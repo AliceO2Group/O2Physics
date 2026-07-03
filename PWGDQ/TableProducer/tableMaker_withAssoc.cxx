@@ -692,8 +692,8 @@ struct TableMaker {
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
-    constexpr std::array<const char*, 5> v0TagNames = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (ib = 0; ib < 5; ib++) {
+    constexpr std::array v0TagNames{"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
+    for (ib = 0; ib < v0TagNames.size(); ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
     fStatsList->AddAt(histTracks, kStatsTracks);
