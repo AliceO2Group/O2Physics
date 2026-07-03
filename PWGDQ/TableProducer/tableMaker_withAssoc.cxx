@@ -1018,7 +1018,7 @@ struct TableMaker {
           bool isTriggerZNA = bc.selection_bit(aod::evsel::kIsBBZNA);
           bool isTriggerZNC = bc.selection_bit(aod::evsel::kIsBBZNC);
 
-          (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(0.0, muTVX);
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(0.0, muTVX);
           if (isTvx) {
             (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(1.0, muTVX);
             if (noBorder) {
