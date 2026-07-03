@@ -708,8 +708,8 @@ struct Nucleibalance {
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
       }
-        LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
-      }
+      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
+    }
     if (cfgEfficiencyAssociated.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
@@ -720,7 +720,7 @@ struct Nucleibalance {
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
       }
-        LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), static_cast<void*>(cfg.mEfficiencyAssociated));
+      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), static_cast<void*>(cfg.mEfficiencyAssociated));
     }
     cfg.efficiencyLoaded = true;
   }
