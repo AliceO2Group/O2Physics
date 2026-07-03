@@ -4646,7 +4646,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
     ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.sign() > 0 ? v1 : v2);
 
     // reaction plane
-    float phi = v_daughter.Phi() > T1Math::Pi() ? v_daughter.Phi() - 2. * TMath::Pi() : v_daughter.Phi();
+    float phi = v_daughter.Phi() > TMath::Pi() ? v_daughter.Phi() - 2. * TMath::Pi() : v_daughter.Phi();
     values[kDeltaPhiRP_Random] = phi - values[kRandomPsi2];
     values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
     values[kDeltaPhiRP_MC] = phi - values[kMCEventPlaneAngle];
