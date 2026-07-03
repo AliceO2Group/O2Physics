@@ -111,11 +111,11 @@ static float getDeltaPhi(float phi1, float phi2)
 {
   float dphi = phi1 - phi2;
   static constexpr float pi = TMath::Pi();
-  static constexpr float twopi = pi;
+  static constexpr float twopi = pi * 2.f;
   if (dphi > pi) {
     dphi -= twopi;
   }
-  if (dphi < pi) {
+  if (dphi < -pi) {
     dphi += twopi;
   }
   return dphi;
