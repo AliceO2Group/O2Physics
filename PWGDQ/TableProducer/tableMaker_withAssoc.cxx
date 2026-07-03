@@ -597,7 +597,7 @@ struct TableMaker {
     if (addMuonCutsStr != "") {
       std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
       for (const auto& t : addMuonCuts) {
-        fMuonCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -1020,20 +1020,20 @@ struct TableMaker {
 
           (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(0.0, muTVX);
           if (isTvx) {
-            (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(1.0, muTVX);
+            (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(1.0, muTVX);
             if (noBorder) {
-              (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(2.0, muTVX);
+              (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(2.0, muTVX);
               if (isCentral) {
-                (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(3.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(3.0, muTVX);
               }
               if (isSemiCentral) {
-                (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(4.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(4.0, muTVX);
               }
               if (isCentral || isSemiCentral) {
-                (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(5.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(5.0, muTVX);
               }
               if (isTriggerZNA && isTriggerZNC) {
-                (static_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(6.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(6.0, muTVX);
               }
             }
           }
@@ -1045,10 +1045,10 @@ struct TableMaker {
 
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
-          (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(i));
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(i));
         }
       }
-      (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // apply the event filter computed by filter-PP
       if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
@@ -1130,22 +1130,22 @@ struct TableMaker {
       // fill stats information, before selections
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
-          (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(i));
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(i));
         }
       }
-      (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       if (fConfigZorro.fConfigRunZorro) {
         zorro.setBaseCCDBPath(fConfigCCDB.fConfigCcdbPathZorro.value);
         zorro.setBCtolerance(fConfigZorro.fBcTolerance);
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
-        zorro.populateExternalHists(fCurrentRun, static_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), static_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        zorro.populateExternalHists(fCurrentRun, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
         if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
 
-        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, static_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
         if (zorroSel) {
           tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
         }
@@ -1161,10 +1161,10 @@ struct TableMaker {
       // fill stats information, after selections
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
-          (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(i));
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(i));
         }
       }
-      (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       fHistMan->FillHistClass("Event_AfterCuts", dqtablemaker_helpers::varValues());
 
@@ -1323,7 +1323,7 @@ struct TableMaker {
           if (fConfigHistOutput.fConfigQA && (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end())) {
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
           }
-          (static_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(static_cast<float>(i));
+          (dynamic_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(static_cast<float>(i));
         }
       }
       if (!trackTempFilterMap) {
@@ -1342,7 +1342,7 @@ struct TableMaker {
         trackFilteringTag |= static_cast<uint64_t>(track.pidbit());
         for (int iv0 = 0; iv0 < 5; iv0++) {
           if (track.pidbit() & (uint8_t(1) << iv0)) {
-            (static_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
+            (dynamic_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
           }
         }
         // TODO: this part should be removed since the calibration histogram can be filled as any other histogram
@@ -1379,9 +1379,9 @@ struct TableMaker {
 
       // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
       if (!track.has_collision()) {
-        (static_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
+        (dynamic_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
       } else {
-        (static_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(0.9);
+        (dynamic_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(0.9);
       }
 
       // NOTE: The collision ID written in the table is the one of the original collision assigned in the AO2D.
@@ -1593,7 +1593,7 @@ struct TableMaker {
           if (fConfigHistOutput.fConfigQA && (fFwdTrackIndexMap.find(muon.globalIndex()) == fFwdTrackIndexMap.end())) {
             fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
           }
-          (static_cast<TH1D*>(fStatsList->At(kStatsMuons)))->Fill(static_cast<float>(i));
+          (dynamic_cast<TH1D*>(fStatsList->At(kStatsMuons)))->Fill(static_cast<float>(i));
         }
       }
 
@@ -2044,10 +2044,10 @@ struct TableMaker {
   {
     for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
       if (static_cast<int>(bc.selection_bit(i)) > 0) {
-        (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(i));
+        (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(i));
       }
     }
-    (static_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(o2::aod::evsel::kNsel));
+    (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(o2::aod::evsel::kNsel));
   }
 
   PROCESS_SWITCH(TableMaker, processPP, "Build full DQ skimmed data model for pp/p-Pb w/o event filtering (use Zorro)", false);
