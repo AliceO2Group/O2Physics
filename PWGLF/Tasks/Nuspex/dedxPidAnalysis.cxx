@@ -88,7 +88,6 @@ struct DedxPidAnalysis {
   std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCNegBefore;
   std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCPosAfter;
   std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCNegAfter;
-
   std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCPosBefore;
   std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCNegBefore;
   std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCPosAfter;
@@ -262,8 +261,8 @@ struct DedxPidAnalysis {
   Configurable<double> highParam2{"highParam2", 0.00981942, "Second parameter for high phi cut"};
   Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|"};
 
-  static constexpr double EtaCut[EtaIntervals + 1] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-  static constexpr double CentClasses[CentralityClasses + 1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
+  static constexpr std::array<double, EtaIntervals + 1> EtaCut = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+  static constexpr std::array<double, CentralityClasses + 1> CentClasses = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
