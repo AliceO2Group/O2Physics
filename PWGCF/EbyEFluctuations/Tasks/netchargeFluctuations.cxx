@@ -76,7 +76,7 @@ struct NetchargeFluctuations {
   // CCDB related configurations
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://alice-ccdb.cern.ch", "url of ccdb"};
-  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/efftest", "Path for ccdb-object"};
+  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/PosNeg_cent/PbPb/LHC24g3_medium", "Path for ccdb-object"};
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency"};
   Configurable<bool> cfgEffNue{"cfgEffNue", false, "efficiency correction to nu_dyn"};
 
@@ -447,8 +447,8 @@ struct NetchargeFluctuations {
       ccdb->setLocalObjectValidityChecking();
 
       auto* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, 1);
-      efficiencyPos = dynamic_cast<TH2D*>(list->FindObject("efficiency_Pos"));
-      efficiencyNeg = dynamic_cast<TH2D*>(list->FindObject("efficiency_Neg"));
+      efficiencyPos = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Pos"));
+      efficiencyNeg = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Neg"));
       // Log fatal error if efficiency histogram is not found
       if (!efficiencyPos || !efficiencyNeg) {
         LOGF(info, "FATAL!! Could not find required histograms in CCDB");
