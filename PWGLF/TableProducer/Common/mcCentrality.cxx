@@ -20,6 +20,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "PWGLF/Utils/inelGt.h"
+
 #include "Common/Core/TableHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -93,17 +94,17 @@ struct McCentrality {
     mCounter.mPdgDatabase = pdgDB.service;
     mCounter.mSelectPrimaries = selectPrimaries.value;
 
-    enableFlagIfTableRequired(initContext,"McCentFT0Ms", fillFt0M);
+    enableFlagIfTableRequired(initContext, "McCentFT0Ms", fillFt0M);
     if (fillFt0M) {
       histos.add("FT0M/percentile", "FT0M percentile.", HistType::kTH1D, {{binsPercentile, "FT0M percentile"}});
       histos.add("FT0M/percentilevsMult", "FT0M percentile.", HistType::kTH2D, {{binsPercentile, "FT0M percentile"}, {binsMultiplicity, "FT0M mult."}});
     }
-    enableFlagIfTableRequired(initContext,"McCentFT0As", fillFt0A);
+    enableFlagIfTableRequired(initContext, "McCentFT0As", fillFt0A);
     if (fillFt0A) {
       histos.add("FT0A/percentile", "FT0A percentile.", HistType::kTH1D, {{binsPercentile, "FT0A percentile"}});
       histos.add("FT0A/percentilevsMult", "FT0A percentile.", HistType::kTH2D, {{binsPercentile, "FT0A percentile"}, {binsMultiplicity, "FT0A mult."}});
     }
-    enableFlagIfTableRequired(initContext,"McCentFT0Cs", fillFt0C);
+    enableFlagIfTableRequired(initContext, "McCentFT0Cs", fillFt0C);
     if (fillFt0C) {
       histos.add("FT0C/percentile", "FT0C percentile.", HistType::kTH1D, {{binsPercentile, "FT0C percentile"}});
       histos.add("FT0C/percentilevsMult", "FT0C percentile.", HistType::kTH2D, {{binsPercentile, "FT0C percentile"}, {binsMultiplicity, "FT0C mult."}});
