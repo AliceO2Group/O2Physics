@@ -88,7 +88,7 @@ struct dimuonV1 {
 
   o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {10, 0, 10}, "pTll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {3, -4.0, -2.5}, "yll bins for output histograms"};
-  o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {200, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {400, -1, 1}, "uQ bins for output histograms"};
   o2::framework::Configurable<int> cfgNrotation{"cfgNrotation", 1, "number of rotation bkg"};
   o2::framework::Configurable<int> cfgRandomSeed{"cfgRandomSeed", 1, "randam seed for rotation bkg"};
   o2::framework::Configurable<float> cfgRotationMin{"cfgRotationMin", -M_PI / 4, "min. rotation angle for rotation bkg"};
@@ -147,7 +147,7 @@ struct dimuonV1 {
     o2::framework::Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 muons (elliptic cut)"};
     o2::framework::Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.02, "min dphi between 2 muons (elliptic cut)"};
 
-    o2::framework::Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    // o2::framework::Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     o2::framework::Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.8, "min pT for single track"};
     o2::framework::Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     o2::framework::Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
@@ -222,10 +222,15 @@ struct dimuonV1 {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
 
-    fRegistry.add("Event/before/ZDC/hQxtQxp", "Q_{x}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQytQyp", "Q_{y}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQxtQyp", "Q_{x}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQytQxp", "Q_{y}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxt", "Q_{x}^{t} vs. centrality;centrality FT0C (%);Q_{x}^{t}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQyt", "Q_{y}^{t} vs. centrality;centrality FT0C (%);Q_{y}^{t}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxp", "Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQyp", "Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+
+    fRegistry.add("Event/before/ZDC/hQxtQxp", "Q_{x}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQytQyp", "Q_{y}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxtQyp", "Q_{x}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQytQxp", "Q_{y}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
     fRegistry.addClone("Event/before/ZDC/", "Event/after/ZDC/");
 
     // pair info
@@ -279,7 +284,8 @@ struct dimuonV1 {
     fDimuonCut.SetMindEtadPhi(dimuoncuts.cfg_apply_detadphi, dimuoncuts.cfg_min_deta, dimuoncuts.cfg_min_dphi);
 
     // for track
-    fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
+    // fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
+    fDimuonCut.SetTrackType(3);
     fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, dimuoncuts.cfg_max_pt_track);
     fDimuonCut.SetTrackEtaRange(dimuoncuts.cfg_min_eta_track, dimuoncuts.cfg_max_eta_track);
     fDimuonCut.SetTrackPhiRange(dimuoncuts.cfg_min_phi_track, dimuoncuts.cfg_max_phi_track);
@@ -362,6 +368,11 @@ struct dimuonV1 {
       float QytQxp = collision.qxZDCA() * collision.qyZDCC();
       float QxtQyp = collision.qxZDCC() * collision.qyZDCA();
 
+      fRegistry.fill(HIST("Event/before/ZDC/hQxt"), centrality, collision.qxZDCC());
+      fRegistry.fill(HIST("Event/before/ZDC/hQyt"), centrality, collision.qyZDCC());
+      fRegistry.fill(HIST("Event/before/ZDC/hQxp"), centrality, collision.qxZDCA());
+      fRegistry.fill(HIST("Event/before/ZDC/hQyp"), centrality, collision.qyZDCA());
+
       fRegistry.fill(HIST("Event/before/ZDC/hQxtQxp"), centrality, QxtQxp);
       fRegistry.fill(HIST("Event/before/ZDC/hQytQyp"), centrality, QytQyp);
       fRegistry.fill(HIST("Event/before/ZDC/hQxtQyp"), centrality, QxtQyp);
@@ -378,6 +389,11 @@ struct dimuonV1 {
 
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
+
+      fRegistry.fill(HIST("Event/after/ZDC/hQxt"), centrality, collision.qxZDCC());
+      fRegistry.fill(HIST("Event/after/ZDC/hQyt"), centrality, collision.qyZDCC());
+      fRegistry.fill(HIST("Event/after/ZDC/hQxp"), centrality, collision.qxZDCA());
+      fRegistry.fill(HIST("Event/after/ZDC/hQyp"), centrality, collision.qyZDCA());
 
       fRegistry.fill(HIST("Event/after/ZDC/hQxtQxp"), centrality, QxtQxp);
       fRegistry.fill(HIST("Event/after/ZDC/hQytQyp"), centrality, QytQyp);
