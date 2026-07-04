@@ -41,16 +41,14 @@
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TF1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
-#include <map>
 #include <memory>
-#include <numeric>
-#include <set>
 #include <string>
 #include <vector>
 
