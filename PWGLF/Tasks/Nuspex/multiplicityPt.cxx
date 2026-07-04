@@ -13,6 +13,7 @@
 /// \file multiplicityPt.cxx
 /// \brief Analysis to do PID with MC - Full correction factors for pions, kaons, protons
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
