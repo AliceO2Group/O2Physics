@@ -1354,7 +1354,7 @@ struct DedxPidAnalysis {
     phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
 
     // cut phi, reject track if inside the gap
-    return !(phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt));
+    return (phi >= fphiCutHigh->Eval(pt)) || (phi <= fphiCutLow->Eval(pt));
   }
 
   // NclCutTPC
