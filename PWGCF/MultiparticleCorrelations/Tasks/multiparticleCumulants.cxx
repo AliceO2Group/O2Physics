@@ -629,7 +629,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     if (bFileIsInAliEn) {
       // File you want to access is in your home dir in AliEn:
-      TGrid* const alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
+      const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
       if (!alien) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
@@ -1202,7 +1202,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnParticleHistograms histType, typename T1>
-  void bookParticleHistograms(T1 const& lPcBins/* , ParticleHistograms& pc */)
+  void bookParticleHistograms(T1 const& lPcBins)
   {
     const auto& lPtBins = lPcBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsPt = static_cast<int>(lPtBins[0]);
@@ -1231,7 +1231,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnEventHistograms histType, typename T1>
-  void bookEventHistograms(T1 const& lEvBins/* , EventHistograms& ev */)
+  void bookEventHistograms(T1 const& lEvBins)
   {
     const auto& lCentBins = lEvBins[histType]; // define local array and initialize it from an array set in the configurables
     int nBinsCent = static_cast<int>(lCentBins[0]);
@@ -1273,7 +1273,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnEventHistograms histType, typename T1>
-  void bookQAHistograms(T1 const& lQABins/* , QAHistograms& qa */)
+  void bookQAHistograms(T1 const& lQABins)
   {
     int nBinsCentX = 0;
     float minCentX = 0.;
@@ -1327,7 +1327,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   }
 
   template <EnCorrHistograms histType, typename T1>
-  void bookCorrHistograms(T1 const& lCrBins/* , CorrHistograms& cr */)
+  void bookCorrHistograms(T1 const& lCrBins)
   {
 
     const auto& lCentBins = lCrBins[histType]; // define local array and initialize it from an array set in the configurables
@@ -1478,18 +1478,18 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     std::vector<std::vector<float>> lQABins = {tc.fCentBins, tc.fMultBins, tc.fNumContribBins};
     std::vector<std::vector<float>> lCrBins = {tc.fCentBins, tc.fMultBins};
 
-    bookParticleHistograms<ePt>(lPcBins/* , pc */);
-    bookParticleHistograms<ePhi>(lPcBins/* , pc */);
-    bookEventHistograms<eCent>(lEvBins/* , ev */);
-    bookEventHistograms<eMult>(lEvBins/* , ev */);
-    bookEventHistograms<eVertexX>(lEvBins/* , ev */);
-    bookEventHistograms<eVertexY>(lEvBins/* , ev */);
-    bookEventHistograms<eVertexZ>(lEvBins/* , ev */);
-    bookEventHistograms<eNumContrib>(lEvBins/* , ev */);
-    bookQAHistograms<eCent>(lQABins/* , qa */);
-    bookQAHistograms<eMult>(lQABins/* , qa */);
-    bookCorrHistograms<eCorrCent>(lCrBins/* , cr */); // if switch on ...
-    bookCorrHistograms<eCorrMult>(lCrBins/* , cr */);
+    bookParticleHistograms<ePt>(lPcBins);
+    bookParticleHistograms<ePhi>(lPcBins);
+    bookEventHistograms<eCent>(lEvBins);
+    bookEventHistograms<eMult>(lEvBins);
+    bookEventHistograms<eVertexX>(lEvBins);
+    bookEventHistograms<eVertexY>(lEvBins);
+    bookEventHistograms<eVertexZ>(lEvBins);
+    bookEventHistograms<eNumContrib>(lEvBins);
+    bookQAHistograms<eCent>(lQABins);
+    bookQAHistograms<eMult>(lQABins);
+    bookCorrHistograms<eCorrCent>(lCrBins); // if switch on ...
+    bookCorrHistograms<eCorrMult>(lCrBins);
 
     wt.fDummyPhiWeightHistogram = new TH1F("fDummyPhiWeightHistogram", "Dummy phi weight histogram", static_cast<int>(tc.fPhiBins[0]), tc.fPhiBins[1], tc.fPhiBins[2]);
     for (int i = 1; i <= wt.fDummyPhiWeightHistogram->GetNbinsX(); i++) {
