@@ -13,11 +13,19 @@
 /// \file multiplicityPt.cxx
 /// \brief Analysis to do PID with MC - Full correction factors for pions, kaons, protons
 
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/DataModel/spectraTOF.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -26,7 +34,6 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
@@ -34,14 +41,16 @@
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TF1.h>
-#include <TH2.h>
-#include <TH3.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <map>
 #include <memory>
+#include <numeric>
+#include <set>
 #include <string>
 #include <vector>
 
