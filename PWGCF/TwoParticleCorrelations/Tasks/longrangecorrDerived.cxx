@@ -19,8 +19,15 @@
 #include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
 #include "PWGUD/Core/SGSelector.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -31,6 +38,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -51,11 +59,16 @@ using namespace o2::aod::fwdtrack;
 using namespace o2::aod::evsel;
 using namespace o2::constants::math;
 
+auto static constexpr KminCharge = 3.0f;
+
 struct LongrangecorrDerived {
 
   SliceCache cache;
   SGSelector sgSelector;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  TrackSelection myTrackFilter;
+  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
@@ -65,11 +78,19 @@ struct LongrangecorrDerived {
     Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
     Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
     Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
+    Configurable<int> cfgVerbosity{"cfgVerbosity", 0, "print statement"};
 
+    Configurable<float> cfgEtaCut{"cfgEtaCut", 0.8f, "Eta range to consider"};
+    Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.2f, "minimum accepted track pT"};
+    Configurable<float> cfgPtCutMax{"cfgPtCutMax", 10.0f, "maximum accepted track pT"};
     Configurable<float> cfgTpcMinNclsFound{"cfgTpcMinNclsFound", 50.0f, ""};
     Configurable<float> cfgTpcMinNCrossedRows{"cfgTpcMinNCrossedRows", 70.0f, ""};
     Configurable<float> cfgTpcMaxChi2PerCluster{"cfgTpcMaxChi2PerCluster", 4.0f, ""};
     Configurable<float> cfgTpcMaxDcaZ{"cfgTpcMaxDcaZ", 1.0f, ""};
+    Configurable<bool> applyEffCorr{"applyEffCorr", true, "Enable efficiency correction"};
+    Configurable<bool> applyAccCorr{"applyAccCorr", false, "Enable NUA correction"};
+    Configurable<std::string> cfgEffccdbPath{"cfgEffccdbPath", "Users/a/abmodak/Efficiency/OO/default", "Browse track eff object from CCDB"};
+    Configurable<std::string> cfgAccccdbPath{"cfgAccccdbPath", "Users/a/abmodak/Acceptance/OO/default", "Browse track eff object from CCDB"};
 
     Configurable<int> cfgMftCluster{"cfgMftCluster", 5, "cut on MFT Cluster"};
     Configurable<float> cfgMftDcaxy{"cfgMftDcaxy", 2.0f, "cut on DCA xy for MFT tracks"};
@@ -78,9 +99,14 @@ struct LongrangecorrDerived {
     Configurable<bool> cfgRejectNonAmbTrk{"cfgRejectNonAmbTrk", false, "Condition to reject Non-Ambiguous tracks"};
     Configurable<bool> cfgRequireCA{"cfgRequireCA", false, "Use Cellular Automaton track-finding algorithm"};
     Configurable<bool> cfgRequireLTF{"cfgRequireLTF", false, "Use LTF track-finding algorithm"};
+    Configurable<bool> cfgRequireFt0aOuterRing{"cfgRequireFt0aOuterRing", false, "Consider FT0A Outer Ring"};
+    Configurable<bool> cfgRequireFt0aInnerRing{"cfgRequireFt0aInnerRing", false, "Consider FT0A Inner Ring"};
+    Configurable<bool> cfgRequireFt0cOuterRing{"cfgRequireFt0cOuterRing", false, "Consider FT0C Outer Ring"};
+    Configurable<bool> cfgRequireFt0cInnerRing{"cfgRequireFt0cInnerRing", false, "Consider FT0C Inner Ring"};
   } cfgSel;
 
   struct : ConfigurableGroup {
+    ConfigurableAxis axisMultQA{"axisMultQA", {500, -0.5, 499.5}, "multiplicity QA axis"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity axis"};
     ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
     ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
@@ -120,6 +146,11 @@ struct LongrangecorrDerived {
 
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+
+  // corrections
+  TH3D* hTrkEff = nullptr;
+  TH3D* hTrkAcc = nullptr;
+  bool fLoadTrkEffCorr = false;
 
   using CollsTable = aod::LRCollisions;
   using TrksTable = aod::LRMidTracks;
@@ -171,46 +202,121 @@ struct LongrangecorrDerived {
                                      {cfgAxis.axisEtaEfficiency, "#eta"}};
     std::vector<AxisSpec> userAxis = {{cfgAxis.axisInvMass, "m (GeV/c^2)"}};
 
-    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
-    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
+    if (!(doprocessTPCtrackEff)) {
 
-    histos.add("hMultiplicity", "hMultiplicity", kTH1D, {cfgAxis.axisMultiplicity});
-    histos.add("hCentrality", "hCentrality", kTH1D, {cfgAxis.axisMultiplicity});
-    histos.add("hVertexZ", "hVertexZ", kTH1D, {cfgAxis.axisVtxZ});
+      same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
+      mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
-    histos.add("hGapSide", "hGapSide", kTH1I, {{5, -0.5, 4.5}});
-    histos.add("hTrueGapSide", "hTrueGapSide", kTH1I, {{6, -1.5, 4.5}});
-    histos.add("hTrueGapSide_AfterSel", "hTrueGapSide_AfterSel", kTH1I, {{6, -1.5, 4.5}});
+      histos.add("hMultiplicity", "hMultiplicity", kTH1D, {cfgAxis.axisMultQA});
+      histos.add("hCentrality", "hCentrality", kTH1D, {cfgAxis.axisMultQA});
+      histos.add("hVertexZ", "hVertexZ", kTH1D, {cfgAxis.axisVtxZ});
 
-    histos.add("Trig_eta", "Trig_eta", kTH1D, {cfgAxis.axisEtaTrig});
-    histos.add("Trig_phi", "Trig_phi", kTH1D, {cfgAxis.axisPhi});
-    histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaTrig});
-    histos.add("Trig_pt", "Trig_pt", kTH1D, {cfgAxis.axisPtTrigger});
-    histos.add("Trig_invMass", "Trig_invMass", kTH1D, {cfgAxis.axisInvMassQA});
-    histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {cfgAxis.axisSample, cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
-    histos.add("Trig_amp", "Trig_amp", kTH1D, {cfgAxis.axisAmplitude});
-    histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
+      histos.add("hGapSide", "hGapSide", kTH1I, {{5, -0.5, 4.5}});
+      histos.add("hTrueGapSide", "hTrueGapSide", kTH1I, {{6, -1.5, 4.5}});
+      histos.add("hTrueGapSide_AfterSel", "hTrueGapSide_AfterSel", kTH1I, {{6, -1.5, 4.5}});
 
-    histos.add("Assoc_eta", "Assoc_eta", kTH1D, {cfgAxis.axisEtaAssoc});
-    histos.add("Assoc_phi", "Assoc_phi", kTH1D, {cfgAxis.axisPhi});
-    histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaAssoc});
-    histos.add("Assoc_amp", "Assoc_amp", kTH1D, {cfgAxis.axisAmplitude});
-    histos.add("Channel_vs_Assoc_amp", "Channel_vs_Assoc_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
+      histos.add("Trig_eta", "Trig_eta", kTH1D, {cfgAxis.axisEtaTrig});
+      histos.add("Trig_eta_corrected", "Trig_eta_corrected", kTH1D, {cfgAxis.axisEtaTrig});
+      histos.add("Trig_phi", "Trig_phi", kTH1D, {cfgAxis.axisPhi});
+      histos.add("Trig_phi_corrected", "Trig_phi_corrected", kTH1D, {cfgAxis.axisPhi});
+      histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaTrig});
+      histos.add("Trig_pt", "Trig_pt", kTH1D, {cfgAxis.axisPtTrigger});
+      histos.add("Trig_pt_corrected", "Trig_pt_corrected", kTH1D, {cfgAxis.axisPtTrigger});
+      histos.add("Trig_invMass", "Trig_invMass", kTH1D, {cfgAxis.axisInvMassQA});
+      histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {cfgAxis.axisSample, cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
+      histos.add("Trig_amp", "Trig_amp", kTH1D, {cfgAxis.axisAmplitude});
+      histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
-    histos.add("deltaEta_deltaPhi_same", "deltaEta_deltaPhi_same", kTH2D, {cfgAxis.axisDeltaPhi, cfgAxis.axisDeltaEta});
-    histos.add("deltaEta_deltaPhi_mixed", "deltaEta_deltaPhi_mixed", kTH2D, {cfgAxis.axisDeltaPhi, cfgAxis.axisDeltaEta});
+      histos.add("Assoc_eta", "Assoc_eta", kTH1D, {cfgAxis.axisEtaAssoc});
+      histos.add("Assoc_phi", "Assoc_phi", kTH1D, {cfgAxis.axisPhi});
+      histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {cfgAxis.axisPhi, cfgAxis.axisEtaAssoc});
+      histos.add("Assoc_amp", "Assoc_amp", kTH1D, {cfgAxis.axisAmplitude});
+      histos.add("Channel_vs_Assoc_amp", "Channel_vs_Assoc_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
-    histos.add("TPCNClsFound", "TPCNClsFound", kTH1D, {cfgAxis.axisTPCNClsFound});
-    histos.add("TPCNClsCrossedRows", "TPCNClsCrossedRows", kTH1D, {cfgAxis.axisTPCNClsCrossedRows});
-    histos.add("TPCChi2NCl", "TPCChi2NCl", kTH1D, {cfgAxis.axisTPCChi2NCl});
-    histos.add("TPCdcaZ", "TPCdcaZ", kTH1D, {cfgAxis.axisTPCdcaZ});
+      histos.add("deltaEta_deltaPhi_same", "deltaEta_deltaPhi_same", kTH2D, {cfgAxis.axisDeltaPhi, cfgAxis.axisDeltaEta});
+      histos.add("deltaEta_deltaPhi_mixed", "deltaEta_deltaPhi_mixed", kTH2D, {cfgAxis.axisDeltaPhi, cfgAxis.axisDeltaEta});
 
-    histos.add("MFTNClusters", "MFTNClusters", kTH1D, {cfgAxis.axisMFTNClusters});
-    histos.add("MFTbestDCAXY", "MFTbestDCAXY", kTH1D, {cfgAxis.axisMFTbestDCAXY});
-    histos.add("MFTbestDCAZ", "MFTbestDCAZ", kTH1D, {cfgAxis.axisMFTbestDCAZ});
+      histos.add("TPCNClsFound", "TPCNClsFound", kTH1D, {cfgAxis.axisTPCNClsFound});
+      histos.add("TPCNClsCrossedRows", "TPCNClsCrossedRows", kTH1D, {cfgAxis.axisTPCNClsCrossedRows});
+      histos.add("TPCChi2NCl", "TPCChi2NCl", kTH1D, {cfgAxis.axisTPCChi2NCl});
+      histos.add("TPCdcaZ", "TPCdcaZ", kTH1D, {cfgAxis.axisTPCdcaZ});
 
-    histos.add("ReassignedMFTtrackAmbDegree", "ReassignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
-    histos.add("AssignedMFTtrackAmbDegree", "AssignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
+      histos.add("MFTNClusters", "MFTNClusters", kTH1D, {cfgAxis.axisMFTNClusters});
+      histos.add("MFTbestDCAXY", "MFTbestDCAXY", kTH1D, {cfgAxis.axisMFTbestDCAXY});
+      histos.add("MFTbestDCAZ", "MFTbestDCAZ", kTH1D, {cfgAxis.axisMFTbestDCAZ});
+
+      histos.add("ReassignedMFTtrackAmbDegree", "ReassignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
+      histos.add("AssignedMFTtrackAmbDegree", "AssignedMFTtrackAmbDegree", kTH1D, {cfgAxis.axisMFTAmbDegree});
+    }
+
+    if (doprocessTPCtrackEff) {
+      histos.add("hGenMCdndpt", "hGenMCdndpt", kTH3D, {cfgAxis.axisVtxZ, cfgAxis.axisEtaEfficiency, cfgAxis.axisPtEfficiency});
+      histos.add("hRecMCdndpt", "hRecMCdndpt", kTH3D, {cfgAxis.axisVtxZ, cfgAxis.axisEtaEfficiency, cfgAxis.axisPtEfficiency});
+    }
+
+    myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny,
+                                                        TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    myTrackFilter.SetPtRange(cfgSel.cfgPtCutMin, cfgSel.cfgPtCutMax);
+    myTrackFilter.SetEtaRange(-cfgSel.cfgEtaCut, cfgSel.cfgEtaCut);
+    myTrackFilter.SetMinNCrossedRowsTPC(cfgSel.cfgTpcMinNCrossedRows);
+    myTrackFilter.SetMinNClustersTPC(cfgSel.cfgTpcMinNclsFound);
+    myTrackFilter.SetMaxChi2PerClusterTPC(cfgSel.cfgTpcMaxChi2PerCluster);
+    myTrackFilter.SetMaxDcaZ(cfgSel.cfgTpcMaxDcaZ);
+    myTrackFilter.print();
+  }
+
+  void loadEffCorrection(uint64_t timestamp)
+  {
+    if (fLoadTrkEffCorr) {
+      return;
+    }
+    if (cfgSel.cfgEffccdbPath.value.empty() == false) {
+      hTrkEff = ccdb->getForTimeStamp<TH3D>(cfgSel.cfgEffccdbPath, timestamp);
+      if (hTrkEff == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgSel.cfgEffccdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgEffccdbPath.value.c_str(), (void*)hTrkEff);
+    }
+
+    if (cfgSel.cfgAccccdbPath.value.empty() == false) {
+      hTrkAcc = ccdb->getForTimeStamp<TH3D>(cfgSel.cfgAccccdbPath, timestamp);
+      if (hTrkAcc == nullptr) {
+        LOGF(fatal, "Could not load NUA histogram for trigger particles from %s", cfgSel.cfgAccccdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgAccccdbPath.value.c_str(), (void*)hTrkAcc);
+    }
+
+    fLoadTrkEffCorr = true;
+  }
+
+  float getTrkEffCorr(float posZ, float eta, float pt)
+  {
+    if (!cfgSel.applyEffCorr || !hTrkEff) {
+      return 1.0;
+    }
+    int zBin = hTrkEff->GetXaxis()->FindBin(posZ);
+    int etaBin = hTrkEff->GetYaxis()->FindBin(eta);
+    int ptBin = hTrkEff->GetZaxis()->FindBin(pt);
+    float effweight = 1.0 / hTrkEff->GetBinContent(zBin, etaBin, ptBin);
+    if (!std::isfinite(effweight) || effweight <= 0) {
+      return 1.0;
+    }
+    return effweight;
+  }
+
+  float getTrkAccCorr(float posZ, float eta, float phi)
+  {
+    if (!cfgSel.applyAccCorr || !hTrkAcc) {
+      return 1.0;
+    }
+    int zBin = hTrkAcc->GetXaxis()->FindBin(posZ);
+    int etaBin = hTrkAcc->GetYaxis()->FindBin(eta);
+    int phiBin = hTrkAcc->GetZaxis()->FindBin(phi);
+    float nua = hTrkAcc->GetBinContent(zBin, etaBin, phiBin);
+    if (!std::isfinite(nua) || nua <= 0) {
+      return 1.0;
+    }
+    return nua;
   }
 
   template <typename TTrack>
@@ -258,16 +364,19 @@ struct LongrangecorrDerived {
   }
 
   template <typename TTrack>
-  void fillTrigTrackQA(TTrack const& track)
+  void fillTrigTrackQA(TTrack const& track, float trigAmpl, float trkeff, float trkAcc)
   {
     histos.fill(HIST("Trig_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Trig_eta"), track.eta());
     histos.fill(HIST("Trig_phi"), track.phi());
+    histos.fill(HIST("Trig_eta_corrected"), track.eta(), trkeff);
+    histos.fill(HIST("Trig_phi_corrected"), track.phi(), trkAcc);
     if constexpr (requires { track.channelID(); }) {
-      histos.fill(HIST("Trig_amp"), track.amplitude());
-      histos.fill(HIST("Channel_vs_Trig_amp"), track.channelID(), track.amplitude());
+      histos.fill(HIST("Trig_amp"), trigAmpl);
+      histos.fill(HIST("Channel_vs_Trig_amp"), track.channelID(), trigAmpl);
     } else {
       histos.fill(HIST("Trig_pt"), track.pt());
+      histos.fill(HIST("Trig_pt_corrected"), track.pt(), trkeff);
     }
     if constexpr (requires { track.invMass(); }) {
       histos.fill(HIST("Trig_invMass"), track.invMass());
@@ -291,14 +400,14 @@ struct LongrangecorrDerived {
   }
 
   template <typename TTrack>
-  void fillAssocTrackQA(TTrack const& track)
+  void fillAssocTrackQA(TTrack const& track, float assoAmpl)
   {
     histos.fill(HIST("Assoc_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Assoc_eta"), track.eta());
     histos.fill(HIST("Assoc_phi"), track.phi());
     if constexpr (requires { track.channelID(); }) {
-      histos.fill(HIST("Assoc_amp"), track.amplitude());
-      histos.fill(HIST("Channel_vs_Assoc_amp"), track.channelID(), track.amplitude());
+      histos.fill(HIST("Assoc_amp"), assoAmpl);
+      histos.fill(HIST("Channel_vs_Assoc_amp"), track.channelID(), assoAmpl);
     }
     if constexpr (requires { track.nClusters(); }) {
       histos.fill(HIST("MFTNClusters"), track.nClusters());
@@ -336,11 +445,8 @@ struct LongrangecorrDerived {
     int fSampleIndex = gRandom->Uniform(0, cfgSel.cfgSampleSize);
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
-      if constexpr (requires { triggerTrack.channelID(); }) {
-        trigAmpl = triggerTrack.amplitude();
-      } else {
-        trigAmpl = 1.0;
-      }
+      auto trkeff = 1.0f;
+      auto trkAcc = 1.0f;
 
       if (!isTrackSelected(triggerTrack))
         continue;
@@ -352,41 +458,71 @@ struct LongrangecorrDerived {
         if (cfgSel.cfgV0Mask != 0 && (cfgSel.cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
           continue;
       }
-      if (!mixing) {
-        fillTrigTrackQA(triggerTrack);
-        if constexpr (requires { triggerTrack.channelID(); }) {
-          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl);
-        } else if constexpr (requires { triggerTrack.invMass(); }) {
-          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl);
+
+      if constexpr (requires { triggerTrack.channelID(); }) {
+        if (cfgSel.cfgRequireFt0aOuterRing && !triggerTrack.isTrackFT0Outer())
+          continue;
+        if (cfgSel.cfgRequireFt0aInnerRing && triggerTrack.isTrackFT0Outer())
+          continue;
+        trigAmpl = triggerTrack.amplitude();
+      } else {
+        trigAmpl = 1.0;
+      }
+
+      if constexpr (step == CorrelationContainer::kCFStepCorrected) {
+        if constexpr (requires { triggerTrack.trackType(); }) {
+          trkeff = getTrkEffCorr(vz, triggerTrack.eta(), triggerTrack.pt());
+          trkAcc = getTrkAccCorr(vz, triggerTrack.eta(), triggerTrack.phi());
         } else {
-          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
+          trkeff = 1.0;
+          trkAcc = 1.0;
+        }
+      }
+
+      if (cfgSel.cfgVerbosity > 0) {
+        LOGF(info, "NUE correction factor: %f | NUA correction factor: %f", trkeff, trkAcc);
+      }
+
+      if (!mixing) {
+        fillTrigTrackQA(triggerTrack, trigAmpl, trkeff, trkAcc);
+        if constexpr (requires { triggerTrack.channelID(); }) {
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl * trkeff * trkAcc);
+        } else if constexpr (requires { triggerTrack.invMass(); }) {
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl * trkeff * trkAcc);
+        } else {
+          histos.fill(HIST("Trig_hist"), fSampleIndex, vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl * trkeff * trkAcc);
         }
       }
       for (auto const& assoTrack : assocs) {
         auto assoAmpl = 1.0f;
+
+        if (!isTrackSelected(assoTrack))
+          continue;
+
         if constexpr (requires { assoTrack.channelID(); }) {
+          if (cfgSel.cfgRequireFt0cOuterRing && !assoTrack.isTrackFT0Outer())
+            continue;
+          if (cfgSel.cfgRequireFt0cInnerRing && assoTrack.isTrackFT0Outer())
+            continue;
           assoAmpl = assoTrack.amplitude();
         } else {
           assoAmpl = 1.0f;
         }
 
-        if (!isTrackSelected(assoTrack))
-          continue;
-
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (!mixing) {
-          fillAssocTrackQA(assoTrack);
-          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
+          fillAssocTrackQA(assoTrack, assoAmpl);
+          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         } else {
-          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
+          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         }
         if constexpr (requires { triggerTrack.channelID(); }) {
-          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         } else if constexpr (requires { triggerTrack.invMass(); }) {
-          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         } else {
-          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
+          target->getPairHist()->Fill(step, fSampleIndex, vz, multiplicity, triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl * trkeff * trkAcc);
         }
       } // associated tracks
     } // trigger tracks
@@ -398,6 +534,7 @@ struct LongrangecorrDerived {
     if (std::abs(col.posZ()) >= cfgSel.cfgVtxCut) {
       return;
     }
+    loadEffCorrection(col.timestamp());
     fillCollQA(col);
     auto multiplicity = 1.0f;
     if constexpr (requires { col.centrality(); }) {
@@ -408,7 +545,11 @@ struct LongrangecorrDerived {
     } else {
       multiplicity = col.multiplicity();
     }
-    fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.posZ(), multiplicity, 1.0);
+    if (cfgSel.applyEffCorr) {
+      fillCorrHist<CorrelationContainer::kCFStepCorrected>(same, triggers, assocs, false, col.posZ(), multiplicity, 1.0);
+    } else {
+      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.posZ(), multiplicity, 1.0);
+    }
   } // process same
 
   template <typename TCollision, typename... TrackTypes>
@@ -446,9 +587,23 @@ struct LongrangecorrDerived {
           continue;
         }
       }
+      if (std::abs(col1.posZ()) >= cfgSel.cfgVtxCut || std::abs(col2.posZ()) >= cfgSel.cfgVtxCut) {
+        continue;
+      }
       float eventweight = 1.0f / it.currentWindowNeighbours();
       auto multiplicity = getMultiplicity(col1);
-      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.posZ(), multiplicity, eventweight);
+      int bin = binningOnVtxAndMult.getBin(std::tuple(col1.posZ(), multiplicity));
+      loadEffCorrection(col1.timestamp());
+
+      if (cfgSel.cfgVerbosity > 0) {
+        LOGF(info, "processMixed: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), col1.globalIndex(), col1.posZ(), col1.multiplicity(), col2.globalIndex(), col2.posZ(), col2.multiplicity());
+      }
+
+      if (cfgSel.applyEffCorr) {
+        fillCorrHist<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, true, col1.posZ(), multiplicity, eventweight);
+      } else {
+        fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.posZ(), multiplicity, eventweight);
+      }
     } // pair loop
   } // process mixed
 
@@ -782,6 +937,87 @@ struct LongrangecorrDerived {
     processMcGenMixed(mccollisions, ft0as, ft0cs);
   }
 
+  using ColMCTrueTable = soa::Join<aod::McCollisions, aod::McCollsExtra>;
+  using ColMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
+  using TrksMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
+  Preslice<TrksMCRecTable> perColMidtrack = aod::track::collisionId;
+
+  template <typename CheckCol>
+  bool isEventSelected(CheckCol const& col)
+  {
+    if (!col.sel8())
+      return false;
+    if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (!col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      return false;
+    if (std::abs(col.posZ()) >= cfgSel.cfgVtxCut)
+      return false;
+    return true;
+  }
+
+  template <typename CheckGenPart>
+  bool isGenPartSelected(CheckGenPart const& particle)
+  {
+    if (!particle.isPhysicalPrimary() || !particle.producedByGenerator())
+      return false;
+    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+    if (pdgParticle == nullptr)
+      return false;
+    if (std::abs(pdgParticle->Charge()) < KminCharge)
+      return false;
+    return true;
+  }
+
+  void processTPCtrackEff(ColMCTrueTable::iterator const& mcCollision, ColMCRecTable const& RecCols,
+                          TrksMCRecTable const& RecTracks, aod::McParticles const& mcparticles)
+  {
+    if (std::abs(mcCollision.posZ()) >= cfgSel.cfgVtxCut) {
+      return;
+    }
+    bool atLeastOne = false;
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol))
+        continue;
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex())
+        continue;
+      auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
+      atLeastOne = true;
+    }
+    for (const auto& particle : mcparticles) {
+      if (!isGenPartSelected(particle) ||
+          std::abs(particle.eta()) > cfgSel.cfgEtaCut ||
+          particle.pt() < cfgSel.cfgPtCutMin ||
+          particle.pt() > cfgSel.cfgPtCutMax)
+        continue;
+      if (atLeastOne)
+        histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
+    }
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol))
+        continue;
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex())
+        continue;
+      auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
+      for (const auto& track : recTracksPart) {
+        if (!track.isGlobalTrack())
+          continue;
+        if (!myTrackFilter.IsSelected(track))
+          continue;
+        if (!track.has_mcParticle())
+          continue;
+        auto particle = track.mcParticle();
+        if (RecCol.mcCollisionId() != particle.mcCollisionId())
+          continue;
+        if (particle.isPhysicalPrimary()) {
+          histos.fill(HIST("hRecMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
+        }
+      }
+    }
+  }
+
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aME, "mixed event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cSE, "same event TPC vs FT0C", false);
@@ -828,6 +1064,7 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenMftft0aME, "mixed MC gen event MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenFt0aft0cSE, "same MC gen event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenFt0aft0cME, "mixed MC gen event FT0A vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTPCtrackEff, "process TPC track efficiency", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -19,9 +19,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -56,13 +54,13 @@ struct PtSpectraInclusiveUpc {
   Configurable<int> nBinsDCAxy{"nBinsDCAxy", 100, "N bins in DCA_{xy} histos"};
   Configurable<bool> applyKineCutsInGen{"applyKineCutsInGen", false, "Apply kinematic cuts in the generated level"};
 
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  Preslice<o2::aod::McParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
   // define abbreviations
-  using CCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>;
+  using CCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using CC = CCs::iterator;
-  using TCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
-  using TC = TCs::iterator;
+  using CCMCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>;
+  using CCMC = CCMCs::iterator;
+  using TCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+  using TCMCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
 
   const double etaMax = 0.9;
   const double yMax = 0.9;
@@ -153,7 +151,7 @@ struct PtSpectraInclusiveUpc {
     }
   }
 
-  void processReco(CC const&, TCs const& tracks, aod::UDMcParticles const&)
+  void processReco(CCMC const&, TCMCs const& tracks, aod::UDMcParticles const&)
   {
 
     double dcaXyLimit = 0;

@@ -24,8 +24,6 @@
 using std::cout;
 using std::endl;
 
-ClassImp(MCSignal);
-
 //________________________________________________________________________________________________
 MCSignal::MCSignal() : TNamed("", ""),
                        fProngs({}),

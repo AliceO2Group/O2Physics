@@ -187,7 +187,8 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgDoIsGoodITSLayersAll, bool, true, "check kIsGoodITSLayersAll")
     O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
     O2_DEFINE_CONFIGURABLE(cfgDoZResAndNumContribCut, bool, true, "check kNoTimeFrameBorder")
-    O2_DEFINE_CONFIGURABLE(cfgDoMultPVCut, bool, true, "do multNTracksPV vs cent cut")
+    O2_DEFINE_CONFIGURABLE(cfgDoMultPVCut, bool, false, "do multNTracksPV vs cent cut")
+    O2_DEFINE_CONFIGURABLE(cfgDoMultTPCCut, bool, false, "do multNTracksTPC vs cent cut")
     O2_DEFINE_CONFIGURABLE(cfgMultPVCut, std::vector<float>, (std::vector<float>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}), "Used MultPVCut function parameter")
     O2_DEFINE_CONFIGURABLE(cfgDoV0AT0Acut, bool, true, "do V0A-T0A cut")
     O2_DEFINE_CONFIGURABLE(cfgCutminIR, float, -1, "cut min IR")
@@ -396,7 +397,7 @@ struct FlowGfwOmegaXi {
     registry.add("hEta", "", {HistType::kTH1D, {cfgaxisEta}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
-    registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
+    registry.add("hCentvsMultTPC", "", {HistType::kTH2D, {{100, 0, 100}, cfgaxisNch}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, {100, 0, 100}}});
     registry.add("hmultFV0AvsmultFT0A", "", {HistType::kTH2D, {{5000, 0, 5000}, {5000, 0, 5000}}});
@@ -449,7 +450,7 @@ struct FlowGfwOmegaXi {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "after kIsGoodZvtxFT0vsPV");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "after kNoCollInTimeRangeStandard");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after kIsGoodITSLayersAll");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after MultPVCut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after MultvsCentCut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "after TPC occupancy cut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(12, "after V0AT0Acut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(13, "after IRmincut");
@@ -1062,6 +1063,15 @@ struct FlowGfwOmegaXi {
         return false;
     }
 
+    int nMultTPC = collision.multTPC();
+    registry.fill(HIST("hCentvsMultTPC"), centrality, nMultTPC);
+    if (evtSeleOpts.cfgDoMultTPCCut.value) {
+      if (nMultTPC < fMultPVCutLow->Eval(centrality))
+        return false;
+      if (nMultTPC > fMultPVCutHigh->Eval(centrality))
+        return false;
+    }
+
     registry.fill(HIST("hEventCount"), 9.5);
 
     if (occupancy > evtSeleOpts.cfgCutOccupancyHigh.value)
@@ -1092,7 +1102,7 @@ struct FlowGfwOmegaXi {
   {
     o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
-    float nMultTPC = collision.multTPC();
+    int nMultTPC = collision.multTPC();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
@@ -1128,7 +1138,6 @@ struct FlowGfwOmegaXi {
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), nTot);
-    registry.fill(HIST("hMultTPC"), nMultTPC);
     registry.fill(HIST("hCent"), cent);
 
     float weff = 1;

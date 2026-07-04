@@ -444,6 +444,10 @@ struct Chk892LI {
       histos.add("EffKstar/genKstar_pri", "Gen primary Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/genKstar_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/recoKstar_vsGenMult", "Reco K* vs gen mid-rapidity multiplicity;#it{p}_{T};N_{ch}^{gen}", HistType::kTH2D, {ptAxis, genMultAxis});
+      histos.add("EffKstar/genKstar_vsGenMult", "Gen K* vs gen mid-rapidity multiplicity;#it{p}_{T};N_{ch}^{gen}", HistType::kTH2D, {ptAxis, genMultAxis});
+      histos.add("EffKstar/genKstar_pri_vsGenMult", "Gen primary Kstar (|y|<0.5) vs gen mid-rapidity multiplicity", HistType::kTH2D, {ptAxis, genMultAxis});
+      histos.add("EffKstar/genKstar_pri_pos_vsGenMult", "Gen primary Kstar selected by vertex position (|y|<0.5) vs gen mid-rapidity multiplicity", HistType::kTH2D, {ptAxis, genMultAxis});
 
       histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
@@ -1084,10 +1088,18 @@ struct Chk892LI {
 
       const float lCentrality = iter->second;
 
+      auto itGenMult = genMultByMcId.find(mcid);
+      if (itGenMult == genMultByMcId.end()) {
+        continue;
+      }
+      const int genMult = itGenMult->second;
+
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+      histos.fill(HIST("EffKstar/genKstar_vsGenMult"), part.pt(), genMult);
 
       if (part.vt() == 0) {
         histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+        histos.fill(HIST("EffKstar/genKstar_pri_vsGenMult"), part.pt(), genMult);
       }
 
       const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
@@ -1100,6 +1112,7 @@ struct Chk892LI {
 
       if (distanceFromPV < fMaxPosPV) {
         histos.fill(HIST("EffKstar/genKstar_pri_pos"), part.pt(), lCentrality);
+        histos.fill(HIST("EffKstar/genKstar_pri_pos_vsGenMult"), part.pt(), genMult);
       }
     }
   } // effKstarProcessGen
@@ -1123,8 +1136,13 @@ struct Chk892LI {
       if (iter == centTruthByAllowed.end()) {
         continue;
       }
-
       const float lCentrality = iter->second;
+
+      auto itGenMult = genMultByMcId.find(mcid);
+      if (itGenMult == genMultByMcId.end()) {
+        continue;
+      }
+      const int genMult = itGenMult->second;
 
       if (!SecondaryCuts.cfgByPassDauPIDSelection) {
         auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
@@ -1134,6 +1152,7 @@ struct Chk892LI {
         if (!selectionPIDPion(negDauTrack))
           continue;
       }
+
       if (!selectionK0s(coll, v0))
         continue;
 
@@ -1163,6 +1182,7 @@ struct Chk892LI {
 
         if (isTrue) {
           histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
+          histos.fill(HIST("EffKstar/recoKstar_vsGenMult"), ptreco, genMult);
           histos.fill(HIST("MCReco/hInvmass_Kstar_true"), lCentrality, ptreco, lResoKstar.M());
         } else {
           histos.fill(HIST("MCReco/hInvmass_Kstar_bkg"), lCentrality, ptreco, lResoKstar.M());

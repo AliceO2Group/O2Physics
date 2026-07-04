@@ -978,6 +978,25 @@ struct Pi0EtaToGammaGamma {
               if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
+              // as photon has mass= 0 e = p
+              float alphaMeson = std::fabs(g1.p() - g2.p()) / (g1.p() + g2.p());
+              float alphaCut = 999.f;
+              switch (static_cast<AlphaMesonCutOption>(cfgAlphaMesonCut.value)) {
+                case AlphaMesonCutOption::Off:
+                  break;
+                case AlphaMesonCutOption::SpecificValue:
+                  alphaCut = cfgAlphaMeson;
+                  break;
+                case AlphaMesonCutOption::PTDependent: {
+                  alphaCut = cfgAlphaMesonA * std::tanh(cfgAlphaMesonB * v12.pt());
+                  break;
+                }
+                default:
+                  LOGF(error, "Invalid option for alpha meson cut. No alpha cut will be applied.");
+              }
+              if (alphaMeson > alphaCut) {
+                continue;
+              }
 
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
             }

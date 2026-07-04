@@ -256,6 +256,7 @@ struct qVectorsTable {
     AxisSpec axisChID = {220, 0, 220};
 
     fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+    ft0geom.calculateChannelCenter();
 
     histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
     histosQA.add("FT0Amp", "", {HistType::kTH2F, {axisFITamp, axisChID}});

@@ -58,6 +58,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -98,6 +99,7 @@ struct nucleiQC {
 
   Configurable<bool> cfgFillTable{"cfgFillTable", true, "Fill output tree"};
   Configurable<bool> cfgDoCheckPdgCode{"cfgDoCheckPdgCode", true, "Should you only select tracks associated to a mc particle with the correct PDG code?"};
+  Configurable<bool> cfgSkipNonReconstructedCollisions{"cfgSkipNonReconstructedCollisions", true, "Should you skip collisions for which no particle is reconstructed?"};
   Configurable<bool> cfgFillOnlyPhysicalPrimaries{"cfgFillOnlyPhysicalPrimaries", true, "Should you only select physical primary particles?"};
   Configurable<LabeledArray<int>> cfgSpeciesToProcess{"cfgSpeciesToProcess", {nuclei::speciesToProcessDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"processNucleus"}}, "Nuclei to process"};
   Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
@@ -160,6 +162,7 @@ struct nucleiQC {
   std::array<bool, nuclei::Species::kNspecies> mFillSpecies{false};
   Produces<aod::NucleiTableRed> mNucleiTableRed;
   Produces<aod::NucleiTableExt> mNucleiTableExt;
+  Produces<aod::NucleiTableMat> mNucleiTableMat;
 
   std::vector<nuclei::SlimCandidate> mNucleiCandidates;
   std::vector<int> mFilledMcParticleIds;
@@ -207,6 +210,7 @@ struct nucleiQC {
 
       nuclei::createHistogramRegistryNucleus<kSpeciesCt>(mHistograms);
       mHistograms.add(fmt::format("{}/hTrackQuality", nuclei::cNames[kSpeciesRt]).c_str(), (fmt::format("{} track quality;", nuclei::cNames[kSpeciesRt]) + std::string("#it{p}_{T} / #it{Z} (GeV/#it{c}); Selection step; Counts")).c_str(), o2::framework::HistType::kTH2D, {{400, -10.0f, 10.0f}, {trackQuality::kNtrackQuality, -0.5f, static_cast<float>(trackQuality::kNtrackQuality) - 0.5f}});
+      mHistograms.add(fmt::format("{}/h2Productionvertex", nuclei::cNames[kSpeciesRt]).c_str(), (fmt::format("{} production vertex;", nuclei::cNames[kSpeciesRt]) + std::string("#it{x} (cm); #it{y} (cm); Counts")).c_str(), o2::framework::HistType::kTH2D, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}});
       for (size_t iSel = 0; iSel < trackQuality::kNtrackQuality; iSel++) {
         mHistograms.get<TH2>(HIST(nuclei::cNames[kSpeciesRt]) + HIST("/hTrackQuality"))->GetYaxis()->SetBinLabel(iSel + 1, trackQualityLabels[iSel].c_str());
       }
@@ -350,7 +354,7 @@ struct nucleiQC {
     return true;
   }
 
-  template <typename Tparticle>
+  template <int iSpecies, typename Tparticle>
   void fillNucleusFlagsPdgsMc(const Tparticle& particle, nuclei::SlimCandidate& candidate)
   {
     candidate.pdgCode = particle.pdgCode();
@@ -381,6 +385,9 @@ struct nucleiQC {
       candidate.flags |= nuclei::QcFlags::kQcIsSecondaryFromWeakDecay;
     } else {
       candidate.flags |= nuclei::QcFlags::kQcIsSecondaryFromMaterial;
+      mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/h2Productionvertex"), particle.vx(), particle.vy());
+      candidate.vx = particle.vx();
+      candidate.vy = particle.vy();
     }
   }
 
@@ -441,7 +448,9 @@ struct nucleiQC {
                                        .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality),
                                        .mcProcess = TMCProcess::kPNoProcess,
                                        .nsigmaTpc = mPidManagers[iSpecies].getNSigmaTPC(track),
-                                       .nsigmaTof = mPidManagers[iSpecies].getNSigmaTOF(track)};
+                                       .nsigmaTof = mPidManagers[iSpecies].getNSigmaTOF(track),
+                                       .vx = -999.f,
+                                       .vy = -999.f};
 
     fillNucleusFlagsPdgs(collision, track, candidate);
 
@@ -449,7 +458,12 @@ struct nucleiQC {
       if (track.has_mcParticle()) {
 
         const auto& particle = track.mcParticle();
-        fillNucleusFlagsPdgsMc(particle, candidate);
+        static_for<0, nuclei::kNspecies - 1>([&](auto iSpeciesCtV) {
+          constexpr int kSpeciesCt = decltype(iSpeciesCtV)::value;
+          if (std::abs(particle.pdgCode()) == nuclei::pdgCodes[kSpeciesCt]) {
+            fillNucleusFlagsPdgsMc<kSpeciesCt>(particle, candidate);
+          }
+        });
         fillNucleusGeneratedVariables(particle, candidate);
       }
     }
@@ -517,6 +531,7 @@ struct nucleiQC {
       candidate.DCAxy,
       candidate.DCAz,
       candidate.flags,
+      candidate.centrality,
       candidate.ptGenerated,
       candidate.mcProcess,
       candidate.pdgCode,
@@ -524,6 +539,9 @@ struct nucleiQC {
     mNucleiTableExt(
       candidate.nsigmaTpc,
       candidate.nsigmaTof);
+    mNucleiTableMat(
+      candidate.vx,
+      candidate.vy);
   }
 
   void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles, const aod::McCollisions& /*mcCollisions*/)
@@ -531,6 +549,7 @@ struct nucleiQC {
     gRandom->SetSeed(67);
     std::unordered_set<int> reconstructedMcParticles;
     std::unordered_set<int> reconstructedCollisions;
+    std::map<int, float> mcCollisionIdToCentrality;
 
     for (const auto& collision : collisions) {
 
@@ -539,8 +558,10 @@ struct nucleiQC {
 
       if (!nuclei::eventSelection(collision, mHistograms, cfgEventSelections, cfgCutVertex))
         continue;
-      mHistograms.fill(HIST("hCentrality"), nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality));
+      const float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
+      mHistograms.fill(HIST("hCentrality"), centrality);
       reconstructedCollisions.insert(collision.mcCollisionId());
+      mcCollisionIdToCentrality[collision.mcCollisionId()] = centrality;
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
@@ -620,6 +641,9 @@ struct nucleiQC {
       if (!mFillSpecies[iSpecies])
         continue;
 
+      if (cfgSkipNonReconstructedCollisions && reconstructedCollisions.count(particle.mcCollisionId()) == 0)
+        continue;
+
       if (reconstructedMcParticles.count(mcIndex) > 0)
         continue;
 
@@ -635,10 +659,15 @@ struct nucleiQC {
       }
 
       nuclei::SlimCandidate candidate;
-      // candidate.centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
-      candidate.centrality = -1.f; // centrality is not well defined for non-reconstructed particles, set to -1 for now
+      const auto& centralityIt = mcCollisionIdToCentrality.find(particle.mcCollisionId());
+      candidate.centrality = centralityIt != mcCollisionIdToCentrality.end() ? centralityIt->second : -1.f;
       fillCollisionFlag(particle, candidate, reconstructedCollisions);
-      fillNucleusFlagsPdgsMc(particle, candidate);
+      static_for<0, nuclei::kNspecies - 1>([&](auto iSpeciesCtV) {
+        constexpr int kSpeciesCt = decltype(iSpeciesCtV)::value;
+        if (std::abs(particle.pdgCode()) == nuclei::pdgCodes[kSpeciesCt]) {
+          fillNucleusFlagsPdgsMc<kSpeciesCt>(particle, candidate);
+        }
+      });
       fillNucleusGeneratedVariables(particle, candidate);
 
       writeCandidate(candidate);

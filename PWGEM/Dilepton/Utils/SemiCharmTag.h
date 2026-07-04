@@ -73,7 +73,7 @@ struct LHPair { // struct to store electron-hadron pair information
 };
 
 template <typename TFitter, typename TCollision, typename TLepton, typename TTrack>
-LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton const& lepton, TTrack const& track, o2::track::PID::ID leptonId, o2::track::PID::ID strHadId)
+LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton const& lepton, TTrack const& track, const o2::track::PID::ID leptonId, const o2::track::PID::ID strHadId, const float massLepton)
 {
   LHPair pair;
   auto leptonParCov = getTrackParCov(lepton);
@@ -159,30 +159,20 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
 
   // LOGF(info, "fitter.getBz() = %f, dcaLH.getY() = %f, dcaLH.getZ() = %f", fitter.getBz(), dcaLH.getY(), dcaLH.getZ());
 
-  ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
-  if (leptonId == o2::track::PID::Electron) {
-    v1.SetM(o2::constants::physics::MassElectron);
-  } else if (leptonId == o2::track::PID::Muon) {
-    v1.SetM(o2::constants::physics::MassMuon);
-  } else {
-    LOGF(info, "leptonId supports only Electron or Muon.");
-    pair.isOK = false;
-    return pair;
-  }
-
+  ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], massLepton);
   ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassKaonCharged);
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
   pair.mass = v12.M();
   pair.pt = v12.Pt();
   pair.p = v12.P();
-  pair.deta = v1.Eta() - v2.Eta();                                                                                                               // lepton - hadron
-  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI / 2, 1U); // lepton - hadron
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                           // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI, 1U); // lepton - hadron
   pair.isOK = true;
   return pair;
 }
 
 template <typename TFitter, typename TCollision, typename TLepton, typename TV0>
-LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton const& lepton, TV0 const& v0, o2::track::PID::ID leptonId, o2::track::PID::ID strHadId)
+LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton const& lepton, TV0 const& v0, o2::track::PID::ID leptonId, o2::track::PID::ID strHadId, const float massLepton)
 {
   LHPair pair;
   auto leptonParCov = getTrackParCov(lepton);
@@ -276,17 +266,7 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   // pair.impParCZY = dcaLH.getSigmaYZ();
   // pair.impParCZZ = dcaLH.getSigmaZ2();
 
-  ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
-  if (leptonId == o2::track::PID::Electron) {
-    v1.SetM(o2::constants::physics::MassElectron);
-  } else if (leptonId == o2::track::PID::Muon) {
-    v1.SetM(o2::constants::physics::MassMuon);
-  } else {
-    LOGF(info, "leptonId supports only Electron or Muon.");
-    pair.isOK = false;
-    return pair;
-  }
-
+  ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], massLepton);
   ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassLambda);
   if (strHadId == o2::track::PID::Lambda) {
     v2.SetM(o2::constants::physics::MassLambda);
@@ -302,15 +282,15 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   pair.mass = v12.M();
   pair.pt = v12.Pt();
   pair.p = v12.P();
-  pair.deta = v1.Eta() - v2.Eta();                                                                                                               // lepton - hadron
-  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI / 2, 1U); // lepton - hadron
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                           // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI, 1U); // lepton - hadron
   pair.isOK = true;
 
   return pair;
 }
 
 template <typename TFitter, typename TCollision, typename TLepton, typename TCascade>
-LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLepton const& lepton, TCascade const& cascade, o2::track::PID::ID leptonId, o2::track::PID::ID strHadId)
+LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLepton const& lepton, TCascade const& cascade, o2::track::PID::ID leptonId, o2::track::PID::ID strHadId, const float massLepton)
 {
   LHPair pair;
   auto leptonParCov = getTrackParCov(lepton);
@@ -408,17 +388,7 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   // pair.impParCZY = dcaLH.getSigmaYZ();
   // pair.impParCZZ = dcaLH.getSigmaZ2();
 
-  ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
-  if (leptonId == o2::track::PID::Electron) {
-    v1.SetM(o2::constants::physics::MassElectron);
-  } else if (leptonId == o2::track::PID::Muon) {
-    v1.SetM(o2::constants::physics::MassMuon);
-  } else {
-    LOGF(info, "leptonId supports only Electron or Muon.");
-    pair.isOK = false;
-    return pair;
-  }
-
+  ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], massLepton);
   ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassXiMinus);
   if (strHadId == o2::track::PID::XiMinus) {
     v2.SetM(o2::constants::physics::MassXiMinus);
@@ -434,8 +404,8 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   pair.mass = v12.M();
   pair.pt = v12.Pt();
   pair.p = v12.P();
-  pair.deta = v1.Eta() - v2.Eta();                                                                                                               // lepton - hadron
-  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI / 2, 1U); // lepton - hadron
+  pair.deta = v1.Eta() - v2.Eta();                                                                                                           // lepton - hadron
+  pair.dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v1.Phi(), 0, 1U) - RecoDecay::constrainAngle(v2.Phi(), 0, 1U), -M_PI, 1U); // lepton - hadron
   pair.isOK = true;
 
   return pair;

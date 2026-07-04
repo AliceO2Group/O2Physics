@@ -36,8 +36,8 @@ class AnalysisCompositeCut : public AnalysisCut
 
   void AddCut(AnalysisCut* cut)
   {
-    if (cut->IsA() == AnalysisCompositeCut::Class()) {
-      fCompositeCutList.push_back(*(AnalysisCompositeCut*)cut);
+    if (auto* composite = dynamic_cast<AnalysisCompositeCut*>(cut)) {
+      fCompositeCutList.push_back(*composite);
     } else {
       fCutList.push_back(*cut);
     }
@@ -52,8 +52,6 @@ class AnalysisCompositeCut : public AnalysisCut
   bool fOptionUseAND;                                  // true (default): apply AND on all cuts; false: use OR
   std::vector<AnalysisCut> fCutList;                   // list of cuts
   std::vector<AnalysisCompositeCut> fCompositeCutList; // list of composite cuts
-
-  ClassDef(AnalysisCompositeCut, 2);
 };
 
 #endif // PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_

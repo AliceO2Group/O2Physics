@@ -95,6 +95,7 @@ struct JetSpectraCharged {
   float configSwitchHigh = 9998.0;
 
   float ptHardCalcMethodSwitch = 999.0;
+  static constexpr float kBrokenPtHardSentinel = 1.0f;
 
   enum AcceptSplitCollisionsOptions {
     NonSplitOnly = 0,
@@ -921,7 +922,7 @@ struct JetSpectraCharged {
   void processSpectraMCDWeighted(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                  soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                                  aod::JetTracks const&,
-                                 aod::JetMcCollisions const&)
+                                 aod::JetMcCollisions const& mccollisions)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -929,7 +930,16 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    // collision.mcCollision() auto-resolves to the wrong JMcCollisions binding here; bind via rawIteratorAt.
+    float ptHardFromMc = ptHardCalcMethodSwitch;
+    if (collision.mcCollisionId() >= 0) {
+      float storedPtHard = mccollisions.rawIteratorAt(collision.mcCollisionId()).ptHard();
+      // LHC26b5 ships placeholder ptHard=1.0; fall back to weight-derived.
+      if (storedPtHard > kBrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
+        ptHardFromMc = storedPtHard;
+      }
+    }
+    float pTHat = ptHardFromMc < ptHardCalcMethodSwitch ? ptHardFromMc : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
@@ -948,7 +958,7 @@ struct JetSpectraCharged {
   void processSpectraAreaSubMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                                         aod::JetTracks const&,
-                                        aod::JetMcCollisions const&)
+                                        aod::JetMcCollisions const& mccollisions)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -956,7 +966,16 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    // See note in processSpectraMCDWeighted: avoid the wrong-type bind by
+    // looking the MC collision up explicitly via the named subscribed table.
+    float ptHardFromMc = ptHardCalcMethodSwitch;
+    if (collision.mcCollisionId() >= 0) {
+      float storedPtHard = mccollisions.rawIteratorAt(collision.mcCollisionId()).ptHard();
+      if (storedPtHard > kBrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
+        ptHardFromMc = storedPtHard;
+      }
+    }
+    float pTHat = ptHardFromMc < ptHardCalcMethodSwitch ? ptHardFromMc : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
 
@@ -1199,7 +1218,8 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = mccollision.ptHard() < ptHardCalcMethodSwitch ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    // LHC26b5 ships placeholder ptHard=1.0; fall back to weight-derived.
+    float pTHat = (mccollision.ptHard() > kBrokenPtHardSentinel && mccollision.ptHard() < ptHardCalcMethodSwitch) ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1231,7 +1251,9 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = mccollision.ptHard() < ptHardCalcMethodSwitch ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    // See note in processSpectraMCPWeighted re: ptHard=1.0 placeholder in
+    // current LHC26b5-class MC.
+    float pTHat = (mccollision.ptHard() > kBrokenPtHardSentinel && mccollision.ptHard() < ptHardCalcMethodSwitch) ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_mccollisions_rho"), mccollision.rho(), eventWeight);
 
     for (auto const& jet : jets) {
@@ -1314,7 +1336,7 @@ struct JetSpectraCharged {
                                   ChargedMCDMatchedJets const& mcdjets,
                                   ChargedMCPMatchedJets const&,
                                   aod::JetTracks const&, aod::JetParticles const&,
-                                  aod::JetMcCollisions const&)
+                                  aod::JetMcCollisions const& mccollisions)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -1322,7 +1344,16 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    // See note in processSpectraMCDWeighted: avoid the wrong-type bind by
+    // looking the MC collision up explicitly via the named subscribed table.
+    float ptHardFromMc = ptHardCalcMethodSwitch;
+    if (collision.mcCollisionId() >= 0) {
+      float storedPtHard = mccollisions.rawIteratorAt(collision.mcCollisionId()).ptHard();
+      if (storedPtHard > kBrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
+        ptHardFromMc = storedPtHard;
+      }
+    }
+    float pTHat = ptHardFromMc < ptHardCalcMethodSwitch ? ptHardFromMc : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (const auto& mcdjet : mcdjets) {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
@@ -1365,9 +1396,21 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < ptHardCalcMethodSwitch ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    // Here we already have JetBkgRhoMcCollisions explicitly subscribed; use the
+    // mcCollision_as<JetBkgRhoMcCollisions>() cast to dodge the wrong-type bind
+    // (same root cause as processSpectraMCDWeighted) and also guard against the
+    // ptHard=1.0 placeholder seen in current LHC26b5-class MC.
+    bool hasMc = collision.has_mcCollision();
+    float ptHardFromMc = ptHardCalcMethodSwitch;
+    if (hasMc) {
+      float storedPtHard = collision.mcCollision_as<JetBkgRhoMcCollisions>().ptHard();
+      if (storedPtHard > kBrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
+        ptHardFromMc = storedPtHard;
+      }
+    }
+    float pTHat = ptHardFromMc < ptHardCalcMethodSwitch ? ptHardFromMc : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
 
-    double mcrho = collision.has_mcCollision() ? collision.mcCollision_as<JetBkgRhoMcCollisions>().rho() : -1;
+    double mcrho = hasMc ? collision.mcCollision_as<JetBkgRhoMcCollisions>().rho() : -1;
 
     for (const auto& mcdjet : mcdjets) {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {

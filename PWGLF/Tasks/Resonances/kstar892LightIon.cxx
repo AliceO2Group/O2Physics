@@ -16,6 +16,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -135,15 +136,9 @@ struct Kstar892LightIon {
     Configurable<float> motherRapidityMin{"motherRapidityMin", -0.5, "Minimum rapidity of mother"};
 
     // PID selections
-    Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
-    Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
-    Configurable<bool> onlyTOFVeto{"onlyTOFVeto", false, "only select TOF tracks with TOF and TPC cuts"};
-    Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"};
-    Configurable<bool> isApplypTdepPID{"isApplypTdepPID", false, "Apply pT dependent PID"};
-    Configurable<bool> isApplypTdepPIDwTOF{"isApplypTdepPIDwTOF", false, "Apply pT dependent PID with compulsory TOF condition in a pT range"};
-    Configurable<bool> isApplyMID{"isApplyMID", false, "Apply particle MID"};
-    Configurable<bool> isApplypTdepMID{"isApplypTdepMID", false, "Apply pT dependent particle MID"};
-    Configurable<bool> isApplypTdepMIDComp{"isApplypTdepMIDComp", false, "Apply pT dependent particle MID by comparing the nsigma value"};
+    Configurable<int> pidStrategy{"pidStrategy", 0, "0=Standard, 1=pTDependent, 2=pTDependentTOF, 3=ThreePtDependent, 4=PIDCompare"};
+    Configurable<int> pidMode{"pidMode", 0, "0=Combined,1=TPC,2=TOF,3=TOFHIT,4=TOFVeto"};
+    Configurable<int> midStrategy{"midStrategy", -1, "-1=Disabled, 0=Standard, 1=PtDependent, 2=PtDependentCompare"};
 
     Configurable<float> nsigmaCutTPCPi{"nsigmaCutTPCPi", 3.0, "TPC Nsigma cut for pions"};
     Configurable<float> nsigmaCutTPCKa{"nsigmaCutTPCKa", 3.0, "TPC Nsigma cut for kaons"};
@@ -152,20 +147,19 @@ struct Kstar892LightIon {
     Configurable<float> nsigmaCutCombinedKa{"nsigmaCutCombinedKa", 3.0, "Combined Nsigma cut for kaon"};
     Configurable<float> nsigmaCutCombinedPi{"nsigmaCutCombinedPi", 3.0, "Combined Nsigma cut for pion"};
 
-    Configurable<float> nsigmaCutCombinedMID{"nsigmaCutCombinedMID", 3.0, "Combined Nsigma cut for pion and kaon in MID"};
     Configurable<float> nsigmaCutTPCMID{"nsigmaCutTPCMID", 1.0, "MID Nsigma cut for pion and kaon in TPC"};
 
     Configurable<bool> isApplyFakeTrack{"isApplyFakeTrack", false, "Fake track selection"};
     Configurable<float> cfgFakeTrackCutKa{"cfgFakeTrackCutKa", 0.3, "Cut based on momentum difference in global and TPC tracks for kaons"};
     Configurable<float> cfgFakeTrackCutPi{"cfgFakeTrackCutPi", 0.3, "Cut based on momentum difference in global and TPC tracks for pions"};
 
-    Configurable<float> pionMIDpTLow{"pionMIDpTLow", 1.0, "Low pT cut for pion in MID"};
-    Configurable<float> pionMIDpTHigh{"pionMIDpTHigh", 2.5, "High pT cut for pion in MID"};
-    Configurable<float> kaonMIDpTLow{"kaonMIDpTLow", 0.7, "Low pT cut for kaon in MID"};
-    Configurable<float> kaonMIDpTHigh{"kaonMIDpTHigh", 2.5, "High pT cut for kaon in MID"};
+    Configurable<float> pionMidPtLow{"pionMidPtLow", 1.0, "Low pT cut for pion in MID"};
+    Configurable<float> pionMidPtHigh{"pionMidPtHigh", 2.5, "High pT cut for pion in MID"};
+    Configurable<float> kaonMidPtLow{"kaonMidPtLow", 0.7, "Low pT cut for kaon in MID"};
+    Configurable<float> kaonMidPtHigh{"kaonMidPtHigh", 2.5, "High pT cut for kaon in MID"};
 
-    // Fixed variables
-    float lowPtCutPID = 0.5;
+    Configurable<float> lowPtCutPid{"lowPtCutPid", 0.5, "Low pT cut for PID"};
+    Configurable<float> highPtCutPid{"highPtCutPid", 6.0, "High pT cut for PID"};
 
     Configurable<bool> selHasFT0MC{"selHasFT0MC", true, "Has FT0?"};
     Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
@@ -209,15 +203,53 @@ struct Kstar892LightIon {
     kNEstimators // useful if you want to iterate or size things
   };
 
-  enum PIDParticle {
+  enum class PIDParticle {
     kPion,
-    kKaon,
-    kProton
+    kKaon
+  };
+
+  enum class PIDStrategy {
+    Standard,
+    PtDependent,
+    PtDependentTOF,
+    ThreePtDependent,
+    PIDCompare
+  };
+
+  enum class PIDMode {
+    Combined,
+    TPC,
+    TOF,
+    TOFHIT,
+    TOFVeto
+  };
+
+  enum class MIDStrategy {
+    Disabled = -1,
+    Standard = 0,
+    PtDependent = 1,
+    PtDependentCompare = 2
   };
 
   int noOfDaughters = 2;
+  int initialValue = -9999999;
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
 
-  double pionPIDpTLow = 1.0, pionPIDpTHigh = 2.5, kaonPIDpTLow = 0.7, kaonPIDpTHigh = 2.5;
+  double pionPidPtLow = 1.0, pionPidPtHigh = 2.5, kaonPidPtLow = 0.7, kaonPidPtHigh = 2.5;
+
+  int kKstar14300 = 10311, kK11400Plus = 20323, kKStar1680Plus = 30323, kK21770Plus = 10325, kK21820Plus = 20325, kKstar14100 = 100313, kKstar16800 = 30313, kK218200 = 20315, kK217700 = 10315, kKstar214300 = 315, kKstar1430Plus = 10321;
+
+  // ThreePtDependent PID cuts
+  // Regions:
+  // 0 : pT < lowPtCutPid
+  // 1 : lowPtCutPid <= pT < highPtCutPID
+  // 2 : pT >= highPtCutPID
+  static constexpr std::array<float, 3> TPCPiCuts3Pt{3.0f, 1.5f, 2.0f};
+  static constexpr std::array<float, 3> TOFPiCuts3Pt{3.0f, 2.0f, 3.0f};
+
+  static constexpr std::array<float, 3> TPCKaCuts3Pt{2.0f, 1.5f, 2.0f};
+  static constexpr std::array<float, 3> TOFKaCuts3Pt{3.0f, 2.0f, 3.0f};
 
   TRandom* rn = new TRandom();
 
@@ -355,17 +387,19 @@ struct Kstar892LightIon {
     if (doprocessRec) {
       hMC.add("Rec/hAllRecCollisions", "All reconstructed events", kTH1F, {centralityAxis});
       hMC.add("Rec/h1KstarRecMass", "Invariant mass of kstar meson", kTH1F, {invmassAxis});
-      hMC.add("Rec/h2KstarRecpt1", "pT of kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
-      hMC.add("Rec/h2KstarRecpt2", "pT of kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Rec/h3KstarRec", "pT of reconstructed kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Rec/h3KstarGen", "pT of generated kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Rec/h1RecCent", "centrality reconstructed", kTH1F, {centralityAxis});
       hMC.add("Rec/h1KSRecsplit", "KS meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
+
+      hMC.add("Rec/hMassShift", "#Delta M = m_{rec} - m_{gen}; #it{p}_{T}_{gen}; #it{p}_{T}_{rec}; #Delta M", kTH3F, {ptAxis, ptAxis, {2000, -0.1, 0.1}});
     }
 
     // Signal Loss & Event Loss
     if (doprocessEvtLossSigLossMC) {
       hMC.add("ImpactCorr/hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       hMC.add("ImpactCorr/hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
-      hMC.add("ImpactCorr/hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {{centralityAxis}, impactParAxis});
+      hMC.add("ImpactCorr/hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {centralityAxis, impactParAxis});
       hMC.add("ImpactCorr/hKstarGenBeforeEvtSel", "K*0 before event selections", kTH2F, {ptAxis, impactParAxis});
       hMC.add("ImpactCorr/hKstarGenAfterEvtSel", "K*0 after event selections", kTH2F, {ptAxis, impactParAxis});
     }
@@ -413,6 +447,57 @@ struct Kstar892LightIon {
       hMC.add("Reflections/hKstarSelf", "Refelction template of Kstar", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Reflections/hEtaToKpi", "Refelction template of Eta", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Reflections/hEtaPrimeToKpi", "Refelction template of Eta'", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+
+      hMC.add("FeedDown/hK1_1270", "Distribution for K1(1270)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hK1_1400", "Distribution for K1(1270)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hKstar1410", "Distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hKstar0_1430_0", "Distribution for K*0(1430)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hKstar0_1430_ch", "Distribution for K*+-(1430)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hKstar2_1430", "Distribution for K*2(1430)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hK2_1770", "Distribution for K2(1770)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hK2_1820", "Distribution for K2(1820)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("FeedDown/hKstar1680", "Distribution for K2(1680)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+    }
+
+    if (doprocessRecCorrelatedBackground) {
+      hMC.add("CorrelatedBG/hKstar1410", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("CorrelatedBG/hKstar0_1430", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("CorrelatedBG/hK1_1270", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("CorrelatedBG/hK1_1400", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("CorrelatedBG/hKstar1680", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("CorrelatedBG/hK2_1770", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("CorrelatedBG/hK2_1820", "Wrong pair distribution for K*(1410)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+    }
+    if (doprocessTemplateMC) {
+      hMC.add("Template/hSignal", "True K*0 signal", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hKstarReflection", "K*0 signal due to mis-identification", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hSameMotherOther", "Kpi pair from same mother other than K*0", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hDifferentMother", "Kpi pair from different mothers", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hPrimaryResonance", "Kpi pair one primary another from decay", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Template/hPrimaryPrimary", "Primary Kpi pair", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+    }
+
+    if (doprocessRecKinematics) {
+      hMC.add("Kinematics/h1RecCent", "centrality reconstructed", kTH1F, {centralityAxis});
+
+      hMC.add("Kinematics/hPDGMotherKstar", "Mother PDG of Ka and Pi from K*0", kTH2F, {{100000, -50000.0, 50000.0}, invmassAxis});
+      hMC.add("Kinematics/hOpenAngleKstar", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH2F, {{180, 0., o2::constants::math::PI}, invmassAxis});
+      hMC.add("Kinematics/hDeltaPhiKstar", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH2F, {{180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+      hMC.add("Kinematics/hDeltaEtaKstar", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH2F, {{200, -2.0, 2.0}, invmassAxis});
+      hMC.add("Kinematics/hDeltaRKstar", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH2F, {{200, 0.0, 5.0}, invmassAxis});
+      hMC.add("Kinematics/hKaonPtKstar", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH2F, {ptAxis, invmassAxis});
+      hMC.add("Kinematics/hPionPtKstar", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH2F, {ptAxis, invmassAxis});
+
+      hMC.add("Kinematics/hPtCentMassKstar", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+
+      hMC.add("Kinematics/hOpenAngleOther", "Opening angle vs M(K#pi) (non-K*);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH2F, {{180, 0., o2::constants::math::PI}, invmassAxis});
+      hMC.add("Kinematics/hDeltaPhiOther", "#Delta#phi vs M(K#pi) (non-K*);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH2F, {{180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+      hMC.add("Kinematics/hDeltaEtaOther", "#Delta#eta vs M(K#pi) (non-K*);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH2F, {{200, -2.0, 2.0}, invmassAxis});
+      hMC.add("Kinematics/hDeltaROther", "#DeltaR vs M(K#pi) (non-K*);#DeltaR;M(K#pi) (GeV/c^{2})", kTH2F, {{200, 0.0, 5.0}, invmassAxis});
+      hMC.add("Kinematics/hKaonPtOther", "Kaon p_{T} vs M(K#pi) (non-K*);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH2F, {ptAxis, invmassAxis});
+      hMC.add("Kinematics/hPionPtOther", "Pion p_{T} vs M(K#pi) (non-K*);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH2F, {ptAxis, invmassAxis});
+      hMC.add("Kinematics/hPtCentMassOther", "p_{T} vs Centrality vs M(K#pi) (non-K*);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Kinematics/hOtherMotherPDG", "Common mother PDG of non-K* pairs;PDG Code;M(K#pi) (GeV/c^{2})", kTH2F, {{100000, -50000.0, 50000.0}, invmassAxis});
     }
 
     if (doprocessMCCheck) {
@@ -448,9 +533,6 @@ struct Kstar892LightIon {
       hMC.add("MCCheck/PtKstarVsNchMC_AllGen", "All Generated Events;;Gen. Nch (|#eta|<0.8);", kTH2F, {{ptAxis, {nBinsNch, minNch, maxNch}}});
     }
   }
-
-  double massPi = o2::constants::physics::MassPiPlus;
-  double massKa = o2::constants::physics::MassKPlus;
 
   template <typename Coll>
   bool selectionEvent(const Coll& collision, bool fillHist = false) // default to false
@@ -621,7 +703,7 @@ struct Kstar892LightIon {
   }
 
   template <typename T>
-  bool isFakeTrack(const T& track, int PID)
+  bool isFakeTrack(const T& track, PIDParticle PID)
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
@@ -638,208 +720,227 @@ struct Kstar892LightIon {
   }
 
   template <typename T>
-  bool selectionPID(const T& candidate, int PID)
+  float tpcSigma(const T& c, PIDParticle pid)
   {
-    if (PID == PIDParticle::kPion) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFVeto) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedPi * selectionConfig.nsigmaCutCombinedPi) && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
+    return pid == PIDParticle::kPion ? c.tpcNSigmaPi() : c.tpcNSigmaKa();
+  }
+
+  template <typename T>
+  float tofSigma(const T& c, PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? c.tofNSigmaPi() : c.tofNSigmaKa();
+  }
+
+  template <typename T>
+  float combinedNSigma2(const T& c, PIDParticle pid)
+  {
+    const float tpc = tpcSigma(c, pid);
+    const float tof = tofSigma(c, pid);
+
+    return tpc * tpc + tof * tof;
+  }
+
+  float tpcCut(PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? selectionConfig.nsigmaCutTPCPi : selectionConfig.nsigmaCutTPCKa;
+  }
+
+  float tofCut(PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? selectionConfig.nsigmaCutTOFPi : selectionConfig.nsigmaCutTOFKa;
+  }
+
+  float combinedCut(PIDParticle pid)
+  {
+    return pid == PIDParticle::kPion ? selectionConfig.nsigmaCutCombinedPi : selectionConfig.nsigmaCutCombinedKa;
+  }
+
+  template <typename T>
+  bool passTPC(const T& c, PIDParticle pid)
+  {
+    return std::abs(tpcSigma(c, pid)) < tpcCut(pid);
+  }
+
+  template <typename T>
+  bool passTOF(const T& c, PIDParticle pid)
+  {
+    return c.hasTOF() && std::abs(tofSigma(c, pid)) < tofCut(pid) && c.beta() > selectionConfig.cfgTOFBetaCut;
+  }
+
+  template <typename T>
+  bool passCombined(const T& c, PIDParticle pid)
+  {
+    if (!c.hasTOF() || c.beta() <= selectionConfig.cfgTOFBetaCut)
+      return false;
+
+    const float cut = combinedCut(pid);
+    return combinedNSigma2(c, pid) < cut * cut;
+  }
+
+  template <typename T>
+  bool selectionPID(const T& candidate, PIDParticle pid)
+  {
+    const auto strategy = static_cast<PIDStrategy>(selectionConfig.pidStrategy.value);
+    const auto mode = static_cast<PIDMode>(selectionConfig.pidMode.value);
+
+    switch (strategy) {
+      case PIDStrategy::Standard: {
+        switch (mode) {
+          case PIDMode::TPC: // Apply only TPC cut
+            return passTPC(candidate, pid);
+
+          case PIDMode::TOF: // Apply only TOF cut
+            return passTOF(candidate, pid);
+
+          case PIDMode::TOFVeto: // Require TOF hit; apply both TPC and TOF cuts. Tracks without TOF are rejected.
+            return passTPC(candidate, pid) && passTOF(candidate, pid);
+
+          case PIDMode::TOFHIT: // Apply only TOF cut that has tof hits, apply TPC cut for the rest
+            if (candidate.hasTOF())
+              return passTOF(candidate, pid);
+
+            return passTPC(candidate, pid);
+
+          case PIDMode::Combined: // Apply combined cut if TOF is available, apply TPC cut for the rest
+            if (candidate.hasTOF())
+              return passCombined(candidate, pid);
+
+            return passTPC(candidate, pid);
+
+          default:
+            LOGF(fatal, "Unknown PID mode!");
+            return false;
         }
       }
-    } else if (PID == PIDParticle::kKaon) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
+
+      case PIDStrategy::PtDependent: // Apply TPC and TOF cut above lowPtCut, apply TPC cut for the rest
+      {
+        if (candidate.hasTOF() && candidate.pt() >= selectionConfig.lowPtCutPid)
+          return passTPC(candidate, pid) && passTOF(candidate, pid);
+
+        return passTPC(candidate, pid);
+      }
+
+      case PIDStrategy::PtDependentTOF: // Apply combined cut (requires TOF) in specific pT window, apply TPC+TOF cut for tracks with TOF hit above lowPtCut, apply TPC cut for the rest.
+      {
+        const bool inPtWindow = (pid == PIDParticle::kPion) ? (candidate.pt() >= pionPidPtLow && candidate.pt() <= pionPidPtHigh) : (candidate.pt() >= kaonPidPtLow && candidate.pt() <= kaonPidPtHigh);
+
+        if (inPtWindow)
+          return passCombined(candidate, pid);
+
+        if (candidate.hasTOF() && candidate.pt() >= selectionConfig.lowPtCutPid)
+          return passTPC(candidate, pid) && passTOF(candidate, pid);
+
+        return passTPC(candidate, pid);
+      }
+
+      case PIDStrategy::ThreePtDependent: // Apply pT-dependent TPC and TOF cuts using three pT regions
+      {
+        const int region = (candidate.pt() < selectionConfig.lowPtCutPid) ? 0 : (candidate.pt() < selectionConfig.highPtCutPid) ? 1
+                                                                                                                                : 2;
+
+        const float regionTPCCut = (pid == PIDParticle::kPion) ? TPCPiCuts3Pt[region] : TPCKaCuts3Pt[region];
+
+        const float regionTOFCut = (pid == PIDParticle::kPion) ? TOFPiCuts3Pt[region] : TOFKaCuts3Pt[region];
+
+        if (candidate.hasTOF()) {
+          return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut) && (std::abs(tofSigma(candidate, pid)) < regionTOFCut) && (candidate.beta() > selectionConfig.cfgTOFBetaCut);
         }
-      } else if (selectionConfig.onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTOFVeto) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedKa * selectionConfig.nsigmaCutCombinedKa) && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
+
+        return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
+      }
+
+      case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, within lowPtCutPid and highPtCutPid, require TOF and accept the track only if its combined nsigma is smaller than that of the alternate PID hypothesis and above highPtCutPid if TOF is available, accept if the track passes combined cut and if TOF is not available, check if it passes TPC cut
+      {
+        if (candidate.pt() < selectionConfig.lowPtCutPid) {
+          if (candidate.hasTOF())
+            return passTPC(candidate, pid) && passTOF(candidate, pid);
+          return passTPC(candidate, pid);
+        } else if (candidate.pt() < selectionConfig.highPtCutPid) {
+          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+            return false;
+
+          const float sigmaComb2 = combinedNSigma2(candidate, pid);
+
+          const float cut = combinedCut(pid);
+          if (sigmaComb2 >= cut * cut)
+            return false;
+
+          const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
+
+          return sigmaComb2 < combinedNSigma2(candidate, otherPID);
+        } else {
+          if (candidate.hasTOF())
+            return passCombined(candidate, pid);
+
+          return passTPC(candidate, pid);
         }
       }
+
+      default:
+        LOGF(fatal, "Unknown PID strategy!");
     }
     return false;
   }
 
   template <typename T>
-  bool selectionPIDpTdep(const T& candidate, int PID)
+  bool isMisidentified(const T& candidate, PIDParticle pid)
   {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-        return true;
+    const auto strategy = static_cast<MIDStrategy>(selectionConfig.midStrategy.value);
+    const PIDParticle misPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
+
+    switch (strategy) {
+      case MIDStrategy::Disabled:
+        return false;
+
+      case MIDStrategy::Standard: // Reject if track also satisfies TPC cut for the opposite hypothesis
+        return std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTPCMID;
+
+      case MIDStrategy::PtDependent: // Reject if track is in MID pT window, has no TOF, and passes opposite TPC cut
+      {
+        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtLow : selectionConfig.kaonMidPtLow;
+        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtHigh : selectionConfig.kaonMidPtHigh;
+
+        return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTPCMID;
       }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-        return true;
+
+      case MIDStrategy::PtDependentCompare: // Reject if track is in MID pT window, has no TOF, and looks more like the opposite hypothesis than the signal hypothesis
+      {
+        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtLow : selectionConfig.kaonMidPtLow;
+        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtHigh : selectionConfig.kaonMidPtHigh;
+
+        return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < std::abs(tpcSigma(candidate, pid));
       }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && !candidate.hasTOF()) {
-        return true;
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-        return true;
-      }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > selectionConfig.cfgTOFBetaCut) {
-        return true;
-      }
-      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && !candidate.hasTOF()) {
-        return true;
-      }
+
+      default:
+        LOGF(fatal, "Unknown MID strategy!");
     }
     return false;
   }
 
-  template <typename T>
-  bool selectionPIDpTdepTOF(const T& candidate, int PID)
+  template <typename MCParticle>
+  std::vector<std::pair<int, int>> getAncestors(const MCParticle& particle)
   {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() < pionPIDpTLow || candidate.pt() > pionPIDpTHigh) {
-        if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi && !candidate.hasTOF()) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedPi * selectionConfig.nsigmaCutCombinedPi)) {
-          return true;
-        }
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() < kaonPIDpTLow || candidate.pt() > kaonPIDpTHigh) {
-        if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa) {
-          return true;
-        }
-        if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa && !candidate.hasTOF()) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedKa * selectionConfig.nsigmaCutCombinedKa)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
+    std::vector<std::pair<int, int>> ancestors;
 
-  template <typename T>
-  bool selectionMID(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedMID * selectionConfig.nsigmaCutCombinedMID)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (selectionConfig.onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else if (selectionConfig.onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedMID * selectionConfig.nsigmaCutCombinedMID)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
+    std::function<void(const MCParticle&)> collect = [&](const auto& p) {
+      for (const auto& mother : p.template mothers_as<aod::McParticles>()) {
 
-  template <typename T>
-  bool selectionMIDpTdep(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= selectionConfig.pionMIDpTLow && candidate.pt() < selectionConfig.pionMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMID) {
-        return true;
+        ancestors.emplace_back(mother.globalIndex(), std::abs(mother.pdgCode()));
+        collect(mother);
       }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= selectionConfig.kaonMIDpTLow && candidate.pt() < selectionConfig.kaonMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMID) {
-        return true;
-      }
-    }
-    return false;
-  }
+    };
 
-  template <typename T>
-  bool selectionMIDPtDepComp(const T& candidate, int PID)
-  {
-    if (PID == PIDParticle::kPion) {
-      if (candidate.pt() >= selectionConfig.pionMIDpTLow && candidate.pt() < selectionConfig.pionMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < std::abs(candidate.tpcNSigmaKa())) {
-        return true;
-      }
-    } else if (PID == PIDParticle::kKaon) {
-      if (candidate.pt() >= selectionConfig.kaonMIDpTLow && candidate.pt() < selectionConfig.kaonMIDpTHigh && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < std::abs(candidate.tpcNSigmaPi())) {
-        return true;
-      }
-    }
-    return false;
+    collect(particle);
+
+    return ancestors;
   }
 
   //*********Varibles declaration***************
   float centrality{-1.0}, theta2;
-  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, mother, motherRot;
+  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, genDaughter1, genDaughter2, mother, motherRot, genMother;
+
+  double genMass, recMass, recPt, genPt;
   bool isMix = false;
 
   template <typename T1, typename T2>
@@ -980,31 +1081,18 @@ struct Kstar892LightIon {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
-        continue;
-      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !selectionPID(track2, 0)) // Track 2 is checked with Pion
+      if (!selectionPID(track1, PIDParticle::kKaon)) // Track 1 is checked with Kaon
         continue;
 
-      if (selectionConfig.isApplypTdepPID && !selectionPIDpTdep(track1, 1)) // Track 1 is checked with Kaon
-        continue;
-      if (selectionConfig.isApplypTdepPID && !selectionPIDpTdep(track2, 0)) // Track 2 is checked with Pion
+      if (!selectionPID(track2, PIDParticle::kPion)) // Track 2 is checked with Pion
         continue;
 
-      if (selectionConfig.isApplypTdepPIDwTOF && !selectionPIDpTdepTOF(track1, 1)) // Track 1 is checked with Kaon
+      if (isMisidentified(track1, PIDParticle::kKaon))
         continue;
-      if (selectionConfig.isApplypTdepPIDwTOF && !selectionPIDpTdepTOF(track2, 0)) // Track 2 is checked with Pion
-        continue;
-
-      if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+      if (isMisidentified(track2, PIDParticle::kPion))
         continue;
 
-      if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
         continue;
 
       if (cQAplots) {
@@ -1158,25 +1246,18 @@ struct Kstar892LightIon {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && (!selectionPID(track1, 1) || !selectionPID(track2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+      if (!selectionPID(track1, PIDParticle::kKaon)) // Track 1 is checked with Kaon
         continue;
 
-      if (selectionConfig.isApplypTdepPID && (!selectionPIDpTdep(track1, 1) || !selectionPIDpTdep(track2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+      if (!selectionPID(track2, PIDParticle::kPion)) // Track 2 is checked with Pion
         continue;
 
-      if (selectionConfig.isApplypTdepPIDwTOF && (!selectionPIDpTdepTOF(track1, 1) || !selectionPIDpTdepTOF(track2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+      if (isMisidentified(track1, PIDParticle::kKaon))
+        continue;
+      if (isMisidentified(track2, PIDParticle::kPion))
         continue;
 
-      if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-        continue;
-
-      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
         continue;
 
       if (cQAplots) {
@@ -1286,25 +1367,14 @@ struct Kstar892LightIon {
             continue;
           }
 
-          if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && (!selectionPID(t1, 1) || !selectionPID(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          // t1 checked as kaon and t2 checked as pion
+          if (!selectionPID(t1, PIDParticle::kKaon) || !selectionPID(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPID && (!selectionPIDpTdep(t1, 1) || !selectionPIDpTdep(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          if (isMisidentified(t1, PIDParticle::kKaon) || isMisidentified(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPIDwTOF && (!selectionPIDpTdepTOF(t1, 1) || !selectionPIDpTdepTOF(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
-            continue;
-
-          if (selectionConfig.isApplyMID && (selectionMID(t1, 0) || selectionMID(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(t1, 0) || selectionMIDpTdep(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(t1, 0) || selectionMIDPtDepComp(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, 1) || isFakeTrack(t2, 0)))
+          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, PIDParticle::kKaon) || isFakeTrack(t2, PIDParticle::kPion)))
             continue;
 
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
@@ -1369,25 +1439,14 @@ struct Kstar892LightIon {
             continue;
           }
 
-          if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && (!selectionPID(t1, 1) || !selectionPID(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          // t1 checked as kaon and t2 checked as pion
+          if (!selectionPID(t1, PIDParticle::kKaon) || !selectionPID(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPID && (!selectionPIDpTdep(t1, 1) || !selectionPIDpTdep(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
+          if (isMisidentified(t1, PIDParticle::kKaon) || isMisidentified(t2, PIDParticle::kPion))
             continue;
 
-          if (selectionConfig.isApplypTdepPIDwTOF && (!selectionPIDpTdepTOF(t1, 1) || !selectionPIDpTdepTOF(t2, 0))) // Track 1 is checked with Kaon, track 2 is checked with Pion
-            continue;
-
-          if (selectionConfig.isApplyMID && (selectionMID(t1, 0) || selectionMID(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(t1, 0) || selectionMIDpTdep(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(t1, 0) || selectionMIDPtDepComp(t2, 1)))
-            continue;
-
-          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, 1) || isFakeTrack(t2, 0)))
+          if (selectionConfig.isApplyFakeTrack && (isFakeTrack(t1, PIDParticle::kKaon) || isFakeTrack(t2, PIDParticle::kPion)))
             continue;
 
           if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
@@ -1673,24 +1732,13 @@ struct Kstar892LightIon {
           }
 
           if (track1PDG == PDG_t::kPiPlus) {
-            if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
-              continue;
-            } else if (selectionConfig.isApplypTdepPID && !(selectionPIDpTdep(track1, 0) && selectionPIDpTdep(track2, 1))) { // pion and kaon
-              continue;
-            } else if (selectionConfig.isApplypTdepPIDwTOF && !(selectionPIDpTdepTOF(track1, 0) && selectionPIDpTdepTOF(track2, 1))) {
-              continue;
-            }
-
-            if (selectionConfig.isApplyMID && (selectionMID(track1, 1) || selectionMID(track2, 0)))
+            if (!selectionPID(track1, PIDParticle::kPion) || !selectionPID(track2, PIDParticle::kKaon)) // Treat track1 as the pion candidate and track2 as the kaon candidate
               continue;
 
-            if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 1) || selectionMIDpTdep(track2, 0)))
+            if (isMisidentified(track1, PIDParticle::kPion) || isMisidentified(track2, PIDParticle::kKaon))
               continue;
 
-            if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 1) || selectionMIDPtDepComp(track2, 0)))
-              continue;
-
-            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 0) || isFakeTrack(track2, 1)))
+            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kPion) || isFakeTrack(track2, PIDParticle::kKaon)))
               continue;
 
             if (cQAplots) {
@@ -1727,24 +1775,13 @@ struct Kstar892LightIon {
             }
 
           } else if (track1PDG == PDG_t::kKPlus) {
-            if ((!selectionConfig.isApplypTdepPID && !selectionConfig.isApplypTdepPIDwTOF) && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // kaon and pion
-              continue;
-            } else if (selectionConfig.isApplypTdepPID && !(selectionPIDpTdep(track1, 1) && selectionPIDpTdep(track2, 0))) { // kaon and pion
-              continue;
-            } else if (selectionConfig.isApplypTdepPIDwTOF && !(selectionPIDpTdepTOF(track1, 1) && selectionPIDpTdepTOF(track2, 0))) {
-              continue;
-            }
-
-            if (selectionConfig.isApplyMID && (selectionMID(track1, 0) || selectionMID(track2, 1)))
+            if (!selectionPID(track1, PIDParticle::kKaon) || !selectionPID(track2, PIDParticle::kPion)) // Treat track1 as the kaon candidate and track2 as the pion candidate
               continue;
 
-            if (selectionConfig.isApplypTdepMID && (selectionMIDpTdep(track1, 0) || selectionMIDpTdep(track2, 1)))
+            if (isMisidentified(track1, PIDParticle::kKaon) || isMisidentified(track2, PIDParticle::kPion))
               continue;
 
-            if (selectionConfig.isApplypTdepMIDComp && (selectionMIDPtDepComp(track1, 0) || selectionMIDPtDepComp(track2, 1)))
-              continue;
-
-            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, 1) || isFakeTrack(track2, 0)))
+            if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
               continue;
 
             if (cQAplots) {
@@ -1798,21 +1835,38 @@ struct Kstar892LightIon {
           if (track1PDG == PDG_t::kPiPlus) {
             daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPi);
             daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+
+            genDaughter1 = ROOT::Math::PxPyPzMVector(mctrack1.px(), mctrack1.py(), mctrack1.pz(), massPi);
+            genDaughter2 = ROOT::Math::PxPyPzMVector(mctrack2.px(), mctrack2.py(), mctrack2.pz(), massKa);
+
           } else if (track1PDG == PDG_t::kKPlus) {
             daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
             daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+
+            genDaughter1 = ROOT::Math::PxPyPzMVector(mctrack1.px(), mctrack1.py(), mctrack1.pz(), massKa);
+            genDaughter2 = ROOT::Math::PxPyPzMVector(mctrack2.px(), mctrack2.py(), mctrack2.pz(), massPi);
           }
 
-          mother = daughter1 + daughter2; // Kstar meson
-
-          hMC.fill(HIST("Rec/h2KstarRecpt2"), mothertrack1.pt(), centrality, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
+          mother = daughter1 + daughter2;          // Rec Kstar meson
+          genMother = genDaughter1 + genDaughter2; // Gen Kstar from MC daughters
 
           if (mother.Rapidity() < selectionConfig.motherRapidityMin || mother.Rapidity() > selectionConfig.motherRapidityMax) {
             continue;
           }
 
-          hMC.fill(HIST("Rec/h1KstarRecMass"), mother.M());
-          hMC.fill(HIST("Rec/h2KstarRecpt1"), mother.Pt(), centrality, mother.M());
+          recMass = mother.M();
+          recPt = mother.Pt();
+
+          genMass = genMother.M();
+          genPt = mothertrack1.pt();
+
+          hMC.fill(HIST("Rec/hMassShift"), genPt, recPt, recMass - genMass);
+
+          hMC.fill(HIST("Rec/h3KstarGen"), genPt, centrality, genMass);
+
+          hMC.fill(HIST("Rec/h1KstarRecMass"), recMass);
+
+          hMC.fill(HIST("Rec/h3KstarRec"), recPt, centrality, recMass);
         }
       }
     }
@@ -2140,8 +2194,7 @@ struct Kstar892LightIon {
       centrality = collision.centFT0M();
     }
 
-    for (const auto& [track1, track2] :
-         combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
 
       if (!selectionTrack(track1) || !selectionTrack(track2))
         continue;
@@ -2306,9 +2359,554 @@ struct Kstar892LightIon {
         if (fake.Rapidity() > selectionConfig.motherRapidityMin && fake.Rapidity() < selectionConfig.motherRapidityMax)
           hMC.fill(HIST("Reflections/hKstarSelf"), fake.Pt(), centrality, fake.M());
       }
+
+      // =========================================
+      // Higher resonance feed-down
+      // =========================================
+
+      if ((pdg1 == PDG_t::kKPlus && pdg2 == PDG_t::kPiPlus) || (pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kKPlus)) {
+
+        ROOT::Math::PxPyPzMVector p1(track1.px(), track1.py(), track1.pz(), pdg1 == PDG_t::kKPlus ? massKa : massPi);
+
+        ROOT::Math::PxPyPzMVector p2(track2.px(), track2.py(), track2.pz(), pdg2 == PDG_t::kKPlus ? massKa : massPi);
+
+        auto pair = p1 + p2;
+
+        if (pair.Rapidity() < selectionConfig.motherRapidityMin || pair.Rapidity() > selectionConfig.motherRapidityMax) {
+          continue;
+        }
+
+        // ==========================================
+        // K1(1270)
+        // ==========================================
+        if (motherPDG == o2::constants::physics::kK1_1270Plus) {
+          hMC.fill(HIST("FeedDown/hK1_1270"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K1(1400)
+        // ==========================================
+        if (motherPDG == kK11400Plus) {
+          hMC.fill(HIST("FeedDown/hK1_1400"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K*(1410)
+        // ==========================================
+        if (motherPDG == kKstar14100) {
+          hMC.fill(HIST("FeedDown/hKstar1410"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K*0(1430)
+        // ==========================================
+        if (motherPDG == kKstar14300) {
+          hMC.fill(HIST("FeedDown/hKstar0_1430_0"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K*±(1430)
+        // ==========================================
+        if (motherPDG == kKstar1430Plus) {
+          hMC.fill(HIST("FeedDown/hKstar0_1430_ch"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K*2(1430)
+        // ==========================================
+        if (motherPDG == kKstar214300) {
+          hMC.fill(HIST("FeedDown/hKstar2_1430"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K2(1770)
+        // ==========================================
+        if (motherPDG == kK217700) {
+          hMC.fill(HIST("FeedDown/hK2_1770"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K2(1820)
+        // ==========================================
+        if (motherPDG == kK218200) {
+          hMC.fill(HIST("FeedDown/hK2_1820"), pair.Pt(), centrality, pair.M());
+        }
+
+        // ==========================================
+        // K*(1680)
+        // ==========================================
+        if (motherPDG == kKstar16800) {
+          hMC.fill(HIST("FeedDown/hKstar1680"), pair.Pt(), centrality, pair.M());
+        }
+      }
     }
   }
   PROCESS_SWITCH(Kstar892LightIon, processRecReflection, "Process reconstructed reflections", false);
+
+  void processRecCorrelatedBackground(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
+  {
+    if (!collision.has_mcCollision())
+      return;
+
+    if (!selectionEvent(collision, false))
+      return;
+
+    centrality = collision.centFT0M();
+
+    if (selectCentEstimator == kFT0A)
+      centrality = collision.centFT0A();
+    else if (selectCentEstimator == kFT0C)
+      centrality = collision.centFT0C();
+    else if (selectCentEstimator == kFV0A)
+      centrality = collision.centFV0A();
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+
+      if (!selectionTrack(track1))
+        continue;
+
+      if (!selectionTrack(track2))
+        continue;
+
+      if (track1.index() >= track2.index())
+        continue;
+
+      if (track1.sign() * track2.sign() >= 0)
+        continue;
+
+      if (!track1.has_mcParticle())
+        continue;
+
+      if (!track2.has_mcParticle())
+        continue;
+
+      auto mc1 = track1.mcParticle();
+      auto mc2 = track2.mcParticle();
+
+      // if (!mc1.isPhysicalPrimary() || !mc2.isPhysicalPrimary())
+      // continue;
+
+      int pdg1 = std::abs(mc1.pdgCode());
+      int pdg2 = std::abs(mc2.pdgCode());
+
+      if (!((pdg1 == PDG_t::kKPlus && pdg2 == PDG_t::kPiPlus) || (pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kKPlus))) {
+        continue;
+      }
+
+      ROOT::Math::PxPyPzMVector p1(track1.px(), track1.py(), track1.pz(), pdg1 == PDG_t::kKPlus ? massKa : massPi);
+      ROOT::Math::PxPyPzMVector p2(track2.px(), track2.py(), track2.pz(), pdg2 == PDG_t::kKPlus ? massKa : massPi);
+      auto pair = p1 + p2;
+
+      if (pair.Rapidity() < selectionConfig.motherRapidityMin || pair.Rapidity() > selectionConfig.motherRapidityMax)
+        continue;
+
+      bool trueKstar = false;
+
+      for (const auto& m1 : mc1.mothers_as<aod::McParticles>()) {
+        for (const auto& m2 : mc2.mothers_as<aod::McParticles>()) {
+
+          if (m1.globalIndex() == m2.globalIndex() && std::abs(m1.pdgCode()) == o2::constants::physics::kK0Star892) {
+            trueKstar = true;
+            break;
+          }
+        }
+        if (trueKstar)
+          break;
+      }
+      if (trueKstar)
+        continue;
+
+      auto ancestors1 = getAncestors(mc1);
+      auto ancestors2 = getAncestors(mc2);
+
+      bool fromK11270 = false;
+      bool fromK11400 = false;
+      bool fromKstar1680 = false;
+      bool fromK21770 = false;
+      bool fromK21820 = false;
+      bool fromKstar1410 = false;
+      bool fromKstar01430 = false;
+
+      for (auto const& a1 : ancestors1) {
+
+        for (auto const& a2 : ancestors2) {
+
+          if (a1.first != a2.first)
+            continue;
+
+          int pdg = a1.second;
+
+          if (pdg == o2::constants::physics::kK1_1270Plus)
+            fromK11270 = true;
+
+          if (pdg == kK11400Plus)
+            fromK11400 = true;
+
+          if (pdg == kKStar1680Plus)
+            fromKstar1680 = true;
+
+          if (pdg == kK21770Plus)
+            fromK21770 = true;
+
+          if (pdg == kK21820Plus)
+            fromK21820 = true;
+
+          if (pdg == kKstar14100)
+            fromKstar1410 = true;
+
+          if (pdg == kKstar14300)
+            fromKstar01430 = true;
+        }
+      }
+
+      if (fromKstar1410) {
+        hMC.fill(HIST("CorrelatedBG/hKstar1410"), pair.Pt(), centrality, pair.M());
+      }
+
+      if (fromKstar01430) {
+        hMC.fill(HIST("CorrelatedBG/hKstar0_1430"), pair.Pt(), centrality, pair.M());
+      }
+
+      if (fromK11270) {
+        hMC.fill(HIST("CorrelatedBG/hK1_1270"), pair.Pt(), centrality, pair.M());
+      }
+
+      if (fromK11400) {
+        hMC.fill(HIST("CorrelatedBG/hK1_1400"), pair.Pt(), centrality, pair.M());
+      }
+
+      if (fromKstar1680) {
+        hMC.fill(HIST("CorrelatedBG/hKstar1680"), pair.Pt(), centrality, pair.M());
+      }
+
+      if (fromK21770) {
+        hMC.fill(HIST("CorrelatedBG/hK2_1770"), pair.Pt(), centrality, pair.M());
+      }
+
+      if (fromK21820) {
+        hMC.fill(HIST("CorrelatedBG/hK2_1820"), pair.Pt(), centrality, pair.M());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Kstar892LightIon, processRecCorrelatedBackground, "Process correlated background", false);
+
+  void processTemplateMC(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
+  {
+    if (!collision.has_mcCollision())
+      return;
+
+    if (!selectionEvent(collision, false))
+      return;
+
+    centrality = -1.f;
+    if (selectCentEstimator == kFT0M) {
+      centrality = collision.centFT0M();
+    } else if (selectCentEstimator == kFT0A) {
+      centrality = collision.centFT0A();
+    } else if (selectCentEstimator == kFT0C) {
+      centrality = collision.centFT0C();
+    } else if (selectCentEstimator == kFV0A) {
+      centrality = collision.centFV0A();
+    } else {
+      centrality = collision.centFT0M();
+    }
+
+    auto classifyOrigin = [](const aod::McParticle& part, int64_t& motherIdx) -> int {
+      motherIdx = -1;
+      if (!part.has_mothers())
+        return 0;
+      for (const auto& mom : part.mothers_as<aod::McParticles>()) {
+        if (!mom.producedByGenerator())
+          continue;
+        motherIdx = mom.globalIndex();
+        if (std::abs(mom.pdgCode()) == o2::constants::physics::kK0Star892)
+          return 1;
+        return 2;
+      }
+      return 0;
+    };
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+
+      if (!selectionTrack(track1) || !selectionTrack(track2))
+        continue;
+
+      if (track1.globalIndex() == track2.globalIndex())
+        continue;
+
+      if (!selectionPair(track1, track2))
+        continue;
+
+      if (!selectionPID(track1, PIDParticle::kKaon))
+        continue;
+      if (!selectionPID(track2, PIDParticle::kPion))
+        continue;
+
+      if (isMisidentified(track1, PIDParticle::kKaon))
+        continue;
+      if (isMisidentified(track2, PIDParticle::kPion))
+        continue;
+
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
+        continue;
+
+      if (!track1.has_mcParticle() || !track2.has_mcParticle())
+        continue;
+
+      daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+      daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+      mother = daughter1 + daughter2;
+
+      if (mother.Rapidity() < selectionConfig.motherRapidityMin ||
+          mother.Rapidity() > selectionConfig.motherRapidityMax)
+        continue;
+
+      const float recMass = mother.M();
+      const float recPt = mother.Pt();
+
+      const auto mcKa = track1.mcParticle();
+      const auto mcPi = track2.mcParticle();
+
+      if (selectionConfig.isPrimaryTrack && (!mcKa.isPhysicalPrimary() || !mcPi.isPhysicalPrimary()))
+        continue;
+
+      int64_t kaMotherIdx = -1;
+      int64_t piMotherIdx = -1;
+      const int kaOrigin = classifyOrigin(mcKa, kaMotherIdx);
+      const int piOrigin = classifyOrigin(mcPi, piMotherIdx);
+
+      const bool kaIsKstar = (kaOrigin == 1);
+      const bool piIsKstar = (piOrigin == 1);
+      const bool kaHasParent = (kaOrigin != 0);
+      const bool piHasParent = (piOrigin != 0);
+      const bool sameMother = (kaMotherIdx >= 0) && (piMotherIdx >= 0) && (kaMotherIdx == piMotherIdx);
+
+      if (kaIsKstar && piIsKstar && sameMother) {
+        const bool correctAssignment = (std::abs(mcKa.pdgCode()) == PDG_t::kKPlus) && (std::abs(mcPi.pdgCode()) == PDG_t::kPiPlus);
+        if (correctAssignment) {
+          hMC.fill(HIST("Template/hSignal"), recPt, centrality, recMass);
+        } else {
+          hMC.fill(HIST("Template/hKstarReflection"), recPt, centrality, recMass);
+        }
+
+      } else if (sameMother && kaHasParent && piHasParent) {
+        hMC.fill(HIST("Template/hSameMotherOther"), recPt, centrality, recMass);
+
+      } else if (!sameMother && kaHasParent && piHasParent) {
+        hMC.fill(HIST("Template/hDifferentMother"), recPt, centrality, recMass);
+
+      } else if (kaHasParent != piHasParent) {
+        hMC.fill(HIST("Template/hPrimaryResonance"), recPt, centrality, recMass);
+
+      } else {
+        hMC.fill(HIST("Template/hPrimaryPrimary"), recPt, centrality, recMass);
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processTemplateMC, "Process MC Template Background", false);
+
+  void processRecKinematics(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+
+    centrality = collision.centFT0M();
+
+    if (selectCentEstimator == kFT0M) {
+      centrality = collision.centFT0M();
+    } else if (selectCentEstimator == kFT0A) {
+      centrality = collision.centFT0A();
+    } else if (selectCentEstimator == kFT0C) {
+      centrality = collision.centFT0C();
+    } else if (selectCentEstimator == kFV0A) {
+      centrality = collision.centFV0A();
+    } else {
+      centrality = collision.centFT0M(); // default
+    }
+
+    if (!selectionEvent(collision, true)) { // fill MC event cut histogram
+      return;
+    }
+
+    hMC.fill(HIST("Kinematics/h1RecCent"), centrality);
+
+    // auto oldindex = -999;
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+      if (!selectionTrack(track1) || !selectionTrack(track2)) {
+        continue;
+      }
+
+      if (!track1.has_mcParticle() || !track2.has_mcParticle()) {
+        continue;
+      }
+
+      if (track1.index() <= track2.index())
+        continue;
+
+      if (!selectionPair(track1, track2)) {
+        continue;
+      }
+
+      if (track1.sign() * track2.sign() >= 0) {
+        continue;
+      }
+
+      const auto mctrack1 = track1.mcParticle();
+      const auto mctrack2 = track2.mcParticle();
+      if (!mctrack1.isPhysicalPrimary() || !mctrack2.isPhysicalPrimary()) {
+        continue;
+      }
+
+      int track1PDG = std::abs(mctrack1.pdgCode());
+      int track2PDG = std::abs(mctrack2.pdgCode());
+
+      if (!(track1PDG == PDG_t::kPiPlus && track2PDG == PDG_t::kKPlus) && !(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
+        continue;
+      }
+
+      ROOT::Math::PxPyPzMVector kVec;
+      ROOT::Math::PxPyPzMVector piVec;
+
+      double phiK, phiPi;
+      double etaK, etaPi;
+      double ptK, ptPi;
+
+      if (track1PDG == PDG_t::kKPlus) {
+
+        if (!selectionPID(track1, PIDParticle::kKaon) || !selectionPID(track2, PIDParticle::kPion)) // Treat track1 as the kaon candidate and track2 as the pion candidate
+          continue;
+
+        if (isMisidentified(track1, PIDParticle::kKaon) || isMisidentified(track2, PIDParticle::kPion))
+          continue;
+
+        if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion)))
+          continue;
+
+        kVec = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+
+        piVec = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+
+        phiK = track1.phi();
+        etaK = track1.eta();
+        ptK = track1.pt();
+
+        phiPi = track2.phi();
+        etaPi = track2.eta();
+        ptPi = track2.pt();
+
+      } else {
+
+        if (!selectionPID(track1, PIDParticle::kPion) || !selectionPID(track2, PIDParticle::kKaon)) // Treat track1 as the pion candidate and track2 as the kaon candidate
+          continue;
+
+        if (isMisidentified(track1, PIDParticle::kPion) || isMisidentified(track2, PIDParticle::kKaon))
+          continue;
+
+        if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kPion) || isFakeTrack(track2, PIDParticle::kKaon)))
+          continue;
+
+        kVec = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+
+        piVec = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPi);
+
+        phiK = track2.phi();
+        etaK = track2.eta();
+        ptK = track2.pt();
+
+        phiPi = track1.phi();
+        etaPi = track1.eta();
+        ptPi = track1.pt();
+      }
+
+      auto pair = kVec + piVec;
+
+      double mass = pair.M();
+
+      double cosAngle = (kVec.Px() * piVec.Px() + kVec.Py() * piVec.Py() + kVec.Pz() * piVec.Pz()) / (kVec.P() * piVec.P());
+
+      cosAngle = std::clamp(cosAngle, -1.0, 1.0);
+
+      double openAngle = std::acos(cosAngle);
+
+      double dPhi = RecoDecay::constrainAngle(phiK - phiPi, -o2::constants::math::PI);
+
+      double dEta = etaK - etaPi;
+
+      double dR = std::sqrt(dPhi * dPhi + dEta * dEta);
+
+      bool isTrueKstar = false;
+      bool hasCommonMother = false;
+
+      int commonMotherPDG = initialValue;
+
+      for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+        for (const auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+
+          if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
+            continue;
+          }
+
+          if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
+            continue;
+          }
+
+          hasCommonMother = true;
+          commonMotherPDG = mothertrack1.pdgCode();
+
+          if (std::abs(commonMotherPDG) == o2::constants::physics::kK0Star892) {
+            isTrueKstar = true;
+          }
+        }
+      }
+
+      if (pair.Rapidity() < selectionConfig.motherRapidityMin || pair.Rapidity() > selectionConfig.motherRapidityMax) {
+        continue;
+      }
+
+      if (isTrueKstar) {
+
+        hMC.fill(HIST("Kinematics/hPDGMotherKstar"), commonMotherPDG, mass);
+
+        hMC.fill(HIST("Kinematics/hOpenAngleKstar"), openAngle, mass);
+
+        hMC.fill(HIST("Kinematics/hDeltaPhiKstar"), dPhi, mass);
+
+        hMC.fill(HIST("Kinematics/hDeltaEtaKstar"), dEta, mass);
+
+        hMC.fill(HIST("Kinematics/hDeltaRKstar"), dR, mass);
+
+        hMC.fill(HIST("Kinematics/hKaonPtKstar"), ptK, mass);
+
+        hMC.fill(HIST("Kinematics/hPionPtKstar"), ptPi, mass);
+
+        hMC.fill(HIST("Kinematics/hPtCentMassKstar"), pair.Pt(), centrality, mass);
+
+      } else {
+
+        hMC.fill(HIST("Kinematics/hOpenAngleOther"), openAngle, mass);
+
+        hMC.fill(HIST("Kinematics/hDeltaPhiOther"), dPhi, mass);
+
+        hMC.fill(HIST("Kinematics/hDeltaEtaOther"), dEta, mass);
+
+        hMC.fill(HIST("Kinematics/hDeltaROther"), dR, mass);
+
+        hMC.fill(HIST("Kinematics/hKaonPtOther"), ptK, mass);
+
+        hMC.fill(HIST("Kinematics/hPionPtOther"), ptPi, mass);
+
+        hMC.fill(HIST("Kinematics/hPtCentMassOther"), pair.Pt(), centrality, mass);
+
+        if (hasCommonMother) {
+          hMC.fill(HIST("Kinematics/hOtherMotherPDG"), commonMotherPDG, mass);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processRecKinematics, "Process Reconstructed Kinematics", false);
 
   Service<o2::framework::O2DatabasePDG> pdg;
 

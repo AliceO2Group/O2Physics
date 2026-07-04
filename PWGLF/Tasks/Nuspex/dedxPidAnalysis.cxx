@@ -43,13 +43,15 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <TString.h>
 
 #include <cmath>
 #include <cstdint>
 #include <memory>
-#include <string_view>
+#include <string>
+// #include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -59,39 +61,37 @@ using namespace constants::physics;
 
 using PIDTracks = soa::Join<
   aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection,
-  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCEl>;
+  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCEl, aod::pidTOFFlags>;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs,
                                      aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, o2::aod::BarrelMults>;
 using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-static constexpr int NCentHists{10};
-std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
-std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
-std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
-
 struct DedxPidAnalysis {
 
   // dE/dx for all charged particles
-  HistogramRegistry registryDeDx{
-    "registryDeDx",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
+  HistogramRegistry registryDeDx{"registryDeDx", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Constant values
   static constexpr int EtaIntervals = 8;
   static constexpr int ParticlesType = 4;
   static constexpr int CentralityClasses = 10;
-  float pionMin = 0.35;
-  float pionMax = 0.45;
-  float elTofCut = 0.1;
-  float pionTofCut = 1.0;
-  float pTcut = 2.0;
+  std::array<std::shared_ptr<TH3>, CentralityClasses> hDedxVsMomentumVsCentPos{};
+  std::array<std::shared_ptr<TH3>, CentralityClasses> hDedxVsMomentumVsCentNeg{};
+  std::array<std::shared_ptr<TH3>, ParticlesType> hDedxvsMomentumPos{};
+  std::array<std::shared_ptr<TH3>, ParticlesType> hDedxvsMomentumNeg{};
+  std::array<std::shared_ptr<TH3>, CentralityClasses + 1> hDedxVspTMomentumVsCent{};
+  std::array<std::shared_ptr<TH2>, CentralityClasses + 1> hMomentumVsEtaPos{};
+  std::array<std::shared_ptr<TH2>, CentralityClasses + 1> hMomentumVsEtaNeg{};
+  std::array<std::shared_ptr<TH2>, CentralityClasses + 1> hpTVsEtaPos{};
+  std::array<std::shared_ptr<TH2>, CentralityClasses + 1> hpTVsEtaNeg{};
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCPosBefore;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCNegBefore;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCPosAfter;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclFoundTPCNegAfter;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCPosBefore;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCNegBefore;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCPosAfter;
+  std::array<std::shared_ptr<TH3>, EtaIntervals> hNclPIDTPCNegAfter;
 
   bool fillHist = false;
 
@@ -114,6 +114,12 @@ struct DedxPidAnalysis {
     V0TOF = 2,
     V0TPCTOF = 3
 
+  };
+
+  enum V0SigmaMode {
+    V0NoSigmaCut = 0,
+    V0SigmaOnly = 1,
+    V0TOFAndSigma = 2
   };
 
   enum NINELSelectionMode : int {
@@ -203,9 +209,17 @@ struct DedxPidAnalysis {
   Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 3.0, "nSigma DCAxy selection"};
   Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
   Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
-  Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCA_xy p2 parameter"};
+  Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCAxy p2 parameter"};
+  Configurable<float> dcaZp0{"dcaZp0", 0.0105f, "DCAz formula: p0 + p1/pt^p2"};
+  Configurable<float> dcaZp1{"dcaZp1", 0.0350f, "DCAz p1 parameter"};
+  Configurable<float> dcaZp2{"dcaZp2", 1.1f, "DCAz p2 parameter"};
   Configurable<float> nSigmaDCAz{"nSigmaDCAz", 3.0, "nSigma DCAz selection"};
-  Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
+  // Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
+  Configurable<float> pionMin{"pionMin", 0.35f, "pionMin"};
+  Configurable<float> pionMax{"pionMax", 0.45f, "pionMax"};
+  Configurable<float> elTofCut{"elTofCut", 0.1f, "elTofCut"};
+  Configurable<float> pionTofCut{"pionTofCut", 1.0f, "pionTofCut"};
+  Configurable<float> pTcut{"pTcut", 2.f, "pTcut"};
   // v0 cuts
   Configurable<float> v0cospaMin{"v0cospaMin", 0.999f, "Minimum V0 CosPA"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 1.2f,
@@ -224,7 +238,9 @@ struct DedxPidAnalysis {
   Configurable<float> v0ProperLifetimeCutK0s{"v0ProperLifetimeCutK0s", 20.f, "V0 proper lifetime cut for K0s"};
   Configurable<float> v0ProperLifetimeCutLambda{"v0ProperLifetimeCutLambda", 30.f, "V0 proper lifetime cut for Lambda"};
   Configurable<float> nsigmaMax{"nsigmaMax", 3.0f, "Maximum nsigma cut"};
+  Configurable<float> nsigmaMaxTOF{"nsigmaMaxTOF", 3.0f, "Maximum nsigma cut for TOF"};
   Configurable<float> tpcMomentumCut{"tpcMomentumCut", 0.6f, "Momentum threshold above which TOF is required"};
+  Configurable<int> v0SigmaMode{"v0SigmaMode", 0, "0: no cut, 1: sigma only, 2: TOF + sigma above tpcMomentumCut"};
   Configurable<float> invMassCutK0s{"invMassCutK0s", 0.015f, "invariant Mass Cut for K0s"};
   Configurable<float> invMassCutLambda{"invMassCutLambda", 0.015f, "invariant Mass Cut for Lambda"};
   Configurable<float> invMassCutGamma{"invMassCutGamma", 0.015f, "invariant Mass Cut for Gamma"};
@@ -245,39 +261,21 @@ struct DedxPidAnalysis {
   Configurable<double> highParam1{"highParam1", 0.16685, "First parameter for high phi cut"};
   Configurable<double> highParam2{"highParam2", 0.00981942, "Second parameter for high phi cut"};
   Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|"};
-  // Histograms names
-  static constexpr std::string_view DedxvsMomentumPos[ParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
-  static constexpr std::string_view DedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
-  static constexpr std::string_view DedxvsMomentumvsCentPos[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Pos", "dEdx_vs_Momentum_Cent1_5_Pos", "dEdx_vs_Momentum_Cent5_10_Pos", "dEdx_vs_Momentum_Cent10_15_Pos", "dEdx_vs_Momentum_Cent15_20_Pos", "dEdx_vs_Momentum_Cent20_30_Pos", "dEdx_vs_Momentum_Cent30_40_Pos", "dEdx_vs_Momentum_Cent40_50_Pos", "dEdx_vs_Momentum_Cent50_70_Pos", "dEdx_vs_Momentum_Cent70_100_Pos"};
-  static constexpr std::string_view DedxvsMomentumvsCentNeg[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Neg", "dEdx_vs_Momentum_Cent1_5_Neg", "dEdx_vs_Momentum_Cent5_10_Neg", "dEdx_vs_Momentum_Cent10_15_Neg", "dEdx_vs_Momentum_Cent15_20_Neg", "dEdx_vs_Momentum_Cent20_30_Neg", "dEdx_vs_Momentum_Cent30_40_Neg", "dEdx_vs_Momentum_Cent40_50_Neg", "dEdx_vs_Momentum_Cent50_70_Neg", "dEdx_vs_Momentum_Cent70_100_Neg"};
-  static constexpr std::string_view DedxvspTMomentumvsCent[CentralityClasses + 1] = {"dEdx_vs_pTMomentum_Cent0_1", "dEdx_vs_pTMomentum_Cent1_5", "dEdx_vs_pTMomentum_Cent5_10", "dEdx_vs_pTMomentum_Cent10_15", "dEdx_vs_pTMomentum_Cent15_20", "dEdx_vs_pTMomentum_Cent20_30", "dEdx_vs_pTMomentum_Cent30_40", "dEdx_vs_pTMomentum_Cent40_50", "dEdx_vs_pTMomentum_Cent50_70", "dEdx_vs_pTMomentum_Cent70_100", "dEdx_vs_pTMomentum_all_Pos"};
-  // Fine binnind
-  static constexpr std::string_view CentpPos[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Pos", "p_vs_eta_Cent1_5_Pos", "p_vs_eta_Cent5_10_Pos", "p_vs_eta_Cent10_15_Pos", "p_vs_eta_Cent15_20_Pos", "p_vs_eta_Cent20_30_Pos", "p_vs_eta_Cent30_40_Pos", "p_vs_eta_Cent40_50_Pos", "p_vs_eta_Cent50_70_Pos", "p_vs_eta_Cent70_100_Pos", "p_vs_eta_MB_Pos"};
-  static constexpr std::string_view CentpNeg[CentralityClasses + 1] = {"p_vs_eta_Cent0_1_Neg", "p_vs_eta_Cent1_5_Neg", "p_vs_eta_Cent5_10_Neg", "p_vs_eta_Cent10_15_Neg", "p_vs_eta_Cent15_20_Neg", "p_vs_eta_Cent20_30_Neg", "p_vs_eta_Cent30_40_Neg", "p_vs_eta_Cent40_50_Neg", "p_vs_eta_Cent50_70_Neg", "p_vs_eta_Cent70_100_Neg", "p_vs_eta_MB_Neg"};
-  static constexpr std::string_view CentpTPos[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Pos", "pT_vs_eta_Cent1_5_Pos", "pT_vs_eta_Cent5_10_Pos", "pT_vs_eta_Cent10_15_Pos", "pT_vs_eta_Cent15_20_Pos", "pT_vs_eta_Cent20_30_Pos", "pT_vs_eta_Cent30_40_Pos", "pT_vs_eta_Cent40_50_Pos", "pT_vs_eta_Cent50_70_Pos", "pT_vs_eta_Cent70_100_Pos", "pT_vs_eta_MB_Pos"};
-  static constexpr std::string_view CentpTNeg[CentralityClasses + 1] = {"pT_vs_eta_Cent0_1_Neg", "pT_vs_eta_Cent1_5_Neg", "pT_vs_eta_Cent5_10_Neg", "pT_vs_eta_Cent10_15_Neg", "pT_vs_eta_Cent15_20_Neg", "pT_vs_eta_Cent20_30_Neg", "pT_vs_eta_Cent30_40_Neg", "pT_vs_eta_Cent40_50_Neg", "pT_vs_eta_Cent50_70_Neg", "pT_vs_eta_Cent70_100_Neg", "pT_vs_eta_MB_Neg"};
-  // Ncl TPC
-  static constexpr std::string_view NclTPCDedxMomentumNegBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_8_Before"};
-  static constexpr std::string_view NclTPCDedxMomentumPosBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_8_Before"};
-  static constexpr std::string_view NclTPCDedxMomentumNegAfter[EtaIntervals] = {"Ncl_TFoundPC_vs_dEdx_vs_Momentum_Neg_1_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_2_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_3_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_4_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_5_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_6_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_7_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_8_After"};
-  static constexpr std::string_view NclTPCDedxMomentumPosAfter[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_1_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_2_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_3_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_4_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_5_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_6_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_7_After", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_8_After"};
-  // Ncl PID TPC
-  static constexpr std::string_view NclPIDTPCDedxMomentumNegBefore[EtaIntervals] = {"Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_1_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_2_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_3_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_4_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_5_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_6_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_7_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_8_Before"};
-  static constexpr std::string_view NclPIDTPCDedxMomentumPosBefore[EtaIntervals] = {"Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_1_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_2_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_3_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_4_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_5_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_6_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_7_Before", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_8_Before"};
-  static constexpr std::string_view NclPIDTPCDedxMomentumNegAfter[EtaIntervals] = {"Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_1_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_2_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_3_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_4_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_5_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_6_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_7_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_8_After"};
-  static constexpr std::string_view NclPIDTPCDedxMomentumPosAfter[EtaIntervals] = {"Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_1_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_2_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_3_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_4_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_5_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_6_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_7_After", "Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_8_After"};
-  static constexpr double EtaCut[EtaIntervals + 1] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-  static constexpr double CentClasses[CentralityClasses + 1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
+
+  static constexpr std::array<double, EtaIntervals + 1> EtaCut = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+  static constexpr std::array<double, CentralityClasses + 1> CentClasses = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
-  ConfigurableAxis centBins{"centBins", {100, 0, 100}, "Binning for centralidad"};
-  ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum"};
+  ConfigurableAxis centBins{"centBins", {100, 0, 100}, "Binning for centralidad plots"};
+  ConfigurableAxis dedxBins{"dedxBins", {100, 0, 100}, "Binning for dedx plots"};
+  ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum plots"};
+  ConfigurableAxis dcaBins{"dcaBins", {500, -0.5, 0.5}, "Binning for DCA plots"};
 
   // phi cut fits
   TF1* fphiCutHigh = nullptr;
   TF1* fphiCutLow = nullptr;
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   TrackSelection myTrackSelection()
   {
@@ -286,7 +284,7 @@ struct DedxPidAnalysis {
     selectedTracks.SetEtaRange(etaMin, etaMax);
     selectedTracks.SetRequireITSRefit(true);
     selectedTracks.SetRequireTPCRefit(true);
-    selectedTracks.SetMinNCrossedRowsTPC(minNCrossedRowsTPC);
+    selectedTracks.SetMinNCrossedRowsTPC(static_cast<int>(minNCrossedRowsTPC.value));
     selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC);
     selectedTracks.SetMaxChi2PerClusterTPC(maxChi2TPC);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2});
@@ -330,6 +328,13 @@ struct DedxPidAnalysis {
     } else if (v0SelectionMode == V0TPCTOF) {
       LOGF(info, "V0 seleccion using TOF + TPC");
     }
+    if (v0SigmaMode == V0NoSigmaCut) {
+      LOGF(info, "V0 sigma mode: no cut");
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      LOGF(info, "V0 sigma mode: sigma only");
+    } else if (v0SigmaMode == V0TOFAndSigma) {
+      LOGF(info, "V0 sigma mode: TOF + sigma above tpcMomentumCut");
+    }
     if (calibrationMode) {
       LOGF(info, "Calibration mode activated");
     } else {
@@ -360,7 +365,7 @@ struct DedxPidAnalysis {
     }
     LOGF(info, "Centrality clases between %.1f - %.1f", CentClasses[0], CentClasses[10]);
 
-    AxisSpec dedxAxis{100, 0.0, 100.0, "dE/dx (a. u.)"};
+    AxisSpec dedxAxis = {dedxBins, "dE/dx (a. u.)"};
     AxisSpec ptAxis = {binP, "#it{p}_{T}  (GeV/c)"};
     AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
     AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
@@ -368,6 +373,7 @@ struct DedxPidAnalysis {
     AxisSpec centAxis{centBins, "Undefined multiplicity estimator"};
     AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
     AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
+    AxisSpec dcaAxis{dcaBins, ""};
     switch (multiplicityEstimator) {
       case MultSelectionMode::NoMultiplicity: // No multiplicity
         LOGF(info, "No multiplicity estimator applied");
@@ -425,6 +431,11 @@ struct DedxPidAnalysis {
     LOGF(info, "=== Phi Cut Parameters ===");
     LOGF(info, "Low cut: %.6f/x² + pi/18 - %.6f", lowParam1.value, lowParam2.value);
     LOGF(info, "High cut: %.6f/x + pi/18 + %.6f", highParam1.value, highParam2.value);
+    const std::array<std::string, CentralityClasses + 1> centNames = {
+      "Cent0_1", "Cent1_5", "Cent5_10", "Cent10_15", "Cent15_20",
+      "Cent20_30", "Cent30_40", "Cent40_50", "Cent50_70", "Cent70_100", "MB"};
+    const std::array<std::string, ParticlesType> v0Names = {
+      "all", "Pi_v0", "Pr_v0", "El_v0"};
 
     if (calibrationMode) {
       // MIP for pions
@@ -477,6 +488,14 @@ struct DedxPidAnalysis {
         "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
 
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_calibrated_TOF2", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF2", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
       // pt vs p
       registryDeDx.add(
         "heta_vs_pt_vs_p_all_Neg", "eta_vs_pT_vs_p", HistType::kTH3F,
@@ -487,23 +506,26 @@ struct DedxPidAnalysis {
 
       // De/Dx for ch and v0 particles
       for (int i = 0; i < ParticlesType; ++i) {
-        registryDeDx.add(DedxvsMomentumPos[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxisTrack}, {dedxAxis}, {etaAxis}});
-        registryDeDx.add(DedxvsMomentumNeg[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxisTrack}, {dedxAxis}, {etaAxis}});
+        const auto& part = v0Names[i];
+        hDedxvsMomentumPos[i] = registryDeDx.add<TH3>(Form("dEdx_vs_Momentum_%s_Pos", part.c_str()),
+                                                      "dE/dx vs Momentum Positive", kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
+        hDedxvsMomentumNeg[i] = registryDeDx.add<TH3>(Form("dEdx_vs_Momentum_%s_Neg", part.c_str()),
+                                                      "dE/dx vs Momentum Negative", kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
       }
 
       for (int i = 0; i < CentralityClasses; ++i) {
-        hDedxVsMomentumVsCentPos[i] = registryDeDx.add<TH3>(DedxvsMomentumvsCentPos[i].data(), "dE/dx", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
-        hDedxVsMomentumVsCentNeg[i] = registryDeDx.add<TH3>(DedxvsMomentumvsCentNeg[i].data(), "dE/dx", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
+        const auto& cent = centNames[i];
+        hDedxVsMomentumVsCentPos[i] = registryDeDx.add<TH3>(Form("dEdx_vs_Momentum_%s_Pos", cent.c_str()), "dE/dx vs Momentum Positive", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
+        hDedxVsMomentumVsCentNeg[i] = registryDeDx.add<TH3>(Form("dEdx_vs_Momentum_%s_Neg", cent.c_str()), "dE/dx vs Momentum Negative", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
       }
 
       for (int i = 0; i < CentralityClasses + 1; ++i) {
-        hDedxVspTMomentumVsCent[i] = registryDeDx.add<TH3>(DedxvspTMomentumvsCent[i].data(), "dE/dx", HistType::kTH3F, {{ptAxis}, {dedxAxis}, {etaAxis}});
-        hMomentumVsEtaPos[i] = registryDeDx.add<TH2>(CentpPos[i].data(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
-        hMomentumVsEtaNeg[i] = registryDeDx.add<TH2>(CentpNeg[i].data(), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
-        hpTVsEtaPos[i] = registryDeDx.add<TH2>(CentpTPos[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
-        hpTVsEtaNeg[i] = registryDeDx.add<TH2>(CentpTNeg[i].data(), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
+        const auto& cent = centNames[i];
+        hDedxVspTMomentumVsCent[i] = registryDeDx.add<TH3>(Form("dEdx_vs_pT_%s", cent.c_str()), "dE/dx vs pT", HistType::kTH3F, {{ptAxis}, {dedxAxis}, {etaAxis}});
+        hMomentumVsEtaPos[i] = registryDeDx.add<TH2>(Form("p_vs_eta_%s_Pos", cent.c_str()), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+        hMomentumVsEtaNeg[i] = registryDeDx.add<TH2>(Form("p_vs_eta_%s_Neg", cent.c_str()), "p vs eta", HistType::kTH2F, {{etaAxis}, {pFineAxis}});
+        hpTVsEtaPos[i] = registryDeDx.add<TH2>(Form("pT_vs_eta_%s_Pos", cent.c_str()), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
+        hpTVsEtaNeg[i] = registryDeDx.add<TH2>(Form("pT_vs_eta_%s_Neg", cent.c_str()), "pT vs eta", HistType::kTH2F, {{etaAxis}, {pTFineAxis}});
       }
 
       // Invariant Mass
@@ -570,33 +592,41 @@ struct DedxPidAnalysis {
         "hp_vs_phi_NclPID_TPC_Before", "phi cut vs p", HistType::kTH3F,
         {{pAxis}, {100, 0.0, 0.4, "#varphi^{'}"}, {100, 0, 160, "N_{cl, PID}"}});
     }
-    // Ncl vs de/dx TPC
+    // Ncl vs de/dx TPC (found)
     if (nClTPCFoundCut) {
       for (int i = 0; i < EtaIntervals; ++i) {
-        registryDeDx.add(NclTPCDedxMomentumPosBefore[i].data(), "Ncl found TPC vs dE/dx vs Momentum Positive before", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
-        registryDeDx.add(NclTPCDedxMomentumNegBefore[i].data(), "Ncl found TPC vs dE/dx vs Momentum Negative before", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclFoundTPCPosBefore[i] = registryDeDx.add<TH3>(Form("Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_%d_Before", i + 1),
+                                                         "Ncl found TPC vs dE/dx vs Momentum Positive before", HistType::kTH3F,
+                                                         {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclFoundTPCNegBefore[i] = registryDeDx.add<TH3>(Form("Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_%d_Before", i + 1),
+                                                         "Ncl found TPC vs dE/dx vs Momentum Negative before", HistType::kTH3F,
+                                                         {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
 
-        registryDeDx.add(NclTPCDedxMomentumPosAfter[i].data(), "Ncl found TPC vs dE/dx vs Momentum Positive after", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
-        registryDeDx.add(NclTPCDedxMomentumNegAfter[i].data(), "Ncl found TPC vs dE/dx vs Momentum Negative after", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclFoundTPCPosAfter[i] = registryDeDx.add<TH3>(Form("Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_%d_After", i + 1),
+                                                        "Ncl found TPC vs dE/dx vs Momentum Positive after", HistType::kTH3F,
+                                                        {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclFoundTPCNegAfter[i] = registryDeDx.add<TH3>(Form("Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_%d_After", i + 1),
+                                                        "Ncl found TPC vs dE/dx vs Momentum Negative after", HistType::kTH3F,
+                                                        {{100, 0, 160, "N_{cl, found}^{TPC}"}, {dedxAxis}, {pAxis}});
       }
     }
 
-    // Ncl vs de/dx ITS
+    // Ncl vs de/dx PID TPC
     if (nClTPCPIDCut) {
       for (int i = 0; i < EtaIntervals; ++i) {
-        registryDeDx.add(NclPIDTPCDedxMomentumPosBefore[i].data(), "Ncl PID TPC vs dE/dx vs Momentum Positive before", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
-        registryDeDx.add(NclPIDTPCDedxMomentumNegBefore[i].data(), "Ncl PID TPC vs dE/dx vs Momentum Negative before", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclPIDTPCPosBefore[i] = registryDeDx.add<TH3>(Form("Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_%d_Before", i + 1),
+                                                       "Ncl PID TPC vs dE/dx vs Momentum Positive before", HistType::kTH3F,
+                                                       {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclPIDTPCNegBefore[i] = registryDeDx.add<TH3>(Form("Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_%d_Before", i + 1),
+                                                       "Ncl PID TPC vs dE/dx vs Momentum Negative before", HistType::kTH3F,
+                                                       {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
 
-        registryDeDx.add(NclPIDTPCDedxMomentumPosAfter[i].data(), "Ncl PID TPC vs dE/dx vs Momentum Positive after", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
-        registryDeDx.add(NclPIDTPCDedxMomentumNegAfter[i].data(), "Ncl PID TPC vs dE/dx vs Momentum Negative after", HistType::kTH3F,
-                         {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclPIDTPCPosAfter[i] = registryDeDx.add<TH3>(Form("Ncl_PIDTPC_vs_dEdx_vs_Momentum_Pos_%d_After", i + 1),
+                                                      "Ncl PID TPC vs dE/dx vs Momentum Positive after", HistType::kTH3F,
+                                                      {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
+        hNclPIDTPCNegAfter[i] = registryDeDx.add<TH3>(Form("Ncl_PIDTPC_vs_dEdx_vs_Momentum_Neg_%d_After", i + 1),
+                                                      "Ncl PID TPC vs dE/dx vs Momentum Negative after", HistType::kTH3F,
+                                                      {{100, 0, 160, "N_{cl, PID}^{TPC}"}, {dedxAxis}, {pAxis}});
       }
     }
     // eta
@@ -717,14 +747,18 @@ struct DedxPidAnalysis {
     registryDeDx.add("hTPCPIDAfter", "N clusters TPC PID After", HistType::kTH1F, {{200, 0, 200, "N_{cl,PID, After}"}});
 
     // DCA cut
+    registryDeDx.add("hDCAxyVsPt_beforeAnyCut", "DCAxy vs pT before any tkr cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
+    registryDeDx.add("hDCAzVsPt_beforeAnyCut", "DCAz vs pT before any tkr cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAxyVsPt_before", "DCAxy vs pT before cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAzVsPt_before", "DCAz vs pT before cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAxyVsPt_after", "DCAxy vs pT after cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registryDeDx.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
-                     HistType::kTH2F, {{ptAxis}, {200, -0.5, 0.5}});
+                     HistType::kTH2F, {{ptAxis}, {dcaAxis}});
 
     // Event Counter
     registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
@@ -815,7 +849,7 @@ struct DedxPidAnalysis {
   template <typename T1>
   bool passesDCAzCut(const T1& track) const
   {
-    const float maxiDcaZ = nSigmaDCAz.value * (maxDCAz.value) / 3.0;
+    const float maxiDcaZ = nSigmaDCAz.value * (dcaZp0.value + dcaZp1.value / std::pow(track.pt(), dcaZp2.value)) / 3.0;
     return std::abs(track.dcaZ()) < maxiDcaZ;
   }
   // Momentum
@@ -871,15 +905,23 @@ struct DedxPidAnalysis {
       sigman = std::hypot(ntrack.tpcNSigmaPi(), ntrack.tofNSigmaPi());
     }
 
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
       if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
-
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
@@ -952,15 +994,23 @@ struct DedxPidAnalysis {
       sigman = std::hypot(ntrack.tpcNSigmaPi(), ntrack.tofNSigmaPi());
     }
 
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
       if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
-
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
@@ -1026,15 +1076,24 @@ struct DedxPidAnalysis {
       sigmap = std::hypot(ptrack.tpcNSigmaPi(), ptrack.tofNSigmaPi());
       sigman = std::hypot(ntrack.tpcNSigmaPr(), ntrack.tofNSigmaPr());
     }
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
-      if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
 
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
+      if (std::abs(sigmap) > nsigmaMax)
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
@@ -1103,19 +1162,28 @@ struct DedxPidAnalysis {
       sigman = std::hypot(ntrack.tpcNSigmaEl(), ntrack.tofNSigmaEl());
     }
 
-    if (ptrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ptrack.hasTOF())
-        return false;
+    if (v0SigmaMode == V0TOFAndSigma) {
+      // TOF + sigma
+      if (ptrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ptrack.hasTOF())
+          return false;
+        if (std::abs(sigmap) > nsigmaMax)
+          return false;
+      }
+      if (ntrack.tpcInnerParam() > tpcMomentumCut) {
+        if (!ntrack.hasTOF())
+          return false;
+        if (std::abs(sigman) > nsigmaMax)
+          return false;
+      }
+    } else if (v0SigmaMode == V0SigmaOnly) {
+      // sigma only
       if (std::abs(sigmap) > nsigmaMax)
-        return false;
-    }
-
-    if (ntrack.tpcInnerParam() > tpcMomentumCut) {
-      if (!ntrack.hasTOF())
         return false;
       if (std::abs(sigman) > nsigmaMax)
         return false;
     }
+
     const float gammaMass = 2 * MassElectron; // GeV/c^2
 
     if (fillHist)
@@ -1155,7 +1223,7 @@ struct DedxPidAnalysis {
   }
   // Phi cut
   template <typename T>
-  bool passedPhiCutPri(const T& trk, float magField, const TF1& fphiCutLow, const TF1& fphiCutHigh)
+  bool passedPhiCutPri(const T& trk, float magField)
   {
     float p = trk.p();
     float pt = trk.pt();
@@ -1182,7 +1250,7 @@ struct DedxPidAnalysis {
     registryDeDx.fill(HIST("hp_vs_phi_NclPID_TPC_Before"), p, phi, nTPCPIDCl);
 
     // cut phi
-    if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
+    if (phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt))
       return false; // reject track
 
     registryDeDx.fill(HIST("hpt_vs_phi_NclFound_TPC_After"), pt, phi, nTPCCl);
@@ -1201,107 +1269,29 @@ struct DedxPidAnalysis {
     float sigP = trk.sign() * getMomentum(trk);
     auto nTPCCl = trk.tpcNClsFound();
 
-    if (eta >= EtaCut[0] && eta < EtaCut[1]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[0]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[0]), nTPCCl, trk.tpcSignal(), sigP);
+    int etaIndex = -1;
+    for (int i = 0; i < EtaIntervals; ++i) {
+      if (eta >= EtaCut[i] && eta < EtaCut[i + 1]) {
+        etaIndex = i;
+        break;
       }
-    } else if (eta >= EtaCut[1] && eta < EtaCut[2]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[1]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[1]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[2] && eta < EtaCut[3]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[2]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[2]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[3] && eta < EtaCut[4]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[3]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[3]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[4] && eta < EtaCut[5]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[4]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[4]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[5] && eta < EtaCut[6]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[5]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[5]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[6] && eta < EtaCut[7]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[6]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[6]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[7] && eta < EtaCut[8]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegBefore[7]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosBefore[7]), nTPCCl, trk.tpcSignal(), sigP);
-      }
+    }
+    if (etaIndex == -1)
+      return false;
+
+    if (sigP < 0) {
+      hNclFoundTPCNegBefore[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), std::abs(sigP));
+    } else {
+      hNclFoundTPCPosBefore[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), sigP);
     }
 
     if (nTPCCl < minTPCnClsFound)
       return false;
 
-    if (eta >= EtaCut[0] && eta < EtaCut[1]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[0]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[0]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[1] && eta < EtaCut[2]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[1]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[1]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[2] && eta < EtaCut[3]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[2]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[2]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[3] && eta < EtaCut[4]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[3]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[3]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[4] && eta < EtaCut[5]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[4]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[4]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[5] && eta < EtaCut[6]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[5]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[5]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[6] && eta < EtaCut[7]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[6]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[6]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[7] && eta < EtaCut[8]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumNegAfter[7]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclTPCDedxMomentumPosAfter[7]), nTPCCl, trk.tpcSignal(), sigP);
-      }
+    if (sigP < 0) {
+      hNclFoundTPCNegAfter[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), std::abs(sigP));
+    } else {
+      hNclFoundTPCPosAfter[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), sigP);
     }
 
     return true;
@@ -1315,107 +1305,29 @@ struct DedxPidAnalysis {
     float sigP = trk.sign() * getMomentum(trk);
     auto nTPCCl = trk.tpcNClsPID();
 
-    if (eta >= EtaCut[0] && eta < EtaCut[1]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[0]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[0]), nTPCCl, trk.tpcSignal(), sigP);
+    int etaIndex = -1;
+    for (int i = 0; i < EtaIntervals; ++i) {
+      if (eta >= EtaCut[i] && eta < EtaCut[i + 1]) {
+        etaIndex = i;
+        break;
       }
-    } else if (eta >= EtaCut[1] && eta < EtaCut[2]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[1]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[1]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[2] && eta < EtaCut[3]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[2]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[2]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[3] && eta < EtaCut[4]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[3]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[3]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[4] && eta < EtaCut[5]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[4]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[4]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[5] && eta < EtaCut[6]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[5]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[5]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[6] && eta < EtaCut[7]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[6]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[6]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[7] && eta < EtaCut[8]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegBefore[7]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosBefore[7]), nTPCCl, trk.tpcSignal(), sigP);
-      }
+    }
+    if (etaIndex == -1)
+      return false;
+
+    if (sigP < 0) {
+      hNclPIDTPCNegBefore[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), std::abs(sigP));
+    } else {
+      hNclPIDTPCPosBefore[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), sigP);
     }
 
     if (nTPCCl < minTPCnClsPID)
       return false;
 
-    if (eta >= EtaCut[0] && eta < EtaCut[1]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[0]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[0]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[1] && eta < EtaCut[2]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[1]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[1]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[2] && eta < EtaCut[3]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[2]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[2]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[3] && eta < EtaCut[4]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[3]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[3]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[4] && eta < EtaCut[5]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[4]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[4]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[5] && eta < EtaCut[6]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[5]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[5]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[6] && eta < EtaCut[7]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[6]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[6]), nTPCCl, trk.tpcSignal(), sigP);
-      }
-    } else if (eta >= EtaCut[7] && eta < EtaCut[8]) {
-      if (sigP < 0) {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumNegAfter[7]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
-      } else {
-        registryDeDx.fill(HIST(NclPIDTPCDedxMomentumPosAfter[7]), nTPCCl, trk.tpcSignal(), sigP);
-      }
+    if (sigP < 0) {
+      hNclPIDTPCNegAfter[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), std::abs(sigP));
+    } else {
+      hNclPIDTPCPosAfter[etaIndex]->Fill(nTPCCl, trk.tpcSignal(), sigP);
     }
 
     return true;
@@ -1423,7 +1335,7 @@ struct DedxPidAnalysis {
 
   // Phi cut Secondaries
   template <typename T>
-  bool passedPhiCutSecondaries(const T& trk, float magField, const TF1& fphiCutLow, const TF1& fphiCutHigh)
+  bool passedPhiCutSecondaries(const T& trk, float magField)
   {
     float pt = trk.pt();
     float phi = trk.phi();
@@ -1441,36 +1353,24 @@ struct DedxPidAnalysis {
     phi += o2::constants::math::PI / 18.0f;
     phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
 
-    // cut phi
-    if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
-      return false; // reject track
-
-    return true;
+    // cut phi, reject track if inside the gap
+    return (phi >= fphiCutHigh->Eval(pt)) || (phi <= fphiCutLow->Eval(pt));
   }
 
   // NclCutTPC
   template <typename T>
   bool passedNClTPCFoundCutSecondaries(const T& trk)
   {
-    auto nTPCCl = trk.tpcNClsFound();
-
-    if (nTPCCl < minTPCnClsFound)
-      return false;
-
-    return true;
+    return trk.tpcNClsFound() >= minTPCnClsFound;
   }
 
   // NclCutPIDTPC secondary
   template <typename T>
   bool passedNClTPCPIDCutSecondaries(const T& trk)
   {
-    auto nTPCCl = trk.tpcNClsPID();
-
-    if (nTPCCl < minTPCnClsPID)
-      return false;
-
-    return true;
+    return trk.tpcNClsPID() >= minTPCnClsPID;
   }
+
   // Get Multiplicity
   template <typename T>
   float getMultiplicity(const T& collision)
@@ -1573,6 +1473,10 @@ struct DedxPidAnalysis {
       registryDeDx.fill(HIST("hTPCClustersBefore"), trk.tpcNClsFound());
       registryDeDx.fill(HIST("hTPCPIDBefore"), trk.tpcNClsPID());
 
+      // Before DCA any tkr cuts
+      registryDeDx.fill(HIST("hDCAxyVsPt_beforeAnyCut"), trk.pt(), trk.dcaXY());
+      registryDeDx.fill(HIST("hDCAzVsPt_beforeAnyCut"), trk.pt(), trk.dcaZ());
+
       // track Selection wo DCA
       if (!mySelectionPrim.IsSelected(trk))
         continue;
@@ -1597,7 +1501,7 @@ struct DedxPidAnalysis {
 
       // phi and Ncl cut
       if (phiVarCut) {
-        if (!passedPhiCutPri(trk, magField, *fphiCutLow, *fphiCutHigh))
+        if (!passedPhiCutPri(trk, magField))
           continue;
         registryDeDx.fill(HIST("trackselAll"), TrkPriCutLabel::PhiVarCutPri);
       }
@@ -1699,6 +1603,24 @@ struct DedxPidAnalysis {
         }
       }
 
+      // pions from TOF w nsigma
+      if (!calibrationMode) {
+        if (trk.hasTOF() && trk.goodTOFMatch()) {
+          const double sigmaPi = std::hypot(trk.tpcNSigmaPi(), trk.tofNSigmaPi());
+          if (std::abs(sigmaPi) < nsigmaMaxTOF) {
+            for (int i = 0; i < EtaIntervals; ++i) {
+              if (trk.eta() >= EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+                if (signedP < 0) {
+                  registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF2"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+                } else {
+                  registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_TOF2"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+                }
+              }
+            }
+          }
+        }
+      }
+
       registryDeDx.fill(HIST("hdEdx_vs_phi"), trk.phi(), trk.tpcSignal());
 
       if (!calibrationMode) {
@@ -1715,7 +1637,7 @@ struct DedxPidAnalysis {
         for (int i = 0; i < EtaIntervals; ++i) {
           if (trk.eta() >= EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
             if (signedP > 0) {
-              registryDeDx.fill(HIST(DedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
+              hDedxvsMomentumPos[0]->Fill(signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Pos"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentPos[centIndex]->Fill(signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
               hDedxVspTMomentumVsCent[centIndex]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
@@ -1725,7 +1647,7 @@ struct DedxPidAnalysis {
               hpTVsEtaPos[centIndex]->Fill(trk.eta(), signedpT);
               hpTVsEtaPos[10]->Fill(trk.eta(), signedpT);
             } else {
-              registryDeDx.fill(HIST(DedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
+              hDedxvsMomentumNeg[0]->Fill(std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Neg"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentNeg[centIndex]->Fill(std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               hDedxVspTMomentumVsCent[centIndex]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
@@ -1763,10 +1685,10 @@ struct DedxPidAnalysis {
         // registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::TPCRefit);
         //  phi and Ncl cut
         if (phiVarCut) {
-          if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
+          if (!passedPhiCutSecondaries(posTrack, magField))
             continue;
 
-          if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
+          if (!passedPhiCutSecondaries(negTrack, magField))
             continue;
 
           registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel ::PhiVarCutSec);
@@ -1840,10 +1762,10 @@ struct DedxPidAnalysis {
           registryDeDx.fill(HIST("hArmenterosK0s"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
+              hDedxvsMomentumNeg[1]->Fill(std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
+              hDedxvsMomentumPos[1]->Fill(signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
@@ -1858,10 +1780,10 @@ struct DedxPidAnalysis {
           registryDeDx.fill(HIST("hArmenterosLambda"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
+              hDedxvsMomentumNeg[1]->Fill(std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumPos[2]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
+              hDedxvsMomentumPos[2]->Fill(signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
@@ -1876,10 +1798,10 @@ struct DedxPidAnalysis {
           registryDeDx.fill(HIST("hArmenterosAntiLambda"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
+              hDedxvsMomentumNeg[2]->Fill(std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
+              hDedxvsMomentumPos[1]->Fill(signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
@@ -1894,10 +1816,10 @@ struct DedxPidAnalysis {
           registryDeDx.fill(HIST("hArmenterosGamma"), v0.alpha(), v0.qtarm());
           for (int i = 0; i < EtaIntervals; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
+              hDedxvsMomentumNeg[3]->Fill(std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST(DedxvsMomentumPos[3]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
+              hDedxvsMomentumPos[3]->Fill(signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }

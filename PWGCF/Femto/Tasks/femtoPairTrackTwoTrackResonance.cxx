@@ -40,39 +40,34 @@
 #include <string>
 #include <vector>
 
-using namespace o2;
-using namespace o2::aod;
-using namespace o2::soa;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::femto;
 
 struct FemtoPairTrackTwoTrackResonance {
 
   // setup tables
-  using Collisions = Join<FCols, FColMasks>;
+  using Collisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
   using FilteredCollision = FilteredCollisions::iterator;
 
-  using Tracks = o2::soa::Join<FTracks, FTrackMasks>;
-  using Phis = o2::soa::Join<FPhis, FPhiMasks>;
-  using Kstar0s = o2::soa::Join<FKstar0s, FKstar0Masks>;
-  using Rho0s = o2::soa::Join<FRho0s, FRho0Masks>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
+  using FemtoPhis = o2::soa::Join<o2::aod::FPhis, o2::aod::FPhiMasks>;
+  using FemtoKstar0s = o2::soa::Join<o2::aod::FKstar0s, o2::aod::FKstar0Masks>;
+  using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
 
-  SliceCache cache;
+  o2::framework::SliceCache cache;
 
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
-  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
+  o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
-  Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoTracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
+  o2::framework::Preslice<FemtoTracks> perColTracks = o2::aod::femtobase::stored::fColId;
 
   // setup for daughters
   trackhistmanager::ConfResonancePosDauBinning confPosDauBinning;
@@ -81,20 +76,20 @@ struct FemtoPairTrackTwoTrackResonance {
   // setup phis
   twotrackresonancebuilder::ConfPhiSelection phiSelection;
   twotrackresonancehistmanager::ConfPhiBinning confPhiBinning;
-  Partition<Phis> phiPartition = MAKE_RESONANCE_0_PARTITON(phiSelection);
-  Preslice<Phis> perColPhis = aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoPhis> phiPartition = MAKE_RESONANCE_0_PARTITON(phiSelection);
+  o2::framework::Preslice<FemtoPhis> perColPhis = o2::aod::femtobase::stored::fColId;
 
   // setup kstar0
   twotrackresonancebuilder::ConfKstar0Selection kstar0Selection;
   twotrackresonancehistmanager::ConfKstar0Binning confKstar0Binning;
-  Partition<Kstar0s> kstar0Partition = MAKE_RESONANCE_1_PARTITON(kstar0Selection);
-  Preslice<Kstar0s> perColKstar0s = aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoKstar0s> kstar0Partition = MAKE_RESONANCE_1_PARTITON(kstar0Selection);
+  o2::framework::Preslice<FemtoKstar0s> perColKstar0s = o2::aod::femtobase::stored::fColId;
 
   // rho0s
   twotrackresonancebuilder::ConfRho0Selection rho0Selection;
   twotrackresonancehistmanager::ConfRho0Binning confRho0Binning;
-  Partition<Rho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(rho0Selection);
-  Preslice<Rho0s> perColRho0s = aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoRho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(rho0Selection);
+  o2::framework::Preslice<FemtoRho0s> perColRho0s = o2::aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -143,26 +138,26 @@ struct FemtoPairTrackTwoTrackResonance {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  ColumnBinningPolicy<femtocollisions::PosZ, femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Mult, aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
   pairhistmanager::ConfMixing confMixing;
 
-  HistogramRegistry hRegistry{"FemtoTrackTwoTrackResonance", {}, OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hRegistry{"FemtoTrackTwoTrackResonance", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
   closepairrejection::ConfCprTrackResonanceDaughter confCpr;
 
-  void init(InitContext&)
+  void init(o2::framework::InitContext&)
   {
 
     if (((doprocessPhiSameEvent || doprocessPhiMixedEvent) + (doprocessKstar0SameEvent || doprocessKstar0MixedEvent)) + (doprocessRho0SameEvent || doprocessRho0MixedEvent) > 1) {
-      LOG(fatal) << "Can only process phi-tracks, rho-tracks or k0*-tracks";
+      LOG(fatal) << "Can only process SE/ME for phi-tracks, rho-tracks or k0*-tracks";
     }
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
@@ -177,64 +172,64 @@ struct FemtoPairTrackTwoTrackResonance {
     if (doprocessPhiSameEvent || doprocessPhiMixedEvent) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
       auto pairTrackPhiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairTrackPhiBuilder.init<modes::Mode::kSe_Analysis, modes::Mode::kMe_Analysis>(&hRegistry, confCollisionBinning, trackSelection, phiSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, phiHistSpec, posDauSpec, negDauSpec, pairTrackPhiHistSpec, cprHistSpec);
+      pairTrackPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, trackSelection, phiSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, phiHistSpec, posDauSpec, negDauSpec, pairTrackPhiHistSpec, cprHistSpec);
     }
 
     // setup for kstar0
     if (doprocessKstar0SameEvent || doprocessKstar0MixedEvent) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
       auto pairTrackKstar0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairTrackKstar0Builder.init<modes::Mode::kSe_Analysis, modes::Mode::kMe_Analysis>(&hRegistry, confCollisionBinning, trackSelection, kstar0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, kstar0HistSpec, posDauSpec, negDauSpec, pairTrackKstar0HistSpec, cprHistSpec);
+      pairTrackKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, trackSelection, kstar0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, kstar0HistSpec, posDauSpec, negDauSpec, pairTrackKstar0HistSpec, cprHistSpec);
     }
 
     // setup for kstar0
     if (doprocessRho0SameEvent || doprocessRho0MixedEvent) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
       auto pairTrackRho0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairTrackRho0Builder.init<modes::Mode::kSe_Analysis, modes::Mode::kMe_Analysis>(&hRegistry, confCollisionBinning, trackSelection, rho0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, rho0HistSpec, posDauSpec, negDauSpec, pairTrackRho0HistSpec, cprHistSpec);
+      pairTrackRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, trackSelection, rho0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, rho0HistSpec, posDauSpec, negDauSpec, pairTrackRho0HistSpec, cprHistSpec);
     }
   };
 
-  void processPhiSameEvent(FilteredCollision const& col, Tracks const& tracks, Phis const& phis)
+  void processPhiSameEvent(FilteredCollision const& col, FemtoTracks const& tracks, FemtoPhis const& phis)
   {
-    pairTrackPhiBuilder.processSameEvent<modes::Mode::kSe_Analysis>(col, tracks, trackPartition, phis, phiPartition, cache);
+    pairTrackPhiBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, phis, phiPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processPhiSameEvent, "Enable processing same event processing for tracks and phis", true);
 
-  void processPhiMixedEvent(FilteredCollisions const& cols, Tracks const& tracks, Phis const& /*phis*/)
+  void processPhiMixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoPhis const& /*phis*/)
   {
-    pairTrackPhiBuilder.processMixedEvent<modes::Mode::kMe_Analysis>(cols, tracks, trackPartition, phiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackPhiBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, phiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processPhiMixedEvent, "Enable processing mixed event processing for tracks and phis", true);
 
-  void processKstar0SameEvent(FilteredCollision const& col, Tracks const& tracks, Kstar0s const& kstar0s)
+  void processKstar0SameEvent(FilteredCollision const& col, FemtoTracks const& tracks, FemtoKstar0s const& kstar0s)
   {
-    pairTrackKstar0Builder.processSameEvent<modes::Mode::kSe_Analysis>(col, tracks, trackPartition, kstar0s, kstar0Partition, cache);
+    pairTrackKstar0Builder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, kstar0s, kstar0Partition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processKstar0SameEvent, "Enable processing same event processing for tracks and kstar0s", false);
 
-  void processKstar0MixedEvent(FilteredCollisions const& cols, Tracks const& tracks, Kstar0s const& /*kstar0s*/)
+  void processKstar0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoKstar0s const& /*kstar0s*/)
   {
-    pairTrackKstar0Builder.processMixedEvent<modes::Mode::kMe_Analysis>(cols, tracks, trackPartition, kstar0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackKstar0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, kstar0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processKstar0MixedEvent, "Enable processing mixed event processing for tracks and kstar0s", false);
 
-  void processRho0SameEvent(FilteredCollision const& col, Tracks const& tracks, Rho0s const& rho0s)
+  void processRho0SameEvent(FilteredCollision const& col, FemtoTracks const& tracks, FemtoRho0s const& rho0s)
   {
-    pairTrackRho0Builder.processSameEvent<modes::Mode::kSe_Analysis>(col, tracks, trackPartition, rho0s, rho0Partition, cache);
+    pairTrackRho0Builder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, rho0s, rho0Partition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processRho0SameEvent, "Enable processing same event processing for tracks and rho0s", false);
 
-  void processRho0MixedEvent(FilteredCollisions const& cols, Tracks const& tracks, Rho0s const& /*rho0s*/)
+  void processRho0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoRho0s const& /*rho0s*/)
   {
-    pairTrackRho0Builder.processMixedEvent<modes::Mode::kMe_Analysis>(cols, tracks, trackPartition, rho0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackRho0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, rho0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processRho0MixedEvent, "Enable processing mixed event processing for tracks and rho0s", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  o2::framework::WorkflowSpec workflow{
     adaptAnalysisTask<FemtoPairTrackTwoTrackResonance>(cfgc),
   };
   return workflow;

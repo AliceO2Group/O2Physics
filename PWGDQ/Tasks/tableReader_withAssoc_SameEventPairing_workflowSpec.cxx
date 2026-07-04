@@ -9,21 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// ========================
-//
-// This code is for dielectron analyses.
-//    Please write to: daiki.sekihata@cern.ch
+// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+//   Configurable workflow for running several DQ or other PWG analyses
 
-#include "PWGEM/Dilepton/Core/Dilepton.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGDQ/Tasks/tableReader_withAssoc.cxx"
 
-#include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
-
-using namespace o2::framework;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, true, MyEMH_electron, FilteredMyElectronsSCT>>(cfgc, TaskName{"dielectron-sct"})};
+    adaptAnalysisTask<AnalysisEventSelection>(cfgc),
+    adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
+    adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
+    adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
+    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
 }
