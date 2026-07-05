@@ -28,13 +28,10 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
-#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -57,7 +54,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -738,11 +734,11 @@ struct LambdaCascadeProducer {
 
   // Initialize CCDB Service (shared with cascade-side path; LTP's cUrlCCDB
   // is the live URL — see init() comment).
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb = {};
 
   // PDG service for cascade competing-mass cut, brought in from
   // the former CascadeSelector struct.
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB = {};
 
   // ===========================================================================
   // Cascade-side Configurables bundled into one ConfigurableGroup:
@@ -1273,11 +1269,7 @@ struct LambdaCascadeProducer {
   // Kinematic Selection
   bool kinCutSelection(float const& ptVal, float const& rapVal, float const& ptMin, float const& ptMax, float const& rapMax)
   {
-    if (ptVal <= ptMin || ptVal >= ptMax || rapVal >= rapMax) {
-      return false;
-    }
-
-    return true;
+    return (ptVal > ptMin && ptVal < ptMax && rapVal < rapMax);
   }
 
   // Track Selection
@@ -1424,7 +1416,8 @@ struct LambdaCascadeProducer {
     if (!lambdaFlag && !antiLambdaFlag) { // neither Lambda nor Anti-Lambda
       histos.fill(HIST("Tracks/h1f_tracks_info"), kNotLambdaNotAntiLambda);
       return false;
-    } else if (lambdaFlag && antiLambdaFlag) { // check if the track is identified as lambda and anti-lambda both (DISCARD THIS TRACK)
+    }
+    if (lambdaFlag && antiLambdaFlag) { // identified as both lambda and anti-lambda (DISCARD THIS TRACK)
       histos.fill(HIST("Tracks/h1f_tracks_info"), kV0IsBothLambdaAntiLambda);
       return false;
     }
@@ -1654,12 +1647,12 @@ struct LambdaCascadeProducer {
       // histogram may be missing from the CCDB TList. Previously the
       // subsequent ->Clone() dereferenced nullptr and crashed.
       const auto effName = Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str());
-      TObject* objEff = reinterpret_cast<TObject*>(ccdbObj->FindObject(effName));
+      auto* objEff = ccdbObj->FindObject(effName);
       if (!objEff) {
         LOGF(warning, "[CCDB] Efficiency histogram '%s' not found; using effCorrFact=1.0", effName);
         effCorrFact = 1.f;
       } else {
-        TH1F* histEff = reinterpret_cast<TH1F*>(objEff->Clone());
+        auto* histEff = static_cast<TH1F*>(objEff->Clone());
         if (histEff->GetDimension() == TwoDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
           effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt()));
@@ -1680,12 +1673,12 @@ struct LambdaCascadeProducer {
     if (cGetPrimFrac) {
       // Same null-guard as the efficiency lookup above.
       const auto pfName = Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str());
-      TObject* objPrm = reinterpret_cast<TObject*>(ccdbObj->FindObject(pfName));
+      auto* objPrm = ccdbObj->FindObject(pfName);
       if (!objPrm) {
         LOGF(warning, "[CCDB] Primary-fraction histogram '%s' not found; using primFrac=1.0", pfName);
         primFrac = 1.f;
       } else {
-        TH1F* histPrm = reinterpret_cast<TH1F*>(objPrm->Clone());
+        auto* histPrm = static_cast<TH1F*>(objPrm->Clone());
         if (histPrm->GetDimension() == TwoDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtCent);
           primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt()));
@@ -1736,7 +1729,7 @@ struct LambdaCascadeProducer {
   template <ParticleType part, typename C, typename V, typename T>
   void fillLambdaQAHistos(C const& col, V const& v0, T const&)
   {
-    static constexpr std::string_view SubDir[] = {"QA/Lambda/", "QA/AntiLambda/"};
+    static constexpr std::array<std::string_view, 2> SubDir = {"QA/Lambda/", "QA/AntiLambda/"};
 
     // daugthers
     auto postrack = v0.template posTrack_as<T>();
@@ -1786,8 +1779,8 @@ struct LambdaCascadeProducer {
   template <RecGenType rg, ParticleType part>
   void fillKinematicHists(float const& ptVal, float const& etaVal, float const& y, float const& phiVal)
   {
-    static constexpr std::string_view SubDirRG[] = {"McRec/", "McGen/"};
-    static constexpr std::string_view SubDirPart[] = {"Lambda/", "AntiLambda/"};
+    static constexpr std::array<std::string_view, 2> SubDirRG = {"McRec/", "McGen/"};
+    static constexpr std::array<std::string_view, 2> SubDirPart = {"Lambda/", "AntiLambda/"};
 
     histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPt"), ptVal);
     histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hEta"), etaVal);
@@ -1930,11 +1923,11 @@ struct LambdaCascadeProducer {
       auto negTrk = v0.template negTrack_as<T>();
       float dcaV0ToPV_v = v0.dcav0topv(); // V0 line vs PV
       float v0Radius_v = v0.v0radius();   // transverse decay radius
-      int8_t posItsNCls_v = static_cast<int8_t>(posTrk.itsNCls());
-      int8_t negItsNCls_v = static_cast<int8_t>(negTrk.itsNCls());
+      auto posItsNCls_v = static_cast<int8_t>(posTrk.itsNCls());
+      auto negItsNCls_v = static_cast<int8_t>(negTrk.itsNCls());
       // ITS hit-map per daughter (uint8_t bitmask, bit i = layer i).
-      uint8_t posItsClusterMap_v = static_cast<uint8_t>(posTrk.itsClusterMap());
-      uint8_t negItsClusterMap_v = static_cast<uint8_t>(negTrk.itsClusterMap());
+      auto posItsClusterMap_v = static_cast<uint8_t>(posTrk.itsClusterMap());
+      auto negItsClusterMap_v = static_cast<uint8_t>(negTrk.itsClusterMap());
       // Per-daughter signed DCA-XY-to-PV (V0Datas already exposes
       // these as helices propagated to the PV).
       float posDcaXY_v = v0.dcapostopv();
@@ -2175,7 +2168,7 @@ struct LambdaCascadeProducer {
   // TracksMC for MC reco). Avoids hardcoding FullTracksExtIUWithPID, which
   // is TracksIU-based and incompatible with our merged Tracks-based binding.
   template <typename TTracks, typename TCollision>
-  void fillMatchedHistos(LabeledCascades::iterator rec, int flag, TCollision collision)
+  void fillMatchedHistos(LabeledCascades::iterator const& rec, int flag, TCollision const& collision)
   {
     if (flag == 0)
       return;
@@ -2226,6 +2219,8 @@ struct LambdaCascadeProducer {
           break;
         case -lcorr_const::kOmegaMinusPdg:
           cascRegistry.fill(HIST("truerec/hOmegaPlus"), rec.pt(), rec.yOmega());
+          break;
+        default:
           break;
       }
     }
@@ -2372,6 +2367,8 @@ struct LambdaCascadeProducer {
         } else {
           cascRegistry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
         }
+        break;
+      default:
         break;
     }
 
@@ -2718,6 +2715,8 @@ struct LambdaCascadeProducer {
         case -lcorr_const::kOmegaMinusPdg:
           cascRegistry.fill(HIST("gen/hOmegaPlus"), mcPart.pt(), mcPart.y());
           break;
+        default:
+          break;
       }
     }
 
@@ -2756,6 +2755,8 @@ struct LambdaCascadeProducer {
           break;
         case -lcorr_const::kOmegaMinusPdg:
           cascRegistry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.y());
+          break;
+        default:
           break;
       }
     }
@@ -2839,7 +2840,7 @@ struct LambdaTracksExtProducer {
   template <ShareDauLambda sd, typename T>
   void fillHistos(T const& track)
   {
-    static constexpr std::string_view SubDir[] = {"Reco/", "SharingDau/"};
+    static constexpr std::array<std::string_view, 2> SubDir = {"Reco/", "SharingDau/"};
 
     if (track.v0Type() == kLambda) {
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_invmass"), track.mass());
@@ -2919,15 +2920,11 @@ struct LambdaTracksExtProducer {
         fillHistos<kUniqueLambda>(lambda);
       }
 
-      if (cAcceptAllLambda) { // Accept all lambda
-        trueLambdaFlag = true;
-      } else if (cRejAllLambdaShaDau && !lambdaSharingDauFlag) { // Reject all lambda sharing daughter
-        trueLambdaFlag = true;
-      } else if (cSelLambdaMassPdg && lambdaMinDeltaMassFlag) { // Select lambda closest to pdg mass
-        trueLambdaFlag = true;
-      } else if (cSelLambdaTScore && lambdaMinTScoreFlag) { // Select lambda based on t-score
-        trueLambdaFlag = true;
-      }
+      // Selection policy: accept all / reject sharers / best mass / best t-score.
+      trueLambdaFlag = cAcceptAllLambda ||
+                       (cRejAllLambdaShaDau && !lambdaSharingDauFlag) ||
+                       (cSelLambdaMassPdg && lambdaMinDeltaMassFlag) ||
+                       (cSelLambdaTScore && lambdaMinTScoreFlag);
 
       // Multiplicity of selected lambda
       if (trueLambdaFlag) {
@@ -3214,7 +3211,7 @@ struct Lambdacascadecorrelation {
     ConfigurableAxis cRapAxis{"cRapAxis", {100, -1.0f, 1.0f}, "rapidity"};
     // φ axis on single-particle (y, φ) histograms — needed
     // to build ρ₁(y, φ) and convolve into ρ₁⊗ρ₁ in (Δy, Δφ).
-    ConfigurableAxis cPhiAxis{"cPhiAxis", {72, 0.f, 2.0f * static_cast<float>(M_PI)}, "φ (rad)"};
+    ConfigurableAxis cPhiAxis{"cPhiAxis", {72, 0.f, TwoPI}, "φ (rad)"};
   } histAxes;
 
   // --- Outputs ---
@@ -3464,7 +3461,7 @@ struct Lambdacascadecorrelation {
     if (!hPairs || !hSinglesTrig || !hSinglesAssoc || nEvents <= 0)
       return nullptr;
 
-    TH2* hR2 = reinterpret_cast<TH2*>(hPairs->Clone(Form("%s_R2", hPairs->GetName())));
+    auto* hR2 = static_cast<TH2*>(hPairs->Clone(Form("%s_R2", hPairs->GetName())));
     hR2->Reset();
 
     double nS1 = hSinglesTrig->Integral();
@@ -3822,7 +3819,7 @@ struct Lambdacascadecorrelation {
 
     // --- 3. Efficiency map production histograms ---
     // Axis definitions for efficiency maps (coarser binning to avoid empty bins)
-    const AxisSpec effCent{cent};
+    const AxisSpec& effCent = cent;
     const AxisSpec effPt{50, 0, 10, "p_{T} (GeV/c)"};
     const AxisSpec effRap{20, -1.0, 1.0, "y"};
 
@@ -4928,7 +4925,7 @@ struct Lambdacascadecorrelation {
         continue;
       if (std::abs(lam.rap()) > maxY)
         continue;
-      LamLite l{static_cast<float>(lam.pt()), static_cast<float>(lam.rap()), static_cast<float>(lam.phi())};
+      LamLite l{.pt = static_cast<float>(lam.pt()), .rap = static_cast<float>(lam.rap()), .phi = static_cast<float>(lam.phi())};
       // Wrap φ to [0, 2π) to match the reco-side convention.
       float phiWrapped = RecoDecay::constrainAngle(lam.phi(), 0.f);
       if (lam.v0Type() == static_cast<int8_t>(kLambda)) {
@@ -5060,7 +5057,7 @@ struct Lambdacascadecorrelation {
         continue;
       if (std::abs(lam.rap()) > maxY)
         continue;
-      LamLite l{static_cast<float>(lam.pt()), static_cast<float>(lam.rap()), static_cast<float>(lam.phi())};
+      LamLite l{.pt = static_cast<float>(lam.pt()), .rap = static_cast<float>(lam.rap()), .phi = static_cast<float>(lam.phi())};
       if (lam.v0Type() == static_cast<int8_t>(kLambda)) {
         goodLam.push_back(l);
       } else if (lam.v0Type() == static_cast<int8_t>(kAntiLambda)) {
