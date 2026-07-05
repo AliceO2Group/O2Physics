@@ -285,23 +285,23 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
   struct ParticleHistograms {
     TList* fParticleHistogramsList = nullptr;
-    std::array<std::array<std::array<TH1F*, 2>, 2>, eParticleHistograms_N> fParticleHistograms = {{{{nullptr}}}};
+    std::array<std::array<std::array<TH1F*, 2>, 2>, eParticleHistograms_N> fParticleHistograms{};
   } pc;
 
   struct EventHistograms {
     TList* fEventHistogramsList = nullptr;
-    std::array<std::array<std::array<TH1F*, 2>, 2>, eEventHistograms_N> fEventHistograms = {{{{nullptr}}}};
+    std::array<std::array<std::array<TH1F*, 2>, 2>, eEventHistograms_N> fEventHistograms{};
   } ev;
 
   struct QAHistograms {
     bool fQASwitch = kTRUE;
     TList* fQAHistogramsList = nullptr;
-    std::array<std::array<TH2F*, 2>, eQAHistograms_N> fQAHistograms = {{{nullptr}}}; // [type][before/after cut]
+    std::array<std::array<TH2F*, 2>, eQAHistograms_N> fQAHistograms{}; // [type][before/after cut]
   } qa;
 
   struct CorrHistograms {
     TList* fCorrHistogramsList = nullptr;
-    std::array<std::array<std::array<std::array<TH2F*, eCutBeforeAfter_N>, eMultEstm_N>, eMultEstm_N>, eCorrHistograms_N> fCorrHistograms = {{{{nullptr}}}};
+    std::array<std::array<std::array<std::array<TH2F*, eCutBeforeAfter_N>, eMultEstm_N>, eMultEstm_N>, eCorrHistograms_N> fCorrHistograms{};
   } cr;
 
   struct WeightHistograms {
@@ -509,12 +509,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         return mcc.fQvectorBefore[n][p];
       }
       return TComplex::Conjugate(mcc.fQvectorBefore[-n][p]);
-    } else {
-      if (n >= 0) {
-        return mcc.fQvectorAfter[n][p];
-      }
-      return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
     }
+    if (n >= 0) {
+      return mcc.fQvectorAfter[n][p];
+    }
+    return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
   }
 
   template <std::size_t N>
@@ -728,7 +727,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         continue;
       }
 
-      hist->SetDirectory(0);
+      hist->SetDirectory(nullptr);
       auto* histClone = dynamic_cast<TH1F*>(hist->Clone());
       if (!histClone) {
         LOGF(warning, "Failed to clone histogram %s", hist->GetName());
@@ -1438,7 +1437,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     wt.fWeightSwitch = cfWeightSwitch;
 
     // *) Book base list:
-    TList* temp = new TList();
+    auto* temp = new TList();
     temp->SetOwner(kTRUE);
     fBaseList.setObject(temp);
 
