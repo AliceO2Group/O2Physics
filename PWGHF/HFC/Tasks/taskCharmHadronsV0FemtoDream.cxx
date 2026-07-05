@@ -404,10 +404,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
       if (cand.candidateSelFlag() == 1) {
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
-      } else {
-        invMass = cand.m(std::array{MassKPlus, MassPiPlus});
-        return invMass;
       }
+      invMass = cand.m(std::array{MassKPlus, MassPiPlus});
+      return invMass;
     } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
       float mDstar = 0.f;
       float mD0 = 0.f;
@@ -420,9 +419,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       if (ReturnDaughMass) {
         return mD0;
-      } else {
-        return mDstar - mD0;
       }
+      return mDstar - mD0;
     }
     // Add more channels as needed
     return 0.f;
@@ -525,7 +523,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
   }
 
   template <bool IsMc, DecayChannel Channel, typename CollisionType, typename PartitionType1, typename PartitionType2, typename FDParticles, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartitionType1& charms, PartitionType2& v0s, FDParticles const& /*femtoParts*/, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartitionType1& charms, PartitionType2& v0s, FDParticles const& /*femtoParts*/, BinningType const& policy)
   {
     processType = 2; // for mixed event
     // Mixed events that contain the pair of interest
