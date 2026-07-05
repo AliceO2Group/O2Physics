@@ -50,6 +50,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/PID.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -59,8 +60,6 @@
 #include <TList.h>
 #include <TMath.h>
 #include <TMathBase.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>

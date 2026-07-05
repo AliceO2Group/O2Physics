@@ -38,6 +38,7 @@
 #include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -53,8 +54,6 @@
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
 #include <TGeoGlobalMagField.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>

@@ -44,6 +44,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHTracking/TrackExtrap.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -70,7 +71,6 @@
 #include <KFPVertex.h>
 #include <KFParticle.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
