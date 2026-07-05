@@ -326,12 +326,15 @@ struct AssociateDileptonToEMEvent {
       // LOGF(info, "collision.collisionId() = %d , nl = %d", collision.collisionId(), nl);
       for (int il = 0; il < nl; il++) {
         eventIds(collision.globalIndex());
+        mCounter++;
       } // end of photon loop
     } // end of collision loop
   }
 
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventDilepton in MC.
+
+  int mCounter{0};
 
   void processElectron(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
@@ -340,7 +343,11 @@ struct AssociateDileptonToEMEvent {
 
   void processFwdMuon(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
   {
+    mCounter = 0;
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
+    if (mCounter != tracks.size()) {
+      LOGF(fatal, "different table size is detected. mCounter = %d, muons.size() = %d", mCounter, tracks.size()); // this should never happen.
+    }
   }
 
   void processChargedTrack(aod::EMEvents const& collisions, soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIdsTMP> const& tracks)
