@@ -780,7 +780,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
       if constexpr (IsMc) {
         run(partitionMcLambda);
       } else {
-      run(partitionLambda);
+        run(partitionLambda);
       }
     } else if (v0Sel.pdgCodeV0 == kK0Short) {
       if constexpr (IsMc) {
