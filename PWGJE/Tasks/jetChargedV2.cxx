@@ -1580,12 +1580,14 @@ struct JetChargedV2 {
         } else {
           integralValue += fFitModulationV2v3->Integral(low, high);
         }
-        if (integralValue < 0) {
-          integralValue = 0;
-        }
 
-        // double integralValue = fFitModulationV2v3->Integral(phi - selectedJetsRadius, phi + selectedJetsRadius);
-        double rholocal = collision.rho() / (2 * selectedJetsRadius * temppara[0]) * integralValue;
+        double rholocal = 0.0;
+        if (integralValue <= 0) {
+          rholocal = collision.rho();
+        } else {
+          // integralValue = fFitModulationV2v3->Integral(phi - selectedJetsRadius, phi + selectedJetsRadius);
+          rholocal = collision.rho() / (2 * selectedJetsRadius * temppara[0]) * integralValue;
+        }
 
         if (nmode == cfgNmodA) {
           double phiMinusPsi2;
