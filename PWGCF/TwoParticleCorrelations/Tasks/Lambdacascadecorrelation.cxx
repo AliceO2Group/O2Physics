@@ -1271,9 +1271,9 @@ struct LambdaCascadeProducer {
   }
 
   // Kinematic Selection
-  bool kinCutSelection(float const& pt, float const& rap, float const& ptMin, float const& ptMax, float const& rapMax)
+  bool kinCutSelection(float const& ptVal, float const& rapVal, float const& ptMin, float const& ptMax, float const& rapMax)
   {
-    if (pt <= ptMin || pt >= ptMax || rap >= rapMax) {
+    if (ptVal <= ptMin || ptVal >= ptMax || rapVal >= rapMax) {
       return false;
     }
 
@@ -1784,15 +1784,15 @@ struct LambdaCascadeProducer {
 
   // Fill Lambda Kinematic Histograms
   template <RecGenType rg, ParticleType part>
-  void fillKinematicHists(float const& pt, float const& eta, float const& y, float const& phi)
+  void fillKinematicHists(float const& ptVal, float const& etaVal, float const& y, float const& phiVal)
   {
     static constexpr std::string_view SubDirRG[] = {"McRec/", "McGen/"};
     static constexpr std::string_view SubDirPart[] = {"Lambda/", "AntiLambda/"};
 
-    histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPt"), pt);
-    histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hEta"), eta);
+    histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPt"), ptVal);
+    histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hEta"), etaVal);
     histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hRap"), y);
-    histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPhi"), phi);
+    histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPhi"), phiVal);
   }
 
   // Reconstructed Level Tables
