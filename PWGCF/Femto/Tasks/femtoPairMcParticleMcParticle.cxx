@@ -140,10 +140,10 @@ struct FemtoPairMcParticleMcParticle {
   PROCESS_SWITCH(FemtoPairMcParticleMcParticle, processMixedEvent, "Enable processing mixed event processing", true);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairMcParticleMcParticle>(cfgc),
+    adaptAnalysisTask<FemtoPairMcParticleMcParticle>(context),
   };
   return workflow;
 }

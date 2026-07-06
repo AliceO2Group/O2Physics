@@ -142,8 +142,9 @@ inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxD
 
   // Calculate mother momentum and direction versor
   float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
-  if (pMother < almost0)
+  if (pMother < almost0) {
     return -999.f;
+  }
 
   float versorX = pxMother / pMother;
   float versorY = pyMother / pMother;
@@ -161,22 +162,26 @@ inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxD
   float b = -4.f * scalarProduct * k;
   float c = 4.f * ePi * ePi * massSigmaMinus * massSigmaMinus - k * k;
 
-  if (std::abs(a) < almost0)
+  if (std::abs(a) < almost0) {
     return -999.f;
+  }
 
   float d = b * b - 4.f * a * c;
-  if (d < 0.f)
+  if (d < 0.f) {
     return -999.f;
+  }
 
   float sqrtD = std::sqrt(d);
   float p1 = (-b + sqrtD) / (2.f * a);
   float p2 = (-b - sqrtD) / (2.f * a);
 
   // Pick physical solution: prefer P2 if positive, otherwise P1
-  if (p2 < 0.f && p1 < 0.f)
+  if (p2 < 0.f && p1 < 0.f) {
     return -999.f;
-  if (p2 < 0.f)
+  }
+  if (p2 < 0.f) {
     return p1;
+  }
 
   // Choose solution closest to original momentum
   float p1Diff = std::abs(p1 - pMother);

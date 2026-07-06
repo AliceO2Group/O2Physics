@@ -29,11 +29,8 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::colhistmanager
 {
-namespace colhistmanager
-{
-
 enum ColHist {
   kPosZ,
   kMult,
@@ -92,31 +89,34 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_ANALYSIS_MAP(conf) \
-  {kPosZ, {conf.vtxZ}},             \
-    {kMult, {conf.mult}},           \
-    {kCent, {conf.cent}},           \
-    {kMagField, {conf.magField}},
+  {kPosZ, {(conf).vtxZ}},           \
+    {kMult, {(conf).mult}},         \
+    {kCent, {(conf).cent}},         \
+    {kMagField, {(conf).magField}},
 
-#define COL_HIST_QA_MAP(confAnalysis, confQa)                    \
-  {kPosX, {confQa.vtxXY}},                                       \
-    {kPosY, {confQa.vtxXY}},                                     \
-    {kPos, {confQa.vtx}},                                        \
-    {kSphericity, {confQa.sphericity}},                          \
-    {kOccupancy, {confQa.occupancy}},                            \
-    {kPoszVsMult, {confAnalysis.vtxZ, confAnalysis.mult}},       \
-    {kPoszVsCent, {confAnalysis.vtxZ, confAnalysis.cent}},       \
-    {kCentVsMult, {confAnalysis.cent, confAnalysis.mult}},       \
-    {kMultVsSphericity, {confAnalysis.mult, confQa.sphericity}}, \
-    {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define COL_HIST_QA_MAP(confAnalysis, confQa)                        \
+  {kPosX, {(confQa).vtxXY}},                                         \
+    {kPosY, {(confQa).vtxXY}},                                       \
+    {kPos, {(confQa).vtx}},                                          \
+    {kSphericity, {(confQa).sphericity}},                            \
+    {kOccupancy, {(confQa).occupancy}},                              \
+    {kPoszVsMult, {(confAnalysis).vtxZ, (confAnalysis).mult}},       \
+    {kPoszVsCent, {(confAnalysis).vtxZ, (confAnalysis).cent}},       \
+    {kCentVsMult, {(confAnalysis).cent, (confAnalysis).mult}},       \
+    {kMultVsSphericity, {(confAnalysis).mult, (confQa).sphericity}}, \
+    {kCentVsSphericity, {confBinningAnalysis.cent, (confQa).sphericity}},
 
-#define COL_HIST_MC_MAP(conf)                  \
-  {kTruePosZ, {conf.vtxZ}},                    \
-    {kTrueCent, {conf.cent}},                  \
-    {kTrueMult, {conf.mult}},                  \
-    {kTruePosZVsPosZ, {conf.vtxZ, conf.vtxZ}}, \
-    {kTrueCentVsCent, {conf.cent, conf.cent}}, \
-    {kTrueMultVsMult, {conf.mult, conf.mult}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define COL_HIST_MC_MAP(conf)                      \
+  {kTruePosZ, {(conf).vtxZ}},                      \
+    {kTrueCent, {(conf).cent}},                    \
+    {kTrueMult, {(conf).mult}},                    \
+    {kTruePosZVsPosZ, {(conf).vtxZ, (conf).vtxZ}}, \
+    {kTrueCentVsCent, {(conf).cent, (conf).cent}}, \
+    {kTrueMultVsMult, {(conf).mult, (conf).mult}},
 
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
@@ -345,6 +345,5 @@ class CollisionHistManager
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlot2d = false;
 };
-} // namespace colhistmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::colhistmanager
 #endif // PWGCF_FEMTO_CORE_COLLISIONHISTMANAGER_H_

@@ -42,9 +42,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace pairhistmanager
+namespace o2::analysis::femto::pairhistmanager
 {
 // enum for pair histograms
 enum PairHist {
@@ -319,95 +317,99 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kQoutQsideQlong, o2::framework::HistType::kTH3F, "hQoutQsideQlong", "Bertsch-Pratt 3D; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
     }};
 
-#define PAIR_HIST_ANALYSIS_MAP(confAnalysis)                                                                                                                                                                                 \
-  {kKstar, {confAnalysis.kstar}},                                                                                                                                                                                            \
-    {kKt, {confAnalysis.kt}},                                                                                                                                                                                                \
-    {kMt, {confAnalysis.mt}},                                                                                                                                                                                                \
-    {kMinv, {confAnalysis.massInv}},                                                                                                                                                                                         \
-    {kPt1VsPt2, {confAnalysis.pt1, confAnalysis.pt2}},                                                                                                                                                                       \
-    {kPt1VsKstar, {confAnalysis.pt1, confAnalysis.kstar}},                                                                                                                                                                   \
-    {kPt2VsKstar, {confAnalysis.pt2, confAnalysis.kstar}},                                                                                                                                                                   \
-    {kPt1VsKt, {confAnalysis.pt1, confAnalysis.kt}},                                                                                                                                                                         \
-    {kPt2VsKt, {confAnalysis.pt2, confAnalysis.kt}},                                                                                                                                                                         \
-    {kPt1VsMt, {confAnalysis.pt1, confAnalysis.mt}},                                                                                                                                                                         \
-    {kPt2VsMt, {confAnalysis.pt2, confAnalysis.mt}},                                                                                                                                                                         \
-    {kKstarVsKt, {confAnalysis.kstar, confAnalysis.kt}},                                                                                                                                                                     \
-    {kKstarVsMt, {confAnalysis.kstar, confAnalysis.mt}},                                                                                                                                                                     \
-    {kKstarVsMult, {confAnalysis.kstar, confAnalysis.multiplicity}},                                                                                                                                                         \
-    {kKstarVsCent, {confAnalysis.kstar, confAnalysis.centrality}},                                                                                                                                                           \
-    {kKstarVsMass1, {confAnalysis.kstar, confAnalysis.mass1}},                                                                                                                                                               \
-    {kKstarVsMass2, {confAnalysis.kstar, confAnalysis.mass2}},                                                                                                                                                               \
-    {kMass1VsMass2, {confAnalysis.mass1, confAnalysis.mass2}},                                                                                                                                                               \
-    {kKstarVsMinv, {confAnalysis.kstar, confAnalysis.massInv}},                                                                                                                                                              \
-    {kPt1VsMinv, {confAnalysis.pt1, confAnalysis.massInv}},                                                                                                                                                                  \
-    {kPt2VsMinv, {confAnalysis.pt2, confAnalysis.massInv}},                                                                                                                                                                  \
-    {kKstarVsMtVsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.multiplicity}},                                                                                                                                    \
-    {kKstarVsMtVsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.multiplicity, confAnalysis.centrality}},                                                                                                     \
-    {kKstarVsMtVsPt1VsPt2, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.pt1, confAnalysis.pt2}},                                                                                                                       \
-    {kKstarVsMtVsPt1VsPt2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity}},                                                                                      \
-    {kKstarVsMtVsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}},                                                       \
-    {kKstarVsMtVsMass1VsMass2, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2}},                                                                                                               \
-    {kKstarVsMtVsMass1VsMass2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.multiplicity}},                                                                              \
-    {kKstarVsMtVsMass1VsMass2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.multiplicity, confAnalysis.centrality}},                                               \
-    {kKstarVsMtVsMass1VsMass2VsPt1VsPt2, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2}},                                                                 \
-    {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity}},                                \
-    {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}}, \
-    {kKstarVsMtVsMinvVsPt1VsPt2, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2}},                                                                                           \
-    {kKstarVsMtVsMinvVsPt1VsPt2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity}},                                                          \
-    {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}},                           \
-    {kDalitz, {confAnalysis.kstar, confAnalysis.dalitzMtot, confAnalysis.dalitzM12, confAnalysis.dalitzM13}},                                                                                                                \
-    {kDeltaEtaDeltaPhi, {confAnalysis.binningDeltaPhi, confAnalysis.binningDeltaEta}},                                                                                                                                       \
-    {kQout, {confAnalysis.qout}},                                                                                                                                                                                            \
-    {kQside, {confAnalysis.qside}},                                                                                                                                                                                          \
-    {kQlong, {confAnalysis.qlong}},                                                                                                                                                                                          \
-    {kQoutQsideQlong, {confAnalysis.qout, confAnalysis.qside, confAnalysis.qlong}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define PAIR_HIST_ANALYSIS_MAP(confAnalysis)                                                                                                                                                                                                 \
+  {kKstar, {(confAnalysis).kstar}},                                                                                                                                                                                                          \
+    {kKt, {(confAnalysis).kt}},                                                                                                                                                                                                              \
+    {kMt, {(confAnalysis).mt}},                                                                                                                                                                                                              \
+    {kMinv, {(confAnalysis).massInv}},                                                                                                                                                                                                       \
+    {kPt1VsPt2, {(confAnalysis).pt1, (confAnalysis).pt2}},                                                                                                                                                                                   \
+    {kPt1VsKstar, {(confAnalysis).pt1, (confAnalysis).kstar}},                                                                                                                                                                               \
+    {kPt2VsKstar, {(confAnalysis).pt2, (confAnalysis).kstar}},                                                                                                                                                                               \
+    {kPt1VsKt, {(confAnalysis).pt1, (confAnalysis).kt}},                                                                                                                                                                                     \
+    {kPt2VsKt, {(confAnalysis).pt2, (confAnalysis).kt}},                                                                                                                                                                                     \
+    {kPt1VsMt, {(confAnalysis).pt1, (confAnalysis).mt}},                                                                                                                                                                                     \
+    {kPt2VsMt, {(confAnalysis).pt2, (confAnalysis).mt}},                                                                                                                                                                                     \
+    {kKstarVsKt, {(confAnalysis).kstar, (confAnalysis).kt}},                                                                                                                                                                                 \
+    {kKstarVsMt, {(confAnalysis).kstar, (confAnalysis).mt}},                                                                                                                                                                                 \
+    {kKstarVsMult, {(confAnalysis).kstar, (confAnalysis).multiplicity}},                                                                                                                                                                     \
+    {kKstarVsCent, {(confAnalysis).kstar, (confAnalysis).centrality}},                                                                                                                                                                       \
+    {kKstarVsMass1, {(confAnalysis).kstar, (confAnalysis).mass1}},                                                                                                                                                                           \
+    {kKstarVsMass2, {(confAnalysis).kstar, (confAnalysis).mass2}},                                                                                                                                                                           \
+    {kMass1VsMass2, {(confAnalysis).mass1, (confAnalysis).mass2}},                                                                                                                                                                           \
+    {kKstarVsMinv, {(confAnalysis).kstar, (confAnalysis).massInv}},                                                                                                                                                                          \
+    {kPt1VsMinv, {(confAnalysis).pt1, (confAnalysis).massInv}},                                                                                                                                                                              \
+    {kPt2VsMinv, {(confAnalysis).pt2, (confAnalysis).massInv}},                                                                                                                                                                              \
+    {kKstarVsMtVsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).multiplicity}},                                                                                                                                              \
+    {kKstarVsMtVsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).multiplicity, (confAnalysis).centrality}},                                                                                                             \
+    {kKstarVsMtVsPt1VsPt2, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).pt1, (confAnalysis).pt2}},                                                                                                                               \
+    {kKstarVsMtVsPt1VsPt2VsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity}},                                                                                            \
+    {kKstarVsMtVsPt1VsPt2VsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity, (confAnalysis).centrality}},                                                           \
+    {kKstarVsMtVsMass1VsMass2, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).mass1, (confAnalysis).mass2}},                                                                                                                       \
+    {kKstarVsMtVsMass1VsMass2VsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).mass1, (confAnalysis).mass2, (confAnalysis).multiplicity}},                                                                                    \
+    {kKstarVsMtVsMass1VsMass2VsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).mass1, (confAnalysis).mass2, (confAnalysis).multiplicity, (confAnalysis).centrality}},                                                   \
+    {kKstarVsMtVsMass1VsMass2VsPt1VsPt2, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).mass1, (confAnalysis).mass2, (confAnalysis).pt1, (confAnalysis).pt2}},                                                                     \
+    {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).mass1, (confAnalysis).mass2, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity}},                                  \
+    {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).mass1, (confAnalysis).mass2, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity, (confAnalysis).centrality}}, \
+    {kKstarVsMtVsMinvVsPt1VsPt2, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).pt1, (confAnalysis).pt2}},                                                                                                 \
+    {kKstarVsMtVsMinvVsPt1VsPt2VsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity}},                                                              \
+    {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity, (confAnalysis).centrality}},                             \
+    {kDalitz, {(confAnalysis).kstar, (confAnalysis).dalitzMtot, (confAnalysis).dalitzM12, (confAnalysis).dalitzM13}},                                                                                                                        \
+    {kDeltaEtaDeltaPhi, {(confAnalysis).binningDeltaPhi, (confAnalysis).binningDeltaEta}},                                                                                                                                                   \
+    {kQout, {(confAnalysis).qout}},                                                                                                                                                                                                          \
+    {kQside, {(confAnalysis).qside}},                                                                                                                                                                                                        \
+    {kQlong, {(confAnalysis).qlong}},                                                                                                                                                                                                        \
+    {kQoutQsideQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},
 
 // mixing-qa entries are independent of reco vs mc-truth status — both the reco
 // analysis path and the pure mc-truth path need them whenever kSe/kMe is set
-#define PAIR_HIST_MIXING_QA_MAP(confMixing)                                        \
-  {kSeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},   \
-    {kMeMixingWindowRaw, {confMixing.particleBinning}},                            \
-    {kMeMixingWindowEffective, {confMixing.particleBinning}},                      \
-    {kMeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}}, \
-    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define PAIR_HIST_MIXING_QA_MAP(confMixing)                                            \
+  {kSeNpart1VsNpart2, {(confMixing).particleBinning, (confMixing).particleBinning}},   \
+    {kMeMixingWindowRaw, {(confMixing).particleBinning}},                              \
+    {kMeMixingWindowEffective, {(confMixing).particleBinning}},                        \
+    {kMeNpart1VsNpart2, {(confMixing).particleBinning, (confMixing).particleBinning}}, \
+    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {(confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins}},
 
-#define PAIR_HIST_MC_MAP(conf)                                 \
-  {kTrueKstarVsKstar, {conf.kstar, conf.kstar}},               \
-    {kTrueKtVsKt, {conf.kt, conf.kt}},                         \
-    {kTrueMtVsMt, {conf.mt, conf.mt}},                         \
-    {kTrueMinvVsMinv, {conf.massInv, conf.massInv}},           \
-    {kTrueMultVsMult, {conf.multiplicity, conf.multiplicity}}, \
-    {kTrueCentVsCent, {conf.centrality, conf.centrality}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define PAIR_HIST_MC_MAP(conf)                                     \
+  {kTrueKstarVsKstar, {(conf).kstar, (conf).kstar}},               \
+    {kTrueKtVsKt, {(conf).kt, (conf).kt}},                         \
+    {kTrueMtVsMt, {(conf).mt, (conf).mt}},                         \
+    {kTrueMinvVsMinv, {(conf).massInv, (conf).massInv}},           \
+    {kTrueMultVsMult, {(conf).multiplicity, (conf).multiplicity}}, \
+    {kTrueCentVsCent, {(conf).centrality, (conf).centrality}},
 
 // pure mc-truth pair (no reco counterpart) — reuses the same analysis binning,
-// since there is no separate "true" axis configuration: the truth value IS the
+// since there is no separate "true" axis (conf)iguration: the truth value IS the
 // analysis-level value for this path.
-#define PAIR_HIST_MC_TRUTH_MAP(conf)                                                                \
-  {kTrueKstar, {conf.kstar}},                                                                       \
-    {kTrueKt, {conf.kt}},                                                                           \
-    {kTrueMt, {conf.mt}},                                                                           \
-    {kTrueMinv1D, {conf.massInv}},                                                                  \
-    {kTruePt1VsPt2, {conf.pt1, conf.pt2}},                                                          \
-    {kTruePt1VsKstar, {conf.pt1, conf.kstar}},                                                      \
-    {kTruePt2VsKstar, {conf.pt2, conf.kstar}},                                                      \
-    {kTruePt1VsKt, {conf.pt1, conf.kt}},                                                            \
-    {kTruePt2VsKt, {conf.pt2, conf.kt}},                                                            \
-    {kTruePt1VsMt, {conf.pt1, conf.mt}},                                                            \
-    {kTruePt2VsMt, {conf.pt2, conf.mt}},                                                            \
-    {kTrueKstarVsKt, {conf.kstar, conf.kt}},                                                        \
-    {kTrueKstarVsMt, {conf.kstar, conf.mt}},                                                        \
-    {kTrueKstarVsMult, {conf.kstar, conf.multiplicity}},                                            \
-    {kTrueKstarVsCent, {conf.kstar, conf.centrality}},                                              \
-    {kTrueDeltaEtaDeltaPhi, {conf.binningDeltaPhi, conf.binningDeltaEta}},                          \
-    {kTrueQout, {conf.qout}},                                                                       \
-    {kTrueQside, {conf.qside}},                                                                     \
-    {kTrueQlong, {conf.qlong}},                                                                     \
-    {kTrueQoutQsideQlong, {conf.qout, conf.qside, conf.qlong}},                                     \
-    {kTrueKstarVsMtVsMult, {conf.kstar, conf.mt, conf.multiplicity}},                               \
-    {kTrueKstarVsMtVsMultVsCent, {conf.kstar, conf.mt, conf.multiplicity, conf.centrality}},        \
-    {kTrueKstarVsMtVsPt1VsPt2, {conf.kstar, conf.mt, conf.pt1, conf.pt2}},                          \
-    {kTrueKstarVsMtVsPt1VsPt2VsMult, {conf.kstar, conf.mt, conf.pt1, conf.pt2, conf.multiplicity}}, \
-    {kTrueKstarVsMtVsPt1VsPt2VsMultVsCent, {conf.kstar, conf.mt, conf.pt1, conf.pt2, conf.multiplicity, conf.centrality}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define PAIR_HIST_MC_TRUTH_MAP(conf)                                                                          \
+  {kTrueKstar, {(conf).kstar}},                                                                               \
+    {kTrueKt, {(conf).kt}},                                                                                   \
+    {kTrueMt, {(conf).mt}},                                                                                   \
+    {kTrueMinv1D, {(conf).massInv}},                                                                          \
+    {kTruePt1VsPt2, {(conf).pt1, (conf).pt2}},                                                                \
+    {kTruePt1VsKstar, {(conf).pt1, (conf).kstar}},                                                            \
+    {kTruePt2VsKstar, {(conf).pt2, (conf).kstar}},                                                            \
+    {kTruePt1VsKt, {(conf).pt1, (conf).kt}},                                                                  \
+    {kTruePt2VsKt, {(conf).pt2, (conf).kt}},                                                                  \
+    {kTruePt1VsMt, {(conf).pt1, (conf).mt}},                                                                  \
+    {kTruePt2VsMt, {(conf).pt2, (conf).mt}},                                                                  \
+    {kTrueKstarVsKt, {(conf).kstar, (conf).kt}},                                                              \
+    {kTrueKstarVsMt, {(conf).kstar, (conf).mt}},                                                              \
+    {kTrueKstarVsMult, {(conf).kstar, (conf).multiplicity}},                                                  \
+    {kTrueKstarVsCent, {(conf).kstar, (conf).centrality}},                                                    \
+    {kTrueDeltaEtaDeltaPhi, {(conf).binningDeltaPhi, (conf).binningDeltaEta}},                                \
+    {kTrueQout, {(conf).qout}},                                                                               \
+    {kTrueQside, {(conf).qside}},                                                                             \
+    {kTrueQlong, {(conf).qlong}},                                                                             \
+    {kTrueQoutQsideQlong, {(conf).qout, (conf).qside, (conf).qlong}},                                         \
+    {kTrueKstarVsMtVsMult, {(conf).kstar, (conf).mt, (conf).multiplicity}},                                   \
+    {kTrueKstarVsMtVsMultVsCent, {(conf).kstar, (conf).mt, (conf).multiplicity, (conf).centrality}},          \
+    {kTrueKstarVsMtVsPt1VsPt2, {(conf).kstar, (conf).mt, (conf).pt1, (conf).pt2}},                            \
+    {kTrueKstarVsMtVsPt1VsPt2VsMult, {(conf).kstar, (conf).mt, (conf).pt1, (conf).pt2, (conf).multiplicity}}, \
+    {kTrueKstarVsMtVsPt1VsPt2VsMultVsCent, {(conf).kstar, (conf).mt, (conf).pt1, (conf).pt2, (conf).multiplicity, (conf).centrality}},
 
 template <typename T1, typename T2>
 auto makePairHistSpecMap(T1 const& confPairBinning, T2 const& confMixing)
@@ -471,7 +473,7 @@ constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view MixingQaDir = "MixingQA/";
 constexpr std::string_view McDir = "MC/";
 
-template <const char* prefix,
+template <auto& prefix,
           modes::Particle particleType1,
           modes::Particle particleType2>
 class PairHistManager
@@ -1249,9 +1251,9 @@ class PairHistManager
     const double kside2 = (p2.Py() * tPx - p2.Px() * tPy) / tPt;
     const double klong2 = gammaL * (p2.Pz() - betaL * p2.E());
 
-    float qOut = static_cast<float>(kout1 - kout2);
-    float qSide = static_cast<float>(kside1 - kside2);
-    float qLong = static_cast<float>(klong1 - klong2);
+    auto qOut = static_cast<float>(kout1 - kout2);
+    auto qSide = static_cast<float>(kside1 - kside2);
+    auto qLong = static_cast<float>(klong1 - klong2);
 
     return {qOut, qSide, qLong};
   }
@@ -1269,8 +1271,8 @@ class PairHistManager
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
-  ROOT::Math::PtEtaPhiMVector mParticle1{};
-  ROOT::Math::PtEtaPhiMVector mParticle2{};
+  ROOT::Math::PtEtaPhiMVector mParticle1;
+  ROOT::Math::PtEtaPhiMVector mParticle2;
   float mRecoMass1 = 0.f;
   float mRecoMass2 = 0.f;
   float mKstar = 0.f;
@@ -1286,8 +1288,8 @@ class PairHistManager
   // mc (used for both reco-vs-truth correlation AND pure mc-truth-only pairs —
   // for the latter, these are simply the primary/only kinematic values, not a
   // "true" comparison against anything)
-  ROOT::Math::PtEtaPhiMVector mTrueParticle1{};
-  ROOT::Math::PtEtaPhiMVector mTrueParticle2{};
+  ROOT::Math::PtEtaPhiMVector mTrueParticle1;
+  ROOT::Math::PtEtaPhiMVector mTrueParticle2;
   float mTrueKstar = 0.f;
   float mTrueKt = 0.f;
   float mTrueMt = 0.f;
@@ -1351,10 +1353,8 @@ class PairHistManager
   bool mPairCorrelationQa = false;
   bool mEventMixingQa = false;
 
-  std::unordered_set<int64_t> mParticles1PerEvent = {};
-  std::unordered_set<int64_t> mParticles2PerEvent = {};
+  std::unordered_set<int64_t> mParticles1PerEvent;
+  std::unordered_set<int64_t> mParticles2PerEvent;
 };
-
-}; // namespace pairhistmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::pairhistmanager
 #endif // PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
