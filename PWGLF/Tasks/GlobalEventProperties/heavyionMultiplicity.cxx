@@ -192,7 +192,7 @@ struct HeavyionMultiplicity {
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   ConfigurableAxis binsDCA{"binsDCA", {500, -10.0f, 10.0f}, ""};
-
+  
   Configurable<bool> isApplyTFcut{"isApplyTFcut", true, "Enable TimeFrameBorder cut"};
   Configurable<bool> isApplyITSROcut{"isApplyITSROcut", true, "Enable ITS ReadOutFrameBorder cut"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
@@ -250,6 +250,19 @@ struct HeavyionMultiplicity {
     x->SetBinLabel(9, "ApplyNoHighMultCollInPrevRof");
     x->SetBinLabel(10, "INEL > 0");
 
+
+    if(doprocessDCAvsptData) {
+      histos.add("hdcaxyvspt", "dca to pv in the xy plane", kTH2D, {dcaAxis, axisPt}, false);
+      histos.add("hdcazvspt" , "dca to pv in the z axis", kTH2D, {dcaAxis, axisPt}, false);
+    }
+
+    if(doprocessDCAvsptMC) {
+      histos.add("hdcaxyvsptMC", "dca to pv in the xy plane MC", kTH2D, {dcaAxis, axisPt}, false);
+      histos.add("hdcazvsptMC", "dca to pv in the z axis MC", kTH2D, {dcaAxis, axisPt}, false);
+      histos.add("hdcaxyvsptMCprimary", "dca to pv in the xy plane MC primary particles", kTH2D, {dcaAxis, axisPt}, false);
+      histos.add("hdcazvsptMCprimary", "dca to pv in the z axis MC primary particles", kTH2D, {dcaAxis, axisPt}, false);
+    }
+    
     if (doprocessData) {
       histos.add("hdcaxy", "dca to pv in the xy plane", kTH1D, {dcaAxis}, false);
       histos.add("hdcaz", "dca to pv in the z axis", kTH1D, {dcaAxis}, false);
@@ -518,6 +531,10 @@ struct HeavyionMultiplicity {
     return true;
   }
 
+
+
+
+  
   expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                                                   ncheckbit(aod::track::trackCutFlag, TrackSelectionIts) &&
                                                   ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
@@ -525,6 +542,66 @@ struct HeavyionMultiplicity {
                                                   ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
                                                          ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
 
+
+  void processDCAvsptData(CollisionDataTable::iterator const& cols, TrackDataTable const& tracks) {
+     if (!isEventSelected(cols)) {
+      return;
+    }
+
+    for (const auto& track : tracks) {
+      if(!track.hasITS())
+	continue;
+      
+      if (!isTrackSelected(track)) 
+        continue;
+
+      histos.fill(HIST("hdcaxyvspt"), track.dcaXY(), track.pt()); 
+      histos.fill(HIST("hdcazvspt"), track.dcaZ(), track.pt());   
+      
+    }
+    
+  }
+
+  void processDCAvsptMC(soa::Join<CollisionMCTrueTable, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const&, TrackMCRecTable const& RecTracks) {
+
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol)) {
+        continue;
+      }
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+
+      auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+
+      for (const auto& Rectrack : recTracksPart) {
+	if(!Rectrack.hasITS())
+	  continue;
+
+	if (!isTrackSelected(Rectrack))
+          continue;
+        
+        if (!Rectrack.has_mcParticle())
+	  continue;
+      
+
+	histos.fill(HIST("hdcaxyvsptMC"), Rectrack.dcaXY(), Rectrack.pt());
+	histos.fill(HIST("hdcazvsptMC"), Rectrack.dcaZ(), Rectrack.pt());   
+
+	auto mcpart = Rectrack.mcParticle();
+	
+	if (mcpart.isPhysicalPrimary()) {
+	  histos.fill(HIST("hdcaxyvsptMCprimary"), Rectrack.dcaXY(), Rectrack.pt());  
+	  histos.fill(HIST("hdcazvsptMCprimary"), Rectrack.dcaZ(), Rectrack.pt());    
+	}
+      }
+    }    
+  }
+
+
+
+
+  
   void processData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
@@ -1032,7 +1109,9 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("BcCentFT0CHist"), multbc.centFT0C());
     histos.fill(HIST("BcCentFT0MHist"), multbc.centFT0M());
   }
-
+  
+  PROCESS_SWITCH(HeavyionMultiplicity, processDCAvsptData, "process DCA data", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processDCAvsptMC, "process DCA MC", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation, "do correlation study in data", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C", false);
