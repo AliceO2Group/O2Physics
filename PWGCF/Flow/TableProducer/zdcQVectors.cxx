@@ -51,6 +51,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <memory>
 
 #include <stdlib.h>
 
@@ -431,8 +432,8 @@ struct ZdcQVectors {
 
   double rescaleTimestamp(uint64_t timestamp, int runnumber)
   {
-    auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
-    auto duration = ccdb.getRunDuration(runnumber);
+    auto& cc = o2::ccdb::BasicCCDBManager::instance();
+    auto duration = cc.getRunDuration(runnumber);
     double ts = (static_cast<double>(timestamp - duration.first) / static_cast<double>(duration.second - duration.first)) * 100.0;
 
     return ts;
