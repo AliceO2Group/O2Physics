@@ -190,14 +190,14 @@ constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable =
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define KINK_HIST_QA_MAP(confAnalysis, confQa)                 \
-  {kKinkAngle, {(confQa).kinkAngle}},                        \
-    {kDcaMothToPV, {(confQa).dcaMothToPV}},                  \
-    {kDcaDaugToPV, {(confQa).dcaDaugToPV}},                  \
-    {kDecayVtxX, {(confQa).decayVertex}},                    \
-    {kDecayVtxY, {(confQa).decayVertex}},                    \
-    {kDecayVtxZ, {(confQa).decayVertex}},                    \
-    {kDecayVtx, {(confQa).decayVertex}},                     \
-    {kTransRadius, {(confQa).transRadius}},                  \
+  {kKinkAngle, {(confQa).kinkAngle}},                          \
+    {kDcaMothToPV, {(confQa).dcaMothToPV}},                    \
+    {kDcaDaugToPV, {(confQa).dcaDaugToPV}},                    \
+    {kDecayVtxX, {(confQa).decayVertex}},                      \
+    {kDecayVtxY, {(confQa).decayVertex}},                      \
+    {kDecayVtxZ, {(confQa).decayVertex}},                      \
+    {kDecayVtx, {(confQa).decayVertex}},                       \
+    {kTransRadius, {(confQa).transRadius}},                    \
     {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},       \
     {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},       \
     {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},     \

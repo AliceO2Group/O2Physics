@@ -115,7 +115,6 @@ struct ConfOmegaSelection : o2::framework::ConfigurableGroup {
 
 #undef CASCADE_DEFAULT_SELECTION
 
-
 /// The different selections this task is capable of doing
 enum CascadeSels {
   // selections for cascades

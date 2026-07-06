@@ -91,18 +91,18 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_ANALYSIS_MAP(conf) \
-  {kPosZ, {(conf).vtxZ}},             \
-    {kMult, {(conf).mult}},           \
-    {kCent, {(conf).cent}},           \
+  {kPosZ, {(conf).vtxZ}},           \
+    {kMult, {(conf).mult}},         \
+    {kCent, {(conf).cent}},         \
     {kMagField, {(conf).magField}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define COL_HIST_QA_MAP(confAnalysis, confQa)                    \
-  {kPosX, {(confQa).vtxXY}},                                       \
-    {kPosY, {(confQa).vtxXY}},                                     \
-    {kPos, {(confQa).vtx}},                                        \
-    {kSphericity, {(confQa).sphericity}},                          \
-    {kOccupancy, {(confQa).occupancy}},                            \
+#define COL_HIST_QA_MAP(confAnalysis, confQa)                        \
+  {kPosX, {(confQa).vtxXY}},                                         \
+    {kPosY, {(confQa).vtxXY}},                                       \
+    {kPos, {(confQa).vtx}},                                          \
+    {kSphericity, {(confQa).sphericity}},                            \
+    {kOccupancy, {(confQa).occupancy}},                              \
     {kPoszVsMult, {(confAnalysis).vtxZ, (confAnalysis).mult}},       \
     {kPoszVsCent, {(confAnalysis).vtxZ, (confAnalysis).cent}},       \
     {kCentVsMult, {(confAnalysis).cent, (confAnalysis).mult}},       \
@@ -110,10 +110,10 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kCentVsSphericity, {confBinningAnalysis.cent, (confQa).sphericity}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define COL_HIST_MC_MAP(conf)                  \
-  {kTruePosZ, {(conf).vtxZ}},                    \
-    {kTrueCent, {(conf).cent}},                  \
-    {kTrueMult, {(conf).mult}},                  \
+#define COL_HIST_MC_MAP(conf)                      \
+  {kTruePosZ, {(conf).vtxZ}},                      \
+    {kTrueCent, {(conf).cent}},                    \
+    {kTrueMult, {(conf).mult}},                    \
     {kTruePosZVsPosZ, {(conf).vtxZ, (conf).vtxZ}}, \
     {kTrueCentVsCent, {(conf).cent, (conf).cent}}, \
     {kTrueMultVsMult, {(conf).mult, (conf).mult}},
