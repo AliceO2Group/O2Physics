@@ -64,7 +64,7 @@ DECLARE_SOA_TABLE(CentMFTs, "AOD", "CENTMFT", cent::CentMFT);             //! Ru
 DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1);                    //! Run 3 FT0C variant 1
 DECLARE_SOA_TABLE(CentFT0CVariant2s, "AOD", "CENTFT0Cvar2", cent::CentFT0CVariant2);                    //! Run 3 FT0C variant 1 - uses truncated Nancestors in glauber fit. Not recommended! for cross-checks only
 DECLARE_SOA_TABLE(CentFT0MLightIonAnchorCols, "AOD", "CENTFT0MLICOL", cent::CentFT0MLightIonAnchorCol); //! Run 3 Light ions FT0M - Traditional anchor at 90% with Glauber. Colliison based calibration. Not recommended! for cross-checks only
-DECLARE_SOA_TABLE(CentFT0MLightIonAnchorBCs, "AOD", "CENTFT0MLIbc", cent::CentFT0MLightIonAnchorBC);    //! Run 3 Light ions FT0M - Traditional anchor at 90% with Glauber. Bunch crossing based calibration. Not recommended! for cross-checks only
+DECLARE_SOA_TABLE(CentFT0MLightIonAnchorBCs, "AOD", "CENTFT0MLIBC", cent::CentFT0MLightIonAnchorBC);    //! Run 3 Light ions FT0M - Traditional anchor at 90% with Glauber. Bunch crossing based calibration. Not recommended! for cross-checks only
 
 // Run 3 centrality per BC (joinable with BC)
 DECLARE_SOA_TABLE(BCCentFT0Ms, "AOD", "BCCENTFT0M", cent::CentFT0M, o2::soa::Marker<1>); //! Run 3 FT0M BC centrality table
