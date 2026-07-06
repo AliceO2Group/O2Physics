@@ -54,8 +54,10 @@
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include <Math/Boost.h>
-#include <Math/Vector4D.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TPDGCode.h>
 #include <TString.h>
